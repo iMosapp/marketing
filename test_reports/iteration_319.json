@@ -1,0 +1,22 @@
+{
+  "summary": "Frontend-only verification of Mystery Shops Industry Packs refactor. All requested UI flows PASS: (1) client list shows real estate 'QA Realty Group' with 'Real estate' subtitle and 'Buyer leads 0/4 Seller leads 0/2' progress; (2) Quick shop sheet renders 7 industry chips, real_estate departments show re_buyer/re_seller with 'THEIR BROKERAGE (OPTIONAL)' + 'A LISTING THE CALLER CAN MENTION (OPTIONAL)' labels, re_seller yields demo-no-challenges and disabled demo-call, home_services shows hs_repair/hs_estimate/hs_maintenance; (3) new client sheet with home_services produces per-department numeric fields + price + 'COMPANY NAME'/'SERVICES OR SYSTEMS' labels, save routes to detail with header 'Home services · 20 repair calls + 10 estimates + 10 maintenance plans / mo', delete works cleanly; (4) real estate client detail: header shows 'Real estate · 4 buyer leads + 2 seller leads / mo' (no sales/service), People has BUYER LEADS·1 + SELLER LEADS·1 groups, person sheet shows only re_buyer/re_seller chips, calls-plan-month label 'Schedule the rest of September (4 buyer leads + 2 seller leads)', scheduled rows show '· Buyer leads' and 'caller <Name>', Challenges tab has challenge-group-re_buyer + challenge-group-re_seller, Report shows report-dept-re_buyer/report-dept-re_seller with BUYER LEADS/SELLER LEADS labels, Billing→proposal-new has proposal-per-re_buyer + proposal-per-re_seller (no proposal-sales/service); (5) library shows 7 industry chips, automotive default groups sales/service/parts/rental, real_estate shows re_buyer/re_seller with library-seed + library-seed-re_seller purple prompts, generator-sheet + challenge-sheet both have per-industry chips and switch departments correctly (verified fitness→fit_membership, RE→re_buyer); (6) automotive regression on QA Jeep 0839 confirms sales+service everywhere (header '20 sales + 20 service / mo', people SALES/SERVICE, person chips sales/service/parts/rental, calls-plan-month '(20 sales + 20 service)', report-dept-sales + report-dept-service); (7) public /proposal/<token> renders '4 BUYER LEADS SHOPS / MONTH' + '2 SELLER LEADS SHOPS / MONTH' tiles and body 'I'm On Social will mystery shop QA Realty Group by phone every month: 4 buyer leads and 2 seller leads calls' (no sales/service tiles); (8) public /shop-kickoff/<token> shows kickoff-vehicles-card titled 'Listings the caller can mention', body has '4 buyer leads and 2 seller leads shops a month', kickoff-add-re_buyer + kickoff-add-re_seller buttons, kickoff-hours-summary starts with 'Our caller calls Mon, Tue…'; (9) public /shop-report/<token> renders report-dept-re_buyer + report-dept-re_seller with intro 'Every call below was placed by our AI caller'. No hard-fail bugs found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor: on the RE client Shops tab, 8 shop-call rows were rendered even though the plan is 4 buyer + 2 seller = 6/mo (likely includes prior-month/day rows). Not a regression, but worth confirming the row filter matches plan_per_month if a stricter 'this month only' count is expected.",
+    "Minor: several Expo deprecation warnings in console (expo-av, shadow* style props, useNativeDriver, pointerEvents). Not blocking, but should be tracked for SDK 54."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "forest@imosapp.com / Admin123! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created 'QA HVAC Test' home_services client during new-client sheet test and deleted it at the end. No residual test data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Web build: hard-loading /admin/... hits marketing static page — always login via /api/auth/login, store token in localStorage under 'token'/'auth_token', then use history.pushState + popstate. Real estate QA client id 6aa6d92be1e1863f484f6907. /api/shop-clients returns object {clients, departments, industries, from_number_default} not a plain list."
+}

@@ -6,7 +6,7 @@ import { useLocalSearchParams } from 'expo-router';
 import api from '../../services/api';
 import { KickoffHours } from '../../components/mystery-shops/KickoffHours';
 import { KickoffPeople, newPerson, type KPerson } from '../../components/mystery-shops/KickoffPeople';
-import { Label, GoldButton, LIGHT, GOLD, GREEN, RED, tid, type Hours } from '../../components/mystery-shops/shared';
+import { Label, GoldButton, LIGHT, GOLD, GREEN, RED, tid, perMonthText, type Hours, type Dept } from '../../components/mystery-shops/shared';
 
 const inp = { backgroundColor: LIGHT.surface, borderRadius: 12, borderWidth: 1, borderColor: LIGHT.border, paddingHorizontal: 12, height: 46, color: LIGHT.text, fontSize: 15 } as const;
 const Card = ({ title, sub, children, testID }: { title: string; sub?: string; children: React.ReactNode; testID: string }) => (
@@ -35,9 +35,10 @@ export default function PublicShopKickoff() {
 
   const hydrate = (d: any) => {
     const c = d.client;
+    const depts: Dept[] = d.departments || [];
     setData(d); setContact({ contact_name: c.contact_name || '', contact_title: c.contact_title || '', contact_email: c.contact_email || '', contact_phone: c.contact_phone || '' });
-    setHours(c.hours); setTimezone(c.timezone); setVehicles(c.vehicles || []);
-    setPeople((d.people || []).map((p: any) => ({ key: p.id, id: p.id, name: p.name, phone: p.phone, department: p.department, title: p.title || '' })).concat(d.people?.length ? [] : [newPerson('sales'), newPerson('service')]));
+    setHours(c.hours); setTimezone(c.timezone); setVehicles(c.offerings || c.vehicles || []);
+    setPeople((d.people || []).map((p: any) => ({ key: p.id, id: p.id, name: p.name, phone: p.phone, department: p.department, title: p.title || '' })).concat(d.people?.length ? [] : depts.slice(0, 2).map(x => newPerson(x.key))));
     setRemoved([]);
   };
   useEffect(() => { if (token) api.get(`/public/shop-kickoff/${token}`).then(r => hydrate(r.data)).catch(() => setError('This setup link is not valid anymore. Ask I\'m On Social for a fresh one.')); }, [token]);
@@ -58,6 +59,9 @@ export default function PublicShopKickoff() {
 
   const wide = width > 800;
   const c = data?.client;
+  const offering = c?.offering || { label: 'vehicle', plural: 'vehicles', hint: '2024 Jeep Grand Cherokee L Limited', field: 'Vehicles our shopper can mention', field_help: 'Real units from your lot make the calls believable. Year, make, model, trim is plenty.' };
+  const customer = c?.customer_noun || 'shopper';
+  const depts: Dept[] = data?.departments || [];
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: LIGHT.bg }}>
       <ScrollView contentContainerStyle={{ padding: wide ? 32 : 16, paddingBottom: 80, alignItems: 'center' }} keyboardShouldPersistTaps="handled">
@@ -70,7 +74,7 @@ export default function PublicShopKickoff() {
               {saved && (
                 <View style={{ backgroundColor: LIGHT.card, borderRadius: 18, padding: 18, borderWidth: 1, borderColor: GREEN + '88', flexDirection: 'row', gap: 12, alignItems: 'center' }} {...tid('kickoff-saved')}>
                   <Ionicons name="checkmark-circle" size={28} color={GREEN} />
-                  <View style={{ flex: 1 }}><Text style={{ fontSize: 17, fontWeight: '800', color: LIGHT.text }}>Saved, thank you</Text><Text style={{ fontSize: 14, color: LIGHT.textSecondary, lineHeight: 20 }}>{saved.people.length} people to shop{saved.added ? ` (${saved.added} new)` : ''}, {vehicles.length} vehicles, hours set. {data.sender_name} has been notified. You can keep editing below.</Text></View>
+                  <View style={{ flex: 1 }}><Text style={{ fontSize: 17, fontWeight: '800', color: LIGHT.text }}>Saved, thank you</Text><Text style={{ fontSize: 14, color: LIGHT.textSecondary, lineHeight: 20 }}>{saved.people.length} people to shop{saved.added ? ` (${saved.added} new)` : ''}, {vehicles.length} {vehicles.length === 1 ? offering.label : offering.plural}, hours set. {data.sender_name} has been notified. You can keep editing below.</Text></View>
                 </View>
               )}
               <Card title="Who we send reports to" sub="The monthly report and invoice go here." testID="kickoff-contact-card">
@@ -84,14 +88,14 @@ export default function PublicShopKickoff() {
                 </View>
               </Card>
               <Card title="When we may call" sub="Shops land at random times inside this window so nobody can predict them." testID="kickoff-hours-card">
-                <KickoffHours hours={hours} timezone={timezone} timezones={data.timezones} onHours={setHours} onTimezone={setTimezone} />
+                <KickoffHours hours={hours} timezone={timezone} timezones={data.timezones} onHours={setHours} onTimezone={setTimezone} customer={customer} />
               </Card>
-              <Card title="Vehicles our shopper can mention" sub="Real units from your lot make the calls believable. Year, make, model, trim is plenty." testID="kickoff-vehicles-card">
+              <Card title={offering.field} sub={offering.field_help} testID="kickoff-vehicles-card">
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TextInput value={vehicle} onChangeText={setVehicle} onSubmitEditing={addVehicle} placeholder="2024 Jeep Grand Cherokee L Limited" placeholderTextColor={LIGHT.textSecondary} style={[inp, { flex: 1 }]} {...tid('kickoff-vehicle-input')} />
+                  <TextInput value={vehicle} onChangeText={setVehicle} onSubmitEditing={addVehicle} placeholder={offering.hint} placeholderTextColor={LIGHT.textSecondary} style={[inp, { flex: 1 }]} {...tid('kickoff-vehicle-input')} />
                   <TouchableOpacity onPress={addVehicle} style={{ paddingHorizontal: 16, height: 46, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center' }} {...tid('kickoff-vehicle-add')}><Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>Add</Text></TouchableOpacity>
                 </View>
-                {vehicles.length === 0 && <Text style={{ fontSize: 13, color: LIGHT.textSecondary }} {...tid('kickoff-vehicles-empty')}>None yet. We will use generic "the SUV you have listed online" until you add some.</Text>}
+                {vehicles.length === 0 && <Text style={{ fontSize: 13, color: LIGHT.textSecondary }} {...tid('kickoff-vehicles-empty')}>None yet. Our {customer} will keep it generic until you add some.</Text>}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                   {vehicles.map((v, i) => (
                     <View key={`${v}-${i}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 6, height: 32, borderRadius: 16, backgroundColor: LIGHT.surface, borderWidth: 1, borderColor: LIGHT.border }} {...tid(`kickoff-vehicle-${i}`)}>
@@ -101,8 +105,8 @@ export default function PublicShopKickoff() {
                   ))}
                 </View>
               </Card>
-              <Card title="People to shop" sub={`Your plan covers ${c.plan?.sales_per_month || 0} sales and ${c.plan?.service_per_month || 0} service shops a month, spread across everyone below. We only ever call the cell numbers here; nobody gets a text or an email.`} testID="kickoff-people-card">
-                <KickoffPeople people={people} onChange={onPeople} />
+              <Card title="People to shop" sub={`Your plan covers ${perMonthText(c.plan?.per_month, ' and ', depts)} shops a month, spread across everyone below. We only ever call the cell numbers here; nobody gets a text or an email.`} testID="kickoff-people-card">
+                <KickoffPeople people={people} onChange={onPeople} departments={depts} />
               </Card>
               {!!err && <Text style={{ fontSize: 14, color: RED, fontWeight: '600' }} {...tid('kickoff-error')}>{err}</Text>}
               {incomplete.length > 0 && <Text style={{ fontSize: 13, color: LIGHT.textSecondary }} {...tid('kickoff-incomplete')}>{incomplete.length} {incomplete.length === 1 ? 'person still needs' : 'people still need'} a name and a full cell number.</Text>}

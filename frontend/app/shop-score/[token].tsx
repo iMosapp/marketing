@@ -36,7 +36,7 @@ export default function PublicShopScore() {
                   <ScoreRing pct={d.score_pct} size={104} stroke={9} colors={LIGHT} label="score" testID="score-ring" />
                   <View style={{ flex: 1, gap: 4 }}>
                     <Text style={{ fontSize: wide ? 26 : 22, fontWeight: '800', color: LIGHT.text }} {...tid('score-title')}>{d.first_name ? `${d.first_name}, here's how that call went` : 'Your mystery shop'}</Text>
-                    <Text style={{ fontSize: 13.5, color: LIGHT.textSecondary, lineHeight: 19 }} {...tid('score-meta')}>{deptLabel(d.department)} · {d.challenge_title}{d.persona_name ? ` · the shopper was ${d.persona_name.split(' ')[0]}` : ''}{d.ended_at ? ` · ${fmtWhen(d.ended_at)}` : ''}{d.store_name ? ` · ${d.store_name}` : ''}</Text>
+                    <Text style={{ fontSize: 13.5, color: LIGHT.textSecondary, lineHeight: 19 }} {...tid('score-meta')}>{d.department_label || deptLabel(d.department)} · {d.challenge_title}{d.persona_name ? ` · the ${d.customer_noun || 'shopper'} was ${d.persona_name.split(' ')[0]}` : ''}{d.ended_at ? ` · ${fmtWhen(d.ended_at)}` : ''}{d.store_name ? ` · ${d.store_name}` : ''}</Text>
                   </View>
                 </View>
                 {!!d.summary && <Text style={{ fontSize: 15, color: LIGHT.text, lineHeight: 23 }} {...tid('score-summary')}>{d.summary}</Text>}

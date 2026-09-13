@@ -9,12 +9,13 @@ import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { CriteriaChecklist } from '../scorecards/CriteriaChecklist';
 import { ScoreRing } from '../scorecards/ScoreRing';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
-import { Sheet, Label, StatusChip, GoldButton, deptLabel, fmtWhen, monthLabel, shiftMonth, scoreColor, GOLD, RED, GREEN, tid, type ShopCall, type Client } from './shared';
+import { Sheet, Label, StatusChip, GoldButton, deptLabel, deptsOfClient, perMonthText, fmtWhen, monthLabel, shiftMonth, scoreColor, GOLD, RED, GREEN, tid, type ShopCall, type Client } from './shared';
 
 type Props = { client: Client; colors: any; month: string; onMonth: (m: string) => void; refreshKey: number; onChanged: () => void };
 
 export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged }: Props) => {
   const { showToast } = useToast();
+  const depts = deptsOfClient(client);
   const [calls, setCalls] = useState<ShopCall[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
@@ -25,7 +26,7 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
 
   const plan = async () => {
     setPlanning(true);
-    try { const r = await api.post(`/shop-clients/${client.id}/plan-month`, { month }); const c = r.data.created; showToast(c.sales + c.service ? `Scheduled ${c.sales} sales + ${c.service} service shops` : 'This month is already fully scheduled', 'success'); load(); onChanged(); }
+    try { const r = await api.post(`/shop-clients/${client.id}/plan-month`, { month }); const c: Record<string, number> = r.data.created || {}; const n = Object.values(c).reduce((s, x) => s + (x || 0), 0); showToast(n ? `Scheduled ${perMonthText(c, ' + ', depts)} shops` : 'This month is already fully scheduled', 'success'); load(); onChanged(); }
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not schedule', 'error'); }
     finally { setPlanning(false); }
   };
@@ -42,8 +43,8 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
     <TouchableOpacity onPress={() => setOpen(c.id)} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 6 }} {...tid(`shop-call-${c.id}`)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {deptLabel(c.department)}</Text></Text>
-          <Text style={{ fontSize: 12.5, color: colors.textSecondary }} numberOfLines={1}>{c.script_title}{c.persona_name ? ` · shopper ${c.persona_name.split(' ')[0]}` : ''}</Text>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {c.department_label || deptLabel(c.department, depts)}</Text></Text>
+          <Text style={{ fontSize: 12.5, color: colors.textSecondary }} numberOfLines={1}>{c.script_title}{c.persona_name ? ` · ${c.customer_noun || client.customer_noun || 'shopper'} ${c.persona_name.split(' ')[0]}` : ''}</Text>
         </View>
         {c.status === 'completed' ? <Text style={{ fontSize: 20, fontWeight: '800', color: scoreColor(c.score_pct) }} {...tid(`shop-call-score-${c.id}`)}>{c.score_pct != null ? `${c.score_pct}%` : '–'}</Text> : <StatusChip status={c.status} colors={colors} />}
       </View>
@@ -63,7 +64,7 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
         <Text style={{ flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.text }} {...tid('calls-month-label')}>{monthLabel(month)}</Text>
         <TouchableOpacity onPress={() => onMonth(shiftMonth(month, 1))} hitSlop={8} {...tid('calls-month-next')}><Ionicons name="chevron-forward" size={22} color={GOLD} /></TouchableOpacity>
       </View>
-      {!client.demo && <GoldButton label={`Schedule the rest of ${monthLabel(month).split(' ')[0]} (${client.plan.sales_per_month} sales + ${client.plan.service_per_month} service)`} onPress={plan} busy={planning} icon="calendar" testID="calls-plan-month" outline />}
+      {!client.demo && <GoldButton label={`Schedule the rest of ${monthLabel(month).split(' ')[0]} (${perMonthText(client.plan.per_month, ' + ', depts)})`} onPress={plan} busy={planning} icon="calendar" testID="calls-plan-month" outline />}
       {calls === null ? <ActivityIndicator color={GOLD} /> : done.length + upcoming.length + other.length === 0 ? <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 }} {...tid('calls-empty')}>{client.demo ? 'No quick shops this month yet. Tap Shop anyone right now, or Shop now on someone under People.' : 'No shops this month yet. Add people, then schedule the month or tap Shop now on someone.'}</Text> : (
         <>
           {upcoming.length > 0 && <View style={{ gap: 8 }}><Label t={`COMING UP · ${upcoming.length}`} colors={colors} />{upcoming.map(c => <Row key={c.id} c={c} />)}</View>}
@@ -85,6 +86,7 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData }: { id: strin
     api.get(`/shop-clients/calls/${id}`).then(r => setD(r.data)).catch(() => setD({ error: true }));
   }, [id, publicData]);
   const ev = d?.evaluation || (d?.results ? d : null);
+  const who = String(d?.customer_noun || 'shopper');
   const turns = d?.transcript_turns || (d?.transcript ? String(d.transcript).split('\n').filter(Boolean).map((l: string) => ({ role: l.startsWith('REP:') ? 'rep' : 'customer', text: l.replace(/^(REP|CUSTOMER):\s*/, '') })) : []);
   return (
     <Sheet visible={!!id} onClose={onClose} title={d?.target_name ? `${d.target_name} · ${d.script_title || ''}` : 'Shop call'} colors={colors} testID="shop-call-detail">
@@ -94,7 +96,7 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData }: { id: strin
             <ScoreRing pct={d.score_pct} size={72} colors={colors} label={d.score_pct != null ? 'score' : ''} />
             <View style={{ flex: 1, gap: 4 }}>
               <StatusChip status={d.status} colors={colors} />
-              <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{fmtWhen(d.ended_at || d.started_at || d.scheduled_for)}{d.persona_name || d.persona?.name ? ` · shopper ${(d.persona_name || d.persona?.name)}` : ''}{d.attempts > 1 ? ` · ${d.attempts} tries` : ''}</Text>
+              <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{fmtWhen(d.ended_at || d.started_at || d.scheduled_for)}{d.persona_name || d.persona?.name ? ` · ${who} ${(d.persona_name || d.persona?.name)}` : ''}{d.attempts > 1 ? ` · ${d.attempts} tries` : ''}</Text>
               {ev?.scorecard_name && <Text style={{ fontSize: 12, color: colors.textSecondary }}>Graded with {ev.scorecard_name}{d.adherence_pct != null ? ` · script ${d.adherence_pct}%` : ''}</Text>}
               {!!d.fail_reason && d.status !== 'completed' && <Text style={{ fontSize: 12.5, color: RED }}>{d.fail_reason}</Text>}
             </View>
@@ -123,7 +125,7 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData }: { id: strin
               {turns.map((t: any, i: number) => (
                 <View key={i} style={{ flexDirection: 'row', justifyContent: t.role === 'rep' ? 'flex-end' : 'flex-start' }}>
                   <View style={{ maxWidth: '86%', backgroundColor: t.role === 'rep' ? GOLD : colors.card, borderRadius: 14, padding: 10, borderWidth: t.role === 'rep' ? 0 : 1, borderColor: colors.border }}>
-                    <Text style={{ fontSize: 10, fontWeight: '800', color: t.role === 'rep' ? '#11111199' : colors.textSecondary, marginBottom: 2 }}>{t.role === 'rep' ? (d.target_name || 'REP').toUpperCase() : 'SHOPPER'}</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: t.role === 'rep' ? '#11111199' : colors.textSecondary, marginBottom: 2 }}>{t.role === 'rep' ? (d.target_name || 'REP').toUpperCase() : who.toUpperCase()}</Text>
                     <Text style={{ fontSize: 14, lineHeight: 19, color: t.role === 'rep' ? '#111' : colors.text }}>{t.text}</Text>
                   </View>
                 </View>

@@ -11,29 +11,18 @@ from zoneinfo import ZoneInfo
 
 from bson import ObjectId
 
+from services import industries as ind
 from services import scripts as scr
 from services import scorecards as sc
 from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
 
-DEPARTMENTS = ["sales", "service", "parts", "rental"]
-DEPT_LABEL = {"sales": "Sales", "service": "Service", "parts": "Parts", "rental": "Rental"}
-DEPT_SCORECARD_TEMPLATE = {"sales": "phone_up", "service": "service_bdc", "parts": "parts_phone", "rental": "rental_phone"}
+DEPARTMENTS = ind.dept_keys("automotive")  # automotive keys; use ind.* for anything industry-aware
+DEPT_LABEL = ind.label_map()
+ALL_DEPARTMENTS = ind.all_dept_keys()
 CALL_STATUSES_OPEN = ["scheduled", "dialing", "live", "grading"]
 DEFAULT_HOURS = {"start": "09:00", "end": "18:00", "days": [0, 1, 2, 3, 4, 5]}
-DEFAULT_VEHICLES = {"sales": ["the used SUV you have listed online", "the pickup you have on your website"], "service": ["my SUV", "my truck"], "parts": ["my SUV", "my truck"], "rental": ["a mid-size SUV", "a pickup"]}
-
-CURVEBALLS = {
-    "sales": ["You already have a written quote from a competing store", "You only have 2 minutes, you are on a work break", "You want the payment over the phone before you will consider coming in",
-              "You are 45 minutes away and worried about wasting the drive", "Your spouse makes the final decision and is not with you", "You ask if the price online is negotiable"],
-    "service": ["You need a loaner or a ride because you work during the day", "You had a bad experience at another store and are skeptical", "You want to know the exact price before booking",
-                "You can only come in on Saturday", "The warning light just came on and you are nervous about driving it", "You ask whether the work is covered under warranty"],
-    "parts": ["You found the part cheaper online and say so", "You are not sure of the exact year or trim of your vehicle", "You need it today because the car is on a lift at an independent shop",
-              "You ask whether the aftermarket version is just as good", "You want it shipped instead of picking it up", "You are calling on behalf of your elderly parent"],
-    "rental": ["Your car is in the body shop and insurance is paying, you are not sure what they cover", "You need the vehicle in the next two hours", "You ask about one-way rentals to another city",
-               "You are under 25 and worry about the extra fee", "You want to know exactly what the deposit and mileage rules are", "You need a car seat or a tow hitch"],
-}
 
 # Global challenge pool. Persona text uses {vehicle} and {store}; the client's brand fills them in at shop time.
 STARTER_CHALLENGES = [
@@ -146,17 +135,44 @@ async def ensure_challenges(db) -> int:
     for tpl in STARTER_CHALLENGES:
         res = await db.scripts.update_one(
             {"slug": tpl["slug"], "pool": "mystery_shop", "shop_client_id": None},
-            {"$setOnInsert": {**tpl, "kind": "phone", "pool": "mystery_shop", "store_id": None, "shop_client_id": None, "direction": "inbound", "active": True, "created_at": _now(), "updated_at": _now()}}, upsert=True)
+            {"$setOnInsert": {**tpl, "kind": "phone", "pool": "mystery_shop", "industry": "automotive", "store_id": None, "shop_client_id": None, "direction": "inbound", "active": True, "created_at": _now(), "updated_at": _now()}}, upsert=True)
         n += 1 if res.upserted_id else 0
+    await db.scripts.update_many({"pool": "mystery_shop", "industry": {"$exists": False}}, {"$set": {"industry": "automotive"}})
     return n
+
+
+def offerings_of(client: dict) -> list:
+    return [str(v).strip() for v in (client.get("offerings") or client.get("vehicles") or []) if str(v).strip()]
+
+
+def plan_per_month(client: dict) -> dict:
+    """Shops per department per month. New accounts store plan.per_month; the original automotive accounts stored sales_per_month / service_per_month."""
+    plan = client.get("plan") or {}
+    per = plan.get("per_month")
+    if isinstance(per, dict) and per:
+        return {k: int(v or 0) for k, v in per.items()}
+    return {k: int(plan.get(f"{k}_per_month") or 0) for k in ind.dept_keys(ind.key_of(client)) if plan.get(f"{k}_per_month") is not None}
+
+
+def terms_per_month(t: dict) -> dict:
+    per = (t or {}).get("per_month")
+    if isinstance(per, dict) and per:
+        return {k: int(v or 0) for k, v in per.items()}
+    return {k: int((t or {}).get(f"{k}_per_month") or 0) for k in ("sales", "service") if (t or {}).get(f"{k}_per_month")}
+
+
+def per_month_text(per: dict, joiner: str = " + ") -> str:
+    parts = [f"{n} {ind.dept_label(k).lower()}" for k, n in per.items() if int(n or 0) > 0]
+    return joiner.join(parts) if parts else "0"
 
 
 # ---------------------------------------------------------------- clients + people
 def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
     out = {"id": str(c["_id"]), "name": c.get("name", ""), "brand": c.get("brand", ""), "city": c.get("city", ""), "state": c.get("state", ""), "timezone": c.get("timezone") or "America/Denver",
            "contact_name": c.get("contact_name", ""), "contact_email": c.get("contact_email", ""), "contact_phone": c.get("contact_phone", ""), "contact_title": c.get("contact_title", ""),
-           "plan": {"sales_per_month": int((c.get("plan") or {}).get("sales_per_month") or 0), "service_per_month": int((c.get("plan") or {}).get("service_per_month") or 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
-           "hours": _hours(c), "vehicles": c.get("vehicles") or [], "active": c.get("active", True), "record_calls": c.get("record_calls", True), "notes": c.get("notes", ""),
+           "plan": {"per_month": plan_per_month(c), "sales_per_month": plan_per_month(c).get("sales", 0), "service_per_month": plan_per_month(c).get("service", 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
+           "industry": ind.key_of(c), "industry_label": ind.get(ind.key_of(c))["label"], "departments": ind.dept_options(ind.key_of(c)), "offering": ind.get(ind.key_of(c))["offering"], "customer_noun": ind.get(ind.key_of(c))["customer"],
+           "hours": _hours(c), "vehicles": offerings_of(c), "offerings": offerings_of(c), "active": c.get("active", True), "record_calls": c.get("record_calls", True), "notes": c.get("notes", ""),
            "from_number": c.get("from_number") or "", "report_token": c.get("report_token"), "scorecards": c.get("scorecards") or {}, "billing": c.get("billing") or {},
            "demo": bool(c.get("demo")), "text_scorecards": bool(c.get("text_scorecards")),
            "created_at": c.get("created_at").isoformat() if c.get("created_at") else None}
@@ -166,7 +182,7 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
 
 
 def serialize_target(t: dict, extra: Optional[dict] = None) -> dict:
-    out = {"id": str(t["_id"]), "client_id": t.get("client_id"), "name": t.get("name", ""), "phone": t.get("phone", ""), "department": t.get("department", "sales"), "title": t.get("title", ""),
+    out = {"id": str(t["_id"]), "client_id": t.get("client_id"), "name": t.get("name", ""), "phone": t.get("phone", ""), "department": t.get("department", "sales"), "department_label": ind.dept_label(t.get("department")), "title": t.get("title", ""),
            "notes": t.get("notes", ""), "active": t.get("active", True), "challenge_history": t.get("challenge_history") or [], "created_at": t.get("created_at").isoformat() if t.get("created_at") else None}
     if extra:
         out.update(extra)
@@ -174,7 +190,8 @@ def serialize_target(t: dict, extra: Optional[dict] = None) -> dict:
 
 
 def serialize_call(s: dict) -> dict:
-    return {"id": str(s["_id"]), "client_id": s.get("client_id"), "target_id": s.get("target_id"), "target_name": s.get("rep_name"), "department": s.get("department"), "status": s.get("status"),
+    return {"id": str(s["_id"]), "client_id": s.get("client_id"), "target_id": s.get("target_id"), "target_name": s.get("rep_name"), "department": s.get("department"), "department_label": ind.dept_label(s.get("department")),
+            "industry": s.get("industry") or ind.industry_of_dept(s.get("department")), "customer_noun": ind.get(s.get("industry") or ind.industry_of_dept(s.get("department")))["customer"], "status": s.get("status"),
             "outcome": s.get("outcome"), "fail_reason": s.get("fail_reason"), "script_id": s.get("script_id"), "script_title": s.get("script_title"), "persona_name": (s.get("persona") or {}).get("name"),
             "curveballs": s.get("curveballs") or [], "scheduled_for": s["scheduled_for"].isoformat() if s.get("scheduled_for") else None, "attempts": s.get("attempts", 0),
             "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
@@ -185,25 +202,29 @@ def serialize_call(s: dict) -> dict:
 
 # ---------------------------------------------------------------- challenge rotation
 def fill_persona(persona: dict, client: dict, department: str) -> dict:
-    pool = [v for v in (client.get("vehicles") or []) if str(v).strip()] or DEFAULT_VEHICLES.get(department) or DEFAULT_VEHICLES["sales"]
-    vehicle = random.choice(pool)
-    low = vehicle.lower()
-    if department in ("sales", "rental") and not low.startswith(("the ", "a ", "an ", "that ")):
-        vehicle = f"{'a' if department == 'rental' else 'the'} {vehicle}"
-    elif department in ("service", "parts") and not low.startswith(("my ", "our ")):
-        vehicle = f"my {vehicle}"
-    def sub(v):
-        if isinstance(v, list):
-            return [sub(x) for x in v]
-        return str(v).replace("{vehicle}", vehicle).replace("{store}", client.get("name") or "the store") if isinstance(v, str) else v
-    return {k: sub(v) for k, v in (persona or {}).items()} | {"vehicle": vehicle}
+    industry = ind.key_of(client)
+    d = ind.dept(department, industry)
+    pool = offerings_of(client) or d.get("defaults") or ["what you have listed online"]
+    offering = random.choice(pool)
+    low = offering.lower()
+    if industry == "automotive":
+        if department in ("sales", "rental") and not low.startswith(("the ", "a ", "an ", "that ")):
+            offering = f"{'a' if department == 'rental' else 'the'} {offering}"
+        elif department in ("service", "parts") and not low.startswith(("my ", "our ")):
+            offering = f"my {offering}"
+    elif not low.startswith(("the ", "a ", "an ", "my ", "our ", "your ", "that ")):
+        offering = f"the {offering}"
+    place = client.get("name") or f"the {ind.get(industry)['place']}"
+    return {k: ind.fill_offering(v, offering, place) for k, v in (persona or {}).items()} | {"vehicle": offering, "offering": offering}
 
 
-async def challenge_pool(db, client_id: Optional[str], department: Optional[str] = None) -> list:
+async def challenge_pool(db, client_id: Optional[str], department: Optional[str] = None, industry: Optional[str] = None) -> list:
     await ensure_challenges(db)
     q = {"kind": "phone", "pool": "mystery_shop", "active": {"$ne": False}, "$or": [{"shop_client_id": None}, {"shop_client_id": client_id}]}
     if department:
         q["department"] = department
+    elif industry:
+        q["industry"] = industry
     return await db.scripts.find(q).sort([("department", 1), ("title", 1)]).to_list(200)
 
 
@@ -275,11 +296,12 @@ async def create_shop_call(db, client: dict, target: dict, when: datetime, creat
         return None
     dept = target.get("department") or "sales"
     persona = fill_persona(script.get("persona") or {}, client, dept)
-    pool_cb = [c for c in (script.get("curveballs") or []) if str(c).strip()] or CURVEBALLS.get(dept, [])
+    industry = ind.key_of(client)
+    pool_cb = [c for c in (script.get("curveballs") or []) if str(c).strip()] or ind.dept(dept, industry).get("curveballs", [])
     curve = random.sample(pool_cb, k=min(len(pool_cb), random.choice([0, 1, 1, 2])))
     now = _now()
     doc = {"kind": "mystery_shop", "mode": "phone", "status": "scheduled", "user_id": None, "client_id": str(client["_id"]), "target_id": str(target["_id"]),
-           "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "department": dept, "store_id": None, "store_name": client.get("name") or "the store",
+           "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "department": dept, "industry": industry, "store_id": None, "store_name": client.get("name") or f"the {ind.get(industry)['place']}",
            "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": script.get("direction") if script.get("direction") in ("inbound", "outbound") else "inbound", "persona": persona, "curveballs": curve,
            "assignment_id": None, "scheduled_for": when, "attempts": 0, "max_attempts": 3, "manual": manual, "token": uuid.uuid4().hex, "turns": [],
            "created_by": created_by, "created_at": now, "updated_at": now}
@@ -294,9 +316,10 @@ async def plan_month(db, client: dict, month: Optional[str] = None, created_by: 
     tz = _tz(client)
     start, end = month_bounds(month, tz)
     now = _now()
-    created = {"sales": 0, "service": 0}
-    for dept in DEPARTMENTS:
-        quota = int((client.get("plan") or {}).get(f"{dept}_per_month") or 0)
+    per = plan_per_month(client)
+    created = {k: 0 for k in ind.dept_keys(ind.key_of(client))}
+    for dept in ind.dept_keys(ind.key_of(client)):
+        quota = int(per.get(dept) or 0)
         if quota <= 0:
             continue
         existing = await db.roleplay_sessions.count_documents({"kind": "mystery_shop", "client_id": str(client["_id"]), "department": dept, "scheduled_for": {"$gte": start, "$lt": end}, "status": {"$ne": "canceled"}})
@@ -476,7 +499,7 @@ async def plan_active_clients(db) -> int:
     async for client in db.shop_clients.find({"active": {"$ne": False}}):
         try:
             made = await plan_month(db, client)
-            n += made["sales"] + made["service"]
+            n += sum(made.values())
         except Exception as e:
             logger.warning(f"[MysteryShop] planning failed for {client.get('name')}: {e}")
     return n
@@ -495,11 +518,17 @@ async def scorecard_for(db, session: dict) -> Optional[dict]:
 
 
 def template_card(dept: str) -> Optional[dict]:
-    """The department's built-in scorecard, so every course taker and every shop is graded the same way."""
-    body = sc.template_body(DEPT_SCORECARD_TEMPLATE.get(dept) or DEPT_SCORECARD_TEMPLATE["sales"])
-    if not body:
+    """The department's built-in scorecard (from its industry pack), so every course taker and every shop is graded the same way."""
+    d = ind.dept(dept)
+    if d.get("template"):
+        body = sc.template_body(d["template"])
+        if not body:
+            return None
+        return {"_id": None, "name": body["name"], "department": body["department"], "criteria": sc.normalize_criteria(body["criteria"]), "alert_on_critical": False}
+    card = d.get("scorecard") or {}
+    if not card.get("criteria"):
         return None
-    return {"_id": None, "name": body["name"], "department": body["department"], "criteria": sc.normalize_criteria(body["criteria"]), "alert_on_critical": False}
+    return {"_id": None, "name": card.get("name") or f"{d['label']} Call", "department": d["label"], "criteria": sc.normalize_criteria(card["criteria"]), "alert_on_critical": False}
 
 
 # ---------------------------------------------------------------- report
@@ -553,11 +582,13 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     criteria = sorted([{**d, "pass_pct": round(100 * d["passed"] / d["total"])} for d in crit.values() if d["total"]], key=lambda d: d["pass_pct"])
     scores = [c.get("score_pct") for c in done]
     by_dept = {}
-    for d in DEPARTMENTS:
+    per = plan_per_month(client)
+    depts = list(dict.fromkeys(ind.dept_keys(ind.key_of(client)) + [c.get("department") for c in calls if c.get("department")]))
+    for d in depts:
         dc = [c for c in done if c.get("department") == d]
-        if d not in ("sales", "service") and not dc and not any(c.get("department") == d for c in calls):
+        if not per.get(d) and not dc and not any(c.get("department") == d for c in calls):
             continue
-        by_dept[d] = {"planned": int((client.get("plan") or {}).get(f"{d}_per_month") or 0), "scheduled": len([c for c in calls if c.get("department") == d and c.get("status") in CALL_STATUSES_OPEN]),
+        by_dept[d] = {"label": ind.dept_label(d), "planned": int(per.get(d) or 0), "scheduled": len([c for c in calls if c.get("department") == d and c.get("status") in CALL_STATUSES_OPEN]),
                       "completed": len(dc), "unreachable": len([c for c in calls if c.get("department") == d and c.get("status") == "unreachable"]), "avg_score": _pct([c.get("score_pct") for c in dc])}
     call_rows = []
     for c in sorted(calls, key=lambda x: x.get("ended_at") or x.get("scheduled_for") or _now(), reverse=True):
@@ -571,9 +602,10 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
             key = no_em_dash(str(tip)).strip().rstrip(".")
             themes[key] = themes.get(key, 0) + 1
     label = start.astimezone(tz).strftime("%B %Y")
-    return {"client": {"id": cid, "name": client.get("name"), "brand": client.get("brand", ""), "city": client.get("city", ""), "state": client.get("state", ""), "contact_name": client.get("contact_name", "")},
+    return {"client": {"id": cid, "name": client.get("name"), "brand": client.get("brand", ""), "city": client.get("city", ""), "state": client.get("state", ""), "contact_name": client.get("contact_name", ""),
+                       "industry": ind.key_of(client), "industry_label": ind.get(ind.key_of(client))["label"], "customer_noun": ind.get(ind.key_of(client))["customer"], "business_noun": ind.get(ind.key_of(client))["business"]},
             "month": start.astimezone(tz).strftime("%Y-%m"), "month_label": label, "generated_at": _now().isoformat(),
-            "summary": {"completed": len(done), "planned": by_dept["sales"]["planned"] + by_dept["service"]["planned"], "scheduled": len([c for c in calls if c.get("status") in CALL_STATUSES_OPEN]),
+            "summary": {"completed": len(done), "planned": sum(v["planned"] for v in by_dept.values()), "scheduled": len([c for c in calls if c.get("status") in CALL_STATUSES_OPEN]),
                         "unreachable": len([c for c in calls if c.get("status") == "unreachable"]), "avg_score": _pct(scores), "avg_adherence": _pct([c.get("adherence_pct") for c in done]),
                         "people_shopped": len([r for r in rows if r["completed"]]), "needs_training": len([r for r in rows if r["needs_training"]])},
             "by_department": by_dept, "people": rows, "criteria": criteria, "coaching_themes": [{"text": k, "count": v} for k, v in sorted(themes.items(), key=lambda kv: -kv[1])[:6]], "calls": call_rows}
@@ -620,7 +652,7 @@ def report_pdf(report: dict) -> bytes:
     pdf.ln(6)
     for r in report["people"]:
         pdf.set_font("Helvetica", "", 10); pdf.set_text_color(*INK)
-        pdf.cell(60, 6, txt(r["name"][:32])); pdf.cell(24, 6, DEPT_LABEL.get(r["department"], r["department"] or "")); pdf.cell(18, 6, str(r["completed"]))
+        pdf.cell(60, 6, txt(r["name"][:32])); pdf.cell(24, 6, txt(ind.dept_label(r["department"])[:14])); pdf.cell(18, 6, str(r["completed"]))
         pdf.cell(18, 6, f"{r['avg_score']}%" if r["avg_score"] is not None else "-"); pdf.cell(18, 6, f"{r['best']}%" if r["best"] is not None else "-"); pdf.cell(26, 6, str(r["critical_misses"]))
         pdf.set_text_color(*(RED if r["needs_training"] else (GREEN if r["completed"] else MUTED))); pdf.set_font("Helvetica", "B", 9)
         pdf.cell(30, 6, "Needs training" if r["needs_training"] else ("On track" if r["completed"] else ("Unreachable" if r["unreachable"] else "Scheduled")), new_x="LMARGIN", new_y="NEXT")
@@ -682,14 +714,14 @@ def serialize_proposal(p: dict) -> dict:
 def proposal_text(p: dict) -> list:
     t = p.get("terms") or {}
     price = float(t.get("price_monthly") or 0)
-    sales, service = int(t.get("sales_per_month") or 0), int(t.get("service_per_month") or 0)
+    per = terms_per_month(t)
     term = int(t.get("term_months") or 3)
     return [
-        ("What you get", f"I'm On Social will mystery shop {p.get('client_name')} by phone every month: {sales} sales calls and {service} service calls, placed by our AI shopper at random times during your business hours. "
+        ("What you get", f"I'm On Social will mystery shop {p.get('client_name')} by phone every month: {per_month_text(per, ' and ')} calls, placed by our AI caller at random times during your business hours. "
                          "Every call is recorded, transcribed and graded against a phone skills scorecard and the scenario's success points, with written coaching for each person."),
         ("Your report", "You receive a live store report (no login needed) plus a monthly PDF: who did well, who needs training, what the whole team misses most, and every call with its recording, transcript and coaching."),
         ("Investment", f"${price:,.0f} per month, billed monthly by invoice (card or bank transfer) for an initial term of {term} months, then month to month. The first invoice is sent as soon as this proposal is signed and shops begin once it is paid."),
-        ("Your part", "Provide the names, cell numbers and department of the people to shop, your store hours, and a few vehicles to reference. You confirm you have the right to have your staff's business calls recorded and evaluated, and that you will handle any notice required in your state."),
+        ("Your part", "Provide the names, cell numbers and department of the people to shop, your business hours, and a few real products or services our caller can reference. You confirm you have the right to have your staff's business calls recorded and evaluated, and that you will handle any notice required in your state."),
         ("Cancel", f"After the initial {term} month term, cancel any time with 30 days notice. Recordings and reports stay available to you for 12 months."),
         ("Agreement", "By typing your name and signing below you agree to these terms on behalf of the store. This electronic signature is legally binding under the U.S. ESIGN Act."),
     ] + ([("Notes", t["notes"])] if t.get("notes") else [])
@@ -712,7 +744,7 @@ async def create_invoice_for(db, proposal: dict) -> dict:
         cust_id = cust.id
         await db.shop_clients.update_one({"_id": client["_id"]}, {"$set": {"billing.stripe_customer_id": cust_id}})
     inv = await asyncio.to_thread(stripe.Invoice.create, customer=cust_id, collection_method="send_invoice", days_until_due=7, auto_advance=True,
-                                  description=f"Mystery shop program for {client.get('name')}: {int(t.get('sales_per_month') or 0)} sales + {int(t.get('service_per_month') or 0)} service shops per month.",
+                                  description=f"Mystery shop program for {client.get('name')}: {per_month_text(terms_per_month(t))} shops per month.",
                                   metadata={"proposal_id": str(proposal["_id"]), "shop_client_id": str(client.get("_id"))})
     await asyncio.to_thread(stripe.InvoiceItem.create, customer=cust_id, invoice=inv.id, amount=amount_cents, currency="usd", description="Phone mystery shopping, first month")
     inv = await asyncio.to_thread(stripe.Invoice.finalize_invoice, inv.id)
@@ -786,7 +818,7 @@ def proposal_email(p: dict, sender_name: str, note: str, url: str, logo_src: str
       <h1 style="font-size:22px;line-height:1.3;margin:0 0 16px;color:#111">Phone mystery shop proposal for {_esc(p.get('client_name'))}</h1>
       <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">Hi {_esc(first)},</p>
       {note_html}
-      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">Here is the proposal we talked about: <b>{int(t.get('sales_per_month') or 0)} sales</b> and <b>{int(t.get('service_per_month') or 0)} service</b> mystery shops every month for <b>${float(t.get('price_monthly') or 0):,.0f}/month</b>, with recordings, grades and a store report you can open any time.</p>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">Here is the proposal we talked about: <b>{per_month_text(terms_per_month(t), ' and ')}</b> mystery shops every month for <b>${float(t.get('price_monthly') or 0):,.0f}/month</b>, with recordings, grades and a store report you can open any time.</p>
       <p style="margin:26px 0;text-align:center"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px;display:inline-block;font-size:15px">Review and sign the proposal</a></p>
       <p style="font-size:13px;color:#666;line-height:1.6;margin:0 0 18px">Signing takes about a minute. Your first invoice arrives by email right after, and shops start once it is paid. Questions? Just reply to this email.</p>
       <p style="font-size:14px;color:#333;line-height:1.5;margin:0">{_esc(sender_name or "Forest")}<br><span style="color:#888">I'm On Social</span></p>
@@ -849,7 +881,7 @@ async def ensure_demo_client(db, me: dict) -> dict:
         return c
     now = _now()
     doc = {"name": DEMO_CLIENT_NAME, "demo": True, "brand": "", "city": "", "state": "", "timezone": "America/Denver", "contact_name": "", "contact_email": "", "contact_phone": "", "contact_title": "",
-           "plan": {"sales_per_month": 0, "service_per_month": 0, "price_monthly": 0.0}, "hours": {"start": "00:00", "end": "23:59", "days": [0, 1, 2, 3, 4, 5, 6]}, "vehicles": [], "active": True,
+           "plan": {"per_month": {}, "price_monthly": 0.0}, "hours": {"start": "00:00", "end": "23:59", "days": [0, 1, 2, 3, 4, 5, 6]}, "vehicles": [], "active": True, "industry": "automotive",
            "record_calls": True, "notes": QUICK_NOTES, "text_scorecards": True, "report_token": uuid.uuid4().hex, "billing": {},
            "created_by": str(me["_id"]), "created_at": now, "updated_at": now}
     res = await db.shop_clients.insert_one(doc)
@@ -857,8 +889,9 @@ async def ensure_demo_client(db, me: dict) -> dict:
     return doc
 
 
-async def demo_shop(db, me: dict, name: str, phone: str, department: str, title: str, store_name: str, vehicle: str, script: Optional[dict], text_scorecard: bool) -> dict:
+async def demo_shop(db, me: dict, name: str, phone: str, department: str, title: str, store_name: str, vehicle: str, script: Optional[dict], text_scorecard: bool, industry: Optional[str] = None) -> dict:
     c = await ensure_demo_client(db, me)
+    industry = industry if industry in ind.INDUSTRIES else ind.industry_of_dept(department)
     cid, now = str(c["_id"]), _now()
     t = await db.shop_targets.find_one({"client_id": cid, "phone": phone})
     if t:
@@ -867,11 +900,12 @@ async def demo_shop(db, me: dict, name: str, phone: str, department: str, title:
     else:
         res = await db.shop_targets.insert_one({"client_id": cid, "name": name, "phone": phone, "department": department, "title": title, "notes": "Quick shop", "active": True, "challenge_history": [], "created_at": now, "updated_at": now})
         t = await db.shop_targets.find_one({"_id": res.inserted_id})
-    persona_client = {**c, "name": store_name or "your dealership", "vehicles": [vehicle] if vehicle else []}
+    place = f"your {ind.get(industry)['business']}"
+    persona_client = {**c, "industry": industry, "name": store_name or place, "vehicles": [vehicle] if vehicle else []}
     call = await create_shop_call(db, persona_client, t, now, created_by=str(me["_id"]), manual=True, script=script)
     if not call:
-        return {"error": f"No {DEPT_LABEL.get(department, '')} challenges in the pool yet"}
-    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"demo": True, "notify_sms": bool(text_scorecard), "store_name": store_name or "the dealership"}})
+        return {"error": f"No {ind.dept_label(department)} challenges for {ind.get(industry)['label']} yet. Open the Challenge Library and let Jessi write the starters."}
+    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"demo": True, "notify_sms": bool(text_scorecard), "store_name": store_name or f"the {ind.get(industry)['business']}"}})
     ok = await place_shop_call(db, call)
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
     return {"ok": ok, "call": s, "client_id": cid}
@@ -951,7 +985,9 @@ async def after_graded(db, sid: str):
 
 def public_score(s: dict, ev: dict, client: dict) -> dict:
     first = (s.get("rep_name") or "").split(" ")[0]
-    return {"first_name": first, "name": s.get("rep_name"), "department": s.get("department"), "store_name": None if s.get("demo") else (s.get("store_name") or client.get("name")), "demo": bool(s.get("demo")),
+    industry = s.get("industry") or ind.industry_of_dept(s.get("department"))
+    return {"first_name": first, "name": s.get("rep_name"), "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "customer_noun": ind.get(industry)["customer"],
+            "store_name": None if s.get("demo") else (s.get("store_name") or client.get("name")), "demo": bool(s.get("demo")),
             "challenge_title": s.get("script_title"), "persona_name": (s.get("persona") or {}).get("name"), "score_pct": ev.get("score_pct"), "scorecard_name": ev.get("scorecard_name"), "summary": ev.get("summary") or "",
             "wins": ev.get("wins") or [], "coaching": ev.get("coaching") or [], "customer_sentiment": ev.get("customer_sentiment") or "",
             "results": [{"text": r.get("text"), "passed": bool(r.get("passed")), "critical": bool(r.get("critical")), "evidence": r.get("evidence") or ""} for r in (ev.get("results") or [])],
@@ -960,12 +996,6 @@ def public_score(s: dict, ev: dict, client: dict) -> dict:
 
 
 # ---------------------------------------------------------------- AI challenge generator
-DEPT_BRIEF = {
-    "sales": "an inbound sales phone-up at a car dealership; the rep should get the name and number, confirm the vehicle, ask about a trade and sell the visit, never quote payments blind",
-    "service": "an inbound service department call; the advisor should confirm the vehicle, identify the concern, offer the first available appointment, mention transportation, confirm the number and recap",
-    "parts": "an inbound parts counter call; the parts person should confirm the exact vehicle (VIN, year, trim), check availability, quote clearly with what it includes, ask for the sale or offer to hold or order, get the number",
-    "rental": "an inbound rental desk call; the agent should ask dates and need, offer a specific vehicle, state the rate and what it includes, explain requirements, ask to reserve and confirm pickup",
-}
 VOICES = ("female", "male", "young", "older")
 
 
@@ -991,22 +1021,25 @@ def normalize_draft(d: dict, department: str) -> Optional[dict]:
     }
 
 
-async def generate_challenges(department: str, scenario: str, count: int = 1, client: Optional[dict] = None) -> list:
+async def generate_challenges(department: str, scenario: str, count: int = 1, client: Optional[dict] = None, industry: Optional[str] = None) -> list:
     """Forest describes a situation in plain words; Jessi drafts count distinct challenges (persona, opening line, what a great rep does, graded points, curveballs). Nothing is saved."""
     count = max(1, min(5, int(count or 1)))
-    store = f" The client store is {client.get('name')}{' (' + client.get('brand') + ')' if client.get('brand') else ''}." if client else ""
-    system = ("You are Jessi, a dealership phone trainer who writes mystery-shop challenges. A challenge is a realistic inbound call the AI shopper will act out against a real rep, then grade. "
-              f"Department context: {DEPT_BRIEF.get(department, DEPT_BRIEF['sales'])}.{store} "
-              f"Write {count} DISTINCT challenge{'s' if count > 1 else ''} from the scenario below (vary the person, the wrinkle and the emotional tone; do not repeat the same customer twice). "
-              "Each challenge: title (short, starts with 'Shopper:' for sales, 'Service caller:' for service, 'Parts caller:' for parts, 'Rental caller:' for rental), runtime like '3 to 5 min', "
+    industry = industry if industry in ind.INDUSTRIES else ind.industry_of_dept(department)
+    pack, d = ind.get(industry), ind.dept(department, industry)
+    off = pack["offering"]
+    store = f" The client is {client.get('name')}{' (' + client.get('brand') + ')' if client.get('brand') else ''}." if client else ""
+    system = (f"You are Jessi, a {pack['trainer']} who writes mystery-shop challenges for {pack['label'].lower()} teams. A challenge is a realistic phone call the AI {pack['customer']} will act out against a real employee ({d['rep']}), then grade. "
+              f"Department context: {d['brief']}.{store} "
+              f"Write {count} DISTINCT challenge{'s' if count > 1 else ''} from the scenario below (vary the person, the wrinkle and the emotional tone; do not repeat the same caller twice). "
+              f"Each challenge: title (short, starts with '{d['prefix']}'), runtime like '3 to 5 min', "
               "purpose (one or two sentences: what the situation is and what a great rep does), "
-              "body (a STRING, the coaching guide written TO THE REP in second person: 'Answer with the store and your name', 'Ask which axle', 4 to 7 short paragraphs separated by blank lines, stage directions in [brackets]; this is what we grade the rep against, it is NOT the shopper's lines; plain words, no curly braces), "
-              "success_points (5 to 8 graded rep behaviours, each 4 to 12 words starting with a verb, e.g. 'Confirms the exact vehicle and trim'), curveballs (2 to 3 short second-person twists the shopper may throw in, e.g. 'You only have two minutes'), "
-              "persona: name (first and last), voice one of female/male/young/older, summary (age, job, situation, mood; you MAY write {vehicle} for the vehicle and {store} for the store name), "
-              "goals (one sentence), objections (2 to 4 things they push back with), opening_line (the exact first thing they say when the rep answers; may use {vehicle} and {store}). "
+              f"body (a STRING, the coaching guide written TO THE REP in second person: 'Answer with the {pack['business']} and your name', 4 to 7 short paragraphs separated by blank lines, stage directions in [brackets]; this is what we grade the rep against, it is NOT the caller's lines; plain words, no curly braces), "
+              f"success_points (5 to 8 graded rep behaviours, each 4 to 12 words starting with a verb, e.g. 'Confirms the exact {off['label']}'), curveballs (2 to 3 short second-person twists the caller may throw in, e.g. 'You only have two minutes'), "
+              f"persona: name (first and last), voice one of female/male/young/older, summary (age, job, situation, mood; you MAY write {{offering}} for the {off['label']} they ask about and {{store}} for the {pack['business']} name), "
+              "goals (one sentence), objections (2 to 4 things they push back with), opening_line (the exact first thing they say when the rep answers; may use {offering} and {store}). "
               "Sound like a real person on the phone, never corporate. Never use em dashes. "
               "Return JSON: {\"challenges\": [{title, runtime, purpose, body, success_points:[...], curveballs:[...], persona:{name, voice, summary, goals, objections:[...], opening_line}}]}")
-    data = await scr._llm_json(system, f"SCENARIO ({DEPT_LABEL.get(department, department)}):\n{scenario.strip()[:3000]}", timeout=120)
+    data = await scr._llm_json(system, f"SCENARIO ({pack['label']} / {d['label']}):\n{scenario.strip()[:3000]}", timeout=120)
     raw = data.get("challenges") if isinstance(data, dict) else None
     if isinstance(data, dict) and not raw and data.get("title"):
         raw = [data]
@@ -1014,3 +1047,24 @@ async def generate_challenges(department: str, scenario: str, count: int = 1, cl
     if not drafts:
         raise ValueError("Jessi could not turn that into a challenge, try adding a little more detail")
     return drafts[:count]
+
+
+async def seed_starters(db, me: dict, industry: str, department: Optional[str] = None, per_department: int = 2) -> list:
+    """Jessi writes the starter challenges for an industry (or one department) from the pack briefs and saves them to the global library, flagged so the admin can review."""
+    industry = industry if industry in ind.INDUSTRIES else ind.DEFAULT_INDUSTRY
+    made = []
+    for d in ind.departments(industry):
+        if department and d["key"] != department:
+            continue
+        have = await db.scripts.count_documents({"pool": "mystery_shop", "shop_client_id": None, "department": d["key"], "active": {"$ne": False}})
+        if have >= per_department:
+            continue
+        scenario = f"Write the everyday, most common versions of this call for a {ind.get(industry)['label'].lower()} team: {d['brief']}. Typical curveballs: {'; '.join(d.get('curveballs', [])[:3])}."
+        drafts = await generate_challenges(d["key"], scenario, per_department - have, None, industry)
+        for x in drafts:
+            doc = {"kind": "phone", "pool": "mystery_shop", "industry": industry, "shop_client_id": None, "store_id": None, "slug": f"shop_starter_{ObjectId()}", "direction": "inbound", "category": d["label"], "active": True,
+                   "generated_from": "starter", "created_by": str(me["_id"]), "created_at": _now(), "updated_at": _now(), **x}
+            res = await db.scripts.insert_one(doc)
+            doc["_id"] = res.inserted_id
+            made.append(doc)
+    return made

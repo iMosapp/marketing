@@ -51,7 +51,7 @@ export const SendProposalSheet = ({ proposal, colors, onClose, onSent }: Props) 
   return (
     <Sheet visible={!!proposal} onClose={onClose} title="Send the proposal" colors={colors} testID="send-sheet"
       footer={<GoldButton label={validTo ? `Send to ${to.trim()}` : 'Enter an email address'} onPress={send} busy={busy} disabled={!validTo || !preview} testID="send-submit" icon="mail" />}>
-      <Field label="TO" value={to} onChange={setTo} colors={colors} placeholder="gm@dealer.com" keyboardType="email-address" autoCapitalize="none" testID="send-to" />
+      <Field label="TO" value={to} onChange={setTo} colors={colors} placeholder="owner@example.com" keyboardType="email-address" autoCapitalize="none" testID="send-to" />
       <Field label="PERSONAL NOTE (LANDS RIGHT UNDER THE GREETING, OPTIONAL)" value={note} onChange={onNote} colors={colors} multiline placeholder={'Great meeting you this morning. Here is everything we talked about, in writing.'} testID="send-note" />
       <View style={{ gap: 6 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

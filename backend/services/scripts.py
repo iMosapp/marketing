@@ -397,23 +397,25 @@ def relay_twiml(session: dict, prelude: str = "") -> str:
 
 ANNOUNCE_VOICE = "Polly.Joanna-Neural"
 GATE_SECONDS = 12
-DEPT_CALL = {"sales": "sales call", "service": "service call", "parts": "parts call", "rental": "rental call"}
 READY_WORDS = ("ready", "yes", "yeah", "yep", "go", "okay", "ok", "sure", "let's", "lets", "bring it", "hit me")
 LATER_WORDS = ("not now", "bad time", "later", "busy", "call back", "can't right now", "cant right now", "no")
 
 
 def shop_announcement(session: dict) -> str:
     """What the rep hears the moment they pick up: who this is, which way the call runs, how to start it."""
+    from services import industries as ind
     first = (session.get("rep_name") or "").split(" ")[0]
-    dept = DEPT_CALL.get(session.get("department") or "sales", "call")
+    industry = session.get("industry") or ind.industry_of_dept(session.get("department"))
+    pack, d = ind.get(industry), ind.dept(session.get("department"), industry)
+    dept = d.get("call") or "call"
     persona = session.get("persona") or {}
     hi = f"Hi {first}, " if first else "Hi, "
     if session.get("direction") == "outbound":
         who = persona.get("name", "").split(" ")[0] or "a customer"
-        about = f" about the {persona['vehicle']}" if persona.get("vehicle") else ""
+        about = f" about {persona['offering'] if persona.get('offering') else persona.get('vehicle')}" if (persona.get("offering") or persona.get("vehicle")) else ""
         setup = f"Coming up: an outbound {dept}. You're calling {who} back{about}. When you're ready, press 1 or say ready, you'll hear it ring, and they'll pick up."
     else:
-        setup = f"Coming up: an inbound {dept}. A customer is calling the store, so answer it exactly like a real phone-up. Press 1 or say ready when you're set."
+        setup = f"Coming up: an inbound {dept}. A {pack['customer'] if pack['customer'] != 'shopper' else 'customer'} is calling the {pack['business']}, so answer it exactly like a real call. Press 1 or say ready when you're set."
     return f"{hi}this is your practice call from I'm On Social. {setup} If now's a bad time, press 2 and we'll call back in a couple of hours."
 
 
@@ -651,9 +653,14 @@ async def save_recording(db, sid: str, recording_url: str, duration: Optional[st
     await db.call_evaluations.update_one({"roleplay_session_id": sid}, {"$set": {"recording_url": sets["recording_url"]}})
 
 
-def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False) -> str:
-    return (f"You are {persona.get('name', 'a customer')}, a real car shopper on a phone call with {rep_first}, a salesperson at {store_name}. "
-            + ("YOU placed this call to the store, so you drive the reason for calling. " if direction == "inbound" else "The salesperson called YOU, so they drive the conversation and you react. ")
+def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None) -> str:
+    from services import industries as ind
+    industry = industry or (ind.industry_of_dept(department) if department else ind.DEFAULT_INDUSTRY)
+    pack = ind.get(industry)
+    rep_role = ind.dept(department, industry)["rep"] if department else ("a salesperson" if industry == "automotive" else "an employee")
+    who = "a real car shopper" if industry == "automotive" else f"a real {pack['customer']} of a {pack['label'].lower()} business"
+    return (f"You are {persona.get('name', 'a customer')}, {who} on a phone call with {rep_first}, {rep_role} at {store_name}. "
+            + (f"YOU placed this call to the {pack['business']}, so you drive the reason for calling. " if direction == "inbound" else "The employee called YOU, so they drive the conversation and you react. ")
             + ("The rep was told this is a practice call, but you stay fully in character as a real customer: never admit you are an AI, a recording or a shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery else "")
             + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "
                "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " if live else "")
@@ -662,11 +669,11 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
             + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
             + "RULES: Speak like a real person on the phone: short, 1 to 3 sentences, contractions, occasional hesitation. Never narrate, never break character, never coach. "
               "Answer what the rep asks; volunteer a little, not everything. If the rep earns it (answers honestly, offers specific times), agree to an appointment and end warmly. "
-              "If the rep is pushy, dodges, or quotes a payment blindly, push back. Say goodbye and end the call naturally after the appointment is set, after you decline for good, "
+              "If the rep is pushy, dodges, or throws out a blind number, push back. Say goodbye and end the call naturally after the appointment or next step is set, after you decline for good, "
             + ("or when the rep says goodbye. A real call runs as long as it needs to, often 5 to 10 minutes, so never rush to end it or count exchanges. "
                if live else "or if the call drags past 12 exchanges. ")
             + "No em dashes. Return ONLY JSON: {\"say\": \"your spoken words\", \"ended\": true|false, \"mood\": \"warm|neutral|guarded|annoyed\"}. "
-              f"The salesperson's script (they may or may not follow it): {script.get('title', '')}: {script.get('purpose', '')}")
+              f"The employee's script (they may or may not follow it): {script.get('title', '')}: {script.get('purpose', '')}")
 
 
 async def start_session(db, me: dict, script: dict, assignment: Optional[dict] = None) -> dict:
@@ -714,7 +721,8 @@ async def customer_turn(db, session: dict, rep_text: str) -> dict:
     out_of_time = live and (minutes >= PHONE_MAX_MINUTES or exchanges >= PHONE_MAX_TURNS)
     user = f"CALL SO FAR:\n{history}\nREP: {rep_text}\n\n(This is exchange {exchanges}. Reply as the customer." + (" You are out of time: wrap up in one sentence, say goodbye and set ended to true.)" if out_of_time else ")")
     try:
-        data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the dealership", rep_first, session.get("curveballs") or [], live, session.get("direction") or "outbound", session.get("kind") == "mystery_shop"), user, timeout=45)
+        data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the business", rep_first, session.get("curveballs") or [], live, session.get("direction") or "outbound", session.get("kind") == "mystery_shop",
+                                                session.get("industry"), session.get("department") if session.get("kind") == "mystery_shop" else None), user, timeout=45)
     except Exception as e:
         logger.warning(f"[Roleplay] customer turn failed: {e}")
         data = {}
@@ -761,7 +769,7 @@ async def grade_session(db, session: dict) -> dict:
     graded = None
     if card and card.get("criteria") and len(rep_turns) >= 2:
         try:
-            graded = await sc.grade_with_ai(card, transcript.replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60))
+            graded = await sc.grade_with_ai(card, transcript.replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60), industry=session.get("industry"))
         except Exception as e:
             logger.warning(f"[Roleplay] scorecard grading failed: {e}")
     adherence = await _grade_adherence(script, transcript, rep_first) if len(rep_turns) >= 1 else {"score_pct": None, "hits": [], "misses": [], "coaching": [], "summary": "Too short to grade."}
@@ -806,7 +814,7 @@ async def _grade_adherence(script: dict, transcript: str, rep_first: str) -> dic
     points = script.get("success_points") or []
     if not points:
         return {"score_pct": None, "hits": [], "misses": [], "coaching": [], "summary": ""}
-    system = ("You grade whether a car salesperson followed their phone script on a practice call. Return ONLY JSON: "
+    system = ("You grade whether an employee followed their phone script on a practice call. Return ONLY JSON: "
               "{\"points\": [{\"point\": str, \"hit\": true|false, \"evidence\": \"short quote or empty\"}], \"summary\": \"2 sentences, plain\", "
               "\"coaching\": [\"up to 3 specific, kind, actionable tips\"]}. Judge intent, not exact wording. No em dashes.")
     user = f"SCRIPT: {script.get('title')}\nPOINTS A GREAT CALL HITS:\n" + "\n".join(f"- {p}" for p in points) + f"\n\nCALL TRANSCRIPT ({rep_first} is REP):\n{transcript}"

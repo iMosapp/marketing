@@ -22,7 +22,9 @@ def _iso(v):
 
 
 def serialize_course(c: dict, extra: Optional[dict] = None) -> dict:
-    out = {"id": str(c["_id"]), "title": c.get("title", ""), "description": c.get("description", ""), "department": c.get("department") or "mixed", "challenge_ids": c.get("challenge_ids") or [],
+    from services import industries as ind
+    dept = c.get("department") or "mixed"
+    out = {"id": str(c["_id"]), "title": c.get("title", ""), "description": c.get("description", ""), "department": dept, "department_label": "Mixed" if dept == "mixed" else ind.dept_label(dept), "challenge_ids": c.get("challenge_ids") or [],
            "pass_pct": int(c.get("pass_pct") or DEFAULT_PASS), "badge_label": c.get("badge_label") or f"Certified: {c.get('title', '')}", "active": c.get("active", True), "created_by_name": c.get("created_by_name"),
            "created_at": _iso(c.get("created_at")), "updated_at": _iso(c.get("updated_at"))}
     if extra:

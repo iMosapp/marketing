@@ -1,22 +1,26 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Chip, Label, DEPTS, LIGHT, GOLD, RED, tid } from './shared';
+import { Chip, Label, DEPTS, LIGHT, GOLD, RED, tid, type Dept } from './shared';
 
 export type KPerson = { key: string; id?: string; name: string; phone: string; department: string; title: string };
-type Props = { people: KPerson[]; onChange: (p: KPerson[]) => void };
+type Props = { people: KPerson[]; onChange: (p: KPerson[]) => void; departments?: Dept[] };
 
 const inp = { backgroundColor: LIGHT.surface, borderRadius: 10, borderWidth: 1, borderColor: LIGHT.border, paddingHorizontal: 10, height: 42, color: LIGHT.text, fontSize: 15 } as const;
 export const newPerson = (department = 'sales'): KPerson => ({ key: Math.random().toString(36).slice(2), name: '', phone: '', department, title: '' });
+const titleHint = (d: Dept) => `Title (${(d.rep || 'team member').replace(/^(a|an) /, '').replace(/^\w/, c => c.toUpperCase())})`;
 
-// The people we shop: one row each. Existing ones arrive prefilled (with id); blank rows are ignored on save.
-export const KickoffPeople = ({ people, onChange }: Props) => {
+// The people we shop: one row each, grouped by the account's departments. Existing ones arrive prefilled (with id); blank rows are ignored on save.
+export const KickoffPeople = ({ people, onChange, departments }: Props) => {
+  const depts = departments?.length ? departments : DEPTS.slice(0, 2);
   const set = (key: string, patch: Partial<KPerson>) => onChange(people.map(p => (p.key === key ? { ...p, ...patch } : p)));
   const remove = (key: string) => onChange(people.filter(p => p.key !== key));
+  const nextDept = (cur: string) => depts[(Math.max(0, depts.findIndex(d => d.key === cur)) + 1) % depts.length];
   return (
     <View style={{ gap: 12 }}>
-      {DEPTS.map(d => {
+      {depts.map(d => {
         const rows = people.filter(p => p.department === d.key);
+        const other = nextDept(d.key);
         return (
           <View key={d.key} style={{ gap: 8 }}>
             <Label t={`${d.label.toUpperCase()} · ${rows.length}`} colors={LIGHT} />
@@ -27,8 +31,8 @@ export const KickoffPeople = ({ people, onChange }: Props) => {
                   <TextInput value={p.phone} onChangeText={v => set(p.key, { phone: v })} placeholder="Cell number" placeholderTextColor={LIGHT.textSecondary} keyboardType="phone-pad" style={[inp, { flex: 1 }]} {...tid(`kickoff-person-phone-${p.key}`)} />
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                  <TextInput value={p.title} onChangeText={v => set(p.key, { title: v })} placeholder={d.key === 'service' ? 'Title (Service advisor)' : 'Title (Sales consultant)'} placeholderTextColor={LIGHT.textSecondary} style={[inp, { flex: 1 }]} {...tid(`kickoff-person-title-${p.key}`)} />
-                  <Chip label={d.key === 'sales' ? 'Move to Service' : 'Move to Sales'} small active={false} onPress={() => set(p.key, { department: d.key === 'sales' ? 'service' : 'sales' })} colors={LIGHT} testID={`kickoff-person-dept-${p.key}`} />
+                  <TextInput value={p.title} onChangeText={v => set(p.key, { title: v })} placeholder={titleHint(d)} placeholderTextColor={LIGHT.textSecondary} style={[inp, { flex: 1 }]} {...tid(`kickoff-person-title-${p.key}`)} />
+                  {depts.length > 1 && <Chip label={`Move to ${other.label}`} small active={false} onPress={() => set(p.key, { department: other.key })} colors={LIGHT} testID={`kickoff-person-dept-${p.key}`} />}
                   <TouchableOpacity onPress={() => remove(p.key)} hitSlop={8} {...tid(`kickoff-person-remove-${p.key}`)}><Ionicons name="trash-outline" size={20} color={RED} /></TouchableOpacity>
                 </View>
               </View>

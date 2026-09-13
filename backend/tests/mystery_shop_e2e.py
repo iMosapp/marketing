@@ -91,9 +91,9 @@ async def main():
     # plan the month: 4 sales + 2 service scheduled, spread, people rotate
     made = requests.post(f"{API}/api/shop-clients/{cid}/plan-month", headers=H, json={}, timeout=60).json()["created"]
     calls = requests.get(f"{API}/api/shop-clients/{cid}/calls", headers=H, timeout=30).json()["calls"]
-    assert made == {"sales": 4, "service": 2} and len(calls) == 6 and all(x["status"] == "scheduled" for x in calls), (made, len(calls))
+    assert {k: v for k, v in made.items() if v} == {"sales": 4, "service": 2} and len(calls) == 6 and all(x["status"] == "scheduled" for x in calls), (made, len(calls))
     again = requests.post(f"{API}/api/shop-clients/{cid}/plan-month", headers=H, json={}, timeout=60).json()["created"]
-    assert again == {"sales": 0, "service": 0}, again
+    assert not any(again.values()), again
     print("planner ok: 6 scheduled, idempotent")
 
     # a scheduled call can be cancelled (and frees the challenge for that person)

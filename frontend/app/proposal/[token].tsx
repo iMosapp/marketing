@@ -5,10 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import api from '../../services/api';
 import { openUrl } from '../../components/mystery-shops/ReportView';
-import { money, GOLD, GREEN, RED, tid } from '../../components/mystery-shops/shared';
+import { money, GOLD, GREEN, RED, tid, type Dept } from '../../components/mystery-shops/shared';
 
 const L = { bg: '#F6F4EE', card: '#FFFFFF', border: '#E4DFD2', text: '#161616', textSecondary: '#6B6B6B' };
-type P = { status: string; terms: any; client_name: string; contact_name: string; contact_email: string; sender_name: string; sections: { title: string; body: string }[]; signer?: any; signed_at?: string | null; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number }; kickoff_url?: string | null };
+type P = { status: string; terms: any; per_month?: Record<string, number>; departments?: Dept[]; offering?: { label: string; plural: string }; business_noun?: string; client_name: string; contact_name: string; contact_email: string; sender_name: string; sections: { title: string; body: string }[]; signer?: any; signed_at?: string | null; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number }; kickoff_url?: string | null };
 
 // The client GM opens this from the proposal email: read, type name, agree, sign. Stripe emails the first invoice right after.
 export default function PublicProposal() {
@@ -41,6 +41,9 @@ export default function PublicProposal() {
   const invoice = done?.invoice || p?.invoice;
   const kickoffUrl = done?.kickoff_url || p?.kickoff_url;
   const t = p?.terms || {};
+  const per: Record<string, number> = p?.per_month && Object.keys(p.per_month).length ? p.per_month : { sales: t.sales_per_month || 0, service: t.service_per_month || 0 };
+  const label = (k: string) => (p?.departments || []).find(d => d.key === k)?.label?.toLowerCase() || k.replace(/^[a-z]+_/, '').replace(/_/g, ' ');
+  const tiles = [...Object.entries(per).filter(([, n]) => (n || 0) > 0).map(([k, n]) => [String(n), `${label(k)} shops / month`]), [money(t.price_monthly), 'per month'], [`${t.term_months} mo`, 'initial term']];
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: L.bg }}>
       <ScrollView contentContainerStyle={{ padding: wide ? 32 : 16, paddingBottom: 60, alignItems: 'center' }} keyboardShouldPersistTaps="handled">
@@ -50,7 +53,7 @@ export default function PublicProposal() {
             <>
               <Text style={{ fontSize: wide ? 32 : 26, fontWeight: '800', color: L.text }} {...tid('proposal-title')}>Phone mystery shopping for {p.client_name}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                {[[`${t.sales_per_month}`, 'sales shops / month'], [`${t.service_per_month}`, 'service shops / month'], [money(t.price_monthly), 'per month'], [`${t.term_months} mo`, 'initial term']].map(([v, l]) => (
+                {tiles.map(([v, l]) => (
                   <View key={l} style={{ flex: 1, minWidth: 140, backgroundColor: L.card, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: L.border }}>
                     <Text style={{ fontSize: 24, fontWeight: '800', color: L.text }}>{v}</Text><Text style={{ fontSize: 12, color: L.textSecondary, fontWeight: '700' }}>{l.toUpperCase()}</Text>
                   </View>
@@ -77,9 +80,9 @@ export default function PublicProposal() {
                   {!!kickoffUrl && (
                     <View style={{ gap: 8, marginTop: 6, paddingTop: 14, borderTopWidth: 1, borderTopColor: L.border }}>
                       <Text style={{ fontSize: 15, fontWeight: '800', color: L.text }}>Next: tell us who to shop</Text>
-                      <Text style={{ fontSize: 14, color: L.textSecondary, lineHeight: 20 }}>Five minutes: your store hours, a few vehicles, and the names and cell numbers of the sales and service people. No login, and you can come back to it any time.</Text>
+                      <Text style={{ fontSize: 14, color: L.textSecondary, lineHeight: 20 }}>Five minutes: your business hours, a few {p.offering?.plural || 'vehicles'} our caller can mention, and the names and cell numbers of the people to shop. No login, and you can come back to it any time.</Text>
                       <TouchableOpacity onPress={() => openUrl(kickoffUrl)} style={{ height: 48, borderRadius: 14, borderWidth: 1.5, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('proposal-kickoff')}>
-                        <Ionicons name="clipboard-outline" size={18} color={GOLD} /><Text style={{ fontSize: 15, fontWeight: '800', color: GOLD }}>Set up your store now</Text>
+                        <Ionicons name="clipboard-outline" size={18} color={GOLD} /><Text style={{ fontSize: 15, fontWeight: '800', color: GOLD }}>Set up your {p.business_noun || 'store'} now</Text>
                       </TouchableOpacity>
                     </View>
                   )}

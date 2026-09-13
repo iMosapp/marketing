@@ -7,16 +7,19 @@ import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
 import { openUrl } from './ReportView';
 import { SendProposalSheet } from './SendProposalSheet';
-import { Sheet, Field, Label, GoldButton, money, fmtWhen, GOLD, RED, GREEN, BLUE, PURPLE, tid, type Client, type Proposal } from './shared';
+import { Sheet, Field, Label, GoldButton, money, fmtWhen, perMonthText, deptsOfClient, GOLD, RED, GREEN, BLUE, PURPLE, tid, type Client, type Proposal } from './shared';
 
 const PSTATUS: Record<string, { label: string; color: string }> = { draft: { label: 'Draft', color: '#8E8E93' }, sent: { label: 'Sent', color: BLUE }, viewed: { label: 'Opened', color: PURPLE }, signed: { label: 'Signed · invoice sent', color: GOLD }, paid: { label: 'Paid', color: GREEN } };
+const termsPer = (t: Proposal['terms']) => (t.per_month && Object.keys(t.per_month).length ? t.per_month : { sales: t.sales_per_month || 0, service: t.service_per_month || 0 });
 
 // Proposal (e-signed on a public page) -> Stripe invoice emailed by Stripe -> paid status.
 export const BillingTab = ({ client, colors, onChanged }: { client: Client; colors: any; onChanged: () => void }) => {
   const { showToast } = useToast();
+  const depts = deptsOfClient(client);
   const [rows, setRows] = useState<Proposal[] | null>(null);
   const [sheet, setSheet] = useState(false);
-  const [f, setF] = useState({ sales: String(client.plan.sales_per_month || 20), service: String(client.plan.service_per_month || 20), price: String(client.plan.price_monthly || 400), term: '3', notes: '', contact_name: client.contact_name, contact_email: client.contact_email });
+  const [per, setPer] = useState<Record<string, string>>(Object.fromEntries(depts.map((d, i) => [d.key, String(client.plan.per_month?.[d.key] ?? (i === 0 ? 20 : 10))])));
+  const [f, setF] = useState({ price: String(client.plan.price_monthly || 400), term: '3', notes: '', contact_name: client.contact_name, contact_email: client.contact_email });
   const [busy, setBusy] = useState(false);
   const [sendFor, setSendFor] = useState<Proposal | null>(null);
 
@@ -26,7 +29,7 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
   const create = async () => {
     setBusy(true);
     try {
-      await api.post(`/shop-clients/${client.id}/proposals`, { sales_per_month: Number(f.sales) || 0, service_per_month: Number(f.service) || 0, price_monthly: Number(f.price) || 0, term_months: Number(f.term) || 3, notes: f.notes, contact_name: f.contact_name, contact_email: f.contact_email });
+      await api.post(`/shop-clients/${client.id}/proposals`, { per_month: Object.fromEntries(depts.map(d => [d.key, Number(per[d.key]) || 0])), price_monthly: Number(f.price) || 0, term_months: Number(f.term) || 3, notes: f.notes, contact_name: f.contact_name, contact_email: f.contact_email });
       setSheet(false); load(); onChanged(); showToast('Proposal ready. Send it or copy the link.', 'success');
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not create', 'error'); }
     finally { setBusy(false); }
@@ -48,7 +51,7 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
           <View key={p.id} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 8 }} {...tid(`proposal-${p.id}`)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{money(p.terms.price_monthly)}/mo · {p.terms.sales_per_month} sales + {p.terms.service_per_month} service</Text>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{money(p.terms.price_monthly)}/mo · {perMonthText(termsPer(p.terms), ' + ', depts)}</Text>
                 <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{p.terms.term_months} month term · to {p.contact_name || p.contact_email || 'no contact'}{p.sent_at ? ` · sent ${fmtWhen(p.sent_at)}` : ''}{p.viewed_at ? ` · opened ${fmtWhen(p.viewed_at)}` : ''}</Text>
               </View>
               <View style={{ paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: st.color + '22', justifyContent: 'center' }} {...tid(`proposal-status-${p.id}`)}><Text style={{ fontSize: 11, fontWeight: '800', color: st.color }}>{st.label}</Text></View>
@@ -67,14 +70,16 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
       })}
 
       <Sheet visible={sheet} onClose={() => setSheet(false)} title="Proposal terms" colors={colors} testID="proposal-sheet" footer={<GoldButton label="Create proposal" onPress={create} busy={busy} disabled={!(Number(f.price) > 0)} testID="proposal-create" />}>
+        <Label t="SHOPS PER MONTH, BY DEPARTMENT" colors={colors} />
+        <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+          {depts.map(d => <View key={d.key} style={{ flex: 1, minWidth: 100 }}><Field label={d.label.toUpperCase()} value={per[d.key] ?? ''} onChange={(v: string) => setPer({ ...per, [d.key]: v.replace(/\D/g, '') })} colors={colors} keyboardType="number-pad" testID={`proposal-per-${d.key}`} /></View>)}
+        </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <View style={{ flex: 1 }}><Field label="SALES / MO" value={f.sales} onChange={(v: string) => setF({ ...f, sales: v.replace(/\D/g, '') })} colors={colors} keyboardType="number-pad" testID="proposal-sales" /></View>
-          <View style={{ flex: 1 }}><Field label="SERVICE / MO" value={f.service} onChange={(v: string) => setF({ ...f, service: v.replace(/\D/g, '') })} colors={colors} keyboardType="number-pad" testID="proposal-service" /></View>
           <View style={{ flex: 1 }}><Field label="$ / MONTH" value={f.price} onChange={(v: string) => setF({ ...f, price: v.replace(/[^\d.]/g, '') })} colors={colors} keyboardType="decimal-pad" testID="proposal-price" /></View>
           <View style={{ flex: 1 }}><Field label="TERM (MO)" value={f.term} onChange={(v: string) => setF({ ...f, term: v.replace(/\D/g, '') })} colors={colors} keyboardType="number-pad" testID="proposal-term" /></View>
         </View>
         <Field label="SIGNER NAME" value={f.contact_name} onChange={(v: string) => setF({ ...f, contact_name: v })} colors={colors} placeholder="Pat Manager" testID="proposal-contact-name" />
-        <Field label="SIGNER EMAIL (GETS THE PROPOSAL + INVOICE)" value={f.contact_email} onChange={(v: string) => setF({ ...f, contact_email: v })} colors={colors} placeholder="gm@dealer.com" keyboardType="email-address" autoCapitalize="none" testID="proposal-contact-email" />
+        <Field label="SIGNER EMAIL (GETS THE PROPOSAL + INVOICE)" value={f.contact_email} onChange={(v: string) => setF({ ...f, contact_email: v })} colors={colors} placeholder="owner@example.com" keyboardType="email-address" autoCapitalize="none" testID="proposal-contact-email" />
         <Field label="EXTRA NOTES ON THE PROPOSAL (OPTIONAL)" value={f.notes} onChange={(v: string) => setF({ ...f, notes: v })} colors={colors} multiline placeholder="Kickoff call included. First report on the 1st." testID="proposal-notes" />
         <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>Creating the proposal also sets this client's plan to these numbers. When they sign, Stripe emails a {money(Number(f.price) || 0)} invoice due in 7 days.</Text>
       </Sheet>

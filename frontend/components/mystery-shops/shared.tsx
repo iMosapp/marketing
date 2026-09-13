@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, Modal, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import api from '../../services/api';
 import { GOLD, GREEN, RED, AMBER, tid } from '../scripts/shared';
 
 export { GOLD, GREEN, RED, AMBER, tid };
@@ -10,30 +11,55 @@ export const BLUE = '#0A84FF';
 export const LIGHT = { bg: '#F6F4EE', card: '#FFFFFF', border: '#E4DFD2', text: '#161616', textSecondary: '#6B6B6B', surface: '#F1EEE6' };
 export const fmtHour = (hm: string) => { const [h, m] = (hm || '09:00').split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; const hh = h % 12 || 12; return m ? `${hh}:${String(m).padStart(2, '0')} ${ap}` : `${hh} ${ap}`; };
 
-export type Plan = { sales_per_month: number; service_per_month: number; price_monthly: number };
+export type Plan = { per_month: Record<string, number>; sales_per_month: number; service_per_month: number; price_monthly: number };
+export type Dept = { key: string; label: string; call?: string; rep?: string; challenges?: number };
+export type Offering = { label: string; plural: string; hint: string; field: string; field_help: string };
+export type Industry = { key: string; label: string; business: string; place: string; customer: string; offering: Offering; departments: Dept[] };
 export type Hours = { start: string; end: string; days: number[] };
-export type DeptStat = { planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null };
+export type DeptStat = { label?: string; planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null };
 export type Client = {
   id: string; name: string; brand: string; city: string; state: string; timezone: string; contact_name: string; contact_email: string; contact_phone: string; contact_title: string;
+  industry: string; industry_label: string; departments: Dept[]; offering: Offering; customer_noun: string; offerings: string[];
   plan: Plan; hours: Hours; vehicles: string[]; active: boolean; record_calls: boolean; notes: string; from_number: string; report_token?: string; scorecards: Record<string, string | null>;
   billing?: { status?: string; last_invoice?: any }; progress?: Record<string, DeptStat>; avg_score?: number | null; completed?: number; planned?: number; needs_training?: number; people?: number;
   demo?: boolean; text_scorecards?: boolean;
 };
-export type Person = { id: string; client_id: string; name: string; phone: string; department: string; title: string; notes: string; active: boolean; challenge_history: string[] };
+export type Person = { id: string; client_id: string; name: string; phone: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[] };
 export type ShopCall = {
-  id: string; target_id: string; target_name: string; department: string; status: string; outcome?: string | null; fail_reason?: string | null; script_id: string; script_title: string; persona_name?: string;
+  id: string; target_id: string; target_name: string; department: string; department_label?: string; industry?: string; customer_noun?: string; status: string; outcome?: string | null; fail_reason?: string | null; script_id: string; script_title: string; persona_name?: string;
   curveballs: string[]; scheduled_for: string | null; attempts: number; started_at: string | null; ended_at: string | null; score_pct: number | null; adherence_pct: number | null; evaluation_id?: string | null;
   recording_url?: string | null; recording_seconds?: number | null; turns: number; manual: boolean; demo?: boolean; score_url?: string | null; score_sms_status?: string | null; score_views?: number;
 };
-export type Challenge = { id: string; title: string; department: string; direction?: 'inbound' | 'outbound'; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean };
-export type ChallengeDraft = { title: string; department: string; runtime?: string; purpose?: string; body: string; success_points?: string[]; curveballs?: string[]; persona?: any; generated_from?: string };
+export type Challenge = { id: string; title: string; department: string; department_label?: string; industry?: string; direction?: 'inbound' | 'outbound'; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean };
+export type ChallengeDraft = { title: string; department: string; industry?: string; runtime?: string; purpose?: string; body: string; success_points?: string[]; curveballs?: string[]; persona?: any; generated_from?: string };
 export type Proposal = {
-  id: string; token: string; status: string; terms: { sales_per_month: number; service_per_month: number; price_monthly: number; term_months: number; notes?: string }; client_name: string; contact_name: string; contact_email: string;
+  id: string; token: string; status: string; terms: { per_month?: Record<string, number>; sales_per_month: number; service_per_month: number; price_monthly: number; term_months: number; notes?: string }; client_name: string; contact_name: string; contact_email: string;
   created_at: string; sent_at?: string | null; viewed_at?: string | null; signed_at?: string | null; signer?: { name?: string; title?: string; email?: string; signed_at?: string }; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number; paid_at?: string; error?: string }; url?: string;
 };
 
-export const DEPTS = [{ key: 'sales', label: 'Sales' }, { key: 'service', label: 'Service' }, { key: 'parts', label: 'Parts' }, { key: 'rental', label: 'Rental' }];
-export const deptLabel = (d?: string) => DEPTS.find(x => x.key === d)?.label || 'Sales';
+export const DEPTS: Dept[] = [{ key: 'sales', label: 'Sales' }, { key: 'service', label: 'Service' }, { key: 'parts', label: 'Parts' }, { key: 'rental', label: 'Rental' }];
+export const AUTOMOTIVE: Industry = { key: 'automotive', label: 'Automotive dealership', business: 'dealership', place: 'store', customer: 'shopper', departments: DEPTS,
+  offering: { label: 'vehicle', plural: 'vehicles', hint: '2024 Jeep Grand Cherokee L Limited', field: 'Vehicles the shopper can mention', field_help: 'Real units from the lot make the calls believable.' } };
+// Industry packs come from the backend once per app session; every picker and label reads from here, never from constants.
+let INDUSTRIES: Industry[] = [AUTOMOTIVE];
+let loadedAt = 0;
+export const loadIndustries = async (force = false): Promise<Industry[]> => {
+  if (!force && Date.now() - loadedAt < 5 * 60 * 1000 && INDUSTRIES.length > 1) return INDUSTRIES;
+  try { const r = await api.get('/shop-clients/industries'); if (r.data?.industries?.length) { INDUSTRIES = r.data.industries; loadedAt = Date.now(); } } catch {}
+  return INDUSTRIES;
+};
+export const industries = () => INDUSTRIES;
+export const industryOf = (key?: string | null): Industry => INDUSTRIES.find(i => i.key === key) || INDUSTRIES[0] || AUTOMOTIVE;
+export const industryLabel = (key?: string | null) => industryOf(key).label;
+export const deptsFor = (industryKey?: string | null): Dept[] => industryOf(industryKey).departments;
+export const industryOfDept = (deptKey?: string): Industry => INDUSTRIES.find(i => i.departments.some(d => d.key === deptKey)) || INDUSTRIES[0] || AUTOMOTIVE;
+export const deptLabel = (d?: string, depts?: Dept[] | null) => { const local = (depts || []).find(x => x.key === d); if (local) return local.label; for (const i of INDUSTRIES) { const hit = i.departments.find(x => x.key === d); if (hit) return hit.label; } return DEPTS.find(x => x.key === d)?.label || (d ? d.replace(/^[a-z]+_/, '').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 'Sales'); };
+export const perMonthText = (per?: Record<string, number> | null, joiner = ' + ', depts?: Dept[] | null) => { const parts = Object.entries(per || {}).filter(([, n]) => (n || 0) > 0).map(([k, n]) => `${n} ${deptLabel(k, depts).toLowerCase()}`); return parts.length ? parts.join(joiner) : '0'; };
+// Departments an account can shop: the server sends them with the client; fall back to its industry pack.
+export const deptsOfClient = (client?: { departments?: Dept[]; industry?: string } | null): Dept[] => (client?.departments?.length ? client.departments : deptsFor(client?.industry));
+export const customerNoun = (industryKey?: string | null) => industryOf(industryKey).customer;
+// "Shopper: is it still available?" -> "is it still available?" (every industry pack prefixes titles with its caller noun)
+export const stripTitlePrefix = (t: string) => t.replace(/^[A-Za-z ]{1,24}:\s*/, '');
 export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const fmtPhone = (p?: string) => { const d = (p || '').replace(/\D/g, '').slice(-10); return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : p || ''; };
 export const fmtWhen = (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');

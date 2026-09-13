@@ -62,7 +62,7 @@ def _fields(body: CourseBody) -> dict:
         d["description"] = no_em_dash(d["description"].strip())[:1000]
     if "badge_label" in d:
         d["badge_label"] = no_em_dash(d["badge_label"].strip())[:80]
-    if "department" in d and d["department"] not in ms.DEPARTMENTS + ["mixed"]:
+    if "department" in d and d["department"] not in ms.ALL_DEPARTMENTS + ["mixed"]:
         raise HTTPException(status_code=400, detail="Department must be sales, service, parts, rental or mixed")
     if "pass_pct" in d:
         d["pass_pct"] = max(50, min(100, int(d["pass_pct"])))
@@ -101,7 +101,7 @@ async def list_courses(request: Request):
     by_id = {str(c["_id"]): c for c in courses}
     return {"courses": [cs.serialize_course(c, await _stats(db, c)) for c in courses], "can_manage": me.get("role") in OWNER_ROLES, "can_assign": _is_manager(me),
             "my": [cs.serialize_enrollment(e, by_id.get(e["course_id"]), {"course": cs.serialize_course(by_id[e["course_id"]])}) for e in mine if e.get("course_id") in by_id],
-            "certifications": (me.get("certifications") or []) and [{**c, "certified_at": cs._iso(c.get("certified_at"))} for c in me.get("certifications")], "departments": [{"key": d, "label": ms.DEPT_LABEL[d]} for d in ms.DEPARTMENTS] + [{"key": "mixed", "label": "Mixed"}]}
+            "certifications": (me.get("certifications") or []) and [{**c, "certified_at": cs._iso(c.get("certified_at"))} for c in me.get("certifications")], "departments": [{"key": d, "label": ms.DEPT_LABEL[d]} for d in ms.ALL_DEPARTMENTS] + [{"key": "mixed", "label": "Mixed"}]}
 
 
 @router.post("")

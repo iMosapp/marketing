@@ -260,13 +260,15 @@ def _transcript_text(log: dict, rep_name: str) -> str:
     return (log.get("transcript") or "").strip()
 
 
-def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str, duration_s: int) -> str:
+def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None) -> str:
+    from services import industries as ind
+    coach = "dealership call-quality coach" if (industry or ind.DEFAULT_INDUSTRY) == "automotive" else f"{ind.get(industry)['label'].lower()} call-quality coach"
     crit_lines = "\n".join(
         f'- id "{c["id"]}": {c["text"]}' + (" (CRITICAL)" if c.get("critical") else "") + (f' | coaching hint: {c["hint"]}' if c.get("hint") else "")
         for c in card.get("criteria") or []
     )
     return (
-        f"You are a dealership call-quality coach grading a recorded {direction} phone call ({duration_s}s) between the rep {rep_name} "
+        f"You are a {coach} grading a recorded {direction} phone call ({duration_s}s) between the rep {rep_name} "
         f"and the customer {contact_name} using the '{card.get('name')}' scorecard ({card.get('department') or 'Sales'} department).\n\n"
         "CRITERIA to grade (each must appear in your results):\n" + crit_lines + "\n\n"
         "RULES:\n"
@@ -306,13 +308,13 @@ def _parse_json(raw: str) -> dict:
     return {}
 
 
-async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name: str, direction: str, duration_s: int) -> dict:
+async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None) -> dict:
     api_key = os.environ.get("EMERGENT_LLM_KEY", "")
     if not api_key:
         raise RuntimeError("EMERGENT_LLM_KEY not set")
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     chat = LlmChat(api_key=api_key, session_id=f"scorecard-{uuid.uuid4().hex[:12]}",
-                   system_message=_grader_prompt(card, rep_name, contact_name, direction, duration_s)).with_model(*MODEL)
+                   system_message=_grader_prompt(card, rep_name, contact_name, direction, duration_s, industry)).with_model(*MODEL)
     resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"TRANSCRIPT:\n{transcript[:24000]}")), timeout=60.0)
     text = resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
     data = _parse_json(text)

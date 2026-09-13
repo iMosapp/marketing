@@ -15,7 +15,7 @@ import { CallsTab } from '../../../components/mystery-shops/CallsTab';
 import { ChallengesTab } from '../../../components/mystery-shops/ChallengesTab';
 import { BillingTab } from '../../../components/mystery-shops/BillingTab';
 import { ReportView, openUrl, type Report } from '../../../components/mystery-shops/ReportView';
-import { Chip, GoldButton, monthKey, monthLabel, shiftMonth, GOLD, RED, tid, type Client, type Person } from '../../../components/mystery-shops/shared';
+import { Chip, GoldButton, monthKey, monthLabel, shiftMonth, perMonthText, deptsOfClient, loadIndustries, GOLD, RED, tid, type Client, type Person } from '../../../components/mystery-shops/shared';
 
 const TABS = [['people', 'People'], ['calls', 'Shops'], ['challenges', 'Challenges'], ['report', 'Report'], ['billing', 'Billing']] as const;
 type Tab = typeof TABS[number][0];
@@ -38,6 +38,7 @@ export default function MysteryShopClient() {
   const [reportBusy, setReportBusy] = useState(false);
 
   const load = useCallback(async () => {
+    loadIndustries();
     try { const r = await api.get(`/shop-clients/${id}`); setClient(r.data.client); setPeople(r.data.people); setReportUrl(r.data.report_url); setKickoffUrl(r.data.kickoff_url || ''); setKickoff(r.data.kickoff || {}); }
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not load', 'error'); router.back(); }
   }, [id]);
@@ -62,7 +63,7 @@ export default function MysteryShopClient() {
   const tabs = client.demo ? TABS.filter(t => t[0] !== 'billing') : TABS;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <ScreenHeader title={client.name} subtitle={client.demo ? 'Anyone you shop without a client account · not billed' : `${client.plan.sales_per_month} sales + ${client.plan.service_per_month} service / mo${client.active ? '' : ' · PAUSED'}`} testID="shop-client-header"
+      <ScreenHeader title={client.name} subtitle={client.demo ? 'Anyone you shop without a client account · not billed' : `${client.industry && client.industry !== 'automotive' ? `${client.industry_label} · ` : ''}${perMonthText(client.plan.per_month, ' + ', deptsOfClient(client))} / mo${client.active ? '' : ' · PAUSED'}`} testID="shop-client-header"
         right={client.demo ? undefined : <View style={{ flexDirection: 'row' }}><HeaderIconButton icon={client.active ? 'pause-circle-outline' : 'play-circle-outline'} onPress={pause} testID="shop-client-pause" /><HeaderIconButton icon="create-outline" onPress={() => setEdit(true)} testID="shop-client-edit" /></View>} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 8 }} style={{ flexGrow: 0, flexShrink: 0 }}>
         {tabs.map(([k, l]) => <Chip key={k} label={l} active={tab === k} onPress={() => setTab(k)} colors={colors} testID={`shop-tab-${k}`} />)}

@@ -6,19 +6,21 @@ import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
 import { openUrl } from './ReportView';
-import { Sheet, Field, Label, Chip, GoldButton, DEPTS, deptLabel, fmtPhone, fmtWhen, GOLD, RED, tid, type Person, type Client } from './shared';
+import { Sheet, Field, Label, Chip, GoldButton, deptLabel, deptsOfClient, fmtPhone, fmtWhen, GOLD, RED, tid, type Person, type Client } from './shared';
 
 type Props = { client: Client; people: Person[]; colors: any; onChanged: () => void; onShopStarted: () => void; kickoffUrl?: string; kickoff?: { submitted_at?: string; submissions?: number } };
 
 export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, kickoffUrl, kickoff }: Props) => {
   const { showToast } = useToast();
+  const depts = deptsOfClient(client);
+  const firstDept = depts[0]?.key || 'sales';
   const [sheet, setSheet] = useState<null | { person?: Person }>(null);
-  const [f, setF] = useState({ name: '', phone: '', department: 'sales', title: '', notes: '' });
+  const [f, setF] = useState({ name: '', phone: '', department: firstDept, title: '', notes: '' });
   const [busy, setBusy] = useState(false);
   const [calling, setCalling] = useState<string | null>(null);
   const copyKickoff = async () => { if (!kickoffUrl) return; await Clipboard.setStringAsync(kickoffUrl); showToast('Setup link copied', 'success'); };
 
-  const open = (person?: Person) => { setF(person ? { name: person.name, phone: person.phone, department: person.department, title: person.title, notes: person.notes } : { name: '', phone: '', department: 'sales', title: '', notes: '' }); setSheet({ person }); };
+  const open = (person?: Person) => { setF(person ? { name: person.name, phone: person.phone, department: person.department, title: person.title, notes: person.notes } : { name: '', phone: '', department: firstDept, title: '', notes: '' }); setSheet({ person }); };
   const save = async () => {
     setBusy(true);
     try {
@@ -30,14 +32,15 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
   const remove = (p: Person) => showConfirm(`Remove ${p.name}?`, 'Scheduled shops for them are canceled. Completed shops stay on the report.', async () => {
     try { await api.delete(`/shop-clients/people/${p.id}`); onChanged(); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not remove', 'error'); }
   }, undefined, 'Remove');
-  const shopNow = (p: Person) => showConfirm(`Shop ${p.name.split(' ')[0]} right now?`, `The AI shopper calls ${fmtPhone(p.phone)} in a few seconds with a ${deptLabel(p.department).toLowerCase()} challenge they have not had yet.`, async () => {
+  const shopNow = (p: Person) => showConfirm(`Shop ${p.name.split(' ')[0]} right now?`, `The AI ${client.customer_noun || 'shopper'} calls ${fmtPhone(p.phone)} in a few seconds with a ${deptLabel(p.department, depts).toLowerCase()} challenge they have not had yet.`, async () => {
     setCalling(p.id);
     try { await api.post(`/shop-clients/${client.id}/calls/shop-now`, { target_id: p.id }); showToast(`Calling ${p.name.split(' ')[0]} now`, 'success'); onShopStarted(); }
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not place the call', 'error'); }
     finally { setCalling(null); }
   }, undefined, 'Call now');
 
-  const groups = DEPTS.map(d => ({ ...d, rows: people.filter(p => p.department === d.key) }));
+  const known = new Set(depts.map(d => d.key));
+  const groups = [...depts, ...[...new Set(people.map(p => p.department).filter(k => !known.has(k)))].map(k => ({ key: k, label: deptLabel(k) }))].map(d => ({ ...d, rows: people.filter(p => p.department === d.key) }));
   return (
     <View style={{ gap: 16 }}>
       <TouchableOpacity onPress={() => open()} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: GOLD + '1A', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: GOLD + '66' }} {...tid('people-add')}>
@@ -45,7 +48,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
         <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Add someone to shop</Text><Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Name, cell and department. They never get a message, we just call.</Text></View>
         <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
       </TouchableOpacity>
-      {people.length === 0 && <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 }} {...tid('people-empty')}>Nobody to shop yet. Add the sales and service people the store wants evaluated.</Text>}
+      {people.length === 0 && <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 }} {...tid('people-empty')}>Nobody to shop yet. Add the {depts.map(d => d.label.toLowerCase()).join(' and ')} people the {client.industry && client.industry !== 'automotive' ? 'account' : 'store'} wants evaluated.</Text>}
       {!!kickoffUrl && (
         <View style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 8 }} {...tid('kickoff-card')}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -89,9 +92,9 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
         <Field label="CELL NUMBER (THIS IS THE PHONE WE CALL)" value={f.phone} onChange={(v: string) => setF({ ...f, phone: v })} colors={colors} placeholder="(801) 555-0100" keyboardType="phone-pad" testID="person-phone" />
         <View style={{ gap: 8 }}>
           <Label t="DEPARTMENT" colors={colors} />
-          <View style={{ flexDirection: 'row', gap: 8 }}>{DEPTS.map(d => <Chip key={d.key} label={d.label} active={f.department === d.key} onPress={() => setF({ ...f, department: d.key })} colors={colors} testID={`person-dept-${d.key}`} />)}</View>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>{depts.map(d => <Chip key={d.key} label={d.label} active={f.department === d.key} onPress={() => setF({ ...f, department: d.key })} colors={colors} testID={`person-dept-${d.key}`} />)}</View>
         </View>
-        <Field label="TITLE (OPTIONAL)" value={f.title} onChange={(v: string) => setF({ ...f, title: v })} colors={colors} placeholder="Sales consultant" testID="person-title" />
+        <Field label="TITLE (OPTIONAL)" value={f.title} onChange={(v: string) => setF({ ...f, title: v })} colors={colors} placeholder={(depts.find(d => d.key === f.department)?.rep || 'Sales consultant').replace(/^(a|an) /, '').replace(/^\w/, c => c.toUpperCase())} testID="person-title" />
         <Field label="NOTES" value={f.notes} onChange={(v: string) => setF({ ...f, notes: v })} colors={colors} multiline placeholder="New hire, started in May" testID="person-notes" />
       </Sheet>
     </View>
