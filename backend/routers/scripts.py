@@ -87,6 +87,16 @@ class ImportBody(BaseModel):
 class StartBody(BaseModel):
     script_id: str
     assignment_id: Optional[str] = None
+    enrollment_id: Optional[str] = None
+
+
+async def _tag_course(db, me: dict, out: dict, enrollment_id: Optional[str]):
+    """Practice started from a course: stamp the session so grading updates the course progress."""
+    if not enrollment_id or not ObjectId.is_valid(str(enrollment_id)) or not out.get("session_id"):
+        return
+    e = await db.course_enrollments.find_one({"_id": ObjectId(enrollment_id), "kind": "user", "user_id": str(me["_id"])})
+    if e:
+        await db.roleplay_sessions.update_one({"_id": ObjectId(out["session_id"])}, {"$set": {"enrollment_id": str(e["_id"]), "course_id": e.get("course_id")}})
 
 
 class TurnBody(BaseModel):
@@ -269,7 +279,9 @@ async def roleplay_start(body: StartBody, request: Request):
         if not assignment:
             raise HTTPException(status_code=404, detail="Assignment not found")
     await db.roleplay_sessions.update_many({"user_id": str(me["_id"]), "status": {"$in": ["active", "ending"]}}, {"$set": {"status": "abandoned", "updated_at": datetime.now(timezone.utc)}})
-    return await svc.start_session(db, me, script, assignment)
+    out = await svc.start_session(db, me, script, assignment)
+    await _tag_course(db, me, out, body.enrollment_id)
+    return out
 
 
 @router.post("/roleplay/call")
@@ -287,11 +299,13 @@ async def roleplay_call(body: StartBody, request: Request):
             raise HTTPException(status_code=404, detail="Assignment not found")
     await db.roleplay_sessions.update_many({"user_id": str(me["_id"]), "status": {"$in": ["active", "ending", "dialing", "live"]}}, {"$set": {"status": "abandoned", "updated_at": datetime.now(timezone.utc)}})
     try:
-        return await svc.start_phone_session(db, me, script, assignment)
+        out = await svc.start_phone_session(db, me, script, assignment)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
+    await _tag_course(db, me, out, body.enrollment_id)
+    return out
 
 
 @router.post("/roleplay/{sid}/hangup")

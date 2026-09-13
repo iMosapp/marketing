@@ -74,6 +74,18 @@ class ClientBody(BaseModel):
     notes: Optional[str] = None
     from_number: Optional[str] = None
     scorecards: Optional[dict] = None
+    text_scorecards: Optional[bool] = None
+
+
+class DemoBody(BaseModel):
+    name: str
+    phone: str
+    department: Optional[str] = "sales"
+    title: Optional[str] = ""
+    store_name: Optional[str] = ""
+    vehicle: Optional[str] = ""
+    script_id: Optional[str] = None
+    text_scorecard: bool = True
 
 
 class PersonBody(BaseModel):
@@ -102,6 +114,15 @@ class ChallengeBody(BaseModel):
     success_points: Optional[list] = None
     persona: Optional[dict] = None
     runtime: Optional[str] = ""
+    curveballs: Optional[list] = None
+    generated_from: Optional[str] = None
+
+
+class GenerateBody(BaseModel):
+    department: str
+    scenario: str
+    count: Optional[int] = 1
+    client_id: Optional[str] = None
 
 
 class ProposalBody(BaseModel):
@@ -180,6 +201,45 @@ async def list_clients(request: Request):
     db = get_db()
     rows = await db.shop_clients.find({}).sort("name", 1).to_list(200)
     return {"clients": [ms.serialize_client(c, await _progress(db, c)) for c in rows], "departments": ms.DEPARTMENTS, "from_number_default": os.environ.get("MYSTERY_SHOP_FROM_NUMBER") or os.environ.get("TWILIO_PHONE_NUMBER", "")}
+
+
+@router.post("/demo")
+async def demo_shop(body: DemoBody, request: Request):
+    """Shop anyone right now: no client, no proposal. Lands in the built-in Demo shops bucket."""
+    me = await require_admin(request)
+    db = get_db()
+    name = (body.name or "").strip()[:80]
+    if len(name) < 2:
+        raise HTTPException(status_code=400, detail="Who are we calling? Add their name")
+    phone = _phone(body.phone or "")
+    dept = body.department if body.department in ms.DEPARTMENTS else "sales"
+    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "rep_phone": phone, "status": {"$in": ["dialing", "live", "grading"]}}):
+        raise HTTPException(status_code=409, detail=f"{name} is already on a shop call")
+    script = None
+    if body.script_id:
+        script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop", "active": {"$ne": False}})
+        if not script:
+            raise HTTPException(status_code=404, detail="That challenge is gone, pick another")
+    r = await ms.demo_shop(db, me, name, phone, dept, (body.title or "").strip()[:60], (body.store_name or "").strip()[:80], (body.vehicle or "").strip()[:80], script, body.text_scorecard)
+    if r.get("error"):
+        raise HTTPException(status_code=400, detail=r["error"])
+    if not r.get("ok"):
+        raise HTTPException(status_code=503, detail=(r.get("call") or {}).get("fail_reason") or "The call could not be placed")
+    return {"call": ms.serialize_call(r["call"]), "client_id": r["client_id"]}
+
+
+@router.get("/demo/challenges")
+async def demo_challenges(request: Request, department: Optional[str] = None):
+    await require_admin(request)
+    return {"challenges": [_challenge_out(s) for s in await ms.challenge_pool(get_db(), None, department)]}
+
+
+@router.get("/challenges")
+async def library(request: Request, department: Optional[str] = None):
+    """The global challenge library (every client's shopper draws from it)."""
+    await require_admin(request)
+    rows = await ms.challenge_pool(get_db(), None, department)
+    return {"challenges": [_challenge_out(s) for s in rows], "departments": [{"key": d, "label": ms.DEPT_LABEL[d]} for d in ms.DEPARTMENTS], "curveballs": ms.CURVEBALLS}
 
 
 @router.post("")
@@ -374,7 +434,69 @@ async def retry_call(sid: str, request: Request):
 
 # ---------------------------------------------------------------- challenges
 def _challenge_out(s: dict) -> dict:
-    return {**scr.serialize_script(s), "department": s.get("department"), "client_specific": bool(s.get("shop_client_id")), "shop_client_id": s.get("shop_client_id")}
+    return {**scr.serialize_script(s), "department": s.get("department"), "client_specific": bool(s.get("shop_client_id")), "shop_client_id": s.get("shop_client_id"), "curveballs": s.get("curveballs") or [], "generated": bool(s.get("generated_from"))}
+
+
+CATEGORY_BY_DEPT = {"sales": "Sales calls", "service": "Service", "parts": "Parts", "rental": "Rental"}
+
+
+def _challenge_fields(body: ChallengeBody) -> dict:
+    if body.department not in ms.DEPARTMENTS:
+        raise HTTPException(status_code=400, detail="Department must be sales, service, parts or rental")
+    if not body.title.strip() or not body.body.strip():
+        raise HTTPException(status_code=400, detail="Title and the challenge text are required")
+    persona = body.persona or {}
+    if not (persona.get("name") or "").strip() or not (persona.get("opening_line") or "").strip():
+        raise HTTPException(status_code=400, detail="The shopper needs a name and an opening line")
+    return {"department": body.department, "category": CATEGORY_BY_DEPT.get(body.department, "Custom"), "title": no_em_dash(body.title.strip())[:120], "runtime": (body.runtime or "").strip()[:40], "purpose": no_em_dash(body.purpose or "")[:400], "body": no_em_dash(body.body)[:8000],
+            "success_points": [str(p).strip()[:160] for p in (body.success_points or []) if str(p).strip()][:12], "curveballs": [no_em_dash(str(c)).strip()[:160] for c in (body.curveballs or []) if str(c).strip()][:4],
+            "persona": {"name": str(persona.get("name")).strip()[:60], "voice": persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female", "summary": no_em_dash(str(persona.get("summary") or ""))[:400],
+                        "goals": no_em_dash(str(persona.get("goals") or ""))[:200], "objections": [no_em_dash(str(o))[:160] for o in (persona.get("objections") or []) if str(o).strip()][:6], "opening_line": no_em_dash(str(persona.get("opening_line")))[:240]}}
+
+
+async def _insert_challenge(db, me: dict, body: ChallengeBody, cid: Optional[str]) -> dict:
+    now = datetime.now(timezone.utc)
+    doc = {"kind": "phone", "pool": "mystery_shop", "shop_client_id": cid, "store_id": None, "slug": f"shop_custom_{ObjectId()}", "direction": "inbound", **_challenge_fields(body),
+           "generated_from": (body.generated_from or "").strip()[:3000] or None, "created_by": str(me["_id"]), "created_by_name": me.get("name"), "active": True, "created_at": now, "updated_at": now}
+    res = await db.scripts.insert_one(doc)
+    return _challenge_out(await db.scripts.find_one({"_id": res.inserted_id}))
+
+
+@router.post("/challenges")
+async def add_global_challenge(body: ChallengeBody, request: Request):
+    me = await require_admin(request)
+    return await _insert_challenge(get_db(), me, body, None)
+
+
+@router.post("/challenges/generate")
+async def generate_challenges(body: GenerateBody, request: Request):
+    """Plain-words scenario in, 1 to 5 challenge drafts out. Nothing is saved until Forest hits save on a draft."""
+    await require_admin(request)
+    if body.department not in ms.DEPARTMENTS:
+        raise HTTPException(status_code=400, detail="Pick sales, service, parts or rental")
+    if len((body.scenario or "").strip()) < 15:
+        raise HTTPException(status_code=400, detail="Describe the situation in a sentence or two")
+    client = await get_db().shop_clients.find_one({"_id": _oid(body.client_id, "Client")}) if body.client_id else None
+    try:
+        drafts = await ms.generate_challenges(body.department, body.scenario, body.count or 1, client)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.warning(f"[MysteryShop] generate failed: {e}")
+        raise HTTPException(status_code=503, detail="Jessi is busy right now, try again in a moment")
+    return {"drafts": drafts, "scenario": body.scenario.strip()}
+
+
+@router.put("/challenges/{script_id}")
+async def update_challenge(script_id: str, body: ChallengeBody, request: Request):
+    await require_admin(request)
+    db = get_db()
+    s = await db.scripts.find_one({"_id": _oid(script_id, "Challenge"), "pool": "mystery_shop"})
+    if not s:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+    await db.scripts.update_one({"_id": s["_id"]}, {"$set": {**_challenge_fields(body), "updated_at": datetime.now(timezone.utc)}})
+    await db.roleplay_sessions.update_many({"kind": "mystery_shop", "script_id": script_id, "status": "scheduled"}, {"$set": {"script_title": body.title.strip()[:120]}})
+    return _challenge_out(await db.scripts.find_one({"_id": s["_id"]}))
 
 
 @router.get("/{cid}/challenges")
@@ -390,22 +512,7 @@ async def add_challenge(cid: str, body: ChallengeBody, request: Request):
     me = await require_admin(request)
     db = get_db()
     await _client(db, cid)
-    if body.department not in ms.DEPARTMENTS:
-        raise HTTPException(status_code=400, detail="Department must be sales or service")
-    if not body.title.strip() or not body.body.strip():
-        raise HTTPException(status_code=400, detail="Title and the challenge text are required")
-    persona = body.persona or {}
-    if not (persona.get("name") or "").strip() or not (persona.get("opening_line") or "").strip():
-        raise HTTPException(status_code=400, detail="The shopper needs a name and an opening line")
-    now = datetime.now(timezone.utc)
-    doc = {"kind": "phone", "pool": "mystery_shop", "shop_client_id": cid, "store_id": None, "slug": f"shop_custom_{ObjectId()}", "department": body.department, "category": "Service" if body.department == "service" else "Sales calls",
-           "direction": "inbound", "title": body.title.strip()[:120], "runtime": (body.runtime or "").strip()[:40], "purpose": no_em_dash(body.purpose or "")[:400], "body": no_em_dash(body.body)[:8000],
-           "success_points": [str(p).strip()[:160] for p in (body.success_points or []) if str(p).strip()][:12],
-           "persona": {"name": str(persona.get("name"))[:60], "voice": persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female", "summary": no_em_dash(str(persona.get("summary") or ""))[:400],
-                       "goals": no_em_dash(str(persona.get("goals") or ""))[:200], "objections": [no_em_dash(str(o))[:160] for o in (persona.get("objections") or []) if str(o).strip()][:6], "opening_line": no_em_dash(str(persona.get("opening_line")))[:240]},
-           "created_by": str(me["_id"]), "created_by_name": me.get("name"), "active": True, "created_at": now, "updated_at": now}
-    res = await db.scripts.insert_one(doc)
-    return _challenge_out(await db.scripts.find_one({"_id": res.inserted_id}))
+    return await _insert_challenge(db, me, body, cid)
 
 
 @router.delete("/challenges/{script_id}")
@@ -465,6 +572,22 @@ async def public_report(token: str, month: Optional[str] = None):
     for call in rep["calls"]:
         call.pop("target_id", None)
     return rep
+
+
+@public_router.get("/shop-score/{token}")
+async def public_score(token: str):
+    """The scorecard link texted to the person who got shopped: score, wins, coaching, recording. No login."""
+    db = get_db()
+    s = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "score_token": token}) if len(token or "") >= 16 else None
+    if not s:
+        raise HTTPException(status_code=404, detail="Scorecard not found")
+    ev = await db.call_evaluations.find_one({"_id": ObjectId(s["evaluation_id"])}) if s.get("evaluation_id") and ObjectId.is_valid(str(s["evaluation_id"])) else None
+    if not ev:
+        raise HTTPException(status_code=404, detail="Scorecard not ready yet")
+    client = await db.shop_clients.find_one({"_id": _oid(s["client_id"])}) if ObjectId.is_valid(str(s.get("client_id"))) else None
+    await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$inc": {"score_views": 1}, "$set": {"score_viewed_at": datetime.now(timezone.utc)}})
+    return ms.public_score(s, ev, client or {})
+
 
 
 # ---------------------------------------------------------------- proposals + billing

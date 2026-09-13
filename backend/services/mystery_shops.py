@@ -17,18 +17,22 @@ from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
 
-DEPARTMENTS = ["sales", "service"]
-DEPT_LABEL = {"sales": "Sales", "service": "Service"}
-DEPT_SCORECARD_TEMPLATE = {"sales": "phone_up", "service": "service_bdc"}
+DEPARTMENTS = ["sales", "service", "parts", "rental"]
+DEPT_LABEL = {"sales": "Sales", "service": "Service", "parts": "Parts", "rental": "Rental"}
+DEPT_SCORECARD_TEMPLATE = {"sales": "phone_up", "service": "service_bdc", "parts": "parts_phone", "rental": "rental_phone"}
 CALL_STATUSES_OPEN = ["scheduled", "dialing", "live", "grading"]
 DEFAULT_HOURS = {"start": "09:00", "end": "18:00", "days": [0, 1, 2, 3, 4, 5]}
-DEFAULT_VEHICLES = {"sales": ["the used SUV you have listed online", "the pickup you have on your website"], "service": ["my SUV", "my truck"]}
+DEFAULT_VEHICLES = {"sales": ["the used SUV you have listed online", "the pickup you have on your website"], "service": ["my SUV", "my truck"], "parts": ["my SUV", "my truck"], "rental": ["a mid-size SUV", "a pickup"]}
 
 CURVEBALLS = {
     "sales": ["You already have a written quote from a competing store", "You only have 2 minutes, you are on a work break", "You want the payment over the phone before you will consider coming in",
               "You are 45 minutes away and worried about wasting the drive", "Your spouse makes the final decision and is not with you", "You ask if the price online is negotiable"],
     "service": ["You need a loaner or a ride because you work during the day", "You had a bad experience at another store and are skeptical", "You want to know the exact price before booking",
                 "You can only come in on Saturday", "The warning light just came on and you are nervous about driving it", "You ask whether the work is covered under warranty"],
+    "parts": ["You found the part cheaper online and say so", "You are not sure of the exact year or trim of your vehicle", "You need it today because the car is on a lift at an independent shop",
+              "You ask whether the aftermarket version is just as good", "You want it shipped instead of picking it up", "You are calling on behalf of your elderly parent"],
+    "rental": ["Your car is in the body shop and insurance is paying, you are not sure what they cover", "You need the vehicle in the next two hours", "You ask about one-way rentals to another city",
+               "You are under 25 and worry about the extra fee", "You want to know exactly what the deposit and mileage rules are", "You need a car seat or a tow hitch"],
 }
 
 # Global challenge pool. Persona text uses {vehicle} and {store}; the client's brand fills them in at shop time.
@@ -154,6 +158,7 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
            "plan": {"sales_per_month": int((c.get("plan") or {}).get("sales_per_month") or 0), "service_per_month": int((c.get("plan") or {}).get("service_per_month") or 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
            "hours": _hours(c), "vehicles": c.get("vehicles") or [], "active": c.get("active", True), "record_calls": c.get("record_calls", True), "notes": c.get("notes", ""),
            "from_number": c.get("from_number") or "", "report_token": c.get("report_token"), "scorecards": c.get("scorecards") or {}, "billing": c.get("billing") or {},
+           "demo": bool(c.get("demo")), "text_scorecards": bool(c.get("text_scorecards")),
            "created_at": c.get("created_at").isoformat() if c.get("created_at") else None}
     if extra:
         out.update(extra)
@@ -174,16 +179,18 @@ def serialize_call(s: dict) -> dict:
             "curveballs": s.get("curveballs") or [], "scheduled_for": s["scheduled_for"].isoformat() if s.get("scheduled_for") else None, "attempts": s.get("attempts", 0),
             "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
             "score_pct": s.get("score_pct"), "adherence_pct": s.get("adherence_pct"), "evaluation_id": s.get("evaluation_id"), "recording_url": s.get("recording_url"),
-            "recording_seconds": s.get("recording_seconds"), "turns": len(s.get("turns") or []), "manual": bool(s.get("manual"))}
+            "recording_seconds": s.get("recording_seconds"), "turns": len(s.get("turns") or []), "manual": bool(s.get("manual")), "demo": bool(s.get("demo")),
+            "score_url": f"{scr._app_url()}/shop-score/{s['score_token']}" if s.get("score_token") else None, "score_sms_status": s.get("score_sms_status"), "score_views": s.get("score_views") or 0}
 
 
 # ---------------------------------------------------------------- challenge rotation
 def fill_persona(persona: dict, client: dict, department: str) -> dict:
-    pool = [v for v in (client.get("vehicles") or []) if str(v).strip()] or DEFAULT_VEHICLES[department]
+    pool = [v for v in (client.get("vehicles") or []) if str(v).strip()] or DEFAULT_VEHICLES.get(department) or DEFAULT_VEHICLES["sales"]
     vehicle = random.choice(pool)
-    if department == "sales" and not vehicle.lower().startswith(("the ", "a ", "an ", "that ")):
-        vehicle = f"the {vehicle}"
-    elif department == "service" and not vehicle.lower().startswith(("my ", "our ")):
+    low = vehicle.lower()
+    if department in ("sales", "rental") and not low.startswith(("the ", "a ", "an ", "that ")):
+        vehicle = f"{'a' if department == 'rental' else 'the'} {vehicle}"
+    elif department in ("service", "parts") and not low.startswith(("my ", "our ")):
         vehicle = f"my {vehicle}"
     def sub(v):
         if isinstance(v, list):
@@ -268,7 +275,8 @@ async def create_shop_call(db, client: dict, target: dict, when: datetime, creat
         return None
     dept = target.get("department") or "sales"
     persona = fill_persona(script.get("persona") or {}, client, dept)
-    curve = random.sample(CURVEBALLS.get(dept, []), k=random.choice([0, 1, 1, 2]))
+    pool_cb = [c for c in (script.get("curveballs") or []) if str(c).strip()] or CURVEBALLS.get(dept, [])
+    curve = random.sample(pool_cb, k=min(len(pool_cb), random.choice([0, 1, 1, 2])))
     now = _now()
     doc = {"kind": "mystery_shop", "mode": "phone", "status": "scheduled", "user_id": None, "client_id": str(client["_id"]), "target_id": str(target["_id"]),
            "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "department": dept, "store_id": None, "store_name": client.get("name") or "the store",
@@ -364,6 +372,14 @@ async def record_outcome(db, call: dict, outcome: str, reason: Optional[str] = N
                                                                    "$push": {"attempt_history": history}})
     else:
         await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "unreachable", "outcome": outcome, "fail_reason": f"{label} ({attempts} tries)", "ended_at": now, "updated_at": now}, "$push": {"attempt_history": history}})
+        if call.get("enrollment_id"):
+            from services import courses as cs
+            e = await db.course_enrollments.find_one({"_id": ObjectId(call["enrollment_id"])}) if ObjectId.is_valid(str(call["enrollment_id"])) else None
+            course = await db.courses.find_one({"_id": ObjectId(e["course_id"])}) if e else None
+            rounds = int((e or {}).get("unreachable_rounds") or 0)
+            if e and course and rounds < 3:
+                await db.course_enrollments.update_one({"_id": e["_id"]}, {"$set": {"unreachable_rounds": rounds + 1, "updated_at": now}})
+                await cs.schedule_next_shop(db, e, course, delay_minutes=24 * 60)
 
 
 async def run_due_calls(db, limit: int = 3) -> int:
@@ -412,7 +428,12 @@ async def scorecard_for(db, session: dict) -> Optional[dict]:
         card = await db.scorecards.find_one({"_id": ObjectId(str(cid)), "active": {"$ne": False}})
         if card:
             return card
-    body = sc.template_body(DEPT_SCORECARD_TEMPLATE[dept])
+    return template_card(dept)
+
+
+def template_card(dept: str) -> Optional[dict]:
+    """The department's built-in scorecard, so every course taker and every shop is graded the same way."""
+    body = sc.template_body(DEPT_SCORECARD_TEMPLATE.get(dept) or DEPT_SCORECARD_TEMPLATE["sales"])
     if not body:
         return None
     return {"_id": None, "name": body["name"], "department": body["department"], "criteria": sc.normalize_criteria(body["criteria"]), "alert_on_critical": False}
@@ -471,6 +492,8 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     by_dept = {}
     for d in DEPARTMENTS:
         dc = [c for c in done if c.get("department") == d]
+        if d not in ("sales", "service") and not dc and not any(c.get("department") == d for c in calls):
+            continue
         by_dept[d] = {"planned": int((client.get("plan") or {}).get(f"{d}_per_month") or 0), "scheduled": len([c for c in calls if c.get("department") == d and c.get("status") in CALL_STATUSES_OPEN]),
                       "completed": len(dc), "unreachable": len([c for c in calls if c.get("department") == d and c.get("status") == "unreachable"]), "avg_score": _pct([c.get("score_pct") for c in dc])}
     call_rows = []
@@ -744,3 +767,181 @@ async def notify_kickoff(db, client: dict, people_added: int, people_total: int)
             await send_push_to_user(uid, title, msg, link, "storefront")
         except Exception as e:
             logger.debug(f"[MysteryShop] kickoff push failed for {uid}: {e}")
+
+
+# ---------------------------------------------------------------- demo shops + texting the scorecard
+DEMO_CLIENT_NAME = "Demo shops"
+
+
+async def ensure_demo_client(db, me: dict) -> dict:
+    """Built-in, never-billed bucket so Forest can shop anyone on the spot without creating a client first."""
+    c = await db.shop_clients.find_one({"demo": True})
+    if c:
+        return c
+    now = _now()
+    doc = {"name": DEMO_CLIENT_NAME, "demo": True, "brand": "", "city": "", "state": "", "timezone": "America/Denver", "contact_name": "", "contact_email": "", "contact_phone": "", "contact_title": "",
+           "plan": {"sales_per_month": 0, "service_per_month": 0, "price_monthly": 0.0}, "hours": {"start": "00:00", "end": "23:59", "days": [0, 1, 2, 3, 4, 5, 6]}, "vehicles": [], "active": True,
+           "record_calls": True, "notes": "Built-in bucket for demo shops. Anyone you shop from the Demo button lands here.", "text_scorecards": True, "report_token": uuid.uuid4().hex, "billing": {},
+           "created_by": str(me["_id"]), "created_at": now, "updated_at": now}
+    res = await db.shop_clients.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    return doc
+
+
+async def demo_shop(db, me: dict, name: str, phone: str, department: str, title: str, store_name: str, vehicle: str, script: Optional[dict], text_scorecard: bool) -> dict:
+    c = await ensure_demo_client(db, me)
+    cid, now = str(c["_id"]), _now()
+    t = await db.shop_targets.find_one({"client_id": cid, "phone": phone})
+    if t:
+        await db.shop_targets.update_one({"_id": t["_id"]}, {"$set": {"name": name, "department": department, "title": title, "active": True, "updated_at": now}})
+        t = {**t, "name": name, "department": department, "title": title}
+    else:
+        res = await db.shop_targets.insert_one({"client_id": cid, "name": name, "phone": phone, "department": department, "title": title, "notes": "Demo shop", "active": True, "challenge_history": [], "created_at": now, "updated_at": now})
+        t = await db.shop_targets.find_one({"_id": res.inserted_id})
+    persona_client = {**c, "name": store_name or "your dealership", "vehicles": [vehicle] if vehicle else []}
+    call = await create_shop_call(db, persona_client, t, now, created_by=str(me["_id"]), manual=True, script=script)
+    if not call:
+        return {"error": f"No {DEPT_LABEL.get(department, '')} challenges in the pool yet"}
+    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"demo": True, "notify_sms": bool(text_scorecard), "store_name": store_name or "the dealership"}})
+    ok = await place_shop_call(db, call)
+    s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
+    return {"ok": ok, "call": s, "client_id": cid}
+
+
+def _short_criteria(ev: dict, passed: bool, n: int = 2) -> list:
+    return [r.get("text", "").strip().rstrip(".") for r in (ev.get("results") or []) if bool(r.get("passed")) is passed and r.get("text")][:n]
+
+
+def scorecard_sms(s: dict, ev: dict, url: str, course_line: str = "") -> str:
+    first = (s.get("rep_name") or "").split(" ")[0] or "there"
+    pct = ev.get("score_pct")
+    lines = [f"Hey {first}, that call just now was a mystery shop from I'm On Social{'' if s.get('demo') else ' for ' + str(s.get('store_name') or 'your store')}. " + (f"You scored {int(pct)}%." if pct is not None else "Your scorecard is ready.")]
+    good, fix = _short_criteria(ev, True), _short_criteria(ev, False)
+    if good:
+        lines.append("Nailed: " + ", ".join(good) + ".")
+    if fix:
+        lines.append("Work on: " + ", ".join(fix) + ".")
+    if course_line:
+        lines.append(course_line)
+    lines.append(f"Full scorecard + recording: {url}")
+    return no_em_dash("\n".join(lines))
+
+
+async def _course_line(db, s: dict, pct) -> str:
+    if not s.get("enrollment_id") or not ObjectId.is_valid(str(s["enrollment_id"])):
+        return ""
+    e = await db.course_enrollments.find_one({"_id": ObjectId(s["enrollment_id"])})
+    course = await db.courses.find_one({"_id": ObjectId(e["course_id"])}) if e else None
+    if not e or not course:
+        return ""
+    ids = course.get("challenge_ids") or []
+    done = len([x for x in ids if ((e.get("progress") or {}).get(x) or {}).get("passed")])
+    need = int(course.get("pass_pct") or 80)
+    this_passed = pct is not None and pct >= need
+    return f"{course.get('title')}: {done} of {len(ids)} passed." + ("" if this_passed else f" You need {need}% on this one, we will call again with it.")
+
+
+async def after_graded(db, sid: str):
+    """Grading just finished for a shop call: give it a public scorecard link, text the person if wanted, ping the admin who set it up."""
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)})
+    if not s or s.get("kind") != "mystery_shop" or s.get("status") != "completed":
+        return
+    client = await db.shop_clients.find_one({"_id": _oid(s["client_id"])}) or {}
+    ev = await db.call_evaluations.find_one({"_id": ObjectId(s["evaluation_id"])}) if s.get("evaluation_id") and ObjectId.is_valid(str(s["evaluation_id"])) else None
+    if not ev:
+        return
+    token = s.get("score_token") or uuid.uuid4().hex
+    if not s.get("score_token"):
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"score_token": token}})
+    url = f"{scr._app_url()}/shop-score/{token}"
+    want_sms = s.get("notify_sms") if s.get("notify_sms") is not None else bool(client.get("text_scorecards") or s.get("enrollment_id"))
+    if want_sms and s.get("rep_phone") and not s.get("score_sms_sent_at"):
+        from services.twilio_service import send_sms
+        try:
+            r = await send_sms(s["rep_phone"], scorecard_sms(s, ev, url, await _course_line(db, s, ev.get("score_pct"))), from_phone=_from_number(client) or None)
+            await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"score_sms_sent_at": _now(), "score_sms_sid": (r or {}).get("sid") or (r or {}).get("message_sid"), "score_sms_status": (r or {}).get("status") or "sent"}})
+        except Exception as e:
+            logger.warning(f"[MysteryShop] scorecard text failed for {sid}: {e}")
+            await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"score_sms_status": "failed", "score_sms_error": str(e)[:200]}})
+    if s.get("created_by") and not s.get("graded_notified_at"):
+        from routers.push_notifications import send_push_to_user
+        from routers.notifications_center import invalidate_feed
+        first = (s.get("rep_name") or "").split(" ")[0] or "The rep"
+        pct = ev.get("score_pct")
+        title = f"{first} scored {int(pct)}% on the {'demo ' if s.get('demo') else ''}shop" if pct is not None else f"{first}'s shop call is graded"
+        msg = (ev.get("summary") or "")[:160] + (" Scorecard texted to them." if want_sms else "")
+        link = f"/admin/mystery-shops/{s['client_id']}?tab=calls"
+        await db.notifications.insert_one({"user_id": s["created_by"], "type": "shop_graded", "title": title, "message": msg, "link": link, "read": False, "dismissed": False, "created_at": _now()})
+        invalidate_feed(s["created_by"])
+        try:
+            await send_push_to_user(s["created_by"], title, msg, link, "storefront")
+        except Exception as e:
+            logger.debug(f"[MysteryShop] graded push failed: {e}")
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"graded_notified_at": _now()}})
+
+
+def public_score(s: dict, ev: dict, client: dict) -> dict:
+    first = (s.get("rep_name") or "").split(" ")[0]
+    return {"first_name": first, "name": s.get("rep_name"), "department": s.get("department"), "store_name": None if s.get("demo") else (s.get("store_name") or client.get("name")), "demo": bool(s.get("demo")),
+            "challenge_title": s.get("script_title"), "persona_name": (s.get("persona") or {}).get("name"), "score_pct": ev.get("score_pct"), "scorecard_name": ev.get("scorecard_name"), "summary": ev.get("summary") or "",
+            "wins": ev.get("wins") or [], "coaching": ev.get("coaching") or [], "customer_sentiment": ev.get("customer_sentiment") or "",
+            "results": [{"text": r.get("text"), "passed": bool(r.get("passed")), "critical": bool(r.get("critical")), "evidence": r.get("evidence") or ""} for r in (ev.get("results") or [])],
+            "recording_url": s.get("recording_url"), "recording_seconds": s.get("recording_seconds"), "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
+            "adherence": {k: (ev.get("adherence") or {}).get(k) for k in ("score_pct", "hits", "misses", "summary")}}
+
+
+# ---------------------------------------------------------------- AI challenge generator
+DEPT_BRIEF = {
+    "sales": "an inbound sales phone-up at a car dealership; the rep should get the name and number, confirm the vehicle, ask about a trade and sell the visit, never quote payments blind",
+    "service": "an inbound service department call; the advisor should confirm the vehicle, identify the concern, offer the first available appointment, mention transportation, confirm the number and recap",
+    "parts": "an inbound parts counter call; the parts person should confirm the exact vehicle (VIN, year, trim), check availability, quote clearly with what it includes, ask for the sale or offer to hold or order, get the number",
+    "rental": "an inbound rental desk call; the agent should ask dates and need, offer a specific vehicle, state the rate and what it includes, explain requirements, ask to reserve and confirm pickup",
+}
+VOICES = ("female", "male", "young", "older")
+
+
+def _plain(v, n: int) -> str:
+    return no_em_dash("; ".join(str(x) for x in v) if isinstance(v, list) else str(v or "")).replace("{", "").replace("}", "")[:n].strip()
+
+
+def normalize_draft(d: dict, department: str) -> Optional[dict]:
+    """Coerce one model draft into the challenge shape the pool and the editor expect. Placeholders {vehicle}/{store} are allowed only in persona text."""
+    body = d.get("body")
+    if isinstance(body, list):
+        body = "\n\n".join(str(x).strip() for x in body if str(x).strip())
+    if not isinstance(d, dict) or not str(d.get("title") or "").strip() or not str(body or "").strip():
+        return None
+    persona = d.get("persona") if isinstance(d.get("persona"), dict) else {}
+    ptxt = lambda v, n: no_em_dash(str(v or ""))[:n].strip()
+    return {
+        "title": _plain(d.get("title"), 120), "department": department, "runtime": _plain(d.get("runtime"), 40) or "3 to 5 min", "purpose": _plain(d.get("purpose"), 400), "body": no_em_dash(str(body))[:8000].strip(),
+        "success_points": [_plain(p, 160) for p in (d.get("success_points") or []) if str(p).strip()][:12],
+        "curveballs": [_plain(c, 160) for c in (d.get("curveballs") or []) if str(c).strip()][:4],
+        "persona": {"name": _plain(persona.get("name"), 60) or "Jordan Lee", "voice": persona.get("voice") if persona.get("voice") in VOICES else "female", "summary": ptxt(persona.get("summary"), 400),
+                    "goals": ptxt(persona.get("goals"), 200), "objections": [ptxt(o, 160) for o in (persona.get("objections") or []) if str(o).strip()][:6], "opening_line": ptxt(persona.get("opening_line"), 240)},
+    }
+
+
+async def generate_challenges(department: str, scenario: str, count: int = 1, client: Optional[dict] = None) -> list:
+    """Forest describes a situation in plain words; Jessi drafts count distinct challenges (persona, opening line, what a great rep does, graded points, curveballs). Nothing is saved."""
+    count = max(1, min(5, int(count or 1)))
+    store = f" The client store is {client.get('name')}{' (' + client.get('brand') + ')' if client.get('brand') else ''}." if client else ""
+    system = ("You are Jessi, a dealership phone trainer who writes mystery-shop challenges. A challenge is a realistic inbound call the AI shopper will act out against a real rep, then grade. "
+              f"Department context: {DEPT_BRIEF.get(department, DEPT_BRIEF['sales'])}.{store} "
+              f"Write {count} DISTINCT challenge{'s' if count > 1 else ''} from the scenario below (vary the person, the wrinkle and the emotional tone; do not repeat the same customer twice). "
+              "Each challenge: title (short, starts with 'Shopper:' for sales, 'Service caller:' for service, 'Parts caller:' for parts, 'Rental caller:' for rental), runtime like '3 to 5 min', "
+              "purpose (one or two sentences: what the situation is and what a great rep does), "
+              "body (a STRING, the coaching guide written TO THE REP in second person: 'Answer with the store and your name', 'Ask which axle', 4 to 7 short paragraphs separated by blank lines, stage directions in [brackets]; this is what we grade the rep against, it is NOT the shopper's lines; plain words, no curly braces), "
+              "success_points (5 to 8 graded rep behaviours, each 4 to 12 words starting with a verb, e.g. 'Confirms the exact vehicle and trim'), curveballs (2 to 3 short second-person twists the shopper may throw in, e.g. 'You only have two minutes'), "
+              "persona: name (first and last), voice one of female/male/young/older, summary (age, job, situation, mood; you MAY write {vehicle} for the vehicle and {store} for the store name), "
+              "goals (one sentence), objections (2 to 4 things they push back with), opening_line (the exact first thing they say when the rep answers; may use {vehicle} and {store}). "
+              "Sound like a real person on the phone, never corporate. Never use em dashes. "
+              "Return JSON: {\"challenges\": [{title, runtime, purpose, body, success_points:[...], curveballs:[...], persona:{name, voice, summary, goals, objections:[...], opening_line}}]}")
+    data = await scr._llm_json(system, f"SCENARIO ({DEPT_LABEL.get(department, department)}):\n{scenario.strip()[:3000]}", timeout=120)
+    raw = data.get("challenges") if isinstance(data, dict) else None
+    if isinstance(data, dict) and not raw and data.get("title"):
+        raw = [data]
+    drafts = [x for x in (normalize_draft(d, department) for d in (raw or [])) if x]
+    if not drafts:
+        raise ValueError("Jessi could not turn that into a challenge, try adding a little more detail")
+    return drafts[:count]

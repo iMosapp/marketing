@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only E2E of the NEW Mystery Shops 'Demo shop' feature + per-client 'Text people their scorecard' toggle + public /shop-score/<token> page. All 10 mandatory checks pass on preview. Backend validation curls both pass (400 for bad phone, 4 service challenges). No product bugs found. Demo call correctly places a Twilio call to a 500-555 test number without crashing; duplicate-phone flow correctly surfaces 409 'is already on a shop call' (documented alternative to upsert). Public scorecard renders score-hero/ring/title/meta/summary/wins/fixes/coaching with all expected copy; invalid token shows score-error. Admin call detail exposes shop-call-score-link + shop-call-sms-status 'Scorecard texted to Sam · opened 3x' and shop-call-score-copy toasts 'Scorecard link copied'. ClientSheet has client-text-scorecards-toggle; toggling ON, saving, reloading, re-toggling OFF all work and are persisted (verified via GET /api/shop-clients/{id}). Cleanup done: QA Demo Rep person deleted from Demo shops via DELETE /api/shop-clients/people/6aa60b532366ce57ee4698c8 (200); Demo Dan preserved.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DemoShopSheet correctly disables demo-call and swaps copy to 'Name and cell number first' / 'Call <First> now' based on name>=2 chars + 10-digit phone; matches spec.",
+    "GET /api/shop-clients/{cid} returns nested {client: {...}} with `people` as an int count when accessed at top level in some paths (verified: people: 1 for Demo shops). Not a bug — this endpoint appears to return summary shape; the client detail page loads full people list from a separate endpoint. Just document for future testers.",
+    "Duplicate-phone flow while a demo call is still dialing correctly rejects with 409 'X is already on a shop call' rather than silently upserting — matches spec's alternate-accepted behavior.",
+    "Public /shop-score/<token> renders all expected copy including must-have flag + italic evidence quote. Invalid token shows 'This scorecard link is not valid.' — matches spec."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (2/2 validation curls)", "frontend": "100% (all mandatory flows)"},
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin)",
+  "seed_data_creation": "Created (then cleaned up) one demo call for 'QA Demo Rep' at +15005550030 in Demo shops (client 6aa6082c2366ce57ee4698c5). Person id 6aa60b532366ce57ee4698c8 deleted via API at end of run. Demo Dan (+15005550020) preserved. QA Jeep 9495 (6aa5f046efccef2627dced30) text_scorecards toggled ON->saved->OFF->saved; final state text_scorecards=false (verified via GET). One new shop_call record was created against Demo shops client with status 'dialing'/'calling now' (Twilio rejects 500-555, safe).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "New Mystery Shops 'Demo shop' feature ships clean on preview. Testids present and stable: shop-demo, demo-sheet, demo-name, demo-phone, demo-dept-sales, demo-dept-service, demo-store, demo-title, demo-vehicle, demo-challenge-random, demo-challenge-<id>, demo-text-row, demo-text-toggle, demo-call, demo-sheet-close. In CallsTab detail sheet: shop-call-score-link, shop-call-sms-status, shop-call-score-copy exist for completed calls with score_token. ClientSheet has client-text-scorecards-toggle (RN-web Switch — outer div has no aria-checked so verify via API round-trip, not DOM). Sales default: 6 chips (random + 5). Service: 5 chips (random + 4). Switching department resets to Surprise me. Header on Mystery Shops list correctly excludes Demo shops client from '1 store · $400/mo' count. Twilio safety respected: only ever used +15005550030. Only remaining Demo shops person after run: Demo Dan +15005550020.",
+  "rca of the issue": "N/A - no product bug encountered."
+}

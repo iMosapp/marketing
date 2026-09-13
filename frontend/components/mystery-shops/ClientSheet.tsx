@@ -20,7 +20,7 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
     if (!visible) return;
     if (client) setF({ name: client.name, brand: client.brand, city: client.city, state: client.state, contact_name: client.contact_name, contact_email: client.contact_email, contact_phone: client.contact_phone, contact_title: client.contact_title,
       sales: String(client.plan.sales_per_month), service: String(client.plan.service_per_month), price: String(client.plan.price_monthly), start: client.hours.start, end: client.hours.end, days: client.hours.days, vehicles: (client.vehicles || []).join('\n'),
-      from_number: client.from_number || '', record: client.record_calls, notes: client.notes || '', timezone: client.timezone });
+      from_number: client.from_number || '', record: client.record_calls, notes: client.notes || '', timezone: client.timezone, text_scorecards: !!client.text_scorecards });
     else setF(blank);
   }, [visible, client?.id]);
 
@@ -30,7 +30,7 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
     try {
       const payload = { name: f.name, brand: f.brand, city: f.city, state: f.state, timezone: f.timezone, contact_name: f.contact_name, contact_email: f.contact_email.trim(), contact_phone: f.contact_phone, contact_title: f.contact_title,
         plan: { sales_per_month: Number(f.sales) || 0, service_per_month: Number(f.service) || 0, price_monthly: Number(f.price) || 0 }, hours: { start: f.start, end: f.end, days: f.days },
-        vehicles: f.vehicles.split('\n').map((v: string) => v.trim()).filter(Boolean), from_number: f.from_number || '', record_calls: f.record, notes: f.notes };
+        vehicles: f.vehicles.split('\n').map((v: string) => v.trim()).filter(Boolean), from_number: f.from_number || '', record_calls: f.record, notes: f.notes, text_scorecards: !!f.text_scorecards };
       const res = client ? await api.put(`/shop-clients/${client.id}`, payload) : await api.post('/shop-clients', payload);
       onSaved(res.data); onClose(); showToast(client ? 'Saved' : 'Client added', 'success');
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not save', 'error'); }
@@ -80,6 +80,11 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
         <Ionicons name="recording" size={18} color={GOLD} />
         <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Record shop calls</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>Recordings go on the store report. Consent is covered in the proposal.</Text></View>
         <Switch value={f.record} onValueChange={(v) => set('record', v)} {...tid('client-record-toggle')} />
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+        <Ionicons name="chatbubble-ellipses" size={18} color={GOLD} />
+        <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Text people their scorecard</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>Right after each shop is graded, the person gets a text with their score, top win, top fix and a link to the full scorecard and recording.</Text></View>
+        <Switch value={!!f.text_scorecards} onValueChange={(v) => set('text_scorecards', v)} {...tid('client-text-scorecards-toggle')} />
       </View>
       <Field label="NOTES" value={f.notes} onChange={(v: string) => set('notes', v)} colors={colors} multiline placeholder="Anything the shopper should know about this store" testID="client-notes" />
     </Sheet>

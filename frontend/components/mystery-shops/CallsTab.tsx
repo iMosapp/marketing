@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
@@ -76,6 +77,7 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
 };
 
 export const CallDetailSheet = ({ id, onClose, colors, publicData }: { id: string | null; onClose: () => void; colors: any; publicData?: any }) => {
+  const { showToast } = useToast();
   const [d, setD] = useState<any>(null);
   useEffect(() => {
     if (!id) { setD(null); return; }
@@ -98,6 +100,13 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData }: { id: strin
             </View>
           </View>
           {!!d.curveballs?.length && <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Curveballs: {d.curveballs.join('; ')}</Text>}
+          {!!d.score_url && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: colors.border }} {...tid('shop-call-score-link')}>
+              <Ionicons name={d.score_sms_status && d.score_sms_status !== 'failed' ? 'chatbubble-ellipses' : 'link'} size={16} color={d.score_sms_status === 'failed' ? RED : GOLD} />
+              <Text style={{ flex: 1, fontSize: 12.5, color: colors.textSecondary }} {...tid('shop-call-sms-status')}>{d.score_sms_status === 'failed' ? 'Scorecard text failed' : d.score_sms_status ? `Scorecard texted to ${d.target_name?.split(' ')[0]}` : 'Scorecard link'}{d.score_views ? ` · opened ${d.score_views}x` : ''}</Text>
+              <TouchableOpacity onPress={async () => { await Clipboard.setStringAsync(d.score_url); showToast('Scorecard link copied', 'success'); }} hitSlop={8} {...tid('shop-call-score-copy')}><Text style={{ fontSize: 12.5, fontWeight: '800', color: GOLD }}>Copy link</Text></TouchableOpacity>
+            </View>
+          )}
           {!!d.recording_url && <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: colors.border }} {...tid('shop-call-recording')}><CallRecordingPlayer url={resolvePhotoUrl(d.recording_url) || d.recording_url} tint={GOLD} textColor={colors.text} subColor={colors.textSecondary} trackColor={colors.border} /></View>}
           {ev && (
             <>

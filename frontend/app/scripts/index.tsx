@@ -21,6 +21,7 @@ export default function ScriptsLibrary() {
   const [scripts, setScripts] = useState<Script[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [recent, setRecent] = useState<Recent[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [canEdit, setCanEdit] = useState(false);
   const [superAdmin, setSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,7 @@ export default function ScriptsLibrary() {
       const res = await api.get('/scripts');
       setScripts(res.data.scripts || []); setAssignments(res.data.my_assignments || []); setRecent(res.data.my_recent || []);
       setCanEdit(!!res.data.can_edit); setSuperAdmin(!!res.data.is_super_admin);
+      api.get('/courses').then(r => setCourses(r.data.my || [])).catch(() => {});
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not load scripts', 'error'); }
     finally { setLoading(false); }
   }, []);
@@ -47,6 +49,22 @@ export default function ScriptsLibrary() {
         right={canEdit ? <HeaderIconButton icon="add-circle" onPress={() => router.push('/scripts/editor' as any)} testID="scripts-add" /> : undefined} />
       {loading ? <ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /> : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60, gap: 14 }} refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={GOLD} />} keyboardShouldPersistTaps="handled">
+          {courses.length > 0 && (
+            <View style={{ gap: 8 }} {...tid('scripts-courses-strip')}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: '#34C759', letterSpacing: 1 }}>MY COURSES</Text>
+              {courses.map((e: any) => (
+                <TouchableOpacity key={e.id} onPress={() => router.push(`/courses/${e.course_id}` as any)} activeOpacity={0.85}
+                  style={{ backgroundColor: colors.card, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: e.status === 'certified' ? '#34C75988' : colors.border }} {...tid(`scripts-course-${e.id}`)}>
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#34C75922', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={e.status === 'certified' ? 'ribbon' : 'school'} size={20} color="#34C759" /></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }} numberOfLines={1}>{e.course?.title}</Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>{e.status === 'certified' ? e.course?.badge_label : `${e.passed} of ${e.total} passed · pass every one at ${e.course?.pass_pct}%`}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           {assignments.length > 0 && (
             <View style={{ gap: 8 }} {...tid('scripts-assigned-strip')}>
               <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 1 }}>ASSIGNED TO YOU</Text>

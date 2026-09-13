@@ -19,7 +19,7 @@ type SessionOut = { session_id: string; status: string; mode?: string; recording
 
 export default function PracticeResult() {
   const router = useRouter();
-  const { session } = useLocalSearchParams<{ session: string }>();
+  const { session, course } = useLocalSearchParams<{ session: string; course?: string }>();
   const { colors } = useThemeStore();
   const { showToast } = useToast();
   const [data, setData] = useState<SessionOut | null>(null);
@@ -48,7 +48,7 @@ export default function PracticeResult() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <ScreenHeader title="Practice result" subtitle={data?.script_title} testID="practice-result-header" onBack={() => router.replace('/scripts' as any)} />
+      <ScreenHeader title="Practice result" subtitle={data?.script_title} testID="practice-result-header" onBack={() => router.replace((course ? `/courses/${course}` : '/scripts') as any)} />
       {loading || !data ? <ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /> : !r ? (
         <View style={{ padding: 30, alignItems: 'center', gap: 10 }} {...tid('practice-result-empty')}><Ionicons name="clipboard-outline" size={34} color={GOLD} /><Text style={{ color: colors.text, fontWeight: '700' }}>Nothing to grade yet</Text></View>
       ) : (

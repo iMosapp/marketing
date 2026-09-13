@@ -67,6 +67,36 @@ TEMPLATES = [
             {"text": "Recapped and thanked the customer", "hint": "Confirm the plan and thank them for calling.", "weight": 1, "critical": False},
         ],
     },
+    {
+        "key": "parts_phone", "name": "Parts Counter Call", "department": "Parts",
+        "description": "Inbound parts calls: pin down the exact vehicle, quote clearly, and turn the call into a sale or a pickup.",
+        "criteria": [
+            {"text": "Answered with their name and the parts department", "hint": "Name, department, store. Sound glad they called.", "weight": 1, "critical": False},
+            {"text": "Got the customer's name", "hint": "Ask early and use it.", "weight": 1, "critical": False},
+            {"text": "Confirmed the exact vehicle (year, make, model, trim or VIN)", "hint": "The right part starts with the right VIN. Ask for it or the year, model and trim.", "weight": 2, "critical": True},
+            {"text": "Confirmed the part and checked availability", "hint": "Say what you are looking up and whether it is on the shelf or how fast it arrives.", "weight": 2, "critical": True},
+            {"text": "Quoted the price clearly, including core, tax or shipping if relevant", "hint": "One clear number and what it includes. Never make them guess.", "weight": 1, "critical": False},
+            {"text": "Explained the OEM advantage without knocking aftermarket", "hint": "Fit, warranty, and it is the part the car came with.", "weight": 1, "critical": False},
+            {"text": "Asked for the sale or offered to hold or order the part", "hint": "'Want me to set it aside for you?' or 'I can have it here tomorrow, should I order it?'", "weight": 2, "critical": False},
+            {"text": "Got the customer's phone number", "hint": "For the ready-for-pickup call or text.", "weight": 1, "critical": False},
+            {"text": "Recapped part, price, timing and thanked the customer", "hint": "Repeat the part, the price and when it is ready.", "weight": 1, "critical": False},
+        ],
+    },
+    {
+        "key": "rental_phone", "name": "Rental Desk Call", "department": "Rental",
+        "description": "Inbound rental calls: understand the need, offer the right vehicle, state the terms plainly, book it.",
+        "criteria": [
+            {"text": "Answered with their name and the rental department", "hint": "Name, department, store.", "weight": 1, "critical": False},
+            {"text": "Got the customer's name", "hint": "Ask early and use it.", "weight": 1, "critical": False},
+            {"text": "Asked when they need the vehicle and for how long", "hint": "Pickup date, return date, and how many people or how much cargo.", "weight": 2, "critical": True},
+            {"text": "Asked the reason for the rental (insurance, service loaner, trip)", "hint": "Insurance and warranty rentals bill differently. Ask up front.", "weight": 1, "critical": False},
+            {"text": "Offered a specific vehicle that fits the need", "hint": "Name a class or a unit, not 'we have lots of stuff'.", "weight": 2, "critical": True},
+            {"text": "Stated the daily rate and what it includes", "hint": "Rate, mileage, fuel, insurance options, deposit.", "weight": 1, "critical": False},
+            {"text": "Explained requirements (age, license, card, deposit)", "hint": "So there are no surprises at the counter.", "weight": 1, "critical": False},
+            {"text": "Asked to reserve it and confirmed pickup time", "hint": "'Should I hold that for you at 9 tomorrow?'", "weight": 2, "critical": False},
+            {"text": "Got the customer's phone number and recapped", "hint": "Number for the confirmation, then recap vehicle, time, rate.", "weight": 1, "critical": False},
+        ],
+    },
 ]
 
 

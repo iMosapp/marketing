@@ -17,21 +17,23 @@ export type Client = {
   id: string; name: string; brand: string; city: string; state: string; timezone: string; contact_name: string; contact_email: string; contact_phone: string; contact_title: string;
   plan: Plan; hours: Hours; vehicles: string[]; active: boolean; record_calls: boolean; notes: string; from_number: string; report_token?: string; scorecards: Record<string, string | null>;
   billing?: { status?: string; last_invoice?: any }; progress?: Record<string, DeptStat>; avg_score?: number | null; completed?: number; planned?: number; needs_training?: number; people?: number;
+  demo?: boolean; text_scorecards?: boolean;
 };
 export type Person = { id: string; client_id: string; name: string; phone: string; department: string; title: string; notes: string; active: boolean; challenge_history: string[] };
 export type ShopCall = {
   id: string; target_id: string; target_name: string; department: string; status: string; outcome?: string | null; fail_reason?: string | null; script_id: string; script_title: string; persona_name?: string;
   curveballs: string[]; scheduled_for: string | null; attempts: number; started_at: string | null; ended_at: string | null; score_pct: number | null; adherence_pct: number | null; evaluation_id?: string | null;
-  recording_url?: string | null; recording_seconds?: number | null; turns: number; manual: boolean;
+  recording_url?: string | null; recording_seconds?: number | null; turns: number; manual: boolean; demo?: boolean; score_url?: string | null; score_sms_status?: string | null; score_views?: number;
 };
-export type Challenge = { id: string; title: string; department: string; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; runtime: string };
+export type Challenge = { id: string; title: string; department: string; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean };
+export type ChallengeDraft = { title: string; department: string; runtime?: string; purpose?: string; body: string; success_points?: string[]; curveballs?: string[]; persona?: any; generated_from?: string };
 export type Proposal = {
   id: string; token: string; status: string; terms: { sales_per_month: number; service_per_month: number; price_monthly: number; term_months: number; notes?: string }; client_name: string; contact_name: string; contact_email: string;
   created_at: string; sent_at?: string | null; viewed_at?: string | null; signed_at?: string | null; signer?: { name?: string; title?: string; email?: string; signed_at?: string }; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number; paid_at?: string; error?: string }; url?: string;
 };
 
-export const DEPTS = [{ key: 'sales', label: 'Sales' }, { key: 'service', label: 'Service' }];
-export const deptLabel = (d?: string) => (d === 'service' ? 'Service' : 'Sales');
+export const DEPTS = [{ key: 'sales', label: 'Sales' }, { key: 'service', label: 'Service' }, { key: 'parts', label: 'Parts' }, { key: 'rental', label: 'Rental' }];
+export const deptLabel = (d?: string) => DEPTS.find(x => x.key === d)?.label || 'Sales';
 export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const fmtPhone = (p?: string) => { const d = (p || '').replace(/\D/g, '').slice(-10); return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : p || ''; };
 export const fmtWhen = (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');

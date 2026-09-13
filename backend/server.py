@@ -726,6 +726,9 @@ from routers import mystery_shops as mystery_shops_router
 api_router.include_router(mystery_shops_router.router)
 api_router.include_router(mystery_shops_router.public_router)
 api_router.include_router(mystery_shops_router.stripe_router)
+from routers import courses as courses_router
+api_router.include_router(courses_router.router)
+api_router.include_router(courses_router.public_router)
 from routers import resend_webhooks as resend_webhooks_router
 api_router.include_router(resend_webhooks_router.router)
 api_router.include_router(wallet_pass.router)

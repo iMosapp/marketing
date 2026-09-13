@@ -17,7 +17,7 @@ const PHONE_LABEL: Record<string, string> = { dialing: 'Calling your phone…', 
 
 export default function PracticeCall() {
   const router = useRouter();
-  const { script, assignment } = useLocalSearchParams<{ script: string; assignment?: string }>();
+  const { script, assignment, enrollment, course } = useLocalSearchParams<{ script: string; assignment?: string; enrollment?: string; course?: string }>();
   const { user } = useAuthStore();
   const { colors } = useThemeStore();
   const { showToast } = useToast();
@@ -51,13 +51,13 @@ export default function PracticeCall() {
 
   useEffect(() => { if (script) api.get(`/scripts/${script}`).then(r => setTitle(r.data?.title || '')).catch(() => {}); }, [script]);
 
-  const goResult = useCallback((id: string) => { if (pollRef.current) clearInterval(pollRef.current); router.replace(`/scripts/result?session=${id}` as any); }, []);
+  const goResult = useCallback((id: string) => { if (pollRef.current) clearInterval(pollRef.current); router.replace(`/scripts/result?session=${id}${course ? `&course=${course}` : ''}` as any); }, [course]);
 
   // ---- phone mode: we ring the rep's cell, then just mirror the live transcript
   const startPhone = async () => {
     setMode('phone'); setPhase('connecting');
     try {
-      const res = await api.post('/scripts/roleplay/call', { script_id: script, assignment_id: assignment || null });
+      const res = await api.post('/scripts/roleplay/call', { script_id: script, assignment_id: assignment || null, enrollment_id: enrollment || null });
       setSid(res.data.session_id); setPersona(res.data.persona); setInbound(res.data.direction === 'inbound'); setTitle(res.data.script_title || 'Practice call'); setStatus('dialing'); setPhase('live');
       pollRef.current = setInterval(async () => {
         try {
@@ -81,7 +81,7 @@ export default function PracticeCall() {
   const startText = async () => {
     setMode('text'); setPhase('connecting');
     try {
-      const res = await api.post('/scripts/roleplay/start', { script_id: script, assignment_id: assignment || null });
+      const res = await api.post('/scripts/roleplay/start', { script_id: script, assignment_id: assignment || null, enrollment_id: enrollment || null });
       setSid(res.data.session_id); setPersona(res.data.persona); setInbound(res.data.direction === 'inbound'); setTitle(res.data.script_title || 'Practice call'); setTurns(res.data.customer ? [res.data.customer] : []); setStatus('live'); setPhase('live');
     } catch (e: any) { setFailReason(e?.response?.data?.detail || 'Could not start'); setPhase('failed'); }
   };

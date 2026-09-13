@@ -664,6 +664,9 @@ async def grade_session(db, session: dict) -> dict:
         card = await scorecard_for(db, session)
     elif script.get("scorecard_id") and ObjectId.is_valid(str(script["scorecard_id"])):
         card = await db.scorecards.find_one({"_id": ObjectId(script["scorecard_id"]), "active": {"$ne": False}})
+    elif script.get("pool") == "mystery_shop" and script.get("department"):
+        from services.mystery_shops import template_card
+        card = template_card(script["department"])
     if not card and not shop:
         card = await sc.pick_scorecard(db, rep, None)
     graded = None
@@ -692,6 +695,18 @@ async def grade_session(db, session: dict) -> dict:
     ev_doc = await db.call_evaluations.find_one({"call_sid": ev["call_sid"]}, {"_id": 1})
     ev_id = str(ev_doc["_id"])
     await db.roleplay_sessions.update_one({"_id": session["_id"]}, {"$set": {"status": "completed", "ended_at": now, "evaluation_id": ev_id, "score_pct": pct, "adherence_pct": adherence.get("score_pct"), "updated_at": now}})
+    if session.get("enrollment_id"):
+        from services.courses import record_result
+        try:
+            await record_result(db, session, pct)
+        except Exception as e:
+            logger.warning(f"[Roleplay] course progress update failed: {e}")
+    if shop:
+        from services.mystery_shops import after_graded
+        try:
+            await after_graded(db, str(session["_id"]))
+        except Exception as e:
+            logger.warning(f"[Roleplay] mystery shop follow-up failed: {e}")
     if not shop and session.get("assignment_id") and ObjectId.is_valid(str(session["assignment_id"])):
         await db.mystery_shops.update_one({"_id": ObjectId(session["assignment_id"])}, {"$set": {f"completed.{session['user_id']}": {"session_id": str(session["_id"]), "evaluation_id": ev_id, "score_pct": pct, "adherence_pct": adherence.get("score_pct"), "at": now}}})
     return {"evaluation_id": ev_id, "score_pct": pct, "scorecard_name": ev["scorecard_name"], "critical_misses": misses, "adherence": adherence,
