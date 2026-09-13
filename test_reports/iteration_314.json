@@ -1,0 +1,44 @@
+{
+  "summary": "Full frontend E2E of Mystery Shops SaaS feature (Tools tab entry, admin client list, ClientSheet create/edit/pause/delete, 5-tab detail, People CRUD + shop-now, Challenges CRUD + client-specific vs global, Billing proposal create/send, PUBLIC proposal sign flow + reload + invalid token + already-paid, PUBLIC shop-report + month nav + PDF + invalid token, admin Report tab actions, Tools regression). All major happy paths pass. One minor UI leak (global challenges expose Delete button in detail sheet even though backend rejects with 404).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ChallengesTab (challenge-detail sheet)",
+        "issue": "Opening any GLOBAL/pool challenge (no THIS CLIENT badge) still shows the red 'challenge-delete' button. Spec: global challenges must NOT show a delete option. Backend correctly returns 404 on DELETE /api/shop-clients/{id}/challenges/{globalId}, so it fails gracefully, but the affordance is misleading. Hide the button when challenge.client_specific !== true (or challenge.shop_client_id !== current client).",
+        "selector": "[data-testid='challenge-delete']",
+        "priority": "LOW"
+      },
+      {
+        "component": "Tools tab (app/(tabs)/more.tsx) hub-search-input",
+        "issue": "TextInput has data-testid='hub-search-input' in source but the rendered DOM did not always carry data-testid on the underlying <input> during scripting. Other RN-web inputs using the mystery-shops shared tid() helper (testID + dataSet.testid) exposed data-testid on the DOM node correctly. Non-blocking; input placeholder selector works.",
+        "selector": "[data-testid='hub-search-input']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Expo dev overlay",
+        "issues": ["Occasional 'Uncaught Error: 6000ms timeout exceeded' from node_modules/fontfaceobserver appears on some cold loads and blocks the whole viewport with a red dev overlay. Pre-existing, not Mystery-Shops-specific, but can hurt real preview users. Consider raising the fontfaceobserver timeout or self-hosting the font."]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Hide the challenge-delete button in ChallengesTab challenge-detail sheet for global (non client-specific) challenges."
+  ],
+  "critical_code_review_comments": [
+    "app/admin/mystery-shops/[id].tsx: pause/remove/rotate use showConfirm which becomes native window.confirm on web. Works, but breaks any automated test that doesn't attach page.on('dialog'). Consider a shadcn-style modal for consistency.",
+    "Backend DELETE /api/shop-clients/{id}/challenges/{globalId} idempotent-404s — correct, but front-end should not offer the affordance.",
+    "report-share-url text is the production host (app.imonsocial.com) — acceptable but preview QA must substring-replace host to test the public links."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "~97% (all mandatory flows pass; 1 minor UI leak)"},
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin). Contact email qa-gm@invalid.imonsocial.test used. Only 500-555-XXXX Twilio test numbers used.",
+  "seed_data_creation": "Created temp client 'QA Test Store IK64G' id 6aa5f52eefccef2627dced3c with proposal 6aa5f674efccef2627dced40 (token 5b9df952f70e4b7ab083b89b827cc7c9) which was SIGNED via the public page as 'Test GM' (creates a Stripe TEST invoice via Resend/Stripe). Person 'Test Rep' 500-555-0010 was added & removed. Challenge 'QA Test Challenge' was added & removed. CLIENT was DELETED via API at end of run — GET /api/shop-clients now returns only QA Jeep 9495.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Mystery Shops feature is production-ready from a UX standpoint. Only follow-up is hiding challenge-delete for global pool challenges. Public preview host is https://user-routing-issue.preview.emergentagent.com — admin UI share URLs point at app.imonsocial.com, so replace host when opening /proposal/{token} or /shop-report/{token}. Login: fill email + password on /auth/login and press Enter. In-app routes: history.pushState + PopStateEvent('popstate'). Always attach page.on('dialog', d => d.accept()) because pause/delete/challenge-delete use native window.confirm. Twilio 500-555 range only.",
+  "rca of the issue": "ChallengesTab renders <challenge-delete> unconditionally inside the challenge-detail sheet. Repro: log in as forest, /admin/mystery-shops/6aa5f046efccef2627dced30, Challenges, tap any card WITHOUT 'THIS CLIENT' (e.g. 'Shopper: is it still available?'). Red Delete button appears. Clicking it hits DELETE /api/shop-clients/{clientId}/challenges/{globalId} which returns 404 (no data loss). Mitigation: gate the delete button by `challenge.client_specific === true` (or `challenge.shop_client_id === client.id`)."
+}

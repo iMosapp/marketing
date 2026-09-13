@@ -45,3 +45,8 @@
 - Screens: `/scripts` (everyone), `/scripts/{id}`, `/scripts/practice?script=`, `/scripts/result?session=`, `/scripts/editor?id=`, `/scripts/assign` (managers), `/scripts/training` (super_admin only). Rep = activation-tester, manager = qa-manager, super admin = forest.
 - Practice chooser: `practice-mode-phone` (rings the rep's cell via Twilio; on preview the activation-tester's 500-555 number comes back "Your phone was busy" after ~30s, which exercises the `practice-failed` / `practice-retry` state) or `practice-mode-text` (type turns via `practice-text-input` + `practice-text-send`). LLM turns take 3-15s, grading 15-40s.
 - Backend smoke: `cd /app/backend && python tests/scripts_practice_smoke.py` (creates + cancels an assignment, leaves one completed roleplay_session) and `python tests/relay_roleplay_sim.py` (simulates the Twilio ConversationRelay websocket end to end). Extra pytest: `tests/test_scripts_practice_extra.py`.
+
+## Mystery Shops (June 2026, preview seed via `cd /app/backend && python tests/mystery_shop_e2e.py`)
+- Entry: log in as forest@imosapp.com -> Tools tab -> Internal Operations -> Mystery Shops (`/admin/mystery-shops`, super_admin only).
+- Seeded client "QA Jeep 9495" id 6aa5f046efccef2627dced30 (people Sam Seller 500-555-0006 / Val Advisor 500-555-0007, one completed 64% shop). Report token 5c631d7ba7204fb79ba6b7cdcc661cbe -> `/shop-report/<token>`; paid proposal token 75d44d8e031149e3bc5d265356ad4352 -> `/proposal/<token>`. UI links show app.imonsocial.com; swap the host for the preview host when testing.
+- Only ever add people with 500-555-XXXX numbers ("Shop now" places a real Twilio call). Stripe is TEST mode; signing a proposal creates a test invoice. Use @invalid.imonsocial.test contact emails.

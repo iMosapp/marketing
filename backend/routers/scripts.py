@@ -466,8 +466,16 @@ def _twiml(xml: str) -> Response:
 
 
 @relay_router.post("/twiml/{sid}")
-async def relay_twiml(sid: str, t: str):
-    return _twiml(svc.relay_twiml(await _phone_session(sid, t)))
+async def relay_twiml(sid: str, t: str, request: Request):
+    s = await _phone_session(sid, t)
+    if s.get("kind") == "mystery_shop":
+        form = await request.form()
+        answered_by = (form.get("AnsweredBy") or "").lower()
+        if answered_by.startswith(("machine", "fax")):
+            from services.mystery_shops import record_outcome
+            await record_outcome(get_db(), {**s, "call_sid": form.get("CallSid") or s.get("call_sid")}, "voicemail")
+            return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
+    return _twiml(svc.relay_twiml(s))
 
 
 @relay_router.post("/after/{sid}")
@@ -476,11 +484,17 @@ async def relay_after(sid: str, t: str, request: Request):
     form = await request.form()
     if form.get("SessionStatus") == "failed":
         logger.warning(f"[Roleplay] ConversationRelay failed for {sid}: {form.get('ErrorCode')} {form.get('ErrorMessage')}")
+        if s.get("kind") == "mystery_shop" and not any(x.get("role") == "rep" for x in s.get("turns", [])):
+            from services.mystery_shops import record_outcome
+            await record_outcome(get_db(), s, "failed", "The line had a problem")
+            return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
         if not any(x.get("role") == "rep" for x in s.get("turns", [])):
             await get_db().roleplay_sessions.update_one({"_id": s["_id"], "status": {"$in": ["dialing", "live"]}},
                                                         {"$set": {"status": "failed", "fail_reason": f"The practice line had a problem ({form.get('ErrorCode') or 'relay'})", "updated_at": datetime.now(timezone.utc)}})
             return _twiml(svc.hangup_twiml("Sorry, the practice line had a problem. Please try again in a minute."))
     asyncio.create_task(svc.finalize_session(get_db(), sid, f"relay_{form.get('SessionStatus') or 'ended'}"))
+    if s.get("kind") == "mystery_shop":
+        return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
     return _twiml(svc.hangup_twiml("Nice work. Your practice call is being graded, check the app in a moment."))
 
 
@@ -496,7 +510,11 @@ async def relay_status(sid: str, t: str, request: Request):
     elif status == "in-progress":
         await db.roleplay_sessions.update_one({"_id": s["_id"], "status": "dialing"}, {"$set": {**sets, "status": "live"}})
     elif status in svc.FAIL_REASONS and s.get("status") in ("dialing",):
-        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {**sets, "status": "failed", "fail_reason": svc.FAIL_REASONS[status]}})
+        if s.get("kind") == "mystery_shop":
+            from services.mystery_shops import record_outcome
+            await record_outcome(db, {**s, **sets}, status)
+        else:
+            await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {**sets, "status": "failed", "fail_reason": svc.FAIL_REASONS[status]}})
     elif status == "completed":
         await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": sets})
         asyncio.create_task(svc.finalize_session(db, sid, "call_completed"))

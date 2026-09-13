@@ -2167,6 +2167,20 @@ def start_scheduler():
         misfire_grace_time=30,
     )
 
+    # Every 2 minutes — mystery shop calls whose time has come (client business hours are checked inside)
+    async def _shop_calls_due():
+        from routers.database import get_db
+        from services.mystery_shops import run_due_calls
+        await run_due_calls(get_db())
+    scheduler.add_job(safe_job(_shop_calls_due), IntervalTrigger(seconds=120), id="mystery_shop_dialer", replace_existing=True, misfire_grace_time=60)
+
+    # Every 6 hours — keep every active mystery shop client's month scheduled up to its plan
+    async def _shop_plan():
+        from routers.database import get_db
+        from services.mystery_shops import plan_active_clients
+        await plan_active_clients(get_db())
+    scheduler.add_job(safe_job(_shop_plan), IntervalTrigger(hours=6), id="mystery_shop_planner", replace_existing=True, misfire_grace_time=600)
+
     # Every 5 minutes — force garbage collection to reclaim memory from large operations
     async def _force_gc():
         import gc

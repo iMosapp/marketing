@@ -257,7 +257,7 @@ def script_direction(s: dict) -> str:
 async def phone_library(db, store_id: Optional[str]) -> list:
     """Global starters with the store's customized copies swapped in, plus store-created scripts."""
     await ensure_starters(db)
-    rows = await db.scripts.find({"kind": "phone", "active": {"$ne": False}, "$or": [{"store_id": None}, {"store_id": store_id}]}).sort([("category", 1), ("title", 1)]).to_list(200)
+    rows = await db.scripts.find({"kind": "phone", "active": {"$ne": False}, "pool": {"$exists": False}, "$or": [{"store_id": None}, {"store_id": store_id}]}).sort([("category", 1), ("title", 1)]).to_list(200)
     by_slug = {}
     for r in rows:
         key = r.get("slug") or str(r["_id"])
@@ -388,10 +388,17 @@ def relay_twiml(session: dict) -> str:
     hints = ",".join(h for h in [session.get("store_name"), persona.get("name")] if h)
     # inbound = the customer is calling in, so the AI stays quiet until the rep answers the phone
     greeting = "" if session.get("direction") == "inbound" else f'welcomeGreeting="{_xml(opening)}" '
+    if session.get("kind") == "mystery_shop":
+        greeting = f'welcomeGreeting="{_xml(shop_greeting(session))}" '
     return (f'<?xml version="1.0" encoding="UTF-8"?><Response><Connect action="{_xml(base)}/api/scripts/roleplay/after/{sid}?t={token}">'
             f'<ConversationRelay url="{_xml(ws)}" {greeting}ttsProvider="Google" voice="{RELAY_VOICES.get(persona.get("voice"), "en-US-Journey-F")}" '
             f'transcriptionProvider="Deepgram" interruptible="any" interruptSensitivity="medium" ignoreBackchannel="true" hints="{_xml(hints)}" />'
             f'</Connect></Response>')
+
+
+def shop_greeting(session: dict) -> str:
+    first = (session.get("rep_name") or "").split(" ")[0]
+    return f"Hi, is this {first}?" if first else "Hi, is this the sales department?"
 
 
 def hangup_twiml(text: str) -> str:
@@ -451,6 +458,10 @@ async def reconcile_dialing(db, s: dict) -> dict:
         logger.debug(f"[Roleplay] reconcile fetch failed: {e}")
         return s
     sets = {"call_status": call.status, "updated_at": _now()}
+    if call.status in FAIL_REASONS and s.get("kind") == "mystery_shop":
+        from services.mystery_shops import record_outcome
+        await record_outcome(db, {**s, "call_status": call.status}, call.status)
+        return await db.roleplay_sessions.find_one({"_id": s["_id"]})
     if call.status in FAIL_REASONS:
         sets.update(status="failed", fail_reason=FAIL_REASONS[call.status])
     elif call.status == "in-progress":
@@ -465,7 +476,7 @@ async def reconcile_dialing(db, s: dict) -> dict:
 
 async def relay_setup(db, sid: str, msg: dict):
     """ConversationRelay connected: the greeting is about to play, so the clock starts here."""
-    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"persona": 1, "turns": 1, "direction": 1})
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"persona": 1, "turns": 1, "direction": 1, "kind": 1, "rep_name": 1})
     if not s:
         return
     now = _now()
@@ -473,7 +484,9 @@ async def relay_setup(db, sid: str, msg: dict):
     if msg.get("callSid"):
         sets["call_sid"] = msg["callSid"]
     update = {"$set": sets}
-    if not s.get("turns") and s.get("direction") != "inbound":
+    if not s.get("turns") and s.get("kind") == "mystery_shop":
+        update["$push"] = {"turns": {"role": "customer", "text": shop_greeting(s), "audio_url": None, "at": now, "mood": "neutral"}}
+    elif not s.get("turns") and s.get("direction") != "inbound":
         opening = (s.get("persona") or {}).get("opening_line") or "Hi, I'm calling about a car I saw online."
         update["$push"] = {"turns": {"role": "customer", "text": opening, "audio_url": None, "at": now, "mood": "neutral"}}
     await db.roleplay_sessions.update_one({"_id": s["_id"]}, update)
@@ -509,6 +522,10 @@ async def finalize_session(db, sid: str, reason: str) -> Optional[dict]:
         return None
     s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)})
     if not any(t.get("role") == "rep" for t in s.get("turns", [])):
+        if s.get("kind") == "mystery_shop":
+            from services.mystery_shops import record_outcome
+            await record_outcome(db, s, "hung_up")
+            return None
         await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "abandoned", "fail_reason": "The call ended before you said anything", "updated_at": _now()}})
         return None
     try:
@@ -545,9 +562,10 @@ async def save_recording(db, sid: str, recording_url: str, duration: Optional[st
     await db.call_evaluations.update_one({"roleplay_session_id": sid}, {"$set": {"recording_url": sets["recording_url"]}})
 
 
-def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound") -> str:
+def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False) -> str:
     return (f"You are {persona.get('name', 'a customer')}, a real car shopper on a phone call with {rep_first}, a salesperson at {store_name}. "
             + ("YOU placed this call to the store, so you drive the reason for calling. " if direction == "inbound" else "The salesperson called YOU, so they drive the conversation and you react. ")
+            + ("This is a real mystery shop of a real employee: never reveal you are an AI, a recording or a mystery shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery else "")
             + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "
                "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " if live else "")
             + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
@@ -589,7 +607,7 @@ def _turn_out(t: dict) -> dict:
 async def customer_turn(db, session: dict, rep_text: str) -> dict:
     """Rep spoke -> the AI customer answers (text + audio)."""
     now = _now()
-    if session.get("direction") == "inbound" and not any(t["role"] == "customer" for t in session.get("turns", [])):
+    if session.get("direction") == "inbound" and not any(t["role"] == "rep" for t in session.get("turns", [])):
         # the rep just answered the phone: the customer opens with their scripted line, no model call needed
         persona = session.get("persona") or {}
         rep_turn = {"role": "rep", "text": rep_text, "at": now}
@@ -607,7 +625,7 @@ async def customer_turn(db, session: dict, rep_text: str) -> dict:
     out_of_time = live and (minutes >= PHONE_MAX_MINUTES or exchanges >= PHONE_MAX_TURNS)
     user = f"CALL SO FAR:\n{history}\nREP: {rep_text}\n\n(This is exchange {exchanges}. Reply as the customer." + (" You are out of time: wrap up in one sentence, say goodbye and set ended to true.)" if out_of_time else ")")
     try:
-        data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the dealership", rep_first, session.get("curveballs") or [], live, session.get("direction") or "outbound"), user, timeout=45)
+        data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the dealership", rep_first, session.get("curveballs") or [], live, session.get("direction") or "outbound", session.get("kind") == "mystery_shop"), user, timeout=45)
     except Exception as e:
         logger.warning(f"[Roleplay] customer turn failed: {e}")
         data = {}
@@ -627,16 +645,26 @@ async def grade_session(db, session: dict) -> dict:
     """Score with the store's scorecard (same grader as real calls) + script adherence + coaching, stored as a call_evaluation."""
     from services import scorecards as sc
     script = await db.scripts.find_one({"_id": ObjectId(session["script_id"])}) or {}
-    rep = await db.users.find_one({"_id": ObjectId(session["user_id"])}) or {}
+    shop = session.get("kind") == "mystery_shop"
+    rep = ({"name": session.get("rep_name") or "Rep"} if shop else await db.users.find_one({"_id": ObjectId(session["user_id"])})) or {}
     rep_first = (rep.get("first_name") or (rep.get("name") or "Rep").split(" ")[0])
     transcript = transcript_text(session)
     rep_turns = [t for t in session.get("turns", []) if t["role"] == "rep"]
-    duration_s = int(((session.get("ended_at") or _now()) - session["started_at"]).total_seconds()) if session.get("started_at") else 0
+    started = session.get("started_at")
+    if started and started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    ended = session.get("ended_at") or _now()
+    if ended.tzinfo is None:
+        ended = ended.replace(tzinfo=timezone.utc)
+    duration_s = int((ended - started).total_seconds()) if started else 0
     persona = session.get("persona") or {}
     card = None
-    if script.get("scorecard_id") and ObjectId.is_valid(str(script["scorecard_id"])):
+    if shop:
+        from services.mystery_shops import scorecard_for
+        card = await scorecard_for(db, session)
+    elif script.get("scorecard_id") and ObjectId.is_valid(str(script["scorecard_id"])):
         card = await db.scorecards.find_one({"_id": ObjectId(script["scorecard_id"]), "active": {"$ne": False}})
-    if not card:
+    if not card and not shop:
         card = await sc.pick_scorecard(db, rep, None)
     graded = None
     if card and card.get("criteria") and len(rep_turns) >= 2:
@@ -648,22 +676,23 @@ async def grade_session(db, session: dict) -> dict:
     pct, misses = (sc.compute_score(graded["results"], card["criteria"]) if graded else (None, []))
     now = _now()
     ev = {
-        "call_sid": f"RP_{session['_id']}", "is_roleplay": True, "roleplay_session_id": str(session["_id"]), "assignment_id": session.get("assignment_id"),
-        "user_id": session["user_id"], "rep_name": rep.get("name") or rep_first, "store_id": session.get("store_id"),
-        "contact_id": None, "contact_name": f"{persona.get('name', 'AI customer')} (practice)", "conversation_id": None, "inbox_id": None,
-        "scorecard_id": str(card["_id"]) if card else None, "scorecard_name": card.get("name") if card else None, "department": (card or {}).get("department") or "",
+        "call_sid": f"RP_{session['_id']}", "is_roleplay": not shop, "is_mystery_shop": shop, "roleplay_session_id": str(session["_id"]), "assignment_id": session.get("assignment_id"),
+        "shop_client_id": session.get("client_id"), "shop_target_id": session.get("target_id"),
+        "user_id": session.get("user_id"), "rep_name": rep.get("name") or rep_first, "store_id": session.get("store_id"),
+        "contact_id": None, "contact_name": f"{persona.get('name', 'AI customer')} ({'mystery shopper' if shop else 'practice'})", "conversation_id": None, "inbox_id": None,
+        "scorecard_id": str(card["_id"]) if card and card.get("_id") else None, "scorecard_name": card.get("name") if card else None, "department": (card or {}).get("department") or "",
         "duration_s": duration_s, "direction": "inbound", "call_at": session.get("started_at") or now,
         "results": (graded or {}).get("results") or [], "score_pct": pct, "critical_misses": misses,
         "summary": (graded or {}).get("summary") or adherence.get("summary") or "", "wins": (graded or {}).get("wins") or adherence.get("hits") or [],
         "coaching": ((graded or {}).get("coaching") or []) + adherence.get("coaching", []), "customer_sentiment": (graded or {}).get("customer_sentiment") or "",
-        "call_type": "roleplay", "script_id": session["script_id"], "script_title": session.get("script_title"),
+        "call_type": "mystery_shop" if shop else "roleplay", "script_id": session["script_id"], "script_title": session.get("script_title"),
         "adherence": adherence, "transcript": transcript, "model": MODEL[1], "graded_by": "ai", "created_at": now, "updated_at": now, "alerts_sent_at": None, "alerted_user_ids": [],
     }
     res = await db.call_evaluations.update_one({"call_sid": ev["call_sid"]}, {"$set": ev}, upsert=True)
     ev_doc = await db.call_evaluations.find_one({"call_sid": ev["call_sid"]}, {"_id": 1})
     ev_id = str(ev_doc["_id"])
     await db.roleplay_sessions.update_one({"_id": session["_id"]}, {"$set": {"status": "completed", "ended_at": now, "evaluation_id": ev_id, "score_pct": pct, "adherence_pct": adherence.get("score_pct"), "updated_at": now}})
-    if session.get("assignment_id") and ObjectId.is_valid(str(session["assignment_id"])):
+    if not shop and session.get("assignment_id") and ObjectId.is_valid(str(session["assignment_id"])):
         await db.mystery_shops.update_one({"_id": ObjectId(session["assignment_id"])}, {"$set": {f"completed.{session['user_id']}": {"session_id": str(session["_id"]), "evaluation_id": ev_id, "score_pct": pct, "adherence_pct": adherence.get("score_pct"), "at": now}}})
     return {"evaluation_id": ev_id, "score_pct": pct, "scorecard_name": ev["scorecard_name"], "critical_misses": misses, "adherence": adherence,
             "summary": ev["summary"], "wins": ev["wins"], "coaching": ev["coaching"], "customer_sentiment": ev["customer_sentiment"], "duration_s": duration_s, "results": ev["results"]}

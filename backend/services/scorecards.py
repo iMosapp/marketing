@@ -157,7 +157,7 @@ async def eval_scope_filter(user: dict) -> dict:
         return {"user_id": str(user["_id"])}
     ids = await scope_store_ids(user)
     if ids is None:
-        return {}
+        return {"is_mystery_shop": {"$ne": True}}
     return {"$or": [{"store_id": {"$in": ids}}, {"user_id": str(user["_id"])}]}
 
 
