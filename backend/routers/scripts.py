@@ -481,14 +481,8 @@ def _twiml(xml: str) -> Response:
 
 @relay_router.post("/twiml/{sid}")
 async def relay_twiml(sid: str, t: str, request: Request):
+    """The AI starts talking the moment the line is answered: no answering-machine gate (it kept cutting off real people mid-greeting)."""
     s = await _phone_session(sid, t)
-    if s.get("kind") == "mystery_shop":
-        form = await request.form()
-        answered_by = (form.get("AnsweredBy") or "").lower()
-        if answered_by.startswith(("machine", "fax")):
-            from services.mystery_shops import record_outcome
-            await record_outcome(get_db(), {**s, "call_sid": form.get("CallSid") or s.get("call_sid")}, "voicemail")
-            return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
     return _twiml(svc.relay_twiml(s))
 
 

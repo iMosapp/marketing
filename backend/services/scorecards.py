@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -280,15 +281,24 @@ def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str,
 
 
 def _parse_json(raw: str) -> dict:
+    """Graders sometimes wrap the JSON in prose or escape the quotes around a value; try the lenient forms before giving up."""
     cleaned = (raw or "").strip()
     if cleaned.startswith("```"):
-        cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[3:]
-    if cleaned.endswith("```"):
-        cleaned = cleaned[:-3]
-    cleaned = cleaned.strip()
+        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", cleaned)
     if cleaned.startswith("json"):
         cleaned = cleaned[4:].strip()
-    return json.loads(cleaned)
+    m = re.search(r"\{.*\}", cleaned, re.S)
+    if m:
+        cleaned = m.group(0)
+    lenient = re.sub(r'\\"(\s*[,}\]\n])', r'"\1', re.sub(r'(:\s*)\\"', r'\1"', cleaned))
+    for cand in (cleaned, lenient):
+        try:
+            d = json.loads(cand)
+            if isinstance(d, dict):
+                return d
+        except json.JSONDecodeError:
+            continue
+    return {}
 
 
 async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name: str, direction: str, duration_s: int) -> dict:
@@ -301,6 +311,12 @@ async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name
     resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"TRANSCRIPT:\n{transcript[:24000]}")), timeout=60.0)
     text = resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
     data = _parse_json(text)
+    if not data:
+        logger.warning(f"[Scorecards] grader returned unparseable JSON, retrying once: {text[:160]!r}")
+        resp = await asyncio.wait_for(chat.send_message(UserMessage(text="Your last reply was not valid JSON. Reply again with ONLY the JSON object, no prose, no escaped quotes around values.")), timeout=60.0)
+        data = _parse_json(resp if isinstance(resp, str) else getattr(resp, "text", "") or "")
+    if not data:
+        raise ValueError("The grader did not return valid JSON")
     by_id = {str(r.get("id")): r for r in data.get("results") or [] if isinstance(r, dict)}
     results = []
     for c in card.get("criteria") or []:

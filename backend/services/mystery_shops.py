@@ -373,7 +373,7 @@ async def place_shop_call(db, call: dict) -> bool:
             tw.calls.create, to=call["rep_phone"], from_=frm, url=f"{base}/twiml/{sid}?t={token}", method="POST",
             status_callback=f"{base}/status/{sid}?t={token}", status_callback_event=["answered", "completed"], status_callback_method="POST",
             record=bool(client.get("record_calls", True)), recording_status_callback=f"{base}/recording/{sid}?t={token}", recording_status_callback_event=["completed"],
-            machine_detection="Enable", machine_detection_timeout=12, timeout=25)
+            timeout=25)
     except Exception as e:
         logger.warning(f"[MysteryShop] could not place call {sid}: {e}")
         await record_outcome(db, {**call, "attempts": call.get("attempts", 0) + 1}, "failed", "The call could not be placed")

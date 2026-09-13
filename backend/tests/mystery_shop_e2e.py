@@ -100,15 +100,16 @@ async def main():
     victim = calls[0]
     assert requests.delete(f"{API}/api/shop-clients/calls/{victim['id']}", headers=H, timeout=30).status_code == 200
 
-    # simulate a shop call: create + drive the Twilio side by hand (AMD says human, relay connects, rep talks, hangs up)
+    # simulate a shop call: create + drive the Twilio side by hand (relay connects the moment the line is answered)
     call = await ms.create_shop_call(db, cdoc, tdoc, datetime.now(timezone.utc), manual=True, script=await db.scripts.find_one({"slug": "shop_sales_availability"}))
     sid, token = str(call["_id"]), call["token"]
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "dialing", "started_at": datetime.now(timezone.utc), "attempts": 1, "call_sid": "CA_shop_sim"}})
+    # answering-machine detection is OFF for shop calls: it kept cutting off real people mid-greeting, so even a machine label must still connect
     r = requests.post(f"{API}/api/scripts/roleplay/twiml/{sid}?t={token}", data={"AnsweredBy": "machine_end_beep", "CallSid": "CA_shop_sim"}, timeout=30)
-    assert r.status_code == 200 and "<Hangup/>" in r.text and "ConversationRelay" not in r.text
+    assert r.status_code == 200 and "ConversationRelay" in r.text and "<Hangup/>" not in r.text, r.text[:300]
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
-    assert s["status"] == "scheduled" and s["outcome"] == "voicemail" and s["attempts"] == 1 and s["scheduled_for"] > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=1), (s["status"], s.get("outcome"))
-    print("voicemail -> retry scheduled ok:", s["fail_reason"])
+    assert s["status"] == "dialing" and not s.get("outcome"), (s["status"], s.get("outcome"))
+    print("machine label no longer hangs up the call ok")
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "dialing", "started_at": datetime.now(timezone.utc), "attempts": 2, "call_sid": "CA_shop_sim2"}})
     r = requests.post(f"{API}/api/scripts/roleplay/twiml/{sid}?t={token}", data={"AnsweredBy": "human", "CallSid": "CA_shop_sim2"}, timeout=30)
     assert r.status_code == 200 and "ConversationRelay" in r.text and 'welcomeGreeting="Hi, is this Sam?"' in r.text, r.text[:300]
@@ -148,7 +149,7 @@ async def main():
     team = requests.get(f"{API}/api/scorecards/team?days=30", headers=H, timeout=60).json()
     assert not any(a.get("evaluation_id") == s["evaluation_id"] for a in (team.get("alerts") or [])) and cid not in json.dumps(team)
     detail_call = requests.get(f"{API}/api/shop-clients/calls/{sid}", headers=H, timeout=30).json()
-    assert detail_call["evaluation"]["score_pct"] == s["score_pct"] and len(detail_call["transcript_turns"]) >= 8 and len(detail_call["attempt_history"]) == 1
+    assert detail_call["evaluation"]["score_pct"] == s["score_pct"] and len(detail_call["transcript_turns"]) >= 8 and detail_call["attempt_history"] == []
     print("call detail ok")
 
     # report: admin + public + pdf
