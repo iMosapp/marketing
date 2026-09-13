@@ -51,6 +51,7 @@
 - Seeded client "QA Jeep 9495" id 6aa5f046efccef2627dced30 (people Sam Seller 500-555-0006 / Val Advisor 500-555-0007, one completed 64% shop). Report token 5c631d7ba7204fb79ba6b7cdcc661cbe -> `/shop-report/<token>`; paid proposal token 75d44d8e031149e3bc5d265356ad4352 -> `/proposal/<token>`. UI links show app.imonsocial.com; swap the host for the preview host when testing.
 - Only ever add people with 500-555-XXXX numbers ("Shop now" places a real Twilio call). Stripe is TEST mode; signing a proposal creates a test invoice. Use @invalid.imonsocial.test contact emails.
 - Kickoff form (no login): `/shop-kickoff/da134fbca3bd4a40968353f833259fce` for QA Jeep 9495 (also via People tab "Copy setup link"). Sent proposal for the send-sheet: id 6aa5fcdbfbc94be4c788d8f3 (token 54f844a247b84ec5843beb550163fedb), To = qa-gm@invalid.imonsocial.test.
+- Shop caller number: `/admin/mystery-shops` card `shop-number-card`. NEVER tap Buy / call `POST /api/shop-clients/number/buy` in tests (buys a real Twilio number). Picking an owned number (PUT) and reset (DELETE) are safe; leave the setting on the platform number when done.
 
 ## Courses & Certification (June 2026)
 - Admin: forest -> Hub/Tools > Manage > "Courses & Certification" (`/admin/courses`); managers (qa-manager) see the list + can enroll their store's reps but cannot create/edit/retire. Rep: activation-tester -> `/scripts` "MY COURSES" strip -> `/courses/{id}`.

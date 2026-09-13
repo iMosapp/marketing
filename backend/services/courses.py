@@ -141,7 +141,7 @@ async def certify(db, e: dict, course: dict):
         if target and target.get("phone"):
             from services.twilio_service import send_sms
             try:
-                await send_sms(target["phone"], f"{first}, you did it. Every challenge in {course.get('title')} passed at {course.get('pass_pct') or DEFAULT_PASS}% or better. You are {badge}. Your certificate: {url}", from_phone=ms._from_number(client or {}) or None)
+                await send_sms(target["phone"], f"{first}, you did it. Every challenge in {course.get('title')} passed at {course.get('pass_pct') or DEFAULT_PASS}% or better. You are {badge}. Your certificate: {url}", from_phone=await ms.from_number(db, client) or None)
             except Exception as ex:
                 logger.warning(f"[Courses] certificate text failed: {ex}")
     if e.get("assigned_by") and e.get("assigned_by") != e.get("user_id"):

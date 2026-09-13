@@ -200,7 +200,153 @@ async def list_clients(request: Request):
     await require_admin(request)
     db = get_db()
     rows = await db.shop_clients.find({}).sort("name", 1).to_list(200)
-    return {"clients": [ms.serialize_client(c, await _progress(db, c)) for c in rows], "departments": ms.DEPARTMENTS, "from_number_default": os.environ.get("MYSTERY_SHOP_FROM_NUMBER") or os.environ.get("TWILIO_PHONE_NUMBER", "")}
+    return {"clients": [ms.serialize_client(c, await _progress(db, c)) for c in rows], "departments": ms.DEPARTMENTS, "from_number_default": await ms.default_from_number(db)}
+
+
+# ---------------------------------------------------------------- the Mystery Shop caller number
+class NumberBody(BaseModel):
+    phone_number: str
+
+
+def _e164(v: str) -> str:
+    from routers.twilio_webhooks import normalize_phone
+    p = normalize_phone(v or "")
+    if not p or len(p) < 11:
+        raise HTTPException(status_code=400, detail="That is not a full phone number")
+    return p
+
+
+async def _number_use(db, phone: str) -> str:
+    """Plain-English label for what a Twilio number on the account is already doing."""
+    variants = [phone, phone.replace("+", ""), phone[-10:]]
+    u = await db.users.find_one({"$or": [{"twilio_number": {"$in": variants}}, {"mvpline_number": {"$in": variants}}]}, {"name": 1, "first_name": 1})
+    if u:
+        return f"{(u.get('name') or u.get('first_name') or 'A rep').split(' ')[0]}'s rep line"
+    ib = await db.inboxes.find_one({"phone_number": {"$in": variants}, "is_active": {"$ne": False}}, {"name": 1})
+    if ib:
+        return f"Team inbox: {ib.get('name') or 'shared'}"
+    c = await db.shop_clients.find_one({"from_number": phone}, {"name": 1})
+    if c:
+        return f"Shop calls for {c.get('name')}"
+    if phone == (os.environ.get("TWILIO_PHONE_NUMBER") or ""):
+        return "Platform number (codes, alerts)"
+    return "Not in use"
+
+
+async def _number_state(db) -> dict:
+    from routers.twilio_admin import _get_twilio_client, _twilio_call
+    saved = await ms.saved_shop_number(db)
+    current = await ms.default_from_number(db)
+    owned, error = [], None
+    try:
+        numbers = await _twilio_call(_get_twilio_client().incoming_phone_numbers.list)
+        for tn in numbers:
+            owned.append({"phone": tn.phone_number, "sid": tn.sid, "friendly_name": tn.friendly_name or "", "voice": bool((tn.capabilities or {}).get("voice", True)),
+                          "use": "Main Mystery Shop number" if saved and saved.get("value") == tn.phone_number else await _number_use(db, tn.phone_number)})
+    except HTTPException as he:
+        error = he.detail
+    except Exception as e:
+        error = f"Could not reach Twilio ({type(e).__name__})"
+    owned.sort(key=lambda n: (n["use"] != "Main Mystery Shop number", n["use"] != "Not in use", n["phone"]))
+    return {"current": current, "source": "saved" if saved else ("platform" if current else "none"), "saved_at": (saved or {}).get("updated_at"), "owned": owned, "twilio_error": error,
+            "clients_with_own_number": [{"id": str(c["_id"]), "name": c.get("name"), "from_number": c.get("from_number")} for c in await db.shop_clients.find({"from_number": {"$nin": ["", None]}}, {"name": 1, "from_number": 1}).to_list(100)]}
+
+
+@router.get("/number")
+async def shop_number(request: Request):
+    """Which number every shop call and scorecard text comes from, plus every number on the Twilio account to pick from."""
+    await require_admin(request)
+    return await _number_state(get_db())
+
+
+async def _save_shop_number(db, me: dict, phone: str, sid: Optional[str], friendly: Optional[str]):
+    from routers.twilio_admin import _get_twilio_client, _twilio_call
+    now = datetime.now(timezone.utc)
+    await db.settings.update_one({"key": ms.SHOP_NUMBER_KEY}, {"$set": {"value": phone, "sid": sid, "friendly_name": friendly, "updated_at": now, "updated_by": str(me["_id"])}}, upsert=True)
+    if sid:
+        try:
+            await _twilio_call(_get_twilio_client().incoming_phone_numbers(sid).update, friendly_name="Mystery Shops")
+        except Exception as e:
+            logger.debug(f"[MysteryShop] friendly name update skipped: {e}")
+
+
+@router.put("/number")
+async def set_shop_number(body: NumberBody, request: Request):
+    """Pick one of the numbers already on the account as the main Mystery Shop number."""
+    from routers.twilio_admin import _get_twilio_client, _twilio_call
+    me = await require_admin(request)
+    db = get_db()
+    phone = _e164(body.phone_number)
+    owned = await _twilio_call(_get_twilio_client().incoming_phone_numbers.list)
+    tn = next((n for n in owned if n.phone_number == phone), None)
+    if not tn:
+        raise HTTPException(status_code=400, detail="That number is not on your Twilio account. Pick one from the list or buy a new one.")
+    if not (tn.capabilities or {}).get("voice", True):
+        raise HTTPException(status_code=400, detail="That number cannot place voice calls")
+    await _save_shop_number(db, me, phone, tn.sid, tn.friendly_name)
+    return await _number_state(db)
+
+
+@router.delete("/number")
+async def clear_shop_number(request: Request):
+    """Back to the platform number."""
+    await require_admin(request)
+    db = get_db()
+    await db.settings.delete_one({"key": ms.SHOP_NUMBER_KEY})
+    return await _number_state(db)
+
+
+@router.get("/number/search")
+async def search_shop_numbers(request: Request, area_code: Optional[str] = None, contains: Optional[str] = None):
+    """Voice + SMS capable US numbers available to buy, by area code or digits."""
+    from routers.twilio_admin import _get_twilio_client, _twilio_call, NUMBER_MONTHLY_COST
+    await require_admin(request)
+    ac = "".join(ch for ch in (area_code or "") if ch.isdigit())
+    digits = "".join(ch for ch in (contains or "") if ch.isdigit() or ch == "*")
+    if ac and len(ac) != 3:
+        raise HTTPException(status_code=400, detail="Area code is 3 digits")
+    if not ac and not digits:
+        raise HTTPException(status_code=400, detail="Give me an area code or a few digits to look for")
+    params = {"limit": 12, "voice_enabled": True, "sms_enabled": True}
+    if ac:
+        params["area_code"] = ac
+    if digits:
+        params["contains"] = digits
+    try:
+        found = await _twilio_call(lambda: _get_twilio_client().available_phone_numbers("US").local.list(**params))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Twilio search failed ({type(e).__name__})")
+    return {"numbers": [{"phone": n.phone_number, "locality": n.locality or "", "region": n.region or "", "monthly_cost_usd": NUMBER_MONTHLY_COST} for n in found], "monthly_cost_usd": NUMBER_MONTHLY_COST}
+
+
+@router.post("/number/buy")
+async def buy_shop_number(body: NumberBody, request: Request):
+    """Buy a number from Twilio, point its webhooks at us, and make it the main Mystery Shop number."""
+    from routers.twilio_admin import _get_twilio_client, _twilio_call, NUMBER_MONTHLY_COST
+    me = await require_admin(request)
+    db = get_db()
+    phone = _e164(body.phone_number)
+    base = scr._app_url()
+    try:
+        bought = await _twilio_call(_get_twilio_client().incoming_phone_numbers.create, phone_number=phone, friendly_name="Mystery Shops",
+                                    voice_url=f"{base}/api/webhooks/twilio/voice", voice_method="POST", sms_url=f"{base}/api/webhooks/twilio/incoming", sms_method="POST", timeout=30)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Twilio would not sell that number: {str(e)[:160]}")
+    ms_sid = os.environ.get("TWILIO_MESSAGING_SERVICE_SID")
+    if ms_sid:
+        try:
+            await _twilio_call(_get_twilio_client().messaging.v1.services(ms_sid).phone_numbers.create, phone_number_sid=bought.sid)
+        except Exception as e:
+            logger.warning(f"[MysteryShop] could not add {phone} to the messaging service: {e}")
+    await db.phone_number_pool.insert_one({"phone_number": bought.phone_number, "twilio_sid": bought.sid, "status": "mystery_shop", "assigned_user_id": None, "purpose": "mystery_shop", "monthly_cost_usd": NUMBER_MONTHLY_COST,
+                                           "purchased_at": datetime.now(timezone.utc), "purchased_by": str(me["_id"])})
+    await _save_shop_number(db, me, bought.phone_number, bought.sid, "Mystery Shops")
+    logger.info(f"[MysteryShop] bought {bought.phone_number} ({bought.sid}) as the main shop number")
+    return await _number_state(db)
 
 
 @router.post("/demo")

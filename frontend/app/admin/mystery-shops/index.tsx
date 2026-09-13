@@ -8,22 +8,27 @@ import { useThemeStore } from '../../../store/themeStore';
 import { ScreenHeader, HeaderIconButton } from '../../../components/common/ScreenHeader';
 import { ClientSheet } from '../../../components/mystery-shops/ClientSheet';
 import { DemoShopSheet } from '../../../components/mystery-shops/DemoShopSheet';
-import { Bar, money, scoreColor, GOLD, GREEN, RED, PURPLE, tid, type Client } from '../../../components/mystery-shops/shared';
+import { ShopNumberSheet, type NumberState } from '../../../components/mystery-shops/ShopNumberSheet';
+import { Bar, money, scoreColor, fmtPhone, GOLD, GREEN, RED, PURPLE, tid, type Client } from '../../../components/mystery-shops/shared';
 
 export default function MysteryShopClients() {
   const router = useRouter();
   const { colors } = useThemeStore();
   const [clients, setClients] = useState<Client[] | null>(null);
   const [defaultFrom, setDefaultFrom] = useState('');
+  const [numberSaved, setNumberSaved] = useState<boolean | null>(null);
   const [sheet, setSheet] = useState(false);
   const [demo, setDemo] = useState(false);
+  const [numberSheet, setNumberSheet] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try { const r = await api.get('/shop-clients'); setClients(r.data.clients); setDefaultFrom(r.data.from_number_default || ''); } catch { setClients([]); }
     finally { setRefreshing(false); }
+    api.get('/shop-clients/number').then(r => setNumberSaved(r.data.source === 'saved')).catch(() => setNumberSaved(false));
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
+  const onNumberChanged = (s: NumberState) => { setDefaultFrom(s.current || ''); setNumberSaved(s.source === 'saved'); };
 
   const mrr = (clients || []).filter(c => c.active && !c.demo).reduce((s, c) => s + (c.plan.price_monthly || 0), 0);
   const stores = (clients || []).filter(c => !c.demo).length;
@@ -46,6 +51,14 @@ export default function MysteryShopClients() {
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Challenge library</Text>
               <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Sales, service, parts and rental scenarios. Describe one and Jessi writes it.</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setNumberSheet(true)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: numberSaved ? GREEN + '66' : colors.border }} {...tid('shop-number-card')}>
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: (numberSaved ? GREEN : GOLD) + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="call-outline" size={20} color={numberSaved ? GREEN : GOLD} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{defaultFrom ? `Shops call from ${fmtPhone(defaultFrom)}` : 'Pick the number shops call from'}</Text>
+              <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{numberSaved ? 'Your Mystery Shop number. Tap to change or buy another.' : numberSaved === false ? 'Shared platform number. Pick one of yours or buy a new one.' : 'Checking your Twilio numbers…'}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -94,6 +107,7 @@ export default function MysteryShopClients() {
       )}
       <ClientSheet visible={sheet} onClose={() => setSheet(false)} colors={colors} onSaved={(c) => router.push(`/admin/mystery-shops/${c.id}` as any)} defaultFrom={defaultFrom} />
       <DemoShopSheet visible={demo} onClose={() => setDemo(false)} colors={colors} onStarted={(clientId) => router.push(`/admin/mystery-shops/${clientId}?tab=calls` as any)} />
+      <ShopNumberSheet visible={numberSheet} onClose={() => setNumberSheet(false)} colors={colors} onChanged={onNumberChanged} />
     </SafeAreaView>
   );
 }

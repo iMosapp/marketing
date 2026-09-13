@@ -2001,6 +2001,18 @@ async def handle_inbound_voice(
 
     logger.info(f"[Voice] Inbound call from {from_phone} to {to_phone} | SID={CallSid}")
 
+    # A shop number is a caller ID, never a person: callbacks get a neutral voicemail, no rep cell rings.
+    from services.mystery_shops import is_shop_number
+    if await is_shop_number(db, to_phone):
+        app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Joanna-Neural">Thanks for calling. Nobody can take your call right now. Please leave a message after the tone.</Say>
+  <Record maxLength="120" transcribe="true" transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription" />
+  <Say voice="Polly.Joanna-Neural">Thank you. Goodbye.</Say>
+</Response>"""
+        return Response(content=twiml, media_type="application/xml")
+
     # Find the rep who owns this Twilio number — same strict lookup as SMS
     rep_user = await db.users.find_one({
         "$or": [{"twilio_number": to_phone}, {"mvpline_number": to_phone}],

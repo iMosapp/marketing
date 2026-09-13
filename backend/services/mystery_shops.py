@@ -327,24 +327,50 @@ async def plan_month(db, client: dict, month: Optional[str] = None, created_by: 
 
 
 # ---------------------------------------------------------------- placing + outcomes
-def _from_number(client: dict) -> str:
-    return client.get("from_number") or os.environ.get("MYSTERY_SHOP_FROM_NUMBER") or os.environ.get("TWILIO_PHONE_NUMBER", "")
+SHOP_NUMBER_KEY = "mystery_shop_from_number"
+
+
+async def saved_shop_number(db) -> Optional[dict]:
+    """The number Forest picked (or bought) as the main Mystery Shop caller ID, if any."""
+    row = await db.settings.find_one({"key": SHOP_NUMBER_KEY})
+    return row if row and row.get("value") else None
+
+
+async def default_from_number(db) -> str:
+    row = await saved_shop_number(db)
+    return (row or {}).get("value") or os.environ.get("MYSTERY_SHOP_FROM_NUMBER") or os.environ.get("TWILIO_PHONE_NUMBER", "")
+
+
+async def from_number(db, client: Optional[dict]) -> str:
+    """Per-client override first, then the saved default, then the platform number."""
+    return (client or {}).get("from_number") or await default_from_number(db)
+
+
+async def is_shop_number(db, phone: str) -> bool:
+    """True when an inbound call/text hits a number we shop from (so it must never ring a real person)."""
+    if not phone:
+        return False
+    row = await saved_shop_number(db)
+    if row and row.get("value") == phone:
+        return True
+    return bool(await db.shop_clients.find_one({"from_number": phone}, {"_id": 1}))
 
 
 async def place_shop_call(db, call: dict) -> bool:
     from services.lead_call_engine import _twilio_client
     client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])})
     tw = _twilio_client()
-    if not client or tw is None or not _from_number(client) or not call.get("rep_phone"):
+    frm = await from_number(db, client) if client else ""
+    if not client or tw is None or not frm or not call.get("rep_phone"):
         await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "failed", "outcome": "not_configured", "fail_reason": "Calling is not set up (no caller number)", "updated_at": _now()}})
         return False
     sid, token = str(call["_id"]), call["token"]
     base = f"{scr._app_url()}/api/scripts/roleplay"
     now = _now()
-    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "dialing", "started_at": now, "last_attempt_at": now, "updated_at": now}, "$inc": {"attempts": 1}})
+    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "dialing", "started_at": now, "last_attempt_at": now, "updated_at": now, "from_number": frm}, "$inc": {"attempts": 1}})
     try:
         tw_call = await asyncio.to_thread(
-            tw.calls.create, to=call["rep_phone"], from_=_from_number(client), url=f"{base}/twiml/{sid}?t={token}", method="POST",
+            tw.calls.create, to=call["rep_phone"], from_=frm, url=f"{base}/twiml/{sid}?t={token}", method="POST",
             status_callback=f"{base}/status/{sid}?t={token}", status_callback_event=["answered", "completed"], status_callback_method="POST",
             record=bool(client.get("record_calls", True)), recording_status_callback=f"{base}/recording/{sid}?t={token}", recording_status_callback_event=["completed"],
             machine_detection="Enable", machine_detection_timeout=12, timeout=25)
@@ -858,7 +884,7 @@ async def after_graded(db, sid: str):
     if want_sms and s.get("rep_phone") and not s.get("score_sms_sent_at"):
         from services.twilio_service import send_sms
         try:
-            r = await send_sms(s["rep_phone"], scorecard_sms(s, ev, url, await _course_line(db, s, ev.get("score_pct"))), from_phone=_from_number(client) or None)
+            r = await send_sms(s["rep_phone"], scorecard_sms(s, ev, url, await _course_line(db, s, ev.get("score_pct"))), from_phone=(s.get("from_number") or await from_number(db, client)) or None)
             await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"score_sms_sent_at": _now(), "score_sms_sid": (r or {}).get("sid") or (r or {}).get("message_sid"), "score_sms_status": (r or {}).get("status") or "sent"}})
         except Exception as e:
             logger.warning(f"[MysteryShop] scorecard text failed for {sid}: {e}")
