@@ -482,9 +482,37 @@ def _twiml(xml: str) -> Response:
 
 @relay_router.post("/twiml/{sid}")
 async def relay_twiml(sid: str, t: str, request: Request):
-    """The AI starts talking the moment the line is answered: no answering-machine gate (it kept cutting off real people mid-greeting)."""
+    """Practice calls go straight to the AI customer. Shop calls open with Jessi's announcement and wait for press 1 / 'ready' (see /gate)."""
     s = await _phone_session(sid, t)
+    if s.get("kind") == "mystery_shop":
+        return _twiml(svc.shop_gate_twiml(s))
     return _twiml(svc.relay_twiml(s))
+
+
+@relay_router.post("/gate/{sid}")
+async def relay_gate(sid: str, t: str, request: Request):
+    """What the rep did with the announcement: 1/ready -> ring + live customer; 2/not now -> back in 2 h; nothing (voicemail, ignored) -> polite goodbye, no grade, no text."""
+    s = await _phone_session(sid, t)
+    form = await request.form()
+    choice = svc.gate_choice(form.get("Digits") or "", form.get("SpeechResult") or "")
+    db = get_db()
+    logger.info(f"[MysteryShop] gate {sid}: {choice} (digits={form.get('Digits')!r} speech={form.get('SpeechResult')!r})")
+    if s.get("status") not in ("dialing", "live"):
+        return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
+    if choice == "go":
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"gate_passed_at": datetime.now(timezone.utc), "gate_via": "dtmf" if form.get("Digits") else "speech", "updated_at": datetime.now(timezone.utc)}})
+        return _twiml(svc.shop_go_twiml(s))
+    from services.mystery_shops import postpone_call, record_outcome
+    if choice == "later":
+        await postpone_call(db, s)
+        return _twiml(svc.say_hangup_twiml("No problem, we'll call back in a couple of hours. Good luck out there."))
+    await record_outcome(db, s, "no_response")
+    return _twiml(svc.say_hangup_twiml("No problem, we'll try again another time. This was your practice call from I'm On Social."))
+
+
+@relay_router.get("/audio/ring.wav")
+async def relay_ring():
+    return Response(content=svc.ring_wav(), media_type="audio/wav", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @relay_router.post("/after/{sid}")
@@ -548,16 +576,28 @@ async def relay_ws(ws: WebSocket, sid: str, token: str):
         await ws.close(code=1008)
         return
     await ws.accept()
+    nudge_at = None
     try:
         while True:
-            msg = json.loads(await ws.receive_text())
+            try:
+                raw = await asyncio.wait_for(ws.receive_text(), timeout=max(0.5, nudge_at - asyncio.get_event_loop().time()) if nudge_at else None)
+            except asyncio.TimeoutError:
+                nudge_at = None
+                opening = await svc.relay_nudge(db, sid)
+                if opening:
+                    await ws.send_text(json.dumps({"type": "text", "token": opening, "last": True}))
+                continue
+            msg = json.loads(raw)
             kind = msg.get("type")
             if kind == "setup":
                 await svc.relay_setup(db, sid, msg)
+                if s.get("direction") == "inbound" and not s.get("turns"):
+                    nudge_at = asyncio.get_event_loop().time() + svc.INBOUND_NUDGE_S
             elif kind == "prompt":
                 heard = (msg.get("voicePrompt") or "").strip()
                 if not msg.get("last", True) or not heard:
                     continue
+                nudge_at = None
                 out = await svc.relay_turn(db, sid, heard)
                 if out["say"]:
                     await ws.send_text(json.dumps({"type": "text", "token": out["say"], "last": True}))

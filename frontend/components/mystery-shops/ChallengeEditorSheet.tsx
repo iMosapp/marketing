@@ -9,9 +9,9 @@ import { Sheet, Field, Label, Chip, GoldButton, DEPTS, GOLD, PURPLE, tid, type C
 
 type Scope = { clientId?: string; clientName?: string };
 type Props = { visible: boolean; onClose: () => void; colors: any; initial?: ChallengeDraft | Challenge | null; existing?: Challenge | null; scope?: Scope; onSaved: (c: Challenge) => void };
-const blank = { title: '', department: 'sales', runtime: '', purpose: '', body: '', points: '', curveballs: '', name: '', voice: 'female', summary: '', goals: '', objections: '', opening_line: '' };
+const blank = { title: '', department: 'sales', direction: 'inbound', runtime: '', purpose: '', body: '', points: '', curveballs: '', name: '', voice: 'female', summary: '', goals: '', objections: '', opening_line: '' };
 
-const toForm = (c: any) => ({ title: c.title || '', department: c.department || 'sales', runtime: c.runtime || '', purpose: c.purpose || '', body: c.body || '', points: (c.success_points || []).join('\n'), curveballs: (c.curveballs || []).join('\n'),
+const toForm = (c: any) => ({ title: c.title || '', department: c.department || 'sales', direction: c.direction === 'outbound' ? 'outbound' : 'inbound', runtime: c.runtime || '', purpose: c.purpose || '', body: c.body || '', points: (c.success_points || []).join('\n'), curveballs: (c.curveballs || []).join('\n'),
   name: c.persona?.name || '', voice: c.persona?.voice || 'female', summary: c.persona?.summary || '', goals: c.persona?.goals || '', objections: (c.persona?.objections || []).join('\n'), opening_line: c.persona?.opening_line || '' });
 
 // One editor for every way a challenge gets written: by hand, from a pasted script, from a Jessi draft, or editing an existing one.
@@ -32,7 +32,7 @@ export const ChallengeEditorSheet = ({ visible, onClose, colors, initial, existi
 
   const save = async () => {
     setBusy(true);
-    const payload = { title: f.title, department: f.department, runtime: f.runtime, purpose: f.purpose, body: f.body, success_points: lines(f.points), curveballs: lines(f.curveballs), generated_from: (initial as any)?.generated_from,
+    const payload = { title: f.title, department: f.department, direction: f.direction, runtime: f.runtime, purpose: f.purpose, body: f.body, success_points: lines(f.points), curveballs: lines(f.curveballs), generated_from: (initial as any)?.generated_from,
       persona: { name: f.name, voice: f.voice, summary: f.summary, goals: f.goals, objections: lines(f.objections), opening_line: f.opening_line } };
     try {
       const r = existing ? await api.put(`/shop-clients/challenges/${existing.id}`, payload) : where === 'client' && scope?.clientId ? await api.post(`/shop-clients/${scope.clientId}/challenges`, payload) : await api.post('/shop-clients/challenges', payload);
@@ -61,6 +61,12 @@ export const ChallengeEditorSheet = ({ visible, onClose, colors, initial, existi
         )}
         <Field label="TITLE" value={f.title} onChange={(v: string) => set('title', v)} colors={colors} placeholder="Shopper: asks about a lifted Wrangler" testID="challenge-title" />
         <View style={{ gap: 8 }}><Label t="DEPARTMENT" colors={colors} /><View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>{DEPTS.map(d => <Chip key={d.key} label={d.label} active={f.department === d.key} onPress={() => set('department', d.key)} colors={colors} testID={`challenge-dept-${d.key}`} />)}</View></View>
+        <View style={{ gap: 6 }}><Label t="CALL DIRECTION (JESSI TELLS THE REP BEFORE IT STARTS)" colors={colors} />
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            <Chip label="Inbound: they call the store" active={f.direction === 'inbound'} onPress={() => set('direction', 'inbound')} colors={colors} testID="challenge-direction-inbound" />
+            <Chip label="Outbound: rep calls them" active={f.direction === 'outbound'} onPress={() => set('direction', 'outbound')} colors={colors} testID="challenge-direction-outbound" />
+          </View>
+        </View>
         <Field label="PURPOSE (ONE LINE)" value={f.purpose} onChange={(v: string) => set('purpose', v)} colors={colors} placeholder="What this shop tests" testID="challenge-purpose" />
         <Field label="WHAT A GREAT REP DOES (GRADED FOR SCRIPT ADHERENCE)" value={f.body} onChange={(v: string) => set('body', v)} colors={colors} multiline placeholder="Answer the question, ask for the name and number, offer two times…" testID="challenge-body" />
         <Field label="GRADED POINTS (ONE PER LINE)" value={f.points} onChange={(v: string) => set('points', v)} colors={colors} multiline placeholder={'Answers with store and name\nOffers two appointment times'} testID="challenge-points" />
@@ -71,7 +77,7 @@ export const ChallengeEditorSheet = ({ visible, onClose, colors, initial, existi
           <View style={{ gap: 6 }}><Label t="VOICE" colors={colors} /><View style={{ flexDirection: 'row', gap: 6 }}>{VOICES.map(v => <Chip key={v.key} label={v.label} small active={f.voice === v.key} onPress={() => set('voice', v.key)} colors={colors} testID={`challenge-voice-${v.key}`} />)}</View></View>
           <Field label="WHO THEY ARE" value={f.summary} onChange={(v: string) => set('summary', v)} colors={colors} multiline placeholder="32, weekend off-roader, saw {vehicle} on {store}'s site" testID="challenge-persona-summary" />
           <Field label="WHAT THEY WANT" value={f.goals} onChange={(v: string) => set('goals', v)} colors={colors} placeholder="Know if a lift is doable and what it costs" testID="challenge-persona-goals" />
-          <Field label="OPENING LINE (SAID RIGHT AFTER THE REP ANSWERS)" value={f.opening_line} onChange={(v: string) => set('opening_line', v)} colors={colors} placeholder="Hey, do you guys do lift kits on {vehicle}?" testID="challenge-persona-opening" />
+          <Field label={f.direction === 'outbound' ? "OPENING LINE (HOW THEY ANSWER WHEN THE REP CALLS)" : "OPENING LINE (SAID RIGHT AFTER THE REP ANSWERS)"} value={f.opening_line} onChange={(v: string) => set('opening_line', v)} colors={colors} placeholder="Hey, do you guys do lift kits on {vehicle}?" testID="challenge-persona-opening" />
           <Field label="OBJECTIONS (ONE PER LINE)" value={f.objections} onChange={(v: string) => set('objections', v)} colors={colors} multiline placeholder={'Can you just give me a price?\nThe shop down the road is cheaper'} testID="challenge-persona-objections" />
         </View>
       </Sheet>

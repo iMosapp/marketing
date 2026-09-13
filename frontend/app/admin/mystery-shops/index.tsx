@@ -37,7 +37,7 @@ export default function MysteryShopClients() {
       <ScreenHeader title="Mystery Shop Clients" subtitle={clients ? `${stores} store${stores === 1 ? '' : 's'} · ${money(mrr)}/mo` : undefined} testID="shop-clients-header" right={<HeaderIconButton icon="add-circle" onPress={() => setSheet(true)} testID="shop-clients-add" />} />
       {clients === null ? <ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /> : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60, gap: 12 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GOLD} />}>
-          <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>Stores that pay you to phone-shop their people. The AI shopper calls their cells at random times inside store hours, grades every call, and the store gets a live report link plus a monthly PDF.</Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>Stores that pay you to phone-shop their people. Jessi calls their cells at random times inside store hours, announces the practice call, and when they press 1 the AI customer comes on. Every call is graded, and the store gets a live report link plus a monthly PDF.</Text>
           <TouchableOpacity onPress={() => setDemo(true)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: GOLD, borderRadius: 16, padding: 14 }} {...tid('shop-demo')}>
             <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#11111122', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="call" size={20} color="#111" /></View>
             <View style={{ flex: 1 }}>

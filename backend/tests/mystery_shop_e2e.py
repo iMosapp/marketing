@@ -100,30 +100,64 @@ async def main():
     victim = calls[0]
     assert requests.delete(f"{API}/api/shop-clients/calls/{victim['id']}", headers=H, timeout=30).status_code == 200
 
-    # simulate a shop call: create + drive the Twilio side by hand (relay connects the moment the line is answered)
+    # simulate a shop call: create + drive the Twilio side by hand. The line is answered -> Jessi announces the practice call and waits for press 1 / ready.
     call = await ms.create_shop_call(db, cdoc, tdoc, datetime.now(timezone.utc), manual=True, script=await db.scripts.find_one({"slug": "shop_sales_availability"}))
     sid, token = str(call["_id"]), call["token"]
-    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "dialing", "started_at": datetime.now(timezone.utc), "attempts": 1, "call_sid": "CA_shop_sim"}})
-    # answering-machine detection is OFF for shop calls: it kept cutting off real people mid-greeting, so even a machine label must still connect
-    r = requests.post(f"{API}/api/scripts/roleplay/twiml/{sid}?t={token}", data={"AnsweredBy": "machine_end_beep", "CallSid": "CA_shop_sim"}, timeout=30)
-    assert r.status_code == 200 and "ConversationRelay" in r.text and "<Hangup/>" not in r.text, r.text[:300]
+    assert call["direction"] == "inbound"
+    tw = f"{API}/api/scripts/roleplay"
+
+    async def redial(n, call_sid):
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "dialing", "started_at": datetime.now(timezone.utc), "attempts": n, "call_sid": call_sid, "turns": [], "scheduled_for": datetime.now(timezone.utc)}})
+
+    await redial(1, "CA_shop_sim")
+    r = requests.post(f"{tw}/twiml/{sid}?t={token}", data={"AnsweredBy": "human", "CallSid": "CA_shop_sim"}, timeout=30)
+    assert r.status_code == 200 and "<Gather" in r.text and "ConversationRelay" not in r.text and "practice call from I" in r.text, r.text[:400]
+    assert "Sam" in r.text and "inbound sales call" in r.text and "press 2" in r.text and f"/gate/{sid}?t={token}" in r.text, r.text[:400]
+    print("answered -> announcement + gather ok")
+    # voicemail picked up: its greeting is the only 'speech', nobody presses anything -> goodbye, no grade, retry later (real client)
+    r = requests.post(f"{tw}/gate/{sid}?t={token}", data={"SpeechResult": "Hi you've reached Sam, leave a message after the tone", "CallSid": "CA_shop_sim"}, timeout=30)
+    assert r.status_code == 200 and "<Hangup/>" in r.text and "try again another time" in r.text and "ConversationRelay" not in r.text, r.text[:300]
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
-    assert s["status"] == "dialing" and not s.get("outcome"), (s["status"], s.get("outcome"))
-    print("machine label no longer hangs up the call ok")
-    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "dialing", "started_at": datetime.now(timezone.utc), "attempts": 2, "call_sid": "CA_shop_sim2"}})
-    r = requests.post(f"{API}/api/scripts/roleplay/twiml/{sid}?t={token}", data={"AnsweredBy": "human", "CallSid": "CA_shop_sim2"}, timeout=30)
-    assert r.status_code == 200 and "ConversationRelay" in r.text and 'welcomeGreeting="Hi, is this Sam?"' in r.text, r.text[:300]
-    print("human -> relay twiml with 'Hi, is this Sam?' ok")
+    assert s["status"] == "scheduled" and s["outcome"] == "no_response" and "voicemail" in s["fail_reason"] and s.get("scheduled_for"), (s["status"], s.get("outcome"), s.get("fail_reason"))
+    r = requests.post(f"{tw}/status/{sid}?t={token}", data={"CallStatus": "completed", "CallSid": "CA_shop_sim"}, timeout=30)
+    await asyncio.sleep(0.5)
+    s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
+    assert s["status"] == "scheduled" and not s.get("evaluation_id"), "a voicemail attempt must never be graded"
+    print("voicemail -> no grade, rescheduled ok:", s["fail_reason"])
+    # rep pressed 2: bad time -> back in ~2 h, does not count as a try
+    await redial(2, "CA_shop_sim_b")
+    r = requests.post(f"{tw}/gate/{sid}?t={token}", data={"Digits": "2", "CallSid": "CA_shop_sim_b"}, timeout=30)
+    assert r.status_code == 200 and "<Hangup/>" in r.text and "couple of hours" in r.text, r.text[:300]
+    s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
+    gap = (s["scheduled_for"].replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)).total_seconds() / 60
+    assert s["status"] == "scheduled" and s["outcome"] == "postponed" and s["attempts"] == 1 and 110 <= gap <= 130, (s["status"], s.get("outcome"), s["attempts"], gap)
+    print("press 2 -> postponed", f"{gap:.0f} min, attempts back to 1 ok")
+    # said 'ready' -> ring + live customer, inbound so the AI waits for the rep's greeting
+    await redial(2, "CA_shop_sim2")
+    r = requests.post(f"{tw}/gate/{sid}?t={token}", data={"SpeechResult": "Yeah I'm ready.", "CallSid": "CA_shop_sim2"}, timeout=30)
+    assert r.status_code == 200 and "ConversationRelay" in r.text and "ring.wav" in r.text and "welcomeGreeting" not in r.text and "Here it comes" in r.text, r.text[:400]
+    ring = requests.get(f"{tw}/audio/ring.wav", timeout=30)
+    assert ring.status_code == 200 and ring.headers["content-type"].startswith("audio/wav") and ring.content[:4] == b"RIFF" and len(ring.content) > 40000, (ring.status_code, len(ring.content))
+    s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
+    assert s.get("gate_passed_at") and s["gate_via"] == "speech"
+    print("ready -> ring + relay twiml ok")
     async with websockets.connect(f"{WS}/api/scripts/roleplay/relay/{sid}/{token}", open_timeout=30) as ws:
         await ws.send(json.dumps({"type": "setup", "sessionId": "VX_shop", "callSid": "CA_shop_sim2"}))
         await asyncio.sleep(0.4)
         s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
-        assert s["status"] == "live" and s["turns"][0]["text"] == "Hi, is this Sam?", s.get("turns")
+        assert s["status"] == "live" and s["turns"] == [], s.get("turns")
+        # rep says nothing after the ring: the customer speaks first after the nudge window
         t0 = time.time()
-        await ws.send(json.dumps({"type": "prompt", "voicePrompt": "Yeah, this is Sam.", "last": True}))
+        reply = json.loads(await asyncio.wait_for(ws.recv(), timeout=20))
+        assert reply["type"] == "text" and reply["token"] == s["persona"]["opening_line"] and 7 <= time.time() - t0 <= 12, (reply, time.time() - t0)
+        print("silent rep -> customer opened anyway after", f"{time.time()-t0:.1f}s")
+        t0 = time.time()
+        await ws.send(json.dumps({"type": "prompt", "voicePrompt": "Thanks for calling LHM Jeep, this is Sam.", "last": True}))
         reply = json.loads(await asyncio.wait_for(ws.recv(), timeout=60))
-        assert reply["type"] == "text" and reply["token"] == s["persona"]["opening_line"] and time.time() - t0 < 3, reply
-        print("rep answered -> scripted opening in", f"{time.time()-t0:.2f}s:", reply["token"][:80])
+        assert reply["type"] == "text" and reply["token"] != s["persona"]["opening_line"], reply
+        s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
+        assert sum(1 for t in s["turns"] if t["text"] == s["persona"]["opening_line"]) == 1, "opening line must not repeat"
+        print("rep greeted -> shopper continues in", f"{time.time()-t0:.2f}s:", reply["token"][:80])
         for line in ["Yes it is, it just came in. Who am I speaking with?", "Great to meet you Dana. Are you going to have anything to trade in?",
                      "I'd love to have it up front for you. I have 4:30 today or 10 tomorrow, which works better? And what's the best cell for you in case we get cut off?"]:
             await ws.send(json.dumps({"type": "prompt", "voicePrompt": line, "last": True}))
@@ -149,8 +183,35 @@ async def main():
     team = requests.get(f"{API}/api/scorecards/team?days=30", headers=H, timeout=60).json()
     assert not any(a.get("evaluation_id") == s["evaluation_id"] for a in (team.get("alerts") or [])) and cid not in json.dumps(team)
     detail_call = requests.get(f"{API}/api/shop-clients/calls/{sid}", headers=H, timeout=30).json()
-    assert detail_call["evaluation"]["score_pct"] == s["score_pct"] and len(detail_call["transcript_turns"]) >= 8 and detail_call["attempt_history"] == []
+    assert detail_call["evaluation"]["score_pct"] == s["score_pct"] and len(detail_call["transcript_turns"]) >= 8 and [h["outcome"] for h in detail_call["attempt_history"]] == ["no_response", "postponed"]
     print("call detail ok")
+
+    # Quick shops never auto-retry: voicemail / ignored -> unreachable right away so the admin can tap Try again
+    qdoc = await ms.ensure_demo_client(db, await db.users.find_one({"email": "forest@imosapp.com"}))
+    assert qdoc["name"] == "Quick shops"
+    qt = await db.shop_targets.find_one_and_update({"client_id": str(qdoc["_id"]), "phone": "+15005550199"}, {"$set": {"name": "QA Quick Rep", "department": "sales", "active": True, "updated_at": datetime.now(timezone.utc)}, "$setOnInsert": {"created_at": datetime.now(timezone.utc), "challenge_history": []}}, upsert=True, return_document=True)
+    qcall = await ms.create_shop_call(db, qdoc, qt, datetime.now(timezone.utc), manual=True, script=await db.scripts.find_one({"slug": "shop_sales_availability"}))
+    await db.roleplay_sessions.update_one({"_id": qcall["_id"]}, {"$set": {"status": "dialing", "started_at": datetime.now(timezone.utc), "attempts": 1, "call_sid": "CA_quick_sim", "demo": True}})
+    r = requests.post(f"{tw}/gate/{qcall['_id']}?t={qcall['token']}", data={"CallSid": "CA_quick_sim"}, timeout=30)
+    assert r.status_code == 200 and "<Hangup/>" in r.text
+    qs = await db.roleplay_sessions.find_one({"_id": qcall["_id"]})
+    assert qs["status"] == "unreachable" and qs["fail_reason"] == "Went to voicemail or wasn't ready", (qs["status"], qs["fail_reason"])
+    print("quick shop voicemail -> unreachable, no retry ok")
+    # outbound challenge -> the announcement says who they're calling back and the customer answers first
+    ob = await db.scripts.find_one_and_update({"slug": "shop_qa_outbound"}, {"$set": {"kind": "phone", "pool": "mystery_shop", "shop_client_id": None, "store_id": None, "department": "sales", "direction": "outbound", "title": "Shopper: internet lead callback", "body": "Call the lead back, confirm interest, set the visit.", "success_points": ["Confirms the vehicle"], "active": False,
+                                                                                   "persona": {"name": "Marcus Lee", "voice": "male", "summary": "Sent an internet lead on {vehicle}", "goals": "Find out the price", "objections": [], "opening_line": "Hello?"}, "updated_at": datetime.now(timezone.utc)}}, upsert=True, return_document=True)
+    ocall = await ms.create_shop_call(db, qdoc, qt, datetime.now(timezone.utc), manual=True, script=ob)
+    assert ocall["direction"] == "outbound"
+    await db.roleplay_sessions.update_one({"_id": ocall["_id"]}, {"$set": {"status": "dialing", "started_at": datetime.now(timezone.utc), "attempts": 1, "call_sid": "CA_ob_sim"}})
+    r = requests.post(f"{tw}/twiml/{ocall['_id']}?t={ocall['token']}", data={"CallSid": "CA_ob_sim"}, timeout=30)
+    assert "outbound sales call" in r.text and "calling Marcus back" in r.text and "they&apos;ll pick up" in r.text.replace("'", "&apos;"), r.text[:400]
+    r = requests.post(f"{tw}/gate/{ocall['_id']}?t={ocall['token']}", data={"Digits": "1", "CallSid": "CA_ob_sim"}, timeout=30)
+    assert 'welcomeGreeting="Hello?"' in r.text and "ring.wav" in r.text and "ringing" in r.text, r.text[:400]
+    print("outbound challenge -> announcement + customer answers first ok")
+    await db.roleplay_sessions.delete_many({"_id": {"$in": [qcall["_id"], ocall["_id"]]}})
+    await db.shop_targets.delete_one({"_id": qt["_id"]})
+    await db.scripts.delete_one({"slug": "shop_qa_outbound"})
+
 
     # report: admin + public + pdf
     rep_json = requests.get(f"{API}/api/shop-clients/{cid}/report", headers=H, timeout=60).json()

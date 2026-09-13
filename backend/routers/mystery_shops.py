@@ -110,6 +110,7 @@ class PlanBody(BaseModel):
 class ChallengeBody(BaseModel):
     title: str
     department: str
+    direction: Optional[str] = None
     purpose: Optional[str] = ""
     body: str
     success_points: Optional[list] = None
@@ -596,7 +597,7 @@ def _challenge_fields(body: ChallengeBody) -> dict:
     persona = body.persona or {}
     if not (persona.get("name") or "").strip() or not (persona.get("opening_line") or "").strip():
         raise HTTPException(status_code=400, detail="The shopper needs a name and an opening line")
-    return {"department": body.department, "category": CATEGORY_BY_DEPT.get(body.department, "Custom"), "title": no_em_dash(body.title.strip())[:120], "runtime": (body.runtime or "").strip()[:40], "purpose": no_em_dash(body.purpose or "")[:400], "body": no_em_dash(body.body)[:8000],
+    return {"department": body.department, "direction": "outbound" if body.direction == "outbound" else "inbound", "category": CATEGORY_BY_DEPT.get(body.department, "Custom"), "title": no_em_dash(body.title.strip())[:120], "runtime": (body.runtime or "").strip()[:40], "purpose": no_em_dash(body.purpose or "")[:400], "body": no_em_dash(body.body)[:8000],
             "success_points": [str(p).strip()[:160] for p in (body.success_points or []) if str(p).strip()][:12], "curveballs": [no_em_dash(str(c)).strip()[:160] for c in (body.curveballs or []) if str(c).strip()][:4],
             "persona": {"name": str(persona.get("name")).strip()[:60], "voice": persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female", "summary": no_em_dash(str(persona.get("summary") or ""))[:400],
                         "goals": no_em_dash(str(persona.get("goals") or ""))[:200], "objections": [no_em_dash(str(o))[:160] for o in (persona.get("objections") or []) if str(o).strip()][:6], "opening_line": no_em_dash(str(persona.get("opening_line")))[:240]}}
@@ -604,7 +605,7 @@ def _challenge_fields(body: ChallengeBody) -> dict:
 
 async def _insert_challenge(db, me: dict, body: ChallengeBody, cid: Optional[str]) -> dict:
     now = datetime.now(timezone.utc)
-    doc = {"kind": "phone", "pool": "mystery_shop", "shop_client_id": cid, "store_id": None, "slug": f"shop_custom_{ObjectId()}", "direction": "inbound", **_challenge_fields(body),
+    doc = {"kind": "phone", "pool": "mystery_shop", "shop_client_id": cid, "store_id": None, "slug": f"shop_custom_{ObjectId()}", **_challenge_fields(body),
            "generated_from": (body.generated_from or "").strip()[:3000] or None, "created_by": str(me["_id"]), "created_by_name": me.get("name"), "active": True, "created_at": now, "updated_at": now}
     res = await db.scripts.insert_one(doc)
     return _challenge_out(await db.scripts.find_one({"_id": res.inserted_id}))

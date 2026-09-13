@@ -280,7 +280,7 @@ async def create_shop_call(db, client: dict, target: dict, when: datetime, creat
     now = _now()
     doc = {"kind": "mystery_shop", "mode": "phone", "status": "scheduled", "user_id": None, "client_id": str(client["_id"]), "target_id": str(target["_id"]),
            "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "department": dept, "store_id": None, "store_name": client.get("name") or "the store",
-           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": "inbound", "persona": persona, "curveballs": curve,
+           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": script.get("direction") if script.get("direction") in ("inbound", "outbound") else "inbound", "persona": persona, "curveballs": curve,
            "assignment_id": None, "scheduled_for": when, "attempts": 0, "max_attempts": 3, "manual": manual, "token": uuid.uuid4().hex, "turns": [],
            "created_by": created_by, "created_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
@@ -373,7 +373,7 @@ async def place_shop_call(db, call: dict) -> bool:
             tw.calls.create, to=call["rep_phone"], from_=frm, url=f"{base}/twiml/{sid}?t={token}", method="POST",
             status_callback=f"{base}/status/{sid}?t={token}", status_callback_event=["answered", "completed"], status_callback_method="POST",
             record=bool(client.get("record_calls", True)), recording_status_callback=f"{base}/recording/{sid}?t={token}", recording_status_callback_event=["completed"],
-            timeout=25)
+            timeout=25, time_limit=scr.CALL_TIME_LIMIT_S)
     except Exception as e:
         logger.warning(f"[MysteryShop] could not place call {sid}: {e}")
         await record_outcome(db, {**call, "attempts": call.get("attempts", 0) + 1}, "failed", "The call could not be placed")
@@ -382,22 +382,36 @@ async def place_shop_call(db, call: dict) -> bool:
     return True
 
 
-OUTCOME_LABEL = {"voicemail": "Went to voicemail", "no-answer": "No answer", "busy": "Line was busy", "failed": "The call could not be placed", "canceled": "The call was cancelled", "hung_up": "Hung up before the shop started"}
+OUTCOME_LABEL = {"voicemail": "Went to voicemail", "no-answer": "No answer", "busy": "Line was busy", "failed": "The call could not be placed", "canceled": "The call was cancelled", "hung_up": "Hung up before the shop started",
+                 "no_response": "Went to voicemail or wasn't ready", "postponed": "Asked us to call back later"}
+
+
+async def postpone_call(db, call: dict, hours: int = 2):
+    """Rep pressed 2 (bad time): same shop again in a couple of hours, inside store hours, and it does not count as a try."""
+    client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])}) or {}
+    now = _now()
+    when = now + timedelta(hours=hours)
+    if client and not in_hours(client, when):
+        when = next_slot(client, when, min_gap_minutes=0)
+    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": when, "outcome": "postponed", "fail_reason": OUTCOME_LABEL["postponed"], "call_sid": None, "call_status": None, "turns": [], "updated_at": now},
+                                                               "$inc": {"attempts": -1 if int(call.get("attempts") or 0) > 0 else 0},
+                                                               "$push": {"attempt_history": {"at": now, "outcome": "postponed", "call_sid": call.get("call_sid")}}})
 
 
 async def record_outcome(db, call: dict, outcome: str, reason: Optional[str] = None):
-    """A shop attempt that never became a conversation: retry later inside business hours, or give up after max attempts."""
+    """A shop attempt that never became a conversation: retry later inside business hours, or give up after max attempts. Quick shops never auto-retry (the admin taps Try again)."""
     client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])}) or {}
     attempts = int(call.get("attempts") or 0)
     label = reason or OUTCOME_LABEL.get(outcome, outcome)
     now = _now()
     history = {"at": now, "outcome": outcome, "call_sid": call.get("call_sid")}
-    if attempts < int(call.get("max_attempts") or 3) and client:
+    if attempts < int(call.get("max_attempts") or 3) and client and not client.get("demo"):
         when = next_slot(client, now, min_gap_minutes=random.randint(90, 240))
         await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": when, "outcome": outcome, "fail_reason": f"{label}, trying again", "call_sid": None, "call_status": None, "turns": [], "updated_at": now},
                                                                    "$push": {"attempt_history": history}})
     else:
-        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "unreachable", "outcome": outcome, "fail_reason": f"{label} ({attempts} tries)", "ended_at": now, "updated_at": now}, "$push": {"attempt_history": history}})
+        tries = "" if client.get("demo") else f" ({attempts} {'try' if attempts == 1 else 'tries'})"
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "unreachable", "outcome": outcome, "fail_reason": f"{label}{tries}", "ended_at": now, "updated_at": now}, "$push": {"attempt_history": history}})
         if call.get("enrollment_id"):
             from services import courses as cs
             e = await db.course_enrollments.find_one({"_id": ObjectId(call["enrollment_id"])}) if ObjectId.is_valid(str(call["enrollment_id"])) else None
@@ -870,7 +884,7 @@ def _short_criteria(ev: dict, passed: bool, n: int = 2) -> list:
 def scorecard_sms(s: dict, ev: dict, url: str, course_line: str = "") -> str:
     first = (s.get("rep_name") or "").split(" ")[0] or "there"
     pct = ev.get("score_pct")
-    lines = [f"Hey {first}, that call just now was a mystery shop from I'm On Social{'' if s.get('demo') else ' for ' + str(s.get('store_name') or 'your store')}. " + (f"You scored {int(pct)}%." if pct is not None else "Your scorecard is ready.")]
+    lines = [f"Hey {first}, that practice call just now was from I'm On Social{'' if s.get('demo') else ' for ' + str(s.get('store_name') or 'your store')}. " + (f"You scored {int(pct)}%." if pct is not None else "Your scorecard is ready.")]
     good, fix = _short_criteria(ev, True), _short_criteria(ev, False)
     if good:
         lines.append("Nailed: " + ", ".join(good) + ".")

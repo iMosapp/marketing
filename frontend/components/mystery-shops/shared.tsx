@@ -25,7 +25,7 @@ export type ShopCall = {
   curveballs: string[]; scheduled_for: string | null; attempts: number; started_at: string | null; ended_at: string | null; score_pct: number | null; adherence_pct: number | null; evaluation_id?: string | null;
   recording_url?: string | null; recording_seconds?: number | null; turns: number; manual: boolean; demo?: boolean; score_url?: string | null; score_sms_status?: string | null; score_views?: number;
 };
-export type Challenge = { id: string; title: string; department: string; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean };
+export type Challenge = { id: string; title: string; department: string; direction?: 'inbound' | 'outbound'; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean };
 export type ChallengeDraft = { title: string; department: string; runtime?: string; purpose?: string; body: string; success_points?: string[]; curveballs?: string[]; persona?: any; generated_from?: string };
 export type Proposal = {
   id: string; token: string; status: string; terms: { sales_per_month: number; service_per_month: number; price_monthly: number; term_months: number; notes?: string }; client_name: string; contact_name: string; contact_email: string;

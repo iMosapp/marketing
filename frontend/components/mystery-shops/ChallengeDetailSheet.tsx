@@ -14,7 +14,7 @@ export const ChallengeDetailSheet = ({ open, onClose, colors, onEdit, onDelete }
     ) : undefined}>
     {open && (
       <>
-        <Text style={{ fontSize: 12.5, fontWeight: '800', color: GOLD }}>{deptLabel(open.department).toUpperCase()}{open.runtime ? ` · ${open.runtime}` : ''}{open.generated ? ' · WRITTEN BY JESSI' : ''}</Text>
+        <Text style={{ fontSize: 12.5, fontWeight: '800', color: GOLD }}>{deptLabel(open.department).toUpperCase()}{open.direction === 'outbound' ? ' · OUTBOUND (REP CALLS THEM)' : ' · INBOUND (THEY CALL THE STORE)'}{open.runtime ? ` · ${open.runtime}` : ''}{open.generated ? ' · WRITTEN BY JESSI' : ''}</Text>
         {!!open.purpose && <Text style={{ fontSize: 14.5, color: colors.textSecondary, fontStyle: 'italic', lineHeight: 20 }}>{open.purpose}</Text>}
         <View style={{ gap: 4 }}><Label t="WHAT A GREAT REP DOES" colors={colors} /><Text style={{ fontSize: 14.5, color: colors.text, lineHeight: 21 }}>{open.body}</Text></View>
         {open.success_points?.length > 0 && <View style={{ gap: 4 }}><Label t="GRADED POINTS" colors={colors} />{open.success_points.map((p, i) => <Text key={i} style={{ fontSize: 13.5, color: colors.text }}>• {p}</Text>)}</View>}

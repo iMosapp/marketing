@@ -21,6 +21,7 @@ MERGE_FIELDS = ["first_name", "vehicle", "store", "rep_name", "appointment_time"
 MAX_TURNS = 24
 PHONE_MAX_MINUTES = 15
 PHONE_MAX_TURNS = 60
+CALL_TIME_LIMIT_S = (PHONE_MAX_MINUTES + 3) * 60  # Twilio-side ceiling: announcement + the call itself can never run past this
 
 # ---------------------------------------------------------------- starter phone scripts (global library, stores override by copying)
 STARTER_SCRIPTS = [
@@ -378,7 +379,7 @@ def _xml(v: str) -> str:
     return (v or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
-def relay_twiml(session: dict) -> str:
+def relay_twiml(session: dict, prelude: str = "") -> str:
     """TwiML that hands the answered call to ConversationRelay, which streams the rep's speech to our websocket and speaks Jessi's customer lines."""
     sid, token = str(session["_id"]), session["token"]
     base = _app_url()
@@ -388,17 +389,91 @@ def relay_twiml(session: dict) -> str:
     hints = ",".join(h for h in [session.get("store_name"), persona.get("name")] if h)
     # inbound = the customer is calling in, so the AI stays quiet until the rep answers the phone
     greeting = "" if session.get("direction") == "inbound" else f'welcomeGreeting="{_xml(opening)}" '
-    if session.get("kind") == "mystery_shop":
-        greeting = f'welcomeGreeting="{_xml(shop_greeting(session))}" '
-    return (f'<?xml version="1.0" encoding="UTF-8"?><Response><Connect action="{_xml(base)}/api/scripts/roleplay/after/{sid}?t={token}">'
+    return (f'<?xml version="1.0" encoding="UTF-8"?><Response>{prelude}<Connect action="{_xml(base)}/api/scripts/roleplay/after/{sid}?t={token}">'
             f'<ConversationRelay url="{_xml(ws)}" {greeting}ttsProvider="Google" voice="{RELAY_VOICES.get(persona.get("voice"), "en-US-Journey-F")}" '
             f'transcriptionProvider="Deepgram" interruptible="any" interruptSensitivity="medium" ignoreBackchannel="true" hints="{_xml(hints)}" />'
             f'</Connect></Response>')
 
 
-def shop_greeting(session: dict) -> str:
+ANNOUNCE_VOICE = "Polly.Joanna-Neural"
+GATE_SECONDS = 12
+DEPT_CALL = {"sales": "sales call", "service": "service call", "parts": "parts call", "rental": "rental call"}
+READY_WORDS = ("ready", "yes", "yeah", "yep", "go", "okay", "ok", "sure", "let's", "lets", "bring it", "hit me")
+LATER_WORDS = ("not now", "bad time", "later", "busy", "call back", "can't right now", "cant right now", "no")
+
+
+def shop_announcement(session: dict) -> str:
+    """What the rep hears the moment they pick up: who this is, which way the call runs, how to start it."""
     first = (session.get("rep_name") or "").split(" ")[0]
-    return f"Hi, is this {first}?" if first else "Hi, is this the sales department?"
+    dept = DEPT_CALL.get(session.get("department") or "sales", "call")
+    persona = session.get("persona") or {}
+    hi = f"Hi {first}, " if first else "Hi, "
+    if session.get("direction") == "outbound":
+        who = persona.get("name", "").split(" ")[0] or "a customer"
+        about = f" about the {persona['vehicle']}" if persona.get("vehicle") else ""
+        setup = f"Coming up: an outbound {dept}. You're calling {who} back{about}. When you're ready, press 1 or say ready, you'll hear it ring, and they'll pick up."
+    else:
+        setup = f"Coming up: an inbound {dept}. A customer is calling the store, so answer it exactly like a real phone-up. Press 1 or say ready when you're set."
+    return f"{hi}this is your practice call from I'm On Social. {setup} If now's a bad time, press 2 and we'll call back in a couple of hours."
+
+
+def shop_gate_twiml(session: dict) -> str:
+    sid, token = str(session["_id"]), session["token"]
+    action = f"{_xml(_app_url())}/api/scripts/roleplay/gate/{sid}?t={token}"
+    return (f'<?xml version="1.0" encoding="UTF-8"?><Response>'
+            f'<Gather input="dtmf speech" numDigits="1" timeout="{GATE_SECONDS}" speechTimeout="auto" actionOnEmptyResult="true" action="{action}" method="POST" hints="ready, yes, go, not now, later">'
+            f'<Say voice="{ANNOUNCE_VOICE}">{_xml(shop_announcement(session))}</Say></Gather></Response>')
+
+
+def gate_choice(digits: str, speech: str) -> str:
+    """'go' (press 1 / ready), 'later' (press 2 / not now) or 'none' (silence, voicemail greeting, anything else)."""
+    d = (digits or "").strip()
+    low = " ".join((speech or "").lower().split())
+    if d == "1" or any(w in low for w in READY_WORDS if w != "no"):
+        return "go"
+    if d == "2" or any(w == low or f" {w}" in f" {low}" for w in LATER_WORDS):
+        return "later"
+    return "none"
+
+
+def shop_go_twiml(session: dict) -> str:
+    """Rep is ready: a heads-up, a ring, then the live customer."""
+    line = "Here it comes." if session.get("direction") == "inbound" else "Here we go, it's ringing."
+    ring = f"{_xml(_app_url())}/api/scripts/roleplay/audio/ring.wav"
+    return relay_twiml(session, prelude=f'<Say voice="{ANNOUNCE_VOICE}">{_xml(line)}</Say><Play>{ring}</Play>')
+
+
+def say_hangup_twiml(text: str) -> str:
+    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="{ANNOUNCE_VOICE}">{_xml(text)}</Say><Hangup/></Response>'
+
+
+_RING_WAV: Optional[bytes] = None
+
+
+def ring_wav() -> bytes:
+    """US ringback (440 + 480 Hz, 2 s on / 1.2 s off, two rings), 8 kHz mono PCM, built once."""
+    global _RING_WAV
+    if _RING_WAV is None:
+        import io
+        import math
+        import struct
+        import wave
+        rate = 8000
+        frames = bytearray()
+        for on, off in ((2.0, 1.2), (2.0, 0.6)):
+            for i in range(int(rate * on)):
+                t = i / rate
+                v = 0.35 * (math.sin(2 * math.pi * 440 * t) + math.sin(2 * math.pi * 480 * t)) / 2
+                frames += struct.pack("<h", int(v * 32767))
+            frames += b"\x00\x00" * int(rate * off)
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(rate)
+            w.writeframes(bytes(frames))
+        _RING_WAV = buf.getvalue()
+    return _RING_WAV
 
 
 def hangup_twiml(text: str) -> str:
@@ -432,7 +507,7 @@ async def start_phone_session(db, me: dict, script: dict, assignment: Optional[d
         call = await asyncio.to_thread(
             client.calls.create, to=rep_phone, from_=from_number, url=f"{base}/twiml/{sid}?t={token}", method="POST",
             status_callback=f"{base}/status/{sid}?t={token}", status_callback_event=["answered", "completed"], status_callback_method="POST",
-            record=True, recording_status_callback=f"{base}/recording/{sid}?t={token}", recording_status_callback_event=["completed"], timeout=25)
+            record=True, recording_status_callback=f"{base}/recording/{sid}?t={token}", recording_status_callback_event=["completed"], timeout=25, time_limit=CALL_TIME_LIMIT_S)
     except Exception as e:
         logger.warning(f"[Roleplay] could not place practice call: {e}")
         await db.roleplay_sessions.update_one({"_id": res.inserted_id}, {"$set": {"status": "failed", "fail_reason": "The call could not be placed", "updated_at": _now()}})
@@ -484,9 +559,7 @@ async def relay_setup(db, sid: str, msg: dict):
     if msg.get("callSid"):
         sets["call_sid"] = msg["callSid"]
     update = {"$set": sets}
-    if not s.get("turns") and s.get("kind") == "mystery_shop":
-        update["$push"] = {"turns": {"role": "customer", "text": shop_greeting(s), "audio_url": None, "at": now, "mood": "neutral"}}
-    elif not s.get("turns") and s.get("direction") != "inbound":
+    if not s.get("turns") and s.get("direction") != "inbound":
         opening = (s.get("persona") or {}).get("opening_line") or "Hi, I'm calling about a car I saw online."
         update["$push"] = {"turns": {"role": "customer", "text": opening, "audio_url": None, "at": now, "mood": "neutral"}}
     await db.roleplay_sessions.update_one({"_id": s["_id"]}, update)
@@ -498,6 +571,19 @@ async def relay_turn(db, sid: str, heard: str) -> dict:
         return {"say": "", "ended": True}
     out = await customer_turn(db, s, heard[:1200])
     return {"say": out["customer"]["text"], "ended": out["ended"]}
+
+
+INBOUND_NUDGE_S = 8
+
+
+async def relay_nudge(db, sid: str) -> str:
+    """Inbound call, ring played, rep still silent: the customer speaks first anyway so the call never sits dead."""
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"turns": 1, "direction": 1, "persona": 1, "status": 1})
+    if not s or s.get("status") not in ("live", "dialing") or s.get("turns") or s.get("direction") != "inbound":
+        return ""
+    opening = (s.get("persona") or {}).get("opening_line") or "Hi, I'm calling about a car I saw online."
+    await db.roleplay_sessions.update_one({"_id": s["_id"], "turns": {"$size": 0}}, {"$push": {"turns": {"role": "customer", "text": opening, "audio_url": None, "at": _now(), "mood": "neutral"}}, "$set": {"updated_at": _now()}})
+    return opening
 
 
 async def relay_interrupt(db, sid: str, spoken: Optional[str]):
@@ -537,9 +623,12 @@ async def finalize_session(db, sid: str, reason: str) -> Optional[dict]:
 
 
 async def save_recording(db, sid: str, recording_url: str, duration: Optional[str]):
-    """Pull the mp3 from Twilio into our storage so playback needs no Twilio auth."""
+    """Pull the mp3 from Twilio into our storage so playback needs no Twilio auth. Attempts that never got past the announcement keep no recording."""
     import httpx
     from utils.image_storage import put_object
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"status": 1})
+    if not s or s.get("status") in ("scheduled", "unreachable", "canceled"):
+        return
     tw_sid, tw_tok = os.environ.get("TWILIO_ACCOUNT_SID", ""), os.environ.get("TWILIO_AUTH_TOKEN", "")
     mp3 = recording_url if recording_url.endswith(".mp3") else f"{recording_url}.mp3"
     for attempt in range(3):
@@ -565,7 +654,7 @@ async def save_recording(db, sid: str, recording_url: str, duration: Optional[st
 def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False) -> str:
     return (f"You are {persona.get('name', 'a customer')}, a real car shopper on a phone call with {rep_first}, a salesperson at {store_name}. "
             + ("YOU placed this call to the store, so you drive the reason for calling. " if direction == "inbound" else "The salesperson called YOU, so they drive the conversation and you react. ")
-            + ("This is a real mystery shop of a real employee: never reveal you are an AI, a recording or a mystery shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery else "")
+            + ("The rep was told this is a practice call, but you stay fully in character as a real customer: never admit you are an AI, a recording or a shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery else "")
             + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "
                "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " if live else "")
             + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
@@ -607,7 +696,7 @@ def _turn_out(t: dict) -> dict:
 async def customer_turn(db, session: dict, rep_text: str) -> dict:
     """Rep spoke -> the AI customer answers (text + audio)."""
     now = _now()
-    if session.get("direction") == "inbound" and not any(t["role"] == "rep" for t in session.get("turns", [])):
+    if session.get("direction") == "inbound" and not session.get("turns"):
         # the rep just answered the phone: the customer opens with their scripted line, no model call needed
         persona = session.get("persona") or {}
         rep_turn = {"role": "rep", "text": rep_text, "at": now}
@@ -672,7 +761,7 @@ async def grade_session(db, session: dict) -> dict:
     graded = None
     if card and card.get("criteria") and len(rep_turns) >= 2:
         try:
-            graded = await sc.grade_with_ai(card, transcript.replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", "inbound", max(duration_s, 60))
+            graded = await sc.grade_with_ai(card, transcript.replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60))
         except Exception as e:
             logger.warning(f"[Roleplay] scorecard grading failed: {e}")
     adherence = await _grade_adherence(script, transcript, rep_first) if len(rep_turns) >= 1 else {"score_pct": None, "hits": [], "misses": [], "coaching": [], "summary": "Too short to grade."}
@@ -684,7 +773,7 @@ async def grade_session(db, session: dict) -> dict:
         "user_id": session.get("user_id"), "rep_name": rep.get("name") or rep_first, "store_id": session.get("store_id"),
         "contact_id": None, "contact_name": f"{persona.get('name', 'AI customer')} ({'mystery shopper' if shop else 'practice'})", "conversation_id": None, "inbox_id": None,
         "scorecard_id": str(card["_id"]) if card and card.get("_id") else None, "scorecard_name": card.get("name") if card else None, "department": (card or {}).get("department") or "",
-        "duration_s": duration_s, "direction": "inbound", "call_at": session.get("started_at") or now,
+        "duration_s": duration_s, "direction": session.get("direction") or "inbound", "call_at": session.get("started_at") or now,
         "results": (graded or {}).get("results") or [], "score_pct": pct, "critical_misses": misses,
         "summary": (graded or {}).get("summary") or adherence.get("summary") or "", "wins": (graded or {}).get("wins") or adherence.get("hits") or [],
         "coaching": ((graded or {}).get("coaching") or []) + adherence.get("coaching", []), "customer_sentiment": (graded or {}).get("customer_sentiment") or "",
