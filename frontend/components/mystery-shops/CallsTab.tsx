@@ -63,8 +63,8 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
         <Text style={{ flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.text }} {...tid('calls-month-label')}>{monthLabel(month)}</Text>
         <TouchableOpacity onPress={() => onMonth(shiftMonth(month, 1))} hitSlop={8} {...tid('calls-month-next')}><Ionicons name="chevron-forward" size={22} color={GOLD} /></TouchableOpacity>
       </View>
-      <GoldButton label={`Schedule the rest of ${monthLabel(month).split(' ')[0]} (${client.plan.sales_per_month} sales + ${client.plan.service_per_month} service)`} onPress={plan} busy={planning} icon="calendar" testID="calls-plan-month" outline />
-      {calls === null ? <ActivityIndicator color={GOLD} /> : calls.length === 0 ? <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 }} {...tid('calls-empty')}>No shops this month yet. Add people, then schedule the month or tap Shop now on someone.</Text> : (
+      {!client.demo && <GoldButton label={`Schedule the rest of ${monthLabel(month).split(' ')[0]} (${client.plan.sales_per_month} sales + ${client.plan.service_per_month} service)`} onPress={plan} busy={planning} icon="calendar" testID="calls-plan-month" outline />}
+      {calls === null ? <ActivityIndicator color={GOLD} /> : done.length + upcoming.length + other.length === 0 ? <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 }} {...tid('calls-empty')}>{client.demo ? 'No quick shops this month yet. Tap Shop anyone right now, or Shop now on someone under People.' : 'No shops this month yet. Add people, then schedule the month or tap Shop now on someone.'}</Text> : (
         <>
           {upcoming.length > 0 && <View style={{ gap: 8 }}><Label t={`COMING UP · ${upcoming.length}`} colors={colors} />{upcoming.map(c => <Row key={c.id} c={c} />)}</View>}
           {done.length > 0 && <View style={{ gap: 8 }}><Label t={`COMPLETED · ${done.length}`} colors={colors} />{done.map(c => <Row key={c.id} c={c} />)}</View>}

@@ -59,15 +59,16 @@ export default function MysteryShopClient() {
   const rotate = () => showConfirm('New report link?', 'The old link stops working. Send the new one to the store.', async () => { const r = await api.post(`/shop-clients/${id}/report/rotate-link`); setReportUrl(r.data.report_url); showToast('New link ready', 'success'); }, undefined, 'Replace link');
 
   if (!client) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}><ScreenHeader title="Client" testID="shop-client-header" /><ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /></SafeAreaView>;
+  const tabs = client.demo ? TABS.filter(t => t[0] !== 'billing') : TABS;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <ScreenHeader title={client.name} subtitle={`${client.plan.sales_per_month} sales + ${client.plan.service_per_month} service / mo${client.active ? '' : ' · PAUSED'}`} testID="shop-client-header"
-        right={<View style={{ flexDirection: 'row' }}><HeaderIconButton icon={client.active ? 'pause-circle-outline' : 'play-circle-outline'} onPress={pause} testID="shop-client-pause" /><HeaderIconButton icon="create-outline" onPress={() => setEdit(true)} testID="shop-client-edit" /></View>} />
+      <ScreenHeader title={client.name} subtitle={client.demo ? 'Anyone you shop without a client account · not billed' : `${client.plan.sales_per_month} sales + ${client.plan.service_per_month} service / mo${client.active ? '' : ' · PAUSED'}`} testID="shop-client-header"
+        right={client.demo ? undefined : <View style={{ flexDirection: 'row' }}><HeaderIconButton icon={client.active ? 'pause-circle-outline' : 'play-circle-outline'} onPress={pause} testID="shop-client-pause" /><HeaderIconButton icon="create-outline" onPress={() => setEdit(true)} testID="shop-client-edit" /></View>} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 8 }} style={{ flexGrow: 0, flexShrink: 0 }}>
-        {TABS.map(([k, l]) => <Chip key={k} label={l} active={tab === k} onPress={() => setTab(k)} colors={colors} testID={`shop-tab-${k}`} />)}
+        {tabs.map(([k, l]) => <Chip key={k} label={l} active={tab === k} onPress={() => setTab(k)} colors={colors} testID={`shop-tab-${k}`} />)}
       </ScrollView>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80, gap: 16 }} keyboardShouldPersistTaps="handled">
-        {tab === 'people' && <PeopleTab client={client} people={people} colors={colors} onChanged={load} onShopStarted={() => { setCallsKey(k => k + 1); setTab('calls'); }} kickoffUrl={kickoffUrl} kickoff={kickoff} />}
+        {tab === 'people' && <PeopleTab client={client} people={people} colors={colors} onChanged={load} onShopStarted={() => { setCallsKey(k => k + 1); setTab('calls'); }} kickoffUrl={client.demo ? undefined : kickoffUrl} kickoff={kickoff} />}
         {tab === 'calls' && <CallsTab client={client} colors={colors} month={month} onMonth={setMonth} refreshKey={callsKey} onChanged={load} />}
         {tab === 'challenges' && <ChallengesTab client={client} colors={colors} />}
         {tab === 'report' && (

@@ -25,7 +25,7 @@ export default function ChallengeLibrary() {
   const load = useCallback(async () => { try { const r = await api.get('/shop-clients/challenges'); setRows(r.data.challenges); } catch { setRows([]); } }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const remove = (c: Challenge) => showConfirm('Hide this challenge?', 'It disappears from every client\'s pool and from the demo picker.', async () => {
+  const remove = (c: Challenge) => showConfirm('Hide this challenge?', 'It disappears from every client\'s pool and from the Quick shop picker.', async () => {
     try { await api.delete(`/shop-clients/challenges/${c.id}`); setOpen(null); load(); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not remove', 'error'); }
   }, undefined, 'Hide');
 

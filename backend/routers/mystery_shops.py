@@ -200,6 +200,7 @@ async def _progress(db, client: dict) -> dict:
 async def list_clients(request: Request):
     await require_admin(request)
     db = get_db()
+    await ms.rename_legacy_quick_bucket(db)
     rows = await db.shop_clients.find({}).sort("name", 1).to_list(200)
     return {"clients": [ms.serialize_client(c, await _progress(db, c)) for c in rows], "departments": ms.DEPARTMENTS, "from_number_default": await ms.default_from_number(db)}
 
@@ -352,7 +353,7 @@ async def buy_shop_number(body: NumberBody, request: Request):
 
 @router.post("/demo")
 async def demo_shop(body: DemoBody, request: Request):
-    """Shop anyone right now: no client, no proposal. Lands in the built-in Demo shops bucket."""
+    """Shop anyone right now: no client, no proposal. Lands in the built-in Quick shops bucket."""
     me = await require_admin(request)
     db = get_db()
     name = (body.name or "").strip()[:80]

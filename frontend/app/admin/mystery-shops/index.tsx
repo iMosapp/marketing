@@ -41,8 +41,8 @@ export default function MysteryShopClients() {
           <TouchableOpacity onPress={() => setDemo(true)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: GOLD, borderRadius: 16, padding: 14 }} {...tid('shop-demo')}>
             <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#11111122', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="call" size={20} color="#111" /></View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15.5, fontWeight: '800', color: '#111' }}>Demo shop: call anyone right now</Text>
-              <Text style={{ fontSize: 12.5, color: '#111111AA' }}>Name, cell, department. It dials, grades, and texts them their scorecard.</Text>
+              <Text style={{ fontSize: 15.5, fontWeight: '800', color: '#111' }}>Shop anyone right now</Text>
+              <Text style={{ fontSize: 12.5, color: '#111111AA' }}>Name, cell, department. No account needed. It dials, grades, and texts them their scorecard.</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#111" />
           </TouchableOpacity>
@@ -74,10 +74,10 @@ export default function MysteryShopClients() {
             return (
               <TouchableOpacity key={c.id} onPress={() => router.push(`/admin/mystery-shops/${c.id}` as any)} activeOpacity={0.85} style={{ backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 10, opacity: c.active ? 1 : 0.6 }} {...tid(`shop-client-${c.id}`)}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: (c.demo ? PURPLE : GOLD) + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={c.demo ? 'call' : 'storefront'} size={20} color={c.demo ? PURPLE : GOLD} /></View>
+                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={c.demo ? 'flash' : 'storefront'} size={20} color={GOLD} /></View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>{c.name}{!c.active ? '  · paused' : ''}</Text>
-                    <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{c.demo ? 'Everyone you shop from the Demo button' : [c.brand, [c.city, c.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}{c.people ? ` · ${c.people} people` : ''}</Text>
+                    <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{c.demo ? 'Anyone you shop without a client account' : [c.brand, [c.city, c.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}{c.people ? ` · ${c.people} people` : ''}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={{ fontSize: 18, fontWeight: '800', color: scoreColor(c.avg_score) }}>{c.avg_score != null ? `${c.avg_score}%` : '–'}</Text>
@@ -99,7 +99,15 @@ export default function MysteryShopClients() {
                     </View>
                   </>
                 )}
-                {c.demo && <Text style={{ fontSize: 12, color: colors.textSecondary }}>{done} demo shop{done === 1 ? '' : 's'} this month · not billed</Text>}
+                {c.demo && (
+                  <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }} {...tid('quick-shops-stats')}>
+                    <Text style={{ fontSize: 12.5, fontWeight: '700', color: colors.text }}>{done} shop{done === 1 ? '' : 's'} this month</Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Sales {c.progress?.sales.completed ?? 0}</Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Service {c.progress?.service.completed ?? 0}</Text>
+                    {!!c.needs_training && <Text style={{ fontSize: 12, fontWeight: '700', color: RED }}>{c.needs_training} need training</Text>}
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>not billed</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}

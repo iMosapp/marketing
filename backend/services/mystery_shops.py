@@ -408,9 +408,32 @@ async def record_outcome(db, call: dict, outcome: str, reason: Optional[str] = N
                 await cs.schedule_next_shop(db, e, course, delay_minutes=24 * 60)
 
 
+async def sweep_stuck_calls(db) -> int:
+    """Lost Twilio callbacks: ask Twilio about anything still dialing after 2 min, give up after 10; finalize a 'live' call nobody has touched in 20 min."""
+    now = _now()
+    n = 0
+    rows = await db.roleplay_sessions.find({"kind": "mystery_shop", "mode": "phone", "status": {"$in": ["dialing", "live"]}, "started_at": {"$lte": now - timedelta(minutes=2)}}).to_list(50)
+    for s in rows:
+        started = s["started_at"].replace(tzinfo=timezone.utc) if s["started_at"].tzinfo is None else s["started_at"]
+        age = (now - started).total_seconds() / 60
+        if s["status"] == "dialing":
+            s = await scr.reconcile_dialing(db, s)
+            if s.get("status") == "dialing" and age >= 10:
+                await record_outcome(db, s, "no-answer")
+                n += 1
+        elif age >= scr.PHONE_MAX_MINUTES + 5:
+            await scr.finalize_session(db, str(s["_id"]), "swept_stale")
+            n += 1
+    return n
+
+
 async def run_due_calls(db, limit: int = 3) -> int:
     """Scheduler tick: dial shops whose time has come (inside the client's hours), a few at a time."""
     now = _now()
+    try:
+        await sweep_stuck_calls(db)
+    except Exception as e:
+        logger.warning(f"[MysteryShop] sweep failed: {e}")
     due = await db.roleplay_sessions.find({"kind": "mystery_shop", "status": "scheduled", "scheduled_for": {"$lte": now}}).sort("scheduled_for", 1).limit(limit * 3).to_list(limit * 3)
     placed = 0
     for call in due:
@@ -795,19 +818,25 @@ async def notify_kickoff(db, client: dict, people_added: int, people_total: int)
             logger.debug(f"[MysteryShop] kickoff push failed for {uid}: {e}")
 
 
-# ---------------------------------------------------------------- demo shops + texting the scorecard
-DEMO_CLIENT_NAME = "Demo shops"
+# ---------------------------------------------------------------- quick shops (anyone, no client account) + texting the scorecard
+DEMO_CLIENT_NAME = "Quick shops"
+QUICK_NOTES = "Built-in bucket for quick shops: anyone you shop without a client account lands here. Never billed."
+
+
+async def rename_legacy_quick_bucket(db):
+    await db.shop_clients.update_many({"demo": True, "name": {"$ne": DEMO_CLIENT_NAME}}, {"$set": {"name": DEMO_CLIENT_NAME, "notes": QUICK_NOTES}})
 
 
 async def ensure_demo_client(db, me: dict) -> dict:
     """Built-in, never-billed bucket so Forest can shop anyone on the spot without creating a client first."""
+    await rename_legacy_quick_bucket(db)
     c = await db.shop_clients.find_one({"demo": True})
     if c:
         return c
     now = _now()
     doc = {"name": DEMO_CLIENT_NAME, "demo": True, "brand": "", "city": "", "state": "", "timezone": "America/Denver", "contact_name": "", "contact_email": "", "contact_phone": "", "contact_title": "",
            "plan": {"sales_per_month": 0, "service_per_month": 0, "price_monthly": 0.0}, "hours": {"start": "00:00", "end": "23:59", "days": [0, 1, 2, 3, 4, 5, 6]}, "vehicles": [], "active": True,
-           "record_calls": True, "notes": "Built-in bucket for demo shops. Anyone you shop from the Demo button lands here.", "text_scorecards": True, "report_token": uuid.uuid4().hex, "billing": {},
+           "record_calls": True, "notes": QUICK_NOTES, "text_scorecards": True, "report_token": uuid.uuid4().hex, "billing": {},
            "created_by": str(me["_id"]), "created_at": now, "updated_at": now}
     res = await db.shop_clients.insert_one(doc)
     doc["_id"] = res.inserted_id
@@ -822,7 +851,7 @@ async def demo_shop(db, me: dict, name: str, phone: str, department: str, title:
         await db.shop_targets.update_one({"_id": t["_id"]}, {"$set": {"name": name, "department": department, "title": title, "active": True, "updated_at": now}})
         t = {**t, "name": name, "department": department, "title": title}
     else:
-        res = await db.shop_targets.insert_one({"client_id": cid, "name": name, "phone": phone, "department": department, "title": title, "notes": "Demo shop", "active": True, "challenge_history": [], "created_at": now, "updated_at": now})
+        res = await db.shop_targets.insert_one({"client_id": cid, "name": name, "phone": phone, "department": department, "title": title, "notes": "Quick shop", "active": True, "challenge_history": [], "created_at": now, "updated_at": now})
         t = await db.shop_targets.find_one({"_id": res.inserted_id})
     persona_client = {**c, "name": store_name or "your dealership", "vehicles": [vehicle] if vehicle else []}
     call = await create_shop_call(db, persona_client, t, now, created_by=str(me["_id"]), manual=True, script=script)
@@ -894,7 +923,7 @@ async def after_graded(db, sid: str):
         from routers.notifications_center import invalidate_feed
         first = (s.get("rep_name") or "").split(" ")[0] or "The rep"
         pct = ev.get("score_pct")
-        title = f"{first} scored {int(pct)}% on the {'demo ' if s.get('demo') else ''}shop" if pct is not None else f"{first}'s shop call is graded"
+        title = f"{first} scored {int(pct)}% on the shop" if pct is not None else f"{first}'s shop call is graded"
         msg = (ev.get("summary") or "")[:160] + (" Scorecard texted to them." if want_sms else "")
         link = f"/admin/mystery-shops/{s['client_id']}?tab=calls"
         await db.notifications.insert_one({"user_id": s["created_by"], "type": "shop_graded", "title": title, "message": msg, "link": link, "read": False, "dismissed": False, "created_at": _now()})

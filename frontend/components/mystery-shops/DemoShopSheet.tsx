@@ -8,7 +8,7 @@ import { Sheet, Field, Label, Chip, GoldButton, DEPTS, GOLD, tid, type Challenge
 type Props = { visible: boolean; onClose: () => void; colors: any; onStarted: (clientId: string, callId: string) => void };
 const blank = { name: '', phone: '', department: 'sales', title: '', store_name: '', vehicle: '', script_id: null as string | null, text: true };
 
-// Shop anyone on the spot: no client, no proposal. The call lands in the built-in "Demo shops" bucket.
+// Shop anyone on the spot: no client, no proposal. The call lands in the built-in "Quick shops" bucket.
 export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) => {
   const { showToast } = useToast();
   const [f, setF] = useState(blank);
@@ -33,9 +33,9 @@ export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) =>
   };
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Demo shop" colors={colors} testID="demo-sheet"
+    <Sheet visible={visible} onClose={onClose} title="Quick shop" colors={colors} testID="demo-sheet"
       footer={<GoldButton label={ready ? `Call ${f.name.trim().split(' ')[0] || 'them'} now` : 'Name and cell number first'} onPress={go} busy={busy} disabled={!ready} testID="demo-call" icon="call" />}>
-      <Text style={{ fontSize: 13.5, color: colors.textSecondary, lineHeight: 19 }}>Their phone rings within seconds. The AI shopper runs a challenge, the call is recorded and graded, and if you leave the text on they get their scorecard by SMS a minute after hanging up.</Text>
+      <Text style={{ fontSize: 13.5, color: colors.textSecondary, lineHeight: 19 }}>A real mystery shop, no client account needed. Their phone rings within seconds, the AI shopper runs a challenge, the call is recorded and graded, and if you leave the text on they get their scorecard by SMS a minute after hanging up. Everything lands in Quick shops.</Text>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <View style={{ flex: 1.2 }}><Field label="WHO" value={f.name} onChange={(v: string) => set('name', v)} colors={colors} placeholder="Sam Seller" testID="demo-name" /></View>
         <View style={{ flex: 1 }}><Field label="CELL" value={f.phone} onChange={(v: string) => set('phone', v)} colors={colors} placeholder="(801) 555-0100" keyboardType="phone-pad" testID="demo-phone" /></View>
