@@ -23,6 +23,7 @@ DEPT_LABEL = ind.label_map()
 ALL_DEPARTMENTS = ind.all_dept_keys()
 CALL_STATUSES_OPEN = ["scheduled", "dialing", "live", "grading"]
 DEFAULT_HOURS = {"start": "09:00", "end": "18:00", "days": [0, 1, 2, 3, 4, 5]}
+ALWAYS_OPEN = {"start": "00:00", "end": "23:59", "days": [0, 1, 2, 3, 4, 5, 6]}
 
 # Global challenge pool. Persona text uses {vehicle} and {store}; the client's brand fills them in at shop time.
 STARTER_CHALLENGES = [
@@ -117,6 +118,8 @@ def _tz(client: dict) -> ZoneInfo:
 
 
 def _hours(client: dict) -> dict:
+    if client.get("demo"):
+        return dict(ALWAYS_OPEN)  # Quick shops have no business hours: they dial the moment they are placed, any time of day
     h = {**DEFAULT_HOURS, **(client.get("hours") or {})}
     h["days"] = [int(d) for d in (h.get("days") or DEFAULT_HOURS["days"])]
     return h
@@ -255,6 +258,8 @@ def _local_window(client: dict, day: datetime) -> Optional[tuple]:
 
 
 def in_hours(client: dict, when: Optional[datetime] = None) -> bool:
+    if client.get("demo"):
+        return True
     local = (when or _now()).astimezone(_tz(client))
     win = _local_window(client, local)
     return bool(win and win[0] <= local <= win[1])
@@ -262,6 +267,8 @@ def in_hours(client: dict, when: Optional[datetime] = None) -> bool:
 
 def next_slot(client: dict, after: datetime, min_gap_minutes: int = 90) -> datetime:
     """A random moment inside business hours, at least min_gap after `after` (retries) and never in the last 20 minutes of the day."""
+    if client.get("demo"):
+        return (after + timedelta(minutes=min_gap_minutes)).astimezone(timezone.utc)  # no window, no random spread: exactly when asked
     tz = _tz(client)
     local = after.astimezone(tz) + timedelta(minutes=min_gap_minutes)
     for i in range(14):
@@ -405,20 +412,33 @@ async def place_shop_call(db, call: dict) -> bool:
     return True
 
 
+async def dial_now(db, call: dict) -> bool:
+    """Immediate shops (Quick shop, Shop now): claim the row first so the 2-minute scheduler can never dial the same shop a second time."""
+    claimed = await db.roleplay_sessions.find_one_and_update({"_id": call["_id"], "status": "scheduled"}, {"$set": {"status": "dialing", "updated_at": _now()}})
+    if not claimed:
+        return True  # the scheduler tick got there first and is already dialing it
+    return await place_shop_call(db, call)
+
+
 OUTCOME_LABEL = {"voicemail": "Went to voicemail", "no-answer": "No answer", "busy": "Line was busy", "failed": "The call could not be placed", "canceled": "The call was cancelled", "hung_up": "Hung up before the shop started",
                  "no_response": "Went to voicemail or wasn't ready", "postponed": "Asked us to call back later"}
 
 
 async def postpone_call(db, call: dict, hours: int = 2):
-    """Rep pressed 2 (bad time): same shop again in a couple of hours, inside store hours, and it does not count as a try."""
+    """Rep pressed 2 (bad time): same shop again in a couple of hours, inside store hours, and it does not count as a try.
+    Quick shops are never rescheduled: the shop is parked as 'asked us to call back' and the admin taps Try again."""
     client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])}) or {}
     now = _now()
+    history = {"at": now, "outcome": "postponed", "call_sid": call.get("call_sid")}
+    if client.get("demo") or call.get("demo"):
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "unreachable", "outcome": "postponed", "fail_reason": OUTCOME_LABEL["postponed"], "ended_at": now, "updated_at": now}, "$push": {"attempt_history": history}})
+        return
     when = now + timedelta(hours=hours)
     if client and not in_hours(client, when):
         when = next_slot(client, when, min_gap_minutes=0)
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": when, "outcome": "postponed", "fail_reason": OUTCOME_LABEL["postponed"], "call_sid": None, "call_status": None, "turns": [], "updated_at": now},
                                                                "$inc": {"attempts": -1 if int(call.get("attempts") or 0) > 0 else 0},
-                                                               "$push": {"attempt_history": {"at": now, "outcome": "postponed", "call_sid": call.get("call_sid")}}})
+                                                               "$push": {"attempt_history": history}})
 
 
 async def record_outcome(db, call: dict, outcome: str, reason: Optional[str] = None):
@@ -480,7 +500,7 @@ async def run_due_calls(db, limit: int = 3) -> int:
         if not client or not client.get("active", True):
             await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "canceled", "fail_reason": "Client paused", "updated_at": now}})
             continue
-        if not call.get("manual") and not in_hours(client, now):
+        if not call.get("manual") and not client.get("demo") and not in_hours(client, now):
             await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"scheduled_for": next_slot(client, now, min_gap_minutes=0), "updated_at": now}})
             continue
         busy = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": call["target_id"], "status": {"$in": ["dialing", "live", "grading"]}}, {"_id": 1})
@@ -871,6 +891,7 @@ QUICK_NOTES = "Built-in bucket for quick shops: anyone you shop without a client
 
 async def rename_legacy_quick_bucket(db):
     await db.shop_clients.update_many({"demo": True, "name": {"$ne": DEMO_CLIENT_NAME}}, {"$set": {"name": DEMO_CLIENT_NAME, "notes": QUICK_NOTES}})
+    await db.shop_clients.update_many({"demo": True, "$or": [{"hours": {"$ne": ALWAYS_OPEN}}, {"active": {"$ne": True}}]}, {"$set": {"hours": dict(ALWAYS_OPEN), "active": True}})
 
 
 async def ensure_demo_client(db, me: dict) -> dict:
@@ -881,7 +902,7 @@ async def ensure_demo_client(db, me: dict) -> dict:
         return c
     now = _now()
     doc = {"name": DEMO_CLIENT_NAME, "demo": True, "brand": "", "city": "", "state": "", "timezone": "America/Denver", "contact_name": "", "contact_email": "", "contact_phone": "", "contact_title": "",
-           "plan": {"per_month": {}, "price_monthly": 0.0}, "hours": {"start": "00:00", "end": "23:59", "days": [0, 1, 2, 3, 4, 5, 6]}, "vehicles": [], "active": True, "industry": "automotive",
+           "plan": {"per_month": {}, "price_monthly": 0.0}, "hours": dict(ALWAYS_OPEN), "vehicles": [], "active": True, "industry": "automotive",
            "record_calls": True, "notes": QUICK_NOTES, "text_scorecards": True, "report_token": uuid.uuid4().hex, "billing": {},
            "created_by": str(me["_id"]), "created_at": now, "updated_at": now}
     res = await db.shop_clients.insert_one(doc)
@@ -906,7 +927,7 @@ async def demo_shop(db, me: dict, name: str, phone: str, department: str, title:
     if not call:
         return {"error": f"No {ind.dept_label(department)} challenges for {ind.get(industry)['label']} yet. Open the Challenge Library and let Jessi write the starters."}
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"demo": True, "notify_sms": bool(text_scorecard), "store_name": store_name or f"the {ind.get(industry)['business']}"}})
-    ok = await place_shop_call(db, call)
+    ok = await dial_now(db, {**call, "demo": True})
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
     return {"ok": ok, "call": s, "client_id": cid}
 

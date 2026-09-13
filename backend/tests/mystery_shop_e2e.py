@@ -197,6 +197,20 @@ async def main():
     qs = await db.roleplay_sessions.find_one({"_id": qcall["_id"]})
     assert qs["status"] == "unreachable" and qs["fail_reason"] == "Went to voicemail or wasn't ready", (qs["status"], qs["fail_reason"])
     print("quick shop voicemail -> unreachable, no retry ok")
+    # Quick shops have no hours and no schedule: press 2 parks the shop (Try again) instead of booking a callback, and the announcement says so
+    q2 = await ms.create_shop_call(db, qdoc, qt, datetime.now(timezone.utc), manual=True, script=await db.scripts.find_one({"slug": "shop_sales_availability"}))
+    await db.roleplay_sessions.update_one({"_id": q2["_id"]}, {"$set": {"status": "dialing", "started_at": datetime.now(timezone.utc), "attempts": 1, "call_sid": "CA_quick_sim2", "demo": True}})
+    r = requests.post(f"{tw}/twiml/{q2['_id']}?t={q2['token']}", data={"CallSid": "CA_quick_sim2"}, timeout=30)
+    assert "try another time" in r.text and "couple of hours" not in r.text, r.text[:400]
+    r = requests.post(f"{tw}/gate/{q2['_id']}?t={q2['token']}", data={"Digits": "2", "CallSid": "CA_quick_sim2"}, timeout=30)
+    assert r.status_code == 200 and "try another time" in r.text and "<Hangup/>" in r.text
+    q2s = await db.roleplay_sessions.find_one({"_id": q2["_id"]})
+    assert q2s["status"] == "unreachable" and q2s["outcome"] == "postponed", (q2s["status"], q2s.get("outcome"))
+    assert ms.in_hours({**qdoc, "hours": {"start": "09:00", "end": "10:00", "days": [0]}}) and ms._hours({**qdoc, "hours": {"start": "09:00", "end": "10:00", "days": [0]}}) == ms.ALWAYS_OPEN
+    gap = (ms.next_slot(qdoc, datetime.now(timezone.utc), min_gap_minutes=120) - datetime.now(timezone.utc)).total_seconds() / 60
+    assert 119 <= gap <= 121, gap
+    await db.roleplay_sessions.delete_one({"_id": q2["_id"]})
+    print("quick shop press 2 -> parked for Try again, no hours, no schedule ok")
     # outbound challenge -> the announcement says who they're calling back and the customer answers first
     ob = await db.scripts.find_one_and_update({"slug": "shop_qa_outbound"}, {"$set": {"kind": "phone", "pool": "mystery_shop", "shop_client_id": None, "store_id": None, "department": "sales", "direction": "outbound", "title": "Shopper: internet lead callback", "body": "Call the lead back, confirm interest, set the visit.", "success_points": ["Confirms the vehicle"], "active": False,
                                                                                    "persona": {"name": "Marcus Lee", "voice": "male", "summary": "Sent an internet lead on {vehicle}", "goals": "Find out the price", "objections": [], "opening_line": "Hello?"}, "updated_at": datetime.now(timezone.utc)}}, upsert=True, return_document=True)

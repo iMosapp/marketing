@@ -571,7 +571,7 @@ async def shop_now(cid: str, body: ShopNowBody, request: Request):
     call = await ms.create_shop_call(db, c, t, datetime.now(timezone.utc), created_by=str(me["_id"]), manual=True, script=script)
     if not call:
         raise HTTPException(status_code=400, detail=f"No {ind.dept_label(t.get('department'))} challenges in the pool yet. Open the Challenge Library and let Jessi write the starters.")
-    ok = await ms.place_shop_call(db, call)
+    ok = await ms.dial_now(db, call)
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
     if not ok:
         raise HTTPException(status_code=503, detail=s.get("fail_reason") or "The call could not be placed")

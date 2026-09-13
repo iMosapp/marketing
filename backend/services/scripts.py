@@ -416,7 +416,7 @@ def shop_announcement(session: dict) -> str:
         setup = f"Coming up: an outbound {dept}. You're calling {who} back{about}. When you're ready, press 1 or say ready, you'll hear it ring, and they'll pick up."
     else:
         setup = f"Coming up: an inbound {dept}. A {pack['customer'] if pack['customer'] != 'shopper' else 'customer'} is calling the {pack['business']}, so answer it exactly like a real call. Press 1 or say ready when you're set."
-    return f"{hi}this is your practice call from I'm On Social. {setup} If now's a bad time, press 2 and we'll call back in a couple of hours."
+    return f"{hi}this is your practice call from I'm On Social. {setup} If now's a bad time, press 2 and we'll {'try another time' if session.get('demo') else 'call back in a couple of hours'}."
 
 
 def shop_gate_twiml(session: dict) -> str:
