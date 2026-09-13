@@ -626,8 +626,7 @@ async def retry_call(sid: str, request: Request):
         raise HTTPException(status_code=409, detail="This shop cannot be retried")
     await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": datetime.now(timezone.utc), "attempts": 0, "manual": True, "fail_reason": None, "outcome": None, "turns": [], "updated_at": datetime.now(timezone.utc)}})
     call = await db.roleplay_sessions.find_one({"_id": s["_id"]})
-    await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "dialing"}})
-    if not await ms.place_shop_call(db, call):
+    if not await ms.dial_now(db, call):
         raise HTTPException(status_code=503, detail="The call could not be placed")
     return ms.serialize_call(await db.roleplay_sessions.find_one({"_id": s["_id"]}))
 

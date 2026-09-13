@@ -32,7 +32,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
   const remove = (p: Person) => showConfirm(`Remove ${p.name}?`, 'Scheduled shops for them are canceled. Completed shops stay on the report.', async () => {
     try { await api.delete(`/shop-clients/people/${p.id}`); onChanged(); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not remove', 'error'); }
   }, undefined, 'Remove');
-  const shopNow = (p: Person) => showConfirm(`Shop ${p.name.split(' ')[0]} right now?`, `The AI ${client.customer_noun || 'shopper'} calls ${fmtPhone(p.phone)} in a few seconds with a ${deptLabel(p.department, depts).toLowerCase()} challenge they have not had yet.`, async () => {
+  const shopNow = (p: Person) => showConfirm(`Shop ${p.name.split(' ')[0]} right now?`, `The AI ${client.customer_noun || 'shopper'} calls ${fmtPhone(p.phone)} in a few seconds with a ${deptLabel(p.department, depts).toLowerCase()} challenge they have not had yet. Business hours don't apply; if they don't pick up or press 2, the shop waits for you to tap Try again.`, async () => {
     setCalling(p.id);
     try { await api.post(`/shop-clients/${client.id}/calls/shop-now`, { target_id: p.id }); showToast(`Calling ${p.name.split(' ')[0]} now`, 'success'); onShopStarted(); }
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not place the call', 'error'); }

@@ -271,11 +271,10 @@ async def enrollment_shop_now(eid: str, request: Request):
     if live:
         raise HTTPException(status_code=409, detail=f"{e.get('name')} is already on a shop call")
     await db.roleplay_sessions.update_many({"kind": "mystery_shop", "enrollment_id": eid, "status": "scheduled"}, {"$set": {"status": "canceled", "fail_reason": "Replaced by a call now", "updated_at": datetime.now(timezone.utc)}})
-    call = await cs.schedule_next_shop(db, e, c, delay_minutes=0)
+    call = await cs.schedule_next_shop(db, e, c, immediate=True)
     if not call:
         raise HTTPException(status_code=400, detail="Nothing left to shop, or the person or client is missing")
-    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"manual": True}})
-    ok = await ms.place_shop_call(db, {**call, "manual": True})
+    ok = await ms.dial_now(db, call)
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
     if not ok:
         raise HTTPException(status_code=503, detail=s.get("fail_reason") or "The call could not be placed")

@@ -425,12 +425,12 @@ OUTCOME_LABEL = {"voicemail": "Went to voicemail", "no-answer": "No answer", "bu
 
 
 async def postpone_call(db, call: dict, hours: int = 2):
-    """Rep pressed 2 (bad time): same shop again in a couple of hours, inside store hours, and it does not count as a try.
-    Quick shops are never rescheduled: the shop is parked as 'asked us to call back' and the admin taps Try again."""
+    """Rep pressed 2 (bad time): automatic shops come back in a couple of hours, inside store hours, and it does not count as a try.
+    Human-fired shops (Quick shop, Shop now, Call now, Try again) are never rescheduled: the shop is parked as 'asked us to call back' and the admin taps Try again."""
     client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])}) or {}
     now = _now()
     history = {"at": now, "outcome": "postponed", "call_sid": call.get("call_sid")}
-    if client.get("demo") or call.get("demo"):
+    if client.get("demo") or call.get("demo") or call.get("manual"):
         await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "unreachable", "outcome": "postponed", "fail_reason": OUTCOME_LABEL["postponed"], "ended_at": now, "updated_at": now}, "$push": {"attempt_history": history}})
         return
     when = now + timedelta(hours=hours)
@@ -442,20 +442,22 @@ async def postpone_call(db, call: dict, hours: int = 2):
 
 
 async def record_outcome(db, call: dict, outcome: str, reason: Optional[str] = None):
-    """A shop attempt that never became a conversation: retry later inside business hours, or give up after max attempts. Quick shops never auto-retry (the admin taps Try again)."""
+    """A shop attempt that never became a conversation: automatic shops retry later inside business hours (or give up after max attempts).
+    Human-fired shops (Quick shop, Shop now, course Call now, Try again) never auto-retry: they park as unreachable and the admin taps Try again."""
     client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])}) or {}
     attempts = int(call.get("attempts") or 0)
     label = reason or OUTCOME_LABEL.get(outcome, outcome)
     now = _now()
     history = {"at": now, "outcome": outcome, "call_sid": call.get("call_sid")}
-    if attempts < int(call.get("max_attempts") or 3) and client and not client.get("demo"):
+    hand_fired = bool(client.get("demo") or call.get("demo") or call.get("manual"))
+    if attempts < int(call.get("max_attempts") or 3) and client and not hand_fired:
         when = next_slot(client, now, min_gap_minutes=random.randint(90, 240))
         await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": when, "outcome": outcome, "fail_reason": f"{label}, trying again", "call_sid": None, "call_status": None, "turns": [], "updated_at": now},
                                                                    "$push": {"attempt_history": history}})
     else:
-        tries = "" if client.get("demo") else f" ({attempts} {'try' if attempts == 1 else 'tries'})"
+        tries = "" if hand_fired else f" ({attempts} {'try' if attempts == 1 else 'tries'})"
         await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "unreachable", "outcome": outcome, "fail_reason": f"{label}{tries}", "ended_at": now, "updated_at": now}, "$push": {"attempt_history": history}})
-        if call.get("enrollment_id"):
+        if call.get("enrollment_id") and not hand_fired:
             from services import courses as cs
             e = await db.course_enrollments.find_one({"_id": ObjectId(call["enrollment_id"])}) if ObjectId.is_valid(str(call["enrollment_id"])) else None
             course = await db.courses.find_one({"_id": ObjectId(e["course_id"])}) if e else None

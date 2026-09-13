@@ -68,8 +68,8 @@ async def enroll(db, course: dict, me: dict, kind: str, ref: dict, note: str = "
     return doc
 
 
-async def schedule_next_shop(db, enrollment: dict, course: dict, delay_minutes: int = 5) -> Optional[dict]:
-    """For a mystery-shop person: put the next un-passed challenge on the dialer inside the client's hours."""
+async def schedule_next_shop(db, enrollment: dict, course: dict, delay_minutes: int = 5, immediate: bool = False) -> Optional[dict]:
+    """For a mystery-shop person: put the next un-passed challenge on the dialer inside the client's hours (or right now, hours ignored, when immediate)."""
     prog = enrollment.get("progress") or {}
     nxt = next((cid for cid in (course.get("challenge_ids") or []) if not (prog.get(cid) or {}).get("passed")), None)
     if not nxt:
@@ -81,8 +81,8 @@ async def schedule_next_shop(db, enrollment: dict, course: dict, delay_minutes: 
     script = await db.scripts.find_one({"_id": ObjectId(nxt)})
     if not client or not target or not script:
         return None
-    when = ms.next_slot(client, _now() + timedelta(minutes=delay_minutes), min_gap_minutes=0)
-    call = await ms.create_shop_call(db, client, target, when, created_by=enrollment.get("assigned_by"), manual=False, script=script)
+    when = _now() if immediate else ms.next_slot(client, _now() + timedelta(minutes=delay_minutes), min_gap_minutes=0)
+    call = await ms.create_shop_call(db, client, target, when, created_by=enrollment.get("assigned_by"), manual=immediate, script=script)
     if call:
         await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"enrollment_id": str(enrollment["_id"]), "course_id": str(course["_id"]), "course_title": course.get("title")}})
     return call

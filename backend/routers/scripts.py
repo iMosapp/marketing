@@ -505,7 +505,7 @@ async def relay_gate(sid: str, t: str, request: Request):
     from services.mystery_shops import postpone_call, record_outcome
     if choice == "later":
         await postpone_call(db, s)
-        return _twiml(svc.say_hangup_twiml("No problem, we'll try another time. Good luck out there." if s.get("demo") else "No problem, we'll call back in a couple of hours. Good luck out there."))
+        return _twiml(svc.say_hangup_twiml("No problem, we'll try another time. Good luck out there." if s.get("demo") or s.get("manual") else "No problem, we'll call back in a couple of hours. Good luck out there."))
     await record_outcome(db, s, "no_response")
     return _twiml(svc.say_hangup_twiml("No problem, we'll try again another time. This was your practice call from I'm On Social."))
 

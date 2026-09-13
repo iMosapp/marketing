@@ -100,8 +100,9 @@ async def main():
     victim = calls[0]
     assert requests.delete(f"{API}/api/shop-clients/calls/{victim['id']}", headers=H, timeout=30).status_code == 200
 
-    # simulate a shop call: create + drive the Twilio side by hand. The line is answered -> Jessi announces the practice call and waits for press 1 / ready.
-    call = await ms.create_shop_call(db, cdoc, tdoc, datetime.now(timezone.utc), manual=True, script=await db.scripts.find_one({"slug": "shop_sales_availability"}))
+    # simulate an AUTOMATIC shop call (manual=False: these are the only ones the scheduler ever retries): create + drive the Twilio side by hand.
+    # The line is answered -> Jessi announces the practice call and waits for press 1 / ready.
+    call = await ms.create_shop_call(db, cdoc, tdoc, datetime.now(timezone.utc), manual=False, script=await db.scripts.find_one({"slug": "shop_sales_availability"}))
     sid, token = str(call["_id"]), call["token"]
     assert call["direction"] == "inbound"
     tw = f"{API}/api/scripts/roleplay"
@@ -112,7 +113,7 @@ async def main():
     await redial(1, "CA_shop_sim")
     r = requests.post(f"{tw}/twiml/{sid}?t={token}", data={"AnsweredBy": "human", "CallSid": "CA_shop_sim"}, timeout=30)
     assert r.status_code == 200 and "<Gather" in r.text and "ConversationRelay" not in r.text and "practice call from I" in r.text, r.text[:400]
-    assert "Sam" in r.text and "inbound sales call" in r.text and "press 2" in r.text and f"/gate/{sid}?t={token}" in r.text, r.text[:400]
+    assert "Sam" in r.text and "inbound sales call" in r.text and "press 2" in r.text and "couple of hours" in r.text and f"/gate/{sid}?t={token}" in r.text, r.text[:400]
     print("answered -> announcement + gather ok")
     # voicemail picked up: its greeting is the only 'speech', nobody presses anything -> goodbye, no grade, retry later (real client)
     r = requests.post(f"{tw}/gate/{sid}?t={token}", data={"SpeechResult": "Hi you've reached Sam, leave a message after the tone", "CallSid": "CA_shop_sim"}, timeout=30)
@@ -211,6 +212,24 @@ async def main():
     assert 119 <= gap <= 121, gap
     await db.roleplay_sessions.delete_one({"_id": q2["_id"]})
     print("quick shop press 2 -> parked for Try again, no hours, no schedule ok")
+    # Human-fired shops inside a REAL account (Shop now / Try again / course Call now) behave the same: no hours, no auto-retry, voicemail or press 2 -> parked for Try again
+    m = await ms.create_shop_call(db, {**cdoc, "hours": {"start": "09:00", "end": "10:00", "days": [0]}}, tdoc, datetime.now(timezone.utc), manual=True, script=await db.scripts.find_one({"slug": "shop_sales_availability"}))
+    await db.roleplay_sessions.update_one({"_id": m["_id"]}, {"$set": {"status": "dialing", "started_at": datetime.now(timezone.utc), "attempts": 1, "call_sid": "CA_manual_sim"}})
+    r = requests.post(f"{tw}/twiml/{m['_id']}?t={m['token']}", data={"AnsweredBy": "human", "CallSid": "CA_manual_sim"}, timeout=30)
+    assert "try another time" in r.text and "couple of hours" not in r.text, r.text[:400]
+    r = requests.post(f"{tw}/gate/{m['_id']}?t={m['token']}", data={"SpeechResult": "Leave a message after the tone", "CallSid": "CA_manual_sim"}, timeout=30)
+    ms_ = await db.roleplay_sessions.find_one({"_id": m["_id"]})
+    assert ms_["status"] == "unreachable" and ms_["outcome"] == "no_response" and "tries" not in ms_["fail_reason"], (ms_["status"], ms_.get("outcome"), ms_.get("fail_reason"))
+    await db.roleplay_sessions.update_one({"_id": m["_id"]}, {"$set": {"status": "dialing", "attempts": 1, "call_sid": "CA_manual_sim_b"}})
+    r = requests.post(f"{tw}/gate/{m['_id']}?t={m['token']}", data={"Digits": "2", "CallSid": "CA_manual_sim_b"}, timeout=30)
+    ms_ = await db.roleplay_sessions.find_one({"_id": m["_id"]})
+    assert "try another time" in r.text and ms_["status"] == "unreachable" and ms_["outcome"] == "postponed", (ms_["status"], ms_.get("outcome"))
+    # Try again from the app dials right now (claimed straight to dialing; the Twilio call itself fails for the 500 test number and parks it again)
+    r = requests.post(f"{API}/api/shop-clients/calls/{m['_id']}/retry", headers=H, timeout=60)
+    ms_ = await db.roleplay_sessions.find_one({"_id": m["_id"]})
+    assert r.status_code in (200, 503) and ms_["status"] in ("dialing", "unreachable") and ms_["manual"] and abs((ms_["scheduled_for"].replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)).total_seconds()) < 120, (r.status_code, ms_["status"], ms_.get("fail_reason"))
+    await db.roleplay_sessions.delete_one({"_id": m["_id"]})
+    print("manual shop in a real account -> no hours, no auto-retry, Try again dials now ok")
     # outbound challenge -> the announcement says who they're calling back and the customer answers first
     ob = await db.scripts.find_one_and_update({"slug": "shop_qa_outbound"}, {"$set": {"kind": "phone", "pool": "mystery_shop", "shop_client_id": None, "store_id": None, "department": "sales", "direction": "outbound", "title": "Shopper: internet lead callback", "body": "Call the lead back, confirm interest, set the visit.", "success_points": ["Confirms the vehicle"], "active": False,
                                                                                    "persona": {"name": "Marcus Lee", "voice": "male", "summary": "Sent an internet lead on {vehicle}", "goals": "Find out the price", "objections": [], "opening_line": "Hello?"}, "updated_at": datetime.now(timezone.utc)}}, upsert=True, return_document=True)
