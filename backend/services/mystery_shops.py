@@ -664,3 +664,83 @@ async def mark_invoice_paid(db, stripe_invoice_id: str):
     now = _now()
     await db.shop_proposals.update_one({"_id": p["_id"]}, {"$set": {"invoice.status": "paid", "invoice.paid_at": now.isoformat(), "status": "paid", "updated_at": now}})
     await db.shop_clients.update_one({"_id": _oid(p["client_id"])}, {"$set": {"billing.status": "paid", "billing.last_invoice.status": "paid", "billing.last_paid_at": now}})
+
+
+# ---------------------------------------------------------------- proposal email + store kickoff
+TIMEZONES = [("America/New_York", "Eastern"), ("America/Chicago", "Central"), ("America/Denver", "Mountain"), ("America/Phoenix", "Arizona"), ("America/Los_Angeles", "Pacific"), ("America/Anchorage", "Alaska"), ("Pacific/Honolulu", "Hawaii")]
+LOGO_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "imos-logo-email-168.png")
+
+
+def logo_b64() -> str:
+    try:
+        import base64
+        with open(LOGO_PATH, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except Exception as e:
+        logger.warning(f"[MysteryShop] logo missing: {e}")
+        return ""
+
+
+def _esc(v: str) -> str:
+    return (v or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def proposal_email(p: dict, sender_name: str, note: str, url: str, logo_src: str) -> tuple:
+    """(subject, html) for the proposal email. logo_src is a data: URI for the in-app preview and cid:imos-logo when sending."""
+    t = p.get("terms") or {}
+    first = (p.get("contact_name") or "").strip().split(" ")[0] or "there"
+    note_html = "".join(f'<p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">{_esc(line)}</p>' for line in no_em_dash(note or "").strip().split("\n") if line.strip())
+    logo = f'<img src="{logo_src}" alt="I\'m On Social" width="96" height="96" style="width:96px;height:96px;display:block;margin:0 auto" />' if logo_src else ""
+    html = f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f5f3ee">
+  <div style="background:#fff;border-radius:18px;overflow:hidden;border:1px solid #e6e1d6">
+    <div style="text-align:center;padding:30px 20px 18px;border-bottom:1px solid #eee">{logo}
+      <p style="margin:12px 0 0;font-size:11px;letter-spacing:2px;color:#C9A962;font-weight:800">I'M ON SOCIAL</p>
+    </div>
+    <div style="padding:28px 30px">
+      <h1 style="font-size:22px;line-height:1.3;margin:0 0 16px;color:#111">Phone mystery shop proposal for {_esc(p.get('client_name'))}</h1>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">Hi {_esc(first)},</p>
+      {note_html}
+      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">Here is the proposal we talked about: <b>{int(t.get('sales_per_month') or 0)} sales</b> and <b>{int(t.get('service_per_month') or 0)} service</b> mystery shops every month for <b>${float(t.get('price_monthly') or 0):,.0f}/month</b>, with recordings, grades and a store report you can open any time.</p>
+      <p style="margin:26px 0;text-align:center"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px;display:inline-block;font-size:15px">Review and sign the proposal</a></p>
+      <p style="font-size:13px;color:#666;line-height:1.6;margin:0 0 18px">Signing takes about a minute. Your first invoice arrives by email right after, and shops start once it is paid. Questions? Just reply to this email.</p>
+      <p style="font-size:14px;color:#333;line-height:1.5;margin:0">{_esc(sender_name or "Forest")}<br><span style="color:#888">I'm On Social</span></p>
+    </div>
+  </div>
+  <p style="text-align:center;margin:18px 0 0;color:#999;font-size:12px">I'm On Social LLC · 1741 Lunford Ln, Riverton, UT 84065</p>
+</div>"""
+    return f"Mystery shop proposal for {p.get('client_name')}", html
+
+
+async def ensure_kickoff_token(db, client: dict) -> str:
+    tok = client.get("kickoff_token")
+    if not tok:
+        tok = uuid.uuid4().hex
+        await db.shop_clients.update_one({"_id": client["_id"]}, {"$set": {"kickoff_token": tok}})
+        client["kickoff_token"] = tok
+    return tok
+
+
+def kickoff_url(client: dict) -> Optional[str]:
+    return f"{scr._app_url()}/shop-kickoff/{client['kickoff_token']}" if client.get("kickoff_token") else None
+
+
+async def notify_kickoff(db, client: dict, people_added: int, people_total: int):
+    """Tell the iMOS admins who own this client that the store filled in its kickoff form."""
+    from routers.push_notifications import send_push_to_user
+    from routers.notifications_center import invalidate_feed
+    uids = {client.get("created_by")}
+    latest = await db.shop_proposals.find_one({"client_id": str(client["_id"])}, sort=[("created_at", -1)])
+    if latest and latest.get("sender_id"):
+        uids.add(latest["sender_id"])
+    uids.discard(None)
+    title = f"{client.get('name')} set up their store"
+    msg = f"{people_total} people to shop ({people_added} new), hours {_hours(client)['start']} to {_hours(client)['end']}. Tap to review."
+    link = f"/admin/mystery-shops/{client['_id']}?tab=people"
+    now = _now()
+    for uid in uids:
+        await db.notifications.insert_one({"user_id": uid, "type": "shop_kickoff", "title": title, "message": msg, "link": link, "read": False, "dismissed": False, "created_at": now})
+        invalidate_feed(uid)
+        try:
+            await send_push_to_user(uid, title, msg, link, "storefront")
+        except Exception as e:
+            logger.debug(f"[MysteryShop] kickoff push failed for {uid}: {e}")

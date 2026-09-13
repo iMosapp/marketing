@@ -8,7 +8,7 @@ import { openUrl } from '../../components/mystery-shops/ReportView';
 import { money, GOLD, GREEN, RED, tid } from '../../components/mystery-shops/shared';
 
 const L = { bg: '#F6F4EE', card: '#FFFFFF', border: '#E4DFD2', text: '#161616', textSecondary: '#6B6B6B' };
-type P = { status: string; terms: any; client_name: string; contact_name: string; contact_email: string; sender_name: string; sections: { title: string; body: string }[]; signer?: any; signed_at?: string | null; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number } };
+type P = { status: string; terms: any; client_name: string; contact_name: string; contact_email: string; sender_name: string; sections: { title: string; body: string }[]; signer?: any; signed_at?: string | null; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number }; kickoff_url?: string | null };
 
 // The client GM opens this from the proposal email: read, type name, agree, sign. Stripe emails the first invoice right after.
 export default function PublicProposal() {
@@ -21,7 +21,7 @@ export default function PublicProposal() {
   const [email, setEmail] = useState('');
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<{ invoice?: { hosted_invoice_url?: string; status?: string; amount?: number } } | null>(null);
+  const [done, setDone] = useState<{ invoice?: { hosted_invoice_url?: string; status?: string; amount?: number }; kickoff_url?: string | null } | null>(null);
   const [err, setErr] = useState('');
 
   useEffect(() => {
@@ -39,6 +39,7 @@ export default function PublicProposal() {
   const wide = width > 800;
   const signed = !!done || (p && ['signed', 'paid'].includes(p.status));
   const invoice = done?.invoice || p?.invoice;
+  const kickoffUrl = done?.kickoff_url || p?.kickoff_url;
   const t = p?.terms || {};
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: L.bg }}>
@@ -73,6 +74,15 @@ export default function PublicProposal() {
                       </TouchableOpacity>
                     </>
                   ) : <Text style={{ fontSize: 15, color: L.text, lineHeight: 22 }}>Thank you. {p.sender_name || 'We'} will send your first invoice shortly.</Text>}
+                  {!!kickoffUrl && (
+                    <View style={{ gap: 8, marginTop: 6, paddingTop: 14, borderTopWidth: 1, borderTopColor: L.border }}>
+                      <Text style={{ fontSize: 15, fontWeight: '800', color: L.text }}>Next: tell us who to shop</Text>
+                      <Text style={{ fontSize: 14, color: L.textSecondary, lineHeight: 20 }}>Five minutes: your store hours, a few vehicles, and the names and cell numbers of the sales and service people. No login, and you can come back to it any time.</Text>
+                      <TouchableOpacity onPress={() => openUrl(kickoffUrl)} style={{ height: 48, borderRadius: 14, borderWidth: 1.5, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('proposal-kickoff')}>
+                        <Ionicons name="clipboard-outline" size={18} color={GOLD} /><Text style={{ fontSize: 15, fontWeight: '800', color: GOLD }}>Set up your store now</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               ) : (
                 <View style={{ backgroundColor: L.card, borderRadius: 18, padding: 20, borderWidth: 1, borderColor: L.border, gap: 14 }} {...tid('proposal-sign-card')}>

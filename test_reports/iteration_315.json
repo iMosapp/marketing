@@ -1,0 +1,37 @@
+{
+  "summary": "Frontend-only e2e testing of the two new Mystery Shops features: (1) Proposal 'Email it' send sheet with live email preview iframe, and (2) Public /shop-kickoff/<token> store setup form + admin People-tab kickoff card + signed-proposal 'Set up your store now' button. All primary success paths worked. Data-testids all present. Backend APIs (email-preview, public kickoff GET/POST, public proposal, notifications) confirmed functional via curl. One test-error caused data loss for Val Advisor during a save flow; DB was manually restored during cleanup. No product bugs blocking the two features. Minor UX/spec deltas noted below.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/shop-clients/{cid} (kickoff_url)", "issue": "kickoff_url returned uses production host https://app.imonsocial.com/... instead of the request's preview host. In preview the admin People-tab 'kickoff-url' therefore points to app.imonsocial.com, and kickoff-open opens a new tab on the production domain. Functionally OK (task allowed any URL), but preview testers must switch domains manually."},
+      {"endpoint": "POST /api/shop-clients/proposals/{pid}/send", "issue": "After send the proposal doc gets sent_at + sent_note updated, but status only changes if it was in draft/sent. The QA proposal was already 'viewed', so the UI status chip remained 'Opened' rather than 'Sent'. This is arguably correct product behavior, but the test spec expected 'Sent'."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Kickoff save UI after 400 error (duplicate phone)", "issue": "After a failed save (server returned 400 duplicate-cell), the People section briefly rendered SERVICE·0 (QA Kick Sales row visually disappeared from the SERVICE section) even though DB state was unchanged. On reload the correct people show up again. Minor UI state glitch; no data loss.", "affected_selectors": ["kickoff-people-card"]}
+    ],
+    "design_issues": [
+      {"screen": "kickoff-saved card", "issues": ["The saved summary text 'X people to shop (N new), Y vehicles, hours set.' omits the '(N new)' segment when added=0. Task spec expected always showing 'N new' — cosmetic only."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "(Low) Make backend kickoff_url respect the request Host / an APP_URL env override so preview testing links to the preview domain instead of app.imonsocial.com.",
+    "(Low) Consider whether an already-viewed proposal being re-sent should reset status to 'Sent' (spec expectation) or keep 'Opened' (current). Product decision."
+  ],
+  "critical_code_review_comments": [
+    "backend/routers/mystery_shops.py submit_kickoff (line 660-730) correctly matches existing people by id and inserts new rows with client-provided random keys; behavior is deterministic. However there is no dedup guard for two brand-new rows that share the same phone across sales+service — this is currently caught at the seen_phones set (line 699) which is fine.",
+    "frontend/app/shop-kickoff/[token].tsx save() sends people:[{id,...}] where id is undefined for freshly added rows. Backend uses `person.id or ''` for lookup — works, but be aware payload serialization must preserve missing id (not send empty string) to avoid accidental matches. Currently OK.",
+    "SendProposalSheet fetchPreview uses debounced GET for note; iframe srcdoc updates within ~2s. Works but consider showing a 'preview updating…' hint for slower networks."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin)",
+  "seed_data_creation": "None new. Cleanup restored: Val Advisor (id 6aa5f046efccef2627dced32, phone +15005550007, service, title 'Service advisor') after a test-flow error clobbered his record; client 6aa5f046efccef2627dced30 restored to hours 00:00-23:59 all-days, timezone America/Denver, contact_title 'General Manager', vehicles ['2024 Jeep Wrangler Rubicon','2023 Ram 1500 Laramie']. QA Kick Sales was NOT left in DB (it lived in Val's slot and was overwritten during restore). Kickoff Tester was removed as expected by the QA flow.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Both new Mystery Shops features are working end-to-end on preview. Verified: (a) Send-sheet: TO prefill, remembered note, subject, from-line, live iframe preview containing logo(data:image/png;base64), 'Hi Pat,', note text, '20 sales', '20 service', '$400/month', 'Review and sign the proposal' anchor with /proposal/ href, sender 'Forest'; live update on note change; empty note removes note paragraph but keeps greeting; invalid email disables send with label 'Enter an email address'; send closes sheet and toasts 'Emailed to ...'; note persisted (verified via API default_note=='QA live note ABC123' and re-opened sheet after 2.5s wait). (b) Admin People-tab kickoff-card shows 'Filled in <time>', kickoff-url contains the token, kickoff-copy shows 'Setup link copied' toast, kickoff-open opens new tab. (c) Public kickoff GET returns correct title/intro/contact/hours/vehicles/people; edit flow toggles day/start/end/timezone chips and updates the hours-summary sentence live; vehicle add/remove works; add-sales creates a new row in SALES section (department 'sales'); saving inserts the new person, deletes remove_ids, updates client hours/timezone/vehicles/contact_title; kickoff-saved card shows 'Saved, thank you' with 'N people to shop, M vehicles, hours set.'; reload persists all changes. (d) Validation: kickoff-incomplete text and save-disabled work at product level (RN-web GoldButton doesn't expose the disabled attribute to page.is_disabled() but the button is inert — verified by absence of API call on click). Deselect all days also disables save. Duplicate-phone save returns 400 surfaced as kickoff-error 'X has the same cell number as someone else on the list'. (e) Invalid token URL renders kickoff-error with the expected copy. (f) Signed proposal page shows proposal-signed AND proposal-kickoff button that opens /shop-kickoff/<token>; unsigned page has no proposal-kickoff. (g) Notifications: 2 shop_kickoff docs exist in db.notifications for forest, title 'QA Jeep 9495 set up their store'. GET /api/notifications/ requires ?user_id=... query param — not friendly for self-service; use ?user_id=<forest's _id>=69a0b7095fddcede09591667. WARNING to future testers: do NOT pick all_rows[-1] when adding a new person — the newly created row appears IN its section (sales/service) not at DOM end. Use the tid pattern (short random key vs 24-char ObjectId) to identify the new row.",
+  "rca of the issue": "N/A - no product bug required RCA. The 'Val Advisor missing' finding during my second run was caused by my Playwright test picking `all_rows[-1]` (which was Val's row within the SERVICE section) instead of the row with a short random key added by `kickoff-add-sales`. The backend correctly updated Val's record with the QA Kick Sales data I typed. DB was manually restored during cleanup."
+}

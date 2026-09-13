@@ -121,6 +121,31 @@ class SignBody(BaseModel):
     agree: bool
 
 
+class SendBody(BaseModel):
+    note: Optional[str] = ""
+    to: Optional[str] = None
+
+
+class KickoffPerson(BaseModel):
+    id: Optional[str] = None
+    name: str
+    phone: str
+    department: Optional[str] = "sales"
+    title: Optional[str] = ""
+
+
+class KickoffBody(BaseModel):
+    contact_name: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_title: Optional[str] = None
+    timezone: Optional[str] = None
+    hours: Optional[dict] = None
+    vehicles: Optional[list] = None
+    people: list[KickoffPerson] = []
+    remove_ids: list[str] = []
+
+
 def _client_fields(body: ClientBody) -> dict:
     d = {k: v for k, v in body.dict().items() if v is not None}
     if "name" in d:
@@ -177,9 +202,10 @@ async def get_client(cid: str, request: Request):
     db = get_db()
     c = await _client(db, cid)
     cards = await db.scorecards.find({"active": {"$ne": False}}, {"name": 1, "department": 1, "store_id": 1}).sort("name", 1).to_list(200)
+    await ms.ensure_kickoff_token(db, c)
     return {"client": ms.serialize_client(c, await _progress(db, c)), "people": [ms.serialize_target(t) for t in await db.shop_targets.find({"client_id": cid}).sort([("department", 1), ("name", 1)]).to_list(300)],
             "scorecard_options": [{"id": str(x["_id"]), "name": x.get("name"), "department": x.get("department")} for x in cards],
-            "report_url": f"{scr._app_url()}/shop-report/{c.get('report_token')}", "departments": ms.DEPARTMENTS}
+            "report_url": f"{scr._app_url()}/shop-report/{c.get('report_token')}", "kickoff_url": ms.kickoff_url(c), "kickoff": c.get("kickoff") or {}, "departments": ms.DEPARTMENTS}
 
 
 @router.put("/{cid}")
@@ -476,37 +502,60 @@ async def create_proposal(cid: str, body: ProposalBody, request: Request):
 
 
 @router.post("/proposals/{pid}/send")
-async def send_proposal(pid: str, request: Request):
+async def send_proposal(pid: str, request: Request, body: Optional[SendBody] = None):
     me = await require_admin(request)
     db = get_db()
     p = await db.shop_proposals.find_one({"_id": _oid(pid, "Proposal")})
     if not p:
         raise HTTPException(status_code=404, detail="Proposal not found")
+    body = body or SendBody()
+    to = (body.to or "").strip().lower()
+    if to and ("@" not in to or "." not in to.split("@")[-1]):
+        raise HTTPException(status_code=400, detail="That email address does not look right")
+    if to and to != p.get("contact_email"):
+        await db.shop_proposals.update_one({"_id": p["_id"]}, {"$set": {"contact_email": to}})
+        await db.shop_clients.update_one({"_id": ObjectId(p["client_id"]), "contact_email": {"$in": ["", None, p.get("contact_email")]}}, {"$set": {"contact_email": to}})
+        p["contact_email"] = to
     if not p.get("contact_email"):
         raise HTTPException(status_code=400, detail="Add the client's contact email first")
+    note = no_em_dash(body.note or "").strip()[:1500]
     url = f"{scr._app_url()}/proposal/{p['token']}"
-    t = p["terms"]
-    html = f"""<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:600px;margin:0 auto;padding:32px 20px;color:#1a1a1a">
-      <p style="font-size:12px;letter-spacing:2px;color:#C9A962;font-weight:700">I'M ON SOCIAL</p>
-      <h1 style="font-size:22px;margin:0 0 12px">Phone mystery shop proposal for {p.get('client_name')}</h1>
-      <p style="font-size:15px;line-height:1.6">Hi {p.get('contact_name') or 'there'}, here is the proposal we talked about: <b>{t['sales_per_month']} sales</b> and <b>{t['service_per_month']} service</b> mystery shops every month for <b>${t['price_monthly']:,.0f}/month</b>, with recordings, grades and a store report you can open any time.</p>
-      <p style="margin:28px 0"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:12px;display:inline-block">Review and sign the proposal</a></p>
-      <p style="font-size:13px;color:#666;line-height:1.6">Signing takes about a minute. Your first invoice arrives by email right after, and shops start once it is paid. Questions? Just reply to this email.</p>
-      <p style="font-size:13px;color:#666">{me.get('name') or 'Forest'}<br>I'm On Social</p></div>"""
+    subject, html = ms.proposal_email(p, me.get("name") or "Forest", note, url, "cid:imos-logo")
     key = os.environ.get("RESEND_API_KEY")
     if not key:
         raise HTTPException(status_code=503, detail="Email is not configured, copy the link instead")
     import resend
     resend.api_key = key
     sender = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
+    payload = {"from": f"I'm On Social <{sender}>", "to": [p["contact_email"]], "reply_to": me.get("email") or "support@imonsocial.com", "subject": subject, "html": html}
+    logo = ms.logo_b64()
+    if logo:
+        payload["attachments"] = [{"filename": "imos-logo.png", "content": logo, "content_id": "imos-logo"}]
     try:
-        await asyncio.to_thread(resend.Emails.send, {"from": f"I'm On Social <{sender}>", "to": [p["contact_email"]], "reply_to": me.get("email") or "support@imonsocial.com", "subject": f"Mystery shop proposal for {p.get('client_name')}", "html": html})
+        await asyncio.to_thread(resend.Emails.send, payload)
     except Exception as e:
         logger.warning(f"[MysteryShop] proposal email failed: {e}")
         raise HTTPException(status_code=503, detail="The email did not go out, copy the link instead")
     now = datetime.now(timezone.utc)
-    await db.shop_proposals.update_one({"_id": p["_id"]}, {"$set": {"status": "sent" if p.get("status") in ("draft", "sent") else p.get("status"), "sent_at": now, "updated_at": now}})
-    return {"ok": True, "url": url}
+    await db.shop_proposals.update_one({"_id": p["_id"]}, {"$set": {"status": "sent" if p.get("status") in ("draft", "sent") else p.get("status"), "sent_at": now, "sent_note": note, "updated_at": now}})
+    await db.users.update_one({"_id": me["_id"]}, {"$set": {"shop_proposal_note": note}})
+    return {"ok": True, "url": url, "to": p["contact_email"]}
+
+
+@router.get("/proposals/{pid}/email-preview")
+async def proposal_email_preview(pid: str, request: Request, note: Optional[str] = None):
+    """Exactly what the GM receives: same template as /send, logo inlined so the app can render it."""
+    me = await require_admin(request)
+    db = get_db()
+    p = await db.shop_proposals.find_one({"_id": _oid(pid, "Proposal")})
+    if not p:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    default_note = p.get("sent_note") if p.get("sent_note") is not None else (me.get("shop_proposal_note") or "")
+    note_txt = default_note if note is None else note
+    logo = ms.logo_b64()
+    subject, html = ms.proposal_email(p, me.get("name") or "Forest", note_txt, f"{scr._app_url()}/proposal/{p['token']}", f"data:image/png;base64,{logo}" if logo else "")
+    sender = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
+    return {"subject": subject, "html": html, "to": p.get("contact_email") or "", "from": f"I'm On Social <{sender}>", "reply_to": me.get("email") or "support@imonsocial.com", "default_note": default_note}
 
 
 @router.delete("/proposals/{pid}")
@@ -536,7 +585,16 @@ async def public_proposal(token: str):
     out = ms.serialize_proposal(p)
     out["sections"] = [{"title": a, "body": b} for a, b in ms.proposal_text(p)]
     out["invoice"] = {"hosted_invoice_url": (p.get("invoice") or {}).get("hosted_invoice_url"), "status": (p.get("invoice") or {}).get("status"), "amount": (p.get("invoice") or {}).get("amount")}
+    out["kickoff_url"] = await _kickoff_for(db, p) if p.get("status") in ("signed", "paid") else None
     return out
+
+
+async def _kickoff_for(db, p: dict) -> Optional[str]:
+    c = await db.shop_clients.find_one({"_id": ObjectId(p["client_id"])}) if ObjectId.is_valid(str(p.get("client_id"))) else None
+    if not c:
+        return None
+    await ms.ensure_kickoff_token(db, c)
+    return ms.kickoff_url(c)
 
 
 @public_router.post("/proposal/{token}/sign")
@@ -561,7 +619,115 @@ async def sign_proposal(token: str, body: SignBody, request: Request):
     except Exception as e:
         logger.warning(f"[MysteryShop] invoice creation failed for proposal {p['_id']}: {e}")
         await db.shop_proposals.update_one({"_id": p["_id"]}, {"$set": {"invoice": {"error": str(e)[:200]}}})
-    return {"ok": True, "signed_at": now.isoformat(), "invoice": {"hosted_invoice_url": invoice.get("hosted_invoice_url"), "status": invoice.get("status"), "amount": invoice.get("amount")}}
+    return {"ok": True, "signed_at": now.isoformat(), "invoice": {"hosted_invoice_url": invoice.get("hosted_invoice_url"), "status": invoice.get("status"), "amount": invoice.get("amount")}, "kickoff_url": await _kickoff_for(db, p)}
+
+
+# ---------------------------------------------------------------- store kickoff (the GM fills in people, hours, vehicles on a public form)
+@router.post("/{cid}/kickoff/rotate-link")
+async def rotate_kickoff_link(cid: str, request: Request):
+    await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    tok = uuid.uuid4().hex
+    await db.shop_clients.update_one({"_id": c["_id"]}, {"$set": {"kickoff_token": tok}})
+    c["kickoff_token"] = tok
+    return {"kickoff_token": tok, "kickoff_url": ms.kickoff_url(c)}
+
+
+async def _kickoff_client(db, token: str) -> dict:
+    c = await db.shop_clients.find_one({"kickoff_token": token}) if len(token or "") >= 16 else None
+    if not c:
+        raise HTTPException(status_code=404, detail="Setup link not found")
+    return c
+
+
+def _kickoff_out(c: dict, people: list) -> dict:
+    return {"client": {"id": str(c["_id"]), "name": c.get("name"), "brand": c.get("brand", ""), "city": c.get("city", ""), "state": c.get("state", ""), "contact_name": c.get("contact_name", ""), "contact_email": c.get("contact_email", ""),
+                       "contact_phone": c.get("contact_phone", ""), "contact_title": c.get("contact_title", ""), "timezone": c.get("timezone") or "America/Denver", "hours": ms._hours(c), "vehicles": c.get("vehicles") or [],
+                       "plan": (c.get("plan") or {}), "kickoff": {k: (v.isoformat() if isinstance(v, datetime) else v) for k, v in (c.get("kickoff") or {}).items()}},
+            "people": [{"id": str(t["_id"]), "name": t.get("name", ""), "phone": t.get("phone", ""), "department": t.get("department", "sales"), "title": t.get("title", "")} for t in people],
+            "departments": ms.DEPARTMENTS, "timezones": [{"id": a, "label": b} for a, b in ms.TIMEZONES], "sender_name": (c.get("kickoff") or {}).get("sender_name") or "Forest"}
+
+
+@public_router.get("/shop-kickoff/{token}")
+async def public_kickoff(token: str):
+    db = get_db()
+    c = await _kickoff_client(db, token)
+    people = await db.shop_targets.find({"client_id": str(c["_id"]), "active": {"$ne": False}}).sort([("department", 1), ("name", 1)]).to_list(300)
+    return _kickoff_out(c, people)
+
+
+@public_router.post("/shop-kickoff/{token}")
+async def submit_kickoff(token: str, body: KickoffBody, request: Request):
+    db = get_db()
+    c = await _kickoff_client(db, token)
+    cid = str(c["_id"])
+    upd = {}
+    for k in ("contact_name", "contact_email", "contact_phone", "contact_title"):
+        v = getattr(body, k)
+        if v is not None:
+            upd[k] = v.strip()[:160] if k == "contact_email" else v.strip()[:120]
+    if upd.get("contact_email"):
+        upd["contact_email"] = upd["contact_email"].lower()
+        if "@" not in upd["contact_email"]:
+            raise HTTPException(status_code=400, detail="That contact email does not look right")
+    if body.timezone:
+        if body.timezone not in {a for a, _ in ms.TIMEZONES}:
+            raise HTTPException(status_code=400, detail="Pick a time zone from the list")
+        upd["timezone"] = body.timezone
+    if body.hours is not None:
+        h = {**ms.DEFAULT_HOURS, **(body.hours or {})}
+        days = sorted({int(x) for x in (h.get("days") or []) if 0 <= int(x) <= 6})
+        if not days:
+            raise HTTPException(status_code=400, detail="Pick at least one day we may call")
+        s, e = ms._hm(str(h.get("start")), "09:00"), ms._hm(str(h.get("end")), "18:00")
+        if (e[0], e[1]) <= (s[0], s[1]):
+            raise HTTPException(status_code=400, detail="Closing time has to be after opening time")
+        upd["hours"] = {"start": f"{s[0]:02d}:{s[1]:02d}", "end": f"{e[0]:02d}:{e[1]:02d}", "days": days}
+    if body.vehicles is not None:
+        upd["vehicles"] = [str(v).strip()[:80] for v in body.vehicles if str(v).strip()][:30]
+    existing = {str(t["_id"]): t for t in await db.shop_targets.find({"client_id": cid}).to_list(300)}
+    seen_phones, added, now = set(), 0, datetime.now(timezone.utc)
+    for person in body.people:
+        name = (person.name or "").strip()[:80]
+        if not name:
+            raise HTTPException(status_code=400, detail="Every person needs a name")
+        try:
+            phone = _phone(person.phone or "")
+        except HTTPException:
+            raise HTTPException(status_code=400, detail=f"Enter a full cell number with area code for {name}")
+        if phone in seen_phones:
+            raise HTTPException(status_code=400, detail=f"{name} has the same cell number as someone else on the list")
+        seen_phones.add(phone)
+        dept = person.department if person.department in ms.DEPARTMENTS else "sales"
+        title = (person.title or "").strip()[:60]
+        cur = existing.get(person.id or "")
+        dup = await db.shop_targets.find_one({"client_id": cid, "phone": phone, **({"_id": {"$ne": cur["_id"]}} if cur else {})})
+        if dup and str(dup["_id"]) in body.remove_ids:
+            dup = None
+        if dup:
+            raise HTTPException(status_code=400, detail=f"{name}'s cell number is already on the list as {dup.get('name')}")
+        if cur:
+            await db.shop_targets.update_one({"_id": cur["_id"]}, {"$set": {"name": name, "phone": phone, "department": dept, "title": title, "active": True, "updated_at": now}})
+            if (cur.get("name"), cur.get("phone"), cur.get("department")) != (name, phone, dept):
+                await db.roleplay_sessions.update_many({"kind": "mystery_shop", "target_id": str(cur["_id"]), "status": "scheduled"}, {"$set": {"rep_name": name, "rep_phone": phone, "department": dept}})
+        else:
+            await db.shop_targets.insert_one({"client_id": cid, "name": name, "phone": phone, "department": dept, "title": title, "notes": "Added by the store on the kickoff form", "active": True, "challenge_history": [], "created_at": now, "updated_at": now})
+            added += 1
+    for rid in body.remove_ids:
+        if rid in existing:
+            await db.roleplay_sessions.update_many({"kind": "mystery_shop", "target_id": rid, "status": "scheduled"}, {"$set": {"status": "canceled", "fail_reason": "Removed by the store", "updated_at": now}})
+            await db.shop_targets.delete_one({"_id": existing[rid]["_id"]})
+    kick = {**(c.get("kickoff") or {}), "submitted_at": now, "submissions": int((c.get("kickoff") or {}).get("submissions") or 0) + 1,
+            "ip": (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "") or "").split(",")[0].strip()}
+    await db.shop_clients.update_one({"_id": c["_id"]}, {"$set": {**upd, "kickoff": kick, "updated_at": now}})
+    c = await db.shop_clients.find_one({"_id": c["_id"]})
+    people = await db.shop_targets.find({"client_id": cid, "active": {"$ne": False}}).sort([("department", 1), ("name", 1)]).to_list(300)
+    try:
+        await ms.notify_kickoff(db, c, added, len(people))
+    except Exception as e:
+        logger.warning(f"[MysteryShop] kickoff notify failed: {e}")
+    return {"ok": True, **_kickoff_out(c, people), "added": added}
 
 
 @stripe_router.post("/stripe/webhook")

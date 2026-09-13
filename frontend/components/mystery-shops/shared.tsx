@@ -6,6 +6,9 @@ import { GOLD, GREEN, RED, AMBER, tid } from '../scripts/shared';
 export { GOLD, GREEN, RED, AMBER, tid };
 export const PURPLE = '#AF52DE';
 export const BLUE = '#0A84FF';
+// Fixed light palette for the no-login pages a client GM opens (proposal, report, kickoff form).
+export const LIGHT = { bg: '#F6F4EE', card: '#FFFFFF', border: '#E4DFD2', text: '#161616', textSecondary: '#6B6B6B', surface: '#F1EEE6' };
+export const fmtHour = (hm: string) => { const [h, m] = (hm || '09:00').split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; const hh = h % 12 || 12; return m ? `${hh}:${String(m).padStart(2, '0')} ${ap}` : `${hh} ${ap}`; };
 
 export type Plan = { sales_per_month: number; service_per_month: number; price_monthly: number };
 export type Hours = { start: string; end: string; days: number[] };

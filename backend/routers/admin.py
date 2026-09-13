@@ -85,7 +85,7 @@ async def send_invite_email(email: str, name: str, temp_password: str, role: str
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
                 <div style="background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e5e5;">
                     <div style="text-align: center; padding: 32px 20px 20px 20px; border-bottom: 1px solid #eee;">
-                        <img src="cid:imos-logo" alt="I'm On Social" width="100" height="100" style="width: 100px; height: 100px; border-radius: 50%; display: block; margin: 0 auto;" />
+                        <img src="cid:imos-logo" alt="I'm On Social" width="100" height="100" style="width: 100px; height: 100px; display: block; margin: 0 auto;" />
                         <p style="margin: 10px 0 0 0; font-size: 13px; color: #888; letter-spacing: 1px;">Relationship Management System</p>
                     </div>
                     

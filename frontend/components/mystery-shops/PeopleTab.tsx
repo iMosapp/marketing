@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
-import { Sheet, Field, Label, Chip, GoldButton, DEPTS, deptLabel, fmtPhone, GOLD, RED, tid, type Person, type Client } from './shared';
+import { openUrl } from './ReportView';
+import { Sheet, Field, Label, Chip, GoldButton, DEPTS, deptLabel, fmtPhone, fmtWhen, GOLD, RED, tid, type Person, type Client } from './shared';
 
-type Props = { client: Client; people: Person[]; colors: any; onChanged: () => void; onShopStarted: () => void };
+type Props = { client: Client; people: Person[]; colors: any; onChanged: () => void; onShopStarted: () => void; kickoffUrl?: string; kickoff?: { submitted_at?: string; submissions?: number } };
 
-export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted }: Props) => {
+export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, kickoffUrl, kickoff }: Props) => {
   const { showToast } = useToast();
   const [sheet, setSheet] = useState<null | { person?: Person }>(null);
   const [f, setF] = useState({ name: '', phone: '', department: 'sales', title: '', notes: '' });
   const [busy, setBusy] = useState(false);
   const [calling, setCalling] = useState<string | null>(null);
+  const copyKickoff = async () => { if (!kickoffUrl) return; await Clipboard.setStringAsync(kickoffUrl); showToast('Setup link copied', 'success'); };
 
   const open = (person?: Person) => { setF(person ? { name: person.name, phone: person.phone, department: person.department, title: person.title, notes: person.notes } : { name: '', phone: '', department: 'sales', title: '', notes: '' }); setSheet({ person }); };
   const save = async () => {
@@ -43,6 +46,22 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted }: 
         <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
       </TouchableOpacity>
       {people.length === 0 && <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 }} {...tid('people-empty')}>Nobody to shop yet. Add the sales and service people the store wants evaluated.</Text>}
+      {!!kickoffUrl && (
+        <View style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 8 }} {...tid('kickoff-card')}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Ionicons name="clipboard-outline" size={18} color={GOLD} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>Let the store fill this in</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('kickoff-status')}>{kickoff?.submitted_at ? `Filled in ${fmtWhen(kickoff.submitted_at)}${(kickoff.submissions || 0) > 1 ? ` · ${kickoff.submissions} times` : ''}` : 'No-login form: people, hours, vehicles. Saves straight into this client.'}</Text>
+            </View>
+          </View>
+          <Text style={{ fontSize: 11.5, color: colors.textSecondary }} numberOfLines={1} {...tid('kickoff-url')}>{kickoffUrl}</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity onPress={copyKickoff} style={{ flex: 1, height: 36, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }} {...tid('kickoff-copy')}><Ionicons name="link" size={14} color="#111" /><Text style={{ fontSize: 13, fontWeight: '800', color: '#111' }}>Copy setup link</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => openUrl(kickoffUrl)} style={{ width: 36, height: 36, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid('kickoff-open')}><Ionicons name="open-outline" size={16} color={colors.text} /></TouchableOpacity>
+          </View>
+        </View>
+      )}
       {groups.filter(g => g.rows.length).map(g => (
         <View key={g.key} style={{ gap: 8 }}>
           <Label t={`${g.label.toUpperCase()} · ${g.rows.length}`} colors={colors} />

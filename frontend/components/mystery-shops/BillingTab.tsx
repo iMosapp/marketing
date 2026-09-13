@@ -6,6 +6,7 @@ import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
 import { openUrl } from './ReportView';
+import { SendProposalSheet } from './SendProposalSheet';
 import { Sheet, Field, Label, GoldButton, money, fmtWhen, GOLD, RED, GREEN, BLUE, PURPLE, tid, type Client, type Proposal } from './shared';
 
 const PSTATUS: Record<string, { label: string; color: string }> = { draft: { label: 'Draft', color: '#8E8E93' }, sent: { label: 'Sent', color: BLUE }, viewed: { label: 'Opened', color: PURPLE }, signed: { label: 'Signed · invoice sent', color: GOLD }, paid: { label: 'Paid', color: GREEN } };
@@ -17,7 +18,7 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
   const [sheet, setSheet] = useState(false);
   const [f, setF] = useState({ sales: String(client.plan.sales_per_month || 20), service: String(client.plan.service_per_month || 20), price: String(client.plan.price_monthly || 400), term: '3', notes: '', contact_name: client.contact_name, contact_email: client.contact_email });
   const [busy, setBusy] = useState(false);
-  const [sending, setSending] = useState<string | null>(null);
+  const [sendFor, setSendFor] = useState<Proposal | null>(null);
 
   const load = async () => { try { const r = await api.get(`/shop-clients/${client.id}/proposals`); setRows(r.data.proposals); } catch { setRows([]); } };
   useEffect(() => { load(); }, [client.id]);
@@ -29,12 +30,6 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
       setSheet(false); load(); onChanged(); showToast('Proposal ready. Send it or copy the link.', 'success');
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not create', 'error'); }
     finally { setBusy(false); }
-  };
-  const send = async (p: Proposal) => {
-    setSending(p.id);
-    try { await api.post(`/shop-clients/proposals/${p.id}/send`); showToast(`Emailed to ${p.contact_email}`, 'success'); load(); }
-    catch (e: any) { showToast(e?.response?.data?.detail || 'Could not send', 'error'); }
-    finally { setSending(null); }
   };
   const copy = async (url?: string) => { if (!url) return; await Clipboard.setStringAsync(url); showToast('Link copied', 'success'); };
   const remove = (p: Proposal) => showConfirm('Delete this proposal?', 'The link stops working.', async () => { try { await api.delete(`/shop-clients/proposals/${p.id}`); load(); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not delete', 'error'); } }, undefined, 'Delete');
@@ -62,7 +57,7 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
             {p.invoice?.hosted_invoice_url && <TouchableOpacity onPress={() => openUrl(p.invoice!.hosted_invoice_url!)} {...tid(`proposal-invoice-${p.id}`)}><Text style={{ fontSize: 12.5, fontWeight: '800', color: p.invoice.status === 'paid' ? GREEN : GOLD }}>Stripe invoice {money(p.invoice.amount)} · {p.invoice.status}{p.invoice.paid_at ? ` ${fmtWhen(p.invoice.paid_at)}` : ''} · open</Text></TouchableOpacity>}
             {p.invoice?.error && <Text style={{ fontSize: 12.5, color: RED }}>Invoice failed: {p.invoice.error}</Text>}
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              {!['signed', 'paid'].includes(p.status) && <TouchableOpacity onPress={() => send(p)} disabled={sending === p.id} style={{ flex: 1, height: 38, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }} {...tid(`proposal-send-${p.id}`)}><Ionicons name="mail" size={14} color="#111" /><Text style={{ fontSize: 13, fontWeight: '800', color: '#111' }}>{sending === p.id ? 'Sending…' : p.sent_at ? 'Send again' : 'Email it'}</Text></TouchableOpacity>}
+              {!['signed', 'paid'].includes(p.status) && <TouchableOpacity onPress={() => setSendFor(p)} style={{ flex: 1, height: 38, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }} {...tid(`proposal-send-${p.id}`)}><Ionicons name="mail" size={14} color="#111" /><Text style={{ fontSize: 13, fontWeight: '800', color: '#111' }}>{p.sent_at ? 'Send again' : 'Email it'}</Text></TouchableOpacity>}
               <TouchableOpacity onPress={() => copy(p.url)} style={{ flex: 1, height: 38, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }} {...tid(`proposal-copy-${p.id}`)}><Ionicons name="link" size={14} color={colors.text} /><Text style={{ fontSize: 13, fontWeight: '800', color: colors.text }}>Copy link</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => openUrl(p.url || '')} style={{ width: 38, height: 38, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid(`proposal-open-${p.id}`)}><Ionicons name="open-outline" size={16} color={colors.text} /></TouchableOpacity>
               {!['signed', 'paid'].includes(p.status) && <TouchableOpacity onPress={() => remove(p)} style={{ width: 38, height: 38, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid(`proposal-delete-${p.id}`)}><Ionicons name="trash-outline" size={16} color={RED} /></TouchableOpacity>}
@@ -83,6 +78,7 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
         <Field label="EXTRA NOTES ON THE PROPOSAL (OPTIONAL)" value={f.notes} onChange={(v: string) => setF({ ...f, notes: v })} colors={colors} multiline placeholder="Kickoff call included. First report on the 1st." testID="proposal-notes" />
         <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>Creating the proposal also sets this client's plan to these numbers. When they sign, Stripe emails a {money(Number(f.price) || 0)} invoice due in 7 days.</Text>
       </Sheet>
+      <SendProposalSheet proposal={sendFor} colors={colors} onClose={() => setSendFor(null)} onSent={load} />
     </View>
   );
 };

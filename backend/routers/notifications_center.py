@@ -42,6 +42,7 @@ ACTION_TYPES = {
     "highlight_due":              ("now",   "{title}",                          "Send text", "paper-plane"),
     "lead_reopened":              ("today", "{title}",                          "Open",     "refresh"),
     "practice_assigned":          ("today", "{title}",                          "Practice", "mic"),
+    "shop_kickoff":               ("today", "{title}",                          "Review",   "storefront"),
     "manager_nudge":              ("today", "{title}",                          "Open",     "megaphone"),
     "inventory_feed_issue":       ("today", "{title}",                          "Fix",      "cloud-offline"),
     "app_install":                ("today", "{title}",                          "See",      "phone-portrait"),
@@ -52,7 +53,7 @@ BUCKETS = ("now", "today", "later")
 # legacy category (older app builds filter on it)
 _CATEGORY = {"you_are_needed": "urgent", "slow_lead": "urgent", "customer_reply": "replies", "call_retry_replied": "replies",
              "ai_draft_approval_required": "replies", "keyword_alert": "replies", "appointment_extracted": "appts",
-             "task_reminder": "appts", "manager_nudge": "appts", "push": "appts", "highlight_due": "replies", "lead_reopened": "leads", "practice_assigned": "appts"}
+             "task_reminder": "appts", "manager_nudge": "appts", "push": "appts", "highlight_due": "replies", "lead_reopened": "leads", "practice_assigned": "appts", "shop_kickoff": "appts"}
 FOR_YOU_CATEGORIES = ("urgent", "leads", "replies", "appts")
 VIRTUAL_PREFIXES = ("task_", "task_soon_", "msg_", "flag_", "evt_", "csend_")
 

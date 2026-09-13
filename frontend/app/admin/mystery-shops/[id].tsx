@@ -28,6 +28,8 @@ export default function MysteryShopClient() {
   const [client, setClient] = useState<Client | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [reportUrl, setReportUrl] = useState('');
+  const [kickoffUrl, setKickoffUrl] = useState('');
+  const [kickoff, setKickoff] = useState<any>({});
   const [tab, setTab] = useState<Tab>((TABS.some(t => t[0] === tabParam) ? tabParam : 'people') as Tab);
   const [month, setMonth] = useState(monthKey());
   const [edit, setEdit] = useState(false);
@@ -36,7 +38,7 @@ export default function MysteryShopClient() {
   const [reportBusy, setReportBusy] = useState(false);
 
   const load = useCallback(async () => {
-    try { const r = await api.get(`/shop-clients/${id}`); setClient(r.data.client); setPeople(r.data.people); setReportUrl(r.data.report_url); }
+    try { const r = await api.get(`/shop-clients/${id}`); setClient(r.data.client); setPeople(r.data.people); setReportUrl(r.data.report_url); setKickoffUrl(r.data.kickoff_url || ''); setKickoff(r.data.kickoff || {}); }
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not load', 'error'); router.back(); }
   }, [id]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -65,7 +67,7 @@ export default function MysteryShopClient() {
         {TABS.map(([k, l]) => <Chip key={k} label={l} active={tab === k} onPress={() => setTab(k)} colors={colors} testID={`shop-tab-${k}`} />)}
       </ScrollView>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80, gap: 16 }} keyboardShouldPersistTaps="handled">
-        {tab === 'people' && <PeopleTab client={client} people={people} colors={colors} onChanged={load} onShopStarted={() => { setCallsKey(k => k + 1); setTab('calls'); }} />}
+        {tab === 'people' && <PeopleTab client={client} people={people} colors={colors} onChanged={load} onShopStarted={() => { setCallsKey(k => k + 1); setTab('calls'); }} kickoffUrl={kickoffUrl} kickoff={kickoff} />}
         {tab === 'calls' && <CallsTab client={client} colors={colors} month={month} onMonth={setMonth} refreshKey={callsKey} onChanged={load} />}
         {tab === 'challenges' && <ChallengesTab client={client} colors={colors} />}
         {tab === 'report' && (
