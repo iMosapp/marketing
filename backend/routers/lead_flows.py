@@ -150,13 +150,42 @@ async def create_flow(body: FlowBody, request: Request):
     return lf.serialize(flow, [], await _names(db, [flow]))
 
 
+async def _flow_reps(db, flow: dict, me: dict) -> list:
+    """People who can go on THIS flow's ladder: the flow's store team + the team of every store / shared inbox whose
+    lead sources use the flow. (The library list is scoped to the caller's store, which is the wrong pool when an admin
+    edits another store's flow.)"""
+    from services.team_scope import eligible_people
+    stores: set = {str(flow["store_id"])} if flow.get("store_id") else set()
+    inboxes: set = set()
+    async for s in db.lead_sources.find({"flow_id": str(flow["_id"])}, {"store_id": 1, "inbox_id": 1, "team_id": 1}):
+        if s.get("store_id"):
+            stores.add(str(s["store_id"]))
+        for k in ("inbox_id", "team_id"):
+            if s.get(k) and ObjectId.is_valid(str(s[k])):
+                inboxes.add(str(s[k]))
+    if not stores and not inboxes:
+        return await lf.store_reps(db, None, me)
+    async for ib in db.shared_inboxes.find({"store_id": {"$in": [v for sid in stores for v in ([sid] + ([ObjectId(sid)] if ObjectId.is_valid(sid) else []))]}, "is_active": {"$ne": False}}, {"_id": 1}):
+        inboxes.add(str(ib["_id"]))
+    people: dict = {}
+    for sid in (sorted(stores) or [None]):
+        for p in (await eligible_people(db, sid, me, inbox_ids=sorted(inboxes) or None))["people"]:
+            cur = people.get(p["id"])
+            people[p["id"]] = {**p, "via": sorted(set((cur or {}).get("via", [])) | set(p["via"]))} if cur else p
+    rows = list(people.values())
+    from services.team_scope import RANK
+    rows.sort(key=lambda r: (RANK.get(r["role"], 1), r["name"].lower()))
+    return rows
+
+
 @router.get("/{flow_id}")
 async def get_flow(flow_id: str, request: Request, days: int = 30):
     db = get_db()
     flow = await _flow(db, flow_id, request.state.user)
     by_flow = await _sources_by_flow(db, [str(flow["_id"])])
     stats = await lf.flow_stats(db, [str(flow["_id"])], max(1, min(365, days)))
-    return {**lf.serialize(flow, by_flow.get(str(flow["_id"])), await _names(db, [flow])), "stats": stats.get(str(flow["_id"]))}
+    return {**lf.serialize(flow, by_flow.get(str(flow["_id"])), await _names(db, [flow])), "stats": stats.get(str(flow["_id"])),
+            "reps": await _flow_reps(db, flow, request.state.user), "store_hours": await _store_hours(db, str(flow["store_id"]) if flow.get("store_id") else None)}
 
 
 @router.get("/{flow_id}/stats")

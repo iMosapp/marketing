@@ -38,8 +38,9 @@ export default function LeadFlowEditor() {
       setFlow(f.data);
       setTagsClaim((f.data.tags_on_claim || []).join(', '));
       setTagsNoAnswer((f.data.tags_on_no_answer || []).join(', '));
-      setReps((lib.data.reps || []).map((r: any) => ({ ...r, _id: r._id || r.id })));
-      setStoreHours(lib.data.store_hours || null);
+      // the flow's own pool (its store + every store/inbox whose sources use it); the library list is scoped to the caller's store
+      setReps((f.data.reps || lib.data.reps || []).map((r: any) => ({ ...r, _id: r._id || r.id })));
+      setStoreHours(f.data.store_hours || lib.data.store_hours || null);
     }).catch((e: any) => showToast(e?.response?.data?.detail || 'Could not load flow', 'error'));
   }, [id, user?._id]);
 
