@@ -9,21 +9,37 @@ export type PersonHistory = {
   person: { target_id: string; name: string; title: string; department: string; department_label: string; active: boolean };
   summary: { shops: number; unreachable: number; avg_score: number | null; best: number | null; worst: number | null; critical_misses: number; trend_delta: number | null; needs_training: boolean; first_shop: string | null };
   departments: Record<string, { label: string; shops: number; avg_score: number | null; critical_misses: number }>;
-  trend: { month: string; label: string; shops: number; unreachable: number; avg_score: number | null; by_department: Record<string, { label: string; shops: number; avg_score: number | null }> }[];
+  trend: { month: string; label: string; shops: number; unreachable: number; avg_score: number | null; store_avg_score?: number | null; by_department: Record<string, { label: string; shops: number; avg_score: number | null }> }[];
   shops: any[];
   coaching_themes: { text: string; count: number }[];
+  store?: { avg_score: number | null; shops: number; people: number; by_department: Record<string, { label: string; avg_score: number | null; shops: number }> };
+  vs_store?: number | null;
+  vs_department?: Record<string, number>;
 };
 
+const Delta = ({ d, colors, what, testID }: { d: number | null | undefined; colors: any; what: string; testID?: string }) => (
+  d == null ? null : (
+    <Text style={{ fontSize: 12, fontWeight: '800', color: d > 0 ? GREEN : d < 0 ? RED : colors.textSecondary }} {...(testID ? tid(testID) : {})}>
+      {d === 0 ? `Right on the ${what} line` : `${d > 0 ? '+' : ''}${d} pts ${d > 0 ? 'above' : 'below'} the ${what}`}
+    </Text>
+  )
+);
+
+// Rep bars with a thin store-average marker per month, so above/below the line is visible at a glance.
 const TrendBars = ({ trend, colors }: { trend: PersonHistory['trend']; colors: any }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 110 }} {...tid('person-trend')}>
+  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 118 }} {...tid('person-trend')}>
     {trend.map(t => {
       const h = t.avg_score == null ? 4 : Math.max(6, Math.round(78 * t.avg_score / 100));
+      const sh = t.store_avg_score == null ? null : Math.max(2, Math.round(78 * t.store_avg_score / 100));
       return (
         <View key={t.month} style={{ flex: 1, alignItems: 'center', gap: 4 }} {...tid(`person-trend-${t.month}`)}>
           <Text style={{ fontSize: 11, fontWeight: '800', color: t.avg_score == null ? colors.textSecondary : scoreColor(t.avg_score) }}>{t.avg_score == null ? (t.unreachable ? 'n/r' : '–') : `${t.avg_score}%`}</Text>
-          <View style={{ width: '70%', height: h, borderRadius: 4, backgroundColor: t.avg_score == null ? colors.border : scoreColor(t.avg_score) }} />
+          <View style={{ width: '70%', height: 78, justifyContent: 'flex-end', position: 'relative' }}>
+            <View style={{ width: '100%', height: h, borderRadius: 4, backgroundColor: t.avg_score == null ? colors.border : scoreColor(t.avg_score) }} />
+            {sh != null && <View style={{ position: 'absolute', left: -4, right: -4, bottom: sh, height: 2, backgroundColor: colors.text, opacity: 0.55, borderRadius: 1 }} {...tid(`person-trend-${t.month}-store`)} />}
+          </View>
           <Text style={{ fontSize: 10, color: colors.textSecondary }}>{t.label.split(' ')[0]}</Text>
-          <Text style={{ fontSize: 9.5, color: colors.textSecondary }}>{t.shops ? `${t.shops} shop${t.shops === 1 ? '' : 's'}` : ' '}</Text>
+          <Text style={{ fontSize: 9.5, color: colors.textSecondary }}>{t.store_avg_score != null ? `store ${t.store_avg_score}%` : t.shops ? `${t.shops} shop${t.shops === 1 ? '' : 's'}` : ' '}</Text>
         </View>
       );
     })}
@@ -59,16 +75,19 @@ export const PersonDetailSheet = ({ targetId, name, path, onClose, colors }: { t
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
             <Stat label="Shops" value={`${s.shops}${s.unreachable ? ` · ${s.unreachable} n/r` : ''}`} colors={colors} testID="person-stat-shops" />
             <Stat label="Average" value={s.avg_score != null ? `${s.avg_score}%` : '–'} colors={colors} tone={scoreColor(s.avg_score)} testID="person-stat-avg" />
+            {data.store?.avg_score != null && <Stat label={`Store avg · ${data.store.people} people`} value={`${data.store.avg_score}%`} colors={colors} tone={data.vs_store == null ? undefined : data.vs_store >= 0 ? GREEN : RED} testID="person-stat-store" />}
             <Stat label="Best / worst" value={s.best != null ? `${s.best}% / ${s.worst}%` : '–'} colors={colors} testID="person-stat-range" />
             <Stat label="Critical misses" value={String(s.critical_misses)} colors={colors} tone={s.critical_misses ? RED : GREEN} testID="person-stat-crit" />
           </View>
-          {Object.keys(data.departments).length > 1 && (
+          <Delta d={data.vs_store} colors={colors} what={`store average across ${data.store?.shops || 0} shops`} testID="person-vs-store" />
+          {Object.keys(data.departments).length > 0 && (
             <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
               {Object.entries(data.departments).map(([d, x]) => (
                 <View key={d} style={{ flex: 1, minWidth: 140, backgroundColor: colors.card, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: colors.border, gap: 2 }} {...tid(`person-dept-${d}`)}>
                   <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD }}>{x.label.toUpperCase()}</Text>
                   <Text style={{ fontSize: 13, color: colors.text }}>{x.shops} shop{x.shops === 1 ? '' : 's'}{x.critical_misses ? ` · ${x.critical_misses} critical` : ''}</Text>
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: scoreColor(x.avg_score) }}>{x.avg_score != null ? `Avg ${x.avg_score}%` : '–'}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: scoreColor(x.avg_score) }}>{x.avg_score != null ? `Avg ${x.avg_score}%` : '–'}{data.store?.by_department?.[d]?.avg_score != null ? <Text style={{ fontSize: 11.5, fontWeight: '600', color: colors.textSecondary }}>  · {x.label.toLowerCase()} line {data.store.by_department[d].avg_score}%</Text> : null}</Text>
+                  <Delta d={data.vs_department?.[d]} colors={colors} what={`${x.label.toLowerCase()} line`} testID={`person-vs-dept-${d}`} />
                 </View>
               ))}
             </View>

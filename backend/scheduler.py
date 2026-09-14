@@ -2188,6 +2188,13 @@ def start_scheduler():
         await send_due_reports(get_db())
     scheduler.add_job(safe_job(_shop_monthly_reports), IntervalTrigger(hours=1), id="mystery_shop_monthly_report", replace_existing=True, misfire_grace_time=1800)
 
+    # Hourly — Monday morning (after 8am client time) weekly digest: last week's shops and scores, for GMs who turned it on
+    async def _shop_weekly_digests():
+        from routers.database import get_db
+        from services.shop_report_mail import send_due_digests
+        await send_due_digests(get_db())
+    scheduler.add_job(safe_job(_shop_weekly_digests), IntervalTrigger(hours=1), id="mystery_shop_weekly_digest", replace_existing=True, misfire_grace_time=1800)
+
     # Every 5 minutes — force garbage collection to reclaim memory from large operations
     async def _force_gc():
         import gc

@@ -641,6 +641,25 @@ async def person_history(db, client: dict, target_id: str, months: int = 6) -> O
         row["month"] = ((c.get("ended_at") or c.get("scheduled_for")).astimezone(tz).strftime("%Y-%m")) if (c.get("ended_at") or c.get("scheduled_for")) else None
         shops.append(row)
     all_scores = [c.get("score_pct") for c in done]
+    # the line to compare against: every completed shop on this account in the same window, overall + per department + per month
+    window_start = datetime(int(buckets[0]["month"][:4]), int(buckets[0]["month"][5:]), 1, tzinfo=tz).astimezone(timezone.utc)
+    store_done = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "status": "completed", "$or": [{"ended_at": {"$gte": window_start}}, {"scheduled_for": {"$gte": window_start}}]},
+                                                 {"score_pct": 1, "department": 1, "ended_at": 1, "scheduled_for": 1, "target_id": 1}).to_list(2000)
+    store_by_dept: dict = {}
+    store_by_month: dict = {}
+    for c in store_done:
+        d = c.get("department") or "sales"
+        store_by_dept.setdefault(d, []).append(c.get("score_pct"))
+        when = c.get("ended_at") or c.get("scheduled_for")
+        if when:
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            store_by_month.setdefault(when.astimezone(tz).strftime("%Y-%m"), []).append(c.get("score_pct"))
+    for t in trend:
+        t["store_avg_score"] = _pct(store_by_month.get(t["month"], []))
+    store_avg = _pct([c.get("score_pct") for c in store_done])
+    store = {"avg_score": store_avg, "shops": len(store_done), "people": len({c.get("target_id") for c in store_done}),
+             "by_department": {d: {"label": ind.dept_label(d), "avg_score": _pct(v), "shops": len(v)} for d, v in store_by_dept.items()}}
     crit_total = sum(len((evals.get(str(c.get("evaluation_id"))) or {}).get("critical_misses") or []) for c in done)
     coaching: dict = {}
     for c in done:
@@ -648,6 +667,12 @@ async def person_history(db, client: dict, target_id: str, months: int = 6) -> O
             key = no_em_dash(str(tip)).strip().rstrip(".")
             coaching[key] = coaching.get(key, 0) + 1
     avg = _pct(all_scores)
+    vs_store = (avg - store_avg) if (avg is not None and store_avg is not None) else None
+    vs_dept = {}
+    for d, v in depts.items():
+        mine, line = _pct(v["scores"]), _pct(store_by_dept.get(d, []))
+        if mine is not None and line is not None:
+            vs_dept[d] = mine - line
     return {"person": {"target_id": str(target["_id"]), "name": target.get("name"), "title": target.get("title") or "", "department": target.get("department"), "department_label": ind.dept_label(target.get("department") or "sales"),
                        "phone_last4": (target.get("phone") or "")[-4:], "active": target.get("active", True)},
             "summary": {"shops": len(done), "unreachable": len([c for c in calls if c.get("status") == "unreachable"]), "avg_score": avg, "best": max([s for s in all_scores if s is not None], default=None),
@@ -655,6 +680,7 @@ async def person_history(db, client: dict, target_id: str, months: int = 6) -> O
                         "needs_training": bool(done and ((avg is not None and avg < 70) or crit_total >= 2)), "first_shop": (done[-1].get("ended_at") or done[-1].get("scheduled_for")).isoformat() if done else None},
             "departments": {d: {"label": v["label"], "shops": v["shops"], "avg_score": _pct(v["scores"]), "critical_misses": v["critical_misses"]} for d, v in depts.items()},
             "trend": trend, "shops": shops, "coaching_themes": [{"text": k, "count": v} for k, v in sorted(coaching.items(), key=lambda kv: -kv[1])[:5]],
+            "store": store, "vs_store": vs_store, "vs_department": vs_dept,
             "client": {"id": cid, "name": client.get("name")}}
 
 

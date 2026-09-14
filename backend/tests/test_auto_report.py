@@ -37,6 +37,24 @@ def test_summary_line():
     assert srm.summary_line({"month_label": "July 2026", "summary": {"completed": 0}}) == "No shops were completed in July 2026."
 
 
+def test_weekly_digest_logic():
+    # Monday Sep 14 2026 09:00 Denver (15:00 UTC): last week = Sep 7-13, key 2026-W37, due
+    mon = datetime(2026, 9, 14, 15, 0, tzinfo=timezone.utc)
+    start, end, key, label = srm.last_week(DENVER, mon)
+    assert key == "2026-W37" and label == "Sep 7 to Sep 13" and (end - start).days == 7
+    wk = {**DENVER, "weekly_digest": {"enabled": True, "to": "gm@example.com"}}
+    assert srm.digest_due_now(wk, mon)
+    assert not srm.digest_due_now(wk, datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc))          # 6am Monday: too early
+    assert srm.digest_due_now(wk, datetime(2026, 9, 15, 15, 0, tzinfo=timezone.utc))              # Tuesday catch-up
+    assert not srm.digest_due_now(wk, datetime(2026, 9, 16, 15, 0, tzinfo=timezone.utc))          # Wednesday: no
+    assert not srm.digest_due_now({**wk, "weekly_digest": {**wk["weekly_digest"], "last_sent_week": "2026-W37"}}, mon)
+    assert not srm.digest_due_now({**wk, "demo": True}, mon) and not srm.digest_due_now(DENVER, mon)
+    assert srm.next_monday(DENVER, mon) == "2026-09-21" and srm.next_monday(DENVER, datetime(2026, 9, 16, 15, 0, tzinfo=timezone.utc)) == "2026-09-21"
+    rows = [{"name": "Bud", "status": "completed", "score": 72, "critical": 1}, {"name": "Jessi", "status": "completed", "score": 88, "critical": 0}, {"name": "Kira", "status": "unreachable", "score": None, "critical": 0}]
+    assert srm.digest_line(rows, "Sep 7 to Sep 13") == "2 shops Sep 7 to Sep 13, average 80%, top score Jessi 88%, 1 critical miss, 1 unreachable."
+    assert srm.digest_line([rows[2]], "Sep 7 to Sep 13") == "No shops were completed Sep 7 to Sep 13. 1 could not be reached."
+
+
 async def _login(c):
     r = await c.post(f"{API}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"})
     d = r.json()
@@ -79,7 +97,19 @@ async def _api_flow():
             # the hourly job skips it now (already sent for this cycle only if month == previous month; either way it must not raise)
             n = await srm.send_due_reports(db)
             assert isinstance(n, int)
-            print(f"OK: toggle validated, send-now delivered ({body['summary']}), due-run sent {n}")
+            # weekly digest: same toggle rules, own address defaults to the monthly one, send-now hits Resend's sink
+            r = await c.get(f"{API}/api/shop-clients/{cid}", headers=h)
+            wd = r.json()["weekly_digest"]
+            assert wd["enabled"] is False and wd["to"] == "delivered@resend.dev" and wd["next_send"] is None
+            r = await c.put(f"{API}/api/shop-clients/{cid}/report/weekly", json={"enabled": True}, headers=h)
+            assert r.status_code == 200 and r.json()["weekly_digest"]["enabled"] and r.json()["weekly_digest"]["next_send"]
+            r = await c.post(f"{API}/api/shop-clients/{cid}/report/weekly/send", json={}, headers=h)
+            assert r.status_code == 200, r.text
+            w = r.json()
+            assert w["ok"] and w["to"] == "delivered@resend.dev" and w["week"].count("-W") == 1 and w["summary"] and w["weekly_digest"]["last_sent_week"] == w["week"]
+            assert await db.shop_report_sends.count_documents({"client_id": cid, "kind": "weekly", "ok": True}) == 1
+            assert isinstance(await srm.send_due_digests(db), int)
+            print(f"OK: toggle validated, send-now delivered ({body['summary']}), due-run sent {n}; weekly digest sent ({w['summary']})")
     finally:
         await db.shop_clients.delete_many({"qa_auto_report": True})
         await db.shop_report_sends.delete_many({"client_id": cid})

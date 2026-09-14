@@ -465,7 +465,7 @@ async def get_client(cid: str, request: Request):
     return {"client": ms.serialize_client(c, await _progress(db, c)), "people": [ms.serialize_target(t) for t in await db.shop_targets.find({"client_id": cid}).sort([("department", 1), ("name", 1)]).to_list(300)],
             "scorecard_options": [{"id": str(x["_id"]), "name": x.get("name"), "department": x.get("department")} for x in cards],
             "report_url": f"{scr._app_url()}/shop-report/{c.get('report_token')}", "kickoff_url": ms.kickoff_url(c), "kickoff": c.get("kickoff") or {}, "departments": ind.dept_options(ind.key_of(c)),
-            "auto_report": srm.serialize_auto_report(c)}
+            "auto_report": srm.serialize_auto_report(c), "weekly_digest": srm.serialize_weekly_digest(c)}
 
 
 @router.put("/{cid}")
@@ -772,6 +772,40 @@ async def set_auto_report(cid: str, body: AutoReportBody, request: Request):
 class SendReportBody(BaseModel):
     month: Optional[str] = None
     to: Optional[str] = None
+
+
+@router.put("/{cid}/report/weekly")
+async def set_weekly_digest(cid: str, body: AutoReportBody, request: Request):
+    """Toggle the Monday-morning digest (last week's shops and scores, no PDF) and where it goes."""
+    await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    sets: dict = {"updated_at": datetime.now(timezone.utc)}
+    if body.to is not None:
+        to = body.to.strip().lower()
+        if to and ("@" not in to or "." not in to.split("@")[-1]):
+            raise HTTPException(status_code=400, detail="That email address does not look right")
+        sets["weekly_digest.to"] = to
+    if body.enabled is not None:
+        if body.enabled and not ((body.to or "").strip() or (c.get("weekly_digest") or {}).get("to") or (c.get("auto_report") or {}).get("to") or c.get("contact_email")):
+            raise HTTPException(status_code=400, detail="Add the GM's email first")
+        sets["weekly_digest.enabled"] = bool(body.enabled)
+        if body.enabled:
+            sets["weekly_digest.last_error"] = None
+    await db.shop_clients.update_one({"_id": c["_id"]}, {"$set": sets})
+    return {"weekly_digest": srm.serialize_weekly_digest(await _client(db, cid))}
+
+
+@router.post("/{cid}/report/weekly/send")
+async def send_weekly_now(cid: str, request: Request, body: Optional[SendReportBody] = None):
+    """Email last week's digest right now."""
+    me = await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    res = await srm.send_weekly_digest(db, c, (body or SendReportBody()).to, actor=me, reason="manual")
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error"))
+    return {**res, "weekly_digest": srm.serialize_weekly_digest(await _client(db, cid))}
 
 
 @router.post("/{cid}/report/send")

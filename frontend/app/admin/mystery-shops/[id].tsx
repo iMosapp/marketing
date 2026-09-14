@@ -32,6 +32,7 @@ export default function MysteryShopClient() {
   const [kickoffUrl, setKickoffUrl] = useState('');
   const [kickoff, setKickoff] = useState<any>({});
   const [autoReport, setAutoReport] = useState<AutoReport | null>(null);
+  const [weeklyDigest, setWeeklyDigest] = useState<AutoReport | null>(null);
   const [tab, setTab] = useState<Tab>((TABS.some(t => t[0] === tabParam) ? tabParam : 'people') as Tab);
   const [month, setMonth] = useState(monthKey());
   const [edit, setEdit] = useState(false);
@@ -41,7 +42,7 @@ export default function MysteryShopClient() {
 
   const load = useCallback(async () => {
     loadIndustries();
-    try { const r = await api.get(`/shop-clients/${id}`); setClient(r.data.client); setPeople(r.data.people); setReportUrl(r.data.report_url); setKickoffUrl(r.data.kickoff_url || ''); setKickoff(r.data.kickoff || {}); setAutoReport(r.data.auto_report || null); }
+    try { const r = await api.get(`/shop-clients/${id}`); setClient(r.data.client); setPeople(r.data.people); setReportUrl(r.data.report_url); setKickoffUrl(r.data.kickoff_url || ''); setKickoff(r.data.kickoff || {}); setAutoReport(r.data.auto_report || null); setWeeklyDigest(r.data.weekly_digest || null); }
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not load', 'error'); router.back(); }
   }, [id]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -86,6 +87,7 @@ export default function MysteryShopClient() {
               </View>
             </View>
             {!client.demo && autoReport && <AutoReportCard clientId={String(id)} value={autoReport} month={month} colors={colors} onChanged={setAutoReport} />}
+            {!client.demo && weeklyDigest && <AutoReportCard kind="weekly" clientId={String(id)} value={weeklyDigest} month={month} colors={colors} onChanged={setWeeklyDigest} />}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <TouchableOpacity onPress={() => setMonth(shiftMonth(month, -1))} hitSlop={8} {...tid('report-month-prev')}><Ionicons name="chevron-back" size={22} color={GOLD} /></TouchableOpacity>
               <Text style={{ flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.text }} {...tid('report-month-label')}>{monthLabel(month)}</Text>

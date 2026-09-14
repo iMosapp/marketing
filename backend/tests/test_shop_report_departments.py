@@ -80,6 +80,16 @@ async def _run():
         assert all(s["snippet"].startswith("CUSTOMER: Hi, is this the service department?") for s in done_rows), done_rows[0]["snippet"]
         assert {s["department_label"] for s in done_rows} == {"Sales", "Service"}
         assert await ms.person_history(db, client, str(ObjectId()), months=3) is None
+        # compare to store: Bud is the only person here, so his numbers ARE the store line
+        assert hist["store"]["avg_score"] == hist["summary"]["avg_score"] and hist["store"]["shops"] == 3 and hist["store"]["people"] == 1
+        assert hist["vs_store"] == 0 and hist["vs_department"] == {"sales": 0, "service": 0}
+        assert hist["trend"][-1]["store_avg_score"] == 65 and hist["trend"][-2]["store_avg_score"] == 40
+        # add a stronger colleague and the line moves above Bud
+        await db.roleplay_sessions.insert_one({**base, "target_id": str(ObjectId()), "rep_name": "Ace", "department": "sales", "score_pct": 100, "adherence_pct": 100, "evaluation_id": None})
+        hist2 = await ms.person_history(db, client, tid, months=3)
+        assert hist2["store"]["people"] == 2 and hist2["store"]["avg_score"] == round((70 + 60 + 40 + 100) / 4)
+        assert hist2["vs_store"] == hist2["summary"]["avg_score"] - hist2["store"]["avg_score"] < 0
+        assert hist2["store"]["by_department"]["sales"]["avg_score"] == 70 and hist2["vs_department"]["sales"] == 55 - 70
         print(f"OK: {len(rep['people'])} person rows, depts {list(bd)}, pdf {len(pdf)} bytes, text_checked={bool(text)}, history shops={hist['summary']['shops']} delta={hist['summary']['trend_delta']}")
     finally:
         await db.roleplay_sessions.delete_many({"qa_report": True})
