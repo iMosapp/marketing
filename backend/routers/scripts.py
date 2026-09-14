@@ -84,6 +84,8 @@ class GenerateBody(BaseModel):
 
 class ImportBody(BaseModel):
     text: str
+    industry: Optional[str] = None
+    department: Optional[str] = None
 
 
 class StartBody(BaseModel):
@@ -175,7 +177,7 @@ async def import_script(body: ImportBody, request: Request):
     if len(text) < 40:
         raise HTTPException(status_code=400, detail="Paste the whole script first, that is too short to work with")
     try:
-        return await svc.import_script_text(text)
+        return await svc.import_script_text(text, body.industry, body.department)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
@@ -184,7 +186,7 @@ async def import_script(body: ImportBody, request: Request):
 
 
 @router.post("/import-file")
-async def import_script_file(request: Request, file: UploadFile = File(...)):
+async def import_script_file(request: Request, file: UploadFile = File(...), industry: Optional[str] = None, department: Optional[str] = None):
     """Attach a PDF, Word (.docx) or text file: the text is pulled out server-side and shaped exactly like a pasted script."""
     me = await _current(request)
     if not _is_manager(me):
@@ -212,7 +214,7 @@ async def import_script_file(request: Request, file: UploadFile = File(...)):
     if len(text) < 40:
         raise HTTPException(status_code=422, detail="No readable text in that file (scanned PDFs are images). Paste the script instead")
     try:
-        return await svc.import_script_text(text[:12000])
+        return await svc.import_script_text(text[:12000], industry, department)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:

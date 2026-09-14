@@ -6,12 +6,12 @@ import api from '../../services/api';
 import { GOLD, tid, type Persona } from './shared';
 
 export type ImportedScript = { title: string; category: string; direction?: 'inbound' | 'outbound'; runtime: string; purpose: string; body: string; success_points: string[]; persona: Persona };
-type PanelProps = { colors: any; onImported: (draft: ImportedScript) => void; onCancel?: () => void; autoFocus?: boolean; onFocusInput?: (node: any) => void };
+type PanelProps = { colors: any; onImported: (draft: ImportedScript) => void; onCancel?: () => void; autoFocus?: boolean; onFocusInput?: (node: any) => void; industry?: string; department?: string };
 type Props = { visible: boolean; colors: any; onClose: () => void; onImported: (draft: ImportedScript) => void };
 
 // Paste a script you already use (Word, email, notes): Jessi shapes it into the editor fields, nothing is saved until you tap Save.
 // The panel is plain content so it can live INSIDE another sheet (stacking two iOS modals freezes the app); the Sheet wraps it for full screens.
-export const ImportScriptPanel = ({ colors, onImported, onCancel, autoFocus = true, onFocusInput }: PanelProps) => {
+export const ImportScriptPanel = ({ colors, onImported, onCancel, autoFocus = true, onFocusInput, industry, department }: PanelProps) => {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -22,7 +22,7 @@ export const ImportScriptPanel = ({ colors, onImported, onCancel, autoFocus = tr
     if (!ready || busy) return;
     setBusy(true); setError('');
     try {
-      const res = await api.post('/scripts/import', { text: text.trim() }, { timeout: 120000 });
+      const res = await api.post('/scripts/import', { text: text.trim(), industry, department }, { timeout: 120000 });
       onImported(res.data); setText('');
     } catch (e: any) { setError(e?.response?.data?.detail || 'Jessi could not format that, try again'); }
     finally { setBusy(false); }
@@ -45,7 +45,7 @@ export const ImportScriptPanel = ({ colors, onImported, onCancel, autoFocus = tr
       const name = picked.name || 'script.pdf';
       if (Platform.OS === 'web') { const blob = await (await fetch(picked.uri)).blob(); form.append('file', blob, name); }
       else form.append('file', { uri: picked.uri, name, type: picked.mimeType || 'application/octet-stream' } as any);
-      const res = await api.post('/scripts/import-file', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 180000 });
+      const res = await api.post('/scripts/import-file', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 180000, params: { industry, department } });
       onImported(res.data); setText(''); setFileName('');
     } catch (e: any) { setError(e?.response?.data?.detail || 'Jessi could not read that file, try pasting the text'); }
     finally { setBusy(false); }

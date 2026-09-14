@@ -15,7 +15,7 @@ const toForm = (c: any) => ({ title: c.title || '', industry: c.industry || indu
   name: c.persona?.name || '', voice: c.persona?.voice || 'female', summary: c.persona?.summary || '', goals: c.persona?.goals || '', objections: (c.persona?.objections || []).join('\n'), opening_line: c.persona?.opening_line || '' });
 
 // The paste-a-script panel lives inside the sheet (a second modal on top of a modal freezes iOS) and scrolls itself above the keyboard.
-const ImportPanelInSheet = (props: { colors: any; onCancel: () => void; onImported: (d: any) => void }) => {
+const ImportPanelInSheet = (props: { colors: any; onCancel: () => void; onImported: (d: any) => void; industry?: string; department?: string }) => {
   const sheet = useSheetScroll();
   return <ImportScriptPanel {...props} onFocusInput={(node) => sheet?.ensureVisible(node)} />;
 };
@@ -66,7 +66,7 @@ export const ChallengeEditorSheet = ({ visible, onClose, colors, initial, existi
         )}
         {!existing && importOpen && (
           <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: GOLD + '66' }}>
-            <ImportPanelInSheet colors={colors} onCancel={() => setImportOpen(false)} onImported={(d) => {
+            <ImportPanelInSheet colors={colors} industry={f.industry} department={f.department} onCancel={() => setImportOpen(false)} onImported={(d) => {
               setF({ ...f, title: d.title || f.title, department: d.category === 'Service' && depts.some(x => x.key === 'service') ? 'service' : f.department, purpose: d.purpose || '', body: d.body || '', points: (d.success_points || []).join('\n'), name: d.persona?.name || '', voice: d.persona?.voice || 'female',
                 summary: d.persona?.summary || '', goals: d.persona?.goals || '', objections: (d.persona?.objections || []).join('\n'), opening_line: d.persona?.opening_line || '' });
               setImportOpen(false);

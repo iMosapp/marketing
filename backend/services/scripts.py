@@ -192,17 +192,28 @@ def merge(body: str, values: dict) -> str:
 IMPORT_CATEGORIES = ["Sales calls", "Appointments", "Follow-up", "Objections", "Service", "Custom"]
 
 
-async def import_script_text(text: str) -> dict:
-    """Turn a pasted phone script (any format: notes, Word dump, bullets) into a structured draft for the editor. Nothing is saved here."""
-    system = ("You are Jessi, a dealership sales trainer. A manager pasted a phone script they already use. Re-shape it into our script format WITHOUT rewriting their words: "
+async def import_script_text(text: str, industry: Optional[str] = None, department: Optional[str] = None) -> dict:
+    """Turn a pasted phone script (any format: notes, Word dump, bullets) into a structured draft for the editor. Nothing is saved here.
+    industry/department (industry packs) make Jessi talk like that business: an insurance agency never hears 'dealership' or 'vehicle'."""
+    from services import industries as ind
+    industry = industry if industry in ind.INDUSTRIES else (ind.industry_of_dept(department) if department else ind.DEFAULT_INDUSTRY)
+    pack = ind.get(industry)
+    d = ind.dept(department, industry) if department else None
+    off = pack["offering"]
+    who = f"{d['rep']}" if d else f"a {pack['label'].lower()} team member"
+    context = f" The script is for {who} handling {d['call']}s: {d['brief']}." if d else ""
+    system = (f"You are Jessi, a {pack['trainer']} for {pack['label'].lower()} teams. A manager pasted a phone script they already use.{context} Re-shape it into our script format WITHOUT rewriting their words: "
               "keep every line of dialogue they wrote (fix only obvious typos), keep their order, drop page numbers and headers. "
-              "Put stage directions in [brackets]. Replace the customer's name with {first_name}, the vehicle with {vehicle}, the store name with {store}, the rep's name with {rep_name}, "
-              "appointment times with {appointment_time} and trade-in mentions with {trade}, but only where the pasted text clearly refers to those things and ONLY inside body; write success_points and persona in plain words (no curly braces). "
-              f"Pick category from {IMPORT_CATEGORIES}. success_points = 4 to 8 short graded behaviours the script asks the rep to do (start with a verb). "
-              "persona = the customer this script is talking to, so a rep can practice against it: name (first and last), voice one of female/male/young/older, summary (age, situation, what they saw), goals as ONE sentence string, 2 to 4 objections they would raise, and an opening_line they would say to start the call. "
-              "runtime like '2 to 4 min'. purpose = one line on when to use it. direction = inbound when the customer is calling the store (the rep answers the phone), outbound when the rep places the call. Never use em dashes. "
+              f"Put stage directions in [brackets]. Replace the customer's name with {{first_name}}, the specific {off['label']} with {{offering}}, the {pack['business']} name with {{store}}, the employee's name with {{rep_name}} and "
+              "appointment times with {appointment_time}, but only where the pasted text clearly refers to those things and ONLY inside body; write success_points and persona in plain words (no curly braces). "
+              f"Use this business's own words: the business is a {pack['business']} (never call it a dealership or store unless it is one), the caller is a {pack['customer']}, what they ask about is a {off['label']}. "
+              f"Pick category from {IMPORT_CATEGORIES}. success_points = 4 to 8 short graded behaviours the script asks the employee to do (start with a verb). "
+              f"persona = the {pack['customer']} this script is talking to, so an employee can practice against it: name (first and last), voice one of female/male/young/older, summary (age, situation, what they saw or need), goals as ONE sentence string, 2 to 4 objections they would raise, and an opening_line they would say to start the call. "
+              f"runtime like '2 to 4 min'. purpose = one line on when to use it. direction = inbound when the {pack['customer']} is calling the {pack['business']} (the employee answers the phone), outbound when the employee places the call. Never use em dashes. "
               "Return JSON: {title, category, direction, runtime, purpose, body, success_points:[...], persona:{name, voice, summary, goals, objections:[...], opening_line}}.")
-    data = await _llm_json(system, f"PASTED SCRIPT:\n\n{text[:12000]}", timeout=90)
+    data = await _llm_json(system, f"PASTED SCRIPT ({pack['label']}{' / ' + d['label'] if d else ''}):\n\n{text[:12000]}", timeout=90)
+    if industry == ind.DEFAULT_INDUSTRY and isinstance(data.get("body"), str):
+        data["body"] = data["body"].replace("{offering}", "{vehicle}")  # automotive practice scripts keep their historical merge field
     body = data.get("body")
     if isinstance(body, list):  # the model sometimes returns the script as a list of lines / turns
         body = "\n".join(str(x.get("text") or x.get("line") or " ".join(str(v) for v in x.values())) if isinstance(x, dict) else str(x) for x in body)
@@ -503,7 +514,7 @@ async def start_phone_session(db, me: dict, script: dict, assignment: Optional[d
     persona = (assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."}
     now = _now()
     token = uuid.uuid4().hex
-    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the dealership",
+    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the store",
            "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": script_direction(script), "persona": persona, "curveballs": (assignment or {}).get("curveballs") or [],
            "assignment_id": str(assignment["_id"]) if assignment else None, "mode": "phone", "status": "dialing", "token": token, "turns": [], "started_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
@@ -686,7 +697,7 @@ async def start_session(db, me: dict, script: dict, assignment: Optional[dict] =
     curveballs = (assignment or {}).get("curveballs") or []
     now = _now()
     direction = script_direction(script)
-    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the dealership",
+    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the store",
            "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": direction, "persona": persona, "curveballs": curveballs,
            "assignment_id": str(assignment["_id"]) if assignment else None, "mode": "text", "status": "active", "turns": [], "started_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
