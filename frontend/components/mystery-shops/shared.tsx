@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, TextInput, Modal, ScrollView, Platform, KeyboardAvoidingView, Keyboard, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { GOLD, GREEN, RED, AMBER, tid } from '../scripts/shared';
@@ -78,13 +78,22 @@ export const STATUS: Record<string, { label: string; color: string; icon: any }>
 
 export const Label = ({ t, colors }: { t: string; colors: any }) => <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1 }}>{t}</Text>;
 
-export const Field = ({ label, value, onChange, colors, placeholder, multiline, keyboardType, testID, autoCapitalize }: any) => (
-  <View style={{ gap: 6 }}>
-    {!!label && <Label t={label} colors={colors} />}
-    <TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={colors.textSecondary} multiline={multiline} keyboardType={keyboardType} autoCapitalize={autoCapitalize}
-      style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10, color: colors.text, fontSize: 15, minHeight: multiline ? 90 : 44, textAlignVertical: 'top' }} {...tid(testID)} />
-  </View>
-);
+// Inside a Sheet, focusing a field scrolls it above the keyboard (core ScrollView does not do this on its own).
+const SheetScrollCtx = React.createContext<{ ensureVisible: (node: any) => void } | null>(null);
+export const useSheetScroll = () => React.useContext(SheetScrollCtx);
+
+export const Field = ({ label, value, onChange, colors, placeholder, multiline, keyboardType, testID, autoCapitalize }: any) => {
+  const ref = useRef<TextInput>(null);
+  const sheet = useSheetScroll();
+  return (
+    <View style={{ gap: 6 }}>
+      {!!label && <Label t={label} colors={colors} />}
+      <TextInput ref={ref} value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={colors.textSecondary} multiline={multiline} keyboardType={keyboardType} autoCapitalize={autoCapitalize}
+        onFocus={() => sheet?.ensureVisible(ref.current)}
+        style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10, color: colors.text, fontSize: 15, minHeight: multiline ? 90 : 44, textAlignVertical: 'top' }} {...tid(testID)} />
+    </View>
+  );
+};
 
 export const Chip = ({ label, active, onPress, colors, testID, color = GOLD, small }: { label: string; active: boolean; onPress: () => void; colors: any; testID: string; color?: string; small?: boolean }) => (
   <TouchableOpacity onPress={onPress} style={{ paddingHorizontal: small ? 10 : 12, height: small ? 28 : 34, borderRadius: 17, backgroundColor: active ? color : colors.card, borderWidth: 1, borderColor: active ? color : colors.border, justifyContent: 'center' }} {...tid(testID)}>
@@ -101,23 +110,56 @@ export const StatusChip = ({ status, colors }: { status: string; colors: any }) 
   );
 };
 
-export const Sheet = ({ visible, onClose, title, colors, children, testID, footer }: { visible: boolean; onClose: () => void; title: string; colors: any; children: React.ReactNode; testID: string; footer?: React.ReactNode }) => (
-  <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}>
-        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
-        <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%' }} {...tid(testID)}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 }}>
-            <Text style={{ flex: 1, fontSize: 18, fontWeight: '800', color: colors.text }}>{title}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={10} {...tid(`${testID}-close`)}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
+// iOS presents one modal at a time: never open a second Sheet (or navigate) in the same tick you close one, or the
+// screen is left under an invisible, touch-eating modal until the app is killed. Run the follow-up after the dismiss animation.
+export const afterModal = (fn: () => void) => setTimeout(fn, Platform.OS === 'ios' ? 450 : 50);
+
+export const Sheet = ({ visible, onClose, title, colors, children, testID, footer }: { visible: boolean; onClose: () => void; title: string; colors: any; children: React.ReactNode; testID: string; footer?: React.ReactNode }) => {
+  const scrollRef = useRef<ScrollView>(null);
+  const offsetY = useRef(0);
+  const footerH = useRef(0);
+  const kbTop = useRef<number | null>(null);
+  const focused = useRef<any>(null);
+
+  // Scroll so the focused input sits above the keyboard + footer. Runs on focus and again once the keyboard has settled.
+  const ensureVisible = (node: any) => {
+    focused.current = node;
+    const go = () => node?.measure?.((_x: number, _y: number, _w: number, h: number, _px: number, pageY: number) => {
+      const limit = (kbTop.current ?? Dimensions.get('window').height) - footerH.current - 16;
+      const overflow = pageY + h - limit;
+      if (overflow > 0) scrollRef.current?.scrollTo({ y: Math.max(0, offsetY.current + overflow), animated: true });
+    });
+    setTimeout(go, 80);
+    setTimeout(go, 400);
+  };
+  useEffect(() => {
+    if (!visible) return;
+    const show = Keyboard.addListener('keyboardDidShow', (e) => { kbTop.current = e.endCoordinates.screenY; if (focused.current) ensureVisible(focused.current); });
+    const hide = Keyboard.addListener('keyboardDidHide', () => { kbTop.current = null; });
+    return () => { show.remove(); hide.remove(); focused.current = null; };
+  }, [visible]);
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%' }} {...tid(testID)}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 }}>
+              <Text style={{ flex: 1, fontSize: 18, fontWeight: '800', color: colors.text }}>{title}</Text>
+              <TouchableOpacity onPress={onClose} hitSlop={10} {...tid(`${testID}-close`)}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
+            </View>
+            <SheetScrollCtx.Provider value={{ ensureVisible }}>
+              <ScrollView ref={scrollRef} onScroll={(e) => { offsetY.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20, gap: 16 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">{children}</ScrollView>
+            </SheetScrollCtx.Provider>
+            {footer && <View onLayout={(e) => { footerH.current = e.nativeEvent.layout.height; }} style={{ padding: 16, paddingBottom: Platform.OS === 'ios' ? 30 : 16, borderTopWidth: 1, borderTopColor: colors.border }}>{footer}</View>}
           </View>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20, gap: 16 }} keyboardShouldPersistTaps="handled">{children}</ScrollView>
-          {footer && <View style={{ padding: 16, paddingBottom: Platform.OS === 'ios' ? 30 : 16, borderTopWidth: 1, borderTopColor: colors.border }}>{footer}</View>}
         </View>
-      </View>
-    </KeyboardAvoidingView>
-  </Modal>
-);
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+};
 
 export const GoldButton = ({ label, onPress, disabled, busy, testID, icon, outline, color = GOLD }: { label: string; onPress: () => void; disabled?: boolean; busy?: boolean; testID: string; icon?: any; outline?: boolean; color?: string }) => (
   <TouchableOpacity onPress={onPress} disabled={disabled || busy} style={{ height: 46, borderRadius: 14, backgroundColor: outline ? 'transparent' : disabled ? color + '55' : color, borderWidth: outline ? 1 : 0, borderColor: color, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: busy ? 0.7 : 1 }} {...tid(testID)}>

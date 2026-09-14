@@ -203,7 +203,11 @@ async def import_script_text(text: str) -> dict:
               "runtime like '2 to 4 min'. purpose = one line on when to use it. direction = inbound when the customer is calling the store (the rep answers the phone), outbound when the rep places the call. Never use em dashes. "
               "Return JSON: {title, category, direction, runtime, purpose, body, success_points:[...], persona:{name, voice, summary, goals, objections:[...], opening_line}}.")
     data = await _llm_json(system, f"PASTED SCRIPT:\n\n{text[:12000]}", timeout=90)
-    if not (data.get("body") or "").strip():
+    body = data.get("body")
+    if isinstance(body, list):  # the model sometimes returns the script as a list of lines / turns
+        body = "\n".join(str(x.get("text") or x.get("line") or " ".join(str(v) for v in x.values())) if isinstance(x, dict) else str(x) for x in body)
+        data["body"] = body
+    if not str(body or "").strip():
         raise ValueError("Jessi could not read a script in that text")
     persona = data.get("persona") if isinstance(data.get("persona"), dict) else {}
     voice = persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female"

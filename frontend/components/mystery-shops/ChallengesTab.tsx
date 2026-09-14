@@ -7,7 +7,7 @@ import { useToast } from '../common/Toast';
 import { ChallengeEditorSheet } from './ChallengeEditorSheet';
 import { ChallengeDetailSheet, ChallengeGroups } from './ChallengeDetailSheet';
 import { GeneratorSheet } from './GeneratorSheet';
-import { GOLD, PURPLE, tid, deptsOfClient, type Challenge, type ChallengeDraft, type Client } from './shared';
+import { GOLD, PURPLE, tid, afterModal, deptsOfClient, type Challenge, type ChallengeDraft, type Client } from './shared';
 
 // The challenge pool for one client: global library scenarios (for its industry) + scenarios written for this client only.
 export const ChallengesTab = ({ client, colors }: { client: Client; colors: any }) => {
@@ -42,9 +42,9 @@ export const ChallengesTab = ({ client, colors }: { client: Client; colors: any 
       </TouchableOpacity>
       <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>Every shop picks a challenge the person has not had yet, fills in one of the account's {client.offering?.plural || 'offerings'}, and adds 0 to 2 random curveballs. Once someone has had them all, the rotation starts over with the oldest.</Text>
       <ChallengeGroups rows={rows} colors={colors} onOpen={setOpen} departments={depts} emptyHint="Nothing in the library for this department yet. Have Jessi write one above." />
-      <ChallengeDetailSheet open={open} onClose={() => setOpen(null)} colors={colors} onEdit={(c) => { setOpen(null); setEditor({ existing: c }); }} onDelete={remove} />
+      <ChallengeDetailSheet open={open} onClose={() => setOpen(null)} colors={colors} onEdit={(c) => { setOpen(null); afterModal(() => setEditor({ existing: c })); }} onDelete={remove} />
       <ChallengeEditorSheet visible={!!editor} onClose={() => setEditor(null)} colors={colors} existing={editor?.existing} initial={editor?.draft} scope={scope} onSaved={load} />
-      <GeneratorSheet visible={generator} onClose={() => setGenerator(false)} colors={colors} scope={scope} onSaved={load} onEditDraft={(d) => { setGenerator(false); setEditor({ draft: d }); }} />
+      <GeneratorSheet visible={generator} onClose={() => setGenerator(false)} colors={colors} scope={scope} onSaved={load} onEditDraft={(d) => { setGenerator(false); afterModal(() => setEditor({ draft: d })); }} />
     </View>
   );
 };

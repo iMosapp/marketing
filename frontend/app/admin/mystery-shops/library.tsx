@@ -11,7 +11,7 @@ import { useToast } from '../../../components/common/Toast';
 import { ChallengeEditorSheet } from '../../../components/mystery-shops/ChallengeEditorSheet';
 import { ChallengeDetailSheet, ChallengeGroups } from '../../../components/mystery-shops/ChallengeDetailSheet';
 import { GeneratorSheet } from '../../../components/mystery-shops/GeneratorSheet';
-import { Chip, GOLD, PURPLE, tid, industries, industryOf, deptsFor, loadIndustries, type Challenge, type ChallengeDraft, type Dept, type Industry } from '../../../components/mystery-shops/shared';
+import { Chip, GOLD, PURPLE, tid, afterModal, industries, industryOf, deptsFor, loadIndustries, type Challenge, type ChallengeDraft, type Dept, type Industry } from '../../../components/mystery-shops/shared';
 
 // The global challenge library: what every client's caller (and every course) draws from, one industry at a time.
 export default function ChallengeLibrary() {
@@ -90,9 +90,9 @@ export default function ChallengeLibrary() {
           </TouchableOpacity>
         )} />
       </ScrollView>
-      <ChallengeDetailSheet open={open} onClose={() => setOpen(null)} colors={colors} onEdit={(c) => { setOpen(null); setEditor({ existing: c }); }} onDelete={remove} />
+      <ChallengeDetailSheet open={open} onClose={() => setOpen(null)} colors={colors} onEdit={(c) => { setOpen(null); afterModal(() => setEditor({ existing: c })); }} onDelete={remove} />
       <ChallengeEditorSheet visible={!!editor} onClose={() => setEditor(null)} colors={colors} existing={editor?.existing} initial={editor?.draft} scope={{ industry }} onSaved={load} />
-      <GeneratorSheet visible={generator} onClose={() => setGenerator(false)} colors={colors} scope={{ industry }} onSaved={load} onEditDraft={(d) => { setGenerator(false); setEditor({ draft: d }); }} />
+      <GeneratorSheet visible={generator} onClose={() => setGenerator(false)} colors={colors} scope={{ industry }} onSaved={load} onEditDraft={(d) => { setGenerator(false); afterModal(() => setEditor({ draft: d })); }} />
     </SafeAreaView>
   );
 }

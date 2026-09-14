@@ -9,7 +9,7 @@ import { ScreenHeader, HeaderIconButton } from '../../../components/common/Scree
 import { ClientSheet } from '../../../components/mystery-shops/ClientSheet';
 import { DemoShopSheet } from '../../../components/mystery-shops/DemoShopSheet';
 import { ShopNumberSheet, type NumberState } from '../../../components/mystery-shops/ShopNumberSheet';
-import { Bar, money, scoreColor, fmtPhone, perMonthText, loadIndustries, GOLD, GREEN, RED, PURPLE, tid, type Client } from '../../../components/mystery-shops/shared';
+import { Bar, money, scoreColor, fmtPhone, perMonthText, loadIndustries, afterModal, GOLD, GREEN, RED, PURPLE, tid, type Client } from '../../../components/mystery-shops/shared';
 
 export default function MysteryShopClients() {
   const router = useRouter();
@@ -113,8 +113,8 @@ export default function MysteryShopClients() {
           })}
         </ScrollView>
       )}
-      <ClientSheet visible={sheet} onClose={() => setSheet(false)} colors={colors} onSaved={(c) => router.push(`/admin/mystery-shops/${c.id}` as any)} defaultFrom={defaultFrom} />
-      <DemoShopSheet visible={demo} onClose={() => setDemo(false)} colors={colors} onStarted={(clientId) => router.push(`/admin/mystery-shops/${clientId}?tab=calls` as any)} />
+      <ClientSheet visible={sheet} onClose={() => setSheet(false)} colors={colors} onSaved={(c) => afterModal(() => router.push(`/admin/mystery-shops/${c.id}` as any))} defaultFrom={defaultFrom} />
+      <DemoShopSheet visible={demo} onClose={() => setDemo(false)} colors={colors} onStarted={(clientId) => afterModal(() => router.push(`/admin/mystery-shops/${clientId}?tab=calls` as any))} />
       <ShopNumberSheet visible={numberSheet} onClose={() => setNumberSheet(false)} colors={colors} onChanged={onNumberChanged} />
     </SafeAreaView>
   );

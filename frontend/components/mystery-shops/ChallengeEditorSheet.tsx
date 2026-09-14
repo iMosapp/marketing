@@ -3,9 +3,9 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useToast } from '../common/Toast';
-import { ImportScriptSheet } from '../scripts/ImportScriptSheet';
+import { ImportScriptPanel } from '../scripts/ImportScriptSheet';
 import { VOICES } from '../scripts/shared';
-import { Sheet, Field, Label, Chip, GoldButton, GOLD, PURPLE, tid, industries, industryOf, industryOfDept, deptsFor, loadIndustries, type Challenge, type ChallengeDraft, type Dept } from './shared';
+import { Sheet, Field, Label, Chip, GoldButton, GOLD, PURPLE, tid, useSheetScroll, industries, industryOf, industryOfDept, deptsFor, loadIndustries, type Challenge, type ChallengeDraft, type Dept } from './shared';
 
 type Scope = { clientId?: string; clientName?: string; industry?: string; departments?: Dept[] };
 type Props = { visible: boolean; onClose: () => void; colors: any; initial?: ChallengeDraft | Challenge | null; existing?: Challenge | null; scope?: Scope; onSaved: (c: Challenge) => void };
@@ -13,6 +13,12 @@ const blank = { title: '', industry: 'automotive', department: 'sales', directio
 
 const toForm = (c: any) => ({ title: c.title || '', industry: c.industry || industryOfDept(c.department).key, department: c.department || 'sales', direction: c.direction === 'outbound' ? 'outbound' : 'inbound', runtime: c.runtime || '', purpose: c.purpose || '', body: c.body || '', points: (c.success_points || []).join('\n'), curveballs: (c.curveballs || []).join('\n'),
   name: c.persona?.name || '', voice: c.persona?.voice || 'female', summary: c.persona?.summary || '', goals: c.persona?.goals || '', objections: (c.persona?.objections || []).join('\n'), opening_line: c.persona?.opening_line || '' });
+
+// The paste-a-script panel lives inside the sheet (a second modal on top of a modal freezes iOS) and scrolls itself above the keyboard.
+const ImportPanelInSheet = (props: { colors: any; onCancel: () => void; onImported: (d: any) => void }) => {
+  const sheet = useSheetScroll();
+  return <ImportScriptPanel {...props} onFocusInput={(node) => sheet?.ensureVisible(node)} />;
+};
 
 // One editor for every way a challenge gets written: by hand, from a pasted script, from a Jessi draft, or editing an existing one.
 export const ChallengeEditorSheet = ({ visible, onClose, colors, initial, existing, scope, onSaved }: Props) => {
@@ -51,12 +57,21 @@ export const ChallengeEditorSheet = ({ visible, onClose, colors, initial, existi
   const ready = f.title.trim() && f.body.trim() && f.name.trim() && f.opening_line.trim();
   return (
     <>
-      <Sheet visible={visible} onClose={onClose} title={existing ? 'Edit challenge' : 'New challenge'} colors={colors} testID="challenge-sheet"
+      <Sheet visible={visible} onClose={() => { setImportOpen(false); onClose(); }} title={existing ? 'Edit challenge' : 'New challenge'} colors={colors} testID="challenge-sheet"
         footer={<GoldButton label={existing ? 'Save changes' : where === 'client' ? `Add to ${scope?.clientName}'s pool` : 'Add to the library'} onPress={save} busy={busy} disabled={!ready} testID="challenge-save" />}>
-        {!existing && (
+        {!existing && !importOpen && (
           <TouchableOpacity onPress={() => setImportOpen(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }} {...tid('challenge-import')}>
-            <Ionicons name="clipboard-outline" size={18} color={GOLD} /><Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: colors.text }}>Paste a script and let Jessi fill this in</Text><Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+            <Ionicons name="clipboard-outline" size={18} color={GOLD} /><Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: colors.text }}>Paste a script (Word, email, PDF text) and let Jessi fill this in</Text><Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
+        )}
+        {!existing && importOpen && (
+          <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: GOLD + '66' }}>
+            <ImportPanelInSheet colors={colors} onCancel={() => setImportOpen(false)} onImported={(d) => {
+              setF({ ...f, title: d.title || f.title, department: d.category === 'Service' && depts.some(x => x.key === 'service') ? 'service' : f.department, purpose: d.purpose || '', body: d.body || '', points: (d.success_points || []).join('\n'), name: d.persona?.name || '', voice: d.persona?.voice || 'female',
+                summary: d.persona?.summary || '', goals: d.persona?.goals || '', objections: (d.persona?.objections || []).join('\n'), opening_line: d.persona?.opening_line || '' });
+              setImportOpen(false);
+            }} />
+          </View>
         )}
         {!existing && !!scope?.clientId && (
           <View style={{ gap: 6 }}><Label t="WHERE IT LIVES" colors={colors} />
@@ -90,11 +105,6 @@ export const ChallengeEditorSheet = ({ visible, onClose, colors, initial, existi
           <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>{'{offering}'} becomes one of the account's {pack.offering.plural} and {'{store}'} becomes the {pack.business} name on every call.</Text>
         </View>
       </Sheet>
-      <ImportScriptSheet visible={importOpen} colors={colors} onClose={() => setImportOpen(false)} onImported={(d) => {
-        setF({ ...f, title: d.title || f.title, department: d.category === 'Service' && depts.some(x => x.key === 'service') ? 'service' : f.department, purpose: d.purpose || '', body: d.body || '', points: (d.success_points || []).join('\n'), name: d.persona?.name || '', voice: d.persona?.voice || 'female',
-          summary: d.persona?.summary || '', goals: d.persona?.goals || '', objections: (d.persona?.objections || []).join('\n'), opening_line: d.persona?.opening_line || '' });
-        setImportOpen(false);
-      }} />
     </>
   );
 };

@@ -1,13 +1,14 @@
 """Scripts & Practice API: phone-script library, training-video script generator, voice roleplay (mystery shop) + assignments."""
 import asyncio
 import base64
+import io
 import json
 import logging
 from datetime import datetime, timezone
 from typing import Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -175,6 +176,43 @@ async def import_script(body: ImportBody, request: Request):
         raise HTTPException(status_code=400, detail="Paste the whole script first, that is too short to work with")
     try:
         return await svc.import_script_text(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.warning(f"[Scripts] import failed: {e}")
+        raise HTTPException(status_code=503, detail="Jessi could not format that right now, try again")
+
+
+@router.post("/import-file")
+async def import_script_file(request: Request, file: UploadFile = File(...)):
+    """Attach a PDF, Word (.docx) or text file: the text is pulled out server-side and shaped exactly like a pasted script."""
+    me = await _current(request)
+    if not _is_manager(me):
+        raise HTTPException(status_code=403, detail="Managers can add scripts")
+    raw = await file.read()
+    if len(raw) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="That file is over 8 MB, export a smaller PDF or paste the text")
+    name = (file.filename or "").lower()
+    text = ""
+    try:
+        if name.endswith(".pdf") or raw[:4] == b"%PDF":
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(raw))
+            text = "\n".join((p.extract_text() or "") for p in reader.pages[:40])
+        elif name.endswith(".docx"):
+            import docx
+            d = docx.Document(io.BytesIO(raw))
+            text = "\n".join(p.text for p in d.paragraphs)
+        else:
+            text = raw.decode("utf-8", errors="ignore")
+    except Exception as e:
+        logger.warning(f"[Scripts] file text extraction failed: {e}")
+        raise HTTPException(status_code=422, detail="Could not read that file. Try a PDF, .docx or .txt, or paste the text instead")
+    text = " ".join(text.split(" ")).strip()
+    if len(text) < 40:
+        raise HTTPException(status_code=422, detail="No readable text in that file (scanned PDFs are images). Paste the script instead")
+    try:
+        return await svc.import_script_text(text[:12000])
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
