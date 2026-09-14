@@ -11,15 +11,16 @@ import { showConfirm } from '../../services/alert';
 import { ScreenHeader, HeaderTextButton } from '../../components/common/ScreenHeader';
 import { GOLD, tid, errText, fmtPhone, RepCard } from '../../components/inbox/ownership';
 import { Section, Label, Hint, inputStyle, OptionRows, ColorPicker, MergeChips, MemberPicker, NumberPicker, ROUTING_OPTIONS, AI_MODE_OPTIONS, AFTER_CLOSE_OPTIONS } from '../../components/inbox/InboxEditorParts';
+import { InboxLeadsTab } from '../../components/inbox/InboxLeadsTab';
 
-type Tab = 'setup' | 'team' | 'jessi' | 'closing';
+type Tab = 'setup' | 'team' | 'leads' | 'jessi' | 'closing';
 const BLANK = { name: '', description: '', phone_number: '', color: '#C9A962', members: [] as string[], member_weights: {} as Record<string, number>, routing: 'jump_ball', daily_cap: 0,
   first_reply: "Thanks for texting {{lead_source}}, {{first_name}}! Someone will be right with you.", ai_mode: 'auto_reply', va_name: '', va_training: '', va_rules: '', va_handoff_rules: '',
   close_tag: 'Sold', after_close: 'move_to_rep', bridge_text: "Hi {first_name}, it's {rep_name}. This is my direct line, save it and text me here anytime." };
 
 export default function InboxEditor() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const isNew = id === 'new';
   const { user } = useAuthStore();
   const { colors } = useThemeStore();
@@ -27,17 +28,19 @@ export default function InboxEditor() {
   const [form, setForm] = useState<any>(isNew ? { ...BLANK } : null);
   const [detail, setDetail] = useState<any>(null);
   const [options, setOptions] = useState<RepCard[]>([]);
+  const [storeName, setStoreName] = useState<string | null>(null);
   const [numbers, setNumbers] = useState<any[]>([]);
-  const [tab, setTab] = useState<Tab>('setup');
+  const [tab, setTab] = useState<Tab>((tabParam as Tab) || 'setup');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (!user?._id) return;
-    const loads: Promise<any>[] = [api.get('/inboxes/members/options'), api.get('/inboxes/numbers', { params: isNew ? {} : { inbox_id: id } }).catch(() => ({ data: { numbers: [] } }))];
+    const loads: Promise<any>[] = [api.get('/inboxes/members/options', { params: isNew ? {} : { inbox_id: id } }), api.get('/inboxes/numbers', { params: isNew ? {} : { inbox_id: id } }).catch(() => ({ data: { numbers: [] } }))];
     if (!isNew) loads.push(api.get(`/inboxes/${id}`));
     Promise.all(loads).then(([opts, nums, det]) => {
       setOptions(opts.data.users || []);
+      setStoreName(opts.data.store_name || null);
       setNumbers(nums.data.numbers || []);
       if (det) {
         const d = det.data; setDetail(d);
@@ -59,8 +62,9 @@ export default function InboxEditor() {
       const body = { ...form, daily_cap: Number(form.daily_cap) || 0 };
       const res = isNew ? await api.post('/inboxes', body) : await api.put(`/inboxes/${id}`, body);
       setDirty(false);
-      showToast(isNew ? `${res.data.name} inbox created` : 'Inbox saved', 'success');
-      if (isNew) router.replace(`/inboxes/${res.data.id}` as any); else setDetail(res.data);
+      const linked = res.data.linked_to_store ? ` · ${res.data.linked_to_store} added to ${storeName || 'the store'}'s team` : '';
+      showToast((isNew ? `${res.data.name} inbox created` : 'Inbox saved') + linked, 'success', linked ? 4000 : undefined);
+      if (isNew) router.replace(`/inboxes/${res.data.id}?tab=leads` as any); else { setDetail(res.data); setOptions(o => o.map(x => (res.data.members.includes(x.id) && x.on_team === false ? { ...x, on_team: true } : x))); }
     } catch (e: any) { showToast(errText(e, 'Could not save inbox'), 'error', 3500); }
     finally { setSaving(false); }
   };
@@ -89,12 +93,15 @@ export default function InboxEditor() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80, gap: 14 }} keyboardShouldPersistTaps="handled">
           <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, gap: 4 }}>
-            {([['setup', 'Setup'], ['team', 'Team'], ['jessi', 'Jessi'], ['closing', 'Closing']] as const).map(([k, l]) => (
+            {([['setup', 'Setup'], ['team', 'Team'], ['leads', 'Leads'], ['jessi', 'Jessi'], ['closing', 'Closing']] as const).filter(([k]) => k !== 'leads' || !isNew).map(([k, l]) => (
               <TouchableOpacity key={k} onPress={() => setTab(k)} style={{ flex: 1, paddingVertical: 10, borderRadius: 9, alignItems: 'center', backgroundColor: tab === k ? GOLD : 'transparent' }} {...tid(`inbox-tab-${k}`)}>
                 <Text style={{ fontSize: 13, fontWeight: '800', color: tab === k ? '#111' : colors.textSecondary }}>{l}</Text>
               </TouchableOpacity>
             ))}
           </View>
+          {isNew && (
+            <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17, paddingHorizontal: 2 }} {...tid('inbox-new-steps')}>Three steps: pick the number, pick the team, then Create. The Leads tab appears next so you can point your lead sources here and make sure the whole team rings.</Text>
+          )}
 
           {tab === 'setup' && (
             <>
@@ -119,8 +126,9 @@ export default function InboxEditor() {
             <>
               <Section colors={colors} testId="inbox-section-members">
                 <Label colors={colors}>Who works this inbox</Label>
-                <Hint colors={colors}>Members see these threads in their Inbox and get pinged on new texts.{noNumberMembers.length ? ` Heads up: ${noNumberMembers.map(m => m.name.split(' ')[0]).join(', ')} ${noNumberMembers.length === 1 ? 'has' : 'have'} no personal number, so their sold threads stay on the shared line.` : ''}</Hint>
-                <MemberPicker options={memberOptions} selected={form.members} weights={form.member_weights} weighted={form.routing === 'weighted_round_robin'} onToggle={toggleMember} onWeight={(uid, w) => patch({ member_weights: { ...form.member_weights, [uid]: w } })} colors={colors} />
+                <Hint colors={colors}>Everyone here sees these threads, gets the new-lead ping and can claim. Whose phone actually rings is set on the Leads tab.{noNumberMembers.length ? ` Heads up: ${noNumberMembers.map(m => m.name.split(' ')[0]).join(', ')} ${noNumberMembers.length === 1 ? 'has' : 'have'} no personal number, so their sold threads stay on the shared line.` : ''}</Hint>
+                <MemberPicker options={memberOptions} selected={form.members} weights={form.member_weights} weighted={form.routing === 'weighted_round_robin'} onToggle={toggleMember} onWeight={(uid, w) => patch({ member_weights: { ...form.member_weights, [uid]: w } })} colors={colors}
+                  storeName={storeName} onSelectMany={ids => patch({ members: ids.length ? Array.from(new Set([...form.members, ...ids])) : form.members.filter((m: string) => !memberOptions.some(o => o.id === m && o.on_team !== false)) })} />
               </Section>
               <Section colors={colors} testId="inbox-section-routing">
                 <Label colors={colors}>When a new customer texts in</Label>
@@ -135,6 +143,10 @@ export default function InboxEditor() {
                 <Hint colors={colors}>{'\n'}Known customers of a rep in your store always keep texting that rep's own line, no matter which number they use. Reps can also hand threads to each other from the thread's "Who's on this" sheet.</Hint>
               </Section>
             </>
+          )}
+
+          {tab === 'leads' && !isNew && (
+            <InboxLeadsTab inboxId={String(id)} inboxName={form.name || 'this inbox'} phone={form.phone_number} colors={colors} showToast={showToast} onGoTeam={() => setTab('team')} />
           )}
 
           {tab === 'jessi' && (

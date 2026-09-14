@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useToast } from '../common/Toast';
-import { Sheet, Field, Label, Chip, GoldButton, DAYS, GOLD, tid, industries, industryOf, deptsFor, loadIndustries, type Client } from './shared';
+import { Sheet, Field, Label, Chip, GoldButton, DAYS, GOLD, AMBER, tid, industries, industryOf, deptsFor, loadIndustries, isTollFree, TOLL_FREE_WARNING, type Client } from './shared';
 
 type Props = { visible: boolean; onClose: () => void; colors: any; client?: Client | null; onSaved: (c: Client) => void; defaultFrom?: string };
 
@@ -86,7 +86,7 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
       </View>
       <Field label={`${ind.offering.field.toUpperCase()} (ONE PER LINE)`} value={f.vehicles} onChange={(v: string) => set('vehicles', v)} colors={colors} multiline placeholder={ind.offering.hint} testID="client-vehicles" />
       <Field label="CALL FROM NUMBER (OPTIONAL)" value={f.from_number} onChange={(v: string) => set('from_number', v)} colors={colors} placeholder={defaultFrom ? `Default ${defaultFrom}` : 'Twilio number the caller calls from'} keyboardType="phone-pad" testID="client-from-number" />
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+      {isTollFree(f.from_number) && <Text style={{ fontSize: 12, color: AMBER, lineHeight: 16, marginTop: -4 }} {...tid('client-from-number-tollfree')}>{TOLL_FREE_WARNING}</Text>}      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
         <Ionicons name="recording" size={18} color={GOLD} />
         <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Record shop calls</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>Recordings go on the client report. Consent is covered in the proposal.</Text></View>
         <Switch value={f.record} onValueChange={(v) => set('record', v)} {...tid('client-record-toggle')} />

@@ -20,6 +20,8 @@ import { showSimpleAlert, showConfirm } from '../../../services/alert';
 import { WebModal } from '../../../components/WebModal';
 
 import { useThemeStore } from '../../../store/themeStore';
+import { useAuthStore } from '../../../store/authStore';
+import { loadIndustries, industries } from '../../../components/mystery-shops/shared';
 interface UserInfo {
   _id: string;
   name: string;
@@ -79,6 +81,9 @@ export default function StoreDetailScreen() {
   const [data, setData] = useState<StoreData | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editedStore, setEditedStore] = useState<any>({});
+  const { user: me } = useAuthStore();
+  const [, setIndustryTick] = useState(0);
+  React.useEffect(() => { loadIndustries().then(() => setIndustryTick(t => t + 1)); }, []);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   
@@ -801,6 +806,27 @@ export default function StoreDetailScreen() {
                 placeholder="Account name"
                 placeholderTextColor={colors.textSecondary}
               />
+
+              {me?.role === 'super_admin' && (
+                <View testID="store-industry-picker" dataSet={{ testid: 'store-industry-picker' } as any}>
+                  <Text style={styles.inputLabel}>Industry</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8, lineHeight: 17 }}>Drives the scorecard templates, course departments and Jessi's wording for this account. Super admins only.</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                    {industries().map(i => {
+                      const cur = String(editedStore.industry || '').trim().toLowerCase();
+                      const on = cur ? cur === i.label.toLowerCase() || cur === i.key : i.key === 'automotive';
+                      return (
+                        <TouchableOpacity key={i.key} onPress={() => setEditedStore({ ...editedStore, industry: i.label })} style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: on ? '#C9A962' : colors.surface, borderWidth: 1, borderColor: on ? '#C9A962' : colors.border }} testID={`store-industry-${i.key}`} dataSet={{ testid: `store-industry-${i.key}` } as any}>
+                          <Text style={{ fontSize: 13, fontWeight: on ? '800' : '600', color: on ? '#111' : colors.text }}>{i.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {!!editedStore.industry && !industries().some(i => [i.label.toLowerCase(), i.key].includes(String(editedStore.industry).trim().toLowerCase())) && (
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }} testID="store-industry-legacy" dataSet={{ testid: 'store-industry-legacy' } as any}>Currently "{editedStore.industry}" (matched to the closest pack automatically). Pick one above to set it explicitly.</Text>
+                  )}
+                </View>
+              )}
               
               <Text style={styles.inputLabel}>Phone</Text>
               <TextInput

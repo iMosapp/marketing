@@ -383,7 +383,26 @@ def _pdf_safe(s: str) -> str:
 
 # ---------------------------------------------------------------- roleplay (mystery shop)
 RELAY_VOICES = {"female": "en-US-Journey-F", "male": "en-US-Journey-D", "young": "en-US-Journey-O", "older": "en-US-Journey-F"}
-FAIL_REASONS = {"busy": "Your phone was busy", "no-answer": "No answer, we let it ring for 25 seconds", "failed": "The call could not be placed", "canceled": "The call was cancelled"}
+FAIL_REASONS = {"busy": "Your phone was busy", "no-answer": "No answer, we let it ring for 25 seconds", "failed": "The call could not be placed", "canceled": "The call was cancelled",
+                "carrier_declined": "Carrier spam filter declined the call before your phone rang", "declined": "Declined before it rang, by a carrier spam filter or by the phone itself"}
+SPAM_SIP = {"607": "carrier_declined", "608": "carrier_declined", "603": "declined"}  # RFC 8197/8688 unwanted + generic decline
+TOLL_FREE_RE = re.compile(r"^\+?1?8(00|33|44|55|66|77|88)\d{7}$")
+
+
+def failure_key(status: str, sip_code=None) -> str:
+    """Twilio's final CallStatus plus the callee carrier's SIP code -> our outcome key. 603/607/608 mean the network refused the call (usually a spam filter), not a real busy signal."""
+    return SPAM_SIP.get(str(sip_code or "").strip(), status)
+
+
+def toll_free(phone) -> bool:
+    return bool(TOLL_FREE_RE.match(re.sub(r"[^\d+]", "", str(phone or ""))))
+
+
+def fail_label(key: str, from_number=None, fix: str = "ask your admin to switch you to a local number") -> str:
+    label = FAIL_REASONS.get(key, key)
+    if key in SPAM_SIP.values() and toll_free(from_number):
+        label += f". We called from a toll-free number, cell carriers flag those as spam often, {fix}"
+    return label
 
 
 def _app_url() -> str:
@@ -514,7 +533,7 @@ async def start_phone_session(db, me: dict, script: dict, assignment: Optional[d
     persona = (assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."}
     now = _now()
     token = uuid.uuid4().hex
-    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the store",
+    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "from_number": from_number, "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the store",
            "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": script_direction(script), "persona": persona, "curveballs": (assignment or {}).get("curveballs") or [],
            "assignment_id": str(assignment["_id"]) if assignment else None, "mode": "phone", "status": "dialing", "token": token, "turns": [], "started_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
@@ -555,7 +574,7 @@ async def reconcile_dialing(db, s: dict) -> dict:
         await record_outcome(db, {**s, "call_status": call.status}, call.status)
         return await db.roleplay_sessions.find_one({"_id": s["_id"]})
     if call.status in FAIL_REASONS:
-        sets.update(status="failed", fail_reason=FAIL_REASONS[call.status])
+        sets.update(status="failed", fail_reason=fail_label(call.status, s.get("from_number")))
     elif call.status == "in-progress":
         sets["status"] = "live"
     elif call.status == "completed":

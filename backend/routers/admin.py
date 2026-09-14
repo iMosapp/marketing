@@ -6,7 +6,7 @@ Split architecture:
   admin_hierarchy.py  — Org/store assignment, role changes, hierarchy views
   admin_helpers.py    — Shared utilities (safe_objectid, send_invite_email, etc.)
 """
-from fastapi import APIRouter, HTTPException, Header, UploadFile, File
+from fastapi import APIRouter, HTTPException, Header, UploadFile, File, Request
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
@@ -582,7 +582,7 @@ async def get_store(store_id: str, x_user_id: str = Header(None, alias="X-User-I
     return store
 
 @router.put("/stores/{store_id}")
-async def update_store(store_id: str, store_data: dict):
+async def update_store(store_id: str, store_data: dict, request: Request):
     """Update a store with all profile fields"""
     allowed_fields = [
         'name', 'organization_id', 'state', 'settings', 'phone', 'address', 'city',
@@ -594,6 +594,13 @@ async def update_store(store_id: str, store_data: dict):
         'external_account_id', 'deal_or_stock_mode', 'partner_id',
     ]
     update_dict = {k: v for k, v in store_data.items() if k in allowed_fields}
+    if 'industry' in update_dict:
+        # The industry pack drives scorecards, courses and Jessi's wording: super admins only may change it
+        from routers.admin_helpers import get_requesting_user as _who
+        me = await _who(request)
+        current = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"industry": 1}) or {}
+        if (me or {}).get('role') != 'super_admin' and (update_dict['industry'] or '') != (current.get('industry') or ''):
+            raise HTTPException(status_code=403, detail="Only a super admin can change an account's industry")
     update_dict['updated_at'] = datetime.utcnow()
     
     result = await get_db().stores.update_one(

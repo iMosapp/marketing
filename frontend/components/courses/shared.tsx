@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Bar, deptLabel, scoreColor, GOLD, GREEN, PURPLE, tid } from '../mystery-shops/shared';
+import { Bar, deptLabel, scoreColor, industryOfDept, GOLD, GREEN, PURPLE, tid } from '../mystery-shops/shared';
 
 export type Course = { id: string; title: string; description: string; department: string; challenge_ids: string[]; pass_pct: number; badge_label: string; active: boolean; enrolled?: number; certified?: number; challenge_count?: number; created_by_name?: string };
 export type CourseChallenge = { id: string; title: string; department: string; purpose: string; runtime: string; persona_name?: string };
 export type Progress = Record<string, { best_pct?: number | null; attempts?: number; passed?: boolean; last_pct?: number | null; last_session_id?: string; last_at?: string; passed_at?: string | null }>;
 export type Enrollment = { id: string; course_id: string; kind: 'user' | 'target'; user_id?: string; target_id?: string; client_id?: string; name: string; status: string; assigned_at: string; assigned_by_name?: string; certified_at?: string | null; certificate_token?: string | null; certificate_url?: string | null; note?: string; progress: Progress; passed: number; total: number; next_challenge_id?: string | null; last_activity_at?: string | null; course?: Course };
-export const deptColor = (d?: string) => (d === 'service' ? '#0A84FF' : d === 'parts' ? '#FF9F0A' : d === 'rental' ? '#30B0C7' : d === 'mixed' ? PURPLE : GOLD);
+const DEPT_PALETTE = [GOLD, '#0A84FF', '#FF9F0A', '#30B0C7', '#34C759'];
+// Colour by the department's position inside its own industry (first department gold, second blue...), Mixed is purple.
+export const deptColor = (d?: string) => { if (d === 'mixed') return PURPLE; const i = industryOfDept(d).departments.findIndex(x => x.key === d); return DEPT_PALETTE[i < 0 ? 0 : i % DEPT_PALETTE.length]; };
 
 // "3 of 20 passed" bar with the certified ribbon when done.
 export const CourseProgress = ({ e, colors, compact }: { e: Enrollment; colors: any; compact?: boolean }) => (
@@ -33,7 +35,7 @@ export const ChallengeStatusRow = ({ c, p, passPct, colors, index, onPress, righ
         <Text style={{ fontSize: 14.5, fontWeight: '800', color: colors.text }} numberOfLines={1}>{c.title}</Text>
         <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>
           <Text style={{ color: deptColor(c.department), fontWeight: '700' }}>{deptLabel(c.department)}</Text>
-          {!showStatus ? `${c.runtime ? ` · ${c.runtime}` : ''}${c.persona_name ? ` · shopper ${c.persona_name.split(' ')[0]}` : ''}` : tried ? ` · best ${p?.best_pct ?? '–'}% of ${passPct}% · ${p?.attempts} ${p?.attempts === 1 ? 'try' : 'tries'}` : ` · not tried yet · need ${passPct}%`}
+          {!showStatus ? `${c.runtime ? ` · ${c.runtime}` : ''}${c.persona_name ? ` · ${industryOfDept(c.department).customer} ${c.persona_name.split(' ')[0]}` : ''}` : tried ? ` · best ${p?.best_pct ?? '–'}% of ${passPct}% · ${p?.attempts} ${p?.attempts === 1 ? 'try' : 'tries'}` : ` · not tried yet · need ${passPct}%`}
         </Text>
       </View>
       {right}

@@ -71,7 +71,7 @@ async def _flow(db, flow_id: str, user: dict) -> dict:
 
 async def _names(db, flows: list) -> dict:
     ids = {u for f in flows for a in f.get("call_attempts") or [] for u in a.get("user_ids") or [] if ObjectId.is_valid(str(u))}
-    names = {}
+    names = {"@inbox": "everyone on the inbox"}
     if ids:
         async for u in db.users.find({"_id": {"$in": [ObjectId(i) for i in ids]}}, {"name": 1, "first_name": 1}):
             names[str(u["_id"])] = (u.get("name") or u.get("first_name") or "Rep").split(" ")[0]

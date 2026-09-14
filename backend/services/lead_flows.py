@@ -95,25 +95,21 @@ def scope_filter(user: dict) -> dict:
 
 
 async def store_reps(db, store_id: str | None, me: dict | None = None) -> list:
-    """People who can be on a flow's ladder: the store's members (+ the caller). No store: every active user (admins)."""
-    ors: list = []
-    if store_id:
-        vals = [store_id] + ([ObjectId(store_id)] if ObjectId.is_valid(store_id) else [])
-        ors += [{"store_id": {"$in": vals}}, {"store_ids": {"$in": vals}}]
-    if me:
-        ors.append({"_id": ObjectId(str(me["_id"]))})
-    q = {"status": {"$ne": "deactivated"}, "active": {"$ne": False}}
-    if ors:
-        q["$or"] = ors
-    users = await db.users.find(q, {"name": 1, "first_name": 1, "last_name": 1, "email": 1, "role": 1, "phone": 1,
-                                    "twilio_number": 1, "mvpline_number": 1, "photo_url": 1}).limit(300).to_list(300)
-    rank = {"user": 0, "salesperson": 0, "store_manager": 1, "manager": 1, "org_admin": 2, "admin": 2, "super_admin": 3}
-    out = [{"_id": str(u["_id"]), "id": str(u["_id"]),
-            "name": u.get("name") or f"{u.get('first_name', '')} {u.get('last_name', '')}".strip() or u.get("email", "Rep"),
-            "email": u.get("email", ""), "role": u.get("role", "user"), "phone": u.get("phone", ""),
-            "has_number": bool(u.get("twilio_number") or u.get("mvpline_number")), "photo_url": u.get("photo_url")} for u in users]
-    out.sort(key=lambda r: (rank.get(r["role"], 1), r["name"].lower()))
-    return out
+    """People who can be on a flow's ladder: the store's team (store members, its org admins, everyone on the
+    store's shared inboxes) + the caller. No store: every active user (admins)."""
+    from services.team_scope import eligible_people
+    if not store_id:
+        q = {"status": {"$ne": "deactivated"}, "active": {"$ne": False}}
+        users = await db.users.find(q, {"name": 1, "first_name": 1, "last_name": 1, "email": 1, "role": 1, "phone": 1,
+                                        "twilio_number": 1, "mvpline_number": 1, "photo_url": 1}).limit(300).to_list(300)
+        rank = {"user": 0, "salesperson": 0, "store_manager": 1, "manager": 1, "org_admin": 2, "admin": 2, "super_admin": 3}
+        out = [{"_id": str(u["_id"]), "id": str(u["_id"]),
+                "name": u.get("name") or f"{u.get('first_name', '')} {u.get('last_name', '')}".strip() or u.get("email", "Rep"),
+                "email": u.get("email", ""), "role": u.get("role", "user"), "phone": u.get("phone", ""),
+                "has_number": bool(u.get("twilio_number") or u.get("mvpline_number")), "photo_url": u.get("photo_url"), "via": [], "on_team": True} for u in users]
+        out.sort(key=lambda r: (rank.get(r["role"], 1), r["name"].lower()))
+        return out
+    return (await eligible_people(db, store_id, me))["people"]
 
 
 # ---------------------------------------------------------------- normalise / clean
@@ -231,7 +227,7 @@ def summarize(flow: dict, names: dict | None = None) -> list:
         rows.append({"icon": "sparkles", "text": "Jessi answers replies until a rep claims"})
     if mode == "text_and_call":
         for i, a in enumerate(flow.get("call_attempts") or []):
-            who = [names.get(u, "Rep") for u in a.get("user_ids") or []]
+            who = ["everyone on the inbox" if u == "@inbox" else names.get(u, "Rep") for u in a.get("user_ids") or []]
             who_txt = ", ".join(who[:3]) + (f" +{len(who) - 3}" if len(who) > 3 else "")
             when = "right away" if i == 0 and not a.get("delay_seconds") else f"{a.get('delay_seconds', 0)}s later"
             verb = "Push" if a.get("delivery") == "push" else "Ring"

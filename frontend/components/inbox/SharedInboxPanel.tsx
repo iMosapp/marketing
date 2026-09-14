@@ -98,6 +98,13 @@ export function SharedInboxPanel({ inboxes, meId, colors, showToast, onClaimed, 
         {inboxes.map((i: any) => (
           <Chip key={i.id} label={i.name} count={i.counts?.open} unread={i.counts?.unread} color={i.color || GOLD} active={inboxId === i.id} onPress={() => setInboxId(i.id)} testId={`inbox-chip-${i.id}`} colors={colors} />
         ))}
+        {inboxes.some((i: any) => i.can_manage) && (
+          <TouchableOpacity onPress={() => router.push((inboxId !== 'all' && inboxes.find((i: any) => i.id === inboxId)?.can_manage ? `/inboxes/${inboxId}?tab=leads` : '/inboxes') as any)} activeOpacity={0.75}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 14, backgroundColor: colors.surface }} {...tid('inbox-rules-btn')}>
+            <Ionicons name="settings-outline" size={14} color={GOLD} />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: GOLD }}>{inboxId !== 'all' ? 'Rules & team' : 'Manage inboxes'}</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
       <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
         <Chip label="Everything" count={totals.open} active={view === 'all'} onPress={() => setView('all')} testId="inbox-view-all" colors={colors} />

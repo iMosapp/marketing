@@ -11,7 +11,7 @@ import { useToast } from '../../components/common/Toast';
 import { openUrl } from '../../components/mystery-shops/ReportView';
 import { ScoreRing } from '../../components/scorecards/ScoreRing';
 import { CourseProgress, ChallengeStatusRow, type Course, type CourseChallenge, type Enrollment } from '../../components/courses/shared';
-import { Sheet, Label, GoldButton, deptLabel, fmtWhen, GOLD, GREEN, tid } from '../../components/mystery-shops/shared';
+import { Sheet, Label, GoldButton, deptLabel, loadIndustries, fmtWhen, GOLD, GREEN, tid } from '../../components/mystery-shops/shared';
 
 // A rep's view of a course they are enrolled in: what is passed, what is next, practice any challenge, grab the certificate.
 export default function MyCourse() {
@@ -24,6 +24,7 @@ export default function MyCourse() {
   const [me, setMe] = useState<Enrollment | null>(null);
   const [open, setOpen] = useState<CourseChallenge | null>(null);
   const load = useCallback(async () => {
+    loadIndustries();
     try { const r = await api.get(`/courses/${id}`); setCourse(r.data.course); setChallenges(r.data.challenges); setMe(r.data.my_enrollment); }
     catch { showToast('Course not found', 'error'); router.back(); }
   }, [id]);

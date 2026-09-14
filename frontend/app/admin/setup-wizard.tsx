@@ -22,10 +22,10 @@ const STEPS = [
   { num: 7, title: 'Handoff', icon: 'checkmark-circle-outline' },
 ];
 
+// Matches the industry packs (services/industries.py): the pick drives scorecard templates, course departments and Jessi's wording.
 const INDUSTRIES = [
-  'Automotive / Dealership', 'Real Estate', 'Restaurant / Hospitality',
-  'Salon / Barbershop', 'Health & Wellness', 'Insurance',
-  'Financial Services', 'Home Services', 'Retail', 'Other',
+  'Automotive dealership', 'Real estate', 'Home services', 'Medical / Dental', 'Insurance', 'Fitness', 'Apartment leasing',
+  'Restaurant / Hospitality', 'Salon / Barbershop', 'Financial Services', 'Retail', 'Other',
 ];
 
 const BRAND_COLORS = [

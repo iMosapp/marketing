@@ -51,6 +51,22 @@ def members(inbox: dict) -> list:
     return [str(u) for u in (inbox or {}).get("assigned_user_ids") or [] if u]
 
 
+# A ladder step or notify list may name the whole inbox instead of individual reps. Resolved at intake to the
+# inbox's members of that moment, so flows stay reusable across inboxes and new hires join automatically.
+INBOX_TOKEN = "@inbox"
+
+
+def resolve_team(ids: list, member_ids: list, extra_first: bool = False) -> list:
+    """Replace INBOX_TOKEN with the inbox's members, keep order, drop dupes and any unresolved tokens."""
+    out: list = []
+    for u in ids or []:
+        for v in (member_ids if str(u) == INBOX_TOKEN else [u]):
+            v = str(v or "")
+            if v and not v.startswith("@") and v not in out:
+                out.append(v)
+    return out
+
+
 def serialize(inbox: dict) -> dict:
     return {
         "id": str(inbox["_id"]),
@@ -187,16 +203,24 @@ async def inbox_for_source(db, source: Optional[dict]) -> Optional[dict]:
 
 async def apply_inbox(db, source: Optional[dict]) -> Optional[dict]:
     """A lead source pointed at an inbox inherits its members, routing, first reply and number.
-    Fields set on the source itself win (per-source overrides)."""
+    Fields set on the source itself win (per-source overrides), except that everyone on the inbox is always
+    part of the notify / claim pool (the inbox IS the team); the ladder decides whose phone rings."""
     inbox = await inbox_for_source(db, source)
     if not inbox:
+        if source and (INBOX_TOKEN in (source.get("workflow_user_ids") or []) or any(INBOX_TOKEN in (a.get("user_ids") or []) for a in source.get("call_attempts") or [])):
+            merged = dict(source)
+            merged["workflow_user_ids"] = resolve_team(source.get("workflow_user_ids"), [])
+            merged["call_attempts"] = [{**a, "user_ids": resolve_team(a.get("user_ids"), [])} for a in source.get("call_attempts") or []]
+            return merged
         return source
+    team = members(inbox)
     merged = dict(source)
     merged["inbox_id"] = str(inbox["_id"])
     merged["inbox_name"] = inbox.get("name")
+    merged["inbox_member_ids"] = team
     merged["inbox_phone_number"] = _norm(inbox.get("phone_number")) if inbox.get("phone_number") else ""
-    if not merged.get("workflow_user_ids"):
-        merged["workflow_user_ids"] = members(inbox)
+    merged["workflow_user_ids"] = resolve_team(list(source.get("workflow_user_ids") or []) + team, team)
+    merged["call_attempts"] = [{**a, "user_ids": resolve_team(a.get("user_ids"), team)} for a in source.get("call_attempts") or []]
     if not source.get("assignment_method_override"):
         merged["assignment_method"] = inbox.get("routing") or source.get("assignment_method") or "jump_ball"
     if merged["assignment_method"] != "jump_ball":

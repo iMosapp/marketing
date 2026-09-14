@@ -62,6 +62,9 @@ export const customerNoun = (industryKey?: string | null) => industryOf(industry
 export const stripTitlePrefix = (t: string) => t.replace(/^[A-Za-z ]{1,24}:\s*/, '');
 export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const fmtPhone = (p?: string) => { const d = (p || '').replace(/\D/g, '').slice(-10); return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : p || ''; };
+// 800/833/844/855/866/877/888: cell carriers flag toll-free callers as spam far more than local numbers
+export const isTollFree = (p?: string) => /^\+?1?8(00|33|44|55|66|77|88)\d{7}$/.test((p || '').replace(/[^\d+]/g, ''));
+export const TOLL_FREE_WARNING = 'Toll-free number: cell carriers often block or label these as spam, so shop calls may never ring. A local number is safer.';
 export const fmtWhen = (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 export const fmtDay = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
 export const money = (n?: number | null) => `$${Math.round(n || 0).toLocaleString()}`;

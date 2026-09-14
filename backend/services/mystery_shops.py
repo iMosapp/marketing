@@ -421,7 +421,8 @@ async def dial_now(db, call: dict) -> bool:
 
 
 OUTCOME_LABEL = {"voicemail": "Went to voicemail", "no-answer": "No answer", "busy": "Line was busy", "failed": "The call could not be placed", "canceled": "The call was cancelled", "hung_up": "Hung up before the shop started",
-                 "no_response": "Went to voicemail or wasn't ready", "postponed": "Asked us to call back later"}
+                 "no_response": "Went to voicemail or wasn't ready", "postponed": "Asked us to call back later",
+                 "carrier_declined": "Carrier spam filter declined the call", "declined": "Declined before it rang (carrier spam filter or the phone itself)"}
 
 
 async def postpone_call(db, call: dict, hours: int = 2):
@@ -447,8 +448,10 @@ async def record_outcome(db, call: dict, outcome: str, reason: Optional[str] = N
     client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])}) or {}
     attempts = int(call.get("attempts") or 0)
     label = reason or OUTCOME_LABEL.get(outcome, outcome)
+    if outcome in scr.SPAM_SIP.values() and scr.toll_free(call.get("from_number")):
+        label += f", the shop number {call['from_number']} is toll-free and cell carriers flag those as spam, pick a local shop number"
     now = _now()
-    history = {"at": now, "outcome": outcome, "call_sid": call.get("call_sid")}
+    history = {"at": now, "outcome": outcome, "call_sid": call.get("call_sid"), **({"sip_code": call["sip_code"]} if call.get("sip_code") else {})}
     hand_fired = bool(client.get("demo") or call.get("demo") or call.get("manual"))
     if attempts < int(call.get("max_attempts") or 3) and client and not hand_fired:
         when = next_slot(client, now, min_gap_minutes=random.randint(90, 240))

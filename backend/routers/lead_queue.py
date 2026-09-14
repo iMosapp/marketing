@@ -64,10 +64,10 @@ def source_thresholds(source: dict) -> dict:
 
 
 def source_member_ids(source: dict) -> set:
-    ids = set(source.get("workflow_user_ids") or [])
+    ids = set(source.get("workflow_user_ids") or []) | set(source.get("inbox_member_ids") or [])
     for a in source.get("call_attempts") or []:
         ids.update(a.get("user_ids") or [])
-    return {str(i) for i in ids if i}
+    return {str(i) for i in ids if i and not str(i).startswith("@")}
 
 
 async def _me(db, user_id: str) -> dict:
@@ -100,7 +100,9 @@ async def _store_sources(db, store_id: str, me: Optional[dict] = None) -> list:
     else:
         q = {"store_id": {"$in": scope}, "active": {"$ne": False}}
     out = []
+    from services.inboxes import apply_inbox
     async for s in db.lead_sources.find(q):
+        s = await apply_inbox(db, s)      # inbox members can see and claim the inbox's leads
         s["_id"] = str(s["_id"])
         out.append(s)
     return out
@@ -463,6 +465,8 @@ async def release_to_queue(db, conv: dict, actor_id: Optional[str], reason: str,
     await _system_message(db, conv_id, f"Released back to the lead queue by {who}" + (f" ({reason})" if reason else "") + (f' · Note for the next rep: "{note}"' if note else ""))
     lead_name = conv.get("contact_name") or "A lead"
     src = await db.lead_sources.find_one({"_id": ObjectId(conv["lead_source_id"])}) if ObjectId.is_valid(str(conv.get("lead_source_id") or "")) else None
+    from services.inboxes import apply_inbox
+    src = await apply_inbox(db, src) if src else None
     members = [m for m in source_member_ids(src or {}) if m != prev_id]
     push_body = (f"{who}: \"{note}\" · Tap to claim." if note
                  else f"{_display_name(prev) or 'Their rep'} hasn't answered this {(src or {}).get('name', 'internet')} lead. Tap to claim.")

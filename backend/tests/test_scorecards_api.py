@@ -42,7 +42,8 @@ class TestLibrary:
     def test_manager_list(self, mgr):
         d = requests.get(f"{BASE_URL}/api/scorecards", headers=mgr, timeout=20).json()
         assert d["can_manage"] is True
-        assert {t["key"] for t in d["templates"]} == {"internet_sales", "service_bdc", "phone_up"}
+        assert {"internet_sales", "service_bdc", "phone_up"} <= {t["key"] for t in d["templates"]}
+        assert d["industry"]["key"] == "automotive"
         assert "reps" in d and "inboxes" in d and "departments" in d
         assert any(c["name"] == "Internet Sales Call" for c in d["scorecards"])
 

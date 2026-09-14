@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from routers.database import get_db
 from routers.scripts import require_user, _current, _is_manager
 from services import courses as cs
+from services import industries as ind
 from services import mystery_shops as ms
 from services import scripts as scr
 from utils.text_sanitize import no_em_dash
@@ -62,8 +63,8 @@ def _fields(body: CourseBody) -> dict:
         d["description"] = no_em_dash(d["description"].strip())[:1000]
     if "badge_label" in d:
         d["badge_label"] = no_em_dash(d["badge_label"].strip())[:80]
-    if "department" in d and d["department"] not in ms.ALL_DEPARTMENTS + ["mixed"]:
-        raise HTTPException(status_code=400, detail="Department must be sales, service, parts, rental or mixed")
+    if "department" in d and d["department"] not in ind.all_dept_keys() + ["mixed"]:
+        raise HTTPException(status_code=400, detail="Pick a department from one of the industries, or Mixed")
     if "pass_pct" in d:
         d["pass_pct"] = max(50, min(100, int(d["pass_pct"])))
     if "challenge_ids" in d:
@@ -99,9 +100,17 @@ async def list_courses(request: Request):
     courses = await db.courses.find({"active": {"$ne": False}}).sort("title", 1).to_list(200)
     mine = await db.course_enrollments.find({"kind": "user", "user_id": str(me["_id"])}).to_list(100)
     by_id = {str(c["_id"]): c for c in courses}
+    industry = (await ind.store_industry(db, me.get("store_id"))) if me.get("role") not in OWNER_ROLES else None
+    if industry:
+        # a brokerage's managers and reps only see their own industry's courses (plus Mixed ones and anything they are enrolled in)
+        keep = set(ind.dept_keys(industry)) | {"mixed"} | {e["course_id"] for e in mine}
+        courses = [c for c in courses if c.get("department") in keep or str(c["_id"]) in keep]
     return {"courses": [cs.serialize_course(c, await _stats(db, c)) for c in courses], "can_manage": me.get("role") in OWNER_ROLES, "can_assign": _is_manager(me),
             "my": [cs.serialize_enrollment(e, by_id.get(e["course_id"]), {"course": cs.serialize_course(by_id[e["course_id"]])}) for e in mine if e.get("course_id") in by_id],
-            "certifications": (me.get("certifications") or []) and [{**c, "certified_at": cs._iso(c.get("certified_at"))} for c in me.get("certifications")], "departments": [{"key": d, "label": ms.DEPT_LABEL[d]} for d in ms.ALL_DEPARTMENTS] + [{"key": "mixed", "label": "Mixed"}]}
+            "certifications": (me.get("certifications") or []) and [{**c, "certified_at": cs._iso(c.get("certified_at"))} for c in me.get("certifications")],
+            # a store's managers see their own industry's departments; iMOS admins (who build courses for every client) get them all, grouped
+            "industry": industry,
+            "departments": [{"key": d, "label": ms.DEPT_LABEL[d], "industry": ind.industry_of_dept(d)} for d in ind.all_dept_keys()] + [{"key": "mixed", "label": "Mixed", "industry": None}]}
 
 
 @router.post("")

@@ -54,14 +54,16 @@ def normalize_attempts(raw: list, fallback_user_ids: list) -> list:
     """Clamp to MAX_ATTEMPTS, drop empty attempts, default the ladder to the workflow reps."""
     attempts = []
     for a in (raw or [])[:MAX_ATTEMPTS]:
-        user_ids = [u for u in (a.get("user_ids") or []) if u]
+        # "@inbox" is resolved by services.inboxes.apply_inbox before we get here; anything still tokenised has no inbox
+        user_ids = [u for u in (a.get("user_ids") or []) if u and not str(u).startswith("@")]
         if not user_ids:
             continue
         delay = a.get("delay_seconds")
         attempts.append({"user_ids": user_ids, "delay_seconds": max(0, int(60 if delay is None else delay)),
                          "delivery": "push" if a.get("delivery") == "push" else "call"})
     if not attempts and fallback_user_ids:
-        attempts = [{"user_ids": list(fallback_user_ids), "delay_seconds": 60, "delivery": "call"}]
+        attempts = [{"user_ids": [u for u in fallback_user_ids if u and not str(u).startswith("@")], "delay_seconds": 60, "delivery": "call"}]
+        attempts = [a for a in attempts if a["user_ids"]]
     return attempts
 
 

@@ -256,9 +256,75 @@ INDUSTRIES: dict = {
                  {"text": "Thanked the resident and closed warmly", "hint": "Leave them feeling heard.", "weight": 1, "critical": False}]}},
         ],
     },
+    "general": {
+        "label": "General business", "business": "business", "place": "office", "customer": "caller", "trainer": "phone skills coach",
+        "offering": {"label": "product or service", "plural": "products or services", "hint": "the spring special you have on your website", "field": "Products or services the caller can mention", "field_help": "Real offers, packages or services make the calls believable. A name and a price is plenty."},
+        "departments": [
+            {"key": "gen_inquiry", "label": "New inquiries", "call": "inquiry call", "prefix": "Caller:", "rep": "a team member",
+             "brief": "an inbound call from a prospective customer asking about a product or service; the team member should greet warmly, get the name and number, understand what the caller needs and why now, answer clearly without overpromising, and propose a concrete next step with two time options",
+             "curveballs": ["You are comparing two other companies and say so", "You want a price before you will share anything else", "You only have a couple of minutes", "You had a bad experience with a competitor and are skeptical", "Someone else makes the final decision", "You ask if there is any discount"],
+             "defaults": ["the special you have on your website", "the package you advertise"],
+             "scorecard": {"name": "New Inquiry Call", "criteria": [
+                 {"text": "Answered with their name and the business", "hint": "Name and company, warm and unhurried.", "weight": 1, "critical": False},
+                 {"text": "Got and used the caller's name", "hint": "Ask early, use it twice.", "weight": 1, "critical": False},
+                 {"text": "Asked what the caller needs and why now", "hint": "Open question before any pitch.", "weight": 2, "critical": False},
+                 {"text": "Answered clearly and honestly", "hint": "Real information or a clear 'let me find out'.", "weight": 1, "critical": False},
+                 {"text": "Proposed a next step with two time options", "hint": "'Today at 4 or tomorrow at 10?'", "weight": 2, "critical": True},
+                 {"text": "Got the caller's phone number", "hint": "Best number in case you get disconnected.", "weight": 2, "critical": True},
+                 {"text": "Recapped and thanked the caller", "hint": "Who does what next, then a genuine thank you.", "weight": 1, "critical": False}]}},
+            {"key": "gen_support", "label": "Existing customers", "call": "customer service call", "prefix": "Customer:", "rep": "a customer service rep",
+             "brief": "an inbound call from a current customer with a problem, question or complaint; the rep should verify the customer, acknowledge the concern with empathy, resolve or log it completely, set a clear expectation and follow-up time, and confirm contact details",
+             "curveballs": ["You have already called twice and nobody called back", "You want to speak to a manager right away", "You are calling on behalf of a family member", "You want a refund and say so up front", "You are polite but clearly frustrated", "You are not sure of your account details"],
+             "defaults": ["my account", "my last order"],
+             "scorecard": {"name": "Customer Service Call", "criteria": [
+                 {"text": "Answered with their name and the business", "hint": "Name and company.", "weight": 1, "critical": False},
+                 {"text": "Verified the customer", "hint": "Name and account or order.", "weight": 1, "critical": False},
+                 {"text": "Acknowledged the concern with empathy", "hint": "Before explaining anything.", "weight": 2, "critical": True},
+                 {"text": "Resolved or logged the request completely", "hint": "A fix, a ticket number or a clear owner.", "weight": 2, "critical": True},
+                 {"text": "Set a clear expectation and follow-up time", "hint": "When and how they will hear back.", "weight": 2, "critical": True},
+                 {"text": "Confirmed the phone number", "hint": "Repeat back.", "weight": 1, "critical": False},
+                 {"text": "Thanked the customer and closed warmly", "hint": "Leave them feeling heard.", "weight": 1, "critical": False}]}},
+        ],
+    },
 }
 
 _DEPT_INDEX = {d["key"]: (ik, d) for ik, ind in INDUSTRIES.items() for d in ind["departments"]}
+
+# Free-text store industries (setup wizard labels, old values, whatever a manager typed) -> a pack key.
+_LABEL_HINTS = [
+    ("automotive", ("auto", "dealer", "car ", "cars", "motor", "powersport", "rv ", "marine", "boat")),
+    ("real_estate", ("real estate", "realty", "realtor", "broker", "mortgage")),
+    ("home_services", ("home service", "hvac", "plumb", "roof", "electric", "landscap", "pest", "clean", "contractor", "remodel", "solar", "garage")),
+    ("medical_dental", ("medical", "dental", "dentist", "health", "wellness", "clinic", "chiro", "ortho", "derm", "vet", "optom", "physical therapy", "med spa", "medspa")),
+    ("insurance", ("insurance", "insur")),
+    ("fitness", ("fitness", "gym", "crossfit", "yoga", "pilates", "martial")),
+    ("property_management", ("apartment", "property", "leasing", "multifamily", "multi-family", "community")),
+]
+
+
+def key_for(value: Optional[str]) -> str:
+    """Pack key for any industry value: a pack key, a pack label, or a free-text store industry ('Automotive / Dealership')."""
+    v = (value or "").strip().lower()
+    if not v:
+        return DEFAULT_INDUSTRY
+    if v in INDUSTRIES:
+        return v
+    for k, pack in INDUSTRIES.items():
+        if v == pack["label"].lower():
+            return k
+    for k, hints in _LABEL_HINTS:
+        if any(h in v for h in hints):
+            return k
+    return "general"
+
+
+async def store_industry(db, store_id) -> str:
+    """The pack a SaaS store (org) runs on, from stores.industry. Missing store or blank industry = automotive (the original product)."""
+    from bson import ObjectId
+    if not store_id or not ObjectId.is_valid(str(store_id)):
+        return DEFAULT_INDUSTRY
+    s = await db.stores.find_one({"_id": ObjectId(str(store_id))}, {"industry": 1})
+    return key_for((s or {}).get("industry"))
 
 
 def get(key: Optional[str]) -> dict:

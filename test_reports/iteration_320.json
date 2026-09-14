@@ -1,0 +1,29 @@
+{
+  "summary": "Backend + frontend regression for shared-inbox team-wiring feature. 8/8 pytest cases pass and all frontend acceptance criteria verified (Leads tab checklist, point/unpoint source, ring-everyone NOT shown on text-only source, Team tab select-all toggle + no outside toggle for store_manager, super-admin outside toggle + search, Inbox tab gold chip transitions Manage inboxes -> Rules & team -> opens /inboxes/{id}?tab=leads, lead-flow ladder-0-rep-inbox chip + hint, lead-flow reps include Activation Tester/QA Manager/Forest, workflow-toggle + workflow-reps-hint present and workflow-inbox-note correctly absent). API-based cleanup performed to unpoint TEST_Lead_Source_VA_Picker so state is restored.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_inbox_team_wiring_review.py",
+    "/app/test_reports/pytest/inbox_team_wiring_review.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Nothing critical spotted for this feature. Verified team scoping is correctly enforced (rep gets 403 on /api/inboxes/{id}/leads).",
+    "Bogus source_id in POST /api/inboxes/{id}/sources correctly returns 400 rather than 500.",
+    "lead-flow-notify-inbox chip only renders when 'Text only' mode is selected in the lead flow editor (verified). This matches the spec ('text-only Who gets the push' variant)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_inbox_team_wiring_review.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "qa-manager@invalid.imonsocial.test/Manager123!; forest@imosapp.com/Admin123!; activation-tester@invalid.imonsocial.test/NewPass123!",
+  "seed_data_creation": "None. Point/unpoint of source 6a165970ac830a1c833af189 executed against inbox 6aa3673e65d794ba9962f1bc; state restored via DELETE after tests.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "New pytest file /app/backend/tests/test_inbox_team_wiring_review.py covers all 8 backend acceptance criteria for the team-wiring feature. /inbox is shadowed by marketing on the web preview; use the in-app bottom tab bar (page.get_by_text('Inbox').first.click()) to reach the app inbox and see the 'Manage inboxes' / 'Rules & team' gold chip (data-testid inbox-rules-btn). The frontend edit flow for /admin/lead-sources/{id} was not deeply exercised (source-inbox-none / source-inbox-{id} radios only render inside edit mode - Edit control was not a plain button, so a specialized selector is needed). Backend already validates the correct data, so this is a minor test-script gap not a product bug.",
+  "rca of the issue": "N/A - no bugs found."
+}

@@ -71,37 +71,73 @@ export const MergeChips = ({ tokens, onInsert, colors }: { tokens: string[]; onI
   </View>
 );
 
-type MemberProps = { options: RepCard[]; selected: string[]; weights: Record<string, number>; weighted: boolean; onToggle: (id: string) => void; onWeight: (id: string, w: number) => void; colors: any };
+type MemberProps = { options: RepCard[]; selected: string[]; weights: Record<string, number>; weighted: boolean; onToggle: (id: string) => void; onWeight: (id: string, w: number) => void; colors: any; storeName?: string | null; onSelectMany?: (ids: string[]) => void };
 
-// Multi-select of teammates with optional per-rep weight steppers.
-export const MemberPicker = ({ options, selected, weights, weighted, onToggle, onWeight, colors }: MemberProps) => (
-  <View style={{ gap: 6 }}>
-    {options.length === 0 && <Text style={{ fontSize: 13, color: colors.textSecondary }}>No teammates found for this store yet.</Text>}
-    {options.map(u => {
-      const on = selected.includes(u.id);
-      const w = Number(weights[u.id] || 1);
-      return (
-        <View key={u.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 12, backgroundColor: on ? GOLD + '18' : colors.surface, borderWidth: 1, borderColor: on ? GOLD + '66' : 'transparent' }}>
-          <TouchableOpacity onPress={() => onToggle(u.id)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid(`inbox-member-${u.id}`)}>
-            <Ionicons name={on ? 'checkbox' : 'square-outline'} size={20} color={on ? GOLD : colors.textSecondary} />
-            <Avatar photo={u.photo || null} name={u.name} size="sm" />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{u.name}</Text>
-              <Text style={{ fontSize: 11, color: u.has_number ? colors.textSecondary : '#FF9500' }}>{u.title || String(u.role || '').replace('_', ' ')}{u.has_number ? '' : ' · no personal number yet'}</Text>
-            </View>
-          </TouchableOpacity>
-          {on && weighted && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <TouchableOpacity onPress={() => onWeight(u.id, Math.max(1, w - 1))} hitSlop={6} {...tid(`inbox-weight-minus-${u.id}`)}><Ionicons name="remove-circle-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: GOLD, minWidth: 16, textAlign: 'center' }} {...tid(`inbox-weight-${u.id}`)}>{w}</Text>
-              <TouchableOpacity onPress={() => onWeight(u.id, Math.min(5, w + 1))} hitSlop={6} {...tid(`inbox-weight-plus-${u.id}`)}><Ionicons name="add-circle-outline" size={22} color={GOLD} /></TouchableOpacity>
-            </View>
-          )}
-        </View>
-      );
-    })}
+const MemberRow = ({ u, on, w, weighted, onToggle, onWeight, colors }: { u: RepCard; on: boolean; w: number; weighted: boolean; onToggle: (id: string) => void; onWeight: (id: string, w: number) => void; colors: any }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 12, backgroundColor: on ? GOLD + '18' : colors.surface, borderWidth: 1, borderColor: on ? GOLD + '66' : 'transparent' }}>
+    <TouchableOpacity onPress={() => onToggle(u.id)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid(`inbox-member-${u.id}`)}>
+      <Ionicons name={on ? 'checkbox' : 'square-outline'} size={20} color={on ? GOLD : colors.textSecondary} />
+      <Avatar photo={u.photo || null} name={u.name} size="sm" />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{u.name}</Text>
+        <Text style={{ fontSize: 11, color: u.has_number ? colors.textSecondary : '#FF9500' }}>{u.title || String(u.role || '').replace('_', ' ')}{u.has_number ? '' : ' · no personal number yet'}{u.on_team === false ? ' · not on this store yet' : ''}</Text>
+      </View>
+    </TouchableOpacity>
+    {on && weighted && (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <TouchableOpacity onPress={() => onWeight(u.id, Math.max(1, w - 1))} hitSlop={6} {...tid(`inbox-weight-minus-${u.id}`)}><Ionicons name="remove-circle-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: GOLD, minWidth: 16, textAlign: 'center' }} {...tid(`inbox-weight-${u.id}`)}>{w}</Text>
+        <TouchableOpacity onPress={() => onWeight(u.id, Math.min(5, w + 1))} hitSlop={6} {...tid(`inbox-weight-plus-${u.id}`)}><Ionicons name="add-circle-outline" size={22} color={GOLD} /></TouchableOpacity>
+      </View>
+    )}
   </View>
 );
+
+// Multi-select of teammates: the store's team first (one tap adds them all), everyone else behind a search so a
+// super admin can still pull in someone who is not linked to the store yet.
+export const MemberPicker = ({ options, selected, weights, weighted, onToggle, onWeight, colors, storeName, onSelectMany }: MemberProps) => {
+  const [showOthers, setShowOthers] = React.useState(false);
+  const [q, setQ] = React.useState('');
+  const team = options.filter(o => o.on_team !== false);
+  const others = options.filter(o => o.on_team === false);
+  const pickedOthers = others.filter(o => selected.includes(o.id));
+  const allTeamOn = team.length > 0 && team.every(t => selected.includes(t.id));
+  const visibleOthers = others.filter(o => !q.trim() || o.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const row = (u: RepCard) => <MemberRow key={u.id} u={u} on={selected.includes(u.id)} w={Number(weights[u.id] || 1)} weighted={weighted} onToggle={onToggle} onWeight={onWeight} colors={colors} />;
+  return (
+    <View style={{ gap: 6 }}>
+      {options.length === 0 && <Text style={{ fontSize: 13, color: colors.textSecondary }}>No teammates found for this store yet.</Text>}
+      {team.length > 0 && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1 }}>{(storeName ? `ON ${storeName}` : 'YOUR TEAM').toUpperCase()} · {team.length}</Text>
+          {onSelectMany && (
+            <TouchableOpacity onPress={() => onSelectMany(allTeamOn ? [] : team.map(t => t.id))} hitSlop={8} {...tid('inbox-members-select-all')}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: GOLD }}>{allTeamOn ? 'Clear all' : 'Everyone on the team'}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+      {team.map(row)}
+      {pickedOthers.map(row)}
+      {others.length > pickedOthers.length && (
+        <View style={{ gap: 6, marginTop: 4 }}>
+          <TouchableOpacity onPress={() => setShowOthers(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 }} {...tid('inbox-members-show-others')}>
+            <Ionicons name={showOthers ? 'chevron-down' : 'chevron-forward'} size={16} color={colors.textSecondary} />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>{showOthers ? 'Hide' : 'Add someone from outside this store'} · {others.length - pickedOthers.length}</Text>
+          </TouchableOpacity>
+          {showOthers && (
+            <>
+              <TextInput value={q} onChangeText={setQ} placeholder="Search by name" placeholderTextColor={colors.textSecondary} style={inputStyle(colors)} {...tid('inbox-members-search')} />
+              <Text style={{ fontSize: 11, color: colors.textSecondary, lineHeight: 15 }}>Adding someone here also puts them on {storeName || 'this store'}'s team, so they show up in lead flows and reports.</Text>
+              {visibleOthers.filter(o => !selected.includes(o.id)).slice(0, 40).map(row)}
+              {visibleOthers.length > 40 && !q.trim() && <Text style={{ fontSize: 11, color: colors.textSecondary }}>Type a name to narrow it down.</Text>}
+            </>
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
 
 type NumberProps = { value: string; numbers: { phone_number: string; friendly_name: string; available: boolean; current: boolean; taken_by?: string }[]; onChange: (v: string) => void; colors: any; fmt: (p: string) => string };
 

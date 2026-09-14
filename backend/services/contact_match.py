@@ -52,7 +52,7 @@ def source_owner_ids(source: dict) -> list:
     ids = list(source.get("workflow_user_ids") or [])
     for a in source.get("call_attempts") or []:
         ids += list(a.get("user_ids") or [])
-    return [str(i) for i in ids if i]
+    return [str(i) for i in ids if i and not str(i).startswith("@")]
 
 
 async def find_existing_contact(db, phone: str, email: str, first: str, last: str, store_id: str,

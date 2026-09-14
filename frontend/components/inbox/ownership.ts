@@ -3,7 +3,7 @@ import api from '../../services/api';
 export const GOLD = '#C9A962';
 export const tid = (id: string) => ({ testID: id, dataSet: { testid: id } } as any);
 
-export type RepCard = { id: string; name: string; role?: string; photo?: string | null; has_number?: boolean; active?: boolean; title?: string };
+export type RepCard = { id: string; name: string; role?: string; photo?: string | null; has_number?: boolean; active?: boolean; title?: string; on_team?: boolean; via?: string[]; phone?: string; store_id?: string | null };
 export type InboxLite = { id: string; name: string; color: string; members: string[]; phone_number?: string; counts?: { open: number; unassigned: number; mine: number } };
 export type Ownership = {
   conversation_id: string;

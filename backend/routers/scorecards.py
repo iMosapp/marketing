@@ -134,9 +134,12 @@ async def list_scorecards(request: Request):
         async for row in db[sc.EVAL_COLL].aggregate([{"$match": {"scorecard_id": {"$in": ids}, "call_at": {"$gte": since}}},
                                                     {"$group": {"_id": "$scorecard_id", "n": {"$sum": 1}, "avg": {"$avg": "$score_pct"}}}]):
             counts[row["_id"]] = {"calls_30d": row["n"], "avg_30d": int(round(row["avg"])) if row.get("avg") is not None else None}
+    from services import industries as ind
+    industry = await ind.store_industry(db, user_store_id(me))
     out = {"scorecards": [sc.serialize(c, counts.get(str(c["_id"]), {"calls_30d": 0, "avg_30d": None})) for c in cards],
-           "templates": [{"key": t["key"], "name": t["name"], "department": t["department"], "description": t["description"], "criteria_count": len(t["criteria"])} for t in sc.TEMPLATES],
-           "departments": sc.DEPARTMENTS, "can_manage": _is_manager(me), "store_id": user_store_id(me)}
+           "templates": [{"key": t["key"], "name": t["name"], "department": t["department"], "description": t["description"], "criteria_count": len(t["criteria"])} for t in sc.templates_for(industry)],
+           "departments": sc.departments_for(industry), "industry": {"key": industry, "label": ind.get(industry)["label"], "business": ind.get(industry)["business"]},
+           "can_manage": _is_manager(me), "store_id": user_store_id(me)}
     if _is_manager(me):
         out.update(await _store_options(db, user_store_id(me), me))
     return out

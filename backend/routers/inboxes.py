@@ -153,7 +153,72 @@ async def _detail(db, inbox: dict, me: dict) -> dict:
     data["webhook_url"] = f"{base}/api/admin/team/shared-inboxes/{data['id']}/webhook"
     src_count = await db.lead_sources.count_documents({"$or": [{"inbox_id": data["id"]}, {"team_id": data["id"]}], "kind": {"$ne": "inbox_direct"}})
     data["lead_source_count"] = src_count
+    if inbox.get("store_id") and ObjectId.is_valid(str(inbox["store_id"])):
+        store = await db.stores.find_one({"_id": ObjectId(str(inbox["store_id"]))}, {"name": 1})
+        data["store_name"] = (store or {}).get("name")
     return data
+
+
+class PointSourceBody(BaseModel):
+    source_id: str
+
+
+async def _managed_inbox(db, inbox_id: str, me: dict) -> dict:
+    inbox = await ib.get_inbox(db, inbox_id)
+    if not inbox or inbox.get("is_active") is False:
+        raise HTTPException(status_code=404, detail="Inbox not found")
+    if not ib.can_manage_inbox(me, inbox):
+        raise HTTPException(status_code=403, detail="Manager or admin role required")
+    return inbox
+
+
+@router.get("/{inbox_id}/leads")
+async def inbox_leads(inbox_id: str, request: Request):
+    """How leads reach this team: the lead sources pointed here, who rings, who gets pinged, plus a setup checklist."""
+    from services import inbox_leads as il
+    db = get_db()
+    return await il.overview(db, await _managed_inbox(db, inbox_id, _me(request)))
+
+
+@router.post("/{inbox_id}/sources")
+async def point_source_at_inbox(inbox_id: str, body: PointSourceBody, request: Request):
+    from services import inbox_leads as il
+    db = get_db()
+    me = _me(request)
+    inbox = await _managed_inbox(db, inbox_id, me)
+    try:
+        await il.point_source(db, inbox, body.source_id, me)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return await il.overview(db, inbox)
+
+
+@router.delete("/{inbox_id}/sources/{source_id}")
+async def unpoint_source_from_inbox(inbox_id: str, source_id: str, request: Request):
+    from services import inbox_leads as il
+    db = get_db()
+    inbox = await _managed_inbox(db, inbox_id, _me(request))
+    try:
+        await il.unpoint_source(db, inbox, source_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return await il.overview(db, inbox)
+
+
+@router.post("/{inbox_id}/sources/{source_id}/ring-everyone")
+async def ring_everyone_on_inbox(inbox_id: str, source_id: str, request: Request):
+    """Attempt 1 of this source's ladder (its flow's, when one is attached) rings everyone on the inbox, now and as the team changes."""
+    from services import inbox_leads as il
+    db = get_db()
+    me = _me(request)
+    inbox = await _managed_inbox(db, inbox_id, me)
+    try:
+        changed = await il.ring_everyone(db, inbox, source_id, me)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {**(await il.overview(db, inbox)), "changed": changed}
 
 
 # ── Inboxes ──────────────────────────────────────────────────────────────────
@@ -214,13 +279,13 @@ async def available_numbers(request: Request, inbox_id: Optional[str] = None):
 
 
 @router.get("/members/options")
-async def member_options(request: Request, store_id: Optional[str] = None):
-    """Teammates a user can hand a thread to / share with: managers see their store(s) / org (super admin: everyone active);
-    reps see their own store plus co-members of their inboxes."""
+async def member_options(request: Request, store_id: Optional[str] = None, inbox_id: Optional[str] = None):
+    """Teammates a user can put on an inbox / hand a thread to. Managers get the store's team (store members, org admins,
+    everyone already on the store's inboxes) flagged `on_team`; super / org admins also get everyone else (on_team False)
+    so they can pull in people who are not linked to the store yet. Reps see their own store plus inbox co-members."""
     db = get_db()
     me = _me(request)
     role = me.get("role")
-    q: dict = {"status": {"$ne": "deactivated"}}
     if not ib.is_manager(me):
         stores = ib._scope_store_ids(me)
         co = set()
@@ -229,20 +294,29 @@ async def member_options(request: Request, store_id: Optional[str] = None):
         ors = [{"_id": {"$in": [ObjectId(c) for c in co if ObjectId.is_valid(c)] + [me["_id"]]}}]
         if stores:
             ors += [{"store_id": {"$in": stores}}, {"store_ids": {"$in": stores}}]
-        q["$or"] = ors
-    elif role == "super_admin":
-        if store_id:
-            q["$or"] = [{"store_id": store_id}, {"store_ids": store_id}]
-    elif role == "org_admin" and me.get("organization_id"):
-        q["organization_id"] = me["organization_id"]
-    else:
-        stores = ib._scope_store_ids(me)
-        q["$or"] = [{"store_id": {"$in": stores}}, {"store_ids": {"$in": stores}}, {"_id": me["_id"]}] if stores else [{"_id": me["_id"]}]
-    users = await db.users.find(q, {"name": 1, "first_name": 1, "role": 1, "photo_url": 1, "photo_thumbnail": 1, "twilio_number": 1,
-                                    "mvpline_number": 1, "store_id": 1, "title": 1}).sort("name", 1).to_list(300)
-    return {"users": [{"id": str(u["_id"]), "name": u.get("name") or u.get("first_name") or "Rep", "role": u.get("role"),
-                       "title": u.get("title") or "", "photo": u.get("photo_thumbnail") or u.get("photo_url"),
-                       "has_number": bool(u.get("twilio_number") or u.get("mvpline_number")), "store_id": u.get("store_id")} for u in users]}
+        users = await db.users.find({"status": {"$ne": "deactivated"}, "$or": ors}, {"name": 1, "first_name": 1, "role": 1, "photo_url": 1, "photo_thumbnail": 1, "twilio_number": 1,
+                                                                                    "mvpline_number": 1, "store_id": 1, "title": 1}).sort("name", 1).to_list(300)
+        return {"users": [{"id": str(u["_id"]), "name": u.get("name") or u.get("first_name") or "Rep", "role": u.get("role"),
+                           "title": u.get("title") or "", "photo": u.get("photo_thumbnail") or u.get("photo_url"),
+                           "has_number": bool(u.get("twilio_number") or u.get("mvpline_number")), "store_id": u.get("store_id"), "on_team": True, "via": ["store"]} for u in users],
+                "store_name": None, "store_id": None}
+    sid = store_id
+    if not sid and inbox_id and ObjectId.is_valid(inbox_id):
+        sid = str(((await ib.get_inbox(db, inbox_id)) or {}).get("store_id") or "") or None
+    if not sid:
+        sid = (ib._scope_store_ids(me) or [None])[0]
+    if role not in ("super_admin", "org_admin") and sid and sid not in ib._scope_store_ids(me):
+        raise HTTPException(status_code=403, detail="That store is outside your scope")
+    from services.team_scope import eligible_people
+    scope = await eligible_people(db, sid, me, include_everyone=role in ("super_admin", "org_admin"))
+    people = scope["people"]
+    if role == "org_admin" and me.get("organization_id"):
+        org = str(me["organization_id"])
+        org_user_ids = {str(u["_id"]) async for u in db.users.find({"organization_id": {"$in": [org, me["organization_id"]]}}, {"_id": 1})}
+        people = [p for p in people if p["on_team"] or p["id"] in org_user_ids]
+    return {"users": [{"id": p["id"], "name": p["name"], "role": p["role"], "title": p["title"], "photo": p["photo"], "has_number": p["has_number"],
+                       "store_id": p["store_id"], "on_team": p["on_team"], "via": p["via"], "phone": p["phone"]} for p in people],
+            "store_name": scope["store_name"], "store_id": scope["store_id"]}
 
 
 @router.post("")
@@ -269,11 +343,14 @@ async def create_inbox(body: InboxBody, request: Request):
            "created_at": now, "updated_at": now}
     res = await db[ib.COLL].insert_one(doc)
     doc["_id"] = res.inserted_id
+    linked = 0
     if doc["assigned_user_ids"]:
         await db.users.update_many({"_id": {"$in": [ObjectId(u) for u in doc["assigned_user_ids"]]}},
                                    {"$addToSet": {"shared_inbox_ids": str(res.inserted_id)}})
+        from services.team_scope import link_to_store
+        linked = await link_to_store(db, doc["assigned_user_ids"], store_id)
     await ib.ensure_direct_source(db, doc)
-    return await _detail(db, await ib.get_inbox(db, res.inserted_id), me)
+    return {**(await _detail(db, await ib.get_inbox(db, res.inserted_id), me)), "linked_to_store": linked}
 
 
 @router.get("/{inbox_id}")
@@ -307,19 +384,22 @@ async def update_inbox(inbox_id: str, body: InboxBody, request: Request):
             raise HTTPException(status_code=409, detail=taken)
     sets["updated_at"] = ib._now()
     await db[ib.COLL].update_one({"_id": inbox["_id"]}, {"$set": sets})
+    linked = 0
     if "assigned_user_ids" in sets:
         old, new = set(ib.members(inbox)), set(sets["assigned_user_ids"])
         if old - new:
             await db.users.update_many({"_id": {"$in": [ObjectId(u) for u in old - new]}}, {"$pull": {"shared_inbox_ids": inbox_id}})
         if new - old:
             await db.users.update_many({"_id": {"$in": [ObjectId(u) for u in new - old]}}, {"$addToSet": {"shared_inbox_ids": inbox_id}})
+            from services.team_scope import link_to_store
+            linked = await link_to_store(db, list(new - old), inbox.get("store_id"))
     fresh = await ib.get_inbox(db, inbox_id)
     await ib.ensure_direct_source(db, fresh)
     if "phone_number" in sets and sets["phone_number"]:
         await db.conversations.update_many({"inbox_id": inbox_id, "graduated_at": None}, {"$set": {"rep_phone": sets["phone_number"]}})
     if "name" in sets:
         await db.conversations.update_many({"inbox_id": inbox_id}, {"$set": {"inbox_name": sets["name"]}})
-    return await _detail(db, fresh, me)
+    return {**(await _detail(db, fresh, me)), "linked_to_store": linked}
 
 
 @router.delete("/{inbox_id}")

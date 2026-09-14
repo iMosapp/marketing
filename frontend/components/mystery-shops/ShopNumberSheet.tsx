@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
-import { Sheet, Field, Label, Chip, GoldButton, fmtPhone, GOLD, GREEN, RED, tid } from './shared';
+import { Sheet, Field, Label, Chip, GoldButton, fmtPhone, isTollFree, TOLL_FREE_WARNING, GOLD, GREEN, RED, AMBER, tid } from './shared';
 
 export type OwnedNumber = { phone: string; sid: string; friendly_name: string; voice: boolean; use: string };
 export type NumberState = { current: string; source: 'saved' | 'platform' | 'none'; owned: OwnedNumber[]; twilio_error?: string | null; clients_with_own_number: { id: string; name: string; from_number: string }[] };
@@ -26,8 +26,9 @@ export const ShopNumberSheet = ({ visible, onClose, colors, onChanged }: { visib
   const pick = (n: OwnedNumber) => {
     if (n.use === 'Main Mystery Shop number') return;
     const go = async () => { setBusy(n.phone); try { const r = await api.put('/shop-clients/number', { phone_number: n.phone }); apply(r.data, `Shop calls now come from ${fmtPhone(n.phone)}`); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not save', 'error'); } finally { setBusy(''); } };
-    if (n.use === 'Not in use') return go();
-    showConfirm('Use this number for shops?', `${fmtPhone(n.phone)} is ${n.use}. Whoever calls it back gets a voicemail instead of a person while it is the shop number.`, go, undefined, 'Use it');
+    if (n.use === 'Not in use' && !isTollFree(n.phone)) return go();
+    const why = isTollFree(n.phone) ? TOLL_FREE_WARNING : `${fmtPhone(n.phone)} is ${n.use}. Whoever calls it back gets a voicemail instead of a person while it is the shop number.`;
+    showConfirm(isTollFree(n.phone) ? 'Use a toll-free number for shops?' : 'Use this number for shops?', why, go, undefined, isTollFree(n.phone) ? 'Use it anyway' : 'Use it');
   };
   const search = async () => { setBusy('search'); setFound(null); try { const r = await api.get('/shop-clients/number/search', { params: { area_code: area } }); setFound(r.data.numbers); } catch (e: any) { showToast(e?.response?.data?.detail || 'Search failed', 'error'); setFound([]); } finally { setBusy(''); } };
   const buy = (f: Found) => showConfirm('Buy this number?', `${fmtPhone(f.phone)} (${place(f)}) is $${f.monthly_cost_usd.toFixed(2)}/month on your Twilio bill. It becomes the main Mystery Shop number right away.`, async () => {
@@ -47,6 +48,12 @@ export const ShopNumberSheet = ({ visible, onClose, colors, onChanged }: { visib
             <Text style={{ fontSize: 24, fontWeight: '800', color: colors.text }}>{state.current ? fmtPhone(state.current) : 'No number yet'}</Text>
             <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{state.source === 'saved' ? 'Your saved Mystery Shop number. Reps who save this contact will see it on every shop.' : state.source === 'platform' ? 'The shared platform number. Pick or buy one below to make it your own.' : 'Pick or buy a number below.'}</Text>
             {state.source === 'saved' && <TouchableOpacity onPress={reset} {...tid('shop-number-reset')}><Text style={{ fontSize: 12.5, fontWeight: '800', color: RED }}>Back to the platform number</Text></TouchableOpacity>}
+            {isTollFree(state.current) && (
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 6, backgroundColor: AMBER + '22', borderRadius: 10, padding: 10 }} {...tid('shop-number-tollfree-warning')}>
+                <Ionicons name="warning" size={16} color={AMBER} />
+                <Text style={{ flex: 1, fontSize: 12.5, color: colors.text, lineHeight: 17 }}>{TOLL_FREE_WARNING}</Text>
+              </View>
+            )}
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Chip label="Pick one of mine" active={mode === 'pick'} onPress={() => setMode('pick')} colors={colors} testID="shop-number-mode-pick" />
@@ -58,12 +65,14 @@ export const ShopNumberSheet = ({ visible, onClose, colors, onChanged }: { visib
               {!!state.twilio_error && <Text style={{ fontSize: 13, color: RED }} {...tid('shop-number-error')}>{state.twilio_error}</Text>}
               {state.owned.map(n => {
                 const on = n.use === 'Main Mystery Shop number';
+                const tf = isTollFree(n.phone);
                 return (
-                  <TouchableOpacity key={n.sid} onPress={() => pick(n)} disabled={on || !n.voice || !!busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: on ? GREEN : colors.border, padding: 12, opacity: n.voice ? 1 : 0.5 }} {...tid(`shop-number-pick-${n.phone.replace(/\D/g, '')}`)}>
-                    <Ionicons name={on ? 'checkmark-circle' : 'call-outline'} size={22} color={on ? GREEN : n.use === 'Not in use' ? GOLD : colors.textSecondary} />
+                  <TouchableOpacity key={n.sid} onPress={() => pick(n)} disabled={on || !n.voice || !!busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: on ? GREEN : tf ? AMBER + '88' : colors.border, padding: 12, opacity: n.voice ? 1 : 0.5 }} {...tid(`shop-number-pick-${n.phone.replace(/\D/g, '')}`)}>
+                    <Ionicons name={on ? 'checkmark-circle' : tf ? 'warning-outline' : 'call-outline'} size={22} color={on ? GREEN : tf ? AMBER : n.use === 'Not in use' ? GOLD : colors.textSecondary} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{fmtPhone(n.phone)}</Text>
                       <Text style={{ fontSize: 12, color: on ? GREEN : colors.textSecondary }}>{n.voice ? n.use : 'No voice on this number'}{n.friendly_name && !n.friendly_name.replace(/\D/g, '').includes(n.phone.replace(/\D/g, '').slice(-10)) && !on ? ` · ${n.friendly_name}` : ''}</Text>
+                      {tf && <Text style={{ fontSize: 11.5, color: AMBER, marginTop: 2 }} {...tid(`shop-number-tollfree-${n.phone.replace(/\D/g, '')}`)}>Toll-free · carriers often block these as spam</Text>}
                     </View>
                     {busy === n.phone ? <ActivityIndicator color={GOLD} /> : !on && n.voice && <Text style={{ fontSize: 12.5, fontWeight: '800', color: GOLD }}>Use</Text>}
                   </TouchableOpacity>

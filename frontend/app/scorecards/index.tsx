@@ -20,6 +20,8 @@ export default function ScorecardsLibrary() {
   const { showToast } = useToast();
   const [cards, setCards] = useState<Scorecard[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [industry, setIndustry] = useState<{ key: string; label: string; business: string } | null>(null);
+  const [departments, setDepartments] = useState<string[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [canManage, setCanManage] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -29,7 +31,7 @@ export default function ScorecardsLibrary() {
   const load = useCallback(async () => {
     try {
       const res = await api.get('/scorecards');
-      setCards(res.data.scorecards || []); setTemplates(res.data.templates || []); setCanManage(!!res.data.can_manage);
+      setCards(res.data.scorecards || []); setTemplates(res.data.templates || []); setCanManage(!!res.data.can_manage); setIndustry(res.data.industry || null); setDepartments(res.data.departments || []);
       const n: Record<string, string> = {};
       (res.data.reps || []).forEach((r: any) => { n[r._id] = (r.name || '').split(' ')[0]; });
       (res.data.inboxes || []).forEach((i: any) => { n[i.id] = `${i.name} inbox`; });
@@ -85,7 +87,7 @@ export default function ScorecardsLibrary() {
             <View style={{ backgroundColor: colors.card, borderRadius: 18, padding: 20, alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.border }} {...tid('scorecards-empty')}>
               <Ionicons name="clipboard-outline" size={36} color={GOLD} />
               <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>No scorecards yet</Text>
-              <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>Start from a proven template for Internet Sales, Service BDC or Phone-Ups.</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }} {...tid('scorecards-empty-hint')}>{departments.length ? `Start from a proven template for ${departments.slice(0, 3).join(', ')}${departments.length > 3 ? ' and more' : ''}.` : 'Start from a proven template.'}</Text>
             </View>
           )}
           {cards.map(c => (
@@ -127,7 +129,7 @@ export default function ScorecardsLibrary() {
         <View style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' }} {...tid('scorecard-template-sheet')}>
             <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 }}>
-              <Text style={{ flex: 1, fontSize: 18, fontWeight: '800', color: colors.text }}>Start a new scorecard</Text>
+              <View style={{ flex: 1 }}><Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Start a new scorecard</Text>{industry && <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('scorecard-template-industry')}>{industry.label} templates, built for your {industry.business}</Text>}</View>
               <TouchableOpacity onPress={() => setPicker(false)} {...tid('scorecard-template-close')}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 10 }}>

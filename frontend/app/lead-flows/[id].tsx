@@ -8,7 +8,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useToast } from '../../components/common/Toast';
 import { ScreenHeader, HeaderTextButton } from '../../components/common/ScreenHeader';
-import { ContactModeToggle, LeadCallLadder } from '../../components/admin/LeadWorkflowControls';
+import { ContactModeToggle, LeadCallLadder, INBOX_TOKEN } from '../../components/admin/LeadWorkflowControls';
 import { AfterHoursRule, type StoreHours } from '../../components/admin/LeadTimingControls';
 import { LeadFlowSummary, FlowStatsStrip, type LeadFlow } from '../../components/admin/LeadFlowSummary';
 
@@ -112,13 +112,23 @@ export default function LeadFlowEditor() {
               <ContactModeToggle value={flow.contact_mode} onChange={v => patch({ contact_mode: v, call_attempts: v === 'text_and_call' && flow.call_attempts.length === 0 ? [{ user_ids: [], delay_seconds: 0, delivery: 'call' }] : flow.call_attempts })} colors={colors} />
               <View style={{ height: 14 }} />
               {flow.contact_mode === 'text_and_call' ? (
-                <LeadCallLadder attempts={flow.call_attempts} reps={visibleReps} onChange={a => patch({ call_attempts: a })} colors={colors} max={6} allowPush
+                <LeadCallLadder attempts={flow.call_attempts} reps={visibleReps} onChange={a => patch({ call_attempts: a })} colors={colors} max={6} allowPush inboxLabel="the source's inbox"
                   ringDelay={(flow as any).ring_delay_seconds || 0} onRingDelayChange={s => patch({ ring_delay_seconds: s } as any)} />
               ) : (
                 <View>
                   <Text style={label}>Who gets the push</Text>
-                  <Text style={hint}>Everyone here is notified the second a lead lands. First to claim owns it.</Text>
+                  <Text style={hint}>Everyone here is notified the second a lead lands. First to claim owns it. When the source lives in a shared inbox, everyone on that inbox is pinged too.</Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {(() => {
+                      const ids: string[] = (flow as any).workflow_user_ids || [];
+                      const on = ids.includes(INBOX_TOKEN);
+                      return (
+                        <TouchableOpacity onPress={() => patch({ workflow_user_ids: on ? ids.filter(i => i !== INBOX_TOKEN) : [...ids, INBOX_TOKEN] } as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, backgroundColor: on ? GOLD + '33' : colors.surface, borderWidth: 1, borderColor: GOLD }} {...tid('lead-flow-notify-inbox')}>
+                          <Ionicons name={on ? 'checkmark' : 'people-outline'} size={13} color={GOLD} />
+                          <Text style={{ fontSize: 13, color: colors.text, fontWeight: on ? '800' : '600' }}>Everyone on the source's inbox</Text>
+                        </TouchableOpacity>
+                      );
+                    })()}
                     {visibleReps.map(r => {
                       const ids: string[] = (flow as any).workflow_user_ids || [];
                       const on = ids.includes(r._id);

@@ -3,8 +3,9 @@ import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export type CallAttempt = { user_ids: string[]; delay_seconds: number; delivery?: 'call' | 'push' };
-type Rep = { _id: string; name?: string; email?: string; role?: string; phone?: string };
+type Rep = { _id: string; name?: string; email?: string; role?: string; phone?: string; via?: string[] };
 
+export const INBOX_TOKEN = '@inbox';
 const MAX = 4;
 const DELAYS = [30, 60, 90, 120, 180];
 
@@ -38,7 +39,7 @@ export const ContactModeToggle = ({ value, onChange, colors }: { value: 'text_on
 
 const RING_DELAYS = [0, 15, 30, 45, 60];
 
-export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, allowPush = false, ringDelay, onRingDelayChange }: { attempts: CallAttempt[]; reps: Rep[]; onChange: (a: CallAttempt[]) => void; colors: any; max?: number; allowPush?: boolean; ringDelay?: number; onRingDelayChange?: (s: number) => void }) => {
+export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, allowPush = false, ringDelay, onRingDelayChange, inboxLabel }: { attempts: CallAttempt[]; reps: Rep[]; onChange: (a: CallAttempt[]) => void; colors: any; max?: number; allowPush?: boolean; ringDelay?: number; onRingDelayChange?: (s: number) => void; inboxLabel?: string }) => {
   const update = (i: number, patch: Partial<CallAttempt>) => onChange(attempts.map((a, idx) => (idx === i ? { ...a, ...patch } : a)));
   const toggleRep = (i: number, uid: string) => {
     const cur = attempts[i].user_ids;
@@ -120,6 +121,16 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, al
           )}
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {!!inboxLabel && (() => {
+              const on = a.user_ids.includes(INBOX_TOKEN);
+              return (
+                <TouchableOpacity onPress={() => toggleRep(i, INBOX_TOKEN)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, backgroundColor: on ? '#C9A96233' : colors.card, borderWidth: 1, borderColor: '#C9A962' }}
+                  testID={`ladder-${i}-rep-inbox`} dataSet={{ testid: `ladder-${i}-rep-inbox` } as any}>
+                  <Ionicons name={on ? 'checkmark' : 'people-outline'} size={13} color="#C9A962" />
+                  <Text style={{ fontSize: 13, color: colors.text, fontWeight: on ? '800' : '600' }}>Everyone on {inboxLabel}</Text>
+                </TouchableOpacity>
+              );
+            })()}
             {reps.map(r => {
               const on = a.user_ids.includes(r._id);
               return (
@@ -138,6 +149,7 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, al
             })}
           </View>
           {a.user_ids.length === 0 && <Text style={{ fontSize: 12, color: '#FF9500', marginTop: 6 }}>Pick at least one rep or this attempt is skipped.</Text>}
+          {a.user_ids.includes(INBOX_TOKEN) && <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6 }}>Whoever is on the inbox when the lead lands rings, so new hires are covered without touching this again.</Text>}
           {(() => {
             const missing = reps.filter(r => a.user_ids.includes(r._id) && !(r.phone || '').replace(/\D/g, ''));
             return missing.length ? (

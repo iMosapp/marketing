@@ -151,8 +151,33 @@ def serialize(card: dict, extra: Optional[dict] = None) -> dict:
     return out
 
 
+def templates_for(industry_key: Optional[str]) -> list:
+    """Starter scorecards for a store: the hand-built automotive set, or one per department from the store's industry pack."""
+    from services import industries as ind
+    if (industry_key or ind.DEFAULT_INDUSTRY) == ind.DEFAULT_INDUSTRY:
+        return TEMPLATES
+    out = []
+    for d in ind.departments(industry_key):
+        card = d.get("scorecard")
+        if not card:
+            continue
+        brief = d["brief"].split(";")[0].strip()
+        out.append({"key": f"pack:{d['key']}", "name": card["name"], "department": d["label"], "description": (brief[0].upper() + brief[1:])[:180] + ".", "criteria": card["criteria"]})
+    return out
+
+
+def departments_for(industry_key: Optional[str]) -> list:
+    from services import industries as ind
+    if (industry_key or ind.DEFAULT_INDUSTRY) == ind.DEFAULT_INDUSTRY:
+        return DEPARTMENTS
+    return [d["label"] for d in ind.departments(industry_key)]
+
+
 def template_body(key: str) -> Optional[dict]:
+    from services import industries as ind
     tpl = next((t for t in TEMPLATES if t["key"] == key), None)
+    if not tpl and key.startswith("pack:"):
+        tpl = next((t for t in templates_for(ind.industry_of_dept(key[5:])) if t["key"] == key), None)
     if not tpl:
         return None
     body = {k: v for k, v in tpl.items() if k != "key"}
@@ -396,7 +421,9 @@ async def evaluate_call(call_sid: str, scorecard_id: Optional[str] = None, force
 
     rep_name = _first(rep)
     contact_name = log.get("contact_name") or "the customer"
-    graded = await grade_with_ai(card, _transcript_text(log, rep_name), rep_name, contact_name, log.get("direction") or "outbound", dur)
+    from services import industries as ind
+    industry = await ind.store_industry(db, card.get("store_id") or rep.get("store_id"))
+    graded = await grade_with_ai(card, _transcript_text(log, rep_name), rep_name, contact_name, log.get("direction") or "outbound", dur, industry)
     pct, misses = compute_score(graded["results"], card["criteria"])
     now = _now()
     doc = {

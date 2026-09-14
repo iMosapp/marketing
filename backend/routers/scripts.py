@@ -587,11 +587,16 @@ async def relay_status(sid: str, t: str, request: Request):
     elif status == "in-progress":
         await db.roleplay_sessions.update_one({"_id": s["_id"], "status": "dialing"}, {"$set": {**sets, "status": "live"}})
     elif status in svc.FAIL_REASONS and s.get("status") in ("dialing",):
+        sip = form.get("SipResponseCode") or None
+        key = svc.failure_key(status, sip)
+        sets.update(sip_code=sip, error_code=form.get("ErrorCode") or None)
+        if key != status:
+            logger.warning(f"[Roleplay] call {sid} refused by the callee's carrier: CallStatus={status} SIP={sip} from={s.get('from_number')}")
         if s.get("kind") == "mystery_shop":
             from services.mystery_shops import record_outcome
-            await record_outcome(db, {**s, **sets}, status)
+            await record_outcome(db, {**s, **sets}, key)
         else:
-            await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {**sets, "status": "failed", "fail_reason": svc.FAIL_REASONS[status]}})
+            await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {**sets, "status": "failed", "fail_reason": svc.fail_label(key, s.get("from_number"))}})
     elif status == "completed":
         await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": sets})
         asyncio.create_task(svc.finalize_session(db, sid, "call_completed"))

@@ -8,7 +8,7 @@ import { useThemeStore } from '../../../store/themeStore';
 import { ScreenHeader, HeaderIconButton } from '../../../components/common/ScreenHeader';
 import { CourseSheet } from '../../../components/courses/CourseSheet';
 import { deptColor, type Course } from '../../../components/courses/shared';
-import { deptLabel, GOLD, GREEN, tid } from '../../../components/mystery-shops/shared';
+import { deptLabel, loadIndustries, GOLD, GREEN, tid } from '../../../components/mystery-shops/shared';
 
 // Courses & certification: iMOS admins build them, managers enroll their reps.
 export default function CoursesAdmin() {
@@ -17,7 +17,7 @@ export default function CoursesAdmin() {
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [canManage, setCanManage] = useState(false);
   const [sheet, setSheet] = useState(false);
-  const load = useCallback(async () => { try { const r = await api.get('/courses'); setCourses(r.data.courses); setCanManage(!!r.data.can_manage); } catch { setCourses([]); } }, []);
+  const load = useCallback(async () => { loadIndustries(); try { const r = await api.get('/courses'); setCourses(r.data.courses); setCanManage(!!r.data.can_manage); } catch { setCourses([]); } }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (

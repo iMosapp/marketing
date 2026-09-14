@@ -143,6 +143,7 @@ export default function LeadSourceDetailScreen() {
   const [websitePages, setWebsitePages] = useState<{ pages: string[]; routed: Record<string, { id: string; name: string }> }>({ pages: [], routed: {} });
   const [workflowUsers, setWorkflowUsers] = useState<any[]>([]);  // All reps to choose from
   const [repStoreName, setRepStoreName] = useState('');
+  const [sourceInbox, setSourceInbox] = useState<{ id: string; name: string; members: string[] } | null>(null);
   const [vaProfiles, setVaProfiles] = useState<any[]>([]);
   const [savingWorkflow, setSavingWorkflow] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
@@ -228,6 +229,7 @@ export default function LeadSourceDetailScreen() {
       const usersArr = usersRes.data?.reps || [];
       setWorkflowUsers(usersArr.map((u: any) => ({ ...u, _id: u._id || u.id })));
       setRepStoreName(usersRes.data?.store_name || '');
+      setSourceInbox(usersRes.data?.inbox || null);
       
       // Load VA profiles
       setVaProfiles(vaRes.data?.profiles || []);
@@ -449,13 +451,23 @@ export default function LeadSourceDetailScreen() {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.label}>TEAM</Text>
+              <Text style={styles.label}>LANDS IN SHARED INBOX</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8, lineHeight: 17 }}>Everyone on that inbox sees these leads, gets the ping and can claim. Who rings is set in the workflow below (or its flow).</Text>
               <View style={styles.teamsContainer}>
+                <TouchableOpacity
+                  style={[styles.teamOption, !formData.team_id && styles.teamOptionSelected]}
+                  onPress={() => setFormData({ ...formData, team_id: '' })}
+                  testID="source-inbox-none" dataSet={{ testid: 'source-inbox-none' } as any}
+                >
+                  <Ionicons name={!formData.team_id ? 'radio-button-on' : 'radio-button-off'} size={20} color={!formData.team_id ? GOLD : colors.textSecondary} />
+                  <Text style={[styles.teamOptionText, !formData.team_id && styles.teamOptionTextSelected]}>No inbox (reps below only)</Text>
+                </TouchableOpacity>
                 {teams.map((team) => (
                   <TouchableOpacity
                     key={team.id}
                     style={[styles.teamOption, formData.team_id === team.id && styles.teamOptionSelected]}
                     onPress={() => setFormData({ ...formData, team_id: team.id })}
+                    testID={`source-inbox-${team.id}`} dataSet={{ testid: `source-inbox-${team.id}` } as any}
                   >
                     <Ionicons
                       name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
@@ -775,6 +787,13 @@ export default function LeadSourceDetailScreen() {
               {/* ── Workflow Reps ─────────────────────────────────── */}
               <View>
                 <Text style={styles.label}>Notify These Reps (first to reply claims the lead)</Text>
+                {sourceInbox && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#C9A96218', borderRadius: 10, padding: 10, marginBottom: 6 }} testID="workflow-inbox-note" dataSet={{ testid: 'workflow-inbox-note' } as any}>
+                    <Ionicons name="people" size={16} color="#C9A962" />
+                    <Text style={{ flex: 1, fontSize: 12, color: colors.text, lineHeight: 17 }}>This source lands in the <Text style={{ fontWeight: '800' }}>{sourceInbox.name}</Text> inbox: all {sourceInbox.members.length} people on it are pinged and can claim. Tick anyone extra below.</Text>
+                    <TouchableOpacity onPress={() => router.push(`/inboxes/${sourceInbox.id}?tab=leads` as any)} testID="workflow-inbox-open" dataSet={{ testid: 'workflow-inbox-open' } as any}><Text style={{ fontSize: 12, fontWeight: '800', color: '#C9A962' }}>Open</Text></TouchableOpacity>
+                  </View>
+                )}
                 {workflowUsers.filter((u: any) => u.role !== 'super_admin' || u._id === user?._id).map((u: any) => {
                   const uid = u._id || u.id;
                   const isSelected = workflow.workflow_user_ids.includes(uid);
@@ -801,7 +820,7 @@ export default function LeadSourceDetailScreen() {
                   );
                 })}
                 <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17, marginTop: 10 }} testID="workflow-reps-hint" dataSet={{ testid: 'workflow-reps-hint' } as any}>
-                  {`Showing everyone on ${repStoreName || 'this store'}. Don't see someone? Open Team Members, tap their name, and use Assign to Store.`}
+                  {`Showing ${repStoreName ? `everyone on ${repStoreName}` : 'this store\'s team'}, including people on its shared inboxes. Don't see someone? Add them to an inbox under Manage → Inboxes, or open Team Members, tap their name, and use Assign to Store.`}
                 </Text>
               </View>
 
@@ -823,6 +842,7 @@ export default function LeadSourceDetailScreen() {
                   reps={workflowUsers.filter((u: any) => u.role !== 'super_admin' || u._id === user?._id)}
                   onChange={a => setWorkflow(prev => ({ ...prev, call_attempts: a }))}
                   colors={colors}
+                  inboxLabel={sourceInbox ? `the ${sourceInbox.name} inbox` : undefined}
                 />
               )}
 

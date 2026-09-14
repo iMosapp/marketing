@@ -222,8 +222,8 @@ async def list_clients(request: Request):
 
 @router.get("/industries")
 async def list_industries(request: Request):
-    """Every industry pack: nouns, departments, what the caller can mention. The app renders pickers from this, never from constants."""
-    await require_admin(request)
+    """Every industry pack: nouns, departments, what the caller can mention. The app renders pickers from this, never from constants.
+    Any signed-in user may read it (managers and reps need the labels for scorecards and courses); the router dependency already enforces login."""
     db = get_db()
     counts = {}
     async for row in db.scripts.aggregate([{"$match": {"pool": "mystery_shop", "shop_client_id": None, "active": {"$ne": False}}}, {"$group": {"_id": "$department", "n": {"$sum": 1}}}]):

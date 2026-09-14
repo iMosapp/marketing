@@ -12,7 +12,7 @@ import { CourseSheet } from '../../../components/courses/CourseSheet';
 import { ChallengePickerSheet, AssignSheet } from '../../../components/courses/CourseSheets';
 import { EnrollmentSheet } from '../../../components/courses/EnrollmentSheet';
 import { CourseProgress, ChallengeStatusRow, deptColor, type Course, type CourseChallenge, type Enrollment } from '../../../components/courses/shared';
-import { Label, GoldButton, deptLabel, fmtWhen, GOLD, GREEN, RED, PURPLE, tid } from '../../../components/mystery-shops/shared';
+import { Label, GoldButton, deptLabel, loadIndustries, fmtWhen, GOLD, GREEN, RED, PURPLE, tid } from '../../../components/mystery-shops/shared';
 
 export default function CourseAdminDetail() {
   const router = useRouter();
@@ -30,6 +30,7 @@ export default function CourseAdminDetail() {
   const [openE, setOpenE] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    loadIndustries();
     try { const r = await api.get(`/courses/${id}`); setCourse(r.data.course); setChallenges(r.data.challenges); setEnrollments(r.data.enrollments); setCanManage(!!r.data.can_manage); setCanAssign(!!r.data.can_assign); }
     catch { showToast('Course not found', 'error'); router.back(); }
   }, [id]);
