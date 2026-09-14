@@ -38,7 +38,7 @@ class SOPCategory(str, Enum):
     BEST_PRACTICES = "best_practices"
     POLICIES = "policies"
     TOOLS_FEATURES = "tools_features"
-
+    LEADS_INBOXES = "leads_inboxes"
 
 class SOPStep(BaseModel):
     order: int
@@ -176,7 +176,8 @@ async def get_categories(x_user_id: str = Header(None, alias="X-User-ID")):
         "troubleshooting": "Troubleshooting",
         "best_practices": "Best Practices",
         "policies": "Policies & Guidelines",
-        "tools_features": "Tools & Features"
+        "tools_features": "Tools & Features",
+        "leads_inboxes": "Leads & Inboxes Setup"
     }
     
     return [

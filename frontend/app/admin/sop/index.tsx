@@ -26,6 +26,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   best_practices: 'Best Practices',
   policies: 'Policies & Guidelines',
   tools_features: 'Tools & Features',
+  leads_inboxes: 'Leads & Inboxes Setup',
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -37,6 +38,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   best_practices: 'star',
   policies: 'document-text',
   tools_features: 'apps',
+  leads_inboxes: 'git-network',
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -48,6 +50,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   best_practices: '#FFD60A',
   policies: '#8E8E93',
   tools_features: '#AF52DE',
+  leads_inboxes: '#C9A962',
 };
 
 export default function SOPListScreen() {

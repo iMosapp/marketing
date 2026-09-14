@@ -1,19 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, TextInput, RefreshControl,
+  ActivityIndicator, TextInput, RefreshControl, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
 import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
 
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
+const GOLD = '#C9A962';
+// Deep-linkable guide collections (Tools > Leads > Setup & Test Guide opens ?category=leads_inboxes)
+const CATEGORY_BANNERS: Record<string, { title: string; sub: string }> = {
+  leads_inboxes: { title: 'Leads & Inboxes Setup', sub: 'Shared inbox, then lead source, then workflow. Each guide ends with its own test. Tap a card to expand it.' },
+};
 
 interface SOP {
   id: string;
+  _id?: string;
   title: string;
   summary: string;
   department: string;
@@ -43,17 +49,22 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 export default function SOPsPage() {
   const { colors } = useThemeStore();
   const router = useRouter();
+  const params = useLocalSearchParams<{ category?: string }>();
   const [sops, setSOPs] = useState<SOP[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [department, setDepartment] = useState('all');
+  const [category, setCategory] = useState<string>(typeof params.category === 'string' ? params.category : '');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const banner = category ? CATEGORY_BANNERS[category] : null;
+  const openLink = (url: string) => (url.startsWith('/') ? router.push(url as any) : Linking.openURL(url));
 
   const fetchSOPs = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
       if (department !== 'all') params.department = department;
+      if (category) params.category = category;
       if (search) params.search = search;
       const query = new URLSearchParams(params).toString();
       const res = await api.get(`/sop/${query ? `?${query}` : ''}`);
@@ -64,7 +75,7 @@ export default function SOPsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [department, search]);
+  }, [department, category, search]);
 
   useEffect(() => { fetchSOPs(); }, [fetchSOPs]);
 
@@ -108,6 +119,19 @@ export default function SOPsPage() {
         ))}
       </ScrollView>
 
+      {banner && (
+        <View style={{ marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 12, backgroundColor: GOLD + '14', borderWidth: 1, borderColor: GOLD + '66', flexDirection: 'row', gap: 10, alignItems: 'flex-start' }} {...tid('sops-category-banner')}>
+          <Ionicons name="git-network" size={18} color={GOLD} style={{ marginTop: 1 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>{banner.title}</Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17, marginTop: 2 }}>{banner.sub}</Text>
+          </View>
+          <TouchableOpacity onPress={() => setCategory('')} {...tid('sops-category-clear')}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: GOLD }}>All SOPs</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {loading ? (
         <View style={s.center}><ActivityIndicator size="large" color={colors.accent} /></View>
       ) : (
@@ -125,14 +149,15 @@ export default function SOPsPage() {
             </View>
           ) : (
             sops.map(sop => {
-              const isExpanded = expandedId === sop.id;
+              const sid = sop.id || sop._id || sop.title;
+              const isExpanded = expandedId === sid;
               return (
                 <TouchableOpacity
-                  key={sop.id || sop._id || sop.title}
+                  key={sid}
                   style={[s.sopCard, { backgroundColor: colors.card }]}
-                  onPress={() => setExpandedId(isExpanded ? null : sop.id)}
+                  onPress={() => setExpandedId(isExpanded ? null : sid)}
                   activeOpacity={0.7}
-                  {...tid(`sop-card-${sop.id}`)}
+                  {...tid(`sop-card-${sid}`)}
                 >
                   <View style={s.sopHeader}>
                     <View style={s.sopMeta}>
@@ -174,6 +199,18 @@ export default function SOPsPage() {
                                 <Ionicons name="bulb-outline" size={14} color="#34C759" />
                                 <Text style={[s.tipText, { color: '#34C759' }]}>{step.tip}</Text>
                               </View>
+                            )}
+                            {step.warning && (
+                              <View style={[s.tipBox, { backgroundColor: '#FF3B3015' }]}>
+                                <Ionicons name="warning-outline" size={14} color="#FF3B30" />
+                                <Text style={[s.tipText, { color: '#FF3B30' }]}>{step.warning}</Text>
+                              </View>
+                            )}
+                            {step.link_url && (
+                              <TouchableOpacity onPress={() => openLink(step.link_url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }} {...tid(`sop-step-link-${sid}-${i}`)}>
+                                <Ionicons name="open-outline" size={14} color={GOLD} />
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: GOLD }}>{step.link_text || 'Open'}</Text>
+                              </TouchableOpacity>
                             )}
                           </View>
                         </View>

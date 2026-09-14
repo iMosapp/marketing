@@ -371,6 +371,7 @@ export default function MoreScreen() {
           { icon: 'megaphone', title: 'Lead Source Config', subtitle: 'ADF webhooks, texting windows and call ladder', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
           { icon: 'git-network', title: 'Lead Flows', subtitle: 'Reusable playbooks: who rings, in what order, what Jessi does', onPress: () => router.push('/lead-flows' as any), color: '#C9A962' },
           { icon: 'link', title: 'Connect Zapier / Make', subtitle: 'Send leads from any app to a source', onPress: () => router.push('/admin/lead-connect' as any), color: '#FF4A00' },
+          { icon: 'book', title: 'Setup & Test Guide', subtitle: 'Shared inbox, lead source, workflow: step by step with a test for each', onPress: () => router.push('/admin/sops?category=leads_inboxes' as any), color: '#C9A962' },
         );
       }
       if (perm('admin', 'users')) {
