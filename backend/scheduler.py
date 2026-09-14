@@ -2181,6 +2181,13 @@ def start_scheduler():
         await plan_active_clients(get_db())
     scheduler.add_job(safe_job(_shop_plan), IntervalTrigger(hours=6), id="mystery_shop_planner", replace_existing=True, misfire_grace_time=600)
 
+    # Hourly — on the 1st (after 8am in the client's timezone) email last month's mystery shop PDF to every GM who has it turned on
+    async def _shop_monthly_reports():
+        from routers.database import get_db
+        from services.shop_report_mail import send_due_reports
+        await send_due_reports(get_db())
+    scheduler.add_job(safe_job(_shop_monthly_reports), IntervalTrigger(hours=1), id="mystery_shop_monthly_report", replace_existing=True, misfire_grace_time=1800)
+
     # Every 5 minutes — force garbage collection to reclaim memory from large operations
     async def _force_gc():
         import gc

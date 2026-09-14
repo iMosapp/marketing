@@ -15,6 +15,7 @@ from routers.database import get_db
 from routers.scripts import require_user, _resolve
 from services import industries as ind
 from services import mystery_shops as ms
+from services import shop_report_mail as srm
 from services import scorecards as sc
 from services import scripts as scr
 from utils.text_sanitize import no_em_dash
@@ -463,7 +464,8 @@ async def get_client(cid: str, request: Request):
     await ms.ensure_kickoff_token(db, c)
     return {"client": ms.serialize_client(c, await _progress(db, c)), "people": [ms.serialize_target(t) for t in await db.shop_targets.find({"client_id": cid}).sort([("department", 1), ("name", 1)]).to_list(300)],
             "scorecard_options": [{"id": str(x["_id"]), "name": x.get("name"), "department": x.get("department")} for x in cards],
-            "report_url": f"{scr._app_url()}/shop-report/{c.get('report_token')}", "kickoff_url": ms.kickoff_url(c), "kickoff": c.get("kickoff") or {}, "departments": ind.dept_options(ind.key_of(c))}
+            "report_url": f"{scr._app_url()}/shop-report/{c.get('report_token')}", "kickoff_url": ms.kickoff_url(c), "kickoff": c.get("kickoff") or {}, "departments": ind.dept_options(ind.key_of(c)),
+            "auto_report": srm.serialize_auto_report(c)}
 
 
 @router.put("/{cid}")
@@ -738,6 +740,51 @@ async def client_report(cid: str, request: Request, month: Optional[str] = None)
     rep = await ms.build_report(db, c, month)
     rep["report_url"] = f"{scr._app_url()}/shop-report/{c.get('report_token')}"
     return rep
+
+
+class AutoReportBody(BaseModel):
+    enabled: Optional[bool] = None
+    to: Optional[str] = None
+
+
+@router.put("/{cid}/report/auto")
+async def set_auto_report(cid: str, body: AutoReportBody, request: Request):
+    """Toggle the monthly PDF email to the GM (1st of the month, after 8am in the client's timezone) and where it goes."""
+    await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    sets: dict = {"updated_at": datetime.now(timezone.utc)}
+    if body.to is not None:
+        to = body.to.strip().lower()
+        if to and ("@" not in to or "." not in to.split("@")[-1]):
+            raise HTTPException(status_code=400, detail="That email address does not look right")
+        sets["auto_report.to"] = to
+    if body.enabled is not None:
+        if body.enabled and not ((body.to or "").strip() or (c.get("auto_report") or {}).get("to") or c.get("contact_email")):
+            raise HTTPException(status_code=400, detail="Add the GM's email first")
+        sets["auto_report.enabled"] = bool(body.enabled)
+        if body.enabled:
+            sets["auto_report.last_error"] = None
+    await db.shop_clients.update_one({"_id": c["_id"]}, {"$set": sets})
+    return {"auto_report": srm.serialize_auto_report(await _client(db, cid))}
+
+
+class SendReportBody(BaseModel):
+    month: Optional[str] = None
+    to: Optional[str] = None
+
+
+@router.post("/{cid}/report/send")
+async def send_report_now(cid: str, request: Request, body: Optional[SendReportBody] = None):
+    """Email the PDF right now (defaults to last month, to the GM on file). Same email the 1st-of-month job sends."""
+    me = await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    body = body or SendReportBody()
+    res = await srm.send_report_email(db, c, body.month, body.to, actor=me, reason="manual")
+    if not res.get("ok"):
+        raise HTTPException(status_code=400 if "email" in (res.get("error") or "").lower() and "configured" not in (res.get("error") or "") else 503, detail=res.get("error"))
+    return {**res, "auto_report": srm.serialize_auto_report(await _client(db, cid))}
 
 
 @router.get("/{cid}/people/{target_id}/history")

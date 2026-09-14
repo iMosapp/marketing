@@ -15,6 +15,7 @@ import { CallsTab } from '../../../components/mystery-shops/CallsTab';
 import { ChallengesTab } from '../../../components/mystery-shops/ChallengesTab';
 import { BillingTab } from '../../../components/mystery-shops/BillingTab';
 import { ReportView, openUrl, type Report } from '../../../components/mystery-shops/ReportView';
+import { AutoReportCard, type AutoReport } from '../../../components/mystery-shops/AutoReportCard';
 import { Chip, GoldButton, monthKey, monthLabel, shiftMonth, perMonthText, deptsOfClient, loadIndustries, GOLD, RED, tid, type Client, type Person } from '../../../components/mystery-shops/shared';
 
 const TABS = [['people', 'People'], ['calls', 'Shops'], ['challenges', 'Challenges'], ['report', 'Report'], ['billing', 'Billing']] as const;
@@ -30,6 +31,7 @@ export default function MysteryShopClient() {
   const [reportUrl, setReportUrl] = useState('');
   const [kickoffUrl, setKickoffUrl] = useState('');
   const [kickoff, setKickoff] = useState<any>({});
+  const [autoReport, setAutoReport] = useState<AutoReport | null>(null);
   const [tab, setTab] = useState<Tab>((TABS.some(t => t[0] === tabParam) ? tabParam : 'people') as Tab);
   const [month, setMonth] = useState(monthKey());
   const [edit, setEdit] = useState(false);
@@ -39,7 +41,7 @@ export default function MysteryShopClient() {
 
   const load = useCallback(async () => {
     loadIndustries();
-    try { const r = await api.get(`/shop-clients/${id}`); setClient(r.data.client); setPeople(r.data.people); setReportUrl(r.data.report_url); setKickoffUrl(r.data.kickoff_url || ''); setKickoff(r.data.kickoff || {}); }
+    try { const r = await api.get(`/shop-clients/${id}`); setClient(r.data.client); setPeople(r.data.people); setReportUrl(r.data.report_url); setKickoffUrl(r.data.kickoff_url || ''); setKickoff(r.data.kickoff || {}); setAutoReport(r.data.auto_report || null); }
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not load', 'error'); router.back(); }
   }, [id]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -83,6 +85,7 @@ export default function MysteryShopClient() {
                 <TouchableOpacity onPress={rotate} style={{ width: 38, height: 38, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid('report-rotate-link')}><Ionicons name="refresh" size={16} color={colors.text} /></TouchableOpacity>
               </View>
             </View>
+            {!client.demo && autoReport && <AutoReportCard clientId={String(id)} value={autoReport} month={month} colors={colors} onChanged={setAutoReport} />}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <TouchableOpacity onPress={() => setMonth(shiftMonth(month, -1))} hitSlop={8} {...tid('report-month-prev')}><Ionicons name="chevron-back" size={22} color={GOLD} /></TouchableOpacity>
               <Text style={{ flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.text }} {...tid('report-month-label')}>{monthLabel(month)}</Text>
