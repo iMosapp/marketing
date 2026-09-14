@@ -154,28 +154,14 @@ export default function SoldQuickScreen() {
       });
       const contactId = contactRes.data.contact_id;
 
-      // Set the sale date (supports backdating past sales)
+      // Record the sale: calendar date + what they bought, in ONE call. A new date = a new purchase record
+      // (earlier purchases stay); the same date corrects the existing record. Never wipes other contact data.
       if (contactId) {
         await api.patch(`/contacts/${user._id}/${contactId}/date-sold`, {
           date: fmtDateLocal(saleDate),
+          ...(vehiclePurchased.trim() ? { title: vehiclePurchased.trim(), category: 'vehicle' } : {}),
         }).catch(() => {
-          showSimpleAlert('Sale Date Not Saved', 'The sale date could not be saved. You can set it later on the contact page.');
-        });
-      }
-
-      // Save purchase to purchase_history AND update contact vehicle field
-      // Uses the dedicated purchase endpoint (safe, partial update — no contact data wiped)
-      if (vehiclePurchased.trim() && contactId) {
-        api.post(`/contacts/${user._id}/${contactId}/purchases`, {
-          title: vehiclePurchased.trim(),
-          category: 'vehicle',
-          date: fmtDateLocal(saleDate),
-          notes: '',
-        }).catch(() => {
-          // Fallback: safe vehicle-only patch so the header still shows what was purchased
-          api.patch(`/contacts/${user._id}/${contactId}/vehicle`, {
-            vehicle: vehiclePurchased.trim(),
-          }).catch(() => {});
+          showSimpleAlert('Sale Not Saved', 'The sale could not be recorded. You can add it under Purchase History on the contact page.');
         });
       }
 

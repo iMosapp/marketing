@@ -69,6 +69,12 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     
     result = await get_db().contacts.insert_one(contact_dict)
     contact_dict['_id'] = str(result.inserted_id)
+    if contact_dict.get('date_sold'):
+        from services import sales as _sales
+        try:
+            await _sales.record_sale(get_db(), contact_dict['_id'], contact_dict['date_sold'], title=contact_dict.get('vehicle') or None, only_if_unsold=True, source="contact_form")
+        except Exception as e:
+            logger.warning(f"Purchase record on create skipped: {e}")
     
     # Auto-enroll in tag-triggered campaigns
     await _check_tag_campaign_enrollment(user_id, str(result.inserted_id), contact_dict)
@@ -799,6 +805,18 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     if update_dict.get('date_sold'):
         existing_tags.add('Sold Date')
     update_dict['tags'] = list(existing_tags)
+
+    # Sold dates are calendar dates: keep the day the rep picked, never the UTC instant (which crosses midnight)
+    from services import sales as _sales
+    if update_dict.get('date_sold'):
+        update_dict['date_sold'] = _sales.to_dt(_sales.ymd(update_dict['date_sold']))
+    _prev_sale = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"date_sold": 1, "vehicle": 1, "purchase_history": 1})
+    # The form owns date_sold/vehicle text only as a view of the latest purchase record: don't let a full-form save
+    # blank them or fork them from the record. The sync below writes them through the record instead.
+    _form_sold = update_dict.pop('date_sold', None)
+    _form_vehicle = update_dict.get('vehicle')
+    if _form_vehicle is None:
+        update_dict.pop('vehicle', None)
     
     # If setting a referrer, update the referrer's count (only when referred_by actually changes)
     if contact_data.referred_by:
@@ -847,6 +865,17 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Date Sold edited on the form = correcting the most recent purchase record (creates the record if there is none)
+    try:
+        _prev_day = _sales.ymd((_prev_sale or {}).get("date_sold"))
+        _new_day = _sales.ymd(_form_sold)
+        if _new_day and (_new_day != _prev_day or not (_prev_sale or {}).get("purchase_history")):
+            await _sales.sync_from_contact_fields(db, contact_id, _new_day, _form_vehicle)
+        elif _form_vehicle and _form_vehicle != (_prev_sale or {}).get("vehicle") and (_prev_sale or {}).get("purchase_history"):
+            await _sales.sync_from_contact_fields(db, contact_id, None, _form_vehicle)
+    except Exception as e:
+        logger.warning(f"Sold-date sync skipped: {e}")
     
     # Auto-enroll in tag-triggered campaigns
     await _check_tag_campaign_enrollment(user_id, contact_id, update_dict)
@@ -1100,19 +1129,20 @@ async def delete_contact_photo(user_id: str, contact_id: str, data: dict = Body(
 
 @router.patch("/{user_id}/{contact_id}/date-sold")
 async def set_date_sold(user_id: str, contact_id: str, data: dict = Body(...)):
-    """Set/backdate the sold date for a contact (used by the SOLD wizard)."""
+    """Record a sale (used by the SOLD wizard): calendar date + what they bought. A new date = a new purchase record;
+    the same date (or same vehicle within 7 days) corrects the existing one. Earlier purchases are never touched."""
     db = get_db()
     date_str = (data.get("date") or "").strip()
     if not date_str:
         raise HTTPException(status_code=400, detail="date is required")
-    try:
-        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00")).replace(tzinfo=None)
-    except Exception:
+    from services import sales
+    day = sales.ymd(date_str)
+    if not day:
         raise HTTPException(status_code=400, detail="Invalid date format")
     if not await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"_id": 1}):
         raise HTTPException(status_code=404, detail="Contact not found")
-    from services.sales import record_sale
-    outcome = await record_sale(db, contact_id, dt)
+    title = (data.get("title") or data.get("vehicle") or "").strip() or None
+    outcome = await sales.record_sale(db, contact_id, day, title=title, category=data.get("category") or "vehicle")
     # Marking sold IS the Sold workflow: add the tag if missing and run the store rulebook (idempotent)
     workflow = []
     try:
@@ -1123,7 +1153,7 @@ async def set_date_sold(user_id: str, contact_id: str, data: dict = Body(...)):
         workflow = await apply_tag_workflows(user_id, contact_id, ["Sold"], source="date-sold")
     except Exception as e:
         logger.error(f"Sold workflow failed: {e}", exc_info=True)
-    return {"success": True, "date_sold": dt.isoformat(), "sale": outcome.get("kind"), "sold_count": outcome.get("sold_count"), "workflow": workflow}
+    return {"success": True, "date_sold": day, "sale": outcome.get("kind"), "sold_count": outcome.get("sold_count"), "workflow": workflow}
 
 
 @router.patch("/{user_id}/{contact_id}/toggle-automation")
@@ -2514,144 +2544,65 @@ async def log_contact_event_photo(
 
 @router.get("/{user_id}/{contact_id}/purchases")
 async def get_purchase_history(user_id: str, contact_id: str):
-    """Return full purchase history for a contact, newest first.
-    Auto-migrates legacy vehicle/date_sold fields on first access."""
+    """Every purchase record for a contact, newest first. Contacts whose sale only lives in the legacy
+    vehicle/date_sold fields get their first record written on first access."""
     db = get_db()
+    from services import sales
     try:
-        contact = await db.contacts.find_one(
-            {"_id": ObjectId(contact_id), "user_id": user_id},
-            {"purchase_history": 1, "vehicle": 1, "date_sold": 1}
-        )
+        c, entries = await sales.load_entries(db, contact_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid contact ID")
-    if not contact:
+    if not c or c.get("user_id") != user_id:
         raise HTTPException(status_code=404, detail="Contact not found")
-
-    purchases = list(contact.get("purchase_history") or [])
-
-    # Auto-migrate legacy vehicle + date_sold if purchase_history is empty
-    if not purchases and (contact.get("vehicle") or contact.get("date_sold")):
-        import uuid as _uuid
-        legacy = {
-            "id": str(_uuid.uuid4()),
-            "title": contact.get("vehicle", "Purchase"),
-            "category": "vehicle",
-            "date": (contact["date_sold"].isoformat() if hasattr(contact.get("date_sold"), "isoformat")
-                     else str(contact.get("date_sold", ""))) if contact.get("date_sold") else None,
-            "notes": "",
-            "migrated": True,
-        }
-        purchases = [legacy]
-
-    # Sort newest first
-    def _date_key(p):
-        d = p.get("date") or ""
-        return d if isinstance(d, str) else (d.isoformat() if hasattr(d, "isoformat") else "")
-    purchases.sort(key=_date_key, reverse=True)
-    return {"success": True, "purchases": purchases}
+    if not entries and (c.get("vehicle") or c.get("date_sold")):
+        entries = [sales.normalize_entry({"title": c.get("vehicle") or "", "category": "vehicle", "date": c.get("date_sold"), "source": "migrated"})]
+        await sales.save_entries(db, c, entries, keep_vehicle_text=True)
+    return {"success": True, "purchases": sales.sort_entries(entries)}
 
 
 @router.post("/{user_id}/{contact_id}/purchases")
 async def add_purchase(user_id: str, contact_id: str, data: dict = Body(...)):
-    """Add a purchase record to a contact."""
-    import uuid as _uuid
+    """Add a purchase record. Dated records merge with the matching sale (same day, or same title within 7 days) so the
+    Sold wizard and Purchase History never create two rows for one delivery."""
     db = get_db()
     title = (data.get("title") or "").strip()
     if not title:
         raise HTTPException(status_code=400, detail="Title is required")
-
-    purchase = {
-        "id": str(_uuid.uuid4()),
-        "title": title,
-        "category": data.get("category", "other"),   # vehicle / real_estate / insurance / other
-        "date": data.get("date"),                      # ISO string or None
-        "notes": (data.get("notes") or "").strip(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-
-    try:
-        set_fields = {
-            "vehicle": title,
-            **({"date_sold": datetime.fromisoformat(data["date"].replace("Z", "+00:00")).replace(tzinfo=None)}
-               if data.get("date") else {}),
-        }
-        # For vehicle purchases, also sync personal_details.vehicle_purchased
-        # so voice-memo context stays current and Jessi doesn't reference old vehicles
-        if data.get("category") == "vehicle":
-            set_fields["personal_details.vehicle_purchased"] = title
-            set_fields["personal_details.vehicle_details"] = ""  # clear stale details
-
-        await db.contacts.update_one(
-            {"_id": ObjectId(contact_id), "user_id": user_id},
-            {
-                "$push": {"purchase_history": purchase},
-                "$set": set_fields,
-                "$inc": {"sold_count": 1},
-            }
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    # Log a contact event
-    now = datetime.now(timezone.utc)
-    event_doc = {
-        "contact_id": contact_id,
-        "user_id": user_id,
-        "event_type": "purchase_added",
-        "title": f"Purchase recorded: {title}",
-        "description": f"Date: {data.get('date', 'unknown')}",
-        "icon": "bag-handle",
-        "color": "#C9A962",
-        "timestamp": now,
-        "category": "sale",
-    }
-    await db.contact_events.insert_one(event_doc)
+    if not await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Contact not found")
+    from services import sales
+    purchase = await sales.add_purchase(db, contact_id, title, data.get("category") or "other", data.get("date"), data.get("notes") or "")
+    await db.contact_events.insert_one({
+        "contact_id": contact_id, "user_id": user_id, "event_type": "purchase_added",
+        "title": f"Purchase recorded: {title}", "description": f"Date: {purchase.get('date') or 'unknown'}",
+        "icon": "bag-handle", "color": "#C9A962", "timestamp": datetime.now(timezone.utc), "category": "sale",
+    })
     return {"success": True, "purchase": purchase}
 
 
 @router.put("/{user_id}/{contact_id}/purchases/{purchase_id}")
 async def update_purchase(user_id: str, contact_id: str, purchase_id: str, data: dict = Body(...)):
-    """Update a specific purchase record."""
+    """Edit one purchase record; the contact's Date Sold / vehicle follow the most recent record."""
     db = get_db()
-    update_fields = {}
-    if "title" in data:
-        update_fields["purchase_history.$.title"] = (data["title"] or "").strip()
-    if "category" in data:
-        update_fields["purchase_history.$.category"] = data["category"]
-    if "date" in data:
-        update_fields["purchase_history.$.date"] = data["date"]
-    if "notes" in data:
-        update_fields["purchase_history.$.notes"] = (data["notes"] or "").strip()
-
-    if not update_fields:
+    if not any(k in data for k in ("title", "category", "date", "notes")):
         raise HTTPException(status_code=400, detail="No fields to update")
-
-    try:
-        result = await db.contacts.update_one(
-            {"_id": ObjectId(contact_id), "user_id": user_id, "purchase_history.id": purchase_id},
-            {"$set": update_fields}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    if result.matched_count == 0:
+    if not await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Contact not found")
+    from services import sales
+    if not await sales.update_purchase(db, contact_id, purchase_id, data):
         raise HTTPException(status_code=404, detail="Purchase not found")
     return {"success": True}
 
 
 @router.delete("/{user_id}/{contact_id}/purchases/{purchase_id}")
 async def delete_purchase(user_id: str, contact_id: str, purchase_id: str):
-    """Remove a purchase record from a contact."""
+    """Remove one purchase record; counts and Date Sold are re-derived from what is left."""
     db = get_db()
-    try:
-        result = await db.contacts.update_one(
-            {"_id": ObjectId(contact_id), "user_id": user_id},
-            {"$pull": {"purchase_history": {"id": purchase_id}}}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    if result.matched_count == 0:
+    if not await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"_id": 1}):
         raise HTTPException(status_code=404, detail="Contact not found")
+    from services import sales
+    if not await sales.delete_purchase(db, contact_id, purchase_id):
+        raise HTTPException(status_code=404, detail="Purchase not found")
     return {"success": True}
 
 
@@ -2665,13 +2616,9 @@ async def update_contact_vehicle(user_id: str, contact_id: str, data: dict = Bod
     if not vehicle:
         raise HTTPException(status_code=400, detail="vehicle is required")
     try:
-        _cur = await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"vehicle": 1, "date_sold": 1, "prev_vehicle": 1})
-        _upd: dict = {"$set": {"vehicle": vehicle, "updated_at": datetime.now(timezone.utc)}}
-        if _cur and _cur.get("date_sold") and _cur.get("vehicle") and _cur["vehicle"] != vehicle and not _cur.get("prev_vehicle"):
-            _upd["$set"]["prev_vehicle"] = _cur["vehicle"]
         result = await db.contacts.update_one(
             {"_id": ObjectId(contact_id), "user_id": user_id},
-            _upd
+            {"$set": {"vehicle": vehicle, "updated_at": datetime.now(timezone.utc)}}
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

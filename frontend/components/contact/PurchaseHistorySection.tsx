@@ -36,9 +36,14 @@ interface Props {
   contactId: string;
   userId: string;
   colors: any;
+  onChanged?: () => void;
 }
 
-export default function PurchaseHistorySection({ contactId, userId, colors }: Props) {
+// Purchase dates are calendar dates: build "YYYY-MM-DD" from the local parts (toISOString would roll past midnight in UTC)
+const toYmd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const fromYmd = (s: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : parseISO(s); };
+
+export default function PurchaseHistorySection({ contactId, userId, colors, onChanged }: Props) {
   const s = getStyles(colors);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +85,7 @@ export default function PurchaseHistorySection({ contactId, userId, colors }: Pr
     setEditing(p);
     setTitle(p.title);
     setCategory(p.category || 'vehicle');
-    setDate(p.date ? parseISO(p.date) : null);
+    setDate(p.date ? fromYmd(p.date) : null);
     setNotes(p.notes || '');
     setShowModal(true);
   }
@@ -92,7 +97,7 @@ export default function PurchaseHistorySection({ contactId, userId, colors }: Pr
       const payload = {
         title: title.trim(),
         category,
-        date: date ? date.toISOString().split('T')[0] : null,
+        date: date ? toYmd(date) : null,
         notes: notes.trim(),
       };
       if (editing) {
@@ -102,6 +107,7 @@ export default function PurchaseHistorySection({ contactId, userId, colors }: Pr
       }
       setShowModal(false);
       await load();
+      onChanged?.();
     } catch (e: any) {
       console.error('Save purchase error', e);
     } finally {
@@ -113,6 +119,7 @@ export default function PurchaseHistorySection({ contactId, userId, colors }: Pr
     try {
       await api.delete(`/contacts/${userId}/${contactId}/purchases/${p.id}`);
       setPurchases(prev => prev.filter(x => x.id !== p.id));
+      onChanged?.();
     } catch {}
   }
 
@@ -154,10 +161,10 @@ export default function PurchaseHistorySection({ contactId, userId, colors }: Pr
               <Ionicons name={catIcon(p.category) as any} size={18} color={colors.accent} />
             </View>
             <View style={s.purchaseInfo}>
-              <Text style={s.purchaseTitle}>{p.title}</Text>
+              <Text style={s.purchaseTitle}>{p.title || 'Purchase'}</Text>
               {p.date && (
                 <Text style={s.purchaseDate}>
-                  {(() => { try { return format(parseISO(p.date), 'MMM d, yyyy'); } catch { return p.date; } })()}
+                  {(() => { try { return format(fromYmd(p.date), 'MMM d, yyyy'); } catch { return p.date; } })()}
                 </Text>
               )}
               {p.notes ? <Text style={s.purchaseNotes}>{p.notes}</Text> : null}

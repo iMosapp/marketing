@@ -1220,10 +1220,14 @@ function ContactDetailScreen() {
     try {
       setSaving(true);
       let result: any = null;
+      // Calendar dates go out as "YYYY-MM-DD" from the LOCAL parts (a Date -> toISOString would land on the next/previous day in UTC)
+      const ymd = (d: any) => { if (!d) return d ?? null; if (typeof d === 'string') { const m = /^(\d{4}-\d{2}-\d{2})/.exec(d); if (m) return m[1]; } const x = d instanceof Date ? d : new Date(d); return isNaN(x.getTime()) ? null : `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+      const payload = { ...contact, birthday: ymd(contact.birthday), anniversary: ymd(contact.anniversary), date_sold: ymd(contact.date_sold),
+        custom_dates: (contact.custom_dates || []).map((cd: any) => ({ ...cd, date: ymd(cd.date) })) };
       if (isNewContact) {
-        result = await contactsAPI.create(user._id, contact);
+        result = await contactsAPI.create(user._id, payload);
       } else {
-        await contactsAPI.update(user._id, id as string, contact);
+        await contactsAPI.update(user._id, id as string, payload);
         // Log note change to activity feed
         if (contact.notes && contact.notes.trim() !== originalNotes.trim()) {
           try {

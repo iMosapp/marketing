@@ -17,6 +17,8 @@ const LABEL: Record<string, string> = {
 const MANAGER_ROLES = ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'];
 
 interface MonthRow { year: number; month: number; label: string; total: number }
+// Sold dates are calendar dates ("YYYY-MM-DD"): format the parts, never go through a Date (no time-zone day shift)
+const fmtDay = (d: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''; };
 
 export default function SalesListScreen() {
   const { colors } = useThemeStore();
@@ -122,7 +124,7 @@ export default function SalesListScreen() {
 
       <FlatList
         data={loading ? [] : contacts}
-        keyExtractor={item => item._id}
+        keyExtractor={item => `${item._id}-${item.unit_id || ''}`}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
         ListHeaderComponent={
           <View>
@@ -246,8 +248,8 @@ export default function SalesListScreen() {
             </View>
             <View style={{ alignItems: 'flex-end', gap: 4 }}>
               {item.date_sold ? (
-                <Text style={{ fontSize: 12, color: colors.textSecondary }}>
-                  {new Date(item.date_sold).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                <Text style={{ fontSize: 12, color: colors.textSecondary }} testID={`sales-unit-date-${item.unit_id || item._id}`} dataSet={{ testid: `sales-unit-date-${item.unit_id || item._id}` }}>
+                  {fmtDay(item.date_sold)}
                 </Text>
               ) : null}
               <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />

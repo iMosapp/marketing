@@ -91,14 +91,10 @@ export default function SoldWizardScreen() {
     if (!user?._id || !contact_id) return;
     setSubmitting(true);
     try {
-      // 1. Save vehicle info if updated
-      if (vehicle && vehicle !== contact_vehicle) {
-        await api.put(`/contacts/${user._id}/${contact_id}`, { vehicle }).catch(() => {});
-      }
-
-      // 1b. Set the sale date (supports backdating past sales)
+      // 1. Record the sale (calendar date + vehicle) as a purchase record; a new date never overwrites an earlier purchase
       await api.patch(`/contacts/${user._id}/${contact_id}/date-sold`, {
         date: fmtDateLocal(saleDate),
+        ...(vehicle.trim() ? { title: vehicle.trim(), category: 'vehicle' } : {}),
       }).catch(() => {
         showSimpleAlert('Sale Date Not Saved', 'The sale date could not be saved. You can set it later on the contact page.');
       });

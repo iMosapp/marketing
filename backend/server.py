@@ -792,6 +792,7 @@ async def get_sold_performance(user_id: str, months: int = 6, month: int = 0, ye
     """
     db = get_db()
     from datetime import timezone as tz
+    from services import sales as _sales
     now = datetime.now(tz.utc)
     anchor_month = month or now.month
     anchor_year = year or now.year
@@ -809,26 +810,12 @@ async def get_sold_performance(user_id: str, months: int = 6, month: int = 0, ye
         start_naive = start.replace(tzinfo=None)
         end_naive = end.replace(tzinfo=None)
 
-        # Total sold this month (contacts with date_sold in range)
-        total = await db.contacts.count_documents({
-            "user_id": user_id,
-            "date_sold": {"$gte": start_naive, "$lt": end_naive},
-            "status": {"$nin": ["hidden", "merged", "deleted"]},
-        })
-        # Referral sales (had a referrer)
-        referrals = await db.contacts.count_documents({
-            "user_id": user_id,
-            "date_sold": {"$gte": start_naive, "$lt": end_naive},
-            "referred_by": {"$exists": True, "$nin": [None, ""]},
-            "status": {"$nin": ["hidden", "merged", "deleted"]},
-        })
-        # Repeat buyers (sold_count > 1 or has purchase_history)
-        repeats = await db.contacts.count_documents({
-            "user_id": user_id,
-            "date_sold": {"$gte": start_naive, "$lt": end_naive},
-            "sold_count": {"$gt": 1},
-            "status": {"$nin": ["hidden", "merged", "deleted"]},
-        })
+        # Units = purchase records (a customer who bought twice counts twice, once in each month)
+        _base = {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}}
+        _s, _e = start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
+        total = await _sales.count_units(db, _base, _s, _e)
+        referrals = await _sales.count_units(db, _base, _s, _e, "referrals")
+        repeats = await _sales.count_units(db, _base, _s, _e, "repeats")
         results.append({
             "year": yr, "month": mo,
             "label": start.strftime("%b %Y"),
@@ -845,12 +832,8 @@ async def get_sold_performance(user_id: str, months: int = 6, month: int = 0, ye
     mom_change = current["total"] - previous["total"]
     mom_pct = round((mom_change / previous["total"] * 100) if previous["total"] > 0 else 0)
 
-    # All-time totals
-    all_time = await db.contacts.count_documents({
-        "user_id": user_id,
-        "date_sold": {"$exists": True, "$ne": None},
-        "status": {"$nin": ["hidden", "merged", "deleted"]},
-    })
+    # All-time totals (units)
+    all_time = await _sales.count_units(db, {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}}, None, None)
     all_referrals = await db.contacts.count_documents({
         "user_id": user_id,
         "referred_by": {"$exists": True, "$nin": [None, ""]},
@@ -888,19 +871,16 @@ async def _team_user_ids(db, user_id: str):
 
 @api_router.get("/users/{user_id}/sold-contacts")
 async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month: int = 0, year: int = 0, scope: str = "me"):
-    """Return filtered sold contacts for home screen tile taps."""
+    """Sold Units for a month: one row per purchase record (unit), newest first. Dates are calendar dates (YYYY-MM-DD)."""
     db = get_db()
     from datetime import timezone as _tz
+    from services import sales as _sales
     now_dt = datetime.now(_tz.utc)
     m = month or now_dt.month
     y = year or now_dt.year
-    start = datetime(y, m, 1)
-    end = datetime(y + (1 if m == 12 else 0), (m % 12) + 1, 1)
-    base: dict = {
-        "user_id": user_id,
-        "date_sold": {"$gte": start.replace(tzinfo=None), "$lt": end.replace(tzinfo=None)},
-        "status": {"$nin": ["hidden", "merged", "deleted"]},
-    }
+    start = datetime(y, m, 1).strftime("%Y-%m-%d")
+    end = datetime(y + (1 if m == 12 else 0), (m % 12) + 1, 1).strftime("%Y-%m-%d")
+    base: dict = {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}}
     rep_names: dict = {}
     if scope == "team":
         is_mgr, ids = await _team_user_ids(db, user_id)
@@ -908,14 +888,7 @@ async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month:
             base["user_id"] = {"$in": ids}
             reps = await db.users.find({"_id": {"$in": [ObjectId(i) for i in ids]}}, {"name": 1}).to_list(300)
             rep_names = {str(r["_id"]): r.get("name", "") for r in reps}
-    if filter_type == "referrals":
-        base["referred_by"] = {"$exists": True, "$nin": [None, ""]}
-    elif filter_type == "repeats":
-        base["sold_count"] = {"$gt": 1}
-    contacts = await db.contacts.find(base, {
-        "_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "user_id": 1,
-        "vehicle": 1, "date_sold": 1, "sold_count": 1, "referred_by_name": 1, "photo_thumbnail": 1
-    }).sort("date_sold", -1).to_list(500)
+    rows = await _sales.list_units(db, base, start, end, filter_type)
     public_base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
     def _abs_photo(u: str) -> str:
@@ -924,52 +897,42 @@ async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month:
         return u if u.startswith("http") else f"{public_base}{u}"
 
     return {"contacts": [{
-        "_id": str(c["_id"]),
-        "name": f"{c.get('first_name','')} {c.get('last_name','')}".strip(),
-        "phone": c.get("phone", ""),
-        "vehicle": c.get("vehicle", ""),
-        "date_sold": c["date_sold"].isoformat() if c.get("date_sold") else "",
-        "sold_count": c.get("sold_count", 1),
-        "referred_by_name": c.get("referred_by_name", ""),
-        "photo_thumbnail": _abs_photo(c.get("photo_thumbnail", "")),
-        "rep_name": rep_names.get(c.get("user_id", ""), ""),
-    } for c in contacts], "total": len(contacts)}
+        "_id": str(r["_id"]),
+        "unit_id": (r.get("unit") or {}).get("id") or "",
+        "name": f"{r.get('first_name','')} {r.get('last_name','')}".strip(),
+        "phone": r.get("phone", ""),
+        "vehicle": (r.get("unit") or {}).get("title") or "",
+        "category": (r.get("unit") or {}).get("category") or "vehicle",
+        "date_sold": r.get("day") or "",
+        "sold_count": r.get("n_units", 1),
+        "referred_by_name": r.get("referred_by_name", ""),
+        "photo_thumbnail": _abs_photo(r.get("photo_thumbnail", "")),
+        "rep_name": rep_names.get(r.get("user_id", ""), ""),
+    } for r in rows], "total": len(rows)}
 
 
 @api_router.get("/users/{user_id}/sold-monthly-summary")
 async def get_sold_monthly_summary(user_id: str, filter_type: str = "sold", scope: str = "me", month: int = 0, year: int = 0):
-    """Monthly sold counts for the last 24 months plus year totals.
+    """Monthly unit counts (purchase records) for the last 24 months plus year totals.
     month/year (optional) anchor the series to the client's local current month."""
     db = get_db()
     from datetime import timezone as _tz
+    from services import sales as _sales
     now_dt = datetime.now(_tz.utc)
     anchor_m = month or now_dt.month
     anchor_y = year or now_dt.year
-    window_start = datetime(anchor_y - 2, anchor_m, 1)
-    match: dict = {
-        "user_id": user_id,
-        "date_sold": {"$gte": window_start, "$ne": None},
-        "status": {"$nin": ["hidden", "merged", "deleted"]},
-    }
+    window_start = datetime(anchor_y - 2, anchor_m, 1).strftime("%Y-%m-%d")
+    match: dict = {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}}
     is_manager = False
     if scope == "team":
         is_manager, ids = await _team_user_ids(db, user_id)
         if is_manager:
             match["user_id"] = {"$in": ids}
-    if filter_type == "referrals":
-        match["referred_by"] = {"$exists": True, "$nin": [None, ""]}
-    elif filter_type == "repeats":
-        match["sold_count"] = {"$gt": 1}
-    pipeline = [
-        {"$match": match},
-        {"$group": {"_id": {"y": {"$year": "$date_sold"}, "m": {"$month": "$date_sold"}}, "total": {"$sum": 1}}},
-    ]
-    rows = await db.contacts.aggregate(pipeline).to_list(60)
-    by_key = {(r["_id"]["y"], r["_id"]["m"]): r["total"] for r in rows}
+    by_key = await _sales.units_by_month(db, match, window_start, filter_type)
     months = []
     y, m = anchor_y, anchor_m
     for _ in range(24):
-        months.append({"year": y, "month": m, "label": datetime(y, m, 1).strftime("%b %Y"), "total": by_key.get((y, m), 0)})
+        months.append({"year": y, "month": m, "label": datetime(y, m, 1).strftime("%b %Y"), "total": by_key.get(f"{y:04d}-{m:02d}", 0)})
         m -= 1
         if m == 0:
             m, y = 12, y - 1
@@ -1007,14 +970,17 @@ async def get_team_performance(user_id: str, month: int = 0, year: int = 0):
         except Exception:
             stores_map[sid] = "Unknown Store"
     results: dict = {}
+    from services import sales as _sales
+    _s, _e = start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
     for rep in reps:
         rid = str(rep["_id"])
         sid = str(rep.get("store_id", "")) or "no_store"
         store_name = stores_map.get(sid, "No Store")
-        sold = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
-        refs = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "referred_by": {"$exists": True, "$nin": [None, ""]}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
-        rpts = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "sold_count": {"$gt": 1}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
-        all_t = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$exists": True, "$ne": None}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
+        _base = {"user_id": rid, "status": {"$nin": ["hidden", "merged", "deleted"]}}
+        sold = await _sales.count_units(db, _base, _s, _e)
+        refs = await _sales.count_units(db, _base, _s, _e, "referrals")
+        rpts = await _sales.count_units(db, _base, _s, _e, "repeats")
+        all_t = await _sales.count_units(db, _base, None, None)
         if sid not in results:
             results[sid] = {"store_id": sid, "store_name": store_name, "reps": [], "totals": {"sold": 0, "referrals": 0, "repeats": 0, "all_time": 0}}
         results[sid]["reps"].append({"user_id": rid, "name": rep.get("name", "?"), "role": role, "photo": rep.get("photo_thumbnail", ""), "sold": sold, "referrals": refs, "repeats": rpts, "all_time": all_t})
@@ -1764,19 +1730,20 @@ async def startup_event():
             logger.warning(f"[Startup] Date opt-in reset failed: {e}")
     _aio2.create_task(_date_optin_migration())
 
-    # One-time: undo sold_count double-counting caused by the old "date_sold exists => repeat" inference.
-    async def _sold_count_repair():
+    # One-time: move every contact to the purchase-record model (merge duplicate archive rows, write a record for
+    # sales that only lived in date_sold/vehicle, re-derive counts). Additive and idempotent.
+    async def _sales_units_repair():
         try:
             db = get_db()
-            if await db.migrations.find_one({"_id": "sold_count_repair_2026_09"}):
+            if await db.migrations.find_one({"_id": "sales_units_v2_2026_09"}):
                 return
-            from services.sales import repair_false_repeats
-            r = await repair_false_repeats(db)
-            await db.migrations.insert_one({"_id": "sold_count_repair_2026_09", **r, "ran_at": datetime.utcnow()})
-            logger.info(f"[Startup] Sold-count repair fixed {r.get('fixed', 0)} contacts")
+            from services.sales import repair_all
+            r = await repair_all(db)
+            await db.migrations.insert_one({"_id": "sales_units_v2_2026_09", **r, "ran_at": datetime.utcnow()})
+            logger.info(f"[Startup] Sales units repair: {r}")
         except Exception as e:
-            logger.warning(f"[Startup] Sold-count repair failed: {e}")
-    _aio2.create_task(_sold_count_repair())
+            logger.warning(f"[Startup] Sales units repair failed: {e}")
+    _aio2.create_task(_sales_units_repair())
 
     # Sync internal docs (PRD / Ops Manual / App Scope) from repo files into Admin → Docs
     async def _doc_sync():

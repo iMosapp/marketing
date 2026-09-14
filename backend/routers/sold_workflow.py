@@ -158,14 +158,12 @@ async def process_sold_workflow(
     db = get_db()
     now = datetime.now(timezone.utc)
 
-    # Set date_sold if empty
+    # First sale recorded through the purchase-record model (no-op when the contact already has one)
     existing_contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"date_sold": 1})
     if existing_contact and not existing_contact.get("date_sold"):
-        await db.contacts.update_one(
-            {"_id": ObjectId(contact_id)},
-            {"$set": {"date_sold": now, "sold_tag_applied_at": now}}
-        )
-    elif existing_contact:
+        from services.sales import record_sale
+        await record_sale(db, contact_id, now, only_if_unsold=True, source="sold_tag")
+    if existing_contact:
         await db.contacts.update_one(
             {"_id": ObjectId(contact_id)},
             {"$set": {"sold_tag_applied_at": now}}
