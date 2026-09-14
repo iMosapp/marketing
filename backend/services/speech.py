@@ -7,16 +7,16 @@ from num2words import num2words
 
 DIGIT_WORDS = {"0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine"}
 _PHONE = re.compile(r"(?<!\w)(?:\+?1[\s.-]?)?\(?(\d{3})\)?[\s.-]?(\d{3})[\s.-]?(\d{4})(?!\d)")
-_MONEY = re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?(?:\s?([kKmM])\b)?(?![\d.])")
+_MONEY = re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?(?:\s?([kKmM])\b)?(?!\d|\.\d)")
 _BARE_CENTS = re.compile(r"(?<![\d.$])(\d{1,6})\.(\d{2})(?![\d%]|\s?(?:l\b|liter|litre|mpg|inch|in\b|percent|\"))", re.IGNORECASE)
 _PERCENT = re.compile(r"(?<![\d.])(\d+(?:\.\d+)?)\s?(?:%|percent\b)")
 _TIME = re.compile(r"(?<!\d)(\d{1,2}):(\d{2})\s?(a\.?m\.?|p\.?m\.?)?(?![\d:])", re.IGNORECASE)
-_DECIMAL = re.compile(r"(?<![\d.])(\d+)\.(\d+)(?![\d.])")
+_DECIMAL = re.compile(r"(?<![\d.])(\d+)\.(\d+)(?!\d|\.\d)")
 _ORDINAL = re.compile(r"(?<!\w)(\d+)(st|nd|rd|th)\b", re.IGNORECASE)
 _K = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\s?k\b(?!\w)", re.IGNORECASE)
 _YEAR = re.compile(r"(?<![\d,.])((?:19[5-9]|20[0-3])\d)(?![\d,])")
-_COMMA_INT = re.compile(r"(?<![\d.])\d{1,3}(?:,\d{3})+(?![\d.])")
-_INT = re.compile(r"(?<![\w.])(\d+)(?![\d.])")
+_COMMA_INT = re.compile(r"(?<![\d.])\d{1,3}(?:,\d{3})+(?!\d|\.\d)")
+_INT = re.compile(r"(?<![\w.])(\d+)(?!\d|\.\d)")
 
 
 def _words(n) -> str:

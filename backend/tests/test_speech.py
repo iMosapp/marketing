@@ -36,3 +36,13 @@ def test_relay_twiml_speaks_the_opening_line():
     session = {"_id": ObjectId(), "token": "t" * 32, "persona": {"opening_line": "Hi, I saw the 2022 Tahoe for $32,500 online.", "voice": "female"}, "direction": "outbound", "store_name": "QA Motors"}
     xml = scr.relay_twiml(session)
     assert 'welcomeGreeting="Hi, I saw the twenty twenty-two Tahoe for thirty-two thousand five hundred dollars online."' in xml
+
+
+def test_lead_whisper_reads_numbers_like_a_person():
+    from services import lead_call_engine as eng
+    job = {"lead": {"name": "Sarah Tester", "source_label": "Cars.com", "interest": "2022 Tahoe under $45,000", "comments": "Call me back at 435-275-9829 after 5:30 pm"}, "customer_phone": "+14352759829"}
+    xml = eng.twiml_claimed_and_bridge(job, "+18015550100")
+    assert "Interested in twenty twenty-two Tahoe under forty-five thousand dollars." in xml
+    assert "four three five, two seven five, nine eight two nine after five thirty PM" in xml
+    assert "<Dial" in xml and "+14352759829" in xml  # the number actually dialed is untouched
+    assert "Press one to claim this lead" in eng.twiml_answer({"lead": {"source_label": "Cars.com"}}, "https://x/y")

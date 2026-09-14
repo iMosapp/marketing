@@ -17,6 +17,7 @@ from xml.sax.saxutils import escape
 from bson import ObjectId
 
 from routers.database import get_db
+from services.speech import speakable
 
 logger = logging.getLogger(__name__)
 
@@ -602,7 +603,8 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
 
 # ── TwiML ─────────────────────────────────────────────────────────────────────
 def _say(text: str) -> str:
-    return f'<Say voice="Polly.Joanna">{escape(text)}</Say>'
+    # every spoken line (whisper, prompts) goes through the same human-number reader as the mystery shopper
+    return f'<Say voice="Polly.Joanna">{escape(speakable(text))}</Say>'
 
 
 def twiml(*parts: str) -> str:
