@@ -12,6 +12,7 @@ from typing import Optional
 from bson import ObjectId
 
 from routers.database import get_db
+from services.speech import NUMBERS_RULE, speakable
 from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
@@ -422,7 +423,7 @@ def relay_twiml(session: dict, prelude: str = "") -> str:
     opening = persona.get("opening_line") or "Hi, I'm calling about a car I saw online."
     hints = ",".join(h for h in [session.get("store_name"), persona.get("name")] if h)
     # inbound = the customer is calling in, so the AI stays quiet until the rep answers the phone
-    greeting = "" if session.get("direction") == "inbound" else f'welcomeGreeting="{_xml(opening)}" '
+    greeting = "" if session.get("direction") == "inbound" else f'welcomeGreeting="{_xml(speakable(opening))}" '
     return (f'<?xml version="1.0" encoding="UTF-8"?><Response>{prelude}<Connect action="{_xml(base)}/api/scripts/roleplay/after/{sid}?t={token}">'
             f'<ConversationRelay url="{_xml(ws)}" {greeting}ttsProvider="Google" voice="{RELAY_VOICES.get(persona.get("voice"), "en-US-Journey-F")}" '
             f'transcriptionProvider="Deepgram" interruptible="any" interruptSensitivity="medium" ignoreBackchannel="true" hints="{_xml(hints)}" />'
@@ -458,7 +459,7 @@ def shop_gate_twiml(session: dict) -> str:
     action = f"{_xml(_app_url())}/api/scripts/roleplay/gate/{sid}?t={token}"
     return (f'<?xml version="1.0" encoding="UTF-8"?><Response>'
             f'<Gather input="dtmf speech" numDigits="1" timeout="{GATE_SECONDS}" speechTimeout="auto" actionOnEmptyResult="true" action="{action}" method="POST" hints="ready, yes, go, not now, later">'
-            f'<Say voice="{ANNOUNCE_VOICE}">{_xml(shop_announcement(session))}</Say></Gather></Response>')
+            f'<Say voice="{ANNOUNCE_VOICE}">{_xml(speakable(shop_announcement(session)))}</Say></Gather></Response>')
 
 
 def gate_choice(digits: str, speech: str) -> str:
@@ -476,11 +477,11 @@ def shop_go_twiml(session: dict) -> str:
     """Rep is ready: a heads-up, a ring, then the live customer."""
     line = "Here it comes." if session.get("direction") == "inbound" else "Here we go, it's ringing."
     ring = f"{_xml(_app_url())}/api/scripts/roleplay/audio/ring.wav"
-    return relay_twiml(session, prelude=f'<Say voice="{ANNOUNCE_VOICE}">{_xml(line)}</Say><Play>{ring}</Play>')
+    return relay_twiml(session, prelude=f'<Say voice="{ANNOUNCE_VOICE}">{_xml(speakable(line))}</Say><Play>{ring}</Play>')
 
 
 def say_hangup_twiml(text: str) -> str:
-    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="{ANNOUNCE_VOICE}">{_xml(text)}</Say><Hangup/></Response>'
+    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="{ANNOUNCE_VOICE}">{_xml(speakable(text))}</Say><Hangup/></Response>'
 
 
 _RING_WAV: Optional[bytes] = None
@@ -513,7 +514,7 @@ def ring_wav() -> bytes:
 
 
 def hangup_twiml(text: str) -> str:
-    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna-Neural">{_xml(text)}</Say><Hangup/></Response>'
+    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna-Neural">{_xml(speakable(text))}</Say><Hangup/></Response>'
 
 
 async def start_phone_session(db, me: dict, script: dict, assignment: Optional[dict] = None) -> dict:
@@ -606,7 +607,7 @@ async def relay_turn(db, sid: str, heard: str) -> dict:
     if not s or s.get("status") not in ("live", "ending", "dialing"):
         return {"say": "", "ended": True}
     out = await customer_turn(db, s, heard[:1200])
-    return {"say": out["customer"]["text"], "ended": out["ended"]}
+    return {"say": speakable(out["customer"]["text"]), "ended": out["ended"]}
 
 
 INBOUND_NUDGE_S = 8
@@ -619,7 +620,7 @@ async def relay_nudge(db, sid: str) -> str:
         return ""
     opening = (s.get("persona") or {}).get("opening_line") or "Hi, I'm calling about a car I saw online."
     await db.roleplay_sessions.update_one({"_id": s["_id"], "turns": {"$size": 0}}, {"$push": {"turns": {"role": "customer", "text": opening, "audio_url": None, "at": _now(), "mood": "neutral"}}, "$set": {"updated_at": _now()}})
-    return opening
+    return speakable(opening)
 
 
 async def relay_interrupt(db, sid: str, spoken: Optional[str]):
@@ -697,7 +698,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
             + (f"YOU placed this call to the {pack['business']}, so you drive the reason for calling. " if direction == "inbound" else "The employee called YOU, so they drive the conversation and you react. ")
             + ("The rep was told this is a practice call, but you stay fully in character as a real customer: never admit you are an AI, a recording or a shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery else "")
             + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "
-               "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " if live else "")
+               "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " + NUMBERS_RULE if live else "")
             + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
             f"OBJECTIONS YOU RAISE (one at a time, only when it fits): {'; '.join(persona.get('objections') or [])}. "
             + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
