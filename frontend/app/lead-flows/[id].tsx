@@ -25,6 +25,7 @@ export default function LeadFlowEditor() {
   const { showToast } = useToast();
   const [flow, setFlow] = useState<LeadFlow | null>(null);
   const [reps, setReps] = useState<any[]>([]);
+  const [teamFrom, setTeamFrom] = useState<{ stores: string[]; inboxes: string[]; sources: string[] } | null>(null);
   const [storeHours, setStoreHours] = useState<StoreHours | null>(null);
   const [tab, setTab] = useState<Tab>('steps');
   const [saving, setSaving] = useState(false);
@@ -40,6 +41,7 @@ export default function LeadFlowEditor() {
       setTagsNoAnswer((f.data.tags_on_no_answer || []).join(', '));
       // the flow's own pool (its store + every store/inbox whose sources use it); the library list is scoped to the caller's store
       setReps((f.data.reps || lib.data.reps || []).map((r: any) => ({ ...r, _id: r._id || r.id })));
+      setTeamFrom(f.data.team_from || null);
       setStoreHours(f.data.store_hours || lib.data.store_hours || null);
     }).catch((e: any) => showToast(e?.response?.data?.detail || 'Could not load flow', 'error'));
   }, [id, user?._id]);
@@ -85,7 +87,12 @@ export default function LeadFlowEditor() {
       ))}
     </View>
   );
-  const visibleReps = reps.filter(r => r.role !== 'super_admin' || r._id === user?._id);
+  const visibleReps = reps;  // super admins on the team stay visible (tagged), hiding them made whole internal teams vanish
+  const teamNote = teamFrom ? (
+    (teamFrom.stores.length || teamFrom.inboxes.length)
+      ? `Team from ${[teamFrom.stores.length ? `store${teamFrom.stores.length > 1 ? 's' : ''} ${teamFrom.stores.join(', ')}` : '', teamFrom.inboxes.length ? `inbox${teamFrom.inboxes.length > 1 ? 'es' : ''} ${teamFrom.inboxes.join(', ')}` : ''].filter(Boolean).join(' and ')}${teamFrom.sources.length ? ` (used by ${teamFrom.sources.join(', ')})` : ''}. Missing someone? Add them to the store under Team Members or to the inbox's Team tab.`
+      : 'This flow is not attached to a source yet, so every active user is listed. Attach it to a source and the list narrows to that store and inbox.'
+  ) : undefined;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -114,7 +121,7 @@ export default function LeadFlowEditor() {
               <View style={{ height: 14 }} />
               {flow.contact_mode === 'text_and_call' ? (
                 <LeadCallLadder attempts={flow.call_attempts} reps={visibleReps} onChange={a => patch({ call_attempts: a })} colors={colors} max={6} allowPush inboxLabel="the source's inbox"
-                  ringDelay={(flow as any).ring_delay_seconds || 0} onRingDelayChange={s => patch({ ring_delay_seconds: s } as any)} />
+                  ringDelay={(flow as any).ring_delay_seconds || 0} onRingDelayChange={s => patch({ ring_delay_seconds: s } as any)} teamNote={teamNote} />
               ) : (
                 <View>
                   <Text style={label}>Who gets the push</Text>

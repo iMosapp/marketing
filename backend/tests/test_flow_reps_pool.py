@@ -47,6 +47,14 @@ async def _run():
             assert "QA Manager" in names and "Activation Tester" in names, names
             via = {p["name"]: p["via"] for p in reps}
             assert "inbox" in via["QA Manager"] and "store" in via["QA Manager"], via["QA Manager"]
+            tf = r.json()["team_from"]
+            assert "Sales" in tf["inboxes"] and "QA cross-store source" in tf["sources"] and len(tf["stores"]) == 2, tf
+            # super admin also gets everyone else, flagged off-team, so a wiring gap never blocks them
+            off = [p for p in reps if p["on_team"] is False]
+            assert off and all(p["via"] == [] for p in off) and reps.index(off[0]) > max(i for i, p in enumerate(reps) if p["on_team"]), "off-team rows must trail the team"
+            reps = [p for p in reps if p["on_team"]]
+            ids = {p["id"] for p in reps}
+            assert "QA Manager" in {p["name"] for p in reps} and str(other_member["_id"]) in ids
             assert r.json()["store_hours"] is None or r.json()["store_hours"]["store_name"] == "TEST_NewBiz_1772880969"
             # control: the QA flow (same store as its sources) still lists the QA team
             r2 = await c.get(f"{API}/api/lead-flows/6aa5802ad1f3a6cbc1df3b65", headers=h)

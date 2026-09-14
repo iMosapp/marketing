@@ -794,7 +794,7 @@ export default function LeadSourceDetailScreen() {
                     <TouchableOpacity onPress={() => router.push(`/inboxes/${sourceInbox.id}?tab=leads` as any)} testID="workflow-inbox-open" dataSet={{ testid: 'workflow-inbox-open' } as any}><Text style={{ fontSize: 12, fontWeight: '800', color: '#C9A962' }}>Open</Text></TouchableOpacity>
                   </View>
                 )}
-                {workflowUsers.filter((u: any) => u.role !== 'super_admin' || u._id === user?._id).map((u: any) => {
+                {workflowUsers.map((u: any) => {
                   const uid = u._id || u.id;
                   const isSelected = workflow.workflow_user_ids.includes(uid);
                   return (
@@ -839,7 +839,7 @@ export default function LeadSourceDetailScreen() {
               {workflow.contact_mode === 'text_and_call' && (
                 <LeadCallLadder
                   attempts={workflow.call_attempts}
-                  reps={workflowUsers.filter((u: any) => u.role !== 'super_admin' || u._id === user?._id)}
+                  reps={workflowUsers}
                   onChange={a => setWorkflow(prev => ({ ...prev, call_attempts: a }))}
                   colors={colors}
                   inboxLabel={sourceInbox ? `the ${sourceInbox.name} inbox` : undefined}

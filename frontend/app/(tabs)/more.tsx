@@ -28,6 +28,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { resolveUserPhotoUrlHiRes } from '../../utils/photoUrl';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { BRAND } from '../../config/brand';
+import { buildStamp } from '../../utils/buildStamp';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { AppHome } from '../../components/hub/AppHome';
 import { slug as hubSlug, HubApp, HubFolderDef } from '../../components/hub/layout';
@@ -1190,6 +1191,7 @@ export default function MoreScreen() {
             <>
               <Text style={styles.version}>{BRAND.poweredByText}</Text>
               <Text style={[styles.version, { marginTop: 4 }]}>v1.0.0</Text>
+              {!!buildStamp() && <Text style={[styles.version, { marginTop: 2, fontSize: 10 }]} testID="build-stamp" dataSet={{ testid: 'build-stamp' } as any}>{buildStamp()}</Text>}
             </>
           )}
         </View>

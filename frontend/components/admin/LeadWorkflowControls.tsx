@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export type CallAttempt = { user_ids: string[]; delay_seconds: number; delivery?: 'call' | 'push' };
-type Rep = { _id: string; name?: string; email?: string; role?: string; phone?: string; via?: string[] };
+type Rep = { _id: string; name?: string; email?: string; role?: string; phone?: string; via?: string[]; on_team?: boolean };
 
 export const INBOX_TOKEN = '@inbox';
 const MAX = 4;
@@ -39,7 +39,11 @@ export const ContactModeToggle = ({ value, onChange, colors }: { value: 'text_on
 
 const RING_DELAYS = [0, 15, 30, 45, 60];
 
-export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, allowPush = false, ringDelay, onRingDelayChange, inboxLabel }: { attempts: CallAttempt[]; reps: Rep[]; onChange: (a: CallAttempt[]) => void; colors: any; max?: number; allowPush?: boolean; ringDelay?: number; onRingDelayChange?: (s: number) => void; inboxLabel?: string }) => {
+export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, allowPush = false, ringDelay, onRingDelayChange, inboxLabel, teamNote }: { attempts: CallAttempt[]; reps: Rep[]; onChange: (a: CallAttempt[]) => void; colors: any; max?: number; allowPush?: boolean; ringDelay?: number; onRingDelayChange?: (s: number) => void; inboxLabel?: string; teamNote?: string }) => {
+  const [showOthers, setShowOthers] = useState<Record<number, boolean>>({});
+  const [otherSearch, setOtherSearch] = useState('');
+  const teamReps = reps.filter(r => r.on_team !== false);
+  const otherReps = reps.filter(r => r.on_team === false);
   const update = (i: number, patch: Partial<CallAttempt>) => onChange(attempts.map((a, idx) => (idx === i ? { ...a, ...patch } : a)));
   const toggleRep = (i: number, uid: string) => {
     const cur = attempts[i].user_ids;
@@ -58,6 +62,12 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, al
       <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10, lineHeight: 17 }}>
         Each attempt rings everyone on it at once for about 25 seconds. Add a manager or another team on later attempts to escalate. Minimum delay between attempts is 30s. Dialing stops the moment someone claims.
       </Text>
+      {!!teamNote && (
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginBottom: 10 }} testID="ladder-team-note" dataSet={{ testid: 'ladder-team-note' } as any}>
+          <Ionicons name="people-outline" size={13} color="#C9A962" style={{ marginTop: 2 }} />
+          <Text style={{ flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>{teamNote}</Text>
+        </View>
+      )}
 
       {attempts.map((a, i) => (
         <View key={i} style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, marginBottom: 10, backgroundColor: colors.surface }}>
@@ -131,7 +141,7 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, al
                 </TouchableOpacity>
               );
             })()}
-            {reps.map(r => {
+            {teamReps.map(r => {
               const on = a.user_ids.includes(r._id);
               return (
                 <TouchableOpacity
@@ -147,7 +157,39 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, al
                 </TouchableOpacity>
               );
             })}
+            {otherReps.filter(r => a.user_ids.includes(r._id)).map(r => (
+              <TouchableOpacity key={r._id} onPress={() => toggleRep(i, r._id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, backgroundColor: '#34C75922', borderWidth: 1, borderColor: '#34C759' }}
+                testID={`ladder-${i}-rep-${r._id}`} dataSet={{ testid: `ladder-${i}-rep-${r._id}` } as any}>
+                <Ionicons name="checkmark" size={13} color="#34C759" />
+                <Text style={{ fontSize: 13, color: colors.text, fontWeight: '700' }}>{r.name || r.email}</Text>
+                <Text style={{ fontSize: 10, color: colors.textSecondary }}>not on this team</Text>
+              </TouchableOpacity>
+            ))}
+            {otherReps.length > 0 && (
+              <TouchableOpacity onPress={() => setShowOthers(s => ({ ...s, [i]: !s[i] }))} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.border }}
+                testID={`ladder-${i}-show-others`} dataSet={{ testid: `ladder-${i}-show-others` } as any}>
+                <Ionicons name={showOthers[i] ? 'chevron-up' : 'person-add-outline'} size={13} color={colors.textSecondary} />
+                <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600' }}>{showOthers[i] ? 'Hide others' : `${otherReps.length} others on the platform`}</Text>
+              </TouchableOpacity>
+            )}
           </View>
+          {showOthers[i] && otherReps.length > 0 && (
+            <View style={{ marginTop: 8, padding: 10, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }} testID={`ladder-${i}-others`} dataSet={{ testid: `ladder-${i}-others` } as any}>
+              <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginBottom: 6, lineHeight: 16 }}>Not on this store or its inboxes. Picking someone here rings them anyway; to see them here permanently add them to the store (Team Members) or the inbox's Team tab.</Text>
+              <TextInput value={otherSearch} onChangeText={setOtherSearch} placeholder="Search by name or email" placeholderTextColor={colors.textSecondary}
+                style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.border, color: colors.text, backgroundColor: colors.surface, fontSize: 13, marginBottom: 8 }}
+                testID={`ladder-${i}-others-search`} dataSet={{ testid: `ladder-${i}-others-search` } as any} />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {otherReps.filter(r => !a.user_ids.includes(r._id) && (!otherSearch || `${r.name || ''} ${r.email || ''}`.toLowerCase().includes(otherSearch.toLowerCase()))).slice(0, 40).map(r => (
+                  <TouchableOpacity key={r._id} onPress={() => toggleRep(i, r._id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
+                    testID={`ladder-${i}-rep-${r._id}`} dataSet={{ testid: `ladder-${i}-rep-${r._id}` } as any}>
+                    <Text style={{ fontSize: 13, color: colors.text, fontWeight: '500' }}>{r.name || r.email}</Text>
+                    {r.role && r.role !== 'user' && <Text style={{ fontSize: 10, color: colors.textSecondary }}>{r.role.replace('_', ' ')}</Text>}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
           {a.user_ids.length === 0 && <Text style={{ fontSize: 12, color: '#FF9500', marginTop: 6 }}>Pick at least one rep or this attempt is skipped.</Text>}
           {a.user_ids.includes(INBOX_TOKEN) && <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6 }}>Whoever is on the inbox when the lead lands rings, so new hires are covered without touching this again.</Text>}
           {(() => {

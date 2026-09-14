@@ -150,32 +150,46 @@ async def create_flow(body: FlowBody, request: Request):
     return lf.serialize(flow, [], await _names(db, [flow]))
 
 
-async def _flow_reps(db, flow: dict, me: dict) -> list:
-    """People who can go on THIS flow's ladder: the flow's store team + the team of every store / shared inbox whose
-    lead sources use the flow. (The library list is scoped to the caller's store, which is the wrong pool when an admin
-    edits another store's flow.)"""
-    from services.team_scope import eligible_people
+async def _flow_reps(db, flow: dict, me: dict) -> dict:
+    """{people, team_from}. People who can go on THIS flow's ladder: the flow's store team + the team of every store /
+    shared inbox whose lead sources use the flow; super/org admins also get every other active user (on_team False) so a
+    wiring gap never blocks them. (The library list is scoped to the caller's store, which is the wrong pool when an
+    admin edits another store's flow.)"""
+    from services.team_scope import RANK, eligible_people
     stores: set = {str(flow["store_id"])} if flow.get("store_id") else set()
     inboxes: set = set()
-    async for s in db.lead_sources.find({"flow_id": str(flow["_id"])}, {"store_id": 1, "inbox_id": 1, "team_id": 1}):
+    source_names: list = []
+    async for s in db.lead_sources.find({"flow_id": str(flow["_id"])}, {"name": 1, "store_id": 1, "inbox_id": 1, "team_id": 1}):
+        source_names.append(s.get("name") or "source")
         if s.get("store_id"):
             stores.add(str(s["store_id"]))
         for k in ("inbox_id", "team_id"):
             if s.get(k) and ObjectId.is_valid(str(s[k])):
                 inboxes.add(str(s[k]))
+    admin = me.get("role") in ("super_admin", "org_admin")
+    team_from = {"stores": [], "inboxes": [], "sources": source_names}
     if not stores and not inboxes:
-        return await lf.store_reps(db, None, me)
-    async for ib in db.shared_inboxes.find({"store_id": {"$in": [v for sid in stores for v in ([sid] + ([ObjectId(sid)] if ObjectId.is_valid(sid) else []))]}, "is_active": {"$ne": False}}, {"_id": 1}):
+        return {"people": await lf.store_reps(db, None, me), "team_from": team_from}
+    sid_values = [v for sid in stores for v in ([sid] + ([ObjectId(sid)] if ObjectId.is_valid(sid) else []))]
+    async for ib in db.shared_inboxes.find({"store_id": {"$in": sid_values}, "is_active": {"$ne": False}}, {"_id": 1}):
         inboxes.add(str(ib["_id"]))
+    async for ib in db.shared_inboxes.find({"_id": {"$in": [ObjectId(i) for i in inboxes]}}, {"name": 1}):
+        team_from["inboxes"].append(ib.get("name") or "inbox")
     people: dict = {}
     for sid in (sorted(stores) or [None]):
-        for p in (await eligible_people(db, sid, me, inbox_ids=sorted(inboxes) or None))["people"]:
+        res = await eligible_people(db, sid, me, inbox_ids=sorted(inboxes) or None, include_everyone=admin)
+        if res.get("store_name"):
+            team_from["stores"].append(res["store_name"])
+        for p in res["people"]:
             cur = people.get(p["id"])
-            people[p["id"]] = {**p, "via": sorted(set((cur or {}).get("via", [])) | set(p["via"]))} if cur else p
+            if cur:
+                via = sorted(set(cur.get("via", [])) | set(p["via"]))
+                people[p["id"]] = {**p, "via": via, "on_team": bool(via)}
+            else:
+                people[p["id"]] = p
     rows = list(people.values())
-    from services.team_scope import RANK
-    rows.sort(key=lambda r: (RANK.get(r["role"], 1), r["name"].lower()))
-    return rows
+    rows.sort(key=lambda r: (0 if r["on_team"] else 1, RANK.get(r["role"], 1), r["name"].lower()))
+    return {"people": rows, "team_from": team_from}
 
 
 @router.get("/{flow_id}")
@@ -184,8 +198,9 @@ async def get_flow(flow_id: str, request: Request, days: int = 30):
     flow = await _flow(db, flow_id, request.state.user)
     by_flow = await _sources_by_flow(db, [str(flow["_id"])])
     stats = await lf.flow_stats(db, [str(flow["_id"])], max(1, min(365, days)))
+    pool = await _flow_reps(db, flow, request.state.user)
     return {**lf.serialize(flow, by_flow.get(str(flow["_id"])), await _names(db, [flow])), "stats": stats.get(str(flow["_id"])),
-            "reps": await _flow_reps(db, flow, request.state.user), "store_hours": await _store_hours(db, str(flow["store_id"]) if flow.get("store_id") else None)}
+            "reps": pool["people"], "team_from": pool["team_from"], "store_hours": await _store_hours(db, str(flow["store_id"]) if flow.get("store_id") else None)}
 
 
 @router.get("/{flow_id}/stats")
