@@ -37,13 +37,14 @@ interface Props {
   userId: string;
   colors: any;
   onChanged?: () => void;
+  focusPurchaseId?: string;   // deep link from Sold Units: highlight this record and open it
 }
 
 // Purchase dates are calendar dates: build "YYYY-MM-DD" from the local parts (toISOString would roll past midnight in UTC)
 const toYmd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const fromYmd = (s: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : parseISO(s); };
 
-export default function PurchaseHistorySection({ contactId, userId, colors, onChanged }: Props) {
+export default function PurchaseHistorySection({ contactId, userId, colors, onChanged, focusPurchaseId }: Props) {
   const s = getStyles(colors);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +72,18 @@ export default function PurchaseHistorySection({ contactId, userId, colors, onCh
   }, [userId, contactId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Sold Units -> "open that purchase": once the records are in, outline the one tapped and open its sheet (once)
+  const [focused, setFocused] = useState<string | null>(null);
+  const consumedFocus = React.useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusPurchaseId || loading || consumedFocus.current === focusPurchaseId || !purchases.length) return;
+    const target = purchases.find(p => p.id === focusPurchaseId) || (focusPurchaseId.startsWith('legacy-') ? purchases[0] : null);
+    if (!target) return;
+    consumedFocus.current = focusPurchaseId;
+    setFocused(target.id);
+    openEdit(target);
+  }, [focusPurchaseId, loading, purchases]);
 
   function openAdd() {
     setEditing(null);
@@ -156,7 +169,7 @@ export default function PurchaseHistorySection({ contactId, userId, colors, onCh
         </TouchableOpacity>
       ) : (
         purchases.map((p, i) => (
-          <View key={p.id} style={[s.purchaseRow, i < purchases.length - 1 && s.rowBorder]}>
+          <View key={p.id} style={[s.purchaseRow, i < purchases.length - 1 && s.rowBorder, focused === p.id && s.focusedRow]} data-testid={`purchase-row-${p.id}`}>
             <View style={[s.iconWrap, { backgroundColor: colors.accent + '20' }]}>
               <Ionicons name={catIcon(p.category) as any} size={18} color={colors.accent} />
             </View>
@@ -292,6 +305,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   emptyCard:     { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
   emptyText:     { fontSize: 13, color: colors.textTertiary, flex: 1 },
   purchaseRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 10 },
+  focusedRow:    { borderWidth: 1.5, borderColor: '#C9A962', borderRadius: 12, paddingHorizontal: 10, marginVertical: 4, backgroundColor: '#C9A96214' },
   rowBorder:     { borderBottomWidth: 1, borderBottomColor: colors.border },
   iconWrap:      { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   purchaseInfo:  { flex: 1 },

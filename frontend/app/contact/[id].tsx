@@ -146,7 +146,7 @@ function ContactDetailScreen() {
     },
   };
   const router = useRouter();
-  const { id, prefill, channel, action, taskId, taskTitle, capture, event_type: urlEventType, event_title: urlEventTitle } = useLocalSearchParams();
+  const { id, prefill, channel, action, taskId, taskTitle, capture, purchase: urlPurchase, event_type: urlEventType, event_title: urlEventTitle } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
@@ -523,6 +523,9 @@ function ContactDetailScreen() {
       }
     }, [id, user])
   );
+
+  // Deep link from Sold Units (?purchase=<record id>): always land on Details, where Purchase History lives
+  useEffect(() => { if (urlPurchase && !isNewContact) setContactTab('details'); }, [urlPurchase]);
 
   // Auto-open voice recorder when deep-linked with ?capture=true (from post-sale notification)
   useEffect(() => {
@@ -2810,6 +2813,7 @@ function ContactDetailScreen() {
               colors={colors}
               contact={contact}
               reloadContact={loadContact}
+              focusPurchaseId={typeof urlPurchase === 'string' ? urlPurchase : undefined}
               contactId={id as string}
               userId={user?._id || ''}
               isNewContact={isNewContact}

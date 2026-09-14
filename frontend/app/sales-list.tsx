@@ -17,6 +17,7 @@ const LABEL: Record<string, string> = {
 const MANAGER_ROLES = ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'];
 
 interface MonthRow { year: number; month: number; label: string; total: number }
+const CAT_ICON: Record<string, any> = { vehicle: 'car-outline', real_estate: 'home-outline', insurance: 'shield-outline', boat: 'boat-outline', other: 'bag-handle-outline' };
 // Sold dates are calendar dates ("YYYY-MM-DD"): format the parts, never go through a Date (no time-zone day shift)
 const fmtDay = (d: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''; };
 
@@ -101,7 +102,7 @@ export default function SalesListScreen() {
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text }}>{LABEL[type] || 'Sales'}</Text>
           <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-            {scope === 'team' ? 'Team' : 'My'} history · tap a bar or use arrows
+            {scope === 'team' ? 'Team' : 'My'} history · one row per unit · tap a unit to open that purchase
           </Text>
         </View>
         {isManager && (
@@ -209,7 +210,7 @@ export default function SalesListScreen() {
         }
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => router.push(`/contact/${item._id}` as any)}
+            onPress={() => router.push(`/contact/${item._id}${item.unit_id ? `?purchase=${encodeURIComponent(item.unit_id)}` : ''}` as any)}
             style={[st.row, { backgroundColor: colors.card, borderColor: colors.surface }]}
             testID={`sales-list-contact-${item._id}`} dataSet={{ testid: `sales-list-contact-${item._id}` }}
           >
@@ -229,9 +230,15 @@ export default function SalesListScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{item.name}</Text>
-              {item.vehicle ? (
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{item.vehicle}</Text>
-              ) : null}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }} testID={`sales-unit-vehicle-${item.unit_id || item._id}`} dataSet={{ testid: `sales-unit-vehicle-${item.unit_id || item._id}` }}>
+                <Ionicons name={CAT_ICON[item.category] || 'bag-handle-outline'} size={13} color={GOLD} />
+                <Text style={{ fontSize: 13.5, fontWeight: '600', color: item.vehicle ? colors.text : colors.textSecondary, flexShrink: 1 }} numberOfLines={1}>{item.vehicle || 'Purchase (no item recorded)'}</Text>
+                {item.sold_count > 1 ? (
+                  <View style={{ paddingHorizontal: 7, height: 18, borderRadius: 9, backgroundColor: '#AF52DE22', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 10.5, fontWeight: '800', color: '#AF52DE' }}>{item.sold_count}x BUYER</Text>
+                  </View>
+                ) : null}
+              </View>
               {scope === 'team' && item.rep_name ? (
                 <Text style={{ fontSize: 12, color: GOLD, marginTop: 2 }}>
                   <Ionicons name="person-circle-outline" size={11} color={GOLD} /> {item.rep_name}
@@ -241,9 +248,6 @@ export default function SalesListScreen() {
                 <Text style={{ fontSize: 12, color: '#007AFF', marginTop: 2 }}>
                   <Ionicons name="person" size={11} color="#007AFF" /> Referred by {item.referred_by_name}
                 </Text>
-              ) : null}
-              {type === 'repeats' && item.sold_count > 1 ? (
-                <Text style={{ fontSize: 12, color: '#AF52DE', marginTop: 2 }}>{item.sold_count}x buyer</Text>
               ) : null}
             </View>
             <View style={{ alignItems: 'flex-end', gap: 4 }}>

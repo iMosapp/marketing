@@ -206,6 +206,7 @@ export default function DetailsTab(props: any) {
           userId={userId}
           colors={colors}
           onChanged={() => reloadContact?.()}
+          focusPurchaseId={props.focusPurchaseId}
         />
       )}
 
