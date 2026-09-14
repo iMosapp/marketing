@@ -571,9 +571,13 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     ev_ids = [ObjectId(c["evaluation_id"]) for c in done if c.get("evaluation_id") and ObjectId.is_valid(str(c["evaluation_id"]))]
     evals = {str(e["_id"]): e for e in await db.call_evaluations.find({"_id": {"$in": ev_ids}}).to_list(500)} if ev_ids else {}
     targets = {str(t["_id"]): t for t in await db.shop_targets.find({"client_id": cid}).to_list(500)}
+    # one row per person PER DEPARTMENT: quick shops reuse the same target for a sales call and a service call, and the
+    # target's department is whatever the LAST shop set it to, so the call's own department is the truth
     people = {}
     for c in calls:
-        p = people.setdefault(c["target_id"], {"target_id": c["target_id"], "name": c.get("rep_name"), "department": c.get("department"), "shops": 0, "completed": 0, "unreachable": 0, "scores": [], "adherence": [], "critical_misses": 0, "last_shop": None, "coaching": []})
+        dept = c.get("department") or (targets.get(c["target_id"]) or {}).get("department") or "sales"
+        p = people.setdefault((c["target_id"], dept), {"key": f"{c['target_id']}:{dept}", "target_id": c["target_id"], "name": c.get("rep_name"), "department": dept, "department_label": ind.dept_label(dept),
+                                                        "shops": 0, "completed": 0, "unreachable": 0, "scores": [], "adherence": [], "critical_misses": 0, "last_shop": None, "coaching": []})
         p["shops"] += 1
         if c.get("status") == "completed":
             p["completed"] += 1
@@ -594,17 +598,20 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
                      "title": (targets.get(p["target_id"]) or {}).get("title", ""), "coaching": p["coaching"][:3]})
         rows[-1].pop("scores"); rows[-1].pop("adherence")
     rows.sort(key=lambda r: (r["avg_score"] is None, -(r["avg_score"] or 0)))
-    # what the whole store misses: pass rate per criterion text (N/A excluded)
+    # what the store misses: pass rate per criterion text (N/A excluded), kept PER DEPARTMENT so one service shop's misses
+    # never sit at the top of a list dominated by sales shops
+    ev_dept = {str(c.get("evaluation_id")): (c.get("department") or "sales") for c in done if c.get("evaluation_id")}
     crit = {}
-    for ev in evals.values():
+    for eid, ev in evals.items():
+        dept = ev_dept.get(eid, "sales")
         for r in ev.get("results") or []:
             if r.get("passed") is None:
                 continue
             k = r.get("text") or r.get("criterion_id")
-            d = crit.setdefault(k, {"text": k, "critical": bool(r.get("critical")), "passed": 0, "total": 0, "department": ev.get("department") or ""})
+            d = crit.setdefault((dept, k), {"text": k, "critical": bool(r.get("critical")), "passed": 0, "total": 0, "department": dept, "department_label": ind.dept_label(dept)})
             d["total"] += 1
             d["passed"] += 1 if r.get("passed") else 0
-    criteria = sorted([{**d, "pass_pct": round(100 * d["passed"] / d["total"])} for d in crit.values() if d["total"]], key=lambda d: d["pass_pct"])
+    criteria = sorted([{**d, "pass_pct": round(100 * d["passed"] / d["total"])} for d in crit.values() if d["total"]], key=lambda d: (d["pass_pct"], -d["total"]))
     scores = [c.get("score_pct") for c in done]
     by_dept = {}
     per = plan_per_month(client)
@@ -614,7 +621,8 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
         if not per.get(d) and not dc and not any(c.get("department") == d for c in calls):
             continue
         by_dept[d] = {"label": ind.dept_label(d), "planned": int(per.get(d) or 0), "scheduled": len([c for c in calls if c.get("department") == d and c.get("status") in CALL_STATUSES_OPEN]),
-                      "completed": len(dc), "unreachable": len([c for c in calls if c.get("department") == d and c.get("status") == "unreachable"]), "avg_score": _pct([c.get("score_pct") for c in dc])}
+                      "completed": len(dc), "unreachable": len([c for c in calls if c.get("department") == d and c.get("status") == "unreachable"]), "avg_score": _pct([c.get("score_pct") for c in dc]),
+                      "people": len({c["target_id"] for c in dc}), "criteria": [cr for cr in criteria if cr["department"] == d]}
     call_rows = []
     for c in sorted(calls, key=lambda x: x.get("ended_at") or x.get("scheduled_for") or _now(), reverse=True):
         ev = evals.get(str(c.get("evaluation_id"))) if c.get("evaluation_id") else None
@@ -632,7 +640,7 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
             "month": start.astimezone(tz).strftime("%Y-%m"), "month_label": label, "generated_at": _now().isoformat(),
             "summary": {"completed": len(done), "planned": sum(v["planned"] for v in by_dept.values()), "scheduled": len([c for c in calls if c.get("status") in CALL_STATUSES_OPEN]),
                         "unreachable": len([c for c in calls if c.get("status") == "unreachable"]), "avg_score": _pct(scores), "avg_adherence": _pct([c.get("adherence_pct") for c in done]),
-                        "people_shopped": len([r for r in rows if r["completed"]]), "needs_training": len([r for r in rows if r["needs_training"]])},
+                        "people_shopped": len({r["target_id"] for r in rows if r["completed"]}), "needs_training": len([r for r in rows if r["needs_training"]])},
             "by_department": by_dept, "people": rows, "criteria": criteria, "coaching_themes": [{"text": k, "count": v} for k, v in sorted(themes.items(), key=lambda kv: -kv[1])[:6]], "calls": call_rows}
 
 
@@ -659,7 +667,7 @@ def report_pdf(report: dict) -> bytes:
     p(f"{report['month_label']}  |  {c.get('brand') or ''}  {c.get('city') or ''} {c.get('state') or ''}".strip(), 10, MUTED)
     pdf.ln(3)
     pdf.set_fill_color(247, 243, 232)
-    boxes = [("Shops completed", f"{s['completed']} of {s['planned']}"), ("Average score", f"{s['avg_score']}%" if s['avg_score'] is not None else "n/a"),
+    boxes = [("Shops completed", f"{s['completed']} of {s['planned']}" if s.get("planned") else str(s['completed'])), ("Average score", f"{s['avg_score']}%" if s['avg_score'] is not None else "n/a"),
              ("People shopped", str(s['people_shopped'])), ("Need training", str(s['needs_training']))]
     w = (pdf.w - 32) / 4
     y = pdf.get_y()
@@ -669,6 +677,28 @@ def report_pdf(report: dict) -> bytes:
         pdf.set_xy(x + 3, y + 2); pdf.set_font("Helvetica", "B", 14); pdf.set_text_color(*INK); pdf.cell(w - 6, 8, txt(val))
         pdf.set_xy(x + 3, y + 10); pdf.set_font("Helvetica", "", 8); pdf.set_text_color(*MUTED); pdf.cell(w - 6, 6, txt(lab.upper()))
     pdf.set_y(y + 24)
+
+    depts = [(k, v) for k, v in (report.get("by_department") or {}).items() if v.get("planned") or v.get("completed") or v.get("scheduled") or v.get("unreachable")]
+    if depts:
+        # one card per department (sales, service, parts, collision... whatever the industry pack + this month's shops contain)
+        per_row = 2 if len(depts) <= 2 else 3
+        dw = (pdf.w - 32) / per_row
+        for i in range(0, len(depts), per_row):
+            y = pdf.get_y()
+            for j, (dk, dv) in enumerate(depts[i:i + per_row]):
+                x = 16 + j * dw
+                pdf.set_fill_color(247, 243, 232); pdf.rect(x + 1, y, dw - 2, 20, "F")
+                pdf.set_xy(x + 3, y + 1.5); pdf.set_font("Helvetica", "B", 8.5); pdf.set_text_color(*GOLD); pdf.cell(dw - 6, 5, txt((dv.get("label") or ind.dept_label(dk)).upper()))
+                parts = [f"{dv['completed']} done" + (f" of {dv['planned']}" if dv.get("planned") else "")]
+                if dv.get("scheduled"):
+                    parts.append(f"{dv['scheduled']} coming")
+                if dv.get("unreachable"):
+                    parts.append(f"{dv['unreachable']} unreachable")
+                pdf.set_xy(x + 3, y + 7); pdf.set_font("Helvetica", "", 9); pdf.set_text_color(*INK); pdf.cell(dw - 6, 5, txt("  |  ".join(parts)))
+                avg = dv.get("avg_score")
+                pdf.set_xy(x + 3, y + 13); pdf.set_font("Helvetica", "B", 9)
+                pdf.set_text_color(*(MUTED if avg is None else RED if avg < 70 else GOLD if avg < 85 else GREEN)); pdf.cell(dw - 6, 5, txt(f"Avg {avg}%" if avg is not None else "No scores yet"))
+            pdf.set_y(y + 24)
 
     h("Who did well, who needs another look", 13)
     pdf.set_font("Helvetica", "B", 9); pdf.set_text_color(*MUTED)
@@ -684,15 +714,19 @@ def report_pdf(report: dict) -> bytes:
     pdf.ln(4)
 
     if report["criteria"]:
-        h("What the whole store misses most", 13)
-        for cr in report["criteria"][:8]:
-            pdf.set_font("Helvetica", "", 10); pdf.set_text_color(*INK)
-            bar_w = 60; x = pdf.get_x(); y = pdf.get_y()
-            pdf.set_fill_color(235, 235, 235); pdf.rect(x, y + 1.5, bar_w, 4, "F")
-            pdf.set_fill_color(*(RED if cr["pass_pct"] < 60 else GOLD if cr["pass_pct"] < 85 else GREEN)); pdf.rect(x, y + 1.5, bar_w * cr["pass_pct"] / 100, 4, "F")
-            pdf.set_xy(x + bar_w + 3, y); pdf.set_font("Helvetica", "B", 9); pdf.cell(12, 7, f"{cr['pass_pct']}%")
-            pdf.set_font("Helvetica", "", 9); pdf.multi_cell(0, 7, txt(cr["text"] + ("  (critical)" if cr["critical"] else "")), new_x="LMARGIN", new_y="NEXT")
-        pdf.ln(3)
+        # one section per department so a single service shop's misses are not read as store-wide sales problems
+        groups = [(dk, dv) for dk, dv in (report.get("by_department") or {}).items() if dv.get("criteria")] or [("all", {"label": "the whole store", "completed": report["summary"]["completed"], "criteria": report["criteria"]})]
+        for dk, dv in groups:
+            n = dv.get("completed") or 0
+            h(f"What {dv.get('label') or ind.dept_label(dk)} misses most" + (f"  ({n} shop{'s' if n != 1 else ''})" if n else ""), 13)
+            for cr in dv["criteria"][:8]:
+                pdf.set_font("Helvetica", "", 10); pdf.set_text_color(*INK)
+                bar_w = 60; x = pdf.get_x(); y = pdf.get_y()
+                pdf.set_fill_color(235, 235, 235); pdf.rect(x, y + 1.5, bar_w, 4, "F")
+                pdf.set_fill_color(*(RED if cr["pass_pct"] < 60 else GOLD if cr["pass_pct"] < 85 else GREEN)); pdf.rect(x, y + 1.5, bar_w * cr["pass_pct"] / 100, 4, "F")
+                pdf.set_xy(x + bar_w + 3, y); pdf.set_font("Helvetica", "B", 9); pdf.cell(12, 7, f"{cr['pass_pct']}%")
+                pdf.set_font("Helvetica", "", 9); pdf.multi_cell(0, 7, txt(cr["text"] + ("  (critical)" if cr["critical"] else "") + (f"  -  {cr['passed']} of {cr['total']}" if cr.get("total") else "")), new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(3)
 
     if report["coaching_themes"]:
         h("Coaching themes for the next meeting", 13)
@@ -707,7 +741,8 @@ def report_pdf(report: dict) -> bytes:
         for cr in done:
             when = datetime.fromisoformat(cr["ended_at"]) if cr.get("ended_at") else None
             pdf.set_font("Helvetica", "B", 11); pdf.set_text_color(*INK)
-            pdf.cell(0, 6, txt(f"{cr['target_name']}  |  {cr['script_title']}  |  {cr['score_pct']}%" if cr["score_pct"] is not None else f"{cr['target_name']}  |  {cr['script_title']}"), new_x="LMARGIN", new_y="NEXT")
+            head = f"{cr['target_name']}  |  {ind.dept_label(cr.get('department') or 'sales')}  |  {cr['script_title']}"
+            pdf.cell(0, 6, txt(head + (f"  |  {cr['score_pct']}%" if cr["score_pct"] is not None else "")), new_x="LMARGIN", new_y="NEXT")
             p((when.strftime("%b %d, %I:%M %p UTC") if when else "") + (f"  |  Shopper: {cr['persona_name']}" if cr.get("persona_name") else ""), 8.5, MUTED)
             if cr.get("summary"):
                 p(cr["summary"], 9.5)

@@ -4,12 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { CallDetailSheet } from './CallsTab';
 import { Label, Stat, Bar, StatusChip, deptLabel, fmtWhen, scoreColor, GOLD, RED, GREEN, AMBER, tid } from './shared';
 
+export type Criterion = { text: string; critical: boolean; passed: number; total: number; pass_pct: number; department: string; department_label?: string };
+
 export type Report = {
   client: { id: string; name: string; brand: string; city: string; state: string; contact_name: string }; month: string; month_label: string; generated_at: string;
   summary: { completed: number; planned: number; scheduled: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; people_shopped: number; needs_training: number };
-  by_department: Record<string, { label?: string; planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null }>;
-  people: { target_id?: string; name: string; department: string; department_label?: string; title: string; shops: number; completed: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; best: number | null; worst: number | null; critical_misses: number; needs_training: boolean; last_shop: string | null; coaching: string[] }[];
-  criteria: { text: string; critical: boolean; passed: number; total: number; pass_pct: number; department: string }[];
+  by_department: Record<string, { label?: string; planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null; people?: number; criteria?: Criterion[] }>;
+  people: { key?: string; target_id?: string; name: string; department: string; department_label?: string; title: string; shops: number; completed: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; best: number | null; worst: number | null; critical_misses: number; needs_training: boolean; last_shop: string | null; coaching: string[] }[];
+  criteria: Criterion[];
   coaching_themes: { text: string; count: number }[];
   calls: any[];
   report_url?: string;
@@ -42,7 +44,7 @@ export const ReportView = ({ report, colors, compact }: { report: Report; colors
         <Label t="WHO DID WELL, WHO NEEDS ANOTHER LOOK" colors={colors} />
         {report.people.length === 0 && <Text style={{ fontSize: 13.5, color: colors.textSecondary }}>No one has been shopped this month yet.</Text>}
         {report.people.map((p, i) => (
-          <View key={i} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: p.needs_training ? RED + '88' : colors.border, padding: 12, gap: 6 }} {...tid(`report-person-${i}`)}>
+          <View key={p.key || i} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: p.needs_training ? RED + '88' : colors.border, padding: 12, gap: 6 }} {...tid(`report-person-${i}`)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{p.name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {report.by_department[p.department]?.label || deptLabel(p.department)}{p.title ? ` · ${p.title}` : ''}</Text></Text>
@@ -58,20 +60,26 @@ export const ReportView = ({ report, colors, compact }: { report: Report; colors
         ))}
       </View>
 
-      {report.criteria.length > 0 && (
-        <View style={{ gap: 8 }}>
-          <Label t="WHAT THE WHOLE TEAM MISSES MOST" colors={colors} />
-          {report.criteria.slice(0, compact ? 6 : 12).map((c, i) => (
-            <View key={i} style={{ gap: 4 }} {...tid(`report-criterion-${i}`)}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>{c.text}{c.critical ? ' (critical)' : ''}</Text>
-                <Text style={{ fontSize: 13, fontWeight: '800', color: c.pass_pct < 60 ? RED : c.pass_pct < 85 ? AMBER : GREEN }}>{c.pass_pct}%</Text>
+      {report.criteria.length > 0 && (() => {
+        const groups = Object.entries(report.by_department).filter(([, x]) => (x.criteria || []).length > 0);
+        const sections = groups.length ? groups.map(([d, x]) => ({ key: d, title: `WHAT ${(x.label || deptLabel(d)).toUpperCase()} MISSES MOST${x.completed ? ` · ${x.completed} SHOP${x.completed === 1 ? '' : 'S'}` : ''}`, rows: x.criteria || [] }))
+          : [{ key: 'all', title: 'WHAT THE WHOLE TEAM MISSES MOST', rows: report.criteria }];
+        return sections.map(sec => (
+          <View key={sec.key} style={{ gap: 8 }} {...tid(`report-misses-${sec.key}`)}>
+            <Label t={sec.title} colors={colors} />
+            {sec.rows.slice(0, compact ? 6 : 12).map((c, i) => (
+              <View key={i} style={{ gap: 4 }} {...tid(`report-criterion-${sec.key}-${i}`)}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>{c.text}{c.critical ? ' (critical)' : ''}</Text>
+                  <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>{c.passed} of {c.total}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: c.pass_pct < 60 ? RED : c.pass_pct < 85 ? AMBER : GREEN }}>{c.pass_pct}%</Text>
+                </View>
+                <Bar pct={c.pass_pct} color={c.pass_pct < 60 ? RED : c.pass_pct < 85 ? AMBER : GREEN} colors={colors} />
               </View>
-              <Bar pct={c.pass_pct} color={c.pass_pct < 60 ? RED : c.pass_pct < 85 ? AMBER : GREEN} colors={colors} />
-            </View>
-          ))}
-        </View>
-      )}
+            ))}
+          </View>
+        ));
+      })()}
 
       {report.coaching_themes.length > 0 && (
         <View style={{ gap: 6 }}>
