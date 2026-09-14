@@ -93,16 +93,16 @@ export const InboxLeadsTab = ({ inboxId, inboxName, phone, colors, showToast, on
                 <Ionicons name={r.icon} size={14} color={r.color} style={{ marginTop: 2 }} />
                 <Text style={{ flex: 1, fontSize: 12.5, color: r.color, lineHeight: 17 }} {...tid(`inbox-source-ringing-${s.id}`)}>{r.text}{s.ringing.no_cell?.length ? ` No cell on profile: ${list(s.ringing.no_cell)}.` : ''}</Text>
               </View>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 2 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 }}>
                 {fixable && (
-                  <TouchableOpacity onPress={() => ringAll(s)} disabled={!!busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 12, backgroundColor: GOLD }} {...tid(`inbox-source-ring-all-${s.id}`)}>
+                  <TouchableOpacity onPress={() => ringAll(s)} disabled={!!busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 12, backgroundColor: GOLD, flexShrink: 1 }} {...tid(`inbox-source-ring-all-${s.id}`)}>
                     {busy === `ring-${s.id}` ? <ActivityIndicator size="small" color="#111" /> : <Ionicons name="people" size={13} color="#111" />}
-                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#111' }}>Ring everyone on {inboxName}</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#111', flexShrink: 1 }} numberOfLines={1}>Ring everyone on {inboxName}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={() => router.push((s.flow ? `/lead-flows/${s.flow.id}` : `/admin/lead-sources/${s.id}`) as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 12, borderWidth: 1, borderColor: colors.border }} {...tid(`inbox-source-open-${s.id}`)}>
-                  <Ionicons name="open-outline" size={13} color={colors.text} />
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>{s.flow ? 'Edit flow' : 'Edit ladder'}</Text>
+                  <Ionicons name="create-outline" size={13} color={colors.text} />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>Edit</Text>
                 </TouchableOpacity>
               </View>
             </View>
