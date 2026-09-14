@@ -88,7 +88,7 @@ export default function MysteryShopClient() {
               <Text style={{ flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.text }} {...tid('report-month-label')}>{monthLabel(month)}</Text>
               <TouchableOpacity onPress={() => setMonth(shiftMonth(month, 1))} hitSlop={8} {...tid('report-month-next')}><Ionicons name="chevron-forward" size={22} color={GOLD} /></TouchableOpacity>
             </View>
-            {reportBusy || !report ? <ActivityIndicator color={GOLD} /> : <ReportView report={report} colors={colors} />}
+            {reportBusy || !report ? <ActivityIndicator color={GOLD} /> : <ReportView report={report} colors={colors} personPath={targetId => `/shop-clients/${id}/people/${targetId}/history`} />}
           </View>
         )}
         {tab === 'billing' && <BillingTab client={client} colors={colors} onChanged={load} />}

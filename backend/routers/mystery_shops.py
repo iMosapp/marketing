@@ -740,6 +740,18 @@ async def client_report(cid: str, request: Request, month: Optional[str] = None)
     return rep
 
 
+@router.get("/{cid}/people/{target_id}/history")
+async def person_history(cid: str, target_id: str, request: Request, months: int = 6):
+    """Tap a name in the report: every shop across months, trend, departments, opening snippets."""
+    await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    out = await ms.person_history(db, c, target_id, max(1, min(24, months)))
+    if not out:
+        raise HTTPException(status_code=404, detail="That person is not on this account")
+    return out
+
+
 @router.post("/{cid}/report/rotate-link")
 async def rotate_report_link(cid: str, request: Request):
     await require_admin(request)
@@ -760,6 +772,22 @@ async def public_report_pdf(token: str, month: Optional[str] = None):
     data = await asyncio.to_thread(ms.report_pdf, rep)
     fname = "".join(ch if ch.isalnum() or ch in " -_" else "" for ch in f"{c.get('name')} mystery shop {rep['month']}").strip().replace(" ", "_")
     return Response(content=data, media_type="application/pdf", headers={"Content-Disposition": f'inline; filename="{fname}.pdf"'})
+
+
+@public_router.get("/shop-report/{token}/people/{target_id}")
+async def public_person(token: str, target_id: str, months: int = 6):
+    """The GM taps a name on the no-login report: that person's shops, trend and snippets. Same token as the report."""
+    db = get_db()
+    c = await db.shop_clients.find_one({"report_token": token})
+    if not c or len(token) < 16:
+        raise HTTPException(status_code=404, detail="Report not found")
+    out = await ms.person_history(db, c, target_id, max(1, min(24, months)))
+    if not out:
+        raise HTTPException(status_code=404, detail="Person not found")
+    out["person"].pop("phone_last4", None)
+    for row in out["shops"]:
+        row.pop("target_id", None)
+    return out
 
 
 @public_router.get("/shop-report/{token}")

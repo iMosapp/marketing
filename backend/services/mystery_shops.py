@@ -562,6 +562,102 @@ def _pct(vals: list) -> Optional[int]:
     return round(sum(vals) / len(vals)) if vals else None
 
 
+def _call_row(c: dict, ev: Optional[dict]) -> dict:
+    """A shop as the report and the person page show it: call + its evaluation (summary, misses, coaching, transcript)."""
+    ev = ev or {}
+    return {**serialize_call(c), "summary": ev.get("summary"), "critical_misses": sc.miss_labels(ev), "coaching": ev.get("coaching") or [],
+            "wins": ev.get("wins") or [], "adherence": ev.get("adherence") or {}, "results": ev.get("results") or [], "transcript": ev.get("transcript") or scr.transcript_text(c),
+            "customer_sentiment": ev.get("customer_sentiment")}
+
+
+def _snippet(transcript: str, lines: int = 4, max_chars: int = 320) -> str:
+    """The opening exchange of a call (how the phone was answered decides most of the score)."""
+    rows = [r.strip() for r in (transcript or "").splitlines() if r.strip()]
+    out = " ".join(rows[:lines])
+    return out if len(out) <= max_chars else out[:max_chars].rsplit(" ", 1)[0] + "..."
+
+
+async def person_history(db, client: dict, target_id: str, months: int = 6) -> Optional[dict]:
+    """Everything a GM wants when tapping a name: every shop across months, trend, departments, opening snippets."""
+    if not ObjectId.is_valid(str(target_id)):
+        return None
+    cid = str(client["_id"])
+    target = await db.shop_targets.find_one({"_id": ObjectId(str(target_id)), "client_id": cid})
+    if not target:
+        return None
+    tz = _tz(client)
+    calls = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "target_id": str(target_id), "status": {"$ne": "canceled"}}).sort("scheduled_for", -1).to_list(120)
+    done = [c for c in calls if c.get("status") == "completed"]
+    ev_ids = [ObjectId(c["evaluation_id"]) for c in done if c.get("evaluation_id") and ObjectId.is_valid(str(c["evaluation_id"]))]
+    evals = {str(e["_id"]): e for e in await db.call_evaluations.find({"_id": {"$in": ev_ids}}).to_list(200)} if ev_ids else {}
+    # month buckets, newest last, always the last `months` months even when empty
+    now_local = _now().astimezone(tz)
+    buckets = []
+    for i in range(months - 1, -1, -1):
+        y, m = now_local.year, now_local.month - i
+        while m <= 0:
+            y, m = y - 1, m + 12
+        buckets.append({"month": f"{y:04d}-{m:02d}", "label": datetime(y, m, 1).strftime("%b %Y"), "shops": 0, "unreachable": 0, "scores": [], "by_department": {}})
+    idx = {b["month"]: b for b in buckets}
+    for c in calls:
+        when = (c.get("ended_at") or c.get("scheduled_for"))
+        if not when:
+            continue
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        b = idx.get(when.astimezone(tz).strftime("%Y-%m"))
+        if not b:
+            continue
+        dept = c.get("department") or "sales"
+        if c.get("status") == "completed":
+            b["shops"] += 1
+            b["scores"].append(c.get("score_pct"))
+            bd = b["by_department"].setdefault(dept, {"label": ind.dept_label(dept), "shops": 0, "scores": []})
+            bd["shops"] += 1
+            bd["scores"].append(c.get("score_pct"))
+        elif c.get("status") == "unreachable":
+            b["unreachable"] += 1
+    trend = []
+    for b in buckets:
+        trend.append({"month": b["month"], "label": b["label"], "shops": b["shops"], "unreachable": b["unreachable"], "avg_score": _pct(b["scores"]),
+                      "by_department": {d: {"label": v["label"], "shops": v["shops"], "avg_score": _pct(v["scores"])} for d, v in b["by_department"].items()}})
+    scored = [t for t in trend if t["avg_score"] is not None]
+    delta = (scored[-1]["avg_score"] - scored[-2]["avg_score"]) if len(scored) >= 2 else None
+    depts: dict = {}
+    for c in done:
+        d = c.get("department") or "sales"
+        depts.setdefault(d, {"label": ind.dept_label(d), "shops": 0, "scores": [], "critical_misses": 0})
+        depts[d]["shops"] += 1
+        depts[d]["scores"].append(c.get("score_pct"))
+        depts[d]["critical_misses"] += len((evals.get(str(c.get("evaluation_id"))) or {}).get("critical_misses") or [])
+    shops = []
+    for c in calls[:40]:
+        if c.get("status") not in ("completed", "unreachable"):
+            continue
+        ev = evals.get(str(c.get("evaluation_id"))) if c.get("evaluation_id") else None
+        row = _call_row(c, ev)
+        row["department_label"] = ind.dept_label(c.get("department") or "sales")
+        row["snippet"] = _snippet(row.get("transcript") or "") if c.get("status") == "completed" else ""
+        row["month"] = ((c.get("ended_at") or c.get("scheduled_for")).astimezone(tz).strftime("%Y-%m")) if (c.get("ended_at") or c.get("scheduled_for")) else None
+        shops.append(row)
+    all_scores = [c.get("score_pct") for c in done]
+    crit_total = sum(len((evals.get(str(c.get("evaluation_id"))) or {}).get("critical_misses") or []) for c in done)
+    coaching: dict = {}
+    for c in done:
+        for tip in ((evals.get(str(c.get("evaluation_id"))) or {}).get("coaching") or [])[:3]:
+            key = no_em_dash(str(tip)).strip().rstrip(".")
+            coaching[key] = coaching.get(key, 0) + 1
+    avg = _pct(all_scores)
+    return {"person": {"target_id": str(target["_id"]), "name": target.get("name"), "title": target.get("title") or "", "department": target.get("department"), "department_label": ind.dept_label(target.get("department") or "sales"),
+                       "phone_last4": (target.get("phone") or "")[-4:], "active": target.get("active", True)},
+            "summary": {"shops": len(done), "unreachable": len([c for c in calls if c.get("status") == "unreachable"]), "avg_score": avg, "best": max([s for s in all_scores if s is not None], default=None),
+                        "worst": min([s for s in all_scores if s is not None], default=None), "critical_misses": crit_total, "trend_delta": delta,
+                        "needs_training": bool(done and ((avg is not None and avg < 70) or crit_total >= 2)), "first_shop": (done[-1].get("ended_at") or done[-1].get("scheduled_for")).isoformat() if done else None},
+            "departments": {d: {"label": v["label"], "shops": v["shops"], "avg_score": _pct(v["scores"]), "critical_misses": v["critical_misses"]} for d, v in depts.items()},
+            "trend": trend, "shops": shops, "coaching_themes": [{"text": k, "count": v} for k, v in sorted(coaching.items(), key=lambda kv: -kv[1])[:5]],
+            "client": {"id": cid, "name": client.get("name")}}
+
+
 async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     tz = _tz(client)
     start, end = month_bounds(month, tz)
@@ -625,15 +721,21 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
                       "people": len({c["target_id"] for c in dc}), "criteria": [cr for cr in criteria if cr["department"] == d]}
     call_rows = []
     for c in sorted(calls, key=lambda x: x.get("ended_at") or x.get("scheduled_for") or _now(), reverse=True):
-        ev = evals.get(str(c.get("evaluation_id"))) if c.get("evaluation_id") else None
-        call_rows.append({**serialize_call(c), "summary": (ev or {}).get("summary"), "critical_misses": sc.miss_labels(ev or {}), "coaching": (ev or {}).get("coaching") or [],
-                          "wins": (ev or {}).get("wins") or [], "adherence": (ev or {}).get("adherence") or {}, "results": (ev or {}).get("results") or [], "transcript": (ev or {}).get("transcript") or scr.transcript_text(c),
-                          "customer_sentiment": (ev or {}).get("customer_sentiment")})
-    themes = {}
-    for ev in evals.values():
+        call_rows.append(_call_row(c, evals.get(str(c.get("evaluation_id"))) if c.get("evaluation_id") else None))
+    # coaching themes per department: a service manager should never get sales tips in their section
+    themes_by_dept: dict = {}
+    for eid, ev in evals.items():
+        dept = ev_dept.get(eid, "sales")
         for tip in (ev.get("coaching") or [])[:3]:
             key = no_em_dash(str(tip)).strip().rstrip(".")
-            themes[key] = themes.get(key, 0) + 1
+            themes_by_dept.setdefault(dept, {})[key] = themes_by_dept.get(dept, {}).get(key, 0) + 1
+    for d, counts in themes_by_dept.items():
+        if d in by_dept:
+            by_dept[d]["coaching_themes"] = [{"text": k, "count": v} for k, v in sorted(counts.items(), key=lambda kv: -kv[1])[:6]]
+    themes: dict = {}
+    for counts in themes_by_dept.values():
+        for k, v in counts.items():
+            themes[k] = themes.get(k, 0) + v
     label = start.astimezone(tz).strftime("%B %Y")
     return {"client": {"id": cid, "name": client.get("name"), "brand": client.get("brand", ""), "city": client.get("city", ""), "state": client.get("state", ""), "contact_name": client.get("contact_name", ""),
                        "industry": ind.key_of(client), "industry_label": ind.get(ind.key_of(client))["label"], "customer_noun": ind.get(ind.key_of(client))["customer"], "business_noun": ind.get(ind.key_of(client))["business"]},
@@ -728,7 +830,15 @@ def report_pdf(report: dict) -> bytes:
                 pdf.set_font("Helvetica", "", 9); pdf.multi_cell(0, 7, txt(cr["text"] + ("  (critical)" if cr["critical"] else "") + (f"  -  {cr['passed']} of {cr['total']}" if cr.get("total") else "")), new_x="LMARGIN", new_y="NEXT")
             pdf.ln(3)
 
-    if report["coaching_themes"]:
+    theme_groups = [(dk, dv) for dk, dv in (report.get("by_department") or {}).items() if dv.get("coaching_themes")]
+    if theme_groups:
+        # one block per department so the service manager's section only carries service tips
+        for dk, dv in theme_groups:
+            h(f"Coaching themes for the next {dv.get('label') or ind.dept_label(dk)} meeting", 13)
+            for t in dv["coaching_themes"]:
+                p(f"-  {t['text']}" + (f"  (x{t['count']})" if t.get("count", 1) > 1 else ""), 10)
+            pdf.ln(3)
+    elif report["coaching_themes"]:
         h("Coaching themes for the next meeting", 13)
         for t in report["coaching_themes"]:
             p(f"-  {t['text']}", 10)

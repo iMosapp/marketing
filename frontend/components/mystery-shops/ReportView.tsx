@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CallDetailSheet } from './CallsTab';
+import { PersonDetailSheet } from './PersonDetailSheet';
 import { Label, Stat, Bar, StatusChip, deptLabel, fmtWhen, scoreColor, GOLD, RED, GREEN, AMBER, tid } from './shared';
 
 export type Criterion = { text: string; critical: boolean; passed: number; total: number; pass_pct: number; department: string; department_label?: string };
@@ -9,7 +10,7 @@ export type Criterion = { text: string; critical: boolean; passed: number; total
 export type Report = {
   client: { id: string; name: string; brand: string; city: string; state: string; contact_name: string }; month: string; month_label: string; generated_at: string;
   summary: { completed: number; planned: number; scheduled: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; people_shopped: number; needs_training: number };
-  by_department: Record<string, { label?: string; planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null; people?: number; criteria?: Criterion[] }>;
+  by_department: Record<string, { label?: string; planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null; people?: number; criteria?: Criterion[]; coaching_themes?: { text: string; count: number }[] }>;
   people: { key?: string; target_id?: string; name: string; department: string; department_label?: string; title: string; shops: number; completed: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; best: number | null; worst: number | null; critical_misses: number; needs_training: boolean; last_shop: string | null; coaching: string[] }[];
   criteria: Criterion[];
   coaching_themes: { text: string; count: number }[];
@@ -17,9 +18,10 @@ export type Report = {
   report_url?: string;
 };
 
-// One report body for the admin tab and the client's no-login page.
-export const ReportView = ({ report, colors, compact }: { report: Report; colors: any; compact?: boolean }) => {
+// One report body for the admin tab and the client's no-login page. personPath decides which endpoint the tap-a-name sheet uses.
+export const ReportView = ({ report, colors, compact, personPath }: { report: Report; colors: any; compact?: boolean; personPath?: (targetId: string) => string }) => {
   const [open, setOpen] = useState<any>(null);
+  const [person, setPerson] = useState<{ id: string; name: string } | null>(null);
   const s = report.summary;
   const done = report.calls.filter(c => c.status === 'completed');
   return (
@@ -44,10 +46,10 @@ export const ReportView = ({ report, colors, compact }: { report: Report; colors
         <Label t="WHO DID WELL, WHO NEEDS ANOTHER LOOK" colors={colors} />
         {report.people.length === 0 && <Text style={{ fontSize: 13.5, color: colors.textSecondary }}>No one has been shopped this month yet.</Text>}
         {report.people.map((p, i) => (
-          <View key={p.key || i} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: p.needs_training ? RED + '88' : colors.border, padding: 12, gap: 6 }} {...tid(`report-person-${i}`)}>
+          <TouchableOpacity key={p.key || i} disabled={!personPath || !p.target_id} onPress={() => p.target_id && setPerson({ id: p.target_id, name: p.name })} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: p.needs_training ? RED + '88' : colors.border, padding: 12, gap: 6 }} {...tid(`report-person-${i}`)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{p.name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {report.by_department[p.department]?.label || deptLabel(p.department)}{p.title ? ` · ${p.title}` : ''}</Text></Text>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{p.name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {report.by_department[p.department]?.label || deptLabel(p.department)}{p.title ? ` · ${p.title}` : ''}</Text>{!!personPath && !!p.target_id && <Text style={{ fontSize: 12, color: GOLD }}>  <Ionicons name="chevron-forward" size={11} color={GOLD} /> history</Text>}</Text>
                 <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{p.completed} shop{p.completed === 1 ? '' : 's'}{p.unreachable ? `, ${p.unreachable} unreachable` : ''}{p.best != null ? ` · best ${p.best}%` : ''}{p.critical_misses ? ` · ${p.critical_misses} critical miss${p.critical_misses === 1 ? '' : 'es'}` : ''}</Text>
               </View>
               <View style={{ alignItems: 'flex-end', gap: 2 }}>
@@ -56,7 +58,7 @@ export const ReportView = ({ report, colors, compact }: { report: Report; colors
               </View>
             </View>
             {p.coaching.length > 0 && <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }} numberOfLines={compact ? 2 : 4}>Coach on: {p.coaching.join(' · ')}</Text>}
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
 
@@ -81,12 +83,17 @@ export const ReportView = ({ report, colors, compact }: { report: Report; colors
         ));
       })()}
 
-      {report.coaching_themes.length > 0 && (
-        <View style={{ gap: 6 }}>
-          <Label t="COACHING THEMES FOR THE NEXT MEETING" colors={colors} />
-          {report.coaching_themes.map((t, i) => <Text key={i} style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>• {t.text}</Text>)}
-        </View>
-      )}
+      {report.coaching_themes.length > 0 && (() => {
+        const groups = Object.entries(report.by_department).filter(([, x]) => (x.coaching_themes || []).length > 0);
+        const sections = groups.length ? groups.map(([d, x]) => ({ key: d, title: `COACHING THEMES FOR THE NEXT ${(x.label || deptLabel(d)).toUpperCase()} MEETING`, rows: x.coaching_themes || [] }))
+          : [{ key: 'all', title: 'COACHING THEMES FOR THE NEXT MEETING', rows: report.coaching_themes }];
+        return sections.map(sec => (
+          <View key={sec.key} style={{ gap: 6 }} {...tid(`report-themes-${sec.key}`)}>
+            <Label t={sec.title} colors={colors} />
+            {sec.rows.map((t, i) => <Text key={i} style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>• {t.text}{t.count > 1 ? ` (x${t.count})` : ''}</Text>)}
+          </View>
+        ));
+      })()}
 
       <View style={{ gap: 8 }}>
         <Label t={`EVERY SHOP · ${done.length} COMPLETED`} colors={colors} />
@@ -105,6 +112,7 @@ export const ReportView = ({ report, colors, compact }: { report: Report; colors
         ))}
       </View>
       <CallDetailSheet id={open?.id || null} onClose={() => setOpen(null)} colors={colors} publicData={open ? { ...open, evaluation: open.results?.length || open.summary ? { summary: open.summary, critical_misses: open.critical_misses, coaching: open.coaching, wins: open.wins, results: open.results, scorecard_name: undefined } : null } : undefined} />
+      {!!personPath && <PersonDetailSheet targetId={person?.id || null} name={person?.name} path={personPath} onClose={() => setPerson(null)} colors={colors} />}
     </View>
   );
 };

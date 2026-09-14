@@ -47,8 +47,8 @@ export default function PublicShopReport() {
           </View>
           {error ? <Text style={{ fontSize: 15, color: LIGHT.textSecondary }} {...tid('public-report-error')}>{error}</Text> : !report ? <ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /> : (
             <>
-              <Text style={{ fontSize: 14, color: LIGHT.textSecondary, lineHeight: 20 }}>Every call below was placed by our AI {(report.client as any)?.customer_noun || 'shopper'} to your team member's cell during your business hours, recorded, transcribed and graded the same way for everyone. Tap any shop to hear the call and read the coaching.</Text>
-              <ReportView report={report} colors={LIGHT} compact />
+              <Text style={{ fontSize: 14, color: LIGHT.textSecondary, lineHeight: 20 }}>Every call below was placed by our AI {(report.client as any)?.customer_noun || 'shopper'} to your team member's cell during your business hours, recorded, transcribed and graded the same way for everyone. Tap any shop to hear the call and read the coaching, or tap a name to see that person's history across months.</Text>
+              <ReportView report={report} colors={LIGHT} compact personPath={targetId => `/public/shop-report/${token}/people/${targetId}`} />
               <Text style={{ fontSize: 12, color: LIGHT.textSecondary, textAlign: 'center', marginTop: 20 }}>Prepared by I'm On Social · imonsocial.com · Questions? Reply to the email this link came in.</Text>
             </>
           )}
