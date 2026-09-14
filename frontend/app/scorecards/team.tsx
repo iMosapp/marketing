@@ -9,11 +9,12 @@ import { useToast } from '../../components/common/Toast';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { ScoreRing } from '../../components/scorecards/ScoreRing';
 import { EvaluationSheet } from '../../components/scorecards/EvaluationSheet';
-import { GOLD, RED, GREEN, tid, scoreTone, fmtWhen, type Evaluation, type Scorecard } from '../../components/scorecards/shared';
+import { DigestCard } from '../../components/scorecards/DigestCard';
+import { GOLD, RED, GREEN, AMBER, tid, scoreTone, fmtWhen, coachingUnread, type Evaluation, type Scorecard } from '../../components/scorecards/shared';
 
 type Team = {
-  days: number; calls: number; avg_score: number | null; critical_misses: number;
-  reps: { user_id: string; name: string; photo?: string | null; count: number; avg_score: number | null; critical_misses: number; last_call_at: string | null; weakest: string | null }[];
+  days: number; calls: number; avg_score: number | null; critical_misses: number; unread_coaching?: number;
+  reps: { user_id: string; name: string; photo?: string | null; count: number; avg_score: number | null; critical_misses: number; unread_coaching?: number; acknowledged?: number; last_call_at: string | null; weakest: string | null }[];
   criteria: { id: string; text: string; critical: boolean; pass_rate: number | null; graded: number }[];
   heatmap: Record<string, Record<string, number | null>>; alerts: Evaluation[]; muted_reps: string[];
 };
@@ -87,9 +88,11 @@ export default function TeamCallScores() {
             <View style={{ flex: 1, flexDirection: 'row', gap: 14 }}>
               <View><Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>{data?.calls ?? 0}</Text><Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4 }}>CALLS GRADED</Text></View>
               <View><Text style={{ fontSize: 22, fontWeight: '800', color: data?.critical_misses ? RED : colors.text }} {...tid('team-misses')}>{data?.critical_misses ?? 0}</Text><Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4 }}>CRITICAL MISSES</Text></View>
-              <View><Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>{data?.reps.length ?? 0}</Text><Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4 }}>REPS</Text></View>
+              <View><Text style={{ fontSize: 22, fontWeight: '800', color: data?.unread_coaching ? AMBER : colors.text }} {...tid('team-unread')}>{data?.unread_coaching ?? 0}</Text><Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4 }}>UNREAD COACHING</Text></View>
             </View>
           </View>
+
+          <DigestCard colors={colors} />
 
           <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, gap: 4 }}>
             <SegBtn k="board" l="Leaderboard" /><SegBtn k="heat" l="Who misses what" /><SegBtn k="alerts" l="Alerts" badge={data?.alerts.length} />
@@ -106,6 +109,11 @@ export default function TeamCallScores() {
                     <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>{r.name}{data.muted_reps.includes(r.user_id) ? <Text style={{ fontSize: 11, color: colors.textSecondary }}>  muted</Text> : null}</Text>
                     <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{r.count} call{r.count === 1 ? '' : 's'}{r.critical_misses ? ` · ${r.critical_misses} critical miss${r.critical_misses === 1 ? '' : 'es'}` : ' · no critical misses'}</Text>
                     {r.weakest && <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>Weakest: {r.weakest}</Text>}
+                    {r.unread_coaching ? (
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: AMBER, marginTop: 2 }} {...tid(`team-rep-unread-${r.user_id}`)}>{r.unread_coaching} coaching note{r.unread_coaching === 1 ? '' : 's'} not read yet</Text>
+                    ) : r.acknowledged ? (
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: GREEN, marginTop: 2 }} {...tid(`team-rep-read-${r.user_id}`)}>Read all coaching</Text>
+                    ) : null}
                   </View>
                   <View style={{ alignItems: 'center' }}><Text style={{ fontSize: 20, fontWeight: '800', color: scoreTone(r.avg_score) }}>{r.avg_score ?? '--'}</Text><Text style={{ fontSize: 9, fontWeight: '700', color: colors.textSecondary }}>AVG</Text></View>
                   <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
@@ -165,7 +173,14 @@ export default function TeamCallScores() {
                     <Text style={{ fontSize: 13, fontWeight: '800', color: scoreTone(ev.score_pct) }}>{ev.score_pct}%</Text>
                   </View>
                   <Text style={{ fontSize: 12, color: RED, fontWeight: '600' }}>Missed: {ev.results.filter(r => ev.critical_misses.includes(r.criterion_id)).map(r => r.text).join(', ')}</Text>
-                  <Text style={{ fontSize: 11, color: colors.textSecondary }}>{fmtWhen(ev.call_at)} · {ev.scorecard_name}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={{ flex: 1, fontSize: 11, color: colors.textSecondary }}>{fmtWhen(ev.call_at)} · {ev.scorecard_name}</Text>
+                    {ev.coaching.length > 0 && (
+                      <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: (coachingUnread(ev) ? AMBER : GREEN) + '22' }} {...tid(`team-alert-ack-${ev.id}`)}>
+                        <Text style={{ fontSize: 10.5, fontWeight: '800', color: coachingUnread(ev) ? AMBER : GREEN }}>{coachingUnread(ev) ? 'COACHING UNREAD' : `READ · ${fmtWhen(ev.acknowledged_at!).toUpperCase()}`}</Text>
+                      </View>
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>

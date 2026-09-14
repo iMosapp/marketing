@@ -30,6 +30,11 @@ INDUSTRIES: dict = {
              "curveballs": ["Your car is in the body shop and insurance is paying, you are not sure what they cover", "You need the vehicle in the next two hours", "You ask about one-way rentals to another city",
                             "You are under 25 and worry about the extra fee", "You want to know exactly what the deposit and mileage rules are", "You need a car seat or a tow hitch"],
              "defaults": ["a mid-size SUV", "a pickup"]},
+            {"key": "collision", "label": "Body Shop", "call": "body shop call", "prefix": "Collision caller:", "rep": "a body shop estimator", "template": "collision_phone",
+             "brief": "an inbound collision center call from someone whose vehicle was just damaged; the estimator should show empathy, confirm the vehicle, the damage and whether it is drivable, ask about the insurance claim, explain the estimate process instead of quoting blind, mention rental or transportation and set a specific estimate or drop-off time",
+             "curveballs": ["The other driver's insurance is paying and you are not sure what that means for you", "Your own insurance told you to use their preferred shop", "You want a price over the phone from a couple of photos",
+                            "You need a rental car today because it is your only vehicle", "You ask whether they use original parts or aftermarket", "You had a bad experience with a body shop that took six weeks last time"],
+             "defaults": ["my SUV", "my sedan"]},
         ],
     },
     "real_estate": {

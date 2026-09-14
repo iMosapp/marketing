@@ -20,9 +20,11 @@ export type Evaluation = {
   scorecard_id: string; scorecard_name: string; department: string; duration_s: number; direction: string; call_at: string;
   results: EvalResult[]; score_pct: number | null; critical_misses: string[]; summary: string; wins: string[]; coaching: string[];
   customer_sentiment: 'positive' | 'neutral' | 'negative'; call_type: string; graded_by: 'ai' | 'manager'; created_at: string;
+  acknowledged_at?: string | null; acknowledged_by?: string | null;
 };
 export type RepStats = {
   days: number; count: number; avg_score: number | null; prev_avg: number | null; critical_misses: number; clean_calls: number;
+  unread_coaching?: number; acknowledged?: number;
   trend: { week_start: string; label: string; avg: number | null; count: number }[];
   criteria: { id: string; text: string; critical: boolean; passed: number; graded: number; pass_rate: number | null }[];
 };
@@ -41,3 +43,5 @@ export const passedCount = (ev: Evaluation) => ({
   passed: ev.results.filter(r => r.passed === true).length,
   graded: ev.results.filter(r => r.passed !== null).length,
 });
+// Coaching the rep has not tapped "Got it" on yet.
+export const coachingUnread = (ev: Evaluation) => (ev.coaching?.length || 0) > 0 && !ev.acknowledged_at;

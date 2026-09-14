@@ -14,6 +14,7 @@ const EXAMPLES: Record<string, string> = {
   service: 'Customer hears a squeal from the front brakes on their 2021 Explorer, has a trip this weekend, wants it looked at tomorrow and asks for a loaner. Worried about cost.',
   parts: 'Customer calling parts for a front brake rotor for a 2019 F-150, wants to know if it is in stock and the price, gets impatient when put on hold.',
   rental: 'Customer whose car is in the body shop, insurance is covering a rental, needs something today with room for a car seat, nervous about the deposit.',
+  collision: 'Customer was rear ended this morning in a 2022 Grand Cherokee, the other driver admitted fault, wants to know what happens next, whether they need a rental and how long repairs take.',
 };
 // Industries without a hand-written example get one built from the department pack (its brief + a curveball).
 const exampleFor = (dept: Dept, industryKey: string) => EXAMPLES[dept.key] || `A ${industryOf(industryKey).customer} calls ${dept.rep ? dept.rep : 'the team'} about ${industryOf(industryKey).offering.hint}. ${dept.call ? `A typical ${dept.call}` : 'A typical call'}, with one wrinkle: they are comparing you with another ${industryOf(industryKey).business} and want a price before they commit.`;

@@ -53,6 +53,12 @@ def email_html(client: dict, rep: dict, line: str, url: str, logo_src: str) -> s
                      ("People", s["people_shopped"]), ("Need training", s["needs_training"])))
     top = [r for r in rep.get("people") or [] if r.get("completed")][:3]
     rows = "".join(f'<li style="margin:0 0 4px">{ms._esc(r["name"])} · {ms._esc(r.get("department_label") or ind.dept_label(r.get("department")))} · <b>{r["avg_score"]}%</b>{" · needs training" if r.get("needs_training") else ""}</li>' for r in top if r.get("avg_score") is not None)
+    boards = [(dv.get("label") or ind.dept_label(dk), dv["leaderboard"][:3]) for dk, dv in (rep.get("by_department") or {}).items() if dv.get("leaderboard")]
+    board_html = "".join(
+        f'<p style="margin:0 0 6px;font-size:14px;color:#1a1a1a;line-height:1.5"><b>{ms._esc(lbl)}</b>: '
+        + " &nbsp;·&nbsp; ".join(f"{r['rank']}. {ms._esc(r['name'])} <b>{r['avg_score']}%</b>" + (f' <span style="color:#C9A962;font-size:12px;font-weight:700">{ms._esc(", ".join(b["label"] for b in r["badges"]))}</span>' if r["badges"] else "") for r in rows_) + "</p>"
+        for lbl, rows_ in boards)
+    people_html = ('<p style="font-size:13px;color:#555;margin:0 0 6px;font-weight:700">Leaderboard</p>' + board_html) if board_html else (('<p style="font-size:13px;color:#555;margin:0 0 4px;font-weight:700">Top of the list</p><ul style="margin:0 0 14px;padding-left:18px;font-size:14px;color:#1a1a1a">' + rows + '</ul>') if rows else '')
     return f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f5f3ee">
   <div style="background:#fff;border-radius:18px;overflow:hidden;border:1px solid #e6e1d6">
     <div style="text-align:center;padding:26px 20px 14px;border-bottom:1px solid #eee">{logo}
@@ -62,7 +68,7 @@ def email_html(client: dict, rep: dict, line: str, url: str, logo_src: str) -> s
       <h1 style="font-size:22px;line-height:1.3;margin:0 0 6px;color:#111">{ms._esc(client.get('name'))}: {ms._esc(rep['month_label'])}</h1>
       <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">Hi {ms._esc(first)}, here is last month's phone mystery shop report. {ms._esc(line)}</p>
       <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 14px"><tr>{boxes}</tr></table>
-      {('<p style="font-size:13px;color:#555;margin:0 0 4px;font-weight:700">Top of the list</p><ul style="margin:0 0 14px;padding-left:18px;font-size:14px;color:#1a1a1a">' + rows + '</ul>') if rows else ''}
+      {people_html}
       <p style="margin:22px 0;text-align:center"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px;display:inline-block;font-size:15px">Open the live report</a></p>
       <p style="font-size:13px;color:#666;line-height:1.6;margin:0">The full PDF is attached. Tap any name in the live report to see that person's shops, transcripts and trend. Questions? Just reply to this email.</p>
     </div>

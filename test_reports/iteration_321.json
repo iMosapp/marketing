@@ -1,0 +1,32 @@
+{
+  "summary": "Full pass over the 4 new features: parts/rental/collision (Body Shop) departments, per-department Shop Leaderboard on monthly report, rep 'Got it' coaching acknowledgement, and Monday Coaching Digest. Backend sanity 6/7 (1 skipped only because ack-403 test couldn't discover an evaluation id from open endpoints - covered indirectly by frontend which confirms managers get NO eval-ack-btn). Frontend A-F all verified end-to-end.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Shop client Challenges tab", "issues": ["Body Shop department section/chip is not rendered on the client's Challenges tab when the client has no Body Shop reps assigned yet. Library and Generator sheet DO include Body Shop chip and 3 collision starter challenges. If the spec intended Body Shop chip to always appear on the client challenges tab regardless of headcount, this is a gap; otherwise this is by-design (chip only renders when at least one rep is in that dept). Flagging for confirmation."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_review_321.py",
+    "/app/test_reports/pytest/review_321.xml"
+  ],
+  "action_items": [
+    "Confirm intended behavior for Body Shop dept chip on the client Challenges tab when the client has no rep in that department (currently hidden). Same likely applies to Rental filter chip on the Report tab (rental had no shops, so report-filter-dept-rental was not rendered)."
+  ],
+  "critical_code_review_comments": [
+    "report-filter-clear testid only renders when a filter is currently active (verified). This is fine but may surprise future tests looking for a persistent Clear affordance.",
+    "PDF export uses FlateDecode-compressed streams, so raw byte grep for 'Sales leaderboard' will fail; assertion should target %PDF header + Content-Type."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_review_321.py"
+  ],
+  "success_rate": {"backend": "6/6 executed passed (1 test skipped due to eval-id discovery)", "frontend": "6/6 sections passed (A,B,C,D,E,F)"},
+  "test_credentials": "forest@imosapp.com/Admin123!; qa-manager@invalid.imonsocial.test/Manager123!; activation-tester@invalid.imonsocial.test/NewPass123!",
+  "seed_data_creation": "No new seed. Leaderboard demo already seeded on QA Jeep 979a. Rep acked one previously-unread evaluation (6aa58b3f3a5cf4005329fa53) as part of section E - this changed TO READ count from 7 -> 6 on activation-tester. If a re-run is desired starting from unread=7, another unread eval exists (6aa58a75, 6aa589de, 6aa58889, 6aa4132c, 6aa41337, 6aa41342) or re-run seed_leaderboard_demo.py.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend login response uses 'token' (not 'access_token'). Web preview uses SPA routing: use history.pushState+popstate to navigate in-app. digest-toggle OFF status text: 'Off for you. Still goes to N other managers.'; ON: 'Every Monday at 8am to <email> and N other managers.'. digest-send-now toast: 'Sent to <email>: N calls graded ... critical misses, N coaching notes not read yet.' Rep view uses 'New coaching, tap to read' row text (not 'Coaching not read yet' which appears in manager view). rep-scores-unread on rep view has the numeric count as inner text and the label 'TO READ' sits below. Report tab: department filter chips are conditional on shops existing for that department (rental chip currently missing because no rental shops). Same likely applies to the client Challenges tab (Body Shop section only renders when at least one rep is in that department).",
+  "rca of the issue": "N/A - all features working. Only ambiguity is whether Body Shop chip on Challenges tab should always render or only when reps exist in that dept - product decision, not a bug."
+}

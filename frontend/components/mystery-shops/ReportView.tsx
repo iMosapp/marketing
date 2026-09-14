@@ -7,11 +7,13 @@ import { Label, Stat, Bar, StatusChip, deptLabel, fmtWhen, scoreColor, GOLD, RED
 
 export type Criterion = { text: string; critical: boolean; passed: number; total: number; pass_pct: number; department: string; department_label?: string };
 type Theme = { text: string; count: number };
+export type LeaderRow = { rank: number; key: string; target_id: string; name: string; title?: string; avg_score: number; completed: number; best: number | null; critical_misses: number; prev_avg: number | null; delta: number | null; badges: { key: string; label: string; detail: string }[] };
+const MEDAL = ['#C9A962', '#A8A9AD', '#CD7F32'];
 
 export type Report = {
-  client: { id: string; name: string; brand: string; city: string; state: string; contact_name: string }; month: string; month_label: string; generated_at: string;
+  client: { id: string; name: string; brand: string; city: string; state: string; contact_name: string }; month: string; month_label: string; prev_month_label?: string; generated_at: string;
   summary: { completed: number; planned: number; scheduled: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; people_shopped: number; needs_training: number };
-  by_department: Record<string, { label?: string; planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null; people?: number; criteria?: Criterion[]; coaching_themes?: Theme[] }>;
+  by_department: Record<string, { label?: string; planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null; people?: number; criteria?: Criterion[]; coaching_themes?: Theme[]; leaderboard?: LeaderRow[] }>;
   people: { key?: string; target_id?: string; name: string; department: string; department_label?: string; title: string; shops: number; completed: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; best: number | null; worst: number | null; critical_misses: number; needs_training: boolean; last_shop: string | null; coaching: string[] }[];
   criteria: Criterion[];
   coaching_themes: Theme[];
@@ -38,6 +40,41 @@ const themesFrom = (done: any[]): Theme[] => {
   for (const c of done) for (const tip of (c.coaching || []).slice(0, 3)) { const k = String(tip).trim().replace(/\.$/, ''); m.set(k, (m.get(k) || 0) + 1); }
   return [...m.entries()].map(([text, count]) => ({ text, count })).sort((a, b) => b.count - a.count).slice(0, 6);
 };
+
+// Ranked rows for one department: medals for the top three, badges for top score / most improved / most shops. Tap a name for their history.
+const Leaderboard = ({ dept, label, rows, prevLabel, colors, onPerson }: { dept: string; label: string; rows: LeaderRow[]; prevLabel?: string; colors: any; onPerson?: (id: string, name: string) => void }) => (
+  <View style={{ gap: 8 }} {...tid(`report-leaderboard-${dept}`)}>
+    <Label t={`${label.toUpperCase()} LEADERBOARD`} colors={colors} />
+    {rows.map(r => {
+      const medal = r.rank <= 3 ? MEDAL[r.rank - 1] : null;
+      return (
+        <TouchableOpacity key={r.key} disabled={!onPerson} onPress={() => onPerson?.(r.target_id, r.name)} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: r.rank === 1 ? GOLD : colors.border, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }} {...tid(`report-leader-${dept}-${r.rank}`)}>
+          <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: medal ? medal + '22' : colors.surface, borderWidth: medal ? 2 : 0, borderColor: medal || 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+            {medal ? <Ionicons name="trophy" size={16} color={medal} /> : <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSecondary }}>{r.rank}</Text>}
+          </View>
+          <View style={{ flex: 1, gap: 3 }}>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{r.name}{r.title ? <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}> · {r.title}</Text> : null}</Text>
+            <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>
+              {r.completed} shop{r.completed === 1 ? '' : 's'}{r.best != null ? ` · best ${r.best}%` : ''} · {r.delta != null ? <Text style={{ fontWeight: '800', color: r.delta > 0 ? GREEN : r.delta < 0 ? RED : colors.textSecondary }}>{r.delta > 0 ? '+' : ''}{r.delta} vs {prevLabel || 'last month'}</Text> : <Text>new this month</Text>}
+            </Text>
+            {r.badges.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 2 }}>
+                {r.badges.map(b => (
+                  <View key={b.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: GOLD + '22' }} {...tid(`report-leader-${dept}-${r.rank}-badge-${b.key}`)}>
+                    <Ionicons name={b.key === 'top_score' ? 'star' : b.key === 'most_improved' ? 'trending-up' : 'flame'} size={11} color={GOLD} />
+                    <Text style={{ fontSize: 10.5, fontWeight: '800', color: GOLD }}>{b.label.toUpperCase()}</Text>
+                    <Text style={{ fontSize: 10.5, fontWeight: '600', color: colors.textSecondary }}>{b.detail}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: scoreColor(r.avg_score) }}>{r.avg_score}%</Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+);
 
 const ChipRow = ({ items, value, onChange, colors, testPrefix }: { items: { key: string; label: string; count?: number }[]; value: string; onChange: (k: string) => void; colors: any; testPrefix: string }) => (
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 8 }}>
@@ -142,6 +179,10 @@ export const ReportView = ({ report, colors, compact, personPath }: { report: Re
           ))}
         </View>
       )}
+
+      {agent === 'all' && Object.entries(report.by_department).filter(([d, x]) => (dept === 'all' || d === dept) && x.leaderboard?.length).map(([d, x]) => (
+        <Leaderboard key={d} dept={d} label={labelOf(d)} rows={x.leaderboard!} prevLabel={report.prev_month_label} colors={colors} onPerson={personPath ? (id, name) => setPerson({ id, name }) : undefined} />
+      ))}
 
       <View style={{ gap: 8 }}>
         <Label t={agent !== 'all' ? `${agent.toUpperCase()} THIS MONTH` : 'WHO DID WELL, WHO NEEDS ANOTHER LOOK'} colors={colors} />

@@ -9,7 +9,7 @@ import { useToast } from '../common/Toast';
 import { ScreenHeader } from '../common/ScreenHeader';
 import { ScoreRing } from './ScoreRing';
 import { EvaluationSheet } from './EvaluationSheet';
-import { GOLD, GREEN, RED, tid, scoreTone, fmtDur, fmtWhen, type Evaluation, type RepStats } from './shared';
+import { GOLD, GREEN, RED, AMBER, tid, scoreTone, fmtDur, fmtWhen, coachingUnread, type Evaluation, type RepStats } from './shared';
 
 const DAYS = [7, 30, 90];
 
@@ -74,6 +74,7 @@ export const RepScores = ({ userId, mine, openId }: { userId?: string; mine: boo
               <View style={{ flexDirection: 'row', gap: 14 }}>
                 <View><Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>{s?.clean_calls ?? 0}</Text><Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4 }}>CLEAN CALLS</Text></View>
                 <View><Text style={{ fontSize: 18, fontWeight: '800', color: s?.critical_misses ? RED : colors.text }} {...tid('rep-scores-misses')}>{s?.critical_misses ?? 0}</Text><Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4 }}>CRITICAL MISSES</Text></View>
+                <View><Text style={{ fontSize: 18, fontWeight: '800', color: s?.unread_coaching ? AMBER : colors.text }} {...tid('rep-scores-unread')}>{s?.unread_coaching ?? 0}</Text><Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4 }}>{mine ? 'TO READ' : 'UNREAD COACHING'}</Text></View>
               </View>
             </View>
           </View>
@@ -133,6 +134,12 @@ export const RepScores = ({ userId, mine, openId }: { userId?: string; mine: boo
                   <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }} numberOfLines={1}>{ev.contact_name || 'Unknown caller'}</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{ev.direction === 'inbound' ? 'Inbound' : 'Outbound'} · {fmtDur(ev.duration_s)} · {fmtWhen(ev.call_at)} · {ev.scorecard_name}</Text>
                   {ev.critical_misses.length > 0 && <Text style={{ fontSize: 11, fontWeight: '700', color: RED, marginTop: 3 }}>Missed: {ev.results.filter(r => ev.critical_misses.includes(r.criterion_id)).map(r => r.text).join(', ')}</Text>}
+                  {ev.coaching.length > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }} {...tid(`rep-scores-eval-ack-${ev.id}`)}>
+                      <Ionicons name={coachingUnread(ev) ? 'ellipse' : 'checkmark-circle'} size={coachingUnread(ev) ? 8 : 12} color={coachingUnread(ev) ? AMBER : GREEN} />
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: coachingUnread(ev) ? AMBER : GREEN }}>{coachingUnread(ev) ? (mine ? 'New coaching, tap to read' : 'Coaching not read yet') : (mine ? 'You read the coaching' : `Read · ${fmtWhen(ev.acknowledged_at!)}`)}</Text>
+                    </View>
+                  )}
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
               </TouchableOpacity>

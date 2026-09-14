@@ -2195,6 +2195,13 @@ def start_scheduler():
         await send_due_digests(get_db())
     scheduler.add_job(safe_job(_shop_weekly_digests), IntervalTrigger(hours=1), id="mystery_shop_weekly_digest", replace_existing=True, misfire_grace_time=1800)
 
+    # Hourly — Monday morning (after 8am store time) coaching digest to every manager: last week's call scores per rep + the one thing to coach next
+    async def _coaching_digests():
+        from routers.database import get_db
+        from services.coaching_digest import send_due_digests
+        await send_due_digests(get_db())
+    scheduler.add_job(safe_job(_coaching_digests), IntervalTrigger(hours=1), id="coaching_digest_weekly", replace_existing=True, misfire_grace_time=1800)
+
     # Every 5 minutes — force garbage collection to reclaim memory from large operations
     async def _force_gc():
         import gc

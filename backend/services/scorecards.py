@@ -22,7 +22,7 @@ COLL = "scorecards"
 EVAL_COLL = "call_evaluations"
 MIN_DURATION_S = 30
 MODEL = ("openai", "gpt-5.2")
-DEPARTMENTS = ["Internet Sales", "Sales Floor", "Service BDC", "Service Advisor", "Finance", "Parts"]
+DEPARTMENTS = ["Internet Sales", "Sales Floor", "Service BDC", "Service Advisor", "Finance", "Parts", "Rental", "Body Shop"]
 
 TEMPLATES = [
     {
@@ -96,6 +96,21 @@ TEMPLATES = [
             {"text": "Explained requirements (age, license, card, deposit)", "hint": "So there are no surprises at the counter.", "weight": 1, "critical": False},
             {"text": "Asked to reserve it and confirmed pickup time", "hint": "'Should I hold that for you at 9 tomorrow?'", "weight": 2, "critical": False},
             {"text": "Got the customer's phone number and recapped", "hint": "Number for the confirmation, then recap vehicle, time, rate.", "weight": 1, "critical": False},
+        ],
+    },
+    {
+        "key": "collision_phone", "name": "Body Shop Call", "department": "Body Shop",
+        "description": "Inbound collision calls: calm the customer, learn the damage and the claim, book the estimate, never quote blind.",
+        "criteria": [
+            {"text": "Answered with their name and the body shop", "hint": "Name, department, store. Calm and glad they called.", "weight": 1, "critical": False},
+            {"text": "Got the customer's name", "hint": "Ask early and use it.", "weight": 1, "critical": False},
+            {"text": "Showed empathy about the accident", "hint": "'I'm glad you're okay' before any process talk.", "weight": 1, "critical": False},
+            {"text": "Confirmed the vehicle, the damage and whether it is drivable", "hint": "Year, make, model, where the damage is, does it drive straight, any lights on.", "weight": 2, "critical": True},
+            {"text": "Asked whether a claim is open and which insurance company", "hint": "Their carrier or the other driver's. Claim number if they have it.", "weight": 2, "critical": True},
+            {"text": "Explained the estimate process instead of quoting a price blind", "hint": "Photos are a start, the real number comes from a teardown. Say how long the estimate takes.", "weight": 2, "critical": False},
+            {"text": "Mentioned rental or transportation options", "hint": "Rental coordination, shuttle or a ride, before they ask.", "weight": 1, "critical": False},
+            {"text": "Offered a specific estimate or drop-off time with two options", "hint": "'Can you swing by at 10 tomorrow or 3 this afternoon?'", "weight": 2, "critical": True},
+            {"text": "Got the customer's phone number and recapped", "hint": "Number for updates, then recap time, what to bring (claim number, insurance card).", "weight": 1, "critical": False},
         ],
     },
 ]
@@ -376,10 +391,25 @@ async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name
 def serialize_eval(ev: dict) -> dict:
     out = {k: v for k, v in ev.items() if k != "_id"}
     out["id"] = str(ev["_id"])
-    for k in ("created_at", "updated_at", "call_at", "alerts_sent_at"):
+    for k in ("created_at", "updated_at", "call_at", "alerts_sent_at", "acknowledged_at"):
         if k in out:
             out[k] = _iso(out[k])
     return out
+
+
+def unread_coaching(evals: list) -> int:
+    """Graded calls whose coaching the rep has not tapped 'Got it' on yet."""
+    return sum(1 for e in evals if e.get("coaching") and not e.get("acknowledged_at"))
+
+
+async def acknowledge(db, ev: dict, actor: dict) -> dict:
+    """The rep read the coaching. Idempotent; managers see the stamp on the team board, the rep page and every alert."""
+    if ev.get("acknowledged_at"):
+        return ev
+    upd = {"acknowledged_at": _now(), "acknowledged_by": str(actor["_id"])}
+    await db[EVAL_COLL].update_one({"_id": ev["_id"]}, {"$set": upd})
+    ev.update(upd)
+    return ev
 
 
 async def _conversation_for(db, log: dict) -> Optional[dict]:
@@ -623,6 +653,7 @@ def rep_stats(evals: list, days: int) -> dict:
         "days": days, "count": len(cur), "avg_score": _avg([e.get("score_pct") for e in cur]), "prev_avg": _avg([e.get("score_pct") for e in prev]),
         "critical_misses": sum(len(e.get("critical_misses") or []) for e in cur),
         "clean_calls": sum(1 for e in cur if not e.get("critical_misses")), "trend": trend, "criteria": criteria_rates(cur),
+        "unread_coaching": unread_coaching(cur), "acknowledged": sum(1 for e in cur if e.get("acknowledged_at")),
     }
 
 
@@ -646,11 +677,12 @@ async def team_stats(db, scope: dict, days: int, scorecard_id: Optional[str] = N
         reps.append({"user_id": uid, "name": u.get("name") or evs[0].get("rep_name") or "Rep", "photo": u.get("photo_thumbnail") or u.get("photo_url"),
                      "count": len(evs), "avg_score": _avg([e.get("score_pct") for e in evs]),
                      "critical_misses": sum(len(e.get("critical_misses") or []) for e in evs),
+                     "unread_coaching": unread_coaching(evs), "acknowledged": sum(1 for e in evs if e.get("acknowledged_at")),
                      "last_call_at": _iso(evs[0].get("call_at")), "weakest": rates[0]["text"] if rates and rates[0]["pass_rate"] is not None and rates[0]["pass_rate"] < 100 else None})
     reps.sort(key=lambda r: (-(r["avg_score"] if r["avg_score"] is not None else -1), -r["count"]))
     alerts = [serialize_eval(e) for e in evals if e.get("critical_misses")][:30]
     return {
         "days": days, "scorecard_id": scorecard_id, "calls": len(evals), "avg_score": _avg([e.get("score_pct") for e in evals]),
-        "critical_misses": sum(len(e.get("critical_misses") or []) for e in evals), "reps": reps,
+        "critical_misses": sum(len(e.get("critical_misses") or []) for e in evals), "reps": reps, "unread_coaching": unread_coaching(evals),
         "criteria": criteria_rates(evals) if scorecard_id else [], "heatmap": heat if scorecard_id else {}, "alerts": alerts,
     }

@@ -37,7 +37,7 @@ export type Proposal = {
   created_at: string; sent_at?: string | null; viewed_at?: string | null; signed_at?: string | null; signer?: { name?: string; title?: string; email?: string; signed_at?: string }; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number; paid_at?: string; error?: string }; url?: string;
 };
 
-export const DEPTS: Dept[] = [{ key: 'sales', label: 'Sales' }, { key: 'service', label: 'Service' }, { key: 'parts', label: 'Parts' }, { key: 'rental', label: 'Rental' }];
+export const DEPTS: Dept[] = [{ key: 'sales', label: 'Sales' }, { key: 'service', label: 'Service' }, { key: 'parts', label: 'Parts' }, { key: 'rental', label: 'Rental' }, { key: 'collision', label: 'Body Shop' }];
 export const AUTOMOTIVE: Industry = { key: 'automotive', label: 'Automotive dealership', business: 'dealership', place: 'store', customer: 'shopper', departments: DEPTS,
   offering: { label: 'vehicle', plural: 'vehicles', hint: '2024 Jeep Grand Cherokee L Limited', field: 'Vehicles the shopper can mention', field_help: 'Real units from the lot make the calls believable.' } };
 // Industry packs come from the backend once per app session; every picker and label reads from here, never from constants.
@@ -54,7 +54,7 @@ export const industryLabel = (key?: string | null) => industryOf(key).label;
 export const deptsFor = (industryKey?: string | null): Dept[] => industryOf(industryKey).departments;
 export const industryOfDept = (deptKey?: string): Industry => INDUSTRIES.find(i => i.departments.some(d => d.key === deptKey)) || INDUSTRIES[0] || AUTOMOTIVE;
 export const deptLabel = (d?: string, depts?: Dept[] | null) => { const local = (depts || []).find(x => x.key === d); if (local) return local.label; for (const i of INDUSTRIES) { const hit = i.departments.find(x => x.key === d); if (hit) return hit.label; } return DEPTS.find(x => x.key === d)?.label || (d ? d.replace(/^[a-z]+_/, '').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 'Sales'); };
-export const perMonthText = (per?: Record<string, number> | null, joiner = ' + ', depts?: Dept[] | null) => { const parts = Object.entries(per || {}).filter(([, n]) => (n || 0) > 0).map(([k, n]) => `${n} ${deptLabel(k, depts).toLowerCase()}`); return parts.length ? parts.join(joiner) : '0'; };
+export const perMonthText = (per?: Record<string, number> | null, joiner = ' + ', depts?: Dept[] | null) => { const parts = Object.entries(per || {}).filter(([, n]) => (n || 0) > 0).map(([k, n]) => `${n} ${deptLabel(k, depts).toLowerCase()}`); if (!parts.length) return '0'; if (joiner.trim() === 'and' && parts.length > 2) return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`; return parts.join(joiner); };
 // Departments an account can shop: the server sends them with the client; fall back to its industry pack.
 export const deptsOfClient = (client?: { departments?: Dept[]; industry?: string } | null): Dept[] => (client?.departments?.length ? client.departments : deptsFor(client?.industry));
 export const customerNoun = (industryKey?: string | null) => industryOf(industryKey).customer;

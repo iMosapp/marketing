@@ -3,12 +3,13 @@ import { View, Text, Modal, ScrollView, TouchableOpacity, ActivityIndicator } fr
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useToast } from '../common/Toast';
 import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { ScoreRing } from './ScoreRing';
 import { CriteriaChecklist } from './CriteriaChecklist';
-import { GOLD, GREEN, RED, tid, fmtDur, fmtWhen, passedCount, type Evaluation, type Scorecard } from './shared';
+import { GOLD, GREEN, RED, AMBER, tid, fmtDur, fmtWhen, passedCount, type Evaluation, type Scorecard } from './shared';
 
 type Props = {
   visible: boolean; onClose: () => void;
@@ -27,6 +28,7 @@ const REASONS: Record<string, string> = {
 export const EvaluationSheet = ({ visible, onClose, evaluationId, callSid, hasRecording, onChanged }: Props) => {
   const { colors } = useThemeStore();
   const { showToast } = useToast();
+  const { user } = useAuthStore();
   const router = useRouter();
   const [ev, setEv] = useState<Evaluation | null>(null);
   const [reason, setReason] = useState<string | null>(null);
@@ -74,6 +76,17 @@ export const EvaluationSheet = ({ visible, onClose, evaluationId, callSid, hasRe
 
   const sid = ev?.call_sid || callSid;
   const counts = ev ? passedCount(ev) : null;
+  const isMine = !!ev && !!user?._id && String(ev.user_id) === String(user._id);
+  const repFirst = (ev?.rep_name || 'the rep').split(' ')[0];
+  const ack = async () => {
+    if (!ev) return;
+    setBusy('ack');
+    try {
+      const res = await api.post(`/scorecards/evaluations/${ev.id}/ack`);
+      setEv(res.data); onChanged?.(res.data); showToast('Marked as read. Your manager can see it.', 'success');
+    } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not save', 'error'); }
+    finally { setBusy(null); }
+  };
   const sentiment = ev?.customer_sentiment === 'positive' ? { c: GREEN, l: 'Customer upbeat' } : ev?.customer_sentiment === 'negative' ? { c: RED, l: 'Customer frustrated' } : { c: '#8E8E93', l: 'Customer neutral' };
   const H = ({ t }: { t: string }) => <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1, marginBottom: 8 }}>{t}</Text>;
 
@@ -139,9 +152,25 @@ export const EvaluationSheet = ({ visible, onClose, evaluationId, callSid, hasRe
                   </View>
                 )}
                 {ev.coaching.length > 0 && (
-                  <View style={{ backgroundColor: GOLD + '14', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: GOLD }} {...tid('eval-coaching')}>
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 1, marginBottom: 6 }}>COACH ON THIS</Text>
+                  <View style={{ backgroundColor: GOLD + '14', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: GOLD, gap: 4 }} {...tid('eval-coaching')}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 1, marginBottom: 2 }}>COACH ON THIS</Text>
                     {ev.coaching.map((t, i) => <Text key={i} style={{ fontSize: 13, color: colors.text, lineHeight: 19, marginBottom: 4 }}>{i + 1}. {t}</Text>)}
+                    {isMine ? (
+                      ev.acknowledged_at ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }} {...tid('eval-ack-done')}>
+                          <Ionicons name="checkmark-circle" size={16} color={GREEN} /><Text style={{ fontSize: 12.5, fontWeight: '700', color: GREEN }}>You read this · {fmtWhen(ev.acknowledged_at)}</Text>
+                        </View>
+                      ) : (
+                        <TouchableOpacity onPress={ack} disabled={busy === 'ack'} style={{ marginTop: 8, height: 42, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }} {...tid('eval-ack-btn')}>
+                          {busy === 'ack' ? <ActivityIndicator color="#111" /> : <><Ionicons name="checkmark-done" size={17} color="#111" /><Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>Got it, I read this</Text></>}
+                        </TouchableOpacity>
+                      )
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }} {...tid('eval-ack-status')}>
+                        <Ionicons name={ev.acknowledged_at ? 'checkmark-circle' : 'time-outline'} size={15} color={ev.acknowledged_at ? GREEN : AMBER} />
+                        <Text style={{ fontSize: 12.5, fontWeight: '700', color: ev.acknowledged_at ? GREEN : AMBER }}>{ev.acknowledged_at ? `Read by ${repFirst} · ${fmtWhen(ev.acknowledged_at)}` : `${repFirst} has not read this yet`}</Text>
+                      </View>
+                    )}
                   </View>
                 )}
 

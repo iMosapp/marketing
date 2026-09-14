@@ -99,6 +99,81 @@ STARTER_CHALLENGES = [
                  "goals": "Get the recall handled and understand what is involved.",
                  "objections": ["Do I have to pay anything for this?", "How long will you need the car?", "Can you do the oil change at the same time?"],
                  "opening_line": "Hello, I received a recall notice for {vehicle}. I'd like to get that taken care of."}},
+    # ── Parts counter ──
+    {"slug": "shop_parts_in_stock", "department": "parts", "category": "Parts", "title": "Parts caller: do you have it in stock?", "runtime": "2 to 4 min",
+     "purpose": "The everyday parts call. A great counterperson pins down the exact vehicle, checks availability, quotes one clear number and asks for the sale or a hold.",
+     "body": "Answer with the parts department and your name. Get the caller's name.\n\nConfirm the exact vehicle: year, model, trim, or better, the VIN. Explain why it matters (right part the first time).\n\nCheck availability and say what you found: on the shelf, or how fast it arrives.\n\nQuote one clear price and what it includes (core charge, tax). Ask to set it aside or order it. Get the cell number for the ready call and recap.",
+     "success_points": ["Answers with the department and their name", "Gets the caller's name", "Confirms year, trim or VIN before quoting", "States availability clearly", "Quotes one clear price with what it includes", "Offers to hold or order the part", "Gets the phone number and recaps"],
+     "persona": {"name": "Ray Dominguez", "voice": "male", "summary": "47, does his own brakes on weekends, needs front pads and rotors for {vehicle}. Friendly, practical, in a bit of a hurry on a lunch break.",
+                 "goals": "Find out if the parts are on the shelf and what they cost. Will hold them if the counterperson is quick and clear.",
+                 "objections": ["I don't have the VIN on me, it's the regular one", "Can you just tell me the price?", "How does that compare to the parts store?"],
+                 "opening_line": "Hi, I'm looking for front brake pads and rotors for {vehicle}. Do you have those in stock?"}},
+    {"slug": "shop_parts_cheaper_online", "department": "parts", "category": "Parts", "title": "Parts caller: I found it cheaper online", "runtime": "2 to 4 min",
+     "purpose": "A price shopper with an online quote. A great counterperson stays friendly, sells fit and warranty without knocking aftermarket, and still asks for the sale.",
+     "body": "Thank them for checking with you. Confirm the vehicle and the exact part so you are comparing the same thing.\n\nAsk what the online price includes: shipping, core, return policy, is it the genuine part or aftermarket.\n\nExplain the OEM advantage in one breath: fit, warranty, it is the part the vehicle came with, and you can have it today. Never trash the other seller.\n\nAsk for the sale or offer to hold it. Get the number.",
+     "success_points": ["Stays friendly about the online price", "Confirms the vehicle and exact part", "Asks what the online price includes", "Explains fit and warranty without knocking aftermarket", "Asks for the sale or offers a hold", "Gets the caller's name and number"],
+     "persona": {"name": "Jenna Kowalski", "voice": "female", "summary": "33, budget minded, found a side mirror assembly for {vehicle} online for about 40 dollars less than she expects the dealer to charge. Polite, direct, has the tab open.",
+                 "goals": "See if the store will come close or give a real reason to pay more. Will buy local if the answer is honest and quick.",
+                 "objections": ["The website has it for 40 less with free shipping", "Is the aftermarket one really any different?", "Why should I pay more to pick it up?"],
+                 "opening_line": "Hi, I need a driver side mirror for {vehicle}. I found one online pretty cheap, can you match that or what would yours run?"}},
+    {"slug": "shop_parts_not_sure", "department": "parts", "category": "Parts", "title": "Parts caller: car is on a lift, not sure which part", "runtime": "3 to 4 min",
+     "purpose": "An urgent caller who does not know the exact part. A great counterperson asks the right questions, gets the VIN, and finds a way to get it in their hands today.",
+     "body": "Slow them down kindly. Get the caller's name and where the vehicle is.\n\nAsk for the VIN (registration, insurance card, door jamb) so you can look up the exact part. Ask what the mechanic said is wrong.\n\nCheck availability. If it is not on the shelf, offer the fastest path: another store, overnight, or a will-call time.\n\nQuote clearly, offer to hold or order, get the cell number, recap when it will be ready.",
+     "success_points": ["Gets the caller's name", "Asks for the VIN or how to find it", "Asks what the mechanic diagnosed", "Checks availability and offers the fastest option", "Quotes clearly", "Offers to hold or order", "Gets the phone number and recaps timing"],
+     "persona": {"name": "Carla Mendes", "voice": "female", "summary": "39, {vehicle} is on a lift at an independent shop across town. The mechanic said it needs a water pump and maybe a thermostat housing. Stressed, needs the car for work tomorrow.",
+                 "goals": "Get the right part today so the shop can finish. Will read the VIN off her insurance card if asked.",
+                 "objections": ["I don't know the exact year, it's the one before the redesign I think", "Can you deliver it or do I have to come get it?", "The mechanic said any brand would work"],
+                 "opening_line": "Hi, my car is up on a lift at a shop right now and they said it needs a water pump. It's {vehicle}, can you tell me if you have one?"}},
+    # ── Rental desk ──
+    {"slug": "shop_rental_insurance", "department": "rental", "category": "Rental", "title": "Rental caller: insurance is paying, car is in the body shop", "runtime": "3 to 4 min",
+     "purpose": "The most common rental call. A great agent learns the claim details, explains direct billing plainly, offers a specific vehicle and books the pickup.",
+     "body": "Answer with the rental department and your name. Get the caller's name and how they are doing after the accident.\n\nAsk which insurance company and whether they have a claim number and a daily allowance. Explain direct billing and what happens if the rate is above the allowance.\n\nAsk what they need: seats, cargo, how long. Offer a specific vehicle. Explain the requirements: license, card for the deposit, age.\n\nAsk to reserve it, set a pickup time, get the cell number, recap.",
+     "success_points": ["Answers with the department and their name", "Asks about the insurance company and claim number", "Explains direct billing and the daily allowance", "Asks about seating and cargo needs", "Offers a specific vehicle", "Explains license, deposit and age requirements", "Sets a pickup time and gets the phone number"],
+     "persona": {"name": "Monica Tran", "voice": "female", "summary": "36, two kids, her car was rear ended yesterday and is going to the body shop. Insurance said they cover a rental up to a daily limit. Needs {vehicle} or similar, with room for a car seat, today.",
+                 "goals": "Get a car today without paying out of pocket. Will book if the agent explains the insurance part clearly.",
+                 "objections": ["Do I have to pay anything or does insurance handle it?", "I need it today, my car is my only way to work", "Will a car seat fit in that?"],
+                 "opening_line": "Hi, my car got hit yesterday and my insurance said I can get a rental while it's in the shop. Do you do that?"}},
+    {"slug": "shop_rental_weekend_trip", "department": "rental", "category": "Rental", "title": "Rental caller: SUV for a weekend trip", "runtime": "2 to 4 min",
+     "purpose": "A retail rental. A great agent nails the dates and the need, states the rate with what it includes, and asks to reserve it.",
+     "body": "Get the caller's name, pickup date, return date and where they are headed.\n\nAsk about people and luggage. Offer a specific vehicle that fits.\n\nState the daily rate and what it includes: mileage, fuel, insurance options, deposit. Ask about the driver's age and a second driver.\n\nAsk to reserve it and confirm the pickup time. Get the cell number and recap.",
+     "success_points": ["Gets the dates and destination", "Asks about people and luggage", "Offers a specific vehicle", "States the rate and what it includes", "Explains mileage, deposit and age rules", "Asks to reserve it", "Gets the phone number and recaps"],
+     "persona": {"name": "Devin Okafor", "voice": "male", "summary": "28, taking three friends to a national park Friday to Sunday, wants {vehicle} or a comparable SUV. Easygoing, cares about mileage limits and the deposit.",
+                 "goals": "Lock in something roomy for the weekend and know the real total. Will reserve if the number is clear.",
+                 "objections": ["Is there a mileage limit? We're driving about 600 miles", "How much is the deposit and when do I get it back?", "I'm 28, is there a young driver fee?"],
+                 "opening_line": "Hi, I'm looking to rent an SUV for a weekend trip, Friday through Sunday. Do you have something like {vehicle} available?"}},
+    {"slug": "shop_rental_service_loaner", "department": "rental", "category": "Rental", "title": "Rental caller: need a car while mine is in service", "runtime": "2 to 3 min",
+     "purpose": "A service customer asking about a loaner or a rental. A great agent checks whether the repair qualifies for a loaner, explains the paid option plainly, and coordinates with service.",
+     "body": "Get the caller's name and the service appointment details. Ask whether their repair is warranty work, which may qualify for a loaner.\n\nIf a loaner is not available, explain the rental option: rate, what it includes, requirements.\n\nOffer to reserve it for the appointment time and coordinate with the advisor. Get the cell number and recap.",
+     "success_points": ["Gets the caller's name and appointment details", "Asks whether the repair is warranty work", "Explains loaner versus paid rental clearly", "States the rate and requirements", "Offers to coordinate with the service advisor", "Gets the phone number and recaps"],
+     "persona": {"name": "Harold Finch", "voice": "older", "summary": "61, has {vehicle} booked for a transmission repair on Thursday and expects it to take a few days. Courteous, a little annoyed about being without a car.",
+                 "goals": "Find out if he gets a loaner for free and, if not, what a rental costs. Will book if the agent makes it simple.",
+                 "objections": ["Shouldn't a loaner be free when it's a warranty repair?", "Why do I need a credit card if the dealership already has my information?", "Can you just have it ready when I drop off?"],
+                 "opening_line": "Hi, I have {vehicle} coming in for service on Thursday and they said it might be a few days. Can I get a loaner, or what would a rental cost?"}},
+    # ── Body shop / collision center ──
+    {"slug": "shop_collision_parking_lot", "department": "collision", "category": "Body Shop", "title": "Collision caller: someone hit my car in a parking lot", "runtime": "3 to 4 min",
+     "purpose": "The classic first call after a fender bender. A great estimator leads with empathy, gets the vehicle, damage and claim details, books the estimate and mentions the rental.",
+     "body": "Answer with the body shop and your name. Ask if everyone is okay before anything else.\n\nConfirm the vehicle, where the damage is and whether it drives straight with no lights on.\n\nAsk whose insurance is handling it and whether a claim number exists. Explain the next step: an estimate in person (or photos to start), how long it takes, and that the real number comes after teardown.\n\nMention rental coordination. Offer two estimate times, get the cell number, recap what to bring.",
+     "success_points": ["Shows empathy about the accident", "Confirms the vehicle and damage location", "Asks whether it is drivable", "Asks which insurance and whether a claim is open", "Explains the estimate process without quoting blind", "Mentions rental or transportation", "Offers two estimate times and gets the phone number"],
+     "persona": {"name": "Nicole Barrett", "voice": "female", "summary": "42, came out of the grocery store to find the rear quarter panel of {vehicle} dented and the tail light cracked. The other driver left a note and insurance info. Shaken but organized.",
+                 "goals": "Understand what happens next and get the car looked at this week. Will book if the estimator is calm and specific.",
+                 "objections": ["Do I go through my insurance or theirs?", "Can you give me a rough number so I know if it's worth a claim?", "Will I need a rental? It's my only car"],
+                 "opening_line": "Hi, somebody hit {vehicle} in a parking lot and left a note. I've never done this before, what do I do?"}},
+    {"slug": "shop_collision_phone_quote", "department": "collision", "category": "Body Shop", "title": "Collision caller: can you quote it from photos?", "runtime": "2 to 4 min",
+     "purpose": "A caller wants a price over the phone. A great estimator explains why a blind number would hurt them, offers a fast in-person estimate, and asks about the deductible and parts.",
+     "body": "Acknowledge the question, do not dodge it. Explain that hidden damage behind a bumper changes the number, so a phone quote would be a guess that could hurt them with insurance.\n\nOffer photos as a starting point and a 20 minute in-person estimate with two times.\n\nAsk if they are paying out of pocket or through a claim, and what their deductible is. Explain original versus aftermarket parts and your warranty.\n\nGet the cell number and recap.",
+     "success_points": ["Acknowledges the price question without dodging", "Explains why a phone quote would be a guess", "Offers a quick in-person estimate with two times", "Asks about a claim and the deductible", "Explains parts and warranty", "Gets the caller's name and number"],
+     "persona": {"name": "Brian Castellano", "voice": "male", "summary": "50, backed {vehicle} into a post, bumper cracked and a dent above it. Thinking about paying cash instead of filing a claim. Impatient, wants a number to decide.",
+                 "goals": "Get a ballpark to decide claim versus cash. Will come in if the estimator gives a real reason and a quick time.",
+                 "objections": ["I can text you photos right now, just give me a range", "My deductible is 1000, is it even worth a claim?", "Do you use real parts or the cheap ones?"],
+                 "opening_line": "Hi, I cracked the bumper on {vehicle}. Can I just text you a couple pictures and get a price?"}},
+    {"slug": "shop_collision_insurance_steer", "department": "collision", "category": "Body Shop", "title": "Collision caller: my insurance says I have to use their shop", "runtime": "3 to 4 min",
+     "purpose": "A customer who thinks they have no choice. A great estimator explains the right to choose respectfully, describes how the shop works with the insurer, and earns the estimate.",
+     "body": "Thank them for calling and show empathy. Confirm the vehicle and damage.\n\nExplain, without bashing the insurance company, that the customer chooses the repair shop and that you work with their carrier directly: estimates, supplements, direct billing.\n\nExplain your warranty and how you keep them updated. Mention rental coordination.\n\nOffer two estimate times, get the cell number and the claim number, recap.",
+     "success_points": ["Shows empathy and confirms the vehicle and damage", "Explains the right to choose the shop respectfully", "Describes working with the insurer directly", "Mentions the repair warranty", "Mentions rental coordination", "Offers two estimate times and gets the phone number"],
+     "persona": {"name": "Patricia Lindqvist", "voice": "older", "summary": "57, {vehicle} was sideswiped and her insurance adjuster listed two preferred shops, neither of which is you. She has heard good things about your store. Polite, cautious, does not want to do anything that voids coverage.",
+                 "goals": "Find out if she can use this shop without trouble from insurance. Will book if the estimator is confident and kind.",
+                 "objections": ["The adjuster said I have to use one of their shops", "Will my insurance still pay if I come to you?", "How long is this going to take? Last time it was six weeks"],
+                 "opening_line": "Hi, my insurance company gave me a list of shops for {vehicle} and you weren't on it, but I'd rather come to you. Is that even allowed?"}},
 ]
 
 
@@ -166,6 +241,8 @@ def terms_per_month(t: dict) -> dict:
 
 def per_month_text(per: dict, joiner: str = " + ") -> str:
     parts = [f"{n} {ind.dept_label(k).lower()}" for k, n in per.items() if int(n or 0) > 0]
+    if joiner.strip() == "and" and len(parts) > 2:
+        return ", ".join(parts[:-1]) + " and " + parts[-1]
     return joiner.join(parts) if parts else "0"
 
 
@@ -213,7 +290,7 @@ def fill_persona(persona: dict, client: dict, department: str) -> dict:
     if industry == "automotive":
         if department in ("sales", "rental") and not low.startswith(("the ", "a ", "an ", "that ")):
             offering = f"{'a' if department == 'rental' else 'the'} {offering}"
-        elif department in ("service", "parts") and not low.startswith(("my ", "our ")):
+        elif department in ("service", "parts", "collision") and not low.startswith(("my ", "our ")):
             offering = f"my {offering}"
     elif not low.startswith(("the ", "a ", "an ", "my ", "our ", "your ", "that ")):
         offering = f"the {offering}"
@@ -684,6 +761,29 @@ async def person_history(db, client: dict, target_id: str, months: int = 6) -> O
             "client": {"id": cid, "name": client.get("name")}}
 
 
+def leaderboard(people: list, prev_scores: dict, prev_label: str) -> list:
+    """Rank one department's people by average score (ties: more shops, then name). prev_scores = {target_id: [last month's scores]}."""
+    ranked = sorted([r for r in people if r.get("completed") and r.get("avg_score") is not None], key=lambda r: (-r["avg_score"], -r["completed"], r.get("name") or ""))
+    board = []
+    for i, r in enumerate(ranked):
+        pv = _pct(prev_scores.get(r["target_id"], []))
+        board.append({"rank": i + 1, "key": r["key"], "target_id": r["target_id"], "name": r["name"], "title": r.get("title") or "", "avg_score": r["avg_score"], "completed": r["completed"],
+                      "best": r.get("best"), "critical_misses": r.get("critical_misses", 0), "prev_avg": pv, "delta": (r["avg_score"] - pv) if pv is not None else None, "badges": []})
+    if not board:
+        return board
+    top = max(board, key=lambda b: (b["best"] if b["best"] is not None else -1))
+    if top["best"] is not None:
+        top["badges"].append({"key": "top_score", "label": "Top score", "detail": f"{top['best']}% on one call"})
+    climbers = [b for b in board if b["delta"] is not None and b["delta"] > 0]
+    if climbers:
+        mi = max(climbers, key=lambda b: b["delta"])
+        mi["badges"].append({"key": "most_improved", "label": "Most improved", "detail": f"+{mi['delta']} vs {prev_label}"})
+    busiest = max(board, key=lambda b: b["completed"])
+    if busiest["completed"] > 1 and sum(1 for b in board if b["completed"] == busiest["completed"]) == 1:
+        busiest["badges"].append({"key": "most_shops", "label": "Most shops", "detail": f"{busiest['completed']} shops"})
+    return board
+
+
 async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     tz = _tz(client)
     start, end = month_bounds(month, tz)
@@ -762,10 +862,20 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     for counts in themes_by_dept.values():
         for k, v in counts.items():
             themes[k] = themes.get(k, 0) + v
+    # leaderboard PER DEPARTMENT (a parts counterperson is never ranked against a salesperson): average first, then volume;
+    # badges for the best single shop, the biggest climb since last month and the most shops
+    prev_month = (start.astimezone(tz) - timedelta(days=1)).strftime("%Y-%m")
+    p_start, p_end = month_bounds(prev_month, tz)
+    prev_label = p_start.astimezone(tz).strftime("%b")
+    prev_scores: dict = {}
+    for c in await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "status": "completed", "scheduled_for": {"$gte": p_start, "$lt": p_end}}, {"target_id": 1, "department": 1, "score_pct": 1}).to_list(500):
+        prev_scores.setdefault((c["target_id"], c.get("department") or "sales"), []).append(c.get("score_pct"))
+    for d, dv in by_dept.items():
+        dv["leaderboard"] = leaderboard([r for r in rows if r["department"] == d], {k[0]: v for k, v in prev_scores.items() if k[1] == d}, prev_label)
     label = start.astimezone(tz).strftime("%B %Y")
     return {"client": {"id": cid, "name": client.get("name"), "brand": client.get("brand", ""), "city": client.get("city", ""), "state": client.get("state", ""), "contact_name": client.get("contact_name", ""),
                        "industry": ind.key_of(client), "industry_label": ind.get(ind.key_of(client))["label"], "customer_noun": ind.get(ind.key_of(client))["customer"], "business_noun": ind.get(ind.key_of(client))["business"]},
-            "month": start.astimezone(tz).strftime("%Y-%m"), "month_label": label, "generated_at": _now().isoformat(),
+            "month": start.astimezone(tz).strftime("%Y-%m"), "month_label": label, "prev_month_label": prev_label, "generated_at": _now().isoformat(),
             "summary": {"completed": len(done), "planned": sum(v["planned"] for v in by_dept.values()), "scheduled": len([c for c in calls if c.get("status") in CALL_STATUSES_OPEN]),
                         "unreachable": len([c for c in calls if c.get("status") == "unreachable"]), "avg_score": _pct(scores), "avg_adherence": _pct([c.get("adherence_pct") for c in done]),
                         "people_shopped": len({r["target_id"] for r in rows if r["completed"]}), "needs_training": len([r for r in rows if r["needs_training"]])},
@@ -827,6 +937,25 @@ def report_pdf(report: dict) -> bytes:
                 pdf.set_xy(x + 3, y + 13); pdf.set_font("Helvetica", "B", 9)
                 pdf.set_text_color(*(MUTED if avg is None else RED if avg < 70 else GOLD if avg < 85 else GREEN)); pdf.cell(dw - 6, 5, txt(f"Avg {avg}%" if avg is not None else "No scores yet"))
             pdf.set_y(y + 24)
+
+    boards = [(dk, dv) for dk, dv in (report.get("by_department") or {}).items() if dv.get("leaderboard")]
+    if boards:
+        # one ranked table per department: the recognition piece of the report
+        prev = (report.get("prev_month_label") or "last month").upper()
+        for dk, dv in boards:
+            h(f"{dv.get('label') or ind.dept_label(dk)} leaderboard", 13)
+            pdf.set_font("Helvetica", "B", 9); pdf.set_text_color(*MUTED)
+            for lab, cw in (("#", 8), ("NAME", 56), ("SHOPS", 16), ("AVG", 16), ("BEST", 16), (f"VS {prev}", 22), ("RECOGNITION", 48)):
+                pdf.cell(cw, 6, txt(lab))
+            pdf.ln(6)
+            for r in dv["leaderboard"]:
+                pdf.set_font("Helvetica", "B" if r["rank"] <= 3 else "", 10); pdf.set_text_color(*(GOLD if r["rank"] == 1 else INK))
+                pdf.cell(8, 6, str(r["rank"])); pdf.cell(56, 6, txt((r["name"] or "")[:30])); pdf.cell(16, 6, str(r["completed"]))
+                pdf.cell(16, 6, f"{r['avg_score']}%"); pdf.cell(16, 6, f"{r['best']}%" if r.get("best") is not None else "-")
+                d = r.get("delta")
+                pdf.set_text_color(*(GREEN if (d or 0) > 0 else RED if (d or 0) < 0 else MUTED)); pdf.cell(22, 6, f"{'+' if d > 0 else ''}{d}" if d is not None else "new")
+                pdf.set_text_color(*GOLD); pdf.set_font("Helvetica", "B", 8.5); pdf.cell(48, 6, txt(", ".join(b["label"] for b in r["badges"])), new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(3)
 
     h("Who did well, who needs another look", 13)
     pdf.set_font("Helvetica", "B", 9); pdf.set_text_color(*MUTED)

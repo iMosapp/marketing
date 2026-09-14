@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from routers.database import get_db
+from services import coaching_digest as cd
 from services import scorecards as sc
 from services.lead_flows import MANAGER_ROLES, user_store_id, store_reps
 
@@ -59,6 +60,10 @@ class RescoreBody(BaseModel):
 class MuteBody(BaseModel):
     rep_id: str
     muted: bool = True
+
+
+class DigestBody(BaseModel):
+    enabled: bool = True
 
 
 def _me(request: Request) -> dict:
@@ -219,6 +224,17 @@ async def override_evaluation(ev_id: str, body: OverrideBody, request: Request):
     return sc.serialize_eval(ev)
 
 
+@router.post("/evaluations/{ev_id}/ack")
+async def acknowledge_evaluation(ev_id: str, request: Request):
+    """The rep on the call taps 'Got it' on the coaching. Managers see the stamp everywhere the call shows up."""
+    db = get_db()
+    me = _me(request)
+    ev = await _eval(db, ev_id, me)
+    if str(ev.get("user_id")) != str(me["_id"]):
+        raise HTTPException(status_code=403, detail="Only the rep on this call can mark the coaching as read")
+    return sc.serialize_eval(await sc.acknowledge(db, ev, me))
+
+
 @router.post("/evaluations/rescore/{call_sid}")
 async def rescore_call(call_sid: str, body: RescoreBody, request: Request):
     db = get_db()
@@ -284,6 +300,49 @@ async def mute_rep_alerts(body: MuteBody, request: Request):
     op = {"$addToSet" if body.muted else "$pull": {"scorecard_muted_reps": body.rep_id}}
     await db.users.update_one({"_id": ObjectId(str(me["_id"]))}, op)
     return {"rep_id": body.rep_id, "muted": body.muted}
+
+
+# ---------------------------------------------------------------- Monday coaching digest (managers)
+async def _my_store(db, me: dict) -> Optional[dict]:
+    sid = user_store_id(me)
+    return await db.stores.find_one({"_id": ObjectId(sid)}) if sid and ObjectId.is_valid(str(sid)) else None
+
+
+@router.get("/digest")
+async def coaching_digest_settings(request: Request):
+    db = get_db()
+    me = _me(request)
+    _require_manager(me)
+    store = await _my_store(db, me)
+    return cd.serialize_for(me, store, await cd.recipients(db, str(store["_id"])) if store else [])
+
+
+@router.put("/digest")
+async def coaching_digest_toggle(body: DigestBody, request: Request):
+    db = get_db()
+    me = _me(request)
+    _require_manager(me)
+    await db.users.update_one({"_id": ObjectId(str(me["_id"]))}, {"$set": {cd.OPT_OUT_FIELD: not body.enabled}})
+    me[cd.OPT_OUT_FIELD] = not body.enabled
+    store = await _my_store(db, me)
+    return cd.serialize_for(me, store, await cd.recipients(db, str(store["_id"])) if store else [])
+
+
+@router.post("/digest/send")
+async def coaching_digest_send_now(request: Request):
+    """Email last week's digest to the manager asking, right now (even with zero graded calls, so they can see the format)."""
+    db = get_db()
+    me = _me(request)
+    _require_manager(me)
+    store = await _my_store(db, me)
+    if not store:
+        raise HTTPException(status_code=400, detail="Your account is not on a store yet, so there is no team to digest")
+    if not (me.get("email") or "").strip():
+        raise HTTPException(status_code=400, detail="Add an email to your profile first")
+    res = await cd.send_digest(db, store, [me], actor=me, reason="manual")
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error") or "The email did not go out")
+    return res
 
 
 # ---------------------------------------------------------------- single card
