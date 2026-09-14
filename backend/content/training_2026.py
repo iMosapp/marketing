@@ -6,7 +6,7 @@ Alerts, the rep-first Home, Share the App, one Phone Numbers screen.
 """
 from datetime import datetime, timezone
 
-CONTENT_VERSION = 4
+CONTENT_VERSION = 5
 APP_STORE_URL = "https://apps.apple.com/us/app/im-on-social/id6774618559"
 
 
@@ -17,7 +17,7 @@ def _now():
 SALES_TEAM_TRACK = {
     "slug": "sales-team",
     "title": "Sales Team Onboarding",
-    "description": "Eight short lessons. Finish them on day one and you will know exactly what to tap tomorrow morning.",
+    "description": "Nine short lessons. Finish them on day one and you will know exactly what to tap tomorrow morning.",
     "icon": "briefcase",
     "color": "#C9A962",
     "roles": ["user", "manager", "admin", "store_manager", "org_admin", "super_admin"],
@@ -212,6 +212,43 @@ SALES_TEAM_TRACK = {
                 "Tools > Settings > Notifications > **Push Health Check** > **Send me a test push**. If nothing arrives, the card tells you what is off (usually iPhone Settings > Notifications > i'M On Social is turned off)."
             ),
             "steps": ["Open Alerts from the bell", "Swipe one alert left to dismiss and one right to snooze", "Set quiet hours under Tools > Settings > Notifications", "Run Send me a test push"],
+        },
+        {
+            "slug": "when-a-lead-rings", "title": "When a Lead Rings: Push, Ring, Press 1, Claim", "icon": "call", "duration": "3 min", "order": 9,
+            "description": "What happens in the 30 seconds after an internet lead lands, and exactly what to do.",
+            "content": (
+                "## When a Lead Rings\n\n"
+                "An internet lead (website form, Cars.com, AutoTrader, a Zap) does four things in about thirty seconds. The customer already got the store's first text the moment the lead landed, so everything below is about getting a human on it fast.\n\n"
+                "### 1. The push\n"
+                "Your phone shows **New Lead: Sarah Tester** with the source and vehicle, then one of these:\n"
+                "- **Ringing your phone now: answer and press 1** (store is open, the team is being rung).\n"
+                "- **Store closed: Jessi is replying, your phone rings at 9:00 AM. Tap to text now** (after hours).\n"
+                "- **tap to claim** (text-only source, nobody is being rung).\n\n"
+                "Tap the push to open the lead. If you missed it, it is also in Alerts (the bell).\n\n"
+                "### 2. The ring\n"
+                "Your cell rings from the store's lead line. A voice says: **\"New lead from Cars.com. Press 1 to claim this lead.\"**\n"
+                "- **Press 1** only if you can talk right now. You hear a quick whisper (name, source, vehicle, what they wrote: \"You got it. New lead: Sarah Tester... Connecting you now\") and then you are live with the customer. They see the store number, not your cell.\n"
+                "- **Do nothing / hang up**: after two prompts it says goodbye and the next step of the ladder rings (other reps, then managers). No penalty, but someone else gets the lead.\n"
+                "- **\"Sorry, Jake already claimed this lead\"**: somebody pressed 1 before you. Move on, the lead is theirs.\n"
+                "- Phone on silent or in a meeting? You can still claim from the app (next section) as long as nobody has pressed 1 yet.\n\n"
+                "### 3. Claim in the app\n"
+                "**Inbox** tab > **Leads**, the red **N leads waiting > Claim** banner on Home, or Tools > **Internet Leads**. Every **WAITING** card shows the source, the vehicle (with **IN STOCK** when we have it), what they wrote, and whether Jessi is replying.\n"
+                "- **Claim**: it is yours, open the thread and text them.\n"
+                "- **Claim & Call**: we ring your cell, say \"You claimed Sarah. Press 1 to connect now\", and bridge you to the customer.\n"
+                "- First to claim wins. Everyone else's card flips to **Jake claimed** and their ring stops.\n\n"
+                "### 4. After you claim\n"
+                "- The thread opens in your Inbox with a **WAITING** badge until you text back. Under five minutes is the goal; the timer turns amber, then red, then your manager gets an alert.\n"
+                "- Jessi stops answering the moment you own it. You are the voice now.\n"
+                "- If they do not pick up your call, the **\"Just tried you\"** text goes out automatically. You do not have to send it.\n"
+                "- A lead left sitting is released back to the whole team after the store's timer. Claim only what you will work.\n"
+                "- The lead timeline at the top of the thread shows every step (text sent, who rang, who claimed). Managers see the same thing.\n\n"
+                "### Your own customers\n"
+                "When a customer you already have submits a new lead, nobody's phone rings. It lands straight in your Inbox as **Returning customer: Sarah Tester** with the text already sent. If you have gone quiet on them for a month with no sale, the store's rule can send them back to the team, so keep your book warm.\n\n"
+                "### The two rules\n"
+                "1. **Press 1 only when you can talk.** It dials the customer immediately.\n"
+                "2. **Never let WAITING sit.** A claim you do not work is a lead the team lost."
+            ),
+            "steps": ["Make sure pushes are on: Tools > Settings > Notifications > Send me a test push", "Open Inbox > Leads and find a WAITING card, or the leads-waiting banner on Home", "Ask your manager to send you a test lead (Lead Source Config > Send a test lead) and press 1 when your phone rings", "Claim one lead from the app with Claim & Call and text the customer back inside five minutes"],
         },
     ],
 }
