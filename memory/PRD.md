@@ -6,6 +6,7 @@ Phase 2 "Relationship OS" UX enhancements: robust backend security, intent-based
 ## Environments
 - Preview: REACT_APP_BACKEND_URL in /app/frontend/.env (backend under test)
 - Production: https://app.imonsocial.com — user pushes frontend via `eas update --branch production --message "msg"` (give ONLY the one-liner). Backend goes live when user hits Deploy.
+- **STANDING RULE (user, June 2026): EVERY finish summary MUST end with the full copy-paste line `cd /app/frontend && eas update --branch production --message "<short summary of the change>"` plus a "Backend Deploy needed: yes/no" note. Never skip it, even for backend-only changes (then say "no eas update needed, backend Deploy only").**
 - IMPORTANT: EXPO_PUBLIC_BACKEND_URL in frontend/.env must point to https://app.imonsocial.com before any `eas update` (it gets baked into the OTA bundle). Temporarily point it at the preview URL only for screenshot testing, then revert + restart frontend.
 
 ## Implemented (key items)
