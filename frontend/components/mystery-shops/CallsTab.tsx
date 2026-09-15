@@ -10,6 +10,7 @@ import { CriteriaChecklist } from '../scorecards/CriteriaChecklist';
 import { ScoreRing } from '../scorecards/ScoreRing';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { Sheet, Label, StatusChip, GoldButton, deptLabel, deptsOfClient, perMonthText, fmtWhen, monthLabel, shiftMonth, scoreColor, GOLD, RED, GREEN, tid, type ShopCall, type Client } from './shared';
+import { makeT, fmtWhenL, type Lang } from './i18n';
 
 type Props = { client: Client; colors: any; month: string; onMonth: (m: string) => void; refreshKey: number; onChanged: () => void };
 
@@ -77,8 +78,9 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
   );
 };
 
-export const CallDetailSheet = ({ id, onClose, colors, publicData }: { id: string | null; onClose: () => void; colors: any; publicData?: any }) => {
+export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }: { id: string | null; onClose: () => void; colors: any; publicData?: any; lang?: Lang }) => {
   const { showToast } = useToast();
+  const tr = makeT(lang);
   const [d, setD] = useState<any>(null);
   useEffect(() => {
     if (!id) { setD(null); return; }
@@ -86,22 +88,22 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData }: { id: strin
     api.get(`/shop-clients/calls/${id}`).then(r => setD(r.data)).catch(() => setD({ error: true }));
   }, [id, publicData]);
   const ev = d?.evaluation || (d?.results ? d : null);
-  const who = String(d?.customer_noun || 'shopper');
+  const who = String(d?.customer_noun || (lang === 'nl' ? 'beller' : 'shopper'));
   const turns = d?.transcript_turns || (d?.transcript ? String(d.transcript).split('\n').filter(Boolean).map((l: string) => ({ role: l.startsWith('REP:') ? 'rep' : 'customer', text: l.replace(/^(REP|CUSTOMER):\s*/, '') })) : []);
   return (
-    <Sheet visible={!!id} onClose={onClose} title={d?.target_name ? `${d.target_name} · ${d.script_title || ''}` : 'Shop call'} colors={colors} testID="shop-call-detail">
-      {!d ? <ActivityIndicator color={GOLD} /> : d.error ? <Text style={{ color: RED }}>Could not load this call.</Text> : (
+    <Sheet visible={!!id} onClose={onClose} title={d?.target_name ? `${d.target_name} · ${d.script_title || ''}` : tr('call.title')} colors={colors} testID="shop-call-detail">
+      {!d ? <ActivityIndicator color={GOLD} /> : d.error ? <Text style={{ color: RED }}>{tr('call.load_error')}</Text> : (
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-            <ScoreRing pct={d.score_pct} size={72} colors={colors} label={d.score_pct != null ? 'score' : ''} />
+            <ScoreRing pct={d.score_pct} size={72} colors={colors} label={d.score_pct != null ? tr('call.score') : ''} />
             <View style={{ flex: 1, gap: 4 }}>
-              <StatusChip status={d.status} colors={colors} />
-              <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{fmtWhen(d.ended_at || d.started_at || d.scheduled_for)}{d.persona_name || d.persona?.name ? ` · ${who} ${(d.persona_name || d.persona?.name)}` : ''}{d.attempts > 1 ? ` · ${d.attempts} tries` : ''}</Text>
-              {ev?.scorecard_name && <Text style={{ fontSize: 12, color: colors.textSecondary }}>Graded with {ev.scorecard_name}{d.adherence_pct != null ? ` · script ${d.adherence_pct}%` : ''}</Text>}
+              <StatusChip status={d.status} colors={colors} lang={lang} />
+              <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{fmtWhenL(d.ended_at || d.started_at || d.scheduled_for, lang)}{d.persona_name || d.persona?.name ? ` · ${who} ${(d.persona_name || d.persona?.name)}` : ''}{d.attempts > 1 ? ` · ${tr('call.tries', { n: d.attempts })}` : ''}</Text>
+              {ev?.scorecard_name && <Text style={{ fontSize: 12, color: colors.textSecondary }}>{tr('call.graded_with', { name: ev.scorecard_name })}{d.adherence_pct != null ? ` · ${tr('call.script', { v: d.adherence_pct })}` : ''}</Text>}
               {!!d.fail_reason && d.status !== 'completed' && <Text style={{ fontSize: 12.5, color: RED }}>{d.fail_reason}</Text>}
             </View>
           </View>
-          {!!d.curveballs?.length && <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Curveballs: {d.curveballs.join('; ')}</Text>}
+          {!!d.curveballs?.length && <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{tr('call.curveballs', { items: d.curveballs.join('; ') })}</Text>}
           {!!d.score_url && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: colors.border }} {...tid('shop-call-score-link')}>
               <Ionicons name={d.score_sms_status && d.score_sms_status !== 'failed' ? 'chatbubble-ellipses' : 'link'} size={16} color={d.score_sms_status === 'failed' ? RED : GOLD} />
@@ -113,19 +115,19 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData }: { id: strin
           {ev && (
             <>
               {!!ev.summary && <Text style={{ fontSize: 14.5, color: colors.text, lineHeight: 21 }} {...tid('shop-call-summary')}>{ev.summary}</Text>}
-              {ev.critical_misses?.length > 0 && <View style={{ backgroundColor: RED + '14', borderLeftWidth: 3, borderLeftColor: RED, borderRadius: 10, padding: 10, gap: 4 }}><Label t="CRITICAL MISSES" colors={{ textSecondary: RED }} />{ev.critical_misses.map((m: any, i: number) => <Text key={i} style={{ fontSize: 13.5, color: colors.text }}>• {typeof m === 'string' ? m : m.text}</Text>)}</View>}
-              {ev.coaching?.length > 0 && <View style={{ gap: 4 }}><Label t="COACHING" colors={colors} />{ev.coaching.map((t: string, i: number) => <Text key={i} style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>• {t}</Text>)}</View>}
-              {ev.wins?.length > 0 && <View style={{ gap: 4 }}><Label t="WHAT WENT WELL" colors={{ textSecondary: GREEN }} />{ev.wins.map((t: string, i: number) => <Text key={i} style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>• {t}</Text>)}</View>}
-              {ev.results?.length > 0 && <View style={{ gap: 6 }}><Label t="SCORECARD" colors={colors} /><CriteriaChecklist results={ev.results} colors={colors} canManage={false} /></View>}
+              {ev.critical_misses?.length > 0 && <View style={{ backgroundColor: RED + '14', borderLeftWidth: 3, borderLeftColor: RED, borderRadius: 10, padding: 10, gap: 4 }}><Label t={tr('call.crit')} colors={{ textSecondary: RED }} />{ev.critical_misses.map((m: any, i: number) => <Text key={i} style={{ fontSize: 13.5, color: colors.text }}>• {typeof m === 'string' ? m : m.text}</Text>)}</View>}
+              {ev.coaching?.length > 0 && <View style={{ gap: 4 }}><Label t={tr('call.coaching')} colors={colors} />{ev.coaching.map((t: string, i: number) => <Text key={i} style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>• {t}</Text>)}</View>}
+              {ev.wins?.length > 0 && <View style={{ gap: 4 }}><Label t={tr('call.wins')} colors={{ textSecondary: GREEN }} />{ev.wins.map((t: string, i: number) => <Text key={i} style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>• {t}</Text>)}</View>}
+              {ev.results?.length > 0 && <View style={{ gap: 6 }}><Label t={tr('call.scorecard')} colors={colors} /><CriteriaChecklist results={ev.results} colors={colors} canManage={false} /></View>}
             </>
           )}
           {turns.length > 0 && (
             <View style={{ gap: 6 }}>
-              <Label t="TRANSCRIPT" colors={colors} />
+              <Label t={tr('call.transcript')} colors={colors} />
               {turns.map((t: any, i: number) => (
                 <View key={i} style={{ flexDirection: 'row', justifyContent: t.role === 'rep' ? 'flex-end' : 'flex-start' }}>
                   <View style={{ maxWidth: '86%', backgroundColor: t.role === 'rep' ? GOLD : colors.card, borderRadius: 14, padding: 10, borderWidth: t.role === 'rep' ? 0 : 1, borderColor: colors.border }}>
-                    <Text style={{ fontSize: 10, fontWeight: '800', color: t.role === 'rep' ? '#11111199' : colors.textSecondary, marginBottom: 2 }}>{t.role === 'rep' ? (d.target_name || 'REP').toUpperCase() : who.toUpperCase()}</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: t.role === 'rep' ? '#11111199' : colors.textSecondary, marginBottom: 2 }}>{t.role === 'rep' ? (d.target_name || tr('call.rep')).toUpperCase() : who.toUpperCase()}</Text>
                     <Text style={{ fontSize: 14, lineHeight: 19, color: t.role === 'rep' ? '#111' : colors.text }}>{t.text}</Text>
                   </View>
                 </View>

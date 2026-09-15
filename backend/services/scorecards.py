@@ -188,7 +188,48 @@ def departments_for(industry_key: Optional[str]) -> list:
     return [d["label"] for d in ind.departments(industry_key)]
 
 
-def template_body(key: str) -> Optional[dict]:
+# Dutch wording for the automotive templates (same order and count as the English criteria; ids stay the same so grading history lines up)
+TEMPLATE_TRANSLATIONS = {
+    "nl": {
+        "phone_up": {"name": "Inkomend verkoopgesprek", "department": "Verkoop", "description": "Inkomende verkoopgesprekken: naam en nummer vragen, de afspraak verkopen, niet de auto.",
+                     "criteria": [("Nam op met eigen naam en de naam van het autobedrijf", "Elke keer een professionele opening."), ("Vroeg de naam van de klant", "Vraag het vroeg en gebruik de naam."),
+                                  ("Vroeg het telefoonnummer van de klant", "'Voor het geval de verbinding wegvalt, wat is het beste nummer?'"), ("Achterhaalde welke auto de klant bedoelt", "Welke auto, en wat sprak hem of haar aan."),
+                                  ("Vroeg naar een inruilauto", "Elk gesprek."), ("Vroeg om een afspraak", "Verkoop het bezoek, niet de prijs."), ("Legde een concrete dag en tijd vast", "Bied twee tijden aan."),
+                                  ("Vatte samen en bedankte de klant", "Bevestig het plan en bedank voor het bellen.")]},
+        "internet_sales": {"name": "Internetlead-gesprek", "department": "Verkoop", "description": "Elk internetlead-gesprek: bevestig de auto, vraag naar de inruil, leg een vaste afspraak vast.",
+                           "criteria": [("Begroette de klant met naam en stelde zichzelf en het autobedrijf voor", "Open met je naam, het bedrijf en waarom je belt."), ("Bevestigde de auto en of die nog beschikbaar is", "Noem precies de auto waar ze naar vroegen en bevestig dat hij er nog staat."),
+                                        ("Stelde vragen over wensen en tijdlijn", "Vraag waarvoor ze de auto gebruiken en wanneer ze willen rijden."), ("Vroeg naar een inruilauto", "Altijd vragen: 'Heb je een auto om in te ruilen?'"),
+                                        ("Vroeg om een afspraak", "Vraag elk gesprek om het bezoek. 'Wanneer kom je kijken, vandaag of morgen?'"), ("Legde een concrete dag en tijd vast", "Bied twee keuzes: 'Past half vijf of zes uur beter?'"),
+                                        ("Bevestigde telefoonnummer of e-mail van de klant", "Herhaal het nummer en bevestig hoe je ze het beste bereikt."), ("Bood alternatieven als de auto niet beschikbaar was", "Heb twee vergelijkbare auto's klaar. Markeer n.v.t. als de auto beschikbaar was."),
+                                        ("Vatte de vervolgstappen samen en bedankte de klant", "Sluit af met wie wat doet en een oprecht bedankje.")]},
+        "service_bdc": {"name": "Werkplaatsafspraak-gesprek", "department": "Werkplaats", "description": "Servicegesprekken: achterhaal de klacht, plan de eerste beschikbare plek, vat samen.",
+                        "criteria": [("Begroette de klant met naam en noemde de werkplaats", "Naam, afdeling, bedrijf. Warm en zonder haast."), ("Bevestigde de auto (bouwjaar, merk, model of kilometerstand)", "Controleer om welke auto het gaat voordat je iets noemt."),
+                                     ("Achterhaalde de klacht of de gewenste service", "Vraag wat ze merken en sinds wanneer."), ("Bood de eerste beschikbare afspraak aan", "Begin met de eerste vrije plek, dan alternatieven."),
+                                     ("Legde een concrete dag en tijd vast", "Twee keuzes, dan bevestigen."), ("Noemde vervoersopties (haal- en brengservice, leenauto of wachtruimte)", "Neem het 'hoe kom ik thuis' bezwaar weg voordat het komt."),
+                                     ("Bevestigde telefoonnummer of e-mail van de klant", "Herhaal het zodat de herinnering aankomt."), ("Vatte de afspraak samen", "Dag, tijd, adviseur, wat mee te nemen.")]},
+        "parts_phone": {"name": "Onderdelenbalie-gesprek", "department": "Onderdelen", "description": "Inkomende onderdelengesprekken: de exacte auto vaststellen, duidelijk een prijs noemen, en het gesprek omzetten in een verkoop of afhaling.",
+                        "criteria": [("Nam op met eigen naam en de onderdelenafdeling", "Naam, afdeling, bedrijf. Klink blij dat ze bellen."), ("Vroeg de naam van de klant", "Vraag het vroeg en gebruik de naam."),
+                                     ("Bevestigde de exacte auto (bouwjaar, merk, model, uitvoering of chassisnummer)", "Het juiste onderdeel begint bij het juiste chassisnummer. Vraag ernaar, of naar bouwjaar, model en uitvoering."),
+                                     ("Bevestigde het onderdeel en controleerde de voorraad", "Zeg wat je opzoekt en of het op de plank ligt of hoe snel het er is."), ("Noemde de prijs duidelijk, inclusief statiegeld, btw of verzendkosten als dat speelt", "Eén duidelijk bedrag en wat erbij zit. Laat ze nooit raden."),
+                                     ("Legde het voordeel van origineel uit zonder af te geven op imitatie", "Passing, garantie, en het is het onderdeel waarmee de auto gebouwd is."), ("Vroeg om de verkoop of bood aan het onderdeel te reserveren of te bestellen", "'Zal ik hem voor je apart leggen?' of 'Ik kan hem morgen hier hebben, zal ik bestellen?'"),
+                                     ("Vroeg het telefoonnummer van de klant", "Voor het belletje of berichtje dat het klaarligt."), ("Vatte onderdeel, prijs en timing samen en bedankte de klant", "Herhaal het onderdeel, de prijs en wanneer het klaar is.")]},
+        "rental_phone": {"name": "Verhuurbalie-gesprek", "department": "Verhuur", "description": "Inkomende verhuurgesprekken: de behoefte begrijpen, de juiste auto aanbieden, de voorwaarden helder noemen, reserveren.",
+                         "criteria": [("Nam op met eigen naam en de verhuurafdeling", "Naam, afdeling, bedrijf."), ("Vroeg de naam van de klant", "Vraag het vroeg en gebruik de naam."),
+                                      ("Vroeg wanneer en hoe lang de klant de auto nodig heeft", "Ophaaldatum, inleverdatum en hoeveel personen of bagage."), ("Vroeg de reden van de huur (verzekering, leenauto bij onderhoud, vakantie)", "Verzekerings- en garantiehuur worden anders gefactureerd. Vraag het vooraf."),
+                                      ("Bood een concrete auto aan die past", "Noem een klasse of een auto, niet 'we hebben van alles'."), ("Noemde het dagtarief en wat erbij zit", "Tarief, kilometers, brandstof, verzekeringsopties, borg."),
+                                      ("Legde de voorwaarden uit (leeftijd, rijbewijs, kaart, borg)", "Zodat er geen verrassingen zijn aan de balie."), ("Vroeg om te reserveren en bevestigde de ophaaltijd", "'Zal ik hem morgen om negen uur voor je vasthouden?'"),
+                                      ("Vroeg het telefoonnummer van de klant en vatte samen", "Nummer voor de bevestiging, dan auto, tijd en tarief herhalen.")]},
+        "collision_phone": {"name": "Schadeherstel-gesprek", "department": "Schadeherstel", "description": "Inkomende schadegesprekken: de klant geruststellen, de schade en de claim achterhalen, de taxatie inplannen, nooit blind een prijs noemen.",
+                            "criteria": [("Nam op met eigen naam en de schadeafdeling", "Naam, afdeling, bedrijf. Rustig en blij dat ze bellen."), ("Vroeg de naam van de klant", "Vraag het vroeg en gebruik de naam."),
+                                         ("Toonde begrip voor het ongeluk", "'Fijn dat je in orde bent' voordat je over de procedure praat."), ("Bevestigde de auto, de schade en of er nog mee gereden kan worden", "Bouwjaar, merk, model, waar de schade zit, rijdt hij recht, branden er lampjes."),
+                                         ("Vroeg of er een schadeclaim loopt en bij welke verzekeraar", "Hun verzekeraar of die van de tegenpartij. Schadenummer als ze het hebben."), ("Legde de taxatieprocedure uit in plaats van blind een prijs te noemen", "Foto's zijn een begin, het echte bedrag komt na demontage. Zeg hoe lang de taxatie duurt."),
+                                         ("Noemde vervangend vervoer of een leenauto", "Huurauto regelen, haal- en brengservice of een lift, voordat ze het vragen."), ("Bood een concrete taxatie- of inlevertijd aan met twee opties", "'Kun je morgen om tien uur langskomen, of vanmiddag om drie uur?'"),
+                                         ("Vroeg het telefoonnummer van de klant en vatte samen", "Nummer voor updates, dan tijd herhalen en wat mee te nemen (schadenummer, verzekeringspas).")]},
+    },
+}
+
+
+def template_body(key: str, language: Optional[str] = None) -> Optional[dict]:
     from services import industries as ind
     tpl = next((t for t in TEMPLATES if t["key"] == key), None)
     if not tpl and key.startswith("pack:"):
@@ -198,6 +239,10 @@ def template_body(key: str) -> Optional[dict]:
     body = {k: v for k, v in tpl.items() if k != "key"}
     body["criteria"] = normalize_criteria(tpl["criteria"])
     body["template_key"] = key
+    tr = TEMPLATE_TRANSLATIONS.get(language or "en", {}).get(key)
+    if tr and len(tr["criteria"]) == len(body["criteria"]):
+        body.update({"name": tr["name"], "department": tr["department"], "description": tr["description"], "language": language})
+        body["criteria"] = [{**c, "text": t, "hint": h} for c, (t, h) in zip(body["criteria"], tr["criteria"])]
     return body
 
 
@@ -301,7 +346,16 @@ def _transcript_text(log: dict, rep_name: str) -> str:
 
 
 GRADER_LANGUAGE = {"nl": ("- LANGUAGE: the call is in Dutch. Write summary, wins and coaching in natural Dutch (Nederlands), addressing the rep as 'je'. "
-                          "Keep the criterion ids exactly as given and the JSON keys in English.\n")}
+                          "Keep the criterion ids exactly as given and the JSON keys in English.\n"),
+                   "en-GB": ("- LANGUAGE: the call is at a UK dealership. Write summary, wins and coaching in British English (spelling and trade words: part exchange, MOT, reg, bonnet, boot, tyres, £, miles). "
+                             "Keep the criterion ids exactly as given and the JSON keys in English.\n"),
+                   "en-IE": ("- LANGUAGE: the call is at an Irish dealership. Write summary, wins and coaching in Irish English (part exchange, NCT, reg, bonnet, boot, tyres, €, kilometres). "
+                             "Keep the criterion ids exactly as given and the JSON keys in English.\n")}
+
+
+def grader_language_rule(language: Optional[str]) -> str:
+    lang = language or "en"
+    return GRADER_LANGUAGE.get(lang) or GRADER_LANGUAGE.get(lang[:2]) or ""
 
 
 def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None, language: Optional[str] = None) -> str:
@@ -325,7 +379,7 @@ def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str,
         "- coaching = 2 or 3 specific, kind, actionable tips tied to what was missed, each one sentence, written to the rep as 'you'.\n"
         "- Never use em dashes or en dashes anywhere. Use commas or periods.\n"
         "- If the recording is a voicemail, hold music or the customer never speaks, set call_type to \"no_conversation\" and grade what you can.\n"
-        + GRADER_LANGUAGE.get(language or "en", "") + "\n"
+        + grader_language_rule(language) + "\n"
         "Respond with ONLY valid JSON in exactly this shape:\n"
         '{"summary": "...", "wins": ["..."], "coaching": ["..."], "customer_sentiment": "positive|neutral|negative", '
         '"call_type": "conversation|no_conversation", "results": [{"id": "criterion id", "passed": true, "evidence": "...", "confidence": 0.9}]}'
@@ -459,7 +513,7 @@ async def evaluate_call(call_sid: str, scorecard_id: Optional[str] = None, force
     from services import industries as ind
     from services import locales as loc
     industry = await ind.store_industry(db, card.get("store_id") or rep.get("store_id"))
-    language = loc.language(await loc.store_locale(db, card.get("store_id") or rep.get("store_id")))
+    language = loc.dialect(await loc.store_locale(db, card.get("store_id") or rep.get("store_id")))
     graded = await grade_with_ai(card, _transcript_text(log, rep_name), rep_name, contact_name, log.get("direction") or "outbound", dur, industry, language)
     pct, misses = compute_score(graded["results"], card["criteria"])
     now = _now()

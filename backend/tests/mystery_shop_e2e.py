@@ -113,7 +113,7 @@ async def main():
     await redial(1, "CA_shop_sim")
     r = requests.post(f"{tw}/twiml/{sid}?t={token}", data={"AnsweredBy": "human", "CallSid": "CA_shop_sim"}, timeout=30)
     assert r.status_code == 200 and "<Gather" in r.text and "ConversationRelay" not in r.text and "practice call from I" in r.text, r.text[:400]
-    assert "Sam" in r.text and "inbound sales call" in r.text and "press 2" in r.text and "couple of hours" in r.text and f"/gate/{sid}?t={token}" in r.text, r.text[:400]
+    assert "Sam" in r.text and "inbound sales call" in r.text and ("press 2" in r.text or "press two" in r.text) and "couple of hours" in r.text and f"/gate/{sid}?t={token}" in r.text, r.text[:400]
     print("answered -> announcement + gather ok")
     # voicemail picked up: its greeting is the only 'speech', nobody presses anything -> goodbye, no grade, retry later (real client)
     r = requests.post(f"{tw}/gate/{sid}?t={token}", data={"SpeechResult": "Hi you've reached Sam, leave a message after the tone", "CallSid": "CA_shop_sim"}, timeout=30)
@@ -150,7 +150,7 @@ async def main():
         # rep says nothing after the ring: the customer speaks first after the nudge window
         t0 = time.time()
         reply = json.loads(await asyncio.wait_for(ws.recv(), timeout=20))
-        assert reply["type"] == "text" and reply["token"] == s["persona"]["opening_line"] and 7 <= time.time() - t0 <= 12, (reply, time.time() - t0)
+        assert reply["type"] == "text" and reply["token"] in (s["persona"]["opening_line"], __import__("services.speech", fromlist=["speakable"]).speakable(s["persona"]["opening_line"])) and 7 <= time.time() - t0 <= 12, (reply, time.time() - t0)
         print("silent rep -> customer opened anyway after", f"{time.time()-t0:.1f}s")
         t0 = time.time()
         await ws.send(json.dumps({"type": "prompt", "voicePrompt": "Thanks for calling LHM Jeep, this is Sam.", "last": True}))

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, Modal, ScrollView, Platform, K
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { GOLD, GREEN, RED, AMBER, tid } from '../scripts/shared';
+import { makeT } from './i18n';
 
 export { GOLD, GREEN, RED, AMBER, tid };
 export const PURPLE = '#AF52DE';
@@ -24,6 +25,7 @@ export type Client = {
   billing?: { status?: string; last_invoice?: any }; progress?: Record<string, DeptStat>; avg_score?: number | null; completed?: number; planned?: number; needs_training?: number; people?: number;
   demo?: boolean; text_scorecards?: boolean;
   locale?: string; language?: string; currency?: string; currency_symbol?: string; country?: string; locale_label?: string; vat_id?: string;
+  number_state?: { own: boolean; needs_local_number: boolean; error?: string | null };
 };
 export type Locale = { code: string; label: string; language: string; language_label: string; country: string; currency: string; symbol: string; timezone: string; flag: string; relay_language: string; say_voice: string; voices: Record<string, string> };
 export type Person = { id: string; client_id: string; name: string; phone: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[] };
@@ -32,7 +34,8 @@ export type ShopCall = {
   curveballs: string[]; scheduled_for: string | null; attempts: number; started_at: string | null; ended_at: string | null; score_pct: number | null; adherence_pct: number | null; evaluation_id?: string | null;
   recording_url?: string | null; recording_seconds?: number | null; turns: number; manual: boolean; demo?: boolean; score_url?: string | null; score_sms_status?: string | null; score_views?: number;
 };
-export type Challenge = { id: string; title: string; department: string; department_label?: string; industry?: string; direction?: 'inbound' | 'outbound'; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean };
+export type ChallengeReview = { status: 'approved' | 'needs_review'; by_name?: string; at?: string | null };
+export type Challenge = { id: string; title: string; department: string; department_label?: string; industry?: string; direction?: 'inbound' | 'outbound'; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean; language?: string; source_slug?: string | null; review?: ChallengeReview | null };
 export type ChallengeDraft = { title: string; department: string; industry?: string; runtime?: string; purpose?: string; body: string; success_points?: string[]; curveballs?: string[]; persona?: any; generated_from?: string };
 export type Proposal = {
   id: string; token: string; status: string; terms: { per_month?: Record<string, number>; sales_per_month: number; service_per_month: number; price_monthly: number; term_months: number; notes?: string }; client_name: string; contact_name: string; contact_email: string;
@@ -118,11 +121,12 @@ export const Chip = ({ label, active, onPress, colors, testID, color = GOLD, sma
   </TouchableOpacity>
 );
 
-export const StatusChip = ({ status, colors }: { status: string; colors: any }) => {
+export const StatusChip = ({ status, colors, lang }: { status: string; colors: any; lang?: string }) => {
   const s = STATUS[status] || { label: status, color: colors.textSecondary, icon: 'ellipse' };
+  const label = lang && lang !== 'en' ? makeT(lang)(`status.${status}`) : s.label;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: s.color + '22' }} {...tid(`shop-status-${status}`)}>
-      <Ionicons name={s.icon} size={12} color={s.color} /><Text style={{ fontSize: 11, fontWeight: '800', color: s.color }}>{s.label}</Text>
+      <Ionicons name={s.icon} size={12} color={s.color} /><Text style={{ fontSize: 11, fontWeight: '800', color: s.color }}>{label.startsWith('status.') ? s.label : label}</Text>
     </View>
   );
 };

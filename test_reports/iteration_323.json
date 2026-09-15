@@ -1,0 +1,36 @@
+{
+  "summary": "Full verification of UK + Ireland English localization pack (Phase D). All 8 review items pass. Backend: 30/30 pytest pass (existing test_uk_pack.py 6, test_dutch_pack.py 4, test_locales.py 4 plus new test_uk_ireland_review.py 16). New tests cover public shop-report en-GB/nl/en regressions, PDF variant, bundles GET listing GB/IE/BE with 'needs' sentences, PUT validation (NL rejected, bad address rejected, bad bundle_sid rejected with 'BU' hint, unauthenticated 401), full save/clear GB bundle flow (client bundle_on_file toggles True/False), UK phone normalisation (07123 456789 -> +447123456789, 0712 rejected with '07123 456789' hint), 401 for unauth, and challenge library languages listing including en-GB with 'British English (UK & Ireland)' label. Frontend UI verified end-to-end via Playwright on the preview URL: (1) /proposal/08fb4ad... shows £450, Bacs bank transfer, Electronic Communications Act 2000 (no ESIGN), 'BODYSHOP SHOPS / MONTH' tile, 'mobile numbers', 'opening hours', Job-title placeholder 'Dealer Principal, Owner'; (2) /shop-kickoff/c03ad1... shows 'Your mobile (optional)' placeholder, 'Add a bodyshop person' group, Mon..Sun day chips, United Kingdom and Ireland tz chips, 'forecourt' in vehicles help; (3) /shop-report/ef5113... renders in English with 'Bodyshop' chip (one word) and no 'Body Shop'; (4) Dutch regression /shop-report/61646e... still Dutch (Werkplaats, Alle afdelingen, Iedereen, Dutch intro); (5) admin /admin/mystery-shops/6aa8b13f2c2d5fb494b1532e People tab: shop-client-header subtitle 'United Kingdom · UK English · 4 sales + 2 service + 1 body shop / mo', client-number-card 'No United Kingdom number yet' with '+44 7' note, number-bundle-row 'Twilio needs a regulatory bundle before it sells GB numbers' + Add link; bad sid 'nope' produced error toast mentioning 'Bundle SID starts with BU'; good BU + AD sids saved -> status 'Twilio bundle on file for GB · BU0000…0000', API GB on_file=true and client bundle_on_file=true; Change -> clear both -> button label became 'Remove bundle' -> save -> status back to 'needs a regulatory bundle' and API on_file=false; (6) library page: three chips library-lang-en / library-lang-nl / library-lang-en-GB (label 'British English'), tapping en-GB shows localize-card 'British English (UK & Ireland) automotive dealership pack' with 'Nothing yet. 18 English challenges can be adapted.' and localize-start 'Have Jessi write the British versions' (NOT tapped per instruction). Dutch chip still shows '18 approved · 0 waiting'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "NumberBundleRow", "issue": "The number-bundle-save button is NOT disabled when both SID and address inputs are empty (review spec requires it to be disabled and read 'Save bundle'). Currently it reads 'Save bundle' but remains clickable; pressing it would send an empty payload. Backend still rejects the empty payload safely, so this is a minor UX polish issue.", "selector": "[data-testid=number-bundle-save]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_uk_ireland_review.py",
+    "/app/backend/tests/test_uk_pack.py",
+    "/app/backend/tests/test_dutch_pack.py",
+    "/app/backend/tests/test_locales.py",
+    "/app/test_reports/pytest/uk_ireland_pack.xml"
+  ],
+  "action_items": [
+    "Optional: disable [data-testid=number-bundle-save] when both bundle_sid and address_sid inputs are empty on the 'add' edit form (current behaviour keeps it enabled). It becomes 'Remove bundle' on the change/clear flow which is correct."
+  ],
+  "critical_code_review_comments": [
+    "buy_client_number correctly raises early before any Twilio HTTP call for GB/IE/BE without a bundle, so the LIVE Twilio account is safe when kickoff auto-buy fires; error is persisted to shop_clients.number_error.",
+    "GET /api/shop-clients/challenges is guarded by require_admin; unauthenticated request rejected properly.",
+    "PUT /api/shop-clients/number/bundles validates country in {GB,IE,BE} and both SIDs' 34-char prefix (BU / AD); NL is correctly rejected 400."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_uk_ireland_review.py (new)"
+  ],
+  "success_rate": {"backend": "30/30 pytest pass (100%)", "frontend": "8/8 review sections verified; 1 minor UX polish (save-button disabled state)"},
+  "test_credentials": "forest@imosapp.com / Admin123!",
+  "seed_data_creation": "Added QA Sophie Walker to UK QA client, then deleted via DELETE /api/shop-clients/people/{id}. GB regulatory bundle saved during test flow and CLEARED at the end (final GB on_file=false, IE=false, BE=false verified). No lingering test data on UK client.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "UK QA client id 6aa8b13f2c2d5fb494b1532e (keep). Public tokens: proposal 08fb4ad374b049a387e6ada59227a80e, kickoff c03ad1fa10234f6dae86a845b13f76d1, report ef5113d7b7f8404e89aa54f39054c60c. Dutch demo report 61646e08ba83440bbcbae301ebd5f24e. US QA Jeep report 51c51185fdbf45e3b15efbadf3e3b203. LANGUAGE_NAMES exposes only nl and en-GB; en-IE clients draw from en-GB library. Bundles GET returns {countries:[{country,needs,bundle_sid,address_sid,on_file}]}. Endpoint /api/shop-clients/{id}/number returns bundle_on_file/needs_bundle/bundle_needs. The public kickoff POST triggers buy_client_number which safely fails before Twilio call when NEEDS_BUNDLE country has no bundle; number_error is stored on client. Do NOT tap client-number-buy or POST /number/buy-local; do NOT tap localize-start on en-GB (real ~3 min LLM job). The save button in NumberBundleRow does not disable when inputs are empty - noted as minor UX bug.",
+  "rca of the issue": "N/A - all functionality works as specified. One minor UI-only observation: the number-bundle-save button stays enabled with empty inputs on initial 'Add' edit view (spec required disabled). Backend still rejects the empty payload, so behaviour is safe."
+}

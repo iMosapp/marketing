@@ -45,19 +45,33 @@ def _oid(v, what="Record") -> ObjectId:
     return ObjectId(str(v))
 
 
-def _phone(v: str) -> str:
+def _phone(v: str, client: Optional[dict] = None) -> str:
+    """E.164 for the client's country: '06-12345678' on a Dutch client becomes +31612345678, US numbers behave as before."""
     from routers.twilio_webhooks import normalize_phone
-    p = normalize_phone(v or "")
-    if not p or len(p) < 11:
-        raise HTTPException(status_code=400, detail="Enter a full cell number with area code")
+    raw = (v or "").strip()
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    country = loc.get(loc.key_of(client))["country"] if client else "US"
+    if raw.startswith("00"):
+        p = "+" + digits[2:]
+    elif raw.startswith("+"):
+        p = "+" + digits
+    elif country == "US":
+        p = normalize_phone(raw)
+    else:
+        cc = {"NL": "31", "GB": "44", "IE": "353", "BE": "32"}.get(country, "")
+        p = "+" + cc + (digits[1:] if digits.startswith("0") else digits)
+    if not p or len(p) < 11 or not p[1:].isdigit():
+        example = {"NL": "06 12345678 or +31 6 12345678", "BE": "0470 12 34 56 or +32 470 12 34 56", "GB": "07123 456789 or +44 7123 456789", "IE": "087 123 4567 or +353 87 123 4567"}.get(country, "06 12345678")
+        raise HTTPException(status_code=400, detail="Enter a full cell number with area code" if country == "US" else f"Enter a full mobile number, e.g. {example}")
     return p
 
 
 async def _client(db, cid: str) -> dict:
-    c = await db.shop_clients.find_one({"_id": _oid(cid, "Client")})
-    if not c:
+    """Internal helper (never returned to HTTP directly; callers serialize via ms.serialize_client)."""
+    found = await db.shop_clients.find_one({"_id": _oid(cid, "Client")})
+    if not found:
         raise HTTPException(status_code=404, detail="Client not found")
-    return c
+    return dict(found)
 
 
 class ClientBody(BaseModel):
@@ -363,6 +377,30 @@ async def clear_shop_number(request: Request):
     return await _number_state(db)
 
 
+class BundleBody(BaseModel):
+    country: str
+    bundle_sid: str = ""
+    address_sid: str = ""
+
+
+@router.get("/number/bundles")
+async def number_bundles(request: Request):
+    """Twilio regulatory bundles on file per country; UK, Irish and Belgian numbers cannot be bought without one."""
+    await require_admin(request)
+    from services import shop_numbers
+    return await shop_numbers.bundles_state(get_db())
+
+
+@router.put("/number/bundles")
+async def set_number_bundle(body: BundleBody, request: Request):
+    await require_admin(request)
+    from services import shop_numbers
+    try:
+        return await shop_numbers.set_bundle(get_db(), body.country, body.bundle_sid, body.address_sid)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.get("/number/search")
 async def search_shop_numbers(request: Request, area_code: Optional[str] = None, contains: Optional[str] = None):
     """Voice + SMS capable US numbers available to buy, by area code or digits."""
@@ -449,16 +487,75 @@ async def demo_challenges(request: Request, department: Optional[str] = None, in
 
 
 @router.get("/challenges")
-async def library(request: Request, department: Optional[str] = None, industry: Optional[str] = None):
-    """The global challenge library (every client's caller draws from it), filterable by industry."""
+async def library(request: Request, department: Optional[str] = None, industry: Optional[str] = None, language: Optional[str] = "en"):
+    """The global challenge library (every client's caller draws from it), filterable by industry and language."""
     await require_admin(request)
-    rows = await ms.challenge_pool(get_db(), None, department, industry)
-    return {"challenges": [_challenge_out(s) for s in rows], "departments": ind.dept_options(industry or ind.DEFAULT_INDUSTRY), "industries": ind.for_api()}
+    db = get_db()
+    rows = await ms.challenge_pool(db, None, department, industry, language=language or "en")
+    out = {"challenges": [_challenge_out(s) for s in rows], "departments": ind.dept_options(industry or ind.DEFAULT_INDUSTRY), "industries": ind.for_api(), "language": language or "en",
+           "languages": [{"code": "en", "label": "English"}] + [{"code": k, "label": v} for k, v in ms.LANGUAGE_NAMES.items()]}
+    if (language or "en") != "en":
+        out["review"] = await ms.review_summary(db, language, industry or ind.DEFAULT_INDUSTRY)
+    return out
 
 
 class SeedBody(BaseModel):
     industry: str
     department: Optional[str] = None
+
+
+class LocalizeBody(BaseModel):
+    language: str = "nl"
+    industry: str = "automotive"
+    department: Optional[str] = None
+
+
+class ReviewBody(BaseModel):
+    status: str = "approved"
+
+
+class ApproveAllBody(BaseModel):
+    language: str = "nl"
+
+
+@router.post("/challenges/localize")
+async def localize_library(body: LocalizeBody, request: Request):
+    """Jessi adapts every English challenge of an industry into another language (background, a few minutes). Drafts land flagged for the native reviewer."""
+    me = await require_admin(request)
+    db = get_db()
+    if body.language not in ms.LANGUAGE_NAMES:
+        raise HTTPException(status_code=400, detail="That language is not set up yet")
+    if body.industry not in ind.INDUSTRIES:
+        raise HTTPException(status_code=400, detail="Pick an industry from the list")
+    job = await ms.localize_status(db, body.language)
+    if job.get("status") == "running" and job.get("started_at") and (datetime.now(timezone.utc) - job["started_at"]).total_seconds() < 1800:
+        return {"started": False, "review": await ms.review_summary(db, body.language, body.industry)}
+    asyncio.create_task(ms.localize_starters(db, me, body.language, body.industry, body.department))
+    await asyncio.sleep(0.2)
+    return {"started": True, "review": await ms.review_summary(db, body.language, body.industry)}
+
+
+@router.get("/challenges/review")
+async def challenge_review(request: Request, language: str = "nl", industry: Optional[str] = None):
+    await require_admin(request)
+    return await ms.review_summary(get_db(), language, industry or ind.DEFAULT_INDUSTRY)
+
+
+@router.post("/challenges/review/approve-all")
+async def challenge_approve_all(body: ApproveAllBody, request: Request):
+    me = await require_admin(request)
+    n = await ms.approve_all(get_db(), body.language, me)
+    return {"approved": n, "review": await ms.review_summary(get_db(), body.language)}
+
+
+@router.put("/challenges/{sid}/review")
+async def challenge_review_one(sid: str, body: ReviewBody, request: Request):
+    me = await require_admin(request)
+    try:
+        s = await ms.set_review(get_db(), sid, body.status, me)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return _challenge_out(s)
 
 
 @router.post("/challenges/seed")
@@ -487,6 +584,148 @@ async def create_client(body: ClientBody, request: Request):
            **d, "report_token": uuid.uuid4().hex, "billing": {}, "created_by": str(me["_id"]), "created_at": now, "updated_at": now}
     res = await get_db().shop_clients.insert_one(doc)
     return ms.serialize_client(await get_db().shop_clients.find_one({"_id": res.inserted_id}))
+
+
+class ImportBody(BaseModel):
+    csv: str
+    locale: Optional[str] = None
+    dry_run: bool = False
+
+
+IMPORT_COLUMNS = ["name", "brand", "city", "state", "contact_name", "contact_title", "contact_email", "contact_phone", "locale", "vat_id", "sales", "service", "parts", "rental", "collision", "price", "timezone", "notes"]
+
+
+def _money_str(v: Optional[str]) -> float:
+    """'€ 1.250,50', '1,250.50', '450' and '450,00' all come out right."""
+    t = "".join(ch for ch in (v or "") if ch.isdigit() or ch in ".,")
+    if not t:
+        return 0.0
+    if "," in t and "." in t:
+        dec = "," if t.rfind(",") > t.rfind(".") else "."
+        t = t.replace("." if dec == "," else ",", "").replace(",", ".")
+    elif "," in t:
+        head, _, tail = t.rpartition(",")
+        t = f"{head.replace(',', '')}.{tail}" if len(tail) == 2 else t.replace(",", "")
+    elif "." in t:
+        head, _, tail = t.rpartition(".")
+        t = t.replace(".", "") if len(tail) == 3 else f"{head.replace('.', '')}.{tail}"
+    try:
+        return max(0.0, float(t))
+    except ValueError:
+        return 0.0
+
+
+def _import_rows(text: str) -> list:
+    import csv as _csv
+    import io
+    sample = text[:4000]
+    delim = ";" if sample.count(";") > sample.count(",") else ("\t" if sample.count("\t") > sample.count(",") else ",")
+    reader = _csv.DictReader(io.StringIO(text.lstrip("\ufeff")), delimiter=delim)
+    rows = []
+    for r in reader:
+        rows.append({(k or "").strip().lower().replace(" ", "_").replace("e-mail", "email").replace("plaats", "city").replace("naam", "name").replace("bedrijf", "name") if k else "": (v or "").strip() for k, v in r.items()})
+    return rows
+
+
+@router.get("/import/template")
+async def import_template(request: Request):
+    """Column list + example line for the bulk import (works for Dutch and US files, comma or semicolon)."""
+    await require_admin(request)
+    return {"columns": IMPORT_COLUMNS, "example": "Autobedrijf Jansen;Volkswagen, Skoda;Utrecht;;Pieter Jansen;Directeur;pieter@jansen.nl;06 12345678;nl-NL;NL123456789B01;4;2;1;0;1;450;;",
+            "notes": "name is required. locale defaults to the value you pick on import (nl-NL for the Dutch list). sales/service/parts/rental/collision are shops per month, price is per month in the client's currency. Duplicates (same contact email, or same name and city) are skipped."}
+
+
+@router.post("/import")
+async def import_clients(body: ImportBody, request: Request):
+    """Bulk-create shop clients from a CSV (paste or upload). dry_run only reports what would happen."""
+    me = await require_admin(request)
+    db = get_db()
+    default_locale = body.locale if body.locale in loc.LOCALES else "en-US"
+    rows = _import_rows(body.csv or "")
+    if not rows:
+        raise HTTPException(status_code=400, detail="No rows found. The first line must be the column names (name, city, contact_email, ...)")
+    if len(rows) > 2000:
+        raise HTTPException(status_code=400, detail="Import at most 2000 clients per file")
+    existing = await db.shop_clients.find({}, {"name": 1, "city": 1, "contact_email": 1}).to_list(10000)
+    seen_key = {(c.get("name") or "").strip().lower() + "|" + (c.get("city") or "").strip().lower() for c in existing}
+    seen_email = {(c.get("contact_email") or "").strip().lower() for c in existing if c.get("contact_email")}
+    created, skipped, errors = [], [], []
+    now = datetime.now(timezone.utc)
+    for i, r in enumerate(rows, start=2):
+        name = (r.get("name") or "")[:120]
+        if not name:
+            errors.append({"row": i, "reason": "name is missing"})
+            continue
+        email = (r.get("contact_email") or "").lower()
+        if email and "@" not in email:
+            errors.append({"row": i, "reason": f"contact_email '{email}' does not look right"})
+            continue
+        key = name.lower() + "|" + (r.get("city") or "").lower()
+        if key in seen_key or (email and email in seen_email):
+            skipped.append({"row": i, "name": name, "reason": "already exists (same name and city, or same contact email)"})
+            continue
+        lc = r.get("locale") if r.get("locale") in loc.LOCALES else default_locale
+        per = {}
+        for k in ("sales", "service", "parts", "rental", "collision"):
+            try:
+                n = int(float((r.get(k) or "0").replace(",", ".")))
+            except ValueError:
+                n = 0
+            if n > 0:
+                per[k] = min(200, n)
+        price = _money_str(r.get("price"))
+        phone = ""
+        if r.get("contact_phone"):
+            try:
+                phone = _phone(r["contact_phone"], {"locale": lc})
+            except HTTPException:
+                phone = r["contact_phone"][:40]
+        tz = r.get("timezone") if r.get("timezone") in {a for a, _ in ms.TIMEZONES} else loc.get(lc)["timezone"]
+        doc = {"name": name, "brand": (r.get("brand") or "")[:120], "city": (r.get("city") or "")[:80], "state": (r.get("state") or "")[:40], "timezone": tz, "locale": lc, "vat_id": (r.get("vat_id") or "").upper()[:40],
+               "contact_name": (r.get("contact_name") or "")[:120], "contact_title": (r.get("contact_title") or "")[:80], "contact_email": email[:160], "contact_phone": phone,
+               "plan": {"per_month": per, "price_monthly": price}, "hours": dict(ms.DEFAULT_HOURS), "vehicles": [], "active": True, "record_calls": True, "notes": (r.get("notes") or "")[:2000], "industry": ind.DEFAULT_INDUSTRY,
+               "report_token": uuid.uuid4().hex, "billing": {}, "created_by": str(me["_id"]), "imported_at": now, "created_at": now, "updated_at": now}
+        seen_key.add(key)
+        if email:
+            seen_email.add(email)
+        if not body.dry_run:
+            res = await db.shop_clients.insert_one(doc)
+            doc["_id"] = res.inserted_id
+        created.append({"row": i, "name": name, "city": doc["city"], "locale": lc, "per_month": per, "price": price, "id": str(doc.get("_id")) if doc.get("_id") else None})
+    return {"dry_run": body.dry_run, "total_rows": len(rows), "created": len(created), "skipped": len(skipped), "errors": len(errors), "created_items": created[:200], "skipped_items": skipped[:200], "error_items": errors[:200]}
+
+
+@router.get("/{cid}/number")
+async def client_number(cid: str, request: Request):
+    await require_admin(request)
+    db = get_db()
+    from services import shop_numbers
+    return shop_numbers.number_state(await _client(db, cid), await shop_numbers.bundles(db))
+
+
+@router.post("/{cid}/number/buy-local")
+async def client_buy_local_number(cid: str, request: Request):
+    """Buy this client a shop number in its own country (Dutch +31 97 mobile-range numbers need no paperwork)."""
+    me = await require_admin(request)
+    db = get_db()
+    from services import shop_numbers
+    c = await _client(db, cid)
+    res = await shop_numbers.buy_client_number(db, c, me, reason="manual")
+    if not res.get("ok"):
+        raise HTTPException(status_code=502, detail=res.get("error") or "Twilio would not sell a number right now")
+    return shop_numbers.number_state(await _client(db, cid), await shop_numbers.bundles(db))
+
+
+@router.delete("/{cid}/number")
+async def client_release_number(cid: str, request: Request):
+    await require_admin(request)
+    db = get_db()
+    from services import shop_numbers
+    c = await _client(db, cid)
+    res = await shop_numbers.release_client_number(db, c)
+    if not res.get("released"):
+        raise HTTPException(status_code=400, detail=res.get("error") or "This client uses the platform number, nothing to release")
+    return shop_numbers.number_state(await _client(db, cid), await shop_numbers.bundles(db))
 
 
 @router.get("/{cid}")
@@ -519,7 +758,10 @@ async def update_client(cid: str, body: ClientBody, request: Request):
 async def delete_client(cid: str, request: Request):
     await require_admin(request)
     db = get_db()
-    await _client(db, cid)
+    c = await _client(db, cid)
+    if (c.get("number") or {}).get("sid"):
+        from services import shop_numbers
+        await shop_numbers.release_client_number(db, c)
     await db.roleplay_sessions.update_many({"kind": "mystery_shop", "client_id": cid, "status": "scheduled"}, {"$set": {"status": "canceled", "fail_reason": "Client removed", "updated_at": datetime.now(timezone.utc)}})
     await db.shop_targets.delete_many({"client_id": cid})
     await db.shop_clients.delete_one({"_id": ObjectId(cid)})
@@ -537,7 +779,7 @@ async def add_person(cid: str, body: PersonBody, request: Request):
     c = await _client(db, cid)
     keys = ind.dept_keys(ind.key_of(c))
     dept = body.department if body.department in keys else keys[0]
-    phone = _phone(body.phone or "")
+    phone = _phone(body.phone or "", c)
     if await db.shop_targets.find_one({"client_id": cid, "phone": phone}):
         raise HTTPException(status_code=409, detail="Someone with that cell number is already on this client")
     now = datetime.now(timezone.utc)
@@ -555,7 +797,7 @@ async def update_person(tid: str, body: PersonBody, request: Request):
         raise HTTPException(status_code=404, detail="Person not found")
     d = {k: v for k, v in body.dict().items() if v is not None}
     if "phone" in d:
-        d["phone"] = _phone(d["phone"])
+        d["phone"] = _phone(d["phone"], await db.shop_clients.find_one({"_id": _oid(t["client_id"])}, {"locale": 1}))
     if "department" in d and d["department"] not in ind.all_dept_keys():
         d.pop("department")
     if "name" in d:
@@ -669,7 +911,9 @@ async def retry_call(sid: str, request: Request):
 
 # ---------------------------------------------------------------- challenges
 def _challenge_out(s: dict) -> dict:
-    return {**scr.serialize_script(s), "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "industry": s.get("industry") or ind.industry_of_dept(s.get("department")), "client_specific": bool(s.get("shop_client_id")), "shop_client_id": s.get("shop_client_id"), "curveballs": s.get("curveballs") or [], "generated": bool(s.get("generated_from"))}
+    rv = s.get("review") or {}
+    return {**scr.serialize_script(s), "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "language": s.get("language") or "en", "source_slug": s.get("source_slug"),
+            "review": {"status": rv.get("status") or "approved", "by_name": rv.get("by_name") or "", "at": rv["at"].isoformat() if hasattr(rv.get("at"), "isoformat") else rv.get("at")} if rv else None, "industry": s.get("industry") or ind.industry_of_dept(s.get("department")), "client_specific": bool(s.get("shop_client_id")), "shop_client_id": s.get("shop_client_id"), "curveballs": s.get("curveballs") or [], "generated": bool(s.get("generated_from"))}
 
 
 CATEGORY_BY_DEPT = {"sales": "Sales calls", "service": "Service", "parts": "Parts", "rental": "Rental", "collision": "Body Shop"}
@@ -740,7 +984,7 @@ async def list_challenges(cid: str, request: Request):
     db = get_db()
     await _client(db, cid)
     c = await _client(db, cid)
-    return {"challenges": [_challenge_out(s) for s in await ms.challenge_pool(db, cid, None, ind.key_of(c))], "departments": ind.dept_options(ind.key_of(c))}
+    return {"challenges": [_challenge_out(s) for s in await ms.challenge_pool(db, cid, None, ind.key_of(c), language=loc.language(loc.key_of(c)))], "departments": ind.dept_options(ind.key_of(c))}
 
 
 @router.post("/{cid}/challenges")
@@ -965,11 +1209,19 @@ async def create_proposal(cid: str, body: ProposalBody, request: Request):
         raise HTTPException(status_code=400, detail="Set how many shops per month")
     doc = {"client_id": cid, "client_name": c.get("name"), "contact_name": (body.contact_name or c.get("contact_name") or "").strip(), "contact_email": (body.contact_email or c.get("contact_email") or "").strip().lower(),
            "terms": {"per_month": per, "sales_per_month": per.get("sales", 0), "service_per_month": per.get("service", 0), "price_monthly": round(float(body.price_monthly), 2), "term_months": max(1, min(24, body.term_months)), "notes": no_em_dash(body.notes or "")[:1500]},
-           "status": "draft", "token": uuid.uuid4().hex, "sender_id": str(me["_id"]), "sender_name": me.get("name") or "I'm On Social", "created_at": now, "updated_at": now}
+           "status": "draft", "token": uuid.uuid4().hex, "sender_id": str(me["_id"]), "sender_name": me.get("name") or "I'm On Social", "locale": loc.key_of(c), "created_at": now, "updated_at": now}
     res = await db.shop_proposals.insert_one(doc)
     await db.shop_clients.update_one({"_id": c["_id"]}, {"$set": {"plan": {"per_month": per, "price_monthly": doc["terms"]["price_monthly"]}}})
     p = await db.shop_proposals.find_one({"_id": res.inserted_id})
     return {**ms.serialize_proposal(p), "url": f"{scr._app_url()}/proposal/{p['token']}"}
+
+
+async def _proposal_locale(db, p: dict) -> str:
+    """Locale stamped on the proposal, else the client's (older proposals predate the field)."""
+    if p.get("locale") in loc.LOCALES:
+        return p["locale"]
+    c = await db.shop_clients.find_one({"_id": ObjectId(p["client_id"])}, {"locale": 1}) if ObjectId.is_valid(str(p.get("client_id"))) else None
+    return loc.key_of(c)
 
 
 @router.post("/proposals/{pid}/send")
@@ -991,7 +1243,7 @@ async def send_proposal(pid: str, request: Request, body: Optional[SendBody] = N
         raise HTTPException(status_code=400, detail="Add the client's contact email first")
     note = no_em_dash(body.note or "").strip()[:1500]
     url = f"{scr._app_url()}/proposal/{p['token']}"
-    subject, html = ms.proposal_email(p, me.get("name") or "Forest", note, url, "cid:imos-logo")
+    subject, html = ms.proposal_email(p, me.get("name") or "Forest", note, url, "cid:imos-logo", await _proposal_locale(db, p))
     key = os.environ.get("RESEND_API_KEY")
     if not key:
         raise HTTPException(status_code=503, detail="Email is not configured, copy the link instead")
@@ -1024,7 +1276,7 @@ async def proposal_email_preview(pid: str, request: Request, note: Optional[str]
     default_note = p.get("sent_note") if p.get("sent_note") is not None else (me.get("shop_proposal_note") or "")
     note_txt = default_note if note is None else note
     logo = ms.logo_b64()
-    subject, html = ms.proposal_email(p, me.get("name") or "Forest", note_txt, f"{scr._app_url()}/proposal/{p['token']}", f"data:image/png;base64,{logo}" if logo else "")
+    subject, html = ms.proposal_email(p, me.get("name") or "Forest", note_txt, f"{scr._app_url()}/proposal/{p['token']}", f"data:image/png;base64,{logo}" if logo else "", await _proposal_locale(db, p))
     sender = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
     return {"subject": subject, "html": html, "to": p.get("contact_email") or "", "from": f"I'm On Social <{sender}>", "reply_to": me.get("email") or "support@imonsocial.com", "default_note": default_note}
 
@@ -1053,16 +1305,17 @@ async def public_proposal(token: str):
         p["status"] = "viewed"
     if (p.get("invoice") or {}).get("stripe_invoice_id") and (p.get("invoice") or {}).get("status") != "paid":
         p["invoice"] = await ms.refresh_invoice(db, p)
+    c = await db.shop_clients.find_one({"_id": ObjectId(p["client_id"])}) if ObjectId.is_valid(str(p.get("client_id"))) else None
     out = ms.serialize_proposal(p)
-    out["sections"] = [{"title": a, "body": b} for a, b in ms.proposal_text(p)]
+    out["sections"] = [{"title": a, "body": b} for a, b in ms.proposal_text(p, loc.key_of(c))]
     out["invoice"] = {"hosted_invoice_url": (p.get("invoice") or {}).get("hosted_invoice_url"), "status": (p.get("invoice") or {}).get("status"), "amount": (p.get("invoice") or {}).get("amount")}
     out["kickoff_url"] = await _kickoff_for(db, p) if p.get("status") in ("signed", "paid") else None
-    c = await db.shop_clients.find_one({"_id": ObjectId(p["client_id"])}) if ObjectId.is_valid(str(p.get("client_id"))) else None
-    pack = ind.get(ind.key_of(c))
+    pack = ind.translated(ind.key_of(c), loc.key_of(c))
     out["per_month"] = ms.terms_per_month(p.get("terms") or {})
-    out["departments"] = ind.dept_options(ind.key_of(c))
+    out["departments"] = ind.dept_options_for(ind.key_of(c), loc.key_of(c))
     out["offering"] = pack["offering"]
     out["business_noun"] = pack["business"]
+    out["language"] = loc.dialect(loc.key_of(c))
     out["locale"] = loc.key_of(c)
     out["currency"] = loc.currency(loc.key_of(c))
     out["currency_symbol"] = loc.get(loc.key_of(c))["symbol"]
@@ -1124,10 +1377,11 @@ async def _kickoff_client(db, token: str) -> dict:
 def _kickoff_out(c: dict, people: list) -> dict:
     return {"client": {"id": str(c["_id"]), "name": c.get("name"), "brand": c.get("brand", ""), "city": c.get("city", ""), "state": c.get("state", ""), "contact_name": c.get("contact_name", ""), "contact_email": c.get("contact_email", ""),
                        "contact_phone": c.get("contact_phone", ""), "contact_title": c.get("contact_title", ""), "timezone": c.get("timezone") or "America/Denver", "hours": ms._hours(c), "vehicles": ms.offerings_of(c),
-                       "offerings": ms.offerings_of(c), "industry": ind.key_of(c), "offering": ind.get(ind.key_of(c))["offering"], "customer_noun": ind.get(ind.key_of(c))["customer"], "business_noun": ind.get(ind.key_of(c))["business"],
+                       "offerings": ms.offerings_of(c), "industry": ind.key_of(c), "offering": ind.translated(ind.key_of(c), loc.key_of(c))["offering"], "customer_noun": ind.translated(ind.key_of(c), loc.key_of(c))["customer"], "business_noun": ind.translated(ind.key_of(c), loc.key_of(c))["business"],
+                       "locale": loc.key_of(c), "language": loc.dialect(loc.key_of(c)), "country": loc.get(loc.key_of(c))["country"],
                        "plan": {**(c.get("plan") or {}), "per_month": ms.plan_per_month(c)}, "kickoff": {k: (v.isoformat() if isinstance(v, datetime) else v) for k, v in (c.get("kickoff") or {}).items()}},
             "people": [{"id": str(t["_id"]), "name": t.get("name", ""), "phone": t.get("phone", ""), "department": t.get("department", "sales"), "title": t.get("title", "")} for t in people],
-            "departments": ind.dept_options(ind.key_of(c)), "timezones": [{"id": a, "label": b} for a, b in ms.TIMEZONES], "sender_name": (c.get("kickoff") or {}).get("sender_name") or "Forest"}
+            "departments": ind.dept_options_for(ind.key_of(c), loc.key_of(c)), "timezones": [{"id": a, "label": b} for a, b in ms.TIMEZONES], "sender_name": (c.get("kickoff") or {}).get("sender_name") or "Forest"}
 
 
 @public_router.get("/shop-kickoff/{token}")
@@ -1175,9 +1429,9 @@ async def submit_kickoff(token: str, body: KickoffBody, request: Request):
         if not name:
             raise HTTPException(status_code=400, detail="Every person needs a name")
         try:
-            phone = _phone(person.phone or "")
+            phone = _phone(person.phone or "", c)
         except HTTPException:
-            raise HTTPException(status_code=400, detail=f"Enter a full cell number with area code for {name}")
+            raise HTTPException(status_code=400, detail=f"Enter a full {'mobile' if loc.get(loc.key_of(c))['country'] != 'US' else 'cell'} number for {name}")
         if phone in seen_phones:
             raise HTTPException(status_code=400, detail=f"{name} has the same cell number as someone else on the list")
         seen_phones.add(phone)
@@ -1205,6 +1459,11 @@ async def submit_kickoff(token: str, body: KickoffBody, request: Request):
             "ip": (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "") or "").split(",")[0].strip()}
     await db.shop_clients.update_one({"_id": c["_id"]}, {"$set": {**upd, "kickoff": kick, "updated_at": now}})
     c = await db.shop_clients.find_one({"_id": c["_id"]})
+    if loc.get(loc.key_of(c))["country"] != "US" and not c.get("from_number"):
+        # a Dutch (or UK / Irish) store gets its own local shop number the moment the GM finishes setup, so reps see a local caller id
+        from services import shop_numbers
+        await shop_numbers.buy_client_number(db, c, reason="kickoff")
+        c = await db.shop_clients.find_one({"_id": c["_id"]})
     people = await db.shop_targets.find({"client_id": cid, "active": {"$ne": False}}).sort([("department", 1), ("name", 1)]).to_list(300)
     try:
         await ms.notify_kickoff(db, c, added, len(people))

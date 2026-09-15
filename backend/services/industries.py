@@ -394,3 +394,62 @@ def fill_offering(text, offering: str, place: str):
     if not isinstance(text, str):
         return text
     return text.replace("{vehicle}", offering).replace("{offering}", offering).replace("{store}", place)
+
+
+# ---------------------------------------------------------------- translations (client-facing words per language)
+# Only what a Dutch dealer, GM or rep reads or hears. Admin screens stay English until Phase E.
+TRANSLATIONS = {
+    "nl": {
+        "automotive": {
+            "label": "Autobedrijf", "business": "autobedrijf", "place": "het autobedrijf", "customer": "mystery shopper", "trainer": "verkooptrainer voor autobedrijven",
+            "offering": {"label": "auto", "plural": "auto's", "hint": "2024 Volkswagen Golf 1.5 eTSI Style", "field": "Auto's die onze shopper mag noemen", "field_help": "Echte auto's uit je voorraad maken de gesprekken geloofwaardig. Bouwjaar, merk, model en uitvoering is genoeg."},
+            "departments": {
+                "sales": {"label": "Verkoop", "call": "verkoopgesprek", "rep": "een verkoopadviseur", "prefix": "Verkoopbeller:"},
+                "service": {"label": "Werkplaats", "call": "servicegesprek", "rep": "een serviceadviseur", "prefix": "Servicebeller:"},
+                "parts": {"label": "Onderdelen", "call": "onderdelengesprek", "rep": "een onderdelenadviseur", "prefix": "Onderdelenbeller:"},
+                "rental": {"label": "Verhuur", "call": "verhuurgesprek", "rep": "een verhuurmedewerker", "prefix": "Verhuurbeller:"},
+                "collision": {"label": "Schadeherstel", "call": "schadegesprek", "rep": "een schade-expert", "prefix": "Schadebeller:"},
+            },
+        },
+    },
+}
+# UK and Irish dealers: same pack, the trade's own words (sales executive, parts advisor, bodyshop)
+TRANSLATIONS["en-GB"] = {
+    "automotive": {
+        "label": "Car dealership",
+        "offering": {"hint": "2024 Volkswagen Golf 1.5 TSI Life", "field_help": "Real cars from the forecourt make the calls believable. Year, make, model and trim is plenty."},
+        "departments": {
+            "sales": {"rep": "a sales executive"},
+            "parts": {"rep": "a parts advisor"},
+            "collision": {"label": "Bodyshop", "call": "bodyshop call", "rep": "a bodyshop estimator", "prefix": "Bodyshop caller:"},
+        },
+    },
+}
+TRANSLATIONS["en-IE"] = TRANSLATIONS["en-GB"]
+
+
+def _tr(locale: Optional[str], industry_key: str) -> dict:
+    from services import locales as loc
+    return (TRANSLATIONS.get(loc.dialect(locale)) or TRANSLATIONS.get(loc.language(locale)) or {}).get(industry_key) or {}
+
+
+def translated(industry_key: Optional[str], locale: Optional[str]) -> dict:
+    """The industry pack with client-facing words swapped for the locale's language (falls back to English per field)."""
+    pack = get(industry_key)
+    tr = _tr(locale, key_of({"industry": industry_key}) if industry_key in INDUSTRIES else DEFAULT_INDUSTRY)
+    if not tr:
+        return pack
+    out = {**pack, **{k: v for k, v in tr.items() if k not in ("offering", "departments")}}
+    out["offering"] = {**pack["offering"], **(tr.get("offering") or {})}
+    out["departments"] = [{**d, **(tr.get("departments", {}).get(d["key"]) or {})} for d in pack["departments"]]
+    return out
+
+
+def dept_label_for(dept_key: Optional[str], locale: Optional[str], industry_key: Optional[str] = None) -> str:
+    tr = _tr(locale, industry_key or industry_of_dept(dept_key))
+    hit = (tr.get("departments") or {}).get(dept_key or "")
+    return hit["label"] if hit and hit.get("label") else dept_label(dept_key)
+
+
+def dept_options_for(industry_key: Optional[str], locale: Optional[str]) -> list:
+    return [{"key": d["key"], "label": d["label"], "call": d["call"], "rep": d["rep"]} for d in translated(industry_key, locale)["departments"]]

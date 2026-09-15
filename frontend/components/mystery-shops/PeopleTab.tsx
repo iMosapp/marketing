@@ -7,6 +7,7 @@ import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
 import { openUrl } from './ReportView';
 import { Sheet, Field, Label, Chip, GoldButton, deptLabel, deptsOfClient, fmtPhone, fmtWhen, GOLD, RED, tid, type Person, type Client } from './shared';
+import { ClientNumberCard } from './ClientNumberCard';
 
 type Props = { client: Client; people: Person[]; colors: any; onChanged: () => void; onShopStarted: () => void; kickoffUrl?: string; kickoff?: { submitted_at?: string; submissions?: number } };
 
@@ -65,6 +66,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
           </View>
         </View>
       )}
+      {!client.demo && <ClientNumberCard client={client} colors={colors} onChanged={onChanged} />}
       {groups.filter(g => g.rows.length).map(g => (
         <View key={g.key} style={{ gap: 8 }}>
           <Label t={`${g.label.toUpperCase()} · ${g.rows.length}`} colors={colors} />

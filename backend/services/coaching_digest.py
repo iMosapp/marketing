@@ -9,6 +9,8 @@ from zoneinfo import ZoneInfo
 
 from bson import ObjectId
 
+from services import i18n
+from services import locales as loc
 from services import scorecards as sc
 from services import scripts as scr
 from services.mystery_shops import _esc, logo_b64
@@ -31,14 +33,16 @@ def store_tz(store: Optional[dict]) -> ZoneInfo:
         return ZoneInfo("America/Denver")
 
 
-def last_week(tz: ZoneInfo, now: Optional[datetime] = None) -> tuple:
+def last_week(tz: ZoneInfo, now: Optional[datetime] = None, lang: str = "en") -> tuple:
     """(monday_utc, next_monday_utc, key 'YYYY-Www', label 'Sep 7 to Sep 13') for the ISO week before the current local one."""
     local = (now or _now()).astimezone(tz)
     this_monday = (local - timedelta(days=local.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     monday = this_monday - timedelta(days=7)
     sunday = this_monday - timedelta(days=1)
     iso = monday.isocalendar()
-    return monday.astimezone(timezone.utc), this_monday.astimezone(timezone.utc), f"{iso[0]}-W{iso[1]:02d}", f"{monday.strftime('%b')} {monday.day} to {sunday.strftime('%b')} {sunday.day}"
+    label = (f"{monday.day} {i18n.month_label(monday, 'nl', short=True)} tot {sunday.day} {i18n.month_label(sunday, 'nl', short=True)}" if lang == "nl"
+             else f"{monday.strftime('%b')} {monday.day} to {sunday.strftime('%b')} {sunday.day}")
+    return monday.astimezone(timezone.utc), this_monday.astimezone(timezone.utc), f"{iso[0]}-W{iso[1]:02d}", label
 
 
 def next_monday(tz: ZoneInfo, now: Optional[datetime] = None) -> str:
@@ -61,7 +65,8 @@ def one_thing(evals: list, cards: dict) -> Optional[dict]:
 
 async def build_digest(db, store: dict, now: Optional[datetime] = None) -> dict:
     tz = store_tz(store)
-    start, end, key, label = last_week(tz, now)
+    lang = loc.dialect(loc.key_of(store))
+    start, end, key, label = last_week(tz, now, lang)
     sid = str(store["_id"])
     evals = await db[sc.EVAL_COLL].find({"store_id": sid, "is_mystery_shop": {"$ne": True}, "call_at": {"$gte": start - timedelta(days=7), "$lt": end}}).sort("call_at", -1).to_list(3000)
     cur = [e for e in evals if sc._dt(e) >= start]
@@ -86,7 +91,7 @@ async def build_digest(db, store: dict, now: Optional[datetime] = None) -> dict:
     reps.sort(key=lambda r: (-(r["avg_score"] if r["avg_score"] is not None else -1), -r["count"]))
     avg = sc._avg([e.get("score_pct") for e in cur])
     pavg = sc._avg([e.get("score_pct") for e in prev])
-    return {"store": {"id": sid, "name": store.get("name") or "your store"}, "week": key, "label": label, "start": start, "end": end, "reps": reps,
+    return {"store": {"id": sid, "name": store.get("name") or "your store"}, "week": key, "label": label, "start": start, "end": end, "reps": reps, "language": lang,
             "team": {"calls": len(cur), "prev_calls": len(prev), "avg_score": avg, "prev_avg": pavg, "delta": (avg - pavg) if (avg is not None and pavg is not None) else None,
                      "critical_misses": sum(len(e.get("critical_misses") or []) for e in cur), "reps": len(reps), "unread_coaching": sc.unread_coaching(cur)}}
 
@@ -97,6 +102,17 @@ def _signed(v) -> str:
 
 def digest_line(d: dict) -> str:
     t = d["team"]
+    if d.get("language") == "nl":
+        if not t["calls"]:
+            return f"Er zijn {d['label']} geen gesprekken beoordeeld."
+        parts = [f"{t['calls']} gesprek{'ken' if t['calls'] != 1 else ''} beoordeeld {d['label']} bij {t['reps']} medewerker{'s' if t['reps'] != 1 else ''}"]
+        if t["avg_score"] is not None:
+            parts.append(f"teamgemiddelde {t['avg_score']}%" + (f" ({_signed(t['delta'])} t.o.v. de week ervoor)" if t["delta"] is not None else ""))
+        if t["critical_misses"]:
+            parts.append(f"{t['critical_misses']} kritieke misser{'s' if t['critical_misses'] != 1 else ''}")
+        if t["unread_coaching"]:
+            parts.append(f"{t['unread_coaching']} coachingnotitie{'s' if t['unread_coaching'] != 1 else ''} nog niet gelezen")
+        return ", ".join(parts) + "."
     if not t["calls"]:
         return f"No calls were graded {d['label']}."
     parts = [f"{t['calls']} call{'s' if t['calls'] != 1 else ''} graded {d['label']} across {t['reps']} rep{'s' if t['reps'] != 1 else ''}"]
@@ -114,46 +130,48 @@ def _score_color(sc_: Optional[int]) -> str:
 
 
 def digest_html(d: dict, manager_first: str, line: str, url: str, logo_src: str) -> str:
+    lang = d.get("language") or "en"
+    tr = lambda k, **kw: i18n.t(lang, k, **kw)
     logo = f'<img src="{logo_src}" alt="I\'m On Social" width="72" height="72" style="width:72px;height:72px;display:block;margin:0 auto" />' if logo_src else ""
     blocks = []
     for r in d["reps"]:
         first = (r["name"] or "Rep").split(" ")[0]
-        delta = f'<span style="color:{"#2E9E5B" if r["delta"] > 0 else "#D64545" if r["delta"] < 0 else "#777"};font-weight:700">{_signed(r["delta"])} vs the week before</span>' if r["delta"] is not None else '<span style="color:#777">first graded week</span>'
-        meta = [f"{r['count']} call{'s' if r['count'] != 1 else ''}", f"best {r['best']}%" if r["best"] is not None else "", f"{r['critical_misses']} critical miss{'es' if r['critical_misses'] != 1 else ''}" if r["critical_misses"] else "no critical misses"]
-        unread = (f'<span style="display:inline-block;background:#fff3d6;color:#8a5a00;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700;margin-left:6px">{r["unread_coaching"]} coaching unread</span>'
-                  if r["unread_coaching"] else '<span style="display:inline-block;background:#e8f6ec;color:#2E9E5B;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700;margin-left:6px">read all coaching</span>')
+        delta = f'<span style="color:{"#2E9E5B" if r["delta"] > 0 else "#D64545" if r["delta"] < 0 else "#777"};font-weight:700">{tr("dig.vs", v=_signed(r["delta"]))}</span>' if r["delta"] is not None else f'<span style="color:#777">{tr("dig.first_week")}</span>'
+        meta = [tr("dig.calls" if r["count"] == 1 else "dig.calls_p", n=r["count"]), tr("dig.best", v=r["best"]) if r["best"] is not None else "", tr("dig.crit_n" if r["critical_misses"] == 1 else "dig.crit_np", n=r["critical_misses"]) if r["critical_misses"] else tr("dig.no_crit")]
+        unread = (f'<span style="display:inline-block;background:#fff3d6;color:#8a5a00;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700;margin-left:6px">{tr("dig.unread", n=r["unread_coaching"])}</span>'
+                  if r["unread_coaching"] else f'<span style="display:inline-block;background:#e8f6ec;color:#2E9E5B;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700;margin-left:6px">{tr("dig.read_all")}</span>')
         ot = r.get("one_thing")
-        crit_tag = ' <span style="color:#D64545;font-size:11px">CRITICAL</span>' if ot and ot["critical"] else ""
+        crit_tag = f' <span style="color:#D64545;font-size:11px">{tr("dig.critical")}</span>' if ot and ot["critical"] else ""
         hint_html = f'<div style="font-size:13px;color:#444;margin-top:3px;font-style:italic">{_esc(ot["hint"])}</div>' if ot and ot.get("hint") else ""
         coach = (f'<div style="margin-top:8px;background:#f7f3e8;border-left:3px solid #C9A962;border-radius:8px;padding:8px 10px">'
-                 f'<div style="font-size:10.5px;letter-spacing:1px;color:#8a6d1f;font-weight:800">COACH {_esc(first.upper())} ON THIS</div>'
-                 f'<div style="font-size:14px;color:#111;font-weight:700;margin-top:2px">{_esc(ot["text"])}{crit_tag} <span style="color:#777;font-weight:600;font-size:12px">· hit {ot["passed"]} of {ot["graded"]}</span></div>'
-                 f'{hint_html}</div>') if ot else '<div style="margin-top:8px;font-size:13px;color:#2E9E5B;font-weight:700">Hit every item on every graded call. Tell them.</div>'
+                 f'<div style="font-size:10.5px;letter-spacing:1px;color:#8a6d1f;font-weight:800">{tr("dig.coach_on", name=_esc(first.upper()))}</div>'
+                 f'<div style="font-size:14px;color:#111;font-weight:700;margin-top:2px">{_esc(ot["text"])}{crit_tag} <span style="color:#777;font-weight:600;font-size:12px">· {tr("dig.hit", a=ot["passed"], b=ot["graded"])}</span></div>'
+                 f'{hint_html}</div>') if ot else f'<div style="margin-top:8px;font-size:13px;color:#2E9E5B;font-weight:700">{tr("dig.perfect")}</div>'
         blocks.append(f'<div style="border-top:1px solid #eee;padding:14px 0">'
                       f'<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:16px;font-weight:800;color:#111">{_esc(r["name"])}</span>'
                       f'<span style="font-size:22px;font-weight:800;color:{_score_color(r["avg_score"])}">{r["avg_score"] if r["avg_score"] is not None else "-"}%</span></div>'
                       f'<div style="font-size:12.5px;color:#666;margin-top:2px">{_esc(" · ".join(m for m in meta if m))} · {delta}{unread}</div>{coach}</div>')
-    body = "".join(blocks) or '<p style="font-size:14px;color:#666;padding:12px 0">No calls were graded last week. Recorded calls over 30 seconds are graded automatically when a scorecard applies.</p>'
+    body = "".join(blocks) or f'<p style="font-size:14px;color:#666;padding:12px 0">{tr("dig.none")}</p>'
     t = d["team"]
     boxes = "".join(
         f'<td style="padding:6px"><div style="background:#f7f3e8;border-radius:12px;padding:12px 10px;text-align:center"><div style="font-size:20px;font-weight:800;color:#111">{_esc(str(v))}</div>'
         f'<div style="font-size:10px;letter-spacing:1px;color:#777;text-transform:uppercase;margin-top:2px">{_esc(k)}</div></div></td>'
-        for k, v in (("Calls graded", t["calls"]), ("Team avg", f"{t['avg_score']}%" if t["avg_score"] is not None else "n/a"), ("Critical misses", t["critical_misses"]), ("Unread coaching", t["unread_coaching"])))
+        for k, v in ((tr("dig.box.calls"), t["calls"]), (tr("dig.box.avg"), f"{t['avg_score']}%" if t["avg_score"] is not None else tr("pdf.na")), (tr("dig.box.crit"), t["critical_misses"]), (tr("dig.box.unread"), t["unread_coaching"])))
     return f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f5f3ee">
   <div style="background:#fff;border-radius:18px;overflow:hidden;border:1px solid #e6e1d6">
     <div style="text-align:center;padding:26px 20px 14px;border-bottom:1px solid #eee">{logo}
-      <p style="margin:10px 0 0;font-size:11px;letter-spacing:2px;color:#C9A962;font-weight:800">I'M ON SOCIAL · MONDAY COACHING DIGEST</p>
+      <p style="margin:10px 0 0;font-size:11px;letter-spacing:2px;color:#C9A962;font-weight:800">{tr("dig.kicker")}</p>
     </div>
     <div style="padding:26px 30px">
       <h1 style="font-size:20px;line-height:1.3;margin:0 0 6px;color:#111">{_esc(d["store"]["name"])}: {_esc(d["label"])}</h1>
-      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">Morning {_esc(manager_first)}. {_esc(line)}</p>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">{_esc(tr("dig.morning", name=manager_first, line=line))}</p>
       <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 10px"><tr>{boxes}</tr></table>
       {body}
-      <p style="margin:22px 0 10px;text-align:center"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px;display:inline-block;font-size:15px">Open Team Call Scores</a></p>
-      <p style="font-size:12.5px;color:#666;line-height:1.6;margin:0">Tap any rep in the app to hear the calls and correct a grade. Reps tap "Got it" on their coaching, which is what "unread" counts.</p>
+      <p style="margin:22px 0 10px;text-align:center"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px;display:inline-block;font-size:15px">{tr("dig.open")}</a></p>
+      <p style="font-size:12.5px;color:#666;line-height:1.6;margin:0">{_esc(tr("dig.hint"))}</p>
     </div>
   </div>
-  <p style="text-align:center;margin:18px 0 0;color:#999;font-size:12px">I'm On Social LLC · 1741 Lunford Ln, Riverton, UT 84065 · You get this because you manage {_esc(d["store"]["name"])}. Turn it off under Team Call Scores in the app.</p>
+  <p style="text-align:center;margin:18px 0 0;color:#999;font-size:12px">I'm On Social LLC · 1741 Lunford Ln, Riverton, UT 84065 · {_esc(tr("dig.footer", store=d["store"]["name"]))}</p>
 </div>"""
 
 
@@ -189,7 +207,7 @@ async def send_digest(db, store: dict, to_users: list, actor: Optional[dict] = N
         to = (u.get("email") or "").strip().lower()
         first = (u.get("first_name") or (u.get("name") or "").split(" ")[0] or "there")
         payload = {"from": f"I'm On Social <{sender}>", "to": [to], "reply_to": os.environ.get("REPORT_REPLY_TO", "support@imonsocial.com"),
-                   "subject": f"{d['store']['name']}: coaching digest for {d['label']}", "html": digest_html(d, first, line, url, "cid:imos-logo"), "text": f"{line}\n\nOpen Team Call Scores: {url}"}
+                   "subject": i18n.t(d.get("language"), "dig.subject", store=d['store']['name'], label=d['label']), "html": digest_html(d, first, line, url, "cid:imos-logo"), "text": f"{line}\n\n{i18n.t(d.get('language'), 'dig.open')}: {url}"}
         if logo:
             payload["attachments"] = [{"filename": "imos-logo.png", "content": logo, "content_id": "imos-logo"}]
         log = {"store_id": d["store"]["id"], "week": d["week"], "user_id": str(u["_id"]), "to": to, "reason": reason, "at": ts, "calls": d["team"]["calls"]}

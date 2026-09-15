@@ -828,7 +828,7 @@ async def grade_session(db, session: dict) -> dict:
     graded = None
     if card and card.get("criteria") and len(rep_turns) >= 2:
         try:
-            graded = await sc.grade_with_ai(card, transcript.replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60), industry=session.get("industry"), language=loc.language(session.get("locale")))
+            graded = await sc.grade_with_ai(card, transcript.replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60), industry=session.get("industry"), language=loc.dialect(session.get("locale")))
         except Exception as e:
             logger.warning(f"[Roleplay] scorecard grading failed: {e}")
     adherence = await _grade_adherence(script, transcript, rep_first) if len(rep_turns) >= 1 else {"score_pct": None, "hits": [], "misses": [], "coaching": [], "summary": "Too short to grade."}

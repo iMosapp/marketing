@@ -33,6 +33,15 @@ LANGUAGE_RULES = {
            "Prices in euro's, distances in kilometers, dates and times the Dutch way. "),
 }
 LANGUAGE_RULES["nl-BE"] = LANGUAGE_RULES["nl"].replace("as spoken in the Netherlands (Nederlands)", "as spoken in Flanders (Vlaams)")
+LANGUAGE_RULES["en-GB"] = ("LANGUAGE: Speak and write natural British English as used in the UK motor trade, with British spelling (colour, tyre, favour, organise, centre). "
+                           "Use the words a British car buyer uses: part exchange (never trade-in), MOT, reg or registration plate (never VIN or license plate), bonnet, boot, tyres, windscreen, "
+                           "saloon, estate, hatchback, forecourt, showroom, screen price or asking price (never sticker price or MSRP), a deposit and monthly payments on PCP or HP finance, "
+                           "road tax, service plan, courtesy car, postcode (never ZIP), mobile (never cell). Prices in pounds, mileage in miles, dates day then month. ")
+LANGUAGE_RULES["en-IE"] = (LANGUAGE_RULES["en-GB"].replace("British English as used in the UK motor trade", "Irish English as spoken in Ireland").replace("a British car buyer", "an Irish car buyer")
+                           .replace("MOT", "NCT").replace("road tax", "motor tax").replace("postcode (never ZIP)", "Eircode (never ZIP)").replace("Prices in pounds, mileage in miles", "Prices in euro, distances and mileage in kilometres"))
+
+# regional English with its own client-facing wording; everything else keys on the plain language
+DIALECTS = ("en-GB", "en-IE")
 
 _VOICE_OVERRIDES: dict = {}
 
@@ -53,6 +62,11 @@ def language(code: Optional[str]) -> str:
 
 def currency(code: Optional[str]) -> str:
     return get(code)["currency"]
+
+
+def dialect(code: Optional[str]) -> str:
+    """Text key for client-facing copy: 'en', 'nl', or a regional English ('en-GB', 'en-IE') with its own wording."""
+    return code if code in DIALECTS else language(code)
 
 
 def language_rule(code: Optional[str]) -> str:

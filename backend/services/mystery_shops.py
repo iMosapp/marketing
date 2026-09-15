@@ -1,6 +1,7 @@
 """Mystery Shop Clients: the AI shopper calls people who are NOT app users (a client store's sales/service staff),
 grades every call and rolls the results into a store report the client can open without logging in."""
 import asyncio
+import json
 import logging
 import os
 import random
@@ -11,6 +12,7 @@ from zoneinfo import ZoneInfo
 
 from bson import ObjectId
 
+from services import i18n
 from services import industries as ind
 from services import locales as loc
 from services import scripts as scr
@@ -256,6 +258,16 @@ def invoice_extras(client: dict) -> dict:
     return out
 
 
+def per_month_text_for(per: dict, locale: Optional[str], joiner: str = " + ") -> str:
+    """'4 verkoop, 2 werkplaats en 1 schadeherstel' for a Dutch client; English otherwise."""
+    if loc.dialect(locale) == "en":
+        return per_month_text(per, joiner)
+    parts = [f"{n} {ind.dept_label_for(k, locale).lower()}" for k, n in per.items() if int(n or 0) > 0]
+    if joiner.strip() in ("en", "and") and len(parts) > 2:
+        return ", ".join(parts[:-1]) + f"{joiner}{parts[-1]}"
+    return joiner.join(parts) if parts else "0"
+
+
 def per_month_text(per: dict, joiner: str = " + ") -> str:
     parts = [f"{n} {ind.dept_label(k).lower()}" for k, n in per.items() if int(n or 0) > 0]
     if joiner.strip() == "and" and len(parts) > 2:
@@ -268,6 +280,7 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
     lc = loc.key_of(c)
     out = {"id": str(c["_id"]), "name": c.get("name", ""), "brand": c.get("brand", ""), "city": c.get("city", ""), "state": c.get("state", ""), "timezone": c.get("timezone") or loc.get(lc)["timezone"],
            "locale": lc, "language": loc.get(lc)["language"], "currency": loc.get(lc)["currency"], "currency_symbol": loc.get(lc)["symbol"], "country": loc.get(lc)["country"], "locale_label": loc.get(lc)["label"], "vat_id": c.get("vat_id", ""),
+           "number_state": {"own": bool((c.get("number") or {}).get("sid")), "needs_local_number": loc.get(lc)["country"] != "US" and not c.get("from_number"), "error": (c.get("number_error") or {}).get("error")},
            "contact_name": c.get("contact_name", ""), "contact_email": c.get("contact_email", ""), "contact_phone": c.get("contact_phone", ""), "contact_title": c.get("contact_title", ""),
            "plan": {"per_month": plan_per_month(c), "sales_per_month": plan_per_month(c).get("sales", 0), "service_per_month": plan_per_month(c).get("service", 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
            "industry": ind.key_of(c), "industry_label": ind.get(ind.key_of(c))["label"], "departments": ind.dept_options(ind.key_of(c)), "offering": ind.get(ind.key_of(c))["offering"], "customer_noun": ind.get(ind.key_of(c))["customer"],
@@ -306,30 +319,55 @@ def fill_persona(persona: dict, client: dict, department: str) -> dict:
     pool = offerings_of(client) or d.get("defaults") or ["what you have listed online"]
     offering = random.choice(pool)
     low = offering.lower()
-    if industry == "automotive":
+    lang = loc.language(loc.key_of(client))
+    if lang == "nl":
+        # Dutch articles: "de Golf" for sales, "mijn Golf" for workshop/parts/damage, "een Golf" for rental
+        if not low.startswith(("de ", "een ", "mijn ", "onze ", "die ", "het ")):
+            offering = f"{'een' if department == 'rental' else 'mijn' if department in ('service', 'parts', 'collision') else 'de'} {offering}"
+    elif industry == "automotive":
         if department in ("sales", "rental") and not low.startswith(("the ", "a ", "an ", "that ")):
             offering = f"{'a' if department == 'rental' else 'the'} {offering}"
         elif department in ("service", "parts", "collision") and not low.startswith(("my ", "our ")):
             offering = f"my {offering}"
     elif not low.startswith(("the ", "a ", "an ", "my ", "our ", "your ", "that ")):
         offering = f"the {offering}"
-    place = client.get("name") or f"the {ind.get(industry)['place']}"
+    place = client.get("name") or (ind.translated(industry, loc.key_of(client))["place"] if lang == "nl" else f"the {ind.get(industry)['place']}")
     return {k: ind.fill_offering(v, offering, place) for k, v in (persona or {}).items()} | {"vehicle": offering, "offering": offering}
 
 
-async def challenge_pool(db, client_id: Optional[str], department: Optional[str] = None, industry: Optional[str] = None) -> list:
+def language_filter(language: Optional[str]) -> dict:
+    """English challenges predate the language field, so 'en' means missing-or-en."""
+    return {"language": {"$in": [None, "en"]}} if (language or "en") == "en" else {"language": language}
+
+
+async def challenge_pool(db, client_id: Optional[str], department: Optional[str] = None, industry: Optional[str] = None, language: Optional[str] = "en", approved_only: bool = False) -> list:
     await ensure_challenges(db)
-    q = {"kind": "phone", "pool": "mystery_shop", "active": {"$ne": False}, "$or": [{"shop_client_id": None}, {"shop_client_id": client_id}]}
+    q = {"kind": "phone", "pool": "mystery_shop", "active": {"$ne": False}, "$or": [{"shop_client_id": None}, {"shop_client_id": client_id}], **language_filter(language)}
     if department:
         q["department"] = department
     elif industry:
         q["industry"] = industry
+    if approved_only:
+        q["review.status"] = {"$ne": "needs_review"}
     return await db.scripts.find(q).sort([("department", 1), ("title", 1)]).to_list(200)
 
 
+CHALLENGE_LANGUAGE = {"en-IE": "en-GB"}  # Irish clients draw from the British library
+
+
+def challenge_language(client: dict) -> str:
+    d = loc.dialect(loc.key_of(client))
+    return CHALLENGE_LANGUAGE.get(d, d)
+
+
 async def pick_challenge(db, client: dict, target: dict) -> Optional[dict]:
-    """A challenge this person has not had; once they have had them all, the one they had longest ago."""
-    pool = await challenge_pool(db, str(client["_id"]), target.get("department") or "sales")
+    """A challenge this person has not had; once they have had them all, the one they had longest ago.
+    Non-English clients draw from reviewer-approved challenges in their language; until any exist, the English library is used (the caller still speaks the client's language)."""
+    lang = challenge_language(client)
+    dept = target.get("department") or "sales"
+    pool = await challenge_pool(db, str(client["_id"]), dept, language=lang, approved_only=(lang != "en"))
+    if not pool and lang != "en":
+        pool = await challenge_pool(db, str(client["_id"]), dept)
     if not pool:
         return None
     history = [str(x) for x in (target.get("challenge_history") or [])]
@@ -635,14 +673,14 @@ async def scorecard_for(db, session: dict) -> Optional[dict]:
         card = await db.scorecards.find_one({"_id": ObjectId(str(cid)), "active": {"$ne": False}})
         if card:
             return card
-    return template_card(dept)
+    return template_card(dept, loc.key_of(client))
 
 
-def template_card(dept: str) -> Optional[dict]:
-    """The department's built-in scorecard (from its industry pack), so every course taker and every shop is graded the same way."""
+def template_card(dept: str, locale: Optional[str] = None) -> Optional[dict]:
+    """The department's built-in scorecard (from its industry pack), in the client's language, so every course taker and every shop is graded the same way."""
     d = ind.dept(dept)
     if d.get("template"):
-        body = sc.template_body(d["template"])
+        body = sc.template_body(d["template"], loc.language(locale))
         if not body:
             return None
         return {"_id": None, "name": body["name"], "department": body["department"], "criteria": sc.normalize_criteria(body["criteria"]), "alert_on_critical": False}
@@ -891,10 +929,23 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
         prev_scores.setdefault((c["target_id"], c.get("department") or "sales"), []).append(c.get("score_pct"))
     for d, dv in by_dept.items():
         dv["leaderboard"] = leaderboard([r for r in rows if r["department"] == d], {k[0]: v for k, v in prev_scores.items() if k[1] == d}, prev_label)
-    label = start.astimezone(tz).strftime("%B %Y")
+    lang = loc.dialect(loc.key_of(client))
+    label = i18n.month_label(start.astimezone(tz), lang)
+    prev_label = i18n.month_label(p_start.astimezone(tz), lang, short=True)
+    if lang != "en":
+        for d, dv in by_dept.items():
+            dv["label"] = ind.dept_label_for(d, loc.key_of(client), ind.key_of(client))
+            for r in dv.get("leaderboard") or []:
+                for b in r["badges"]:
+                    b["label"] = i18n.t(lang, f"badge.{b['key']}")
+                    b["detail"] = i18n.t(lang, f"badge.{b['key']}.detail", v=(r.get("best") if b["key"] == "top_score" else r.get("delta")), prev=prev_label, n=r.get("completed"))
+        for r in rows:
+            r["department_label"] = ind.dept_label_for(r["department"], loc.key_of(client), ind.key_of(client))
+    industry = ind.key_of(client)
+    pack_t = ind.translated(industry, loc.key_of(client))
     return {"client": {"id": cid, "name": client.get("name"), "brand": client.get("brand", ""), "city": client.get("city", ""), "state": client.get("state", ""), "contact_name": client.get("contact_name", ""),
-                       "industry": ind.key_of(client), "industry_label": ind.get(ind.key_of(client))["label"], "customer_noun": ind.get(ind.key_of(client))["customer"], "business_noun": ind.get(ind.key_of(client))["business"]},
-            "month": start.astimezone(tz).strftime("%Y-%m"), "month_label": label, "prev_month_label": prev_label, "generated_at": _now().isoformat(),
+                       "industry": ind.key_of(client), "industry_label": pack_t["label"], "customer_noun": pack_t["customer"], "business_noun": pack_t["business"], "locale": loc.key_of(client), "language": lang},
+            "month": start.astimezone(tz).strftime("%Y-%m"), "month_label": label, "prev_month_label": prev_label, "language": lang, "generated_at": _now().isoformat(),
             "summary": {"completed": len(done), "planned": sum(v["planned"] for v in by_dept.values()), "scheduled": len([c for c in calls if c.get("status") in CALL_STATUSES_OPEN]),
                         "unreachable": len([c for c in calls if c.get("status") == "unreachable"]), "avg_score": _pct(scores), "avg_adherence": _pct([c.get("adherence_pct") for c in done]),
                         "people_shopped": len({r["target_id"] for r in rows if r["completed"]}), "needs_training": len([r for r in rows if r["needs_training"]])},
@@ -919,13 +970,15 @@ def report_pdf(report: dict) -> bytes:
         pdf.set_font("Helvetica", style, size); pdf.set_text_color(*color); pdf.multi_cell(0, size * 0.5, txt(s), new_x="LMARGIN", new_y="NEXT")
 
     c, s = report["client"], report["summary"]
-    pdf.set_font("Helvetica", "B", 9); pdf.set_text_color(*GOLD); pdf.cell(0, 5, "I'M ON SOCIAL  |  MYSTERY SHOP REPORT", new_x="LMARGIN", new_y="NEXT")
+    lang = report.get("language") or "en"
+    tr = lambda k, **kw: i18n.t(lang, k, **kw)
+    pdf.set_font("Helvetica", "B", 9); pdf.set_text_color(*GOLD); pdf.cell(0, 5, txt(tr("pdf.kicker")), new_x="LMARGIN", new_y="NEXT")
     h(f"{c['name']}", 20)
     p(f"{report['month_label']}  |  {c.get('brand') or ''}  {c.get('city') or ''} {c.get('state') or ''}".strip(), 10, MUTED)
     pdf.ln(3)
     pdf.set_fill_color(247, 243, 232)
-    boxes = [("Shops completed", f"{s['completed']} of {s['planned']}" if s.get("planned") else str(s['completed'])), ("Average score", f"{s['avg_score']}%" if s['avg_score'] is not None else "n/a"),
-             ("People shopped", str(s['people_shopped'])), ("Need training", str(s['needs_training']))]
+    boxes = [(tr("pdf.completed"), tr("pdf.of", a=s['completed'], b=s['planned']) if s.get("planned") else str(s['completed'])), (tr("pdf.avg"), f"{s['avg_score']}%" if s['avg_score'] is not None else tr("pdf.na")),
+             (tr("pdf.people"), str(s['people_shopped'])), (tr("pdf.need"), str(s['needs_training']))]
     w = (pdf.w - 32) / 4
     y = pdf.get_y()
     for i, (lab, val) in enumerate(boxes):
@@ -954,7 +1007,7 @@ def report_pdf(report: dict) -> bytes:
                 pdf.set_xy(x + 3, y + 7); pdf.set_font("Helvetica", "", 9); pdf.set_text_color(*INK); pdf.cell(dw - 6, 5, txt("  |  ".join(parts)))
                 avg = dv.get("avg_score")
                 pdf.set_xy(x + 3, y + 13); pdf.set_font("Helvetica", "B", 9)
-                pdf.set_text_color(*(MUTED if avg is None else RED if avg < 70 else GOLD if avg < 85 else GREEN)); pdf.cell(dw - 6, 5, txt(f"Avg {avg}%" if avg is not None else "No scores yet"))
+                pdf.set_text_color(*(MUTED if avg is None else RED if avg < 70 else GOLD if avg < 85 else GREEN)); pdf.cell(dw - 6, 5, txt(tr("pdf.avg_short", v=avg) if avg is not None else tr("pdf.no_scores")))
             pdf.set_y(y + 24)
 
     boards = [(dk, dv) for dk, dv in (report.get("by_department") or {}).items() if dv.get("leaderboard")]
@@ -962,9 +1015,9 @@ def report_pdf(report: dict) -> bytes:
         # one ranked table per department: the recognition piece of the report
         prev = (report.get("prev_month_label") or "last month").upper()
         for dk, dv in boards:
-            h(f"{dv.get('label') or ind.dept_label(dk)} leaderboard", 13)
+            h(tr("pdf.leaderboard", dept=dv.get('label') or ind.dept_label(dk)), 13)
             pdf.set_font("Helvetica", "B", 9); pdf.set_text_color(*MUTED)
-            for lab, cw in (("#", 8), ("NAME", 56), ("SHOPS", 16), ("AVG", 16), ("BEST", 16), (f"VS {prev}", 22), ("RECOGNITION", 48)):
+            for lab, cw in (("#", 8), (tr("pdf.col.name"), 56), (tr("pdf.col.shops"), 16), (tr("pdf.col.avg"), 16), (tr("pdf.col.best"), 16), (tr("pdf.col.vs", prev=prev), 22), (tr("pdf.col.recognition"), 48)):
                 pdf.cell(cw, 6, txt(lab))
             pdf.ln(6)
             for r in dv["leaderboard"]:
@@ -972,21 +1025,21 @@ def report_pdf(report: dict) -> bytes:
                 pdf.cell(8, 6, str(r["rank"])); pdf.cell(56, 6, txt((r["name"] or "")[:30])); pdf.cell(16, 6, str(r["completed"]))
                 pdf.cell(16, 6, f"{r['avg_score']}%"); pdf.cell(16, 6, f"{r['best']}%" if r.get("best") is not None else "-")
                 d = r.get("delta")
-                pdf.set_text_color(*(GREEN if (d or 0) > 0 else RED if (d or 0) < 0 else MUTED)); pdf.cell(22, 6, f"{'+' if d > 0 else ''}{d}" if d is not None else "new")
+                pdf.set_text_color(*(GREEN if (d or 0) > 0 else RED if (d or 0) < 0 else MUTED)); pdf.cell(22, 6, f"{'+' if d > 0 else ''}{d}" if d is not None else tr("pdf.new"))
                 pdf.set_text_color(*GOLD); pdf.set_font("Helvetica", "B", 8.5); pdf.cell(48, 6, txt(", ".join(b["label"] for b in r["badges"])), new_x="LMARGIN", new_y="NEXT")
             pdf.ln(3)
 
-    h("Who did well, who needs another look", 13)
+    h(tr("pdf.who"), 13)
     pdf.set_font("Helvetica", "B", 9); pdf.set_text_color(*MUTED)
-    for lab, cw in (("NAME", 60), ("DEPT", 24), ("SHOPS", 18), ("AVG", 18), ("BEST", 18), ("CRIT MISSES", 26), ("STATUS", 30)):
+    for lab, cw in ((tr("pdf.col.name"), 60), (tr("pdf.col.dept"), 24), (tr("pdf.col.shops"), 18), (tr("pdf.col.avg"), 18), (tr("pdf.col.best"), 18), (tr("pdf.col.crit"), 26), (tr("pdf.col.status"), 30)):
         pdf.cell(cw, 6, lab)
     pdf.ln(6)
     for r in report["people"]:
         pdf.set_font("Helvetica", "", 10); pdf.set_text_color(*INK)
-        pdf.cell(60, 6, txt(r["name"][:32])); pdf.cell(24, 6, txt(ind.dept_label(r["department"])[:14])); pdf.cell(18, 6, str(r["completed"]))
+        pdf.cell(60, 6, txt(r["name"][:32])); pdf.cell(24, 6, txt((r.get("department_label") or ind.dept_label(r["department"]))[:14])); pdf.cell(18, 6, str(r["completed"]))
         pdf.cell(18, 6, f"{r['avg_score']}%" if r["avg_score"] is not None else "-"); pdf.cell(18, 6, f"{r['best']}%" if r["best"] is not None else "-"); pdf.cell(26, 6, str(r["critical_misses"]))
         pdf.set_text_color(*(RED if r["needs_training"] else (GREEN if r["completed"] else MUTED))); pdf.set_font("Helvetica", "B", 9)
-        pdf.cell(30, 6, "Needs training" if r["needs_training"] else ("On track" if r["completed"] else ("Unreachable" if r["unreachable"] else "Scheduled")), new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(30, 6, txt(tr("pdf.status.needs") if r["needs_training"] else (tr("pdf.status.ok") if r["completed"] else (tr("pdf.status.unreachable") if r["unreachable"] else tr("pdf.status.scheduled")))), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(4)
 
     if report["criteria"]:
@@ -994,26 +1047,26 @@ def report_pdf(report: dict) -> bytes:
         groups = [(dk, dv) for dk, dv in (report.get("by_department") or {}).items() if dv.get("criteria")] or [("all", {"label": "the whole store", "completed": report["summary"]["completed"], "criteria": report["criteria"]})]
         for dk, dv in groups:
             n = dv.get("completed") or 0
-            h(f"What {dv.get('label') or ind.dept_label(dk)} misses most" + (f"  ({n} shop{'s' if n != 1 else ''})" if n else ""), 13)
+            h(tr("pdf.misses", dept=dv.get('label') or ind.dept_label(dk)) + (f"  ({tr('pdf.shops_n' if n == 1 else 'pdf.shops_np', n=n)})" if n else ""), 13)
             for cr in dv["criteria"][:8]:
                 pdf.set_font("Helvetica", "", 10); pdf.set_text_color(*INK)
                 bar_w = 60; x = pdf.get_x(); y = pdf.get_y()
                 pdf.set_fill_color(235, 235, 235); pdf.rect(x, y + 1.5, bar_w, 4, "F")
                 pdf.set_fill_color(*(RED if cr["pass_pct"] < 60 else GOLD if cr["pass_pct"] < 85 else GREEN)); pdf.rect(x, y + 1.5, bar_w * cr["pass_pct"] / 100, 4, "F")
                 pdf.set_xy(x + bar_w + 3, y); pdf.set_font("Helvetica", "B", 9); pdf.cell(12, 7, f"{cr['pass_pct']}%")
-                pdf.set_font("Helvetica", "", 9); pdf.multi_cell(0, 7, txt(cr["text"] + ("  (critical)" if cr["critical"] else "") + (f"  -  {cr['passed']} of {cr['total']}" if cr.get("total") else "")), new_x="LMARGIN", new_y="NEXT")
+                pdf.set_font("Helvetica", "", 9); pdf.multi_cell(0, 7, txt(cr["text"] + (f"  {tr('pdf.critical')}" if cr["critical"] else "") + (f"  -  {tr('pdf.x_of_y', a=cr['passed'], b=cr['total'])}" if cr.get("total") else "")), new_x="LMARGIN", new_y="NEXT")
             pdf.ln(3)
 
     theme_groups = [(dk, dv) for dk, dv in (report.get("by_department") or {}).items() if dv.get("coaching_themes")]
     if theme_groups:
         # one block per department so the service manager's section only carries service tips
         for dk, dv in theme_groups:
-            h(f"Coaching themes for the next {dv.get('label') or ind.dept_label(dk)} meeting", 13)
+            h(tr("pdf.themes_dept", dept=dv.get('label') or ind.dept_label(dk)), 13)
             for t in dv["coaching_themes"]:
                 p(f"-  {t['text']}" + (f"  (x{t['count']})" if t.get("count", 1) > 1 else ""), 10)
             pdf.ln(3)
     elif report["coaching_themes"]:
-        h("Coaching themes for the next meeting", 13)
+        h(tr("pdf.themes"), 13)
         for t in report["coaching_themes"]:
             p(f"-  {t['text']}", 10)
         pdf.ln(3)
@@ -1021,22 +1074,22 @@ def report_pdf(report: dict) -> bytes:
     done = [cr for cr in report["calls"] if cr["status"] == "completed"]
     if done:
         pdf.add_page()
-        h("Every shop this month", 13)
+        h(tr("pdf.every"), 13)
         for cr in done:
             when = datetime.fromisoformat(cr["ended_at"]) if cr.get("ended_at") else None
             pdf.set_font("Helvetica", "B", 11); pdf.set_text_color(*INK)
-            head = f"{cr['target_name']}  |  {ind.dept_label(cr.get('department') or 'sales')}  |  {cr['script_title']}"
+            head = f"{cr['target_name']}  |  {ind.dept_label_for(cr.get('department') or 'sales', report['client'].get('locale'))}  |  {cr['script_title']}"
             pdf.cell(0, 6, txt(head + (f"  |  {cr['score_pct']}%" if cr["score_pct"] is not None else "")), new_x="LMARGIN", new_y="NEXT")
-            p((when.strftime("%b %d, %I:%M %p UTC") if when else "") + (f"  |  Shopper: {cr['persona_name']}" if cr.get("persona_name") else ""), 8.5, MUTED)
+            p((when.strftime("%b %d, %I:%M %p UTC") if when else "") + (f"  |  {'Beller' if lang == 'nl' else 'Shopper'}: {cr['persona_name']}" if cr.get("persona_name") else ""), 8.5, MUTED)
             if cr.get("summary"):
                 p(cr["summary"], 9.5)
             if cr.get("critical_misses"):
-                p("Critical misses: " + "; ".join(str(m) for m in cr["critical_misses"]), 9.5, RED, "B")
+                p(tr("pdf.crit_misses") + "; ".join(str(m) for m in cr["critical_misses"]), 9.5, RED, "B")
             for tip in (cr.get("coaching") or [])[:3]:
                 p(f"-  {tip}", 9.5)
             pdf.ln(2)
     pdf.set_y(-14); pdf.set_font("Helvetica", "", 8); pdf.set_text_color(*MUTED)
-    pdf.cell(0, 5, txt(f"Prepared by I'm On Social  |  imonsocial.com  |  generated {report['generated_at'][:10]}"), align="C")
+    pdf.cell(0, 5, txt(f"{'Opgesteld door' if lang == 'nl' else 'Prepared by'} I'm On Social  |  imonsocial.com  |  {report['generated_at'][:10]}"), align="C")
     return bytes(pdf.output())
 
 
@@ -1055,20 +1108,25 @@ def serialize_proposal(p: dict) -> dict:
             "invoice": {k: v for k, v in (p.get("invoice") or {}).items()}, "sender_name": p.get("sender_name")}
 
 
-def proposal_text(p: dict) -> list:
+def proposal_text(p: dict, locale: Optional[str] = None) -> list:
     t = p.get("terms") or {}
+    lang = loc.dialect(locale)
+    en = loc.language(locale) == "en"
     price = float(t.get("price_monthly") or 0)
+    sym = loc.get(locale)["symbol"]
+    price_s = f"{sym}{price:,.0f}" if en else f"{sym} {price:,.0f}".replace(",", ".")
     per = terms_per_month(t)
     term = int(t.get("term_months") or 3)
+    tr = lambda k, **kw: i18n.t(lang, k, **kw)
+    per_text = per_month_text_for(per, locale, " and " if en else " en ")
     return [
-        ("What you get", f"I'm On Social will mystery shop {p.get('client_name')} by phone every month: {per_month_text(per, ' and ')} calls, placed by our AI caller at random times during your business hours. "
-                         "Every call is recorded, transcribed and graded against a phone skills scorecard and the scenario's success points, with written coaching for each person."),
-        ("Your report", "You receive a live store report (no login needed) plus a monthly PDF: who did well, who needs training, what the whole team misses most, and every call with its recording, transcript and coaching."),
-        ("Investment", f"${price:,.0f} per month, billed monthly by invoice (card or bank transfer) for an initial term of {term} months, then month to month. The first invoice is sent as soon as this proposal is signed and shops begin once it is paid."),
-        ("Your part", "Provide the names, cell numbers and department of the people to shop, your business hours, and a few real products or services our caller can reference. You confirm you have the right to have your staff's business calls recorded and evaluated, and that you will handle any notice required in your state."),
-        ("Cancel", f"After the initial {term} month term, cancel any time with 30 days notice. Recordings and reports stay available to you for 12 months."),
-        ("Agreement", "By typing your name and signing below you agree to these terms on behalf of the store. This electronic signature is legally binding under the U.S. ESIGN Act."),
-    ] + ([("Notes", t["notes"])] if t.get("notes") else [])
+        (tr("prop.what.title"), tr("prop.what.body", client=p.get("client_name"), per=per_text)),
+        (tr("prop.report.title"), tr("prop.report.body")),
+        (tr("prop.invest.title"), tr("prop.invest.body", price=price_s, term=term)),
+        (tr("prop.part.title"), tr("prop.part.body")),
+        (tr("prop.cancel.title"), tr("prop.cancel.body", term=term)),
+        (tr("prop.agree.title"), tr("prop.agree.body")),
+    ] + ([(tr("prop.notes.title"), t["notes"])] if t.get("notes") else [])
 
 
 async def create_invoice_for(db, proposal: dict) -> dict:
@@ -1137,7 +1195,8 @@ async def mark_invoice_paid(db, stripe_invoice_id: str):
 
 
 # ---------------------------------------------------------------- proposal email + store kickoff
-TIMEZONES = [("America/New_York", "Eastern"), ("America/Chicago", "Central"), ("America/Denver", "Mountain"), ("America/Phoenix", "Arizona"), ("America/Los_Angeles", "Pacific"), ("America/Anchorage", "Alaska"), ("Pacific/Honolulu", "Hawaii")]
+TIMEZONES = [("America/New_York", "Eastern"), ("America/Chicago", "Central"), ("America/Denver", "Mountain"), ("America/Phoenix", "Arizona"), ("America/Los_Angeles", "Pacific"), ("America/Anchorage", "Alaska"), ("Pacific/Honolulu", "Hawaii"),
+             ("Europe/Amsterdam", "Nederland"), ("Europe/Brussels", "België"), ("Europe/London", "United Kingdom"), ("Europe/Dublin", "Ireland")]
 LOGO_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "imos-logo-email-168.png")
 
 
@@ -1155,30 +1214,40 @@ def _esc(v: str) -> str:
     return (v or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def proposal_email(p: dict, sender_name: str, note: str, url: str, logo_src: str) -> tuple:
-    """(subject, html) for the proposal email. logo_src is a data: URI for the in-app preview and cid:imos-logo when sending."""
+def money_text(amount: float, locale: Optional[str]) -> str:
+    """'$400' / '€ 400' / '€ 1.250' the way the client's country writes it."""
+    sym = loc.get(locale)["symbol"]
+    s = f"{float(amount or 0):,.0f}"
+    return f"{sym}{s}" if loc.language(locale) == "en" else f"{sym} {s}".replace(",", ".")
+
+
+def proposal_email(p: dict, sender_name: str, note: str, url: str, logo_src: str, locale: Optional[str] = None) -> tuple:
+    """(subject, html) for the proposal email in the client's language. logo_src is a data: URI for the in-app preview and cid:imos-logo when sending."""
     t = p.get("terms") or {}
-    first = (p.get("contact_name") or "").strip().split(" ")[0] or "there"
+    lang = loc.dialect(locale)
+    tr = lambda k, **kw: i18n.t(lang, k, **kw)
+    first = (p.get("contact_name") or "").strip().split(" ")[0] or ("daar" if lang == "nl" else "there")
     note_html = "".join(f'<p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">{_esc(line)}</p>' for line in no_em_dash(note or "").strip().split("\n") if line.strip())
     logo = f'<img src="{logo_src}" alt="I\'m On Social" width="96" height="96" style="width:96px;height:96px;display:block;margin:0 auto" />' if logo_src else ""
+    per_text = per_month_text_for(terms_per_month(t), locale, " and " if loc.language(locale) == "en" else " en ")
     html = f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f5f3ee">
   <div style="background:#fff;border-radius:18px;overflow:hidden;border:1px solid #e6e1d6">
     <div style="text-align:center;padding:30px 20px 18px;border-bottom:1px solid #eee">{logo}
       <p style="margin:12px 0 0;font-size:11px;letter-spacing:2px;color:#C9A962;font-weight:800">I'M ON SOCIAL</p>
     </div>
     <div style="padding:28px 30px">
-      <h1 style="font-size:22px;line-height:1.3;margin:0 0 16px;color:#111">Phone mystery shop proposal for {_esc(p.get('client_name'))}</h1>
-      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">Hi {_esc(first)},</p>
+      <h1 style="font-size:22px;line-height:1.3;margin:0 0 16px;color:#111">{_esc(tr("pmail.title", client=p.get('client_name')))}</h1>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">{_esc(tr("pmail.hi", name=first))}</p>
       {note_html}
-      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">Here is the proposal we talked about: <b>{per_month_text(terms_per_month(t), ' and ')}</b> mystery shops every month for <b>${float(t.get('price_monthly') or 0):,.0f}/month</b>, with recordings, grades and a store report you can open any time.</p>
-      <p style="margin:26px 0;text-align:center"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px;display:inline-block;font-size:15px">Review and sign the proposal</a></p>
-      <p style="font-size:13px;color:#666;line-height:1.6;margin:0 0 18px">Signing takes about a minute. Your first invoice arrives by email right after, and shops start once it is paid. Questions? Just reply to this email.</p>
+      <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">{tr("pmail.body", per=_esc(per_text), price=_esc(money_text(t.get('price_monthly') or 0, locale)))}</p>
+      <p style="margin:26px 0;text-align:center"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px;display:inline-block;font-size:15px">{_esc(tr("pmail.button"))}</a></p>
+      <p style="font-size:13px;color:#666;line-height:1.6;margin:0 0 18px">{_esc(tr("pmail.small"))}</p>
       <p style="font-size:14px;color:#333;line-height:1.5;margin:0">{_esc(sender_name or "Forest")}<br><span style="color:#888">I'm On Social</span></p>
     </div>
   </div>
   <p style="text-align:center;margin:18px 0 0;color:#999;font-size:12px">I'm On Social LLC · 1741 Lunford Ln, Riverton, UT 84065</p>
 </div>"""
-    return f"Mystery shop proposal for {p.get('client_name')}", html
+    return tr("pmail.subject", client=p.get('client_name')), html
 
 
 async def ensure_kickoff_token(db, client: dict) -> str:
@@ -1268,22 +1337,24 @@ def _short_criteria(ev: dict, passed: bool, n: int = 2) -> list:
     return [r.get("text", "").strip().rstrip(".") for r in (ev.get("results") or []) if bool(r.get("passed")) is passed and r.get("text")][:n]
 
 
-def scorecard_sms(s: dict, ev: dict, url: str, course_line: str = "") -> str:
-    first = (s.get("rep_name") or "").split(" ")[0] or "there"
+def scorecard_sms(s: dict, ev: dict, url: str, course_line: str = "", lang: str = "en") -> str:
+    tr = lambda k, **kw: i18n.t(lang, k, **kw)
+    first = (s.get("rep_name") or "").split(" ")[0] or ("daar" if lang == "nl" else "there")
     pct = ev.get("score_pct")
-    lines = [f"Hey {first}, that practice call just now was from I'm On Social{'' if s.get('demo') else ' for ' + str(s.get('store_name') or 'your store')}. " + (f"You scored {int(pct)}%." if pct is not None else "Your scorecard is ready.")]
+    store = "" if s.get("demo") else tr("sms.for", store=str(s.get("store_name") or ("jullie vestiging" if lang == "nl" else "your store")))
+    lines = [tr("sms.intro", name=first, store=store) + " " + (tr("sms.scored", pct=int(pct)) if pct is not None else tr("sms.ready"))]
     good, fix = _short_criteria(ev, True), _short_criteria(ev, False)
     if good:
-        lines.append("Nailed: " + ", ".join(good) + ".")
+        lines.append(tr("sms.nailed", items=", ".join(good)))
     if fix:
-        lines.append("Work on: " + ", ".join(fix) + ".")
+        lines.append(tr("sms.workon", items=", ".join(fix)))
     if course_line:
         lines.append(course_line)
-    lines.append(f"Full scorecard + recording: {url}")
+    lines.append(tr("sms.link", url=url))
     return no_em_dash("\n".join(lines))
 
 
-async def _course_line(db, s: dict, pct) -> str:
+async def _course_line(db, s: dict, pct, lang: str = "en") -> str:
     if not s.get("enrollment_id") or not ObjectId.is_valid(str(s["enrollment_id"])):
         return ""
     e = await db.course_enrollments.find_one({"_id": ObjectId(s["enrollment_id"])})
@@ -1294,7 +1365,7 @@ async def _course_line(db, s: dict, pct) -> str:
     done = len([x for x in ids if ((e.get("progress") or {}).get(x) or {}).get("passed")])
     need = int(course.get("pass_pct") or 80)
     this_passed = pct is not None and pct >= need
-    return f"{course.get('title')}: {done} of {len(ids)} passed." + ("" if this_passed else f" You need {need}% on this one, we will call again with it.")
+    return i18n.t(lang, "sms.course", course=course.get('title'), done=done, total=len(ids)) + ("" if this_passed else i18n.t(lang, "sms.course_retry", need=need))
 
 
 async def after_graded(db, sid: str):
@@ -1313,8 +1384,9 @@ async def after_graded(db, sid: str):
     want_sms = s.get("notify_sms") if s.get("notify_sms") is not None else bool(client.get("text_scorecards") or s.get("enrollment_id"))
     if want_sms and s.get("rep_phone") and not s.get("score_sms_sent_at"):
         from services.twilio_service import send_sms
+        lang = loc.dialect(s.get("locale") or loc.key_of(client))
         try:
-            r = await send_sms(s["rep_phone"], scorecard_sms(s, ev, url, await _course_line(db, s, ev.get("score_pct"))), from_phone=(s.get("from_number") or await from_number(db, client)) or None)
+            r = await send_sms(s["rep_phone"], scorecard_sms(s, ev, url, await _course_line(db, s, ev.get("score_pct"), lang), lang), from_phone=(s.get("from_number") or await from_number(db, client)) or None)
             await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"score_sms_sent_at": _now(), "score_sms_sid": (r or {}).get("sid") or (r or {}).get("message_sid"), "score_sms_status": (r or {}).get("status") or "sent"}})
         except Exception as e:
             logger.warning(f"[MysteryShop] scorecard text failed for {sid}: {e}")
@@ -1339,7 +1411,10 @@ async def after_graded(db, sid: str):
 def public_score(s: dict, ev: dict, client: dict) -> dict:
     first = (s.get("rep_name") or "").split(" ")[0]
     industry = s.get("industry") or ind.industry_of_dept(s.get("department"))
-    return {"first_name": first, "name": s.get("rep_name"), "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "customer_noun": ind.get(industry)["customer"],
+    lc = s.get("locale") or loc.key_of(client)
+    pack = ind.translated(industry, lc)
+    return {"first_name": first, "name": s.get("rep_name"), "department": s.get("department"), "department_label": ind.dept_label_for(s.get("department"), lc, industry), "customer_noun": pack["customer"],
+            "language": loc.dialect(lc), "locale": lc,
             "store_name": None if s.get("demo") else (s.get("store_name") or client.get("name")), "demo": bool(s.get("demo")),
             "challenge_title": s.get("script_title"), "persona_name": (s.get("persona") or {}).get("name"), "score_pct": ev.get("score_pct"), "scorecard_name": ev.get("scorecard_name"), "summary": ev.get("summary") or "",
             "wins": ev.get("wins") or [], "coaching": ev.get("coaching") or [], "customer_sentiment": ev.get("customer_sentiment") or "",
@@ -1421,3 +1496,116 @@ async def seed_starters(db, me: dict, industry: str, department: Optional[str] =
             doc["_id"] = res.inserted_id
             made.append(doc)
     return made
+
+
+# ---------------------------------------------------------------- other languages: Jessi adapts the English library, a native speaker approves
+LANGUAGE_NAMES = {"nl": "Dutch (Netherlands)", "en-GB": "British English (UK & Ireland)"}
+LANGUAGE_LOCALE = {"nl": "nl-NL", "en-GB": "en-GB"}
+LANGUAGE_EXTRA = {
+    "nl": ("Dutch specifics: Dutch first and last names (Sanne de Vries, Pieter Bakker), Dutch towns, prices in euro written like 18.950 or 132,89, Dutch car culture and words "
+           "(APK, inruil, occasion, proefrit, private lease, bijtelling, rijklaarmaakkosten, kenteken, dealer, werkplaats, onderdelen, schadeherstel, huurauto), informal 'je' unless the persona is clearly formal. runtime like '3 tot 4 min'. "),
+    "en-GB": ("British specifics: British first and last names (Sophie Walker, Tom Hughes), UK towns, prices in pounds written like £18,950 or £132.89, mileage in miles, British spelling (colour, tyre, organise), "
+              "UK motor trade words: part exchange (never trade-in), MOT, reg plate (never VIN or license plate), bonnet, boot, tyres, windscreen, forecourt, screen price (never sticker price or MSRP), "
+              "a deposit and monthlies on PCP or HP finance, road tax, service plan, courtesy car, postcode (never ZIP), mobile (never cell), sorted, cheers. runtime like '3 to 4 min'. "),
+}
+
+
+def localize_job_key(language: str) -> str:
+    return f"localize_job_{language}"
+
+
+async def localize_status(db, language: str) -> dict:
+    job = await db.settings.find_one({"key": localize_job_key(language)}) or {}
+    return {k: job.get(k) for k in ("status", "made", "total", "started_at", "finished_at", "error") if k in job}
+
+
+async def review_summary(db, language: str, industry: Optional[str] = None) -> dict:
+    """How many localized challenges exist, how many still wait for the native reviewer, per department."""
+    q = {"kind": "phone", "pool": "mystery_shop", "shop_client_id": None, "active": {"$ne": False}, **language_filter(language)}
+    if industry:
+        q["industry"] = industry
+    rows = await db.scripts.find(q, {"title": 1, "department": 1, "review": 1, "persona.name": 1, "source_slug": 1, "updated_at": 1}).sort([("department", 1), ("title", 1)]).to_list(500)
+    pending = [r for r in rows if (r.get("review") or {}).get("status") == "needs_review"]
+    by_dept: dict = {}
+    for r in rows:
+        d = by_dept.setdefault(r.get("department"), {"total": 0, "pending": 0})
+        d["total"] += 1
+        d["pending"] += 1 if (r.get("review") or {}).get("status") == "needs_review" else 0
+    src = await db.scripts.count_documents({"kind": "phone", "pool": "mystery_shop", "shop_client_id": None, "active": {"$ne": False}, "industry": industry or ind.DEFAULT_INDUSTRY, **language_filter("en")})
+    return {"language": language, "language_label": LANGUAGE_NAMES.get(language, language), "total": len(rows), "pending": len(pending), "approved": len(rows) - len(pending), "source_total": src,
+            "by_department": by_dept, "job": await localize_status(db, language),
+            "pending_items": [{"id": str(r["_id"]), "title": r.get("title"), "department": r.get("department"), "persona": (r.get("persona") or {}).get("name", "")} for r in pending][:60]}
+
+
+async def set_review(db, script_id: str, status: str, me: dict) -> dict:
+    if status not in ("approved", "needs_review"):
+        raise ValueError("status must be approved or needs_review")
+    now = _now()
+    res = await db.scripts.find_one_and_update({"_id": _oid(script_id), "pool": "mystery_shop"}, {"$set": {"review": {"status": status, "by": str(me["_id"]), "by_name": me.get("name") or "", "at": now}, "updated_at": now}}, return_document=True)
+    if not res:
+        raise ValueError("Challenge not found")
+    return res
+
+
+async def approve_all(db, language: str, me: dict) -> int:
+    now = _now()
+    r = await db.scripts.update_many({"kind": "phone", "pool": "mystery_shop", "review.status": "needs_review", **language_filter(language)},
+                                     {"$set": {"review": {"status": "approved", "by": str(me["_id"]), "by_name": me.get("name") or "", "at": now}, "updated_at": now}})
+    return r.modified_count
+
+
+def _localize_system(language: str, industry: str, dept: dict, n: int) -> str:
+    lang_name = LANGUAGE_NAMES.get(language, language)
+    pack = ind.translated(industry, LANGUAGE_LOCALE.get(language))
+    extra = LANGUAGE_EXTRA.get(language, "")
+    return (f"You are Jessi, a native {lang_name} speaking sales trainer for {pack['label'].lower()} teams. You ADAPT English mystery-shop phone challenges into natural {lang_name} for a {lang_name} {pack['business']}: "
+            f"not a literal translation, the way a local trainer would write it. {extra}"
+            f"EVERY text field must come out in {lang_name}: title, purpose, body, every success_point, every curveball, and the whole persona (give the persona a typical {lang_name} first and last name, and write summary, goals, objections and opening_line in {lang_name}). "
+            f"Leaving any of those in the original American wording is a failure. Keep the MEANING of each success point and curveball (same count, same order), the persona's age/mood/situation, and the placeholders {{vehicle}} and {{store}} exactly as written (they are filled in later); source_slug and persona.voice are copied unchanged. "
+            f"Titles start with '{dept.get('prefix') or dept['label'] + ':'}'. body is a STRING written TO THE REP in second person, 4 to 7 short paragraphs separated by blank lines, no curly braces except the placeholders. "
+            f"persona.voice stays one of female/male/young/older. Never use em dashes. Sound like a real person on the phone, never corporate. "
+            f"Return JSON: {{\"challenges\": [{{source_slug, title, runtime, purpose, body, success_points:[...], curveballs:[...], persona:{{name, voice, summary, goals, objections:[...], opening_line}}}}]}} with exactly {n} items, one per source_slug, in the same order.")
+
+
+async def localize_starters(db, me: dict, language: str = "nl", industry: str = "automotive", department: Optional[str] = None) -> dict:
+    """Background job: for every English global challenge without a {language} twin, Jessi writes the adapted version, flagged needs_review."""
+    key = localize_job_key(language)
+    now = _now()
+    src_q = {"kind": "phone", "pool": "mystery_shop", "shop_client_id": None, "active": {"$ne": False}, "industry": industry, **language_filter("en")}
+    if department:
+        src_q["department"] = department
+    sources = await db.scripts.find(src_q).sort([("department", 1), ("title", 1)]).to_list(200)
+    have = {r.get("source_slug") for r in await db.scripts.find({"pool": "mystery_shop", "language": language, "source_slug": {"$ne": None}}, {"source_slug": 1}).to_list(500)}
+    todo = [s for s in sources if s.get("slug") and s["slug"] not in have]
+    await db.settings.update_one({"key": key}, {"$set": {"status": "running", "made": 0, "total": len(todo), "started_at": now, "error": None, "finished_at": None}}, upsert=True)
+    made = 0
+    try:
+        by_dept: dict = {}
+        for s_ in todo:
+            by_dept.setdefault(s_.get("department") or "sales", []).append(s_)
+        for dept_key, items in by_dept.items():
+            d = ind.translated(industry, LANGUAGE_LOCALE.get(language))["departments"]
+            dpack = next((x for x in d if x["key"] == dept_key), d[0])
+            for i in range(0, len(items), 3):
+                batch = items[i:i + 3]
+                user = "\n\n".join(f"SOURCE {x['slug']}:\n" + json.dumps({k: x.get(k) for k in ("title", "runtime", "purpose", "body", "success_points", "curveballs", "persona")}, ensure_ascii=False) for x in batch)
+                data = await scr._llm_json(_localize_system(language, industry, dpack, len(batch)), user, timeout=180)
+                raw = data.get("challenges") if isinstance(data, dict) else None
+                for x in raw or []:
+                    src = next((b for b in batch if b["slug"] == x.get("source_slug")), None) or (batch[(raw or []).index(x)] if len(raw or []) == len(batch) else None)
+                    if not src:
+                        continue
+                    draft = normalize_draft(x, dept_key)
+                    if not draft:
+                        continue
+                    doc = {"kind": "phone", "pool": "mystery_shop", "industry": industry, "shop_client_id": None, "store_id": None, "slug": f"{src['slug']}_{language}", "source_slug": src["slug"], "language": language,
+                           "direction": src.get("direction") or "inbound", "category": dpack["label"], "active": True, "generated_from": "localized", "review": {"status": "needs_review", "at": _now()},
+                           "created_by": str(me["_id"]), "created_at": _now(), "updated_at": _now(), **draft}
+                    await db.scripts.update_one({"slug": doc["slug"]}, {"$setOnInsert": doc}, upsert=True)
+                    made += 1
+                await db.settings.update_one({"key": key}, {"$set": {"made": made}})
+        await db.settings.update_one({"key": key}, {"$set": {"status": "done", "made": made, "finished_at": _now()}})
+    except Exception as e:
+        logger.warning(f"[MysteryShop] localize {language} failed after {made}: {e}")
+        await db.settings.update_one({"key": key}, {"$set": {"status": "error", "made": made, "error": str(e)[:300], "finished_at": _now()}})
+    return {"made": made, "total": len(todo)}
