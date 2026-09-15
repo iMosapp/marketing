@@ -6,8 +6,9 @@ import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
 import { openUrl } from './ReportView';
-import { Sheet, Field, Label, Chip, GoldButton, deptLabel, deptsOfClient, fmtPhone, fmtWhen, GOLD, RED, tid, type Person, type Client } from './shared';
+import { Sheet, Field, Label, Chip, GoldButton, deptLabel, deptsOfClient, fmtPhone, fmtWhen, GOLD, GREEN, RED, tid, type Person, type Client } from './shared';
 import { ClientNumberCard } from './ClientNumberCard';
+import { ContactCardPanel } from './ContactCardPanel';
 
 type Props = { client: Client; people: Person[]; colors: any; onChanged: () => void; onShopStarted: () => void; kickoffUrl?: string; kickoff?: { submitted_at?: string; submissions?: number } };
 
@@ -19,6 +20,8 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
   const [f, setF] = useState({ name: '', phone: '', department: firstDept, title: '', notes: '' });
   const [busy, setBusy] = useState(false);
   const [calling, setCalling] = useState<string | null>(null);
+  const [sendingCard, setSendingCard] = useState<string | null>(null);
+  const [cardKey, setCardKey] = useState(0);
   const copyKickoff = async () => { if (!kickoffUrl) return; await Clipboard.setStringAsync(kickoffUrl); showToast('Setup link copied', 'success'); };
 
   const open = (person?: Person) => { setF(person ? { name: person.name, phone: person.phone, department: person.department, title: person.title, notes: person.notes } : { name: '', phone: '', department: firstDept, title: '', notes: '' }); setSheet({ person }); };
@@ -39,6 +42,12 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not place the call', 'error'); }
     finally { setCalling(null); }
   }, undefined, 'Call now');
+  const sendCard = (p: Person) => showConfirm(`Text the contact card to ${p.name.split(' ')[0]}?`, `${fmtPhone(p.phone)} gets a text from the shop number with a link to save it as a contact${p.contact_card_ok ? ' (they already got one)' : ''}.`, async () => {
+    setSendingCard(p.id);
+    try { const r = await api.post(`/shop-clients/${client.id}/contact-card/send`, { target_ids: [p.id] }); showToast(r.data.sent ? `Contact card sent to ${p.name.split(' ')[0]}` : r.data.failed[0]?.error || 'Could not send', r.data.sent ? 'success' : 'error'); onChanged(); setCardKey(k => k + 1); }
+    catch (e: any) { showToast(e?.response?.data?.detail || 'Could not send', 'error'); }
+    finally { setSendingCard(null); }
+  }, undefined, 'Send');
 
   const known = new Set(depts.map(d => d.key));
   const groups = [...depts, ...[...new Set(people.map(p => p.department).filter(k => !known.has(k)))].map(k => ({ key: k, label: deptLabel(k) }))].map(d => ({ ...d, rows: people.filter(p => p.department === d.key) }));
@@ -46,7 +55,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
     <View style={{ gap: 16 }}>
       <TouchableOpacity onPress={() => open()} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: GOLD + '1A', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: GOLD + '66' }} {...tid('people-add')}>
         <Ionicons name="person-add" size={20} color={GOLD} />
-        <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Add someone to shop</Text><Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Name, cell and department. They never get a message, we just call.</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Add someone to shop</Text><Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Name, cell and department. We only call; the only text they ever get is the contact card if you send it.</Text></View>
         <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
       </TouchableOpacity>
       {people.length === 0 && <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 }} {...tid('people-empty')}>Nobody to shop yet. Add the {depts.map(d => d.label.toLowerCase()).join(' and ')} people the {client.industry && client.industry !== 'automotive' ? 'account' : 'store'} wants evaluated.</Text>}
@@ -67,6 +76,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
         </View>
       )}
       {!client.demo && <ClientNumberCard client={client} colors={colors} onChanged={onChanged} />}
+      {!client.demo && <ContactCardPanel client={client} colors={colors} refreshKey={cardKey} onSent={onChanged} />}
       {groups.filter(g => g.rows.length).map(g => (
         <View key={g.key} style={{ gap: 8 }}>
           <Label t={`${g.label.toUpperCase()} · ${g.rows.length}`} colors={colors} />
@@ -78,6 +88,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
                   <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{p.name}</Text>
                   <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{[p.title, fmtPhone(p.phone)].filter(Boolean).join(' · ')}{p.challenge_history?.length ? ` · ${p.challenge_history.length} challenge${p.challenge_history.length === 1 ? '' : 's'} used` : ''}</Text>
                 </View>
+                <TouchableOpacity onPress={() => sendCard(p)} disabled={sendingCard === p.id} hitSlop={8} {...tid(`person-send-card-${p.id}`)}><Ionicons name={p.contact_card_ok ? 'person-circle' : 'person-circle-outline'} size={21} color={p.contact_card_ok ? GREEN : p.contact_card_error ? RED : colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => open(p)} hitSlop={8} {...tid(`person-edit-${p.id}`)}><Ionicons name="create-outline" size={20} color={colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => remove(p)} hitSlop={8} {...tid(`person-remove-${p.id}`)}><Ionicons name="trash-outline" size={19} color={RED} /></TouchableOpacity>
               </View>

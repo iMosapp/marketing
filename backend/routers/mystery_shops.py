@@ -383,6 +383,38 @@ class BundleBody(BaseModel):
     address_sid: str = ""
 
 
+class ContactCardBody(BaseModel):
+    name: str
+    org: str = ""
+
+
+class ContactSendBody(BaseModel):
+    target_ids: list[str] = []
+
+
+async def _contact_card_state(db) -> dict:
+    card = await ms.contact_card_settings(db)
+    page, vcf = ms.contact_urls("platform")
+    return {**card, "phone_number": await ms.default_from_number(db), "url": page, "vcf_url": vcf}
+
+
+@router.get("/number/contact-card")
+async def contact_card(request: Request):
+    """The name reps see when they save the shop number, plus the copy-and-paste link for the platform number."""
+    await require_admin(request)
+    return await _contact_card_state(get_db())
+
+
+@router.put("/number/contact-card")
+async def set_contact_card(body: ContactCardBody, request: Request):
+    await require_admin(request)
+    try:
+        await ms.set_contact_card(get_db(), body.name, body.org)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return await _contact_card_state(get_db())
+
+
 @router.get("/number/bundles")
 async def number_bundles(request: Request):
     """Twilio regulatory bundles on file per country; UK, Irish and Belgian numbers cannot be bought without one."""
@@ -701,6 +733,38 @@ async def client_number(cid: str, request: Request):
     db = get_db()
     from services import shop_numbers
     return shop_numbers.number_state(await _client(db, cid), await shop_numbers.bundles(db))
+
+
+@router.get("/{cid}/contact-card")
+async def client_contact_card(cid: str, request: Request):
+    """The saveable contact for this client's shop number: link to copy, the text we send, and who already got it."""
+    me = await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    card = await ms.contact_card_settings(db)
+    page, vcf = ms.contact_urls(await ms.contact_token(db, c))
+    people = [ms.serialize_target(t) for t in await db.shop_targets.find({"client_id": cid, "active": {"$ne": False}}).sort("name", 1).to_list(500)]
+    sample = {"name": people[0]["name"] if people else "Sam"}
+    return {**card, "phone_number": await ms.from_number(db, c), "url": page, "vcf_url": vcf, "mms": loc.get(loc.key_of(c))["country"] in ms.MMS_COUNTRIES,
+            "sms_preview": ms.contact_sms(card, c, sample, (me.get("first_name") or me.get("name") or "Forest").split(" ")[0], page),
+            "people": [{"id": p["id"], "name": p["name"], "phone": p["phone"], "sent_at": p["contact_card_sent_at"], "ok": p["contact_card_ok"], "error": p["contact_card_error"]} for p in people],
+            "sent": sum(1 for p in people if p["contact_card_ok"]), "total": len(people)}
+
+
+@router.post("/{cid}/contact-card/send")
+async def client_send_contact_card(cid: str, body: ContactSendBody, request: Request):
+    """Text the contact card to everyone on the account (or just the ids given). Real Twilio sends."""
+    me = await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    q = {"client_id": cid, "active": {"$ne": False}}
+    if body.target_ids:
+        q["_id"] = {"$in": [ObjectId(t) for t in body.target_ids if ObjectId.is_valid(t)]}
+    targets = await db.shop_targets.find(q).sort("name", 1).to_list(500)
+    if not targets:
+        raise HTTPException(status_code=400, detail="Nobody to send it to yet. Add people first.")
+    results = await ms.send_contact_cards(db, c, targets, me)
+    return {"sent": sum(1 for r in results if r["ok"]), "failed": [r for r in results if not r["ok"]], "results": results}
 
 
 @router.post("/{cid}/number/buy-local")
@@ -1159,6 +1223,44 @@ async def public_report(token: str, month: Optional[str] = None):
     for call in rep["calls"]:
         call.pop("target_id", None)
     return rep
+
+
+@public_router.get("/shop-contact/logo.png")
+async def shop_contact_logo():
+    with open(ms.LOGO_PATH, "rb") as f:
+        return Response(content=f.read(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
+async def _contact_lookup(db, token: str) -> tuple:
+    if token == "platform":
+        return None, await ms.default_from_number(db)
+    c = await db.shop_clients.find_one({"contact_token": token}) if len(token or "") >= 16 else None
+    if not c:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return c, await ms.from_number(db, c)
+
+
+@public_router.get("/shop-contact/{token}.vcf")
+async def shop_contact_vcf(token: str):
+    """The shop number as a saveable contact (attached to the MMS, or tapped from the link). No login."""
+    db = get_db()
+    c, phone = await _contact_lookup(db, token)
+    if not phone:
+        raise HTTPException(status_code=404, detail="No shop number yet")
+    card = await ms.contact_card_settings(db)
+    return Response(content=ms.contact_vcard(card, phone, c), media_type="text/vcard",
+                    headers={"Content-Type": "text/vcard; charset=utf-8", "Content-Disposition": f'attachment; filename="{card["name"].replace(" ", "_")}.vcf"', "Cache-Control": "no-store"})
+
+
+@public_router.get("/shop-contact/{token}")
+async def shop_contact_page(token: str):
+    """One-tap save page in the client's language; the link Forest pastes from his own phone."""
+    db = get_db()
+    c, phone = await _contact_lookup(db, token)
+    if not phone:
+        raise HTTPException(status_code=404, detail="No shop number yet")
+    card = await ms.contact_card_settings(db)
+    return Response(content=ms.contact_page(card, phone, c, ms.contact_urls(token)[1]), media_type="text/html")
 
 
 @public_router.get("/shop-score/{token}")

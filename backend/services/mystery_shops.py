@@ -1,6 +1,7 @@
 """Mystery Shop Clients: the AI shopper calls people who are NOT app users (a client store's sales/service staff),
 grades every call and rolls the results into a store report the client can open without logging in."""
 import asyncio
+import base64
 import json
 import logging
 import os
@@ -294,8 +295,10 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
 
 
 def serialize_target(t: dict, extra: Optional[dict] = None) -> dict:
+    cc = t.get("contact_card") or {}
     out = {"id": str(t["_id"]), "client_id": t.get("client_id"), "name": t.get("name", ""), "phone": t.get("phone", ""), "department": t.get("department", "sales"), "department_label": ind.dept_label(t.get("department")), "title": t.get("title", ""),
-           "notes": t.get("notes", ""), "active": t.get("active", True), "challenge_history": t.get("challenge_history") or [], "created_at": t.get("created_at").isoformat() if t.get("created_at") else None}
+           "notes": t.get("notes", ""), "active": t.get("active", True), "challenge_history": t.get("challenge_history") or [], "created_at": t.get("created_at").isoformat() if t.get("created_at") else None,
+           "contact_card_sent_at": cc["sent_at"].isoformat() if hasattr(cc.get("sent_at"), "isoformat") else None, "contact_card_ok": cc.get("ok"), "contact_card_error": cc.get("error")}
     if extra:
         out.update(extra)
     return out
@@ -518,6 +521,112 @@ async def is_shop_number(db, phone: str) -> bool:
     if row and row.get("value") == phone:
         return True
     return bool(await db.shop_clients.find_one({"from_number": phone}, {"_id": 1}))
+
+
+# ---------------------------------------------------------------- contact card (the .vcf reps save so the shop number shows a name)
+CONTACT_CARD_KEY = "mystery_shop_contact_card"
+CONTACT_CARD_DEFAULT = {"name": "Mystery Shop", "org": "I'm On Social"}
+MMS_COUNTRIES = ("US", "CA")
+
+
+async def contact_card_settings(db) -> dict:
+    row = await db.settings.find_one({"key": CONTACT_CARD_KEY}) or {}
+    return {**CONTACT_CARD_DEFAULT, **{k: v for k, v in (row.get("value") or {}).items() if v}}
+
+
+async def set_contact_card(db, name: str, org: str) -> dict:
+    name, org = no_em_dash(name or "").strip()[:40], no_em_dash(org or "").strip()[:40]
+    if not name:
+        raise ValueError("Give the contact a name, for example Mystery Shop or Practice Call")
+    await db.settings.update_one({"key": CONTACT_CARD_KEY}, {"$set": {"value": {"name": name, "org": org or CONTACT_CARD_DEFAULT["org"]}, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    return await contact_card_settings(db)
+
+
+async def contact_token(db, client: dict) -> str:
+    tok = client.get("contact_token")
+    if not tok:
+        tok = uuid.uuid4().hex
+        await db.shop_clients.update_one({"_id": client["_id"]}, {"$set": {"contact_token": tok}})
+        client["contact_token"] = tok
+    return tok
+
+
+def contact_urls(token: str) -> tuple:
+    base = scr._app_url()
+    return f"{base}/api/public/shop-contact/{token}", f"{base}/api/public/shop-contact/{token}.vcf"
+
+
+def _vc(s: str) -> str:
+    return (s or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+
+
+def _pretty_phone(p: str) -> str:
+    d = (p or "").replace(" ", "")
+    if d.startswith("+1") and len(d) == 12:
+        return f"({d[2:5]}) {d[5:8]}-{d[8:]}"
+    if d.startswith("+31") and len(d) >= 11:
+        return f"+31 {d[3:5]} {d[5:]}" if d[3] == "9" else f"+31 {d[3]} {d[4:]}"
+    if d.startswith("+44") and len(d) >= 12:
+        return f"+44 {d[3:7]} {d[7:]}"
+    return d
+
+
+def _fold(line: str) -> str:
+    """vCard 3.0 line folding: 75 octets max, continuation lines start with a space."""
+    return line[:75] + "".join("\r\n " + line[i:i + 74] for i in range(75, len(line), 74))
+
+
+def contact_vcard(card: dict, phone: str, client: Optional[dict]) -> str:
+    """vCard 3.0 with the logo embedded, so the shop number shows up named on every call and text."""
+    lang = loc.dialect(loc.key_of(client)) if client else "en"
+    note = i18n.t(lang, "vcf.note", store=client["name"]) if client else i18n.t(lang, "vcf.note_generic")
+    lines = ["BEGIN:VCARD", "VERSION:3.0", f"N:;{_vc(card['name'])};;;", f"FN:{_vc(card['name'])}", f"ORG:{_vc(card['org'])}", f"TEL;TYPE=CELL,VOICE:{phone}", f"NOTE:{_vc(note)}", f"URL:{scr._app_url()}"]
+    try:
+        with open(LOGO_PATH, "rb") as f:
+            lines.append("PHOTO;ENCODING=b;TYPE=PNG:" + base64.b64encode(f.read()).decode())
+    except OSError:
+        pass
+    return "\r\n".join(_fold(line) for line in lines + ["END:VCARD"]) + "\r\n"
+
+
+def contact_page(card: dict, phone: str, client: Optional[dict], vcf_url: str) -> str:
+    lang = loc.dialect(loc.key_of(client)) if client else "en"
+    tr = lambda k, **kw: i18n.t(lang, k, **kw)
+    body = tr("vcf.page_body", store=client["name"]) if client else tr("vcf.page_body_generic")
+    shown = _pretty_phone(phone)
+    return f"""<!DOCTYPE html><html lang="{lang[:2]}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>{_esc(tr('vcf.page_title', name=card['name']))}</title>
+<style>body{{margin:0;background:#0b0b0c;color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}}
+.card{{max-width:420px;width:100%;background:#151517;border:1px solid #2a2a2e;border-radius:22px;padding:28px;text-align:center}}img{{width:84px;height:84px;border-radius:22px;margin:0 auto 16px;display:block}}
+h1{{font-size:22px;margin:0 0 6px}}.num{{font-size:26px;font-weight:800;letter-spacing:.5px;color:#c9a962;margin:12px 0 4px}}.org{{color:#a1a1aa;font-size:14px}}p{{color:#d4d4d8;font-size:15px;line-height:1.55;margin:16px 0 22px}}
+a.btn{{display:block;background:#c9a962;color:#111;text-decoration:none;font-weight:800;font-size:16px;border-radius:999px;padding:15px 20px}}.hint{{font-size:12.5px;color:#71717a;margin-top:14px}}</style></head>
+<body><div class="card"><img src="/api/public/shop-contact/logo.png" alt="I'm On Social"><h1>{_esc(tr('vcf.page_title', name=card['name']))}</h1><div class="org">{_esc(card['org'])}</div><div class="num">{_esc(shown)}</div>
+<p>{_esc(body)}</p><a class="btn" href="{vcf_url}" download="{_esc(card['name']).replace(' ', '_')}.vcf">{_esc(tr('vcf.save'))}</a><div class="hint">{_esc(tr('vcf.hint'))}</div></div></body></html>"""
+
+
+def contact_sms(card: dict, client: dict, target: dict, sender: str, url: str) -> str:
+    lang = loc.dialect(loc.key_of(client))
+    return i18n.t(lang, "vcf.sms", name=(target.get("name") or "").split(" ")[0] or ("daar" if lang == "nl" else "there"), sender=sender, store=client["name"], card=card["name"], url=url)
+
+
+async def send_contact_cards(db, client: dict, targets: list, me: dict) -> list:
+    """Text the client's shop number as a saveable contact to each person: MMS with the .vcf attached where carriers take it (US/CA), a link everywhere."""
+    from services.twilio_service import send_sms
+    card = await contact_card_settings(db)
+    frm = await from_number(db, client)
+    page, vcf = contact_urls(await contact_token(db, client))
+    country = loc.get(loc.key_of(client))["country"]
+    sender = ((me.get("first_name") or me.get("name") or "Forest").split(" ")[0])
+    out = []
+    for t in targets:
+        body = contact_sms(card, client, t, sender, page)
+        r = await send_sms(t["phone"], body, media_urls=[vcf] if country in MMS_COUNTRIES else None, from_phone=frm or None)
+        if not r.get("success") and country in MMS_COUNTRIES:
+            r = await send_sms(t["phone"], body, from_phone=frm or None)
+        ok = bool(r.get("success"))
+        rec = {"sent_at": datetime.now(timezone.utc), "ok": ok, "error": None if ok else (r.get("error") or "Could not send"), "sid": r.get("sid"), "by": str(me.get("_id"))}
+        await db.shop_targets.update_one({"_id": t["_id"]}, {"$set": {"contact_card": rec}})
+        out.append({"id": str(t["_id"]), "name": t.get("name"), "phone": t.get("phone"), "ok": ok, "error": rec["error"]})
+    return out
 
 
 async def place_shop_call(db, call: dict) -> bool:

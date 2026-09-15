@@ -28,7 +28,7 @@ export type Client = {
   number_state?: { own: boolean; needs_local_number: boolean; error?: string | null };
 };
 export type Locale = { code: string; label: string; language: string; language_label: string; country: string; currency: string; symbol: string; timezone: string; flag: string; relay_language: string; say_voice: string; voices: Record<string, string> };
-export type Person = { id: string; client_id: string; name: string; phone: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[] };
+export type Person = { id: string; client_id: string; name: string; phone: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[]; contact_card_sent_at?: string | null; contact_card_ok?: boolean | null; contact_card_error?: string | null };
 export type ShopCall = {
   id: string; target_id: string; target_name: string; department: string; department_label?: string; industry?: string; customer_noun?: string; status: string; outcome?: string | null; fail_reason?: string | null; script_id: string; script_title: string; persona_name?: string;
   curveballs: string[]; scheduled_for: string | null; attempts: number; started_at: string | null; ended_at: string | null; score_pct: number | null; adherence_pct: number | null; evaluation_id?: string | null;

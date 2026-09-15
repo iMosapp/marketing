@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
 import { Sheet, Field, Label, Chip, GoldButton, fmtPhone, isTollFree, TOLL_FREE_WARNING, GOLD, GREEN, RED, AMBER, tid } from './shared';
+import { ContactCardSettings } from './ContactCardSettings';
 
 export type OwnedNumber = { phone: string; sid: string; friendly_name: string; voice: boolean; use: string };
 export type NumberState = { current: string; source: 'saved' | 'platform' | 'none'; owned: OwnedNumber[]; twilio_error?: string | null; clients_with_own_number: { id: string; name: string; from_number: string }[] };
@@ -55,6 +56,7 @@ export const ShopNumberSheet = ({ visible, onClose, colors, onChanged }: { visib
               </View>
             )}
           </View>
+          <ContactCardSettings colors={colors} />
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Chip label="Pick one of mine" active={mode === 'pick'} onPress={() => setMode('pick')} colors={colors} testID="shop-number-mode-pick" />
             <Chip label="Buy a new one" active={mode === 'buy'} onPress={() => setMode('buy')} colors={colors} testID="shop-number-mode-buy" />
