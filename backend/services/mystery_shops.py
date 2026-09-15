@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 from bson import ObjectId
 
 from services import industries as ind
+from services import locales as loc
 from services import scripts as scr
 from services import scorecards as sc
 from utils.text_sanitize import no_em_dash
@@ -239,6 +240,22 @@ def terms_per_month(t: dict) -> dict:
     return {k: int((t or {}).get(f"{k}_per_month") or 0) for k in ("sales", "service") if (t or {}).get(f"{k}_per_month")}
 
 
+def invoice_extras(client: dict) -> dict:
+    """Locale-aware Stripe invoice options: iDEAL + SEPA for euro accounts, a reverse-charge footer when the client gave a VAT id."""
+    lc = loc.key_of(client)
+    cur = loc.currency(lc)
+    out: dict = {}
+    if cur == "eur":
+        out["payment_settings"] = {"payment_method_types": ["card", "ideal", "sepa_debit"]}
+    elif cur == "gbp":
+        out["payment_settings"] = {"payment_method_types": ["card", "bacs_debit"]}
+    vat = (client.get("vat_id") or "").strip()
+    if vat and cur in ("eur", "gbp"):
+        out["custom_fields"] = [{"name": "VAT ID" if loc.language(lc) == "en" else "Btw-nummer", "value": vat[:40]}]
+        out["footer"] = ("VAT reverse-charged to the customer (Article 196 EU VAT Directive)." if loc.language(lc) == "en" else "Btw verlegd naar de afnemer (artikel 196 Btw-richtlijn).")
+    return out
+
+
 def per_month_text(per: dict, joiner: str = " + ") -> str:
     parts = [f"{n} {ind.dept_label(k).lower()}" for k, n in per.items() if int(n or 0) > 0]
     if joiner.strip() == "and" and len(parts) > 2:
@@ -248,7 +265,9 @@ def per_month_text(per: dict, joiner: str = " + ") -> str:
 
 # ---------------------------------------------------------------- clients + people
 def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
-    out = {"id": str(c["_id"]), "name": c.get("name", ""), "brand": c.get("brand", ""), "city": c.get("city", ""), "state": c.get("state", ""), "timezone": c.get("timezone") or "America/Denver",
+    lc = loc.key_of(c)
+    out = {"id": str(c["_id"]), "name": c.get("name", ""), "brand": c.get("brand", ""), "city": c.get("city", ""), "state": c.get("state", ""), "timezone": c.get("timezone") or loc.get(lc)["timezone"],
+           "locale": lc, "language": loc.get(lc)["language"], "currency": loc.get(lc)["currency"], "currency_symbol": loc.get(lc)["symbol"], "country": loc.get(lc)["country"], "locale_label": loc.get(lc)["label"], "vat_id": c.get("vat_id", ""),
            "contact_name": c.get("contact_name", ""), "contact_email": c.get("contact_email", ""), "contact_phone": c.get("contact_phone", ""), "contact_title": c.get("contact_title", ""),
            "plan": {"per_month": plan_per_month(c), "sales_per_month": plan_per_month(c).get("sales", 0), "service_per_month": plan_per_month(c).get("service", 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
            "industry": ind.key_of(c), "industry_label": ind.get(ind.key_of(c))["label"], "departments": ind.dept_options(ind.key_of(c)), "offering": ind.get(ind.key_of(c))["offering"], "customer_noun": ind.get(ind.key_of(c))["customer"],
@@ -385,7 +404,7 @@ async def create_shop_call(db, client: dict, target: dict, when: datetime, creat
     curve = random.sample(pool_cb, k=min(len(pool_cb), random.choice([0, 1, 1, 2])))
     now = _now()
     doc = {"kind": "mystery_shop", "mode": "phone", "status": "scheduled", "user_id": None, "client_id": str(client["_id"]), "target_id": str(target["_id"]),
-           "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "department": dept, "industry": industry, "store_id": None, "store_name": client.get("name") or f"the {ind.get(industry)['place']}",
+           "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "department": dept, "industry": industry, "store_id": None, "store_name": client.get("name") or f"the {ind.get(industry)['place']}", "locale": loc.key_of(client),
            "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": script.get("direction") if script.get("direction") in ("inbound", "outbound") else "inbound", "persona": persona, "curveballs": curve,
            "assignment_id": None, "scheduled_for": when, "attempts": 0, "max_attempts": 3, "manual": manual, "token": uuid.uuid4().hex, "turns": [],
            "created_by": created_by, "created_at": now, "updated_at": now}
@@ -1068,10 +1087,18 @@ async def create_invoice_for(db, proposal: dict) -> dict:
         cust = await asyncio.to_thread(stripe.Customer.create, email=email, name=client.get("name") or proposal.get("client_name"), metadata={"shop_client_id": str(client.get("_id")), "managed_by": "imos_mystery_shop"})
         cust_id = cust.id
         await db.shop_clients.update_one({"_id": client["_id"]}, {"$set": {"billing.stripe_customer_id": cust_id}})
-    inv = await asyncio.to_thread(stripe.Invoice.create, customer=cust_id, collection_method="send_invoice", days_until_due=7, auto_advance=True,
-                                  description=f"Mystery shop program for {client.get('name')}: {per_month_text(terms_per_month(t))} shops per month.",
-                                  metadata={"proposal_id": str(proposal["_id"]), "shop_client_id": str(client.get("_id"))})
-    await asyncio.to_thread(stripe.InvoiceItem.create, customer=cust_id, invoice=inv.id, amount=amount_cents, currency="usd", description="Phone mystery shopping, first month")
+    inv_kwargs = dict(customer=cust_id, collection_method="send_invoice", days_until_due=7, auto_advance=True,
+                      description=f"Mystery shop program for {client.get('name')}: {per_month_text(terms_per_month(t))} shops per month.",
+                      metadata={"proposal_id": str(proposal["_id"]), "shop_client_id": str(client.get("_id"))})
+    inv_kwargs.update(invoice_extras(client))
+    try:
+        inv = await asyncio.to_thread(stripe.Invoice.create, **inv_kwargs)
+    except Exception as e:
+        # iDEAL / SEPA not activated on the Stripe account yet: send a plain card invoice rather than nothing
+        logger.warning(f"[MysteryShop] Stripe invoice with local payment methods failed, retrying plain: {e}")
+        inv_kwargs.pop("payment_settings", None)
+        inv = await asyncio.to_thread(stripe.Invoice.create, **inv_kwargs)
+    await asyncio.to_thread(stripe.InvoiceItem.create, customer=cust_id, invoice=inv.id, amount=amount_cents, currency=loc.currency(loc.key_of(client)), description="Phone mystery shopping, first month")
     inv = await asyncio.to_thread(stripe.Invoice.finalize_invoice, inv.id)
     try:
         inv = await asyncio.to_thread(stripe.Invoice.send_invoice, inv.id)

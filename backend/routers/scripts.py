@@ -545,8 +545,12 @@ async def relay_gate(sid: str, t: str, request: Request):
     from services.mystery_shops import postpone_call, record_outcome
     if choice == "later":
         await postpone_call(db, s)
+        if svc.loc.language(s.get("locale")) == "nl":
+            return _twiml(svc.say_hangup_twiml("Geen probleem, we proberen het een andere keer. Succes!" if s.get("demo") or s.get("manual") else "Geen probleem, we bellen over een paar uur terug. Succes!", s.get("locale")))
         return _twiml(svc.say_hangup_twiml("No problem, we'll try another time. Good luck out there." if s.get("demo") or s.get("manual") else "No problem, we'll call back in a couple of hours. Good luck out there."))
     await record_outcome(db, s, "no_response")
+    if svc.loc.language(s.get("locale")) == "nl":
+        return _twiml(svc.say_hangup_twiml("Geen probleem, we proberen het een andere keer. Dit was je oefengesprek van I'm On Social.", s.get("locale")))
     return _twiml(svc.say_hangup_twiml("No problem, we'll try again another time. This was your practice call from I'm On Social."))
 
 
@@ -568,11 +572,11 @@ async def relay_after(sid: str, t: str, request: Request):
         if not any(x.get("role") == "rep" for x in s.get("turns", [])):
             await get_db().roleplay_sessions.update_one({"_id": s["_id"], "status": {"$in": ["dialing", "live"]}},
                                                         {"$set": {"status": "failed", "fail_reason": f"The practice line had a problem ({form.get('ErrorCode') or 'relay'})", "updated_at": datetime.now(timezone.utc)}})
-            return _twiml(svc.hangup_twiml("Sorry, the practice line had a problem. Please try again in a minute."))
+            return _twiml(svc.hangup_twiml("Sorry, de oefenlijn had een probleem. Probeer het over een minuut opnieuw." if svc.loc.language(s.get("locale")) == "nl" else "Sorry, the practice line had a problem. Please try again in a minute.", s.get("locale")))
     asyncio.create_task(svc.finalize_session(get_db(), sid, f"relay_{form.get('SessionStatus') or 'ended'}"))
     if s.get("kind") == "mystery_shop":
         return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
-    return _twiml(svc.hangup_twiml("Nice work. Your practice call is being graded, check the app in a moment."))
+    return _twiml(svc.hangup_twiml("Goed gedaan. Je oefengesprek wordt beoordeeld, kijk zo in de app." if svc.loc.language(s.get("locale")) == "nl" else "Nice work. Your practice call is being graded, check the app in a moment.", s.get("locale")))
 
 
 @relay_router.post("/status/{sid}")

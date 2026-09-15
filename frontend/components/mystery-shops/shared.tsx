@@ -23,7 +23,9 @@ export type Client = {
   plan: Plan; hours: Hours; vehicles: string[]; active: boolean; record_calls: boolean; notes: string; from_number: string; report_token?: string; scorecards: Record<string, string | null>;
   billing?: { status?: string; last_invoice?: any }; progress?: Record<string, DeptStat>; avg_score?: number | null; completed?: number; planned?: number; needs_training?: number; people?: number;
   demo?: boolean; text_scorecards?: boolean;
+  locale?: string; language?: string; currency?: string; currency_symbol?: string; country?: string; locale_label?: string; vat_id?: string;
 };
+export type Locale = { code: string; label: string; language: string; language_label: string; country: string; currency: string; symbol: string; timezone: string; flag: string; relay_language: string; say_voice: string; voices: Record<string, string> };
 export type Person = { id: string; client_id: string; name: string; phone: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[] };
 export type ShopCall = {
   id: string; target_id: string; target_name: string; department: string; department_label?: string; industry?: string; customer_noun?: string; status: string; outcome?: string | null; fail_reason?: string | null; script_id: string; script_title: string; persona_name?: string;
@@ -49,6 +51,18 @@ export const loadIndustries = async (force = false): Promise<Industry[]> => {
   return INDUSTRIES;
 };
 export const industries = () => INDUSTRIES;
+// Countries + languages (voices, currency, timezone) come from the backend too; en-US is always present.
+export const EN_US: Locale = { code: 'en-US', label: 'United States', language: 'en', language_label: 'English (US)', country: 'US', currency: 'usd', symbol: '$', timezone: 'America/Denver', flag: 'US', relay_language: 'en-US', say_voice: 'Polly.Joanna-Neural', voices: {} };
+let LOCALES: Locale[] = [EN_US];
+let localesAt = 0;
+export const loadLocales = async (force = false): Promise<Locale[]> => {
+  if (!force && Date.now() - localesAt < 5 * 60 * 1000 && LOCALES.length > 1) return LOCALES;
+  try { const r = await api.get('/shop-clients/locales'); if (r.data?.locales?.length) { LOCALES = r.data.locales; localesAt = Date.now(); } } catch {}
+  return LOCALES;
+};
+export const locales = () => LOCALES;
+export const localeOf = (code?: string | null): Locale => LOCALES.find(l => l.code === code) || LOCALES[0] || EN_US;
+export const SYMBOLS: Record<string, string> = { usd: '$', gbp: '£', eur: '€' };
 export const industryOf = (key?: string | null): Industry => INDUSTRIES.find(i => i.key === key) || INDUSTRIES[0] || AUTOMOTIVE;
 export const industryLabel = (key?: string | null) => industryOf(key).label;
 export const deptsFor = (industryKey?: string | null): Dept[] => industryOf(industryKey).departments;
@@ -67,7 +81,7 @@ export const isTollFree = (p?: string) => /^\+?1?8(00|33|44|55|66|77|88)\d{7}$/.
 export const TOLL_FREE_WARNING = 'Toll-free number: cell carriers often block or label these as spam, so shop calls may never ring. A local number is safer.';
 export const fmtWhen = (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 export const fmtDay = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
-export const money = (n?: number | null) => `$${Math.round(n || 0).toLocaleString()}`;
+export const money = (n?: number | null, currency?: string | null) => `${SYMBOLS[(currency || 'usd').toLowerCase()] || '$'}${Math.round(n || 0).toLocaleString()}`;
 export const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 export const shiftMonth = (key: string, by: number) => { const [y, m] = key.split('-').map(Number); return monthKey(new Date(y, m - 1 + by, 1)); };
 export const monthLabel = (key: string) => { const [y, m] = key.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }); };

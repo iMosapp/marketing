@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from routers.database import get_db
 from routers.scripts import require_user, _resolve
 from services import industries as ind
+from services import locales as loc
 from services import mystery_shops as ms
 from services import shop_report_mail as srm
 from services import scorecards as sc
@@ -80,6 +81,12 @@ class ClientBody(BaseModel):
     from_number: Optional[str] = None
     scorecards: Optional[dict] = None
     text_scorecards: Optional[bool] = None
+    locale: Optional[str] = None
+    vat_id: Optional[str] = None
+
+
+class LocaleVoicesBody(BaseModel):
+    voices: dict
 
 
 class DemoBody(BaseModel):
@@ -184,6 +191,14 @@ def _client_fields(body: ClientBody) -> dict:
     if "industry" in d:
         if d["industry"] not in ind.INDUSTRIES:
             raise HTTPException(status_code=400, detail="Pick an industry from the list")
+    if "locale" in d:
+        if d["locale"] not in loc.LOCALES:
+            raise HTTPException(status_code=400, detail="Pick a country and language from the list")
+        # a new locale brings its own default timezone unless the caller set one explicitly
+        if "timezone" not in d:
+            d["timezone"] = loc.get(d["locale"])["timezone"]
+    if "vat_id" in d:
+        d["vat_id"] = (d["vat_id"] or "").strip().upper()[:40]
     if "plan" in d:
         p = d["plan"] or {}
         per = p.get("per_month") if isinstance(p.get("per_month"), dict) else {k: p.get(f"{k}_per_month") for k in ("sales", "service") if p.get(f"{k}_per_month") is not None}
@@ -219,6 +234,25 @@ async def list_clients(request: Request):
     await ms.rename_legacy_quick_bucket(db)
     rows = await db.shop_clients.find({}).sort("name", 1).to_list(200)
     return {"clients": [ms.serialize_client(c, await _progress(db, c)) for c in rows], "departments": ms.DEPARTMENTS, "industries": ind.for_api(), "from_number_default": await ms.default_from_number(db)}
+
+
+@router.get("/locales")
+async def list_locales(request: Request):
+    """Countries + languages a client or store can run in, with the voices each uses. Any signed-in user may read it."""
+    return {"locales": loc.for_api(), "default": loc.DEFAULT}
+
+
+@router.put("/locales/{code}/voices")
+async def set_locale_voices(code: str, body: LocaleVoicesBody, request: Request):
+    """Super admin: swap the ElevenLabs/Google voice ids for one locale ({female, male, young, older, say}) without a deploy."""
+    me = await require_admin(request)
+    if me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only a super admin can change voices")
+    try:
+        voices = await loc.set_voices(get_db(), code, body.voices)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"code": code, "voices": voices}
 
 
 @router.get("/industries")
@@ -1029,6 +1063,9 @@ async def public_proposal(token: str):
     out["departments"] = ind.dept_options(ind.key_of(c))
     out["offering"] = pack["offering"]
     out["business_noun"] = pack["business"]
+    out["locale"] = loc.key_of(c)
+    out["currency"] = loc.currency(loc.key_of(c))
+    out["currency_symbol"] = loc.get(loc.key_of(c))["symbol"]
     return out
 
 

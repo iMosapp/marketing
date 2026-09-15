@@ -421,6 +421,10 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
     store_name = store.get("name", "our team")
     topic = (inquiry or {}).get("topic") or (f"the {veh}" if veh != "the vehicle" else "what you were looking at")
     is_vehicle_lead = inquiry is None or inquiry.get("kind") == "vehicle"
+    from services import locales as loc
+    locale = loc.key_of(store)
+    dutch = loc.language(locale) == "nl"
+    cur_sym = loc.get(locale)["symbol"]
 
     stock_line = ""
     if matched_vehicle and is_vehicle_lead:
@@ -428,7 +432,7 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
         if matched_vehicle.get("color"):
             bits.append(str(matched_vehicle["color"]))
         if matched_vehicle.get("price"):
-            bits.append(f"${matched_vehicle['price']:,.0f}")
+            bits.append(f"{cur_sym}{matched_vehicle['price']:,.0f}")
         if matched_vehicle.get("stock_number"):
             bits.append(f"Stock #{matched_vehicle['stock_number']}")
         stock_line = " - ".join(str(b) for b in bits if b)
@@ -448,6 +452,7 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
                 "Mention what they asked about. Never use em dashes. "
                 "End with a simple question that invites a reply."
             )
+            system_prompt += loc.language_rule(locale)
             system_prompt += inquiry_prompt_block(inquiry)
 
             user_msg = (
@@ -473,6 +478,15 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
 
     # Fallback template
     rep_first = (assigned_user.get("name", "").split()[0] if assigned_user else "")
+    if dutch:
+        intro = f"Ik ben {rep_first} van {store_name}. " if rep_first else f"Dit is {store_name}. "
+        veh_nl = veh if veh != "the vehicle" else "de auto"
+        topic_nl = (inquiry or {}).get("topic") or veh_nl
+        if stock_line:
+            return f"Hoi {first}! {intro}Goed nieuws, {topic_nl} staat nog bij ons ({stock_line}). Zal ik hem even voor je vasthouden voor een kijkje?"
+        if not is_vehicle_lead:
+            return f"Hoi {first}! {intro}Ik zag dat je vroeg naar {topic_nl}. Welke dag past jou het beste om het samen door te nemen?"
+        return f"Hoi {first}! {intro}Ik zag je aanvraag over {topic_nl}. Ben je nog op zoek of aan het rondkijken? Ik help je graag, hoe dan ook."
     intro = f"I'm {rep_first} at {store_name}. " if rep_first else f"This is {store_name}. "
     if stock_line:
         return (

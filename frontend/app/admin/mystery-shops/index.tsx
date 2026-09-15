@@ -94,7 +94,7 @@ export default function MysteryShopClients() {
                     </View>
                     <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }} {...tid(`shop-client-progress-${c.id}`)}>
                       {prog.map(([k, p]) => <Text key={k} style={{ fontSize: 12, color: colors.textSecondary }}>{p.label || k} {p.completed}/{p.planned}</Text>)}
-                      <Text style={{ fontSize: 12, color: colors.textSecondary }}>{money(c.plan.price_monthly)}/mo</Text>
+                      <Text style={{ fontSize: 12, color: colors.textSecondary }}>{money(c.plan.price_monthly, c.currency)}/mo</Text>
                       {!!c.needs_training && <Text style={{ fontSize: 12, fontWeight: '700', color: RED }}>{c.needs_training} need training</Text>}
                       {c.billing?.status && <Text style={{ fontSize: 12, fontWeight: '700', color: c.billing.status === 'paid' ? GREEN : GOLD }}>{c.billing.status}</Text>}
                     </View>

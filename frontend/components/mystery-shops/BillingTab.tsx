@@ -51,7 +51,7 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
           <View key={p.id} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 8 }} {...tid(`proposal-${p.id}`)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{money(p.terms.price_monthly)}/mo · {perMonthText(termsPer(p.terms), ' + ', depts)}</Text>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{money(p.terms.price_monthly, client.currency)}/mo · {perMonthText(termsPer(p.terms), ' + ', depts)}</Text>
                 <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{p.terms.term_months} month term · to {p.contact_name || p.contact_email || 'no contact'}{p.sent_at ? ` · sent ${fmtWhen(p.sent_at)}` : ''}{p.viewed_at ? ` · opened ${fmtWhen(p.viewed_at)}` : ''}</Text>
               </View>
               <View style={{ paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: st.color + '22', justifyContent: 'center' }} {...tid(`proposal-status-${p.id}`)}><Text style={{ fontSize: 11, fontWeight: '800', color: st.color }}>{st.label}</Text></View>

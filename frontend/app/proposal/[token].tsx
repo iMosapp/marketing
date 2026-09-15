@@ -8,7 +8,7 @@ import { openUrl } from '../../components/mystery-shops/ReportView';
 import { money, GOLD, GREEN, RED, tid, type Dept } from '../../components/mystery-shops/shared';
 
 const L = { bg: '#F6F4EE', card: '#FFFFFF', border: '#E4DFD2', text: '#161616', textSecondary: '#6B6B6B' };
-type P = { status: string; terms: any; per_month?: Record<string, number>; departments?: Dept[]; offering?: { label: string; plural: string }; business_noun?: string; client_name: string; contact_name: string; contact_email: string; sender_name: string; sections: { title: string; body: string }[]; signer?: any; signed_at?: string | null; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number }; kickoff_url?: string | null };
+type P = { status: string; terms: any; currency?: string; per_month?: Record<string, number>; departments?: Dept[]; offering?: { label: string; plural: string }; business_noun?: string; client_name: string; contact_name: string; contact_email: string; sender_name: string; sections: { title: string; body: string }[]; signer?: any; signed_at?: string | null; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number }; kickoff_url?: string | null };
 
 // The client GM opens this from the proposal email: read, type name, agree, sign. Stripe emails the first invoice right after.
 export default function PublicProposal() {
@@ -43,7 +43,7 @@ export default function PublicProposal() {
   const t = p?.terms || {};
   const per: Record<string, number> = p?.per_month && Object.keys(p.per_month).length ? p.per_month : { sales: t.sales_per_month || 0, service: t.service_per_month || 0 };
   const label = (k: string) => (p?.departments || []).find(d => d.key === k)?.label?.toLowerCase() || k.replace(/^[a-z]+_/, '').replace(/_/g, ' ');
-  const tiles = [...Object.entries(per).filter(([, n]) => (n || 0) > 0).map(([k, n]) => [String(n), `${label(k)} shops / month`]), [money(t.price_monthly), 'per month'], [`${t.term_months} mo`, 'initial term']];
+  const tiles = [...Object.entries(per).filter(([, n]) => (n || 0) > 0).map(([k, n]) => [String(n), `${label(k)} shops / month`]), [money(t.price_monthly, p?.currency), 'per month'], [`${t.term_months} mo`, 'initial term']];
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: L.bg }}>
       <ScrollView contentContainerStyle={{ padding: wide ? 32 : 16, paddingBottom: 60, alignItems: 'center' }} keyboardShouldPersistTaps="handled">
@@ -71,9 +71,9 @@ export default function PublicProposal() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><Ionicons name="checkmark-circle" size={26} color={GREEN} /><Text style={{ fontSize: 18, fontWeight: '800', color: L.text }}>Signed{p.signer?.name || name ? ` by ${p.signer?.name || name}` : ''}</Text></View>
                   {invoice?.hosted_invoice_url ? (
                     <>
-                      <Text style={{ fontSize: 15, color: L.text, lineHeight: 22 }}>Your first invoice for {money(invoice.amount)} is on its way to {p.signer?.email || email}. You can pay it right now by card or bank transfer, and the shops begin as soon as it clears.</Text>
+                      <Text style={{ fontSize: 15, color: L.text, lineHeight: 22 }}>Your first invoice for {money(invoice.amount, p?.currency)} is on its way to {p.signer?.email || email}. You can pay it right now by card or bank transfer, and the shops begin as soon as it clears.</Text>
                       <TouchableOpacity onPress={() => openUrl(invoice.hosted_invoice_url!)} style={{ height: 50, borderRadius: 14, backgroundColor: invoice.status === 'paid' ? GREEN : GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('proposal-pay')}>
-                        <Ionicons name={invoice.status === 'paid' ? 'checkmark' : 'card'} size={18} color="#111" /><Text style={{ fontSize: 16, fontWeight: '800', color: '#111' }}>{invoice.status === 'paid' ? 'Paid, thank you' : `Pay ${money(invoice.amount)} now`}</Text>
+                        <Ionicons name={invoice.status === 'paid' ? 'checkmark' : 'card'} size={18} color="#111" /><Text style={{ fontSize: 16, fontWeight: '800', color: '#111' }}>{invoice.status === 'paid' ? 'Paid, thank you' : `Pay ${money(invoice.amount, p?.currency)} now`}</Text>
                       </TouchableOpacity>
                     </>
                   ) : <Text style={{ fontSize: 15, color: L.text, lineHeight: 22 }}>Thank you. {p.sender_name || 'We'} will send your first invoice shortly.</Text>}

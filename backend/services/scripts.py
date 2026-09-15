@@ -12,7 +12,8 @@ from typing import Optional
 from bson import ObjectId
 
 from routers.database import get_db
-from services.speech import NUMBERS_RULE, speakable
+from services import locales as loc
+from services.speech import numbers_rule, speakable
 from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
@@ -423,17 +424,21 @@ def relay_twiml(session: dict, prelude: str = "") -> str:
     opening = persona.get("opening_line") or "Hi, I'm calling about a car I saw online."
     hints = ",".join(h for h in [session.get("store_name"), persona.get("name")] if h)
     # inbound = the customer is calling in, so the AI stays quiet until the rep answers the phone
-    greeting = "" if session.get("direction") == "inbound" else f'welcomeGreeting="{_xml(speakable(opening))}" '
+    locale = session.get("locale")
+    greeting = "" if session.get("direction") == "inbound" else f'welcomeGreeting="{_xml(speakable(opening, locale))}" '
+    provider, voice = loc.relay_voice(locale, persona.get("voice"))
     return (f'<?xml version="1.0" encoding="UTF-8"?><Response>{prelude}<Connect action="{_xml(base)}/api/scripts/roleplay/after/{sid}?t={token}">'
-            f'<ConversationRelay url="{_xml(ws)}" {greeting}ttsProvider="Google" voice="{RELAY_VOICES.get(persona.get("voice"), "en-US-Journey-F")}" '
-            f'transcriptionProvider="Deepgram" interruptible="any" interruptSensitivity="medium" ignoreBackchannel="true" hints="{_xml(hints)}" />'
+            f'<ConversationRelay url="{_xml(ws)}" {greeting}ttsProvider="{provider}" voice="{_xml(voice)}" language="{loc.get(locale)["relay_language"]}" '
+            f'transcriptionProvider="Deepgram" speechModel="nova-3-general" interruptible="any" interruptSensitivity="medium" ignoreBackchannel="true" hints="{_xml(hints)}" />'
             f'</Connect></Response>')
 
 
 ANNOUNCE_VOICE = "Polly.Joanna-Neural"
 GATE_SECONDS = 12
-READY_WORDS = ("ready", "yes", "yeah", "yep", "go", "okay", "ok", "sure", "let's", "lets", "bring it", "hit me")
-LATER_WORDS = ("not now", "bad time", "later", "busy", "call back", "can't right now", "cant right now", "no")
+READY_WORDS = ("ready", "yes", "yeah", "yep", "go", "okay", "ok", "sure", "let's", "lets", "bring it", "hit me", "klaar", "ja", "start", "kom maar", "prima", "oké", "oke")
+LATER_WORDS = ("not now", "bad time", "later", "busy", "call back", "can't right now", "cant right now", "no", "niet nu", "nee", "later", "geen tijd", "bel later", "druk")
+GATE_HINTS = {"en": "ready, yes, go, not now, later", "nl": "klaar, ja, start, niet nu, later, nee"}
+GO_LINES = {"en": ("Here it comes.", "Here we go, it's ringing."), "nl": ("Daar komt hij.", "Daar gaan we, hij gaat over.")}
 
 
 def shop_announcement(session: dict) -> str:
@@ -444,6 +449,8 @@ def shop_announcement(session: dict) -> str:
     pack, d = ind.get(industry), ind.dept(session.get("department"), industry)
     dept = d.get("call") or "call"
     persona = session.get("persona") or {}
+    if loc.language(session.get("locale")) == "nl":
+        return _shop_announcement_nl(session, first, dept, persona)
     hi = f"Hi {first}, " if first else "Hi, "
     if session.get("direction") == "outbound":
         who = persona.get("name", "").split(" ")[0] or "a customer"
@@ -454,12 +461,27 @@ def shop_announcement(session: dict) -> str:
     return f"{hi}this is your practice call from I'm On Social. {setup} If now's a bad time, press 2 and we'll {'try another time' if session.get('demo') or session.get('manual') else 'call back in a couple of hours'}."
 
 
+def _shop_announcement_nl(session: dict, first: str, dept: str, persona: dict) -> str:
+    """Dutch version of what the rep hears when they pick up."""
+    hi = f"Hoi {first}, " if first else "Hoi, "
+    dept_nl = {"sales call": "verkoopgesprek", "service call": "servicegesprek", "parts call": "onderdelengesprek", "rental call": "verhuurgesprek", "body shop call": "schadeherstelgesprek"}.get(dept, "gesprek")
+    if session.get("direction") == "outbound":
+        who = persona.get("name", "").split(" ")[0] or "een klant"
+        about = f" over {persona['offering'] if persona.get('offering') else persona.get('vehicle')}" if (persona.get("offering") or persona.get("vehicle")) else ""
+        setup = f"Zo meteen: een uitgaand {dept_nl}. Je belt {who} terug{about}. Druk op 1 of zeg klaar als je er klaar voor bent, je hoort hem overgaan en dan wordt er opgenomen."
+    else:
+        setup = f"Zo meteen: een inkomend {dept_nl}. Een klant belt het bedrijf, dus neem op zoals je een echt gesprek zou opnemen. Druk op 1 of zeg klaar als je zover bent."
+    later = "proberen we het een andere keer" if session.get("demo") or session.get("manual") else "bellen we over een paar uur terug"
+    return f"{hi}dit is je oefengesprek van I'm On Social. {setup} Komt het nu niet uit, druk dan op 2 en {later}."
+
+
 def shop_gate_twiml(session: dict) -> str:
     sid, token = str(session["_id"]), session["token"]
     action = f"{_xml(_app_url())}/api/scripts/roleplay/gate/{sid}?t={token}"
+    lang = loc.language(session.get("locale"))
     return (f'<?xml version="1.0" encoding="UTF-8"?><Response>'
-            f'<Gather input="dtmf speech" numDigits="1" timeout="{GATE_SECONDS}" speechTimeout="auto" actionOnEmptyResult="true" action="{action}" method="POST" hints="ready, yes, go, not now, later">'
-            f'<Say voice="{ANNOUNCE_VOICE}">{_xml(speakable(shop_announcement(session)))}</Say></Gather></Response>')
+            f'<Gather input="dtmf speech" numDigits="1" timeout="{GATE_SECONDS}" speechTimeout="auto" actionOnEmptyResult="true" action="{action}" method="POST" language="{loc.get(session.get("locale"))["relay_language"]}" hints="{GATE_HINTS.get(lang, GATE_HINTS["en"])}">'
+            f'<Say voice="{loc.say_voice(session.get("locale"))}">{_xml(speakable(shop_announcement(session), session.get("locale")))}</Say></Gather></Response>')
 
 
 def gate_choice(digits: str, speech: str) -> str:
@@ -475,13 +497,14 @@ def gate_choice(digits: str, speech: str) -> str:
 
 def shop_go_twiml(session: dict) -> str:
     """Rep is ready: a heads-up, a ring, then the live customer."""
-    line = "Here it comes." if session.get("direction") == "inbound" else "Here we go, it's ringing."
+    lines = GO_LINES.get(loc.language(session.get("locale")), GO_LINES["en"])
+    line = lines[0] if session.get("direction") == "inbound" else lines[1]
     ring = f"{_xml(_app_url())}/api/scripts/roleplay/audio/ring.wav"
-    return relay_twiml(session, prelude=f'<Say voice="{ANNOUNCE_VOICE}">{_xml(speakable(line))}</Say><Play>{ring}</Play>')
+    return relay_twiml(session, prelude=f'<Say voice="{loc.say_voice(session.get("locale"))}">{_xml(speakable(line, session.get("locale")))}</Say><Play>{ring}</Play>')
 
 
-def say_hangup_twiml(text: str) -> str:
-    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="{ANNOUNCE_VOICE}">{_xml(speakable(text))}</Say><Hangup/></Response>'
+def say_hangup_twiml(text: str, locale: Optional[str] = None) -> str:
+    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="{loc.say_voice(locale)}">{_xml(speakable(text, locale))}</Say><Hangup/></Response>'
 
 
 _RING_WAV: Optional[bytes] = None
@@ -513,8 +536,8 @@ def ring_wav() -> bytes:
     return _RING_WAV
 
 
-def hangup_twiml(text: str) -> str:
-    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna-Neural">{_xml(speakable(text))}</Say><Hangup/></Response>'
+def hangup_twiml(text: str, locale: Optional[str] = None) -> str:
+    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="{loc.say_voice(locale)}">{_xml(speakable(text, locale))}</Say><Hangup/></Response>'
 
 
 async def start_phone_session(db, me: dict, script: dict, assignment: Optional[dict] = None) -> dict:
@@ -530,11 +553,11 @@ async def start_phone_session(db, me: dict, script: dict, assignment: Optional[d
     from_number = me.get("twilio_number") or me.get("mvpline_number") or os.environ.get("TWILIO_PHONE_NUMBER", "")
     if not from_number:
         raise RuntimeError("No number to call you from yet, ask your admin to assign one")
-    store = await db.stores.find_one({"_id": ObjectId(me["store_id"])}, {"name": 1}) if ObjectId.is_valid(str(me.get("store_id") or "")) else None
+    store = await db.stores.find_one({"_id": ObjectId(me["store_id"])}, {"name": 1, "locale": 1}) if ObjectId.is_valid(str(me.get("store_id") or "")) else None
     persona = (assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."}
     now = _now()
     token = uuid.uuid4().hex
-    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "from_number": from_number, "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the store",
+    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "from_number": from_number, "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the store", "locale": loc.key_of(store),
            "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": script_direction(script), "persona": persona, "curveballs": (assignment or {}).get("curveballs") or [],
            "assignment_id": str(assignment["_id"]) if assignment else None, "mode": "phone", "status": "dialing", "token": token, "turns": [], "started_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
@@ -607,7 +630,7 @@ async def relay_turn(db, sid: str, heard: str) -> dict:
     if not s or s.get("status") not in ("live", "ending", "dialing"):
         return {"say": "", "ended": True}
     out = await customer_turn(db, s, heard[:1200])
-    return {"say": speakable(out["customer"]["text"]), "ended": out["ended"]}
+    return {"say": speakable(out["customer"]["text"], s.get("locale")), "ended": out["ended"]}
 
 
 INBOUND_NUDGE_S = 8
@@ -615,12 +638,12 @@ INBOUND_NUDGE_S = 8
 
 async def relay_nudge(db, sid: str) -> str:
     """Inbound call, ring played, rep still silent: the customer speaks first anyway so the call never sits dead."""
-    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"turns": 1, "direction": 1, "persona": 1, "status": 1})
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"turns": 1, "direction": 1, "persona": 1, "status": 1, "locale": 1})
     if not s or s.get("status") not in ("live", "dialing") or s.get("turns") or s.get("direction") != "inbound":
         return ""
     opening = (s.get("persona") or {}).get("opening_line") or "Hi, I'm calling about a car I saw online."
     await db.roleplay_sessions.update_one({"_id": s["_id"], "turns": {"$size": 0}}, {"$push": {"turns": {"role": "customer", "text": opening, "audio_url": None, "at": _now(), "mood": "neutral"}}, "$set": {"updated_at": _now()}})
-    return speakable(opening)
+    return speakable(opening, s.get("locale"))
 
 
 async def relay_interrupt(db, sid: str, spoken: Optional[str]):
@@ -688,7 +711,7 @@ async def save_recording(db, sid: str, recording_url: str, duration: Optional[st
     await db.call_evaluations.update_one({"roleplay_session_id": sid}, {"$set": {"recording_url": sets["recording_url"]}})
 
 
-def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None) -> str:
+def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None, locale: Optional[str] = None) -> str:
     from services import industries as ind
     industry = industry or (ind.industry_of_dept(department) if department else ind.DEFAULT_INDUSTRY)
     pack = ind.get(industry)
@@ -698,7 +721,8 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
             + (f"YOU placed this call to the {pack['business']}, so you drive the reason for calling. " if direction == "inbound" else "The employee called YOU, so they drive the conversation and you react. ")
             + ("The rep was told this is a practice call, but you stay fully in character as a real customer: never admit you are an AI, a recording or a shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery else "")
             + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "
-               "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " + NUMBERS_RULE if live else "")
+               "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " + numbers_rule(locale) if live else "")
+            + loc.language_rule(locale)
             + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
             f"OBJECTIONS YOU RAISE (one at a time, only when it fits): {'; '.join(persona.get('objections') or [])}. "
             + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
@@ -712,12 +736,12 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
 
 
 async def start_session(db, me: dict, script: dict, assignment: Optional[dict] = None) -> dict:
-    store = await db.stores.find_one({"_id": ObjectId(me["store_id"])}, {"name": 1}) if ObjectId.is_valid(str(me.get("store_id") or "")) else None
+    store = await db.stores.find_one({"_id": ObjectId(me["store_id"])}, {"name": 1, "locale": 1}) if ObjectId.is_valid(str(me.get("store_id") or "")) else None
     persona = (assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."}
     curveballs = (assignment or {}).get("curveballs") or []
     now = _now()
     direction = script_direction(script)
-    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the store",
+    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the store", "locale": loc.key_of(store),
            "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": direction, "persona": persona, "curveballs": curveballs,
            "assignment_id": str(assignment["_id"]) if assignment else None, "mode": "text", "status": "active", "turns": [], "started_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
@@ -757,7 +781,7 @@ async def customer_turn(db, session: dict, rep_text: str) -> dict:
     user = f"CALL SO FAR:\n{history}\nREP: {rep_text}\n\n(This is exchange {exchanges}. Reply as the customer." + (" You are out of time: wrap up in one sentence, say goodbye and set ended to true.)" if out_of_time else ")")
     try:
         data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the business", rep_first, session.get("curveballs") or [], live, session.get("direction") or "outbound", session.get("kind") == "mystery_shop",
-                                                session.get("industry"), session.get("department") if session.get("kind") == "mystery_shop" else None), user, timeout=45)
+                                                session.get("industry"), session.get("department") if session.get("kind") == "mystery_shop" else None, session.get("locale")), user, timeout=45)
     except Exception as e:
         logger.warning(f"[Roleplay] customer turn failed: {e}")
         data = {}
@@ -804,7 +828,7 @@ async def grade_session(db, session: dict) -> dict:
     graded = None
     if card and card.get("criteria") and len(rep_turns) >= 2:
         try:
-            graded = await sc.grade_with_ai(card, transcript.replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60), industry=session.get("industry"))
+            graded = await sc.grade_with_ai(card, transcript.replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60), industry=session.get("industry"), language=loc.language(session.get("locale")))
         except Exception as e:
             logger.warning(f"[Roleplay] scorecard grading failed: {e}")
     adherence = await _grade_adherence(script, transcript, rep_first) if len(rep_turns) >= 1 else {"score_pct": None, "hits": [], "misses": [], "coaching": [], "summary": "Too short to grade."}

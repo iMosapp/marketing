@@ -88,8 +88,10 @@ async def start_call_workflow(source: dict, conversation_id: str, contact_id: st
 
     now = datetime.now(timezone.utc)
     deferred = bool(not_before and not_before > now)
+    from services import locales as loc
     doc = {
         "token": secrets.token_urlsafe(16),
+        "locale": await loc.store_locale(db, source.get("store_id")),
         "conversation_id": conversation_id,
         "contact_id": contact_id,
         "lead_source_id": str(source.get("_id", "")),
@@ -602,9 +604,16 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
 
 
 # ── TwiML ─────────────────────────────────────────────────────────────────────
-def _say(text: str) -> str:
-    # every spoken line (whisper, prompts) goes through the same human-number reader as the mystery shopper
-    return f'<Say voice="Polly.Joanna">{escape(speakable(text))}</Say>'
+def _say(text: str, locale: Optional[str] = None) -> str:
+    # every spoken line (whisper, prompts) goes through the same human-number reader as the mystery shopper, in the store's language
+    from services import locales as loc
+    return f'<Say voice="{loc.say_voice(locale)}">{escape(speakable(text, locale))}</Say>'
+
+
+def _nl(job_or_locale) -> bool:
+    from services import locales as loc
+    code = job_or_locale.get("locale") if isinstance(job_or_locale, dict) else job_or_locale
+    return loc.language(code) == "nl"
 
 
 def twiml(*parts: str) -> str:
@@ -612,23 +621,49 @@ def twiml(*parts: str) -> str:
 
 
 def twiml_answer(job: dict, action_url: str) -> str:
-    src = (job.get("lead") or {}).get("source_label") or job.get("source_name") or "your website"
-    kind = "Overnight lead" if job.get("deferred") else "New lead"
-    prompt = _say(f"{kind} from {src}. Press 1 to claim this lead.")
+    lc = job.get("locale")
+    src = (job.get("lead") or {}).get("source_label") or job.get("source_name") or ("je website" if _nl(job) else "your website")
+    if _nl(job):
+        kind = "Lead van vannacht" if job.get("deferred") else "Nieuwe lead"
+        prompt = _say(f"{kind} via {src}. Druk op 1 om deze lead te claimen.", lc)
+        no_resp = _say("Geen reactie ontvangen. Tot ziens.", lc)
+    else:
+        kind = "Overnight lead" if job.get("deferred") else "New lead"
+        prompt = _say(f"{kind} from {src}. Press 1 to claim this lead.", lc)
+        no_resp = _say("No response received. Goodbye.", lc)
     gather = f'<Gather numDigits="1" timeout="6" action="{escape(action_url)}" method="POST">{prompt}</Gather>'
-    return twiml(gather, gather, _say("No response received. Goodbye."), "<Hangup/>")
+    return twiml(gather, gather, no_resp, "<Hangup/>")
 
 
 def twiml_connect(job: dict, action_url: str) -> str:
     """Rep already owns this lead (claimed in the app): confirm with 1, then bridge."""
-    name = (job.get("lead") or {}).get("name") or "your new lead"
-    prompt = _say(f"You claimed {name}. Press 1 to connect now.")
+    lc = job.get("locale")
+    if _nl(job):
+        name = (job.get("lead") or {}).get("name") or "je nieuwe lead"
+        prompt, no_resp = _say(f"Je hebt {name} geclaimd. Druk op 1 om nu te verbinden.", lc), _say("Geen reactie ontvangen. Tot ziens.", lc)
+    else:
+        name = (job.get("lead") or {}).get("name") or "your new lead"
+        prompt, no_resp = _say(f"You claimed {name}. Press 1 to connect now.", lc), _say("No response received. Goodbye.", lc)
     gather = f'<Gather numDigits="1" timeout="6" action="{escape(action_url)}" method="POST">{prompt}</Gather>'
-    return twiml(gather, gather, _say("No response received. Goodbye."), "<Hangup/>")
+    return twiml(gather, gather, no_resp, "<Hangup/>")
 
 
 def whisper_text(job: dict) -> str:
     lead = job.get("lead") or {}
+    if _nl(job):
+        bits = [f"Hij is voor jou. Nieuwe lead: {lead.get('name') or 'geen naam opgegeven'}."]
+        if lead.get("source_label"):
+            bits.append(f"Binnengekomen via {lead['source_label']}.")
+        if lead.get("company"):
+            bits.append(f"Bedrijf: {lead['company']}.")
+        if lead.get("industry"):
+            bits.append(f"Branche: {lead['industry']}.")
+        if lead.get("interest"):
+            bits.append(f"Interesse in {lead['interest']}.")
+        if lead.get("comments"):
+            bits.append(f"Ze schreven: {lead['comments'][:300]}.")
+        bits.append("Ik verbind je nu door.")
+        return " ".join(bits)
     bits = [f"You got it. New lead: {lead.get('name') or 'no name given'}."]
     if lead.get("source_label"):
         bits.append(f"They came in from {lead['source_label']}.")
@@ -645,14 +680,18 @@ def whisper_text(job: dict) -> str:
 
 
 def twiml_claimed_and_bridge(job: dict, caller_id: str) -> str:
+    lc = job.get("locale")
     dial = f'<Dial callerId="{escape(caller_id)}" timeout="30">{escape(job["customer_phone"])}</Dial>'
-    return twiml(_say(whisper_text(job)), dial, _say("The call has ended. Goodbye."))
+    return twiml(_say(whisper_text(job), lc), dial, _say("Het gesprek is beëindigd. Tot ziens." if _nl(job) else "The call has ended. Goodbye.", lc))
 
 
-def twiml_already_claimed(name: str) -> str:
+def twiml_already_claimed(name: str, locale: Optional[str] = None) -> str:
+    if _nl(locale):
+        who = f"{name} heeft" if name else "Iemand anders heeft"
+        return twiml(_say(f"Sorry, {who} deze lead al geclaimd. Tot ziens.", locale), "<Hangup/>")
     who = f"{name} already" if name else "Someone already"
-    return twiml(_say(f"Sorry, {who} claimed this lead. Goodbye."), "<Hangup/>")
+    return twiml(_say(f"Sorry, {who} claimed this lead. Goodbye.", locale), "<Hangup/>")
 
 
-def twiml_passed() -> str:
-    return twiml(_say("Okay, passing on this lead. Goodbye."), "<Hangup/>")
+def twiml_passed(locale: Optional[str] = None) -> str:
+    return twiml(_say("Oké, deze lead sla je over. Tot ziens." if _nl(locale) else "Okay, passing on this lead. Goodbye.", locale), "<Hangup/>")

@@ -55,7 +55,12 @@
 - Industry packs: `GET /api/shop-clients/industries` (admin) lists the 7 packs + per-department challenge counts. Automotive = sales, service, parts, rental, collision ("Body Shop"); the global library carries 18 hand-written starters (3 each for parts/rental/collision). `POST /api/shop-clients/challenges/seed {industry, department?}` makes Jessi write 2 starters per empty department (LLM, ~30-60s per department).
 - Leaderboard demo data on QA Jeep 979a: `cd /app/backend && python tests/seed_leaderboard_demo.py` (idempotent; `--wipe` removes): Bud Ward / Jessi Lane / Tom Reyes (sales), Pat Counter (parts), Dana Estimator (collision) with this-month + last-month completed shops so Report tab / public page show ranked boards with Top score / Most improved / Most shops badges.
 
-## Coaching digest + Got it (June 2026)
+## Locales (Phase A, June 2026)
+- `GET /api/shop-clients/locales` lists en-US, en-GB, en-IE, nl-NL, nl-BE. Set a client's locale in the client edit sheet (`client-locale-nl-NL`) or `PUT /api/shop-clients/{id} {"locale":"nl-NL"}`; a store's via the admin store page picker or `PUT /api/admin/stores/{id} {"locale":"nl-NL"}` (tests reset the QA store back to en-US).
+- Voice overrides (super admin): `PUT /api/shop-clients/locales/nl-NL/voices {"voices":{"female":"ElevenLabs:<id>","say":"Polly.Laura-Neural"}}`; empty `{}` clears.
+- Dutch client for manual checks: create one with locale nl-NL; scheduled shops then carry `locale` and `relay_twiml` speaks Dutch (ElevenLabs) with `language="nl-NL"`.
+
+
 - Team Call Scores (`/scorecards/team`, qa-manager) has the `digest-card` (toggle per manager, "Send me last week now" = real Resend email to the manager's address; qa-manager's @invalid address bounces harmlessly). `stores.coaching_digest.last_sent_week` on the QA store gets stamped by `tests/test_coaching_ack_digest.py`, so the hourly scheduler will not re-send for that week in preview.
 - Rep "Got it": activation-tester -> `/scorecards/my` -> open a call -> `eval-ack-btn`. The scorecard demo seed (`seed_scorecard_demo.py`) creates unread coaching; re-run it to reset acknowledgements (evaluations are re-inserted).
 

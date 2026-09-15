@@ -678,6 +678,10 @@ async def queue_ai_reply(
                 "Keep it natural, short, and conversational — 1-3 sentences max. "
                 "Act exactly like the salesperson would respond. Never sound like a bot."
             )
+            # the rep's store decides the language Jessi texts in (Dutch stores get Dutch replies)
+            from services import locales as loc
+            _rep = await db.users.find_one({"_id": ObjectId(assigned_user_id)}, {"store_id": 1}) if ObjectId.is_valid(str(assigned_user_id or "")) else None
+            system_prompt += "\n\n" + loc.language_rule(await loc.user_locale(db, _rep))
         system_prompt += inquiry_prompt_block(lead_inquiry)
 
         contact_context = await get_contact_context(

@@ -300,7 +300,11 @@ def _transcript_text(log: dict, rep_name: str) -> str:
     return (log.get("transcript") or "").strip()
 
 
-def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None) -> str:
+GRADER_LANGUAGE = {"nl": ("- LANGUAGE: the call is in Dutch. Write summary, wins and coaching in natural Dutch (Nederlands), addressing the rep as 'je'. "
+                          "Keep the criterion ids exactly as given and the JSON keys in English.\n")}
+
+
+def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None, language: Optional[str] = None) -> str:
     from services import industries as ind
     coach = "dealership call-quality coach" if (industry or ind.DEFAULT_INDUSTRY) == "automotive" else f"{ind.get(industry)['label'].lower()} call-quality coach"
     crit_lines = "\n".join(
@@ -320,7 +324,8 @@ def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str,
         "- wins = 1 or 2 specific things the rep did well.\n"
         "- coaching = 2 or 3 specific, kind, actionable tips tied to what was missed, each one sentence, written to the rep as 'you'.\n"
         "- Never use em dashes or en dashes anywhere. Use commas or periods.\n"
-        "- If the recording is a voicemail, hold music or the customer never speaks, set call_type to \"no_conversation\" and grade what you can.\n\n"
+        "- If the recording is a voicemail, hold music or the customer never speaks, set call_type to \"no_conversation\" and grade what you can.\n"
+        + GRADER_LANGUAGE.get(language or "en", "") + "\n"
         "Respond with ONLY valid JSON in exactly this shape:\n"
         '{"summary": "...", "wins": ["..."], "coaching": ["..."], "customer_sentiment": "positive|neutral|negative", '
         '"call_type": "conversation|no_conversation", "results": [{"id": "criterion id", "passed": true, "evidence": "...", "confidence": 0.9}]}'
@@ -348,13 +353,13 @@ def _parse_json(raw: str) -> dict:
     return {}
 
 
-async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None) -> dict:
+async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None, language: Optional[str] = None) -> dict:
     api_key = os.environ.get("EMERGENT_LLM_KEY", "")
     if not api_key:
         raise RuntimeError("EMERGENT_LLM_KEY not set")
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     chat = LlmChat(api_key=api_key, session_id=f"scorecard-{uuid.uuid4().hex[:12]}",
-                   system_message=_grader_prompt(card, rep_name, contact_name, direction, duration_s, industry)).with_model(*MODEL)
+                   system_message=_grader_prompt(card, rep_name, contact_name, direction, duration_s, industry, language)).with_model(*MODEL)
     resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"TRANSCRIPT:\n{transcript[:24000]}")), timeout=60.0)
     text = resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
     data = _parse_json(text)
@@ -452,8 +457,10 @@ async def evaluate_call(call_sid: str, scorecard_id: Optional[str] = None, force
     rep_name = _first(rep)
     contact_name = log.get("contact_name") or "the customer"
     from services import industries as ind
+    from services import locales as loc
     industry = await ind.store_industry(db, card.get("store_id") or rep.get("store_id"))
-    graded = await grade_with_ai(card, _transcript_text(log, rep_name), rep_name, contact_name, log.get("direction") or "outbound", dur, industry)
+    language = loc.language(await loc.store_locale(db, card.get("store_id") or rep.get("store_id")))
+    graded = await grade_with_ai(card, _transcript_text(log, rep_name), rep_name, contact_name, log.get("direction") or "outbound", dur, industry, language)
     pct, misses = compute_score(graded["results"], card["criteria"])
     now = _now()
     doc = {

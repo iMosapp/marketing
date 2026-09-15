@@ -1489,6 +1489,11 @@ async def startup_event():
     app.state.start_time = time.time()
     logger.info("I'm On Social API v2.0 starting...")
     logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')} (MONGO_URL {'set' if os.environ.get('MONGO_URL') else 'missing'})")
+    try:
+        from services import locales as _loc
+        await _loc.load_overrides(get_db())
+    except Exception as _e:
+        logger.warning(f"[Locales] voice overrides not loaded: {_e}")
 
     # ── Global asyncio exception handler ────────────────────────────────────
     # Catches ANY unhandled exception from asyncio.create_task() calls so they

@@ -40,7 +40,7 @@ async def lead_call_answer(request: Request, CallSid: str = Form(default="")):
     if job.get("claimed_by"):
         await eng.record_call_event(str(job["_id"]), CallSid, late=True)
         name = await _rep_name(job["claimed_by"])
-        return _xml(eng.twiml_already_claimed(name))
+        return _xml(eng.twiml_already_claimed(name, job.get("locale")))
     return _xml(eng.twiml_answer(job, action))
 
 
@@ -51,14 +51,14 @@ async def lead_call_claim(request: Request, Digits: str = Form(default=""), Call
         return _xml(eng.twiml(eng._say("Sorry, this lead is no longer available. Goodbye."), "<Hangup/>"))
     if Digits.strip() != "1":
         await eng.record_call_event(str(job["_id"]), CallSid, passed=True, status="passed")
-        return _xml(eng.twiml_passed())
+        return _xml(eng.twiml_passed(job.get("locale")))
     if job.get("claimed_by") == user_id:
         won = True  # already theirs (claimed in the app) - just connect
     else:
         won, job = await eng.try_claim_by_phone(str(job["_id"]), user_id)
     if not won:
         await eng.record_call_event(str(job["_id"]), CallSid, late=True, status="late")
-        return _xml(eng.twiml_already_claimed(await _rep_name(job.get("claimed_by"))))
+        return _xml(eng.twiml_already_claimed(await _rep_name(job.get("claimed_by")), job.get("locale")))
     await eng.record_call_event(str(job["_id"]), CallSid, status="claimed")
     db = get_db()
     rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1}) or {}

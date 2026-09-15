@@ -21,7 +21,7 @@ import { WebModal } from '../../../components/WebModal';
 
 import { useThemeStore } from '../../../store/themeStore';
 import { useAuthStore } from '../../../store/authStore';
-import { loadIndustries, industries } from '../../../components/mystery-shops/shared';
+import { loadIndustries, industries, loadLocales, locales } from '../../../components/mystery-shops/shared';
 interface UserInfo {
   _id: string;
   name: string;
@@ -83,7 +83,7 @@ export default function StoreDetailScreen() {
   const [editedStore, setEditedStore] = useState<any>({});
   const { user: me } = useAuthStore();
   const [, setIndustryTick] = useState(0);
-  React.useEffect(() => { loadIndustries().then(() => setIndustryTick(t => t + 1)); }, []);
+  React.useEffect(() => { Promise.all([loadIndustries(), loadLocales()]).then(() => setIndustryTick(t => t + 1)); }, []);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   
@@ -825,6 +825,18 @@ export default function StoreDetailScreen() {
                   {!!editedStore.industry && !industries().some(i => [i.label.toLowerCase(), i.key].includes(String(editedStore.industry).trim().toLowerCase())) && (
                     <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }} testID="store-industry-legacy" dataSet={{ testid: 'store-industry-legacy' } as any}>Currently "{editedStore.industry}" (matched to the closest pack automatically). Pick one above to set it explicitly.</Text>
                   )}
+                  <Text style={styles.inputLabel}>Country & language</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8, lineHeight: 17 }}>The language Jessi texts leads and whispers to reps in, the voices on practice calls, how call recordings are transcribed and graded, and the currency. Dutch stores get everything in Dutch.</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }} testID="store-locale-picker" dataSet={{ testid: 'store-locale-picker' } as any}>
+                    {locales().map(l => {
+                      const on = (editedStore.locale || 'en-US') === l.code;
+                      return (
+                        <TouchableOpacity key={l.code} onPress={() => setEditedStore({ ...editedStore, locale: l.code, timezone: (!editedStore.timezone || locales().some(x => x.timezone === editedStore.timezone)) ? l.timezone : editedStore.timezone })} style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: on ? '#C9A962' : colors.surface, borderWidth: 1, borderColor: on ? '#C9A962' : colors.border }} testID={`store-locale-${l.code}`} dataSet={{ testid: `store-locale-${l.code}` } as any}>
+                          <Text style={{ fontSize: 13, fontWeight: on ? '800' : '600', color: on ? '#111' : colors.text }}>{l.label} · {l.language_label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
               )}
               

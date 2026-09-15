@@ -1495,6 +1495,13 @@ async def handle_recording_complete(
                         logger.info(f"[Voice] Downloaded {len(content)} bytes — transcribing with Whisper...")
 
                         split_paths = None
+                        stt_lang = "en"
+                        try:
+                            from services import locales as _loc
+                            if user_id and ObjectId.is_valid(str(user_id)):
+                                stt_lang = _loc.get(await _loc.user_locale(db, await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})))["whisper"]
+                        except Exception:
+                            pass
                         try:
                             from emergentintegrations.llm.openai import OpenAISpeechToText
                             stt = OpenAISpeechToText(api_key=emergent_key)
@@ -1524,7 +1531,7 @@ async def handle_recording_complete(
                                 async def _tx_verbose(p):
                                     with open(p, "rb") as af:
                                         return await _aio.wait_for(
-                                            stt.transcribe(af, language="en", response_format="verbose_json"),
+                                            stt.transcribe(af, language=stt_lang, response_format="verbose_json"),
                                             timeout=120.0,
                                         )
 
@@ -1547,7 +1554,7 @@ async def handle_recording_complete(
                                 # Mono fallback (old single-channel recordings)
                                 with open(tmp_path, "rb") as audio_file:
                                     result = await _aio.wait_for(
-                                        stt.transcribe(audio_file, language="en"),
+                                        stt.transcribe(audio_file, language=stt_lang),
                                         timeout=90.0
                                     )
                                 if hasattr(result, "text"):

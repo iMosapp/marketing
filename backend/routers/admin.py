@@ -589,7 +589,7 @@ async def update_store(store_id: str, store_data: dict, request: Request):
         'zip_code', 'country', 'website',
         'review_links', 'logo_url', 'cover_image_url', 'primary_color',
         'business_hours', 'timezone', 'social_links', 'slug', 'active',
-        'email_footer', 'industry',
+        'email_footer', 'industry', 'locale',
         # White-label partner / sold workflow fields
         'external_account_id', 'deal_or_stock_mode', 'partner_id',
     ]

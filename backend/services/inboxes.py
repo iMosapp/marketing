@@ -385,6 +385,9 @@ def build_inbox_va_prompt(inbox: dict, va: Optional[dict], store: Optional[dict]
         "Never invent prices, availability, appointment times or policies. If you don't know, say a teammate will confirm.",
         "Do not pretend to be a specific salesperson; you are the team's assistant until someone picks this up.",
     ]
+    from services import locales as loc
+    if loc.language_rule(loc.key_of(store)):
+        lines.append(loc.language_rule(loc.key_of(store)))
     if (va or {}).get("tagline"):
         lines.append(f"Your style: {va['tagline']}")
     if (va or {}).get("bio"):
