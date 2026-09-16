@@ -2698,6 +2698,10 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
     """
     try:
         plan = plan or {}
+        from services import locales as loc
+        from services.lead_flows import localized_texts
+        locale = await loc.store_locale(db, source.get("store_id") or source.get("organization_id"))
+        source = localized_texts(source, locale)
         source_name         = source.get("name", "Lead Source")
         intake_text         = (source.get("intake_text") or "").strip()
         if plan.get("after_hours") and (source.get("after_hours_text") or "").strip():
@@ -2723,7 +2727,7 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
                 "vehicle_model": normalized.get("vehicle_model", ""),
                 "phone":         phone_e164,
             }
-            message_body = hydrate_intake_text(intake_text, lead_data, source_name)
+            message_body = hydrate_intake_text(intake_text, lead_data, source_name, lang=loc.language(locale))
 
             # Shared-inbox source: the text leaves from the department number so the reply lands back in the inbox.
             # Otherwise the assigned rep's business number, else the first on-shift workflow rep.

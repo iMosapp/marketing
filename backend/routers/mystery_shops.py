@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -20,6 +21,14 @@ from services import shop_report_mail as srm
 from services import scorecards as sc
 from services import scripts as scr
 from services import text_shops as tx
+from services import email_shops as ems
+
+
+def _email(v: Optional[str]) -> str:
+    e = (v or "").strip().lower()
+    if e and not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", e):
+        raise HTTPException(status_code=400, detail="That email address does not look right")
+    return e[:120]
 from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
@@ -107,6 +116,7 @@ class LocaleVoicesBody(BaseModel):
 class DemoBody(BaseModel):
     name: str
     phone: str
+    email: Optional[str] = ""
     department: Optional[str] = "sales"
     industry: Optional[str] = None
     title: Optional[str] = ""
@@ -120,6 +130,7 @@ class DemoBody(BaseModel):
 class PersonBody(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
+    email: Optional[str] = None
     department: Optional[str] = None
     title: Optional[str] = None
     notes: Optional[str] = None
@@ -221,7 +232,9 @@ def _client_fields(body: ClientBody) -> dict:
         p = d["plan"] or {}
         per = p.get("per_month") if isinstance(p.get("per_month"), dict) else {k: p.get(f"{k}_per_month") for k in ("sales", "service") if p.get(f"{k}_per_month") is not None}
         text_per = p.get("text_per_month") if isinstance(p.get("text_per_month"), dict) else {}
+        email_per = p.get("email_per_month") if isinstance(p.get("email_per_month"), dict) else {}
         d["plan"] = {"per_month": {k: max(0, min(200, int(v or 0))) for k, v in per.items() if k in ind.all_dept_keys()}, "text_per_month": {k: max(0, min(200, int(v or 0))) for k, v in text_per.items() if k in ind.all_dept_keys()},
+                     "email_per_month": {k: max(0, min(200, int(v or 0))) for k, v in email_per.items() if k in ind.all_dept_keys()},
                      "price_monthly": max(0.0, float(p.get("price_monthly") or 0))}
     if "hours" in d:
         h = {**ms.DEFAULT_HOURS, **(d["hours"] or {})}
@@ -503,20 +516,28 @@ async def demo_shop(body: DemoBody, request: Request):
     phone = _phone(body.phone or "")
     industry = body.industry if body.industry in ind.INDUSTRIES else ind.industry_of_dept(body.department)
     dept = body.department if body.department in ind.dept_keys(industry) else ind.dept_keys(industry)[0]
-    mode = "text" if body.channel == "text" else "phone"
-    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "rep_phone": phone, "status": {"$in": ["dialing", "live", "ending", "grading"]}, **({"mode": "text"} if mode == "text" else {"mode": {"$ne": "text"}})}):
-        raise HTTPException(status_code=409, detail=f"{name} is already in a text shop" if mode == "text" else f"{name} is already on a shop call")
+    mode = ms.mode_of(body.channel)
+    if mode == "email" and not _email(body.email):
+        raise HTTPException(status_code=400, detail="An email shop needs their email address")
+    if mode == "email" and ems.configured():
+        raise HTTPException(status_code=503, detail=ems.configured())
+    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "rep_phone": phone, "status": {"$in": ["dialing", "live", "ending", "grading"]}, **ms.mode_q(mode)}):
+        raise HTTPException(status_code=409, detail=f"{name} is already in {'an email' if mode == 'email' else 'a text'} shop" if mode != "phone" else f"{name} is already on a shop call")
     script = None
     if body.script_id:
         script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop", "active": {"$ne": False}})
         if not script:
             raise HTTPException(status_code=404, detail="That challenge is gone, pick another")
-    r = await ms.demo_shop(db, me, name, phone, dept, (body.title or "").strip()[:60], (body.store_name or "").strip()[:80], (body.vehicle or "").strip()[:80], script, body.text_scorecard, industry, mode)
+    r = await ms.demo_shop(db, me, name, phone, dept, (body.title or "").strip()[:60], (body.store_name or "").strip()[:80], (body.vehicle or "").strip()[:80], script, body.text_scorecard, industry, mode, _email(body.email))
     if r.get("error"):
         raise HTTPException(status_code=400, detail=r["error"])
     if not r.get("ok"):
-        raise HTTPException(status_code=503, detail=(r.get("call") or {}).get("fail_reason") or ("The text could not be sent" if mode == "text" else "The call could not be placed"))
+        raise HTTPException(status_code=503, detail=(r.get("call") or {}).get("fail_reason") or _send_fail(mode))
     return {"call": ms.serialize_call(r["call"]), "client_id": r["client_id"]}
+
+
+def _send_fail(mode: str) -> str:
+    return {"text": "The text could not be sent", "email": "The email could not be sent"}.get(mode, "The call could not be placed")
 
 
 @router.get("/demo/challenges")
@@ -854,7 +875,7 @@ async def add_person(cid: str, body: PersonBody, request: Request):
     if await db.shop_targets.find_one({"client_id": cid, "phone": phone}):
         raise HTTPException(status_code=409, detail="Someone with that cell number is already on this client")
     now = datetime.now(timezone.utc)
-    doc = {"client_id": cid, "name": body.name.strip()[:80], "phone": phone, "department": dept, "title": (body.title or "").strip()[:60], "notes": (body.notes or "").strip()[:400], "active": True, "challenge_history": [], "created_at": now, "updated_at": now}
+    doc = {"client_id": cid, "name": body.name.strip()[:80], "phone": phone, "email": _email(body.email), "department": dept, "title": (body.title or "").strip()[:60], "notes": (body.notes or "").strip()[:400], "active": True, "challenge_history": [], "created_at": now, "updated_at": now}
     res = await db.shop_targets.insert_one(doc)
     return ms.serialize_target(await db.shop_targets.find_one({"_id": res.inserted_id}))
 
@@ -869,6 +890,8 @@ async def update_person(tid: str, body: PersonBody, request: Request):
     d = {k: v for k, v in body.dict().items() if v is not None}
     if "phone" in d:
         d["phone"] = _phone(d["phone"], await db.shop_clients.find_one({"_id": _oid(t["client_id"])}, {"locale": 1}))
+    if "email" in d:
+        d["email"] = _email(d["email"])
     if "department" in d and d["department"] not in ind.all_dept_keys():
         d.pop("department")
     if "name" in d:
@@ -876,8 +899,11 @@ async def update_person(tid: str, body: PersonBody, request: Request):
         if not d["name"]:
             raise HTTPException(status_code=400, detail="Name cannot be empty")
     await db.shop_targets.update_one({"_id": t["_id"]}, {"$set": {**d, "updated_at": datetime.now(timezone.utc)}})
-    if d.get("name") or d.get("phone") or d.get("department"):
-        await db.roleplay_sessions.update_many({"kind": "mystery_shop", "target_id": tid, "status": "scheduled"}, {"$set": {k2: v2 for k2, v2 in (("rep_name", d.get("name")), ("rep_phone", d.get("phone")), ("department", d.get("department"))) if v2}})
+    sync = {k2: v2 for k2, v2 in (("rep_name", d.get("name")), ("rep_phone", d.get("phone")), ("department", d.get("department"))) if v2}
+    if "email" in d:
+        sync["rep_email"] = d["email"] or None
+    if sync:
+        await db.roleplay_sessions.update_many({"kind": "mystery_shop", "target_id": tid, "status": "scheduled"}, {"$set": sync})
     return ms.serialize_target(await db.shop_targets.find_one({"_id": t["_id"]}))
 
 
@@ -912,9 +938,13 @@ async def shop_now(cid: str, body: ShopNowBody, request: Request):
     t = await db.shop_targets.find_one({"_id": _oid(body.target_id, "Person"), "client_id": cid})
     if not t:
         raise HTTPException(status_code=404, detail="Person not found")
-    mode = "text" if body.channel == "text" else "phone"
-    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": body.target_id, "status": {"$in": ["dialing", "live", "ending", "grading"]}, **({"mode": "text"} if mode == "text" else {"mode": {"$ne": "text"}})}):
-        raise HTTPException(status_code=409, detail=f"{t['name']} is already in a text shop, end it first" if mode == "text" else f"{t['name']} is already on a shop call")
+    mode = ms.mode_of(body.channel)
+    if mode == "email" and not (t.get("email") or "").strip():
+        raise HTTPException(status_code=400, detail=f"{t['name']} has no email address yet. Add it under People first.")
+    if mode == "email" and ems.configured():
+        raise HTTPException(status_code=503, detail=ems.configured())
+    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": body.target_id, "status": {"$in": ["dialing", "live", "ending", "grading"]}, **ms.mode_q(mode)}):
+        raise HTTPException(status_code=409, detail=f"{t['name']} is already in {'an email' if mode == 'email' else 'a text'} shop, end it first" if mode != "phone" else f"{t['name']} is already on a shop call")
     script = None
     if body.script_id:
         script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop"})
@@ -924,7 +954,7 @@ async def shop_now(cid: str, body: ShopNowBody, request: Request):
     ok = await ms.dial_now(db, call)
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
     if not ok:
-        raise HTTPException(status_code=503, detail=s.get("fail_reason") or ("The text could not be sent" if mode == "text" else "The call could not be placed"))
+        raise HTTPException(status_code=503, detail=s.get("fail_reason") or _send_fail(mode))
     return ms.serialize_call(s)
 
 
@@ -977,19 +1007,19 @@ async def retry_call(sid: str, request: Request):
     await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": datetime.now(timezone.utc), "attempts": 0, "manual": True, "fail_reason": None, "outcome": None, "turns": [], "updated_at": datetime.now(timezone.utc)}})
     call = await db.roleplay_sessions.find_one({"_id": s["_id"]})
     if not await ms.dial_now(db, call):
-        raise HTTPException(status_code=503, detail="The text could not be sent" if s.get("mode") == "text" else "The call could not be placed")
+        raise HTTPException(status_code=503, detail=_send_fail(s.get("mode") or "phone"))
     return ms.serialize_call(await db.roleplay_sessions.find_one({"_id": s["_id"]}))
 
 
 @router.post("/calls/{sid}/end")
 async def end_text_shop(sid: str, request: Request):
-    """Stop waiting on a live text shop and grade what happened so far."""
+    """Stop waiting on a live text or email shop and grade what happened so far."""
     await require_admin(request)
     db = get_db()
-    s = await db.roleplay_sessions.find_one({"_id": _oid(sid, "Call"), "kind": "mystery_shop", "mode": "text"})
+    s = await db.roleplay_sessions.find_one({"_id": _oid(sid, "Call"), "kind": "mystery_shop", "mode": {"$in": ["text", "email"]}})
     if not s or s.get("status") not in ("live", "ending"):
-        raise HTTPException(status_code=409, detail="Only a live text shop can be ended")
-    await tx.finish(db, sid, "ended_by_admin")
+        raise HTTPException(status_code=409, detail="Only a live text or email shop can be ended")
+    await (ems if s.get("mode") == "email" else tx).finish(db, sid, "ended_by_admin")
     return ms.serialize_call(await db.roleplay_sessions.find_one({"_id": s["_id"]}))
 
 

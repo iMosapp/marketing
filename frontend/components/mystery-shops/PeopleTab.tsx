@@ -17,7 +17,8 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
   const depts = deptsOfClient(client);
   const firstDept = depts[0]?.key || 'sales';
   const [sheet, setSheet] = useState<null | { person?: Person }>(null);
-  const [f, setF] = useState({ name: '', phone: '', department: firstDept, title: '', notes: '' });
+  const [f, setF] = useState({ name: '', phone: '', email: '', department: firstDept, title: '', notes: '' });
+  const [emailing, setEmailing] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [calling, setCalling] = useState<string | null>(null);
   const [texting, setTexting] = useState<string | null>(null);
@@ -25,7 +26,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
   const [cardKey, setCardKey] = useState(0);
   const copyKickoff = async () => { if (!kickoffUrl) return; await Clipboard.setStringAsync(kickoffUrl); showToast('Setup link copied', 'success'); };
 
-  const open = (person?: Person) => { setF(person ? { name: person.name, phone: person.phone, department: person.department, title: person.title, notes: person.notes } : { name: '', phone: '', department: firstDept, title: '', notes: '' }); setSheet({ person }); };
+  const open = (person?: Person) => { setF(person ? { name: person.name, phone: person.phone, email: person.email || '', department: person.department, title: person.title, notes: person.notes } : { name: '', phone: '', email: '', department: firstDept, title: '', notes: '' }); setSheet({ person }); };
   const save = async () => {
     setBusy(true);
     try {
@@ -49,6 +50,12 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not send the text', 'error'); }
     finally { setTexting(null); }
   }, undefined, 'Text now');
+  const emailShop = (p: Person) => showConfirm(`Email shop ${p.name.split(' ')[0]} right now?`, `The AI ${client.customer_noun || 'shopper'} emails ${p.email} like a real internet lead and keeps the thread going as they reply. They have 24 hours to answer each email; the shop is graded on reply speed (30 minutes for the first reply, 2 hours after that) and quality when the shopper wraps up, or when you tap End & grade under Shops. No reply at all scores 0%.`, async () => {
+    setEmailing(p.id);
+    try { await api.post(`/shop-clients/${client.id}/calls/shop-now`, { target_id: p.id, channel: 'email' }); showToast(`Emailing ${p.name.split(' ')[0]} now`, 'success'); onShopStarted(); }
+    catch (e: any) { showToast(e?.response?.data?.detail || 'Could not send the email', 'error'); }
+    finally { setEmailing(null); }
+  }, undefined, 'Email now');
   const sendCard = (p: Person) => showConfirm(`Text the contact card to ${p.name.split(' ')[0]}?`, `${fmtPhone(p.phone)} gets a text from the shop number with a link to save it as a contact${p.contact_card_ok ? ' (they already got one)' : ''}.`, async () => {
     setSendingCard(p.id);
     try { const r = await api.post(`/shop-clients/${client.id}/contact-card/send`, { target_ids: [p.id] }); showToast(r.data.sent ? `Contact card sent to ${p.name.split(' ')[0]}` : r.data.failed[0]?.error || 'Could not send', r.data.sent ? 'success' : 'error'); onChanged(); setCardKey(k => k + 1); }
@@ -62,7 +69,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
     <View style={{ gap: 16 }}>
       <TouchableOpacity onPress={() => open()} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: GOLD + '1A', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: GOLD + '66' }} {...tid('people-add')}>
         <Ionicons name="person-add" size={20} color={GOLD} />
-        <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Add someone to shop</Text><Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Name, cell and department. Shops reach them by call or by text, always from the shop number.</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Add someone to shop</Text><Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Name, cell, email and department. Shops reach them by call or text from the shop number, or by email.</Text></View>
         <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
       </TouchableOpacity>
       {people.length === 0 && <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 }} {...tid('people-empty')}>Nobody to shop yet. Add the {depts.map(d => d.label.toLowerCase()).join(' and ')} people the {client.industry && client.industry !== 'automotive' ? 'account' : 'store'} wants evaluated.</Text>}
@@ -93,7 +100,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
                 <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontWeight: '800', color: GOLD }}>{p.name.split(' ').map(x => x[0]).slice(0, 2).join('').toUpperCase()}</Text></View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{p.name}</Text>
-                  <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{[p.title, fmtPhone(p.phone)].filter(Boolean).join(' · ')}{p.challenge_history?.length ? ` · ${p.challenge_history.length} challenge${p.challenge_history.length === 1 ? '' : 's'} used` : ''}</Text>
+                  <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{[p.title, fmtPhone(p.phone), p.email].filter(Boolean).join(' · ')}{p.challenge_history?.length ? ` · ${p.challenge_history.length} challenge${p.challenge_history.length === 1 ? '' : 's'} used` : ''}</Text>
                 </View>
                 <TouchableOpacity onPress={() => sendCard(p)} disabled={sendingCard === p.id} hitSlop={8} {...tid(`person-send-card-${p.id}`)}><Ionicons name={p.contact_card_ok ? 'person-circle' : 'person-circle-outline'} size={21} color={p.contact_card_ok ? GREEN : p.contact_card_error ? RED : colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => open(p)} hitSlop={8} {...tid(`person-edit-${p.id}`)}><Ionicons name="create-outline" size={20} color={colors.textSecondary} /></TouchableOpacity>
@@ -106,6 +113,11 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
                 <TouchableOpacity onPress={() => textShop(p)} disabled={texting === p.id} style={{ flex: 1, height: 38, borderRadius: 12, borderWidth: 1, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: texting === p.id ? 0.6 : 1 }} {...tid(`person-text-shop-${p.id}`)}>
                   <Ionicons name="chatbubbles" size={15} color={GOLD} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: GOLD }}>{texting === p.id ? 'Sending…' : 'Text shop'}</Text>
                 </TouchableOpacity>
+                {!!p.email && (
+                  <TouchableOpacity onPress={() => emailShop(p)} disabled={emailing === p.id} style={{ flex: 1, height: 38, borderRadius: 12, borderWidth: 1, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: emailing === p.id ? 0.6 : 1 }} {...tid(`person-email-shop-${p.id}`)}>
+                    <Ionicons name="mail" size={15} color={GOLD} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: GOLD }}>{emailing === p.id ? 'Sending…' : 'Email shop'}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           ))}
@@ -115,6 +127,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
       <Sheet visible={!!sheet} onClose={() => setSheet(null)} title={sheet?.person ? 'Edit person' : 'Add someone to shop'} colors={colors} testID="person-sheet" footer={<GoldButton label={sheet?.person ? 'Save' : 'Add'} onPress={save} busy={busy} disabled={!f.name.trim() || f.phone.replace(/\D/g, '').length < 10} testID="person-save" />}>
         <Field label="NAME" value={f.name} onChange={(v: string) => setF({ ...f, name: v })} colors={colors} placeholder="Sam Seller" testID="person-name" />
         <Field label="CELL NUMBER (THIS IS THE PHONE WE CALL)" value={f.phone} onChange={(v: string) => setF({ ...f, phone: v })} colors={colors} placeholder="(801) 555-0100" keyboardType="phone-pad" testID="person-phone" />
+        <Field label="WORK EMAIL (FOR EMAIL SHOPS, OPTIONAL)" value={f.email} onChange={(v: string) => setF({ ...f, email: v })} colors={colors} placeholder="sam@dealership.com" keyboardType="email-address" testID="person-email" />
         <View style={{ gap: 8 }}>
           <Label t="DEPARTMENT" colors={colors} />
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>{depts.map(d => <Chip key={d.key} label={d.label} active={f.department === d.key} onPress={() => setF({ ...f, department: d.key })} colors={colors} testID={`person-dept-${d.key}`} />)}</View>

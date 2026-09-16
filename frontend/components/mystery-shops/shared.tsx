@@ -29,12 +29,12 @@ export type Client = {
   number_state?: { own: boolean; needs_local_number: boolean; error?: string | null };
 };
 export type Locale = { code: string; label: string; language: string; language_label: string; country: string; currency: string; symbol: string; timezone: string; flag: string; relay_language: string; say_voice: string; voices: Record<string, string> };
-export type Person = { id: string; client_id: string; name: string; phone: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[]; contact_card_sent_at?: string | null; contact_card_ok?: boolean | null; contact_card_error?: string | null };
+export type Person = { id: string; client_id: string; name: string; phone: string; email?: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[]; contact_card_sent_at?: string | null; contact_card_ok?: boolean | null; contact_card_error?: string | null };
 export type ShopCall = {
   id: string; target_id: string; target_name: string; department: string; department_label?: string; industry?: string; customer_noun?: string; status: string; outcome?: string | null; fail_reason?: string | null; script_id: string; script_title: string; persona_name?: string;
   curveballs: string[]; scheduled_for: string | null; attempts: number; started_at: string | null; ended_at: string | null; score_pct: number | null; adherence_pct: number | null; evaluation_id?: string | null;
   recording_url?: string | null; recording_seconds?: number | null; turns: number; manual: boolean; demo?: boolean; score_url?: string | null; score_sms_status?: string | null; score_views?: number;
-  channel?: 'call' | 'text'; text?: TextStats | null;
+  channel?: 'call' | 'text' | 'email'; text?: TextStats | null; subject?: string | null; rep_email?: string | null;
 };
 export type ChallengeReview = { status: 'approved' | 'needs_review'; by_name?: string; at?: string | null };
 export type Challenge = { id: string; title: string; department: string; department_label?: string; industry?: string; direction?: 'inbound' | 'outbound'; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean; language?: string; source_slug?: string | null; review?: ChallengeReview | null };
@@ -126,12 +126,16 @@ export const Chip = ({ label, active, onPress, colors, testID, color = GOLD, sma
 // Reply time in plain words: 'under a minute', '3 min', '1 h 5 min'
 export const replyDur = (secs?: number | null, lang?: string) => { if (secs == null) return ''; if (secs < 60) return lang === 'nl' ? 'minder dan een minuut' : 'under a minute'; const m = Math.round(secs / 60); return m >= 60 ? `${Math.floor(m / 60)} ${lang === 'nl' ? 'u' : 'h'} ${m % 60} min` : `${m} min`; };
 export const minutesSince = (iso?: string | null) => (iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0);
-export const isTextLive = (c: { channel?: string; status: string }) => c.channel === 'text' && (c.status === 'live' || c.status === 'ending');
+export const isThread = (c: { channel?: string }) => c.channel === 'text' || c.channel === 'email';
+export const channelIcon = (c: { channel?: string }): any => (c.channel === 'email' ? 'mail' : 'chatbubbles');
+export const channelWord = (c: { channel?: string }) => (c.channel === 'email' ? 'email' : 'text');
+export const isTextLive = (c: { channel?: string; status: string }) => isThread(c) && (c.status === 'live' || c.status === 'ending');
 
 export const StatusChip = ({ status, colors, lang, channel }: { status: string; colors: any; lang?: string; channel?: string }) => {
   const base = STATUS[status] || { label: status, color: colors.textSecondary, icon: 'ellipse' };
-  const s = channel === 'text' && status === 'live' ? { ...base, label: 'Texting', icon: 'chatbubbles' } : base;
-  const label = lang && lang !== 'en' ? makeT(lang)(channel === 'text' && status === 'live' ? 'status.texting' : `status.${status}`) : s.label;
+  const live = isThread({ channel }) && status === 'live';
+  const s = live ? { ...base, label: channel === 'email' ? 'Emailing' : 'Texting', icon: channelIcon({ channel }) } : base;
+  const label = lang && lang !== 'en' ? makeT(lang)(live ? (channel === 'email' ? 'status.emailing' : 'status.texting') : `status.${status}`) : s.label;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: s.color + '22' }} {...tid(`shop-status-${status}`)}>
       <Ionicons name={s.icon} size={12} color={s.color} /><Text style={{ fontSize: 11, fontWeight: '800', color: s.color }}>{label.startsWith('status.') ? s.label : label}</Text>

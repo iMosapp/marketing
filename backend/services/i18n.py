@@ -54,6 +54,9 @@ T = {
         "tx.under_min": "under a minute", "tx.h": "h", "tx.noreply.evidence": "No reply", "tx.first_after": "First reply after {d}", "tx.pace": "Slowest reply {d}, average {avg}",
         "tx.noreply.summary": "{name} never replied. The shopper texted at {time} and gave up after {hours} hours of silence. A real lead would have bought somewhere else.",
         "tx.noreply.coaching": "Answer every text lead within 5 minutes, even if it is only 'Got it, give me a few minutes and I will get you an answer.'",
+        "sms.intro_email": "Hey {name}, that email thread just now was a practice shop from I'm On Social{store}.",
+        "em.noreply.evidence": "No reply", "em.noreply.summary": "{name} never replied. The shopper emailed at {time} and gave up after {hours} hours of silence. A real internet lead would have bought somewhere else.",
+        "em.noreply.coaching": "Answer every email lead within 30 minutes with a real reply, even if it is only 'Got your email, I am pulling the details and will have them to you within the hour.'",
         "sms.course": "{course}: {done} of {total} passed.", "sms.course_retry": " You need {need}% on this one, we will call again with it.",
         "vcf.sms": "Hi {name}, {sender} here with I'm On Social. {store} signed the team up for practice calls and scorecards from this number. Save it as a contact so you know it's us when we call: {url}",
         "vcf.note": "Practice calls and scorecard texts for {store} come from this number. I'm On Social.", "vcf.note_generic": "Practice calls and scorecard texts from I'm On Social come from this number.",
@@ -117,6 +120,9 @@ T = {
         "tx.under_min": "minder dan een minuut", "tx.h": "u", "tx.noreply.evidence": "Geen reactie", "tx.first_after": "Eerste reactie na {d}", "tx.pace": "Traagste reactie {d}, gemiddeld {avg}",
         "tx.noreply.summary": "{name} heeft niet gereageerd. De shopper stuurde om {time} een bericht en gaf het na {hours} uur stilte op. Een echte lead had ergens anders gekocht.",
         "tx.noreply.coaching": "Reageer binnen 5 minuten op elke lead die een bericht stuurt, al is het maar 'Ik kijk het even na, je hoort zo van me.'",
+        "sms.intro_email": "Hoi {name}, die e-mailwissel van net was een oefenshop van I'm On Social{store}.",
+        "em.noreply.evidence": "Geen reactie", "em.noreply.summary": "{name} heeft niet gereageerd. De shopper mailde om {time} en gaf het na {hours} uur stilte op. Een echte internetlead had ergens anders gekocht.",
+        "em.noreply.coaching": "Reageer binnen 30 minuten op elke lead die mailt, al is het maar 'Je mail is binnen, ik zoek de details op en je hoort binnen een uur van me.'",
         "sms.course": "{course}: {done} van {total} gehaald.", "sms.course_retry": " Je hebt {need}% nodig op deze, we bellen er nog een keer mee.",
         "vcf.sms": "Hoi {name}, {sender} hier van I'm On Social. {store} heeft het team aangemeld voor oefengesprekken en scorekaarten vanaf dit nummer. Sla het op als contact, dan weet je dat wij het zijn als we bellen: {url}",
         "vcf.note": "Oefengesprekken en scorekaart-berichten voor {store} komen van dit nummer. I'm On Social.", "vcf.note_generic": "Oefengesprekken en scorekaart-berichten van I'm On Social komen van dit nummer.",
@@ -142,6 +148,7 @@ T["en-GB"] = {
     "prop.agree.body": "By typing your name and signing below you agree to these terms on behalf of the business. This electronic signature is legally binding under the UK eIDAS Regulation and the Electronic Communications Act 2000.",
     "sms.intro": "Hi {name}, that practice call just now was from I'm On Social{store}.",
     "sms.intro_text": "Hi {name}, those texts just now were a practice shop from I'm On Social{store}.",
+    "sms.intro_email": "Hi {name}, that email thread just now was a practice shop from I'm On Social{store}.",
 }
 T["en-IE"] = {
     **T["en-GB"],

@@ -560,6 +560,13 @@ async def queue_ai_reply(
         logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
         # Generate a brief warm response and immediately flag for rep
         hot_reply = "Good question, let me check on that and get back to you."
+        try:
+            from services import locales as loc
+            _rep_for_locale = await db.users.find_one({"_id": ObjectId(assigned_user_id)}, {"store_id": 1, "store_ids": 1}) if assigned_user_id and ObjectId.is_valid(str(assigned_user_id)) else None
+            if _rep_for_locale and loc.language(await loc.user_locale(db, _rep_for_locale)) == "nl":
+                hot_reply = "Goede vraag, dat check ik even en dan kom ik bij je terug."
+        except Exception:
+            pass
         now = datetime.utcnow()
         delay = 30  # Quick reply since we're escalating anyway
         # Flag the conversation so the rep gets notified

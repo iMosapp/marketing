@@ -113,12 +113,19 @@ class TestPromptGateway:
         assert "I am off Sundays" in prompt
 
     @pytest.mark.asyncio
-    async def test_qamgr_old_prompt_in_lab(self, db):
-        u = await db.users.find_one({"email": QAMGR_EMAIL}, {"_id": 1})
-        assert u
-        from routers.ai_campaigns import build_clone_system_prompt
-        prompt = await build_clone_system_prompt(str(u["_id"]))
-        assert "Your Only Job" in prompt, f"expected OLD template; got: {prompt[:200]}"
+    async def test_qamgr_old_prompt_when_pulled_back_to_lab(self, db, forest_tok):
+        # industry_va is released (live by default); pulling it back to the lab restores the old template for non-admins
+        r = requests.put(f"{BASE_URL}/api/lab/features/industry_va", headers={"Authorization": f"Bearer {forest_tok}"}, json={"status": "lab"}, timeout=15)
+        assert r.status_code == 200, r.text
+        try:
+            u = await db.users.find_one({"email": QAMGR_EMAIL}, {"_id": 1})
+            assert u
+            from routers.ai_campaigns import build_clone_system_prompt
+            prompt = await build_clone_system_prompt(str(u["_id"]))
+            assert "Your Only Job" in prompt, f"expected OLD template; got: {prompt[:200]}"
+        finally:
+            r = requests.put(f"{BASE_URL}/api/lab/features/industry_va", headers={"Authorization": f"Bearer {forest_tok}"}, json={"status": "live"}, timeout=15)
+            assert r.status_code == 200
 
     @pytest.mark.asyncio
     async def test_qamgr_new_prompt_when_live(self, db, forest_tok):
@@ -141,7 +148,7 @@ class TestPromptGateway:
         finally:
             r = requests.put(f"{BASE_URL}/api/lab/features/industry_va",
                              headers={"Authorization": f"Bearer {forest_tok}"},
-                             json={"status": "lab"}, timeout=15)
+                             json={"status": "live"}, timeout=15)
             assert r.status_code == 200
 
 

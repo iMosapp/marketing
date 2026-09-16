@@ -247,14 +247,14 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
           <TouchableOpacity key={c.id || i} onPress={() => setOpen(c)} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 4 }} {...tid(`report-call-${i}`)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14.5, fontWeight: '800', color: colors.text }}>{c.channel === 'text' && <Ionicons name="chatbubbles" size={12} color={GOLD} />}{c.channel === 'text' ? ' ' : ''}{c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {labelOf(c.department || 'sales')}{c.channel === 'text' ? ` · ${tr('rep.texted')}` : ''}</Text></Text>
+                <Text style={{ fontSize: 14.5, fontWeight: '800', color: colors.text }}>{(c.channel === 'text' || c.channel === 'email') && <Ionicons name={c.channel === 'email' ? 'mail' : 'chatbubbles'} size={12} color={GOLD} />}{c.channel === 'text' || c.channel === 'email' ? ' ' : ''}{c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {labelOf(c.department || 'sales')}{c.channel === 'text' ? ` · ${tr('rep.texted')}` : c.channel === 'email' ? ` · ${tr('rep.emailed')}` : ''}</Text></Text>
                 <Text style={{ fontSize: 12.5, color: colors.textSecondary }} numberOfLines={1}>{c.script_title} · {fmtWhenL(c.ended_at || c.scheduled_for, lang)}</Text>
               </View>
               {c.status === 'completed' ? <Text style={{ fontSize: 18, fontWeight: '800', color: scoreColor(c.score_pct) }}>{c.score_pct != null ? `${c.score_pct}%` : '–'}</Text> : <StatusChip status={c.status} colors={colors} lang={lang} />}
             </View>
             {!!c.summary && <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }} numberOfLines={2}>{c.summary}</Text>}
             {!!c.recording_url && <Text style={{ fontSize: 11.5, fontWeight: '700', color: GOLD }}><Ionicons name="play" size={10} color={GOLD} /> {tr('rep.inside')}</Text>}
-            {c.channel === 'text' && c.status === 'completed' && <Text style={{ fontSize: 11.5, fontWeight: '700', color: c.text?.first_reply_s == null ? RED : c.text.first_reply_s <= 300 ? GREEN : GOLD }}>{c.text?.first_reply_s == null ? tr('tx.noreply') : tr('tx.first', { d: replyDur(c.text.first_reply_s, lang) })}</Text>}
+            {(c.channel === 'text' || c.channel === 'email') && c.status === 'completed' && <Text style={{ fontSize: 11.5, fontWeight: '700', color: c.text?.first_reply_s == null ? RED : c.text.first_reply_s <= (c.channel === 'email' ? 1800 : 300) ? GREEN : GOLD }}>{c.text?.first_reply_s == null ? tr('tx.noreply') : tr('tx.first', { d: replyDur(c.text.first_reply_s, lang) })}</Text>}
           </TouchableOpacity>
         ))}
       </View>

@@ -717,6 +717,23 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
     pack = ind.get(industry)
     rep_role = ind.dept(department, industry)["rep"] if department else ("a salesperson" if industry == "automotive" else "an employee")
     who = "a real car shopper" if industry == "automotive" else f"a real {pack['customer']} of a {pack['label'].lower()} business"
+    if channel == "email":
+        return (f"You are {persona.get('name', 'a customer')}, {who} emailing {rep_first}, {rep_role} at {store_name}. "
+                f"YOU emailed the {pack['business']} first, like a real internet lead who found them online, so you drive what you want. "
+                "Stay fully in character as a real customer: never admit you are an AI, a bot or a shopper, even if asked directly; a real customer would just sound confused and keep going. "
+                "This is an EMAIL thread: write like a real person emails a business from their phone. A one-line greeting, 2 to 5 short sentences, plain words, contractions, then sign off with just your first name. "
+                "No subject line inside the body (the first email's subject goes in the separate subject field), no letter formality, no bullet lists, no emojis. "
+                "Answer what they asked and add at most one or two things. A real email lead takes a few exchanges: price, availability, what is included, a time to come in, your trade, financing. "
+                "If a reply took the rep a long time (noted like [replied after 3 h 10 min]) you may mention it once, mildly, the way a real person would. "
+                + loc.language_rule(locale)
+                + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
+                f"OBJECTIONS YOU RAISE (one at a time, only when it fits): {'; '.join(persona.get('objections') or [])}. "
+                + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
+                + "RULES: Never narrate, never break character, never coach. Volunteer a little, not everything. If the rep earns it (clear answers, specific times), agree to come in and end warmly with a short final email. "
+                  "If the rep is pushy, vague, sends a wall of boilerplate or throws out a blind number, push back; if they keep it up, lose interest and end politely. "
+                  "Set ended to true on your closing email only: after the appointment or next step is set, after you decline for good, or when the rep clearly ends the conversation. Never end before exchange 3 unless the rep is rude. "
+                  "No em dashes. Return ONLY JSON: {\"subject\": \"short subject, first email only, else empty\", \"say\": \"the email body with line breaks\", \"ended\": true|false, \"mood\": \"warm|neutral|guarded|annoyed\"}. "
+                + f"The employee's script (they may or may not follow it): {script.get('title', '')}: {script.get('purpose', '')}")
     if channel == "text":
         return (f"You are {persona.get('name', 'a customer')}, {who} texting (SMS) with {rep_first}, {rep_role} at {store_name}. "
                 f"YOU texted the {pack['business']} first, like a real lead who found them online, so you drive what you want. "
@@ -832,12 +849,15 @@ async def grade_session(db, session: dict) -> dict:
     duration_s = int((ended - started).total_seconds()) if started else 0
     persona = session.get("persona") or {}
     text = shop and session.get("mode") == "text"
+    email = shop and session.get("mode") == "email"
+    from services import email_shops as ems
+    thread = tx if text else ems if email else None
     card = None
     if shop:
         from services.mystery_shops import scorecard_for
         card = await scorecard_for(db, session)
-        if text and card:
-            card = tx.speed_card(card, session.get("locale"))
+        if thread and card:
+            card = thread.speed_card(card, session.get("locale"))
     elif script.get("scorecard_id") and ObjectId.is_valid(str(script["scorecard_id"])):
         card = await db.scorecards.find_one({"_id": ObjectId(script["scorecard_id"]), "active": {"$ne": False}})
     elif script.get("pool") == "mystery_shop" and script.get("department"):
@@ -846,12 +866,12 @@ async def grade_session(db, session: dict) -> dict:
     if not card and not shop:
         card = await sc.pick_scorecard(db, rep, None)
     graded = None
-    if card and card.get("criteria") and len(rep_turns) >= (1 if text else 2):
+    if card and card.get("criteria") and len(rep_turns) >= (1 if thread else 2):
         try:
-            graded = await sc.grade_with_ai(card, (tx.grader_transcript(session) if text else transcript).replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60),
-                                            industry=session.get("industry"), language=loc.dialect(session.get("locale")), channel="text" if text else "call")
-            if text and graded:
-                tx.apply_speed(session, graded)
+            graded = await sc.grade_with_ai(card, (thread.grader_transcript(session) if thread else transcript).replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60),
+                                            industry=session.get("industry"), language=loc.dialect(session.get("locale")), channel="text" if text else "email" if email else "call")
+            if thread and graded:
+                thread.apply_speed(session, graded)
         except Exception as e:
             logger.warning(f"[Roleplay] scorecard grading failed: {e}")
     adherence = await _grade_adherence(script, transcript, rep_first) if len(rep_turns) >= 1 else {"score_pct": None, "hits": [], "misses": [], "coaching": [], "summary": "Too short to grade."}
@@ -868,7 +888,7 @@ async def grade_session(db, session: dict) -> dict:
         "summary": (graded or {}).get("summary") or adherence.get("summary") or "", "wins": (graded or {}).get("wins") or adherence.get("hits") or [],
         "coaching": ((graded or {}).get("coaching") or []) + adherence.get("coaching", []), "customer_sentiment": (graded or {}).get("customer_sentiment") or "",
         "call_type": "mystery_shop" if shop else "roleplay", "script_id": session["script_id"], "script_title": session.get("script_title"),
-        "channel": "text" if text else "call", **({"text_stats": tx.stats(session)} if text else {}),
+        "channel": "text" if text else "email" if email else "call", **({"text_stats": tx.stats(session)} if thread else {}),
         "adherence": adherence, "transcript": transcript, "model": MODEL[1], "graded_by": "ai", "created_at": now, "updated_at": now, "alerts_sent_at": None, "alerted_user_ids": [],
     }
     res = await db.call_evaluations.update_one({"call_sid": ev["call_sid"]}, {"$set": ev}, upsert=True)

@@ -366,7 +366,10 @@ def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str,
         for c in card.get("criteria") or []
     )
     text = channel == "text"
-    medium = f"a text message (SMS) conversation ({max(1, duration_s // 60)} min from first text to last)" if text else f"a recorded {direction} phone call ({duration_s}s)"
+    email = channel == "email"
+    medium = (f"a text message (SMS) conversation ({max(1, duration_s // 60)} min from first text to last)" if text
+              else f"an email thread ({max(1, duration_s // 3600)} h from the first email to the last)" if email
+              else f"a recorded {direction} phone call ({duration_s}s)")
     return (
         f"You are a {coach} grading {medium} between the rep {rep_name} "
         f"and the customer {contact_name} using the '{card.get('name')}' scorecard ({card.get('department') or 'Sales'} department).\n\n"
@@ -382,7 +385,11 @@ def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str,
         "- Never use em dashes or en dashes anywhere. Use commas or periods.\n"
         + ("- This was a TEXT thread: the customer texted first like a real text lead. '[replied after N min]' notes show how long the rep took; the reply-speed criteria are measured by the system, so grade the other criteria on what the rep wrote. "
            "Phone-only behaviours do not apply to texts: pass them when the rep did the text equivalent, and use null only when a criterion truly cannot apply to a text conversation.\n"
-           if text else "- If the recording is a voicemail, hold music or the customer never speaks, set call_type to \"no_conversation\" and grade what you can.\n")
+           if text else
+           "- This was an EMAIL thread: the customer emailed first like a real internet lead. '[replied after N]' notes show how long the rep took; the reply-speed criteria are measured by the system, so grade the other criteria on what the rep wrote. "
+           "Judge the emails the way a buyer would: did the rep actually answer the question, personalise beyond a template, give a clear next step and make it easy to reply. "
+           "Phone-only behaviours do not apply to email: pass them when the rep did the email equivalent, and use null only when a criterion truly cannot apply to an email conversation.\n"
+           if email else "- If the recording is a voicemail, hold music or the customer never speaks, set call_type to \"no_conversation\" and grade what you can.\n")
         + grader_language_rule(language) + "\n"
         "Respond with ONLY valid JSON in exactly this shape:\n"
         '{"summary": "...", "wins": ["..."], "coaching": ["..."], "customer_sentiment": "positive|neutral|negative", '

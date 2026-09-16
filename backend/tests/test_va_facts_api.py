@@ -72,16 +72,16 @@ class TestConfig:
         assert set(d["facts"].keys()) >= {"store", "mine", "store_name", "can_edit_store"}
 
     def test_qa_manager_lab_gate(self, forest_tok, qamgr_tok):
-        # Lab feature must be `lab`
+        # industry_va was released: live by default, so a manager gets the new VA too
         feats = requests.get(f"{BASE_URL}/api/lab/features", headers=_hdr(forest_tok), timeout=15).json()
         feats_list = feats["features"] if isinstance(feats, dict) else feats
         iv = next((f for f in feats_list if f["key"] == "industry_va"), None)
         assert iv is not None
-        assert iv["status"] == "lab", f"feature must be lab, got {iv['status']}"
+        assert iv["status"] == "live", f"feature is released, got {iv['status']}"
 
         r = requests.get(f"{BASE_URL}/api/va/config", headers=_hdr(qamgr_tok), timeout=15)
         assert r.status_code == 200
-        assert r.json()["available"] is False
+        assert r.json()["available"] is True
 
 
 # ------------------------------------------------------ PUT /api/va/industry

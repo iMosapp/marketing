@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { VoiceCoverageCard } from '../../components/team/VoiceCoverageCard';
 
 import { useThemeStore } from '../../store/themeStore';
 export default function ManageTeamScreen() {
@@ -268,6 +269,9 @@ export default function ManageTeamScreen() {
           </View>
           <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
+
+        {/* Voice ID coverage: who has a voice print, how many recent calls were verified */}
+        <VoiceCoverageCard />
         
         {/* Active Team Members */}
         <View style={styles.section}>

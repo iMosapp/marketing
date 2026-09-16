@@ -19,9 +19,22 @@ from services import locales as loc
 from services import scripts as scr
 from services import scorecards as sc
 from services import text_shops as tx
+from services import email_shops as ems
 from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
+
+MODES = ("phone", "text", "email")
+
+
+def mode_of(channel: Optional[str]) -> str:
+    return channel if channel in ("text", "email") else "phone"
+
+
+def mode_q(mode: Optional[str]) -> dict:
+    """Same-mode query: a person can be on one call, one text thread and one email thread at the same time."""
+    m = mode_of(mode if mode in MODES else "phone")
+    return {"mode": m} if m != "phone" else {"mode": {"$nin": ["text", "email"]}}
 
 DEPARTMENTS = ind.dept_keys("automotive")  # automotive keys; use ind.* for anything industry-aware
 DEPT_LABEL = ind.label_map()
@@ -243,6 +256,12 @@ def plan_text_per_month(client: dict) -> dict:
     return {k: int(v or 0) for k, v in per.items()} if isinstance(per, dict) else {}
 
 
+def plan_email_per_month(client: dict) -> dict:
+    """Email shops per department, on top of the calls and texts."""
+    per = ((client.get("plan") or {}).get("email_per_month")) or {}
+    return {k: int(v or 0) for k, v in per.items()} if isinstance(per, dict) else {}
+
+
 def terms_per_month(t: dict) -> dict:
     per = (t or {}).get("per_month")
     if isinstance(per, dict) and per:
@@ -290,7 +309,7 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
            "locale": lc, "language": loc.get(lc)["language"], "currency": loc.get(lc)["currency"], "currency_symbol": loc.get(lc)["symbol"], "country": loc.get(lc)["country"], "locale_label": loc.get(lc)["label"], "vat_id": c.get("vat_id", ""),
            "number_state": {"own": bool((c.get("number") or {}).get("sid")), "needs_local_number": loc.get(lc)["country"] != "US" and not c.get("from_number"), "error": (c.get("number_error") or {}).get("error")},
            "contact_name": c.get("contact_name", ""), "contact_email": c.get("contact_email", ""), "contact_phone": c.get("contact_phone", ""), "contact_title": c.get("contact_title", ""),
-           "plan": {"per_month": plan_per_month(c), "text_per_month": plan_text_per_month(c), "sales_per_month": plan_per_month(c).get("sales", 0), "service_per_month": plan_per_month(c).get("service", 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
+           "plan": {"per_month": plan_per_month(c), "text_per_month": plan_text_per_month(c), "email_per_month": plan_email_per_month(c), "sales_per_month": plan_per_month(c).get("sales", 0), "service_per_month": plan_per_month(c).get("service", 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
            "industry": ind.key_of(c), "industry_label": ind.get(ind.key_of(c))["label"], "departments": ind.dept_options(ind.key_of(c)), "offering": ind.get(ind.key_of(c))["offering"], "customer_noun": ind.get(ind.key_of(c))["customer"],
            "hours": _hours(c), "vehicles": offerings_of(c), "offerings": offerings_of(c), "active": c.get("active", True), "record_calls": c.get("record_calls", True), "notes": c.get("notes", ""),
            "from_number": c.get("from_number") or "", "report_token": c.get("report_token"), "scorecards": c.get("scorecards") or {}, "billing": c.get("billing") or {},
@@ -303,7 +322,7 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
 
 def serialize_target(t: dict, extra: Optional[dict] = None) -> dict:
     cc = t.get("contact_card") or {}
-    out = {"id": str(t["_id"]), "client_id": t.get("client_id"), "name": t.get("name", ""), "phone": t.get("phone", ""), "department": t.get("department", "sales"), "department_label": ind.dept_label(t.get("department")), "title": t.get("title", ""),
+    out = {"id": str(t["_id"]), "client_id": t.get("client_id"), "name": t.get("name", ""), "phone": t.get("phone", ""), "email": t.get("email", ""), "department": t.get("department", "sales"), "department_label": ind.dept_label(t.get("department")), "title": t.get("title", ""),
            "notes": t.get("notes", ""), "active": t.get("active", True), "challenge_history": t.get("challenge_history") or [], "created_at": t.get("created_at").isoformat() if t.get("created_at") else None,
            "contact_card_sent_at": cc["sent_at"].isoformat() if hasattr(cc.get("sent_at"), "isoformat") else None, "contact_card_ok": cc.get("ok"), "contact_card_error": cc.get("error")}
     if extra:
@@ -320,7 +339,8 @@ def serialize_call(s: dict) -> dict:
             "score_pct": s.get("score_pct"), "adherence_pct": s.get("adherence_pct"), "evaluation_id": s.get("evaluation_id"), "recording_url": s.get("recording_url"),
             "recording_seconds": s.get("recording_seconds"), "turns": len(s.get("turns") or []), "manual": bool(s.get("manual")), "demo": bool(s.get("demo")),
             "score_url": f"{scr._app_url()}/shop-score/{s['score_token']}" if s.get("score_token") else None, "score_sms_status": s.get("score_sms_status"), "score_views": s.get("score_views") or 0,
-            "channel": "text" if s.get("mode") == "text" else "call", "text": tx.stats(s) if s.get("mode") == "text" else None}
+            "channel": s.get("mode") if s.get("mode") in ("text", "email") else "call", "text": tx.stats(s) if s.get("mode") in ("text", "email") else None,
+            "subject": s.get("subject") if s.get("mode") == "email" else None, "rep_email": s.get("rep_email") if s.get("mode") == "email" else None}
 
 
 # ---------------------------------------------------------------- challenge rotation
@@ -443,10 +463,11 @@ def month_bounds(month: Optional[str], tz: ZoneInfo) -> tuple:
 
 
 async def create_shop_call(db, client: dict, target: dict, when: datetime, created_by: Optional[str] = None, manual: bool = False, script: Optional[dict] = None, mode: str = "phone") -> Optional[dict]:
-    """mode 'phone' = the AI calls; 'text' = the AI texts like a lead and the thread is graded (speed by the clock, quality by AI)."""
+    """mode 'phone' = the AI calls; 'text' = the AI texts like a lead; 'email' = the AI emails like an internet lead. Text and email threads are graded with reply speed by the clock, quality by AI."""
     script = script or await pick_challenge(db, client, target)
     if not script:
         return None
+    mode = mode_of(mode)
     dept = target.get("department") or "sales"
     persona = fill_persona(script.get("persona") or {}, client, dept)
     industry = ind.key_of(client)
@@ -454,9 +475,9 @@ async def create_shop_call(db, client: dict, target: dict, when: datetime, creat
     curve = random.sample(pool_cb, k=min(len(pool_cb), random.choice([0, 1, 1, 2])))
     now = _now()
     direction = script.get("direction") if script.get("direction") in ("inbound", "outbound") else "inbound"
-    doc = {"kind": "mystery_shop", "mode": "text" if mode == "text" else "phone", "status": "scheduled", "user_id": None, "client_id": str(client["_id"]), "target_id": str(target["_id"]),
-           "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "department": dept, "industry": industry, "store_id": None, "store_name": client.get("name") or f"the {ind.get(industry)['place']}", "locale": loc.key_of(client),
-           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": "inbound" if mode == "text" else direction, "persona": persona, "curveballs": curve,
+    doc = {"kind": "mystery_shop", "mode": mode, "status": "scheduled", "user_id": None, "client_id": str(client["_id"]), "target_id": str(target["_id"]),
+           "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "rep_email": (target.get("email") or "").strip().lower() or None, "department": dept, "industry": industry, "store_id": None, "store_name": client.get("name") or f"the {ind.get(industry)['place']}", "locale": loc.key_of(client),
+           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": "inbound" if mode != "phone" else direction, "persona": persona, "curveballs": curve,
            "assignment_id": None, "scheduled_for": when, "attempts": 0, "max_attempts": 3, "manual": manual, "token": uuid.uuid4().hex, "turns": [],
            "created_by": created_by, "created_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
@@ -470,18 +491,20 @@ async def plan_month(db, client: dict, month: Optional[str] = None, created_by: 
     tz = _tz(client)
     start, end = month_bounds(month, tz)
     now = _now()
-    per, text_per = plan_per_month(client), plan_text_per_month(client)
+    per, text_per, email_per = plan_per_month(client), plan_text_per_month(client), plan_email_per_month(client)
     created = {k: 0 for k in ind.dept_keys(ind.key_of(client))}
     created_text = {k: 0 for k in ind.dept_keys(ind.key_of(client))}
-    for dept, mode in [(d, m) for d in ind.dept_keys(ind.key_of(client)) for m in ("phone", "text")]:
-        quota = int((text_per if mode == "text" else per).get(dept) or 0)
+    created_email = {k: 0 for k in ind.dept_keys(ind.key_of(client))}
+    quotas = {"phone": per, "text": text_per, "email": email_per}
+    made = {"phone": created, "text": created_text, "email": created_email}
+    for dept, mode in [(d, m) for d in ind.dept_keys(ind.key_of(client)) for m in MODES]:
+        quota = int(quotas[mode].get(dept) or 0)
         if quota <= 0:
             continue
-        mode_q = {"mode": "text"} if mode == "text" else {"mode": {"$ne": "text"}}
-        q = {"kind": "mystery_shop", "client_id": str(client["_id"]), "department": dept, "scheduled_for": {"$gte": start, "$lt": end}, "status": {"$ne": "canceled"}, **mode_q}
+        q = {"kind": "mystery_shop", "client_id": str(client["_id"]), "department": dept, "scheduled_for": {"$gte": start, "$lt": end}, "status": {"$ne": "canceled"}, **mode_q(mode)}
         existing = await db.roleplay_sessions.count_documents(q)
         missing = quota - existing
-        targets = await db.shop_targets.find({"client_id": str(client["_id"]), "department": dept, "active": {"$ne": False}}).to_list(200)
+        targets = await db.shop_targets.find({"client_id": str(client["_id"]), "department": dept, "active": {"$ne": False}, **({"email": {"$nin": [None, ""]}} if mode == "email" else {})}).to_list(200)
         if missing <= 0 or not targets:
             continue
         counts = {}
@@ -502,8 +525,8 @@ async def plan_month(db, client: dict, month: Optional[str] = None, created_by: 
         for i, when in enumerate(slots):
             t = targets[i % len(targets)]
             if await create_shop_call(db, client, t, when, created_by=created_by, mode=mode):
-                (created_text if mode == "text" else created)[dept] += 1
-    return {**created, **({"text": created_text} if any(created_text.values()) else {})}
+                made[mode][dept] += 1
+    return {**created, **({"text": created_text} if any(created_text.values()) else {}), **({"email": created_email} if any(created_email.values()) else {})}
 
 
 # ---------------------------------------------------------------- placing + outcomes
@@ -645,6 +668,8 @@ async def send_contact_cards(db, client: dict, targets: list, me: dict) -> list:
 async def place_shop_call(db, call: dict) -> bool:
     if call.get("mode") == "text":
         return await tx.start_text_shop(db, call)
+    if call.get("mode") == "email":
+        return await ems.start_email_shop(db, call)
     from services.lead_call_engine import _twilio_client
     client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])})
     tw = _twilio_client()
@@ -759,6 +784,10 @@ async def run_due_calls(db, limit: int = 3) -> int:
         await tx.sweep(db)
     except Exception as e:
         logger.warning(f"[MysteryShop] text sweep failed: {e}")
+    try:
+        await ems.sweep(db)
+    except Exception as e:
+        logger.warning(f"[MysteryShop] email sweep failed: {e}")
     due = await db.roleplay_sessions.find({"kind": "mystery_shop", "status": "scheduled", "scheduled_for": {"$lte": now}}).sort("scheduled_for", 1).limit(limit * 3).to_list(limit * 3)
     placed = 0
     for call in due:
@@ -771,8 +800,7 @@ async def run_due_calls(db, limit: int = 3) -> int:
         if not call.get("manual") and not client.get("demo") and not in_hours(client, now):
             await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"scheduled_for": next_slot(client, now, min_gap_minutes=0), "updated_at": now}})
             continue
-        mode_q = {"mode": "text"} if call.get("mode") == "text" else {"mode": {"$ne": "text"}}
-        busy = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": call["target_id"], "status": {"$in": ["dialing", "live", "ending", "grading"]}, **mode_q}, {"_id": 1})
+        busy = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": call["target_id"], "status": {"$in": ["dialing", "live", "ending", "grading"]}, **mode_q(call.get("mode"))}, {"_id": 1})
         if busy:
             await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"scheduled_for": now + timedelta(minutes=45), "updated_at": now}})
             continue
@@ -1081,7 +1109,9 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
                         "unreachable": len([c for c in calls if c.get("status") == "unreachable"]), "avg_score": _pct(scores), "avg_adherence": _pct([c.get("adherence_pct") for c in done]),
                         "people_shopped": len({r["target_id"] for r in rows if r["completed"]}), "needs_training": len([r for r in rows if r["needs_training"]]),
                         "text_shops": len([c for c in done if c.get("mode") == "text"]), "text_no_reply": len([c for c in done if c.get("mode") == "text" and c.get("outcome") == "no_reply"]),
-                        "avg_first_reply_s": _pct([tx.stats(c)["first_reply_s"] for c in done if c.get("mode") == "text" and tx.stats(c)["first_reply_s"] is not None])},
+                        "avg_first_reply_s": _pct([tx.stats(c)["first_reply_s"] for c in done if c.get("mode") == "text" and tx.stats(c)["first_reply_s"] is not None]),
+                        "email_shops": len([c for c in done if c.get("mode") == "email"]), "email_no_reply": len([c for c in done if c.get("mode") == "email" and c.get("outcome") == "no_reply"]),
+                        "avg_first_email_reply_s": _pct([tx.stats(c)["first_reply_s"] for c in done if c.get("mode") == "email" and tx.stats(c)["first_reply_s"] is not None])},
             "by_department": by_dept, "people": rows, "criteria": criteria, "coaching_themes": [{"text": k, "count": v} for k, v in sorted(themes.items(), key=lambda kv: -kv[1])[:6]], "calls": call_rows}
 
 
@@ -1446,16 +1476,17 @@ async def ensure_demo_client(db, me: dict) -> dict:
     return doc
 
 
-async def demo_shop(db, me: dict, name: str, phone: str, department: str, title: str, store_name: str, vehicle: str, script: Optional[dict], text_scorecard: bool, industry: Optional[str] = None, mode: str = "phone") -> dict:
+async def demo_shop(db, me: dict, name: str, phone: str, department: str, title: str, store_name: str, vehicle: str, script: Optional[dict], text_scorecard: bool, industry: Optional[str] = None, mode: str = "phone", email: str = "") -> dict:
     c = await ensure_demo_client(db, me)
     industry = industry if industry in ind.INDUSTRIES else ind.industry_of_dept(department)
     cid, now = str(c["_id"]), _now()
+    email = (email or "").strip().lower()
     t = await db.shop_targets.find_one({"client_id": cid, "phone": phone})
     if t:
-        await db.shop_targets.update_one({"_id": t["_id"]}, {"$set": {"name": name, "department": department, "title": title, "active": True, "updated_at": now}})
-        t = {**t, "name": name, "department": department, "title": title}
+        await db.shop_targets.update_one({"_id": t["_id"]}, {"$set": {"name": name, "department": department, "title": title, "active": True, "updated_at": now, **({"email": email} if email else {})}})
+        t = {**t, "name": name, "department": department, "title": title, **({"email": email} if email else {})}
     else:
-        res = await db.shop_targets.insert_one({"client_id": cid, "name": name, "phone": phone, "department": department, "title": title, "notes": "Quick shop", "active": True, "challenge_history": [], "created_at": now, "updated_at": now})
+        res = await db.shop_targets.insert_one({"client_id": cid, "name": name, "phone": phone, "email": email, "department": department, "title": title, "notes": "Quick shop", "active": True, "challenge_history": [], "created_at": now, "updated_at": now})
         t = await db.shop_targets.find_one({"_id": res.inserted_id})
     place = f"your {ind.get(industry)['business']}"
     persona_client = {**c, "industry": industry, "name": store_name or place, "vehicles": [vehicle] if vehicle else []}
@@ -1478,7 +1509,8 @@ def scorecard_sms(s: dict, ev: dict, url: str, course_line: str = "", lang: str 
     pct = ev.get("score_pct")
     store = "" if s.get("demo") else tr("sms.for", store=str(s.get("store_name") or ("jullie vestiging" if lang == "nl" else "your store")))
     text = s.get("mode") == "text"
-    lines = [tr("sms.intro_text" if text else "sms.intro", name=first, store=store) + " " + (tr("sms.scored", pct=int(pct)) if pct is not None else tr("sms.ready"))]
+    email = s.get("mode") == "email"
+    lines = [tr("sms.intro_email" if email else "sms.intro_text" if text else "sms.intro", name=first, store=store) + " " + (tr("sms.scored", pct=int(pct)) if pct is not None else tr("sms.ready"))]
     good, fix = _short_criteria(ev, True), _short_criteria(ev, False)
     if good:
         lines.append(tr("sms.nailed", items=", ".join(good)))
@@ -1486,7 +1518,7 @@ def scorecard_sms(s: dict, ev: dict, url: str, course_line: str = "", lang: str 
         lines.append(tr("sms.workon", items=", ".join(fix)))
     if course_line:
         lines.append(course_line)
-    lines.append(tr("sms.link_text" if text else "sms.link", url=url))
+    lines.append(tr("sms.link_text" if (text or email) else "sms.link", url=url))
     return no_em_dash("\n".join(lines))
 
 
@@ -1557,7 +1589,8 @@ def public_score(s: dict, ev: dict, client: dict) -> dict:
             "results": [{"text": r.get("text"), "passed": bool(r.get("passed")), "critical": bool(r.get("critical")), "evidence": r.get("evidence") or ""} for r in (ev.get("results") or [])],
             "recording_url": s.get("recording_url"), "recording_seconds": s.get("recording_seconds"), "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
             "adherence": {k: (ev.get("adherence") or {}).get(k) for k in ("score_pct", "hits", "misses", "summary")},
-            "channel": "text" if s.get("mode") == "text" else "call", "text": tx.stats(s) if s.get("mode") == "text" else None, "transcript_turns": tx.transcript_turns(s) if s.get("mode") == "text" else None}
+            "channel": s.get("mode") if s.get("mode") in ("text", "email") else "call", "text": tx.stats(s) if s.get("mode") in ("text", "email") else None, "transcript_turns": tx.transcript_turns(s) if s.get("mode") in ("text", "email") else None,
+            "subject": s.get("subject") if s.get("mode") == "email" else None}
 
 
 # ---------------------------------------------------------------- AI challenge generator

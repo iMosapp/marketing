@@ -52,6 +52,26 @@ DEFAULT_FLOW = {
     "exhausted_push_manager": True,
 }
 
+# The same three automations in Dutch. A Dutch store that never edited the English defaults gets these at send time.
+DUTCH_FLOW_TEXTS = {
+    "intake_text": "Hoi {{first_name}}, bedankt voor je bericht over {{vehicle}}! Iemand van ons team neemt nu contact met je op. Is sms'en voor nu oké?",
+    "after_hours_text": "Hoi {{first_name}}, bedankt voor je bericht over {{vehicle}}! We zijn nu gesloten, maar ik neem morgenochtend meteen persoonlijk contact met je op. Kan ik vanavond alvast iets voor je beantwoorden via sms?",
+    "no_answer_text": "Hoi {{first_name}}, we hebben geprobeerd je te bereiken over {{vehicle}}, maar kregen je niet te pakken. Wanneer kunnen we het beste bellen, of wil je liever verder sms'en?",
+}
+
+
+def localized_texts(source: dict, locale: str | None) -> dict:
+    """Flow texts in the store's language: untouched English defaults become the Dutch defaults for a Dutch store; edited or blank texts are kept."""
+    from services import locales as loc
+    if loc.language(locale) != "nl":
+        return source
+    out = dict(source)
+    for k, nl in DUTCH_FLOW_TEXTS.items():
+        if (source.get(k) or "").strip() == DEFAULT_FLOW[k]:
+            out[k] = nl
+    return out
+
+
 # Starter flows. `role_hint` per attempt is resolved to the store's reps/managers when the flow is created.
 TEMPLATES = [
     {
@@ -380,6 +400,9 @@ async def on_ladder_exhausted(db, job: dict, source: dict) -> list:
     actions = []
     try:
         from routers.lead_sources import hydrate_intake_text
+        from services import locales as loc
+        locale = await loc.store_locale(db, source.get("store_id") or source.get("organization_id"))
+        source = localized_texts(source, locale)
         lead = job.get("lead") or {}
         contact_id = str(job.get("contact_id") or "")
         contact = (await db.contacts.find_one({"_id": ObjectId(contact_id)}) if ObjectId.is_valid(contact_id) else None) or {}
@@ -401,7 +424,7 @@ async def on_ladder_exhausted(db, job: dict, source: dict) -> list:
             from_phone = (conv or {}).get("rep_phone") or from_phone or os.environ.get("TWILIO_PHONE_NUMBER", "")
             lead_data = {"first_name": (lead.get("name") or "").split(" ")[0] or contact.get("first_name", ""),
                          "vehicle_interest": lead.get("interest") or contact.get("vehicle_interest") or "", "phone": job.get("customer_phone", "")}
-            body = hydrate_intake_text(source["no_answer_text"], lead_data, source.get("name") or "")
+            body = hydrate_intake_text(source["no_answer_text"], lead_data, source.get("name") or "", lang=loc.language(locale))
             if from_phone and body and not already:
                 from services.twilio_service import send_sms
                 res = await send_sms(job["customer_phone"], body, from_phone=from_phone)

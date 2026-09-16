@@ -104,7 +104,8 @@ def style_block(first: str, persona: dict) -> str:
     return f"{first} texts {', '.join(bits)}." if bits else f"{first} texts like a real person: short, warm, contractions, one thought at a time."
 
 
-def build_text(user: dict, store: Optional[dict], vab: dict, facts: dict) -> str:
+def build_text(user: dict, store: Optional[dict], vab: dict, facts: dict, locale: Optional[str] = None) -> str:
+    from services import locales as loc
     name = user.get("name") or "the rep"
     first = name.split(" ")[0]
     persona = user.get("persona") or {}
@@ -147,18 +148,20 @@ def build_text(user: dict, store: Optional[dict], vab: dict, facts: dict) -> str
         "- No em dashes. Use a comma or a period.\n"
         + (f"- Your work number is {format_phone_display(work_number)}. If they ask how to reach you, that is the ONLY number you give.\n" if work_number else "")
         + (f"- NEVER say or write: {', '.join(never + banned)}\n" if never or banned else "")
+        + (f"\n{loc.language_rule(locale)}\n" if loc.language_rule(locale) else "")
     )
 
 
 async def build(db, user_id, purpose: str = "reply") -> str:
+    from services import locales as loc
     user = await db.users.find_one({"_id": ObjectId(str(user_id))}) if user_id and ObjectId.is_valid(str(user_id)) else None
     if not user:
         return build_text({"name": "the rep"}, None, ind.va("general"), {})
     from services.lead_flows import user_store_id
     sid = user_store_id(user)
-    store = await db.stores.find_one({"_id": ObjectId(str(sid))}, {"name": 1, "address": 1, "phone": 1, "hours": 1, "industry": 1}) if sid and ObjectId.is_valid(str(sid)) else None
+    store = await db.stores.find_one({"_id": ObjectId(str(sid))}, {"name": 1, "address": 1, "phone": 1, "hours": 1, "industry": 1, "locale": 1}) if sid and ObjectId.is_valid(str(sid)) else None
     industry = await ind.va_industry_for(db, user)
-    return build_text(user, store, ind.va(industry["key"]), await facts_for(db, user))
+    return build_text(user, store, ind.va(industry["key"]), await facts_for(db, user), loc.key_of(store))
 
 
 async def config(db, user: dict) -> dict:

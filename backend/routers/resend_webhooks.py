@@ -119,9 +119,15 @@ async def ingest_received_email(db, email: dict, email_id: str) -> dict:
         return {"status": "duplicate"}
     from_email = _addr(email.get("from"))
     to_list = email.get("to") or []
-    conv = await _route(db, to_list, from_email)
     subject = (email.get("subject") or "").strip()
     body = clean_reply(email.get("text") or _strip_html(email.get("html") or ""))
+    # Email mystery shop reply (shop+<session>@): the shopper's thread, never a customer conversation
+    from services import email_shops as ems
+    shop_sid = ems.session_id_from(list(to_list) + (email.get("cc") if isinstance(email.get("cc"), list) else []))
+    if shop_sid and await ems.handle_inbound(db, shop_sid, from_email, subject, body, email_id):
+        logger.info(f"[ResendInbound] {from_email} -> email shop {shop_sid}")
+        return {"status": "shop", "session_id": shop_sid}
+    conv = await _route(db, to_list, from_email)
     if not conv:
         await db.inbound_email_unmatched.insert_one({"email_id": email_id, "from": from_email, "to": to_list, "subject": subject, "preview": body[:300], "created_at": datetime.now(timezone.utc)})
         logger.warning(f"[ResendInbound] no conversation for {from_email} -> {to_list}")

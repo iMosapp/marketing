@@ -9,7 +9,7 @@ import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { CriteriaChecklist } from '../scorecards/CriteriaChecklist';
 import { ScoreRing } from '../scorecards/ScoreRing';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
-import { Sheet, Label, StatusChip, GoldButton, deptLabel, deptsOfClient, perMonthText, fmtWhen, monthLabel, shiftMonth, scoreColor, replyDur, minutesSince, isTextLive, GOLD, RED, GREEN, tid, type ShopCall, type Client } from './shared';
+import { Sheet, Label, StatusChip, GoldButton, deptLabel, deptsOfClient, perMonthText, fmtWhen, monthLabel, shiftMonth, scoreColor, replyDur, minutesSince, isTextLive, isThread, channelIcon, channelWord, GOLD, RED, GREEN, tid, type ShopCall, type Client } from './shared';
 import { makeT, fmtWhenL, type Lang } from './i18n';
 
 type Props = { client: Client; colors: any; month: string; onMonth: (m: string) => void; refreshKey: number; onChanged: () => void };
@@ -24,7 +24,7 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
   const load = async () => { try { const r = await api.get(`/shop-clients/${client.id}/calls`, { params: { month } }); setCalls(r.data.calls); } catch { setCalls([]); } };
   useEffect(() => { load(); }, [client.id, month, refreshKey]);
   // phone shops move fast (4s); a text thread can sit for hours waiting on the rep, so poll gently
-  useEffect(() => { const live = (calls || []).filter(c => ['dialing', 'live', 'ending', 'grading'].includes(c.status)); if (!live.length) return; const t = setInterval(load, live.some(c => c.channel !== 'text') ? 4000 : 15000); return () => clearInterval(t); }, [calls]);
+  useEffect(() => { const live = (calls || []).filter(c => ['dialing', 'live', 'ending', 'grading'].includes(c.status)); if (!live.length) return; const t = setInterval(load, live.some(c => !isThread(c)) ? 4000 : 15000); return () => clearInterval(t); }, [calls]);
 
   const plan = async () => {
     setPlanning(true);
@@ -35,12 +35,12 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
   const cancel = (c: ShopCall) => showConfirm('Remove this shop?', `${c.target_name} will not get this challenge. The planner can fill the slot again.`, async () => {
     try { await api.delete(`/shop-clients/calls/${c.id}`); load(); onChanged(); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not remove', 'error'); }
   }, undefined, 'Remove');
-  const retry = async (c: ShopCall) => { try { await api.post(`/shop-clients/calls/${c.id}/retry`); showToast(c.channel === 'text' ? `Texting ${c.target_name.split(' ')[0]} now` : `Calling ${c.target_name.split(' ')[0]} now`, 'success'); load(); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not retry', 'error'); } };
+  const retry = async (c: ShopCall) => { try { await api.post(`/shop-clients/calls/${c.id}/retry`); showToast(c.channel === 'text' ? `Texting ${c.target_name.split(' ')[0]} now` : c.channel === 'email' ? `Emailing ${c.target_name.split(' ')[0]} now` : `Calling ${c.target_name.split(' ')[0]} now`, 'success'); load(); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not retry', 'error'); } };
   const endText = (c: ShopCall) => showConfirm('End this text shop?', `${c.target_name.split(' ')[0]} gets no more texts from the shopper and the thread is graded on what happened so far${c.text?.replies ? '' : ' (no reply yet = 0%)'}.`, async () => {
     try { await api.post(`/shop-clients/calls/${c.id}/end`); showToast('Grading the thread', 'success'); load(); onChanged(); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not end it', 'error'); }
   }, undefined, 'End & grade');
   const textLine = (c: ShopCall) => {
-    if (c.channel !== 'text') return '';
+    if (!isThread(c)) return '';
     const t = c.text;
     if (isTextLive(c)) return t?.waiting_since ? ` · waiting on ${c.target_name.split(' ')[0]} for ${minutesSince(t.waiting_since)} min` : ' · shopper is replying';
     if (c.status === 'completed') return t?.first_reply_s == null ? ' · never replied' : ` · first reply ${replyDur(t.first_reply_s)} · ${t.replies} ${t.replies === 1 ? 'reply' : 'replies'}`;
@@ -55,7 +55,7 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
     <TouchableOpacity onPress={() => setOpen(c.id)} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 6 }} {...tid(`shop-call-${c.id}`)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{c.channel === 'text' && <Ionicons name="chatbubbles" size={13} color={GOLD} {...tid(`shop-call-text-${c.id}`)} />}{c.channel === 'text' ? ' ' : ''}{c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {c.department_label || deptLabel(c.department, depts)}{c.channel === 'text' ? ' · text' : ''}</Text></Text>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{isThread(c) && <Ionicons name={channelIcon(c)} size={13} color={GOLD} {...tid(`shop-call-${channelWord(c)}-${c.id}`)} />}{isThread(c) ? ' ' : ''}{c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {c.department_label || deptLabel(c.department, depts)}{isThread(c) ? ` · ${channelWord(c)}` : ''}</Text></Text>
           <Text style={{ fontSize: 12.5, color: colors.textSecondary }} numberOfLines={1}>{c.script_title}{c.persona_name ? ` · ${c.customer_noun || client.customer_noun || 'shopper'} ${c.persona_name.split(' ')[0]}` : ''}</Text>
         </View>
         {c.status === 'completed' ? <Text style={{ fontSize: 20, fontWeight: '800', color: scoreColor(c.score_pct) }} {...tid(`shop-call-score-${c.id}`)}>{c.score_pct != null ? `${c.score_pct}%` : '–'}</Text> : <StatusChip status={c.status} colors={colors} channel={c.channel} />}
@@ -100,7 +100,8 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }
     api.get(`/shop-clients/calls/${id}`).then(r => setD(r.data)).catch(() => setD({ error: true }));
   }, [id, publicData]);
   const ev = d?.evaluation || (d?.results ? d : null);
-  const isText = d?.channel === 'text';
+  const isText = isThread(d || {});
+  const isEmail = d?.channel === 'email';
   const who = String(d?.customer_noun || (lang === 'nl' ? 'beller' : 'shopper'));
   const turns = d?.transcript_turns || (d?.transcript ? String(d.transcript).split('\n').filter(Boolean).map((l: string) => ({ role: l.startsWith('REP:') ? 'rep' : 'customer', text: l.replace(/^(REP|CUSTOMER):\s*/, '') })) : []);
   const speed = isText && d?.text ? (isTextLive(d) && d.text.first_reply_s == null ? `${d.status === 'live' ? 'Waiting on' : 'Wrapping up with'} ${(d.target_name || '').split(' ')[0]}${d.text.waiting_since ? ` · ${minutesSince(d.text.waiting_since)} min` : ''}` : d.text.first_reply_s == null ? tr('tx.noreply') : `${tr('tx.first', { d: replyDur(d.text.first_reply_s, lang) })}${d.text.max_reply_s != null && d.text.replies > 1 ? ` · ${tr('tx.slowest', { d: replyDur(d.text.max_reply_s, lang) })}` : ''} · ${tr('tx.replies', { n: d.text.replies })}`) : '';
@@ -113,9 +114,9 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }
             <View style={{ flex: 1, gap: 4 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <StatusChip status={d.status} colors={colors} lang={lang} channel={d.channel} />
-                {isText && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: GOLD + '22' }} {...tid('shop-call-text-badge')}><Ionicons name="chatbubbles" size={12} color={GOLD} /><Text style={{ fontSize: 11, fontWeight: '800', color: GOLD }}>{tr('tx.badge')}</Text></View>}
+                {isText && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: GOLD + '22' }} {...tid(isEmail ? 'shop-call-email-badge' : 'shop-call-text-badge')}><Ionicons name={channelIcon(d)} size={12} color={GOLD} /><Text style={{ fontSize: 11, fontWeight: '800', color: GOLD }}>{tr(isEmail ? 'em.badge' : 'tx.badge')}</Text></View>}
               </View>
-              {!!speed && <Text style={{ fontSize: 12.5, fontWeight: '700', color: isTextLive(d) && d.text?.first_reply_s == null ? GOLD : d.text?.first_reply_s == null ? RED : d.text.first_reply_s <= 300 ? GREEN : GOLD }} {...tid('shop-call-speed')}>{speed}</Text>}
+              {!!speed && <Text style={{ fontSize: 12.5, fontWeight: '700', color: isTextLive(d) && d.text?.first_reply_s == null ? GOLD : d.text?.first_reply_s == null ? RED : d.text.first_reply_s <= (isEmail ? 1800 : 300) ? GREEN : GOLD }} {...tid('shop-call-speed')}>{speed}</Text>}
               <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{fmtWhenL(d.ended_at || d.started_at || d.scheduled_for, lang)}{d.persona_name || d.persona?.name ? ` · ${who} ${(d.persona_name || d.persona?.name)}` : ''}{d.attempts > 1 ? ` · ${tr('call.tries', { n: d.attempts })}` : ''}</Text>
               {ev?.scorecard_name && <Text style={{ fontSize: 12, color: colors.textSecondary }}>{tr('call.graded_with', { name: ev.scorecard_name })}{d.adherence_pct != null ? ` · ${tr('call.script', { v: d.adherence_pct })}` : ''}</Text>}
               {!!d.fail_reason && d.status !== 'completed' && <Text style={{ fontSize: 12.5, color: RED }}>{d.fail_reason}</Text>}

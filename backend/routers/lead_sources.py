@@ -120,23 +120,24 @@ WEBSITE_PAGES = [
 
 MERGE_FIELDS = ["first_name", "last_name", "full_name", "vehicle", "year", "make", "model", "lead_source", "phone", "rep_name"]
 
-def hydrate_intake_text(template: str, lead_data: dict, source_name: str = "", rep_name: str = "") -> str:
+def hydrate_intake_text(template: str, lead_data: dict, source_name: str = "", rep_name: str = "", lang: str = "en") -> str:
     """Replace {{field}} placeholders with actual lead data."""
     text = template
+    nl = lang == "nl"
     vehicle = lead_data.get("vehicle_interest") or " ".join(filter(None, [
         lead_data.get("vehicle_year"), lead_data.get("vehicle_make"), lead_data.get("vehicle_model")
     ]))
     replacements = {
-        "first_name":   lead_data.get("first_name", "there"),
+        "first_name":   lead_data.get("first_name") or ("daar" if nl else "there"),
         "last_name":    lead_data.get("last_name", ""),
-        "full_name":    lead_data.get("full_name") or f"{lead_data.get('first_name','')} {lead_data.get('last_name','')}".strip() or "there",
-        "vehicle":      vehicle or "vehicle",
+        "full_name":    lead_data.get("full_name") or f"{lead_data.get('first_name','')} {lead_data.get('last_name','')}".strip() or ("daar" if nl else "there"),
+        "vehicle":      vehicle or ("de auto" if nl else "vehicle"),
         "year":         lead_data.get("vehicle_year", ""),
         "make":         lead_data.get("vehicle_make", ""),
         "model":        lead_data.get("vehicle_model", ""),
         "lead_source":  source_name,
         "phone":        lead_data.get("phone", ""),
-        "rep_name":     rep_name or "the team",
+        "rep_name":     rep_name or ("het team" if nl else "the team"),
     }
     for key, value in replacements.items():
         text = text.replace(f"{{{{{key}}}}}", str(value))

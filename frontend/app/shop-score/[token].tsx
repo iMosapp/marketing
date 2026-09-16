@@ -42,17 +42,18 @@ export default function PublicShopScore() {
                     <Text style={{ fontSize: 13.5, color: LIGHT.textSecondary, lineHeight: 19 }} {...tid('score-meta')}>{d.department_label || deptLabel(d.department)} · {d.challenge_title}{d.persona_name ? ` · ${tr('sc.was', { customer: d.customer_noun || 'shopper', name: d.persona_name.split(' ')[0] })}` : ''}{d.ended_at ? ` · ${fmtWhenL(d.ended_at, lang)}` : ''}{d.store_name ? ` · ${d.store_name}` : ''}</Text>
                   </View>
                 </View>
-                {d.channel === 'text' && d.text && (
+                {(d.channel === 'text' || d.channel === 'email') && d.text && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} {...tid('score-text-speed')}>
-                    <Ionicons name="chatbubbles" size={16} color={GOLD} />
-                    <Text style={{ fontSize: 13.5, fontWeight: '700', color: d.text.first_reply_s == null ? RED : d.text.first_reply_s <= 300 ? GREEN : GOLD }}>{tr('sc.text_speed')}: {d.text.first_reply_s == null ? tr('tx.noreply') : `${tr('tx.first', { d: replyDur(d.text.first_reply_s, lang) })}${d.text.replies > 1 ? ` · ${tr('tx.slowest', { d: replyDur(d.text.max_reply_s, lang) })}` : ''} · ${tr('tx.replies', { n: d.text.replies })}`}</Text>
+                    <Ionicons name={d.channel === 'email' ? 'mail' : 'chatbubbles'} size={16} color={GOLD} />
+                    <Text style={{ fontSize: 13.5, fontWeight: '700', color: d.text.first_reply_s == null ? RED : d.text.first_reply_s <= (d.channel === 'email' ? 1800 : 300) ? GREEN : GOLD }}>{tr('sc.text_speed')}: {d.text.first_reply_s == null ? tr('tx.noreply') : `${tr('tx.first', { d: replyDur(d.text.first_reply_s, lang) })}${d.text.replies > 1 ? ` · ${tr('tx.slowest', { d: replyDur(d.text.max_reply_s, lang) })}` : ''} · ${tr('tx.replies', { n: d.text.replies })}`}</Text>
                   </View>
                 )}
                 {!!d.summary && <Text style={{ fontSize: 15, color: LIGHT.text, lineHeight: 23 }} {...tid('score-summary')}>{d.summary}</Text>}
               </Card>
-              {d.channel === 'text' && (d.transcript_turns || []).length > 0 && (
+              {(d.channel === 'text' || d.channel === 'email') && (d.transcript_turns || []).length > 0 && (
                 <Card testID="score-thread">
                   <Label t={tr('sc.thread')} colors={LIGHT} />
+                  {!!d.subject && <Text style={{ fontSize: 13, fontWeight: '700', color: LIGHT.textSecondary }} {...tid('score-subject')}>{d.subject}</Text>}
                   {d.transcript_turns.map((t: any, i: number) => (
                     <View key={i} style={{ flexDirection: 'row', justifyContent: t.role === 'rep' ? 'flex-end' : 'flex-start' }}>
                       <View style={{ maxWidth: '86%', backgroundColor: t.role === 'rep' ? GOLD : LIGHT.bg, borderRadius: 14, padding: 10, borderWidth: t.role === 'rep' ? 0 : 1, borderColor: LIGHT.border }}>

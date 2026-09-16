@@ -26,7 +26,7 @@ FEATURES = [
                      "Tap Generate Your VA's Reply on a scenario: the reply should stay in character, use your facts, and hand pricing to you.",
                      "Text your own work number from another phone: ask something a fact covers (answered, you get an FYI push) and something it does not (you get a You're Needed push).",
                      "Check nothing car-specific leaks into a non-automotive store: switch the store's industry on the admin store page and generate again."],
-     "added": "2026-09-17"},
+     "added": "2026-09-17", "default": "live"},
 ]
 STATUSES = ("lab", "live")
 SETTINGS_KEY = "lab_features"
@@ -41,8 +41,12 @@ async def statuses(db) -> dict:
     return (doc or {}).get("value") or {}
 
 
+def _default(key: str) -> str:
+    return next((f.get("default") or "lab" for f in FEATURES if f["key"] == key), "lab")
+
+
 async def is_live(db, key: str) -> bool:
-    return ((await statuses(db)).get(key) or {}).get("status") == "live"
+    return (((await statuses(db)).get(key) or {}).get("status") or _default(key)) == "live"
 
 
 async def visible(db, user: Optional[dict], key: str) -> bool:
@@ -57,7 +61,7 @@ async def list_features(db) -> list:
     for f in FEATURES:
         s = st.get(f["key"]) or {}
         at = s.get("changed_at")
-        row = {**f, "status": s.get("status") or "lab", "changed_at": at.isoformat() if hasattr(at, "isoformat") else at, "changed_by": s.get("changed_by_name")}
+        row = {**f, "status": s.get("status") or _default(f["key"]), "changed_at": at.isoformat() if hasattr(at, "isoformat") else at, "changed_by": s.get("changed_by_name")}
         if f["key"] == "voice_interview":
             reason = await asyncio.to_thread(voice_id.available)
             row["needs"] = f"Voice ID is not running on this server: {reason}" if reason else None

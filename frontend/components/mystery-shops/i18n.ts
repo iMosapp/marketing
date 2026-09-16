@@ -55,7 +55,7 @@ const T: Record<Lang, Record<string, string>> = {
     'call.crit': 'CRITICAL MISSES', 'call.coaching': 'COACHING', 'call.wins': 'WHAT WENT WELL', 'call.scorecard': 'SCORECARD', 'call.transcript': 'TRANSCRIPT', 'call.rep': 'REP',
     'status.scheduled': 'Scheduled', 'status.dialing': 'Calling now', 'status.live': 'On the call', 'status.grading': 'Grading', 'status.completed': 'Done', 'status.unreachable': 'Unreachable', 'status.failed': 'Failed', 'status.canceled': 'Canceled', 'status.abandoned': 'Hung up',
     'status.texting': 'Texting', 'status.ending': 'Wrapping up', 'tx.badge': 'TEXT SHOP', 'tx.first': 'First reply {d}', 'tx.slowest': 'slowest {d}', 'tx.replies': '{n} replies', 'tx.noreply': 'Never replied', 'tx.after': 'replied after {d}', 'tx.within': 'replied within a minute',
-    'sc.thread': 'THE THREAD', 'sc.text_speed': 'Reply speed', 'rep.text_reply': 'First text reply', 'rep.text_noreply': '{n} unanswered', 'rep.texted': 'texted',
+    'sc.thread': 'THE THREAD', 'sc.text_speed': 'Reply speed', 'rep.text_reply': 'First text reply', 'rep.text_noreply': '{n} unanswered', 'rep.texted': 'texted', 'rep.emailed': 'emailed', 'em.badge': 'EMAIL SHOP', 'status.emailing': 'Emailing',
     // person sheet
     'per.title': 'Rep', 'per.error': 'Could not load this person right now.', 'per.since': 'shopped since {when}', 'per.delta': '{d} pts vs the month before',
     'per.shops': 'Shops', 'per.nr': 'n/r', 'per.avg': 'Average', 'per.store_avg': 'Store avg · {n} people', 'per.range': 'Best / worst', 'per.crit': 'Critical misses',
@@ -107,7 +107,7 @@ const T: Record<Lang, Record<string, string>> = {
     'call.crit': 'KRITIEKE MISSERS', 'call.coaching': 'COACHING', 'call.wins': 'WAT GOED GING', 'call.scorecard': 'SCOREKAART', 'call.transcript': 'TRANSCRIPT', 'call.rep': 'MEDEWERKER',
     'status.scheduled': 'Gepland', 'status.dialing': 'Belt nu', 'status.live': 'In gesprek', 'status.grading': 'Beoordelen', 'status.completed': 'Klaar', 'status.unreachable': 'Onbereikbaar', 'status.failed': 'Mislukt', 'status.canceled': 'Geannuleerd', 'status.abandoned': 'Opgehangen',
     'status.texting': 'Sms-gesprek', 'status.ending': 'Afronden', 'tx.badge': 'SMS-SHOP', 'tx.first': 'Eerste reactie {d}', 'tx.slowest': 'traagste {d}', 'tx.replies': '{n} reacties', 'tx.noreply': 'Nooit gereageerd', 'tx.after': 'reageerde na {d}', 'tx.within': 'reageerde binnen een minuut',
-    'sc.thread': 'HET GESPREK', 'sc.text_speed': 'Reactiesnelheid', 'rep.text_reply': 'Eerste sms-reactie', 'rep.text_noreply': '{n} onbeantwoord', 'rep.texted': 'ge-sms\'t',
+    'sc.thread': 'HET GESPREK', 'sc.text_speed': 'Reactiesnelheid', 'rep.text_reply': 'Eerste sms-reactie', 'rep.text_noreply': '{n} onbeantwoord', 'rep.texted': 'ge-sms\'t', 'rep.emailed': 'gemaild', 'em.badge': 'E-MAILSHOP', 'status.emailing': 'E-mailwissel',
     'per.title': 'Medewerker', 'per.error': 'Deze medewerker kon nu niet worden geladen.', 'per.since': 'gebeld sinds {when}', 'per.delta': '{d} pt t.o.v. de maand ervoor',
     'per.shops': 'Shops', 'per.nr': 'n.b.', 'per.avg': 'Gemiddelde', 'per.store_avg': 'Gem. vestiging · {n} medewerkers', 'per.range': 'Beste / slechtste', 'per.crit': 'Kritieke missers',
     'per.store_line': 'het vestigingsgemiddelde over {n} shops', 'per.dept_line': 'lijn van {dept}', 'per.on_line': 'Precies op {what}', 'per.vs_line': '{d} pt {dir} {what}',

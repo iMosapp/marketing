@@ -2,7 +2,7 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from bson import ObjectId
@@ -60,6 +60,44 @@ async def status(request: Request):
     return {"session": svc.serialize(s), "voice": voice_id.summary(user), "phone": _mask(phone), "can_call": len("".join(c for c in phone if c.isdigit())) >= 10,
             "available": await lab.visible(db, me, "voice_interview"), "is_super_admin": me.get("role") == "super_admin",
             "persona_filled": _persona_filled(user or {}), "interviewed_at": (user or {}).get("persona_interviewed_at").isoformat() if (user or {}).get("persona_interviewed_at") else None}
+
+
+@router.get("/coverage")
+async def coverage(request: Request, days: int = 7):
+    """Managers: which reps have a voice print and how many of the recent recorded calls Voice ID confirmed were them."""
+    me = await _resolve(request)
+    db = get_db()
+    from services.lead_flows import MANAGER_ROLES, store_reps, user_store_id
+    if me.get("role") not in MANAGER_ROLES:
+        raise HTTPException(status_code=403, detail="Managers only")
+    days = max(1, min(90, int(days or 7)))
+    sid = user_store_id(me)
+    reps = [r for r in await store_reps(db, sid, me) if r.get("on_team", True)]
+    ids = [r["_id"] for r in reps]
+    oids = [ObjectId(i) for i in ids if ObjectId.is_valid(i)]
+    users = {str(u["_id"]): u for u in await db.users.find({"_id": {"$in": oids}}, {"voice_id.status": 1, "voice_id.percent": 1, "voice_id.enrolled_at": 1, "voice_id.attempted_at": 1, "voice_id.source": 1, "voice_id.profile": 1, "voice_id.error": 1}).to_list(len(oids) or 1)}
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    counts = {i: {"total": 0, "verified": 0, "mismatched": 0, "unchecked": 0} for i in ids}
+    async for row in db.call_logs.aggregate([{"$match": {"user_id": {"$in": ids}, "created_at": {"$gte": since}}},
+                                             {"$group": {"_id": {"u": "$user_id", "v": "$voice_verified"}, "n": {"$sum": 1}}}]):
+        c = counts.get(row["_id"]["u"])
+        if c is None:
+            continue
+        v = row["_id"].get("v")
+        c["total"] += row["n"]
+        c["verified" if v is True else "mismatched" if v is False else "unchecked"] += row["n"]
+    out = []
+    for r in reps:
+        u = users.get(r["_id"]) or {}
+        v = voice_id.summary(u)
+        v.pop("error", None)
+        out.append({"id": r["_id"], "name": r["name"], "role": r.get("role"), "photo_url": r.get("photo_url"), "voice": v, "calls": counts[r["_id"]]})
+    out.sort(key=lambda x: (not x["voice"]["enrolled"], -x["calls"]["total"], x["name"].lower()))
+    totals = {"reps": len(out), "enrolled": sum(1 for x in out if x["voice"]["enrolled"]),
+              "calls": {k: sum(x["calls"][k] for x in out) for k in ("total", "verified", "mismatched", "unchecked")}}
+    store = await db.stores.find_one({"_id": ObjectId(str(sid))}, {"name": 1}) if sid and ObjectId.is_valid(str(sid)) else None
+    return {"days": days, "store_name": (store or {}).get("name"), "eagle": voice_id.available() is None, "totals": totals, "reps": out}
+
 
 
 @router.post("/start")
