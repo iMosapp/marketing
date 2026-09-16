@@ -348,6 +348,15 @@ async def queue_ai_reply(
         pass
     from services.lead_context import is_vehicle_inquiry, inquiry_prompt_block
     vehicle_ok = is_vehicle_inquiry(lead_inquiry)
+    # Test Lab `industry_va`: the rep's industry decides the hold words, and manager facts may answer instead of holding
+    from services import va_prompt
+    _va = None
+    try:
+        _va = await va_prompt.routing(db, assigned_user_id)
+    except Exception as _ve:
+        logger.debug(f"[AIReply] va routing failed: {_ve}")
+    if _va and _va["industry"] != "automotive":
+        vehicle_ok = False
     # Unclaimed shared-inbox thread: "You're Needed" moments go to the whole inbox team instead of one rep
     _inbox_team = None
     if not assigned_user_id and _conv_pause and _conv_pause.get("inbox_id") and not _conv_pause.get("graduated_at") and not _conv_pause.get("assigned_to"):
@@ -411,6 +420,8 @@ async def queue_ai_reply(
         "trade", "trade-in", "trade in", "trade value", "finance", "financing", "payment",
         "monthly", "apr", "interest rate", "lease", "down payment", "out the door",
     ]
+    if _va:
+        FACT_SIGNALS, FINANCE_SIGNALS = _va["hold_words"], _va["finance_words"]
     # "I'm available Tuesday" / "are you available?" is about PEOPLE, not inventory.
     _fact_probe = _re_sched.sub(r"\b(i'?m|i am|we'?re|we are|are you|you|u|is anyone|anyone)\s+(available|free|open)\b", " ", msg_lower)
     is_fact_topic = (not is_ai_suspect) and _has_phrase(_fact_probe, FACT_SIGNALS)
@@ -426,6 +437,8 @@ async def queue_ai_reply(
     is_finance_topic = is_fact_topic and _has_phrase(_fact_probe, FINANCE_SIGNALS)
     # Anything a human must handle right now (suspicion or facts) is a "hot topic".
     is_hot_topic = is_ai_suspect or is_fact_topic
+    # A manager fact that plainly answers the question lets the VA answer instead of holding (the rep still gets an FYI).
+    fact_answers = va_prompt.match_facts(incoming_message, _va["facts"]) if _va and is_fact_topic else []
 
     # ── Scheduling / appointment approval hold ────────────────────────────────
     # The rep must approve before Jessi commits to ANY time or visit. This applies
@@ -543,7 +556,7 @@ async def queue_ai_reply(
             db, assigned_user_id, incoming_message, contact_id, conversation_id)
     is_narrowing = inventory_context.startswith(NARROW_TAG)
 
-    if is_hot_topic and not inventory_context and not is_scheduling:
+    if is_hot_topic and not inventory_context and not fact_answers and not is_scheduling:
         logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
         # Generate a brief warm response and immediately flag for rep
         hot_reply = "Good question, let me check on that and get back to you."
@@ -649,6 +662,31 @@ async def queue_ai_reply(
             await _alert_inbox_team(f"Inventory Question - {(_conv_pause or {}).get('contact_name') or 'a customer'}",
                                     f"Asked: \"{(incoming_message or '')[:70]}\" - Jessi replied with live inventory. Claim it to follow up.")
 
+    if is_hot_topic and fact_answers and not inventory_context and not is_scheduling:
+        # A fact the manager (or the rep) approved answers this: Jessi answers from it and the rep gets an FYI instead of a hold.
+        logger.info(f"[AIReply] Fact question answered from VA facts for {contact_id}")
+        try:
+            await db.conversations.update_one(
+                {"_id": ObjectId(conversation_id)},
+                {"$set": {"needs_assistance": True, "you_are_needed_at": datetime.utcnow()}}
+            )
+        except Exception:
+            pass
+        if assigned_user_id:
+            try:
+                contact_doc = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1})
+                cname_fact = f"{contact_doc.get('first_name','')} {contact_doc.get('last_name','')}".strip() if contact_doc else "a customer"
+                from routers.push_notifications import send_push_to_user
+                asyncio.create_task(send_push_to_user(
+                    assigned_user_id,
+                    f"Answered from your facts - {cname_fact}",
+                    f"Asked: \"{(incoming_message or '')[:70]}\" - Jessi answered with: {fact_answers[0][:80]}",
+                    f"/thread/{conversation_id}",
+                    "checkmark-circle",
+                ))
+            except Exception:
+                pass
+
     # ── Generate AI draft ──────────────────────────────────────────────────
     try:
         from routers.ai_campaigns import build_clone_system_prompt, get_contact_context
@@ -719,6 +757,8 @@ async def queue_ai_reply(
                 "is close, and offer to keep an eye out. If it lists a count higher than shown, say there are more. "
                 "Never write a web address; if a link is available it is added after your reply automatically.\n\n"
             )
+        if fact_answers:
+            inv_block += va_prompt.facts_block(fact_answers)
         user_prompt = (
             f"Customer context:\n{contact_context}\n\n"
             f"{inv_block}"

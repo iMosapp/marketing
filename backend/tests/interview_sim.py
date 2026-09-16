@@ -24,16 +24,10 @@ ANSWERS = [
     "I grew up in Ogden, still live about ten minutes from where I was raised. My wife Jen and I have two boys, eight and eleven, and a very loud husky named Blue.",
     "Weekends we're usually camping up in the Uintas or at a little league game. I fly fish when I can sneak away.",
     "I drive a 2023 F-150 Tremor. Dream truck would be a Raptor R, but don't tell Jen.",
-    "Trucks for sure, and first time buyers. I like walking somebody through their first deal so they don't get taken advantage of.",
-    "There was a single mom, Maria, who came in scared to death of getting ripped off. We found her a Highlander she could actually afford and she still sends me a Christmas card every year.",
-    "My motto is pretty simple. Do what you said you'd do, when you said you'd do it.",
-    "I text pretty casual, like I talk. Short, no big paragraphs. Maybe a thumbs up emoji now and then but that's about it.",
-    "I joke around a fair amount. Not corny, just keep it light. People are stressed enough buying a car.",
-    "I say 'no worries' a lot, and 'let's make it easy'. Probably too much.",
+    "Honestly I like walking somebody through a big decision so they don't get taken advantage of. Pick me because I'll still answer your text two years after you buy. Most guys disappear after the sale.",
+    "I text pretty casual, like I talk. Short, no big paragraphs. Maybe a thumbs up emoji now and then. I joke around a fair amount, not corny, just keep it light.",
     "I never say 'what's it gonna take to get you in a car today'. Hate that. And I never bad mouth another store.",
     "Fun fact, I was a college wrestler and I still coach the middle school team on Tuesdays.",
-    "Pick me because I'll still answer your text two years after you buy. Most guys disappear after the sale.",
-    "I usually open with 'Hey, it's Alex at QA Motors' and I sign off with just 'Alex' or 'talk soon'.",
     "Nope, I think that covers it. Thanks Jessi.",
 ]
 
@@ -47,7 +41,7 @@ async def main():
     now = datetime.now(timezone.utc)
     res = await db.interview_sessions.insert_one({
         "user_id": str(rep["_id"]), "rep_name": "Alex Tester", "rep_phone": "+15005550006", "from_number": "+15005550100", "store_id": str(rep.get("store_id")), "store_name": "QA Motors",
-        "role_title": "", "locale": "en-US", "status": "dialing", "token": token, "turns": [], "covered": [], "created_at": now, "updated_at": now, "qa_sim": True})
+        "role_title": "", "locale": "en-US", "industry": "automotive", "status": "dialing", "token": token, "turns": [], "covered": [], "created_at": now, "updated_at": now, "qa_sim": True})
     sid = str(res.inserted_id)
     print("session", sid)
     try:
@@ -91,7 +85,7 @@ async def main():
                     ended = True
                     print(f"Jessi wrapped up after {i+1} answers (end message received)")
                     break
-            assert covered_total >= 8, f"only {covered_total} topics marked covered"
+            assert covered_total >= 7, f"only {covered_total} topics marked covered"
             if not ended:
                 print("NOTE: Jessi did not end on her own within the scripted answers; hanging up from Twilio's side")
         # Twilio reports the call finished
@@ -110,7 +104,8 @@ async def main():
         assert "ogden" in (ex["hometown"] or "").lower(), ex["hometown"]
         assert any("f-150" in h.lower() or "f150" in h.lower() or "tremor" in h.lower() for h in [ex["vehicles"]]), ex["vehicles"]
         assert ex["tone"] in ("casual", "friendly") and ex["humor_level"] in ("some", "light", "lots"), (ex["tone"], ex["humor_level"])
-        assert ex["hobbies"] and ex["specialties"] and ex["never_say"], (ex["hobbies"], ex["specialties"], ex["never_say"])
+        assert ex["hobbies"] and ex["never_say"], (ex["hobbies"], ex["never_say"])
+        assert not ex.get("custom_phrases") and not ex.get("greeting_style") and not ex.get("signature"), "phrases, greeting and sign-off are no longer extracted"
         assert ex["professional_identity"], ex
         u = await db.users.find_one({"_id": rep["_id"]})
         assert u["persona"]["bio"] == ex["bio"] and u["persona"]["hometown"] == ex["hometown"] and u.get("persona_interviewed_at"), "persona not applied"
@@ -120,8 +115,8 @@ async def main():
         login = requests.post(f"{API}/api/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}, timeout=30).json()
         h = {"Authorization": f"Bearer {login['token']}"}
         st = requests.get(f"{API}/api/interview/status", headers=h, timeout=30).json()
-        assert st["session"]["id"] == sid and st["session"]["status"] == "completed" and st["persona_filled"] >= 8 and st["voice"]["status"] in ("none", "not_configured"), st
-        assert st["session"]["labels"]["bio"] == "Your story" and len(st["session"]["turns"]) == len(s["turns"])
+        assert st["session"]["id"] == sid and st["session"]["status"] == "completed" and st["persona_filled"] >= 6 and st["voice"]["status"] in ("none", "not_configured"), st
+        assert st["session"]["labels"]["bio"] == "Your story" and st["session"]["topics_total"] == 10 and len(st["session"]["turns"]) == len(s["turns"])
         one = requests.get(f"{API}/api/interview/sessions/{sid}", headers=h, timeout=30).json()
         assert one["id"] == sid and one["extracted"]["bio"] == ex["bio"]
         assert requests.get(f"{API}/api/interview/sessions/{sid}", timeout=30).status_code == 401

@@ -396,6 +396,156 @@ def fill_offering(text, offering: str, place: str):
     return text.replace("{vehicle}", offering).replace("{offering}", offering).replace("{store}", place)
 
 
+
+# ---------------------------------------------------------------- the rep's VA (customer-facing texting assistant) per industry
+# safe = what the VA may handle itself; hold = always goes to the rep; hold_words = whole-phrase triggers that pause the VA
+# (merged with VA_BASE_HOLD_WORDS); slot = the one personal interview topic that changes per industry (field, what Jessi asks, label).
+VA_BASE_HOLD_WORDS = ["in stock", "available", "availability", "do you have", "do you stock", "price", "pricing", "cost", "how much", "what does it cost",
+                      "what's the price", "quote", "estimate", "discount", "fee", "fees", "refund", "cancel", "warranty", "guarantee", "how long will it take"]
+VA_BASE_SAFE = ["a warm, human reply to whatever they said (thanks, small talk, good news, a photo they sent)", "confirming you got their message and that you are on it",
+                "hours, address and directions when they are in FACTS", "helping them pick a time to come in or talk (the exact time gets confirmed by you personally)"]
+VA_BASE_HOLD = ["any price, quote, payment, fee, discount or refund", "whether something specific is available, in stock or possible, unless FACTS or live data in the message say so",
+                "policies, contracts, legal or technical specifics not in FACTS", "promises about dates, delivery or outcomes"]
+VA = {
+    "automotive": {
+        "tone": "Straight talk, no dealer-speak, never pushy. You sound like a salesperson who actually likes people.",
+        "safe": ["what to bring for a visit, a test drive or a trade appraisal (license, insurance, title or payoff, both keys)", "a quick thank-you after a visit, a purchase or a service appointment"],
+        "hold": ["price, out-the-door numbers, monthly payments, APR, lease terms, rebates or discounts", "trade-in values", "whether a specific vehicle is on the lot, unless LIVE INVENTORY is in the message",
+                 "warranty, recall or repair coverage", "credit approval or financing options"],
+        "hold_words": ["trade", "trade-in", "trade in", "trade value", "finance", "financing", "payment", "monthly", "apr", "interest rate", "lease", "vin", "which one", "which ones",
+                       "what models", "which model", "what trim", "trim", "mileage", "how many miles", "msrp", "out the door", "down payment", "what color", "what colour", "which color",
+                       "which colour", "color name", "colour name", "do you have it in", "does it come", "recall", "approved", "credit", "rebate"],
+        "finance_words": ["trade", "trade-in", "trade in", "trade value", "finance", "financing", "payment", "monthly", "apr", "interest rate", "lease", "down payment", "out the door"],
+        "slot": ("vehicles", "What they drive and their dream vehicle", "What you drive"),
+        "scenarios": [("New Lead", "flash", "Hey, I saw your dealership online and I'm interested in trading in my truck. What does that process look like?"),
+                      ("Price Ask", "pricetag", "What's the best price you can do on the white Tahoe? And what would the payment be?"),
+                      ("Happy Customer", "happy", "Just wanted to say I love the car! Everyone keeps asking about it. You guys were amazing."),
+                      ("Set a Time", "calendar", "Could I come see it tomorrow after work, around 5:30?")],
+    },
+    "real_estate": {
+        "tone": "Warm, local, unhurried. You know the area and you care where they end up living.",
+        "safe": ["what to expect at a showing and what to bring", "a quick thank-you after a showing or a closing"],
+        "hold": ["list price, what a seller will take, offers, counteroffers or commission", "whether a listing is still available, pending or under contract", "mortgage rates, pre-approval, closing costs, HOA fees or taxes",
+                 "square footage, lot size, year built or any spec not in FACTS", "anything about the contract, disclosures or inspections"],
+        "hold_words": ["offer", "asking", "listed at", "list price", "still available", "under contract", "pending", "closing", "closing costs", "hoa", "square feet", "sq ft", "sqft",
+                       "lot size", "year built", "commission", "mortgage", "rate", "pre-approved", "preapproved", "pre-approval", "inspection", "appraisal", "earnest", "taxes"],
+        "finance_words": [],
+        "slot": ("interests", "The neighborhood they live in and what they love about the area", "Your neighborhood"),
+        "scenarios": [("New Buyer", "flash", "Hi, I saw the house on Maple Street online. Is it still available and what's the asking price?"),
+                      ("Seller", "home", "Thinking about selling next spring. What do you think my place would go for?"),
+                      ("Happy Client", "happy", "We're all moved in and the kids love the yard. Thank you for everything!"),
+                      ("Showing", "calendar", "Could we see it Saturday morning?")],
+    },
+    "home_services": {
+        "tone": "Practical, friendly, reassuring. You sound like the person who actually shows up on time.",
+        "safe": ["what to have ready before a visit (access, photos of the problem, model numbers)", "a quick thank-you after a job"],
+        "hold": ["prices, estimates, quotes, hourly rates or what a job will run", "how long a job takes or when a crew can be there", "whether something is covered by warranty or insurance",
+                 "diagnosing the problem from a description"],
+        "hold_words": ["rate", "hourly", "when can you", "when could you", "covered", "insurance", "permit", "emergency", "same day", "what's wrong", "diagnos", "fix it today"],
+        "finance_words": [],
+        "slot": ("interests", "A job or project they are proud of and what they like about the trade", "Work you are proud of"),
+        "scenarios": [("New Request", "flash", "Hi, our AC stopped cooling last night. Can someone come out this week and what would it cost?"),
+                      ("Follow-Up", "refresh-circle", "Hey, just checking if you got the photos I sent of the water heater."),
+                      ("Happy Customer", "happy", "The crew was great today, everything works perfect. Thank you!"),
+                      ("Set a Time", "calendar", "Does Thursday afternoon work for the estimate?")],
+    },
+    "medical_dental": {
+        "tone": "Calm, kind and precise. Never clinical advice, never alarm, never guess.",
+        "safe": ["what to bring to an appointment (insurance card, ID, current medications list)", "confirming they got a message or a form", "a quick thank-you after a visit"],
+        "hold": ["anything medical: symptoms, whether something is normal, diagnoses, medications, dosages or test results", "insurance coverage, copays, costs or billing",
+                 "prescription refills", "anything urgent (tell them to call the office line or 911 right now)"],
+        "hold_words": ["copay", "co-pay", "deductible", "covered", "coverage", "insurance", "bill", "billing", "results", "prescription", "refill", "medication", "dose", "symptom",
+                       "pain", "swelling", "bleeding", "infection", "diagnos", "is this normal", "emergency", "urgent"],
+        "finance_words": [],
+        "slot": ("interests", "What they love about caring for patients", "Why you love this work"),
+        "scenarios": [("New Patient", "flash", "Hi, are you taking new patients? I need a cleaning and I think I have a cavity."),
+                      ("Question", "help-circle", "My tooth is still sore two days after the filling, is that normal?"),
+                      ("Happy Patient", "happy", "Thanks again for fitting me in yesterday, feeling so much better."),
+                      ("Reschedule", "calendar", "Can I move my appointment to Friday morning?")],
+    },
+    "insurance": {
+        "tone": "Clear, steady and trustworthy. You explain, you never sell fear.",
+        "safe": ["what information to gather for a review (current policy, vehicles, drivers, home details)", "confirming documents or photos arrived"],
+        "hold": ["premiums, quotes, rates or discounts", "what a policy covers or excludes, deductibles or limits", "claims: status, whether it is covered, who is at fault",
+                 "how much coverage someone needs", "binding, changing or cancelling coverage"],
+        "hold_words": ["premium", "rate", "deductible", "covered", "coverage", "claim", "exclusion", "bind", "renewal", "liability", "full coverage", "how much coverage", "at fault", "policy"],
+        "finance_words": [],
+        "slot": ("interests", "A time they really came through for a client", "A client story"),
+        "scenarios": [("New Quote", "flash", "Hi, looking to switch my auto and home. What would you charge for both?"),
+                      ("Claim", "shield", "Someone backed into me in a parking lot. Am I covered and what happens to my rate?"),
+                      ("Happy Client", "happy", "Thanks for walking my mom through her policy, she felt so much better."),
+                      ("Review", "calendar", "Can we do a policy review call next week?")],
+    },
+    "fitness": {
+        "tone": "Upbeat, encouraging, real. Never preachy.",
+        "safe": ["what to bring or wear for a first visit", "confirming they are booked (the exact time gets confirmed by you)", "cheering on a win they share"],
+        "hold": ["membership prices, promotions, contracts, cancellations or freezes", "medical, injury or diet advice", "guarantees about results", "billing disputes"],
+        "hold_words": ["membership", "rate", "promo", "freeze", "contract", "billing", "charged", "injur", "diet", "results", "lose", "pounds", "how many calories"],
+        "finance_words": [],
+        "slot": ("interests", "How they train themselves and what got them into fitness", "Your own training"),
+        "scenarios": [("New Lead", "flash", "Hey, what does a membership run and do you have anything for beginners?"),
+                      ("Follow-Up", "refresh-circle", "I missed the last two weeks, travel got crazy. Still have a spot for me?"),
+                      ("Win", "happy", "Down 12 pounds since March! Couldn't have done it without you."),
+                      ("Set a Time", "calendar", "Can I come in for that intro session Tuesday at 6?")],
+    },
+    "property_management": {
+        "tone": "Friendly, organized, quick. You make moving feel easy.",
+        "safe": ["what to bring to a tour or to apply (ID, proof of income)", "confirming an application or a maintenance request came in", "a quick thank-you after a tour"],
+        "hold": ["rent, deposits, fees, specials or what is negotiable", "whether a specific unit or floor plan is available or the move-in date, unless in FACTS", "application status, approval, credit or income requirements",
+                 "lease terms, breaking a lease or pet policy specifics not in FACTS", "maintenance emergencies (give them the emergency line)"],
+        "hold_words": ["rent", "deposit", "special", "vacan", "move in", "move-in", "floor plan", "approved", "application", "credit", "income", "lease", "break my lease", "pet",
+                       "maintenance", "broken", "leak", "not working", "no heat", "no hot water"],
+        "finance_words": [],
+        "slot": ("interests", "What they love about the community they manage", "Your community"),
+        "scenarios": [("New Prospect", "flash", "Hi, do you have any 2 bedrooms available in June and what's the rent?"),
+                      ("Resident", "home", "My kitchen faucet has been dripping for a week, can someone look at it?"),
+                      ("Happy Resident", "happy", "Loving the new place, the move went so smooth. Thanks for all your help!"),
+                      ("Tour", "calendar", "Could I tour Saturday around noon?")],
+    },
+    "general": {
+        "tone": "Warm, clear and helpful. You sound like a person, not a company.",
+        "safe": [],
+        "hold": ["availability or delivery dates", "anything about contracts, policies or technical specifics not in FACTS"],
+        "hold_words": ["delivery", "ship", "when will", "policy", "contract"],
+        "finance_words": [],
+        "slot": ("interests", "What they love most about the work", "Why you love this work"),
+        "scenarios": [("New Inquiry", "flash", "Hi, I found you online. What do you charge and how soon could you help?"),
+                      ("Follow-Up", "refresh-circle", "Hey, just checking in on where things stand."),
+                      ("Happy Customer", "happy", "Everything turned out great, thank you so much!"),
+                      ("Set a Time", "calendar", "Could we talk tomorrow afternoon?")],
+    },
+}
+
+
+def va(key: Optional[str]) -> dict:
+    """The VA block for an industry, base lists merged in."""
+    k = key if key in VA else "general"
+    pack, block = INDUSTRIES[k], VA[k]
+    return {"key": k, "label": pack["label"], "business": pack["business"], "customer": pack["customer"], "offering": pack["offering"]["label"], "tone": block["tone"],
+            "safe": VA_BASE_SAFE + block["safe"], "hold": block["hold"] + VA_BASE_HOLD, "hold_words": list(dict.fromkeys(VA_BASE_HOLD_WORDS + block["hold_words"])),
+            "finance_words": block["finance_words"], "slot": block["slot"], "scenarios": [{"label": l, "icon": i, "message": m} for l, i, m in block["scenarios"]]}
+
+
+def va_options() -> list:
+    return [{"key": k, "label": INDUSTRIES[k]["label"]} for k in VA]
+
+
+async def va_industry_for(db, user: Optional[dict]) -> dict:
+    """Which industry a rep's VA speaks: the store's Industry setting, else what the rep picked in My Profile, else General.
+    {key, label, source: store|profile|default, store_name}"""
+    from bson import ObjectId
+    from services.lead_flows import user_store_id
+    sid = user_store_id(user or {}) if user else None
+    store = await db.stores.find_one({"_id": ObjectId(str(sid))}, {"industry": 1, "name": 1}) if sid and ObjectId.is_valid(str(sid)) else None
+    if store and (store.get("industry") or "").strip():
+        k = key_for(store["industry"])
+        return {"key": k, "label": INDUSTRIES[k]["label"], "source": "store", "store_name": store.get("name")}
+    mine = (user or {}).get("industry")
+    if mine in VA:
+        return {"key": mine, "label": INDUSTRIES[mine]["label"], "source": "profile", "store_name": (store or {}).get("name")}
+    return {"key": "general", "label": INDUSTRIES["general"]["label"], "source": "default", "store_name": (store or {}).get("name")}
+
+
 # ---------------------------------------------------------------- translations (client-facing words per language)
 # Only what a Dutch dealer, GM or rep reads or hears. Admin screens stay English until Phase E.
 TRANSLATIONS = {

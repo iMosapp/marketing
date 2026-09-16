@@ -1188,7 +1188,11 @@ async def generate_va_sample_message(user_id: str, data: dict):
     name    = user.get("name", "Your Rep")
     first   = name.split()[0]
 
-    system_prompt = _build_ai_clone_prompt(name, first, persona, user)
+    from services import va_prompt
+    if await va_prompt.enabled_for_id(db, user_id):
+        system_prompt = await va_prompt.build(db, user_id)
+    else:
+        system_prompt = _build_ai_clone_prompt(name, first, persona, user)
     scenario      = data.get("scenario", "Hey, I just wanted to check in. Still thinking about making a move?")
 
     try:
@@ -1203,9 +1207,11 @@ async def generate_va_sample_message(user_id: str, data: dict):
 
         response = await chat.send_message(UserMessage(text=scenario))
         reply = response.strip() if isinstance(response, str) else (response.text.strip() if hasattr(response, "text") else str(response))
+        from utils.text_sanitize import clean_ai_text
+        reply = await clean_ai_text(reply, user_id)
     except Exception as e:
         logger.error(f"[VA Preview] GPT call failed for {user_id}: {e}")
-        reply = f"Hey! Thanks for reaching out. I'll get back to you shortly. — {first}"
+        reply = f"Hey! Thanks for reaching out. I'll get back to you shortly. {first}"
 
     return {"reply": reply, "scenario": scenario}
 

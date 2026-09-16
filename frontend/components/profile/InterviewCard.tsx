@@ -86,7 +86,7 @@ export function InterviewCard({ compact, dryRun }: { compact?: boolean; dryRun?:
       await reload();
     } catch (e: any) {
       const msg = e?.response?.data?.detail || 'Could not place the call, try again in a minute';
-      setData(d => d ? { ...d, session: { ...(d.session || { id: '', elapsed_s: 0, rep_turns: 0, covered: [], topics_total: 17, highlights: [], applied_fields: [], labels: {} }), status: 'failed', fail_reason: msg } as any } : d);
+      setData(d => d ? { ...d, session: { ...(d.session || { id: '', elapsed_s: 0, rep_turns: 0, covered: [], topics_total: 10, highlights: [], applied_fields: [], labels: {} }), status: 'failed', fail_reason: msg } as any } : d);
     } finally { setBusy(false); }
   };
   const confirmRedo = () => showConfirm(dryRun ? 'Run the interview again?' : 'Redo the interview?', dryRun ? 'Jessi calls you again. Nothing is saved to your profile unless you tap Save afterwards.' : 'Jessi calls you again and updates your VA with what you say. Anything she learns replaces the old answers.', start, undefined, 'Call me');
@@ -116,8 +116,8 @@ export function InterviewCard({ compact, dryRun }: { compact?: boolean; dryRun?:
       <View style={{ flex: 1 }}>
         <Text style={st.title}>{dryRun ? (done && !active ? 'Test run done' : 'Test the interview') : done && !active ? 'Jessi knows you' : 'Let Jessi interview you'}</Text>
         {!active && <Text style={st.sub}>{dryRun
-          ? (done ? 'Nothing was saved to your profile. Open the write-up to read it or save it.' : `Jessi calls ${data.phone}, interviews you for about 10 minutes and writes up what she learned. Nothing is saved to your profile unless you tap Save afterwards.`)
-          : done ? `${data.persona_filled} of 11 things your VA knows came from you.` : 'A 10 minute phone call. Jessi asks about you, then writes your VA, bio and card in your voice. She learns your voice too, so we always know when it is you on a call.'}</Text>}
+          ? (done ? 'Nothing was saved to your profile. Open the write-up to read it or save it.' : `Jessi calls ${data.phone}, interviews you for about 5 minutes and writes up what she learned. Nothing is saved to your profile unless you tap Save afterwards.`)
+          : done ? `${data.persona_filled} of 11 things your VA knows came from you.` : 'A 5 minute phone call. Jessi asks about you, then writes your VA, bio and card in your voice. She learns your voice too, so we always know when it is you on a call.'}</Text>}
       </View>
     </View>
   );

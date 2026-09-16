@@ -172,6 +172,11 @@ async def build_clone_system_prompt(user_id: str) -> str:
     """Build the fully hydrated system prompt for a user's AI clone."""
     db = get_db()
 
+    # Test Lab `industry_va`: the four-layer, industry-agnostic VA replaces the template entirely once it is on for this rep
+    from services import va_prompt
+    if await va_prompt.enabled_for_id(db, user_id):
+        return await va_prompt.build(db, user_id)
+
     # Get the prompt template
     user_prompt = await db.ai_clone_prompts.find_one({"scope": "user", "user_id": user_id})
     if user_prompt:

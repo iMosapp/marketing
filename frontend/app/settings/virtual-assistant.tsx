@@ -12,6 +12,7 @@ import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHe
 import api from '../../services/api';
 import { resolveUserPhotoUrl } from '../../utils/photoUrl';
 import { InterviewCard } from '../../components/profile/InterviewCard';
+import { FactsCard, useVaConfig } from '../../components/va/FactsCard';
 
 // ── Scenarios the user can preview ────────────────────────────────────────────
 const SCENARIOS = [
@@ -92,7 +93,12 @@ export default function VirtualAssistantScreen() {
 
   const [persona, setPersona] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedScenario, setSelectedScenario] = useState(SCENARIOS[0]);
+  const { config: vaConfig, setConfig: setVaConfig } = useVaConfig();
+  const scenarios = vaConfig?.available && vaConfig.scenarios?.length
+    ? vaConfig.scenarios.map((sc, i) => ({ id: `${vaConfig.industry.key}_${i}`, label: sc.label, icon: sc.icon, message: sc.message }))
+    : SCENARIOS;
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedScenario = scenarios.find(sc => sc.id === selectedId) || scenarios[0];
   const [generating, setGenerating] = useState(false);
   const [sampleReply, setSampleReply] = useState<string | null>(null);
   const [showAllEmpty, setShowAllEmpty] = useState(false);
@@ -194,6 +200,9 @@ export default function VirtualAssistantScreen() {
         {/* Jessi onboarding interview */}
         <InterviewCard compact />
 
+        {/* Test Lab: industry + the facts the VA may answer with */}
+        <FactsCard config={vaConfig} onConfig={setVaConfig} />
+
         {/* Personality Chips */}
         {traitChips.length > 0 && (
           <View style={s.section}>
@@ -287,11 +296,12 @@ export default function VirtualAssistantScreen() {
 
           {/* Scenario selector */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, paddingHorizontal: 20 }} contentContainerStyle={{ gap: 10, paddingRight: 20 }}>
-            {SCENARIOS.map(sc => (
+            {scenarios.map(sc => (
               <TouchableOpacity
                 key={sc.id}
                 style={[s.scenarioPill, selectedScenario.id === sc.id && s.scenarioPillActive]}
-                onPress={() => { setSelectedScenario(sc); setSampleReply(null); }}
+                onPress={() => { setSelectedId(sc.id); setSampleReply(null); }}
+                {...({ testID: `va-scenario-${sc.id}` } as any)}
               >
                 <Ionicons name={sc.icon as any} size={14} color={selectedScenario.id === sc.id ? '#000' : '#C9A962'} />
                 <Text style={[s.scenarioPillText, selectedScenario.id === sc.id && s.scenarioPillTextActive]}>

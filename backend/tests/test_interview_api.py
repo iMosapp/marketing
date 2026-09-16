@@ -53,8 +53,8 @@ def test_status_shape(auth_headers):
             assert isinstance(d["session"]["applied_fields"], list)
             assert isinstance(d["session"]["turns"], list)
             assert isinstance(d["session"]["labels"], dict)
-            assert len(d["session"]["covered"]) == 17
-            assert d["session"]["topics_total"] == 17
+            assert len(d["session"]["covered"]) <= 10
+            assert d["session"]["topics_total"] == 10
 
 
 # ---- sessions/{sid} ----

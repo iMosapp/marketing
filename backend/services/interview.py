@@ -10,6 +10,7 @@ from typing import Optional
 
 from bson import ObjectId
 
+from services import industries as ind
 from services import locales as loc
 from services import voice_id
 from services.scripts import FAIL_REASONS, _app_url, _llm_json, _now, _xml, fail_label, failure_key, hangup_twiml
@@ -19,47 +20,49 @@ from utils.text_sanitize import no_em_dash
 logger = logging.getLogger(__name__)
 
 COLL = "interview_sessions"
-MAX_MINUTES = 12
-WRAP_AFTER_MINUTES = 9
-MAX_REP_TURNS = 48
+MAX_MINUTES = 6
+WRAP_AFTER_MINUTES = 4
+MAX_REP_TURNS = 24
 CALL_TIME_LIMIT_S = (MAX_MINUTES + 3) * 60
 MIN_REP_TURNS = 3  # fewer than this and there is nothing worth building from
 
-TOPICS = [
-    ("nickname", "What customers call them and their role at the store"),
-    ("years", "How long they have been in the business and how they got into it"),
+# Nine neutral topics that fit any industry, plus ONE industry slot (industries.VA[...]["slot"]: what they drive for a dealership, their neighborhood for real estate...)
+BASE_TOPICS = [
+    ("nickname", "What customers call them and their role"),
+    ("years", "How long they have done this work and how they got into it"),
     ("hometown", "Where they grew up and where they live now"),
     ("family", "Family: partner, kids, pets"),
     ("hobbies", "What they do outside work, weekends, hobbies"),
-    ("vehicles", "What they drive and their dream vehicle"),
-    ("specialties", "What they are known for: trucks, first-time buyers, leasing, Spanish speakers, service, anything"),
-    ("ideal_customer", "The kind of customer they love working with"),
-    ("story", "A customer story they are proud of"),
-    ("motto", "A motto or phrase they live by"),
-    ("tone", "How they text customers: casual or buttoned-up, emojis or none, short or detailed"),
-    ("humor", "How much humor they use with customers"),
-    ("phrases", "Go-to phrases they say a lot"),
+    ("why", "Why they do this work and why customers pick them over anyone else"),
+    ("texting", "How they text customers: casual or buttoned-up, emojis or none, short or detailed, how much humor"),
     ("never_say", "Words or things they never say to a customer"),
     ("fun_fact", "A fun fact people are surprised to learn about them"),
-    ("why_me", "Why a customer should pick them over anyone else"),
-    ("greeting", "How they open a text and how they sign off"),
 ]
-TOPIC_KEYS = [k for k, _ in TOPICS]
 
-PERSONA_STR = ["bio", "professional_identity", "hometown", "family_info", "vehicles", "years_experience", "personal_motto", "ideal_customer", "never_say", "custom_phrases", "greeting_style", "signature"]
+
+def slot(industry_key: Optional[str]) -> tuple:
+    return ind.va(industry_key)["slot"]
+
+
+def topics(industry_key: Optional[str]) -> list:
+    field, question, _ = slot(industry_key)
+    return BASE_TOPICS[:5] + [(field, question)] + BASE_TOPICS[5:]
+
+
+PERSONA_STR = ["bio", "professional_identity", "hometown", "family_info", "vehicles", "years_experience", "personal_motto", "ideal_customer", "never_say"]
 PERSONA_LIST = ["hobbies", "fun_facts", "specialties", "interests"]
 PERSONA_ENUM = {"tone": ("casual", "friendly", "professional", "formal"), "humor_level": ("none", "light", "some", "lots"),
                 "response_length": ("brief", "balanced", "detailed"), "emoji_usage": ("never", "minimal", "moderate", "frequent")}
 LABELS = {"bio": "Your story", "professional_identity": "Title", "hometown": "Hometown", "family_info": "Family", "vehicles": "What you drive", "years_experience": "Years in the business",
-          "personal_motto": "Motto", "ideal_customer": "Ideal customer", "never_say": "Never says", "custom_phrases": "Go-to phrases", "greeting_style": "How you open a text", "signature": "Sign-off",
+          "personal_motto": "Motto", "ideal_customer": "Ideal customer", "never_say": "Never says",
           "hobbies": "Hobbies", "fun_facts": "Fun facts", "specialties": "Specialties", "interests": "Interests", "tone": "Tone", "humor_level": "Humor", "response_length": "Message length", "emoji_usage": "Emojis"}
 
 
 def greeting(first: str) -> str:
     hi = f"Hey {first}, " if first else "Hey, "
-    return (f"{hi}it's Jessi from I'm On Social. This is your interview call, about ten minutes, easy questions, nothing graded. "
+    return (f"{hi}it's Jessi from I'm On Social. This is your interview call, about five minutes, easy questions, nothing graded. "
             "Everything you tell me builds your assistant, your bio and your business card so they sound like you. "
-            "Let's start simple: what do your customers usually call you, and what's your role at the store?")
+            "Let's start simple: what do your customers usually call you, and what's your role?")
 
 
 def _first(name: Optional[str]) -> str:
@@ -76,13 +79,14 @@ def serialize(s: Optional[dict]) -> Optional[dict]:
     started = _aware(s.get("started_at"))
     ended = _aware(s.get("ended_at"))
     elapsed = int(((ended or _now()) - started).total_seconds()) if started and s.get("status") != "dialing" else 0
+    slot_field, _, slot_label = slot(s.get("industry"))
     return {"id": str(s["_id"]), "status": s.get("status"), "call_status": s.get("call_status"), "fail_reason": s.get("fail_reason"), "end_reason": s.get("end_reason"),
             "started_at": started.isoformat() if started else None, "ended_at": ended.isoformat() if ended else None, "elapsed_s": max(0, elapsed),
             "turns": [{"role": t["role"], "text": t["text"], "at": t["at"].isoformat() if hasattr(t.get("at"), "isoformat") else t.get("at")} for t in s.get("turns") or []],
             "rep_turns": sum(1 for t in s.get("turns") or [] if t["role"] == "rep"),
-            "covered": s.get("covered") or [], "topics_total": len(TOPICS), "extracted": s.get("extracted") or None, "highlights": s.get("highlights") or [],
-            "applied_fields": s.get("applied_fields") or [], "applied": bool(s.get("applied")), "dry_run": bool(s.get("dry_run")), "labels": LABELS, "recording_url": s.get("recording_url"), "recording_seconds": s.get("recording_seconds"),
-            "voice": s.get("voice"), "rep_phone": s.get("rep_phone")}
+            "covered": s.get("covered") or [], "topics_total": len(topics(s.get("industry"))), "extracted": s.get("extracted") or None, "highlights": s.get("highlights") or [],
+            "applied_fields": s.get("applied_fields") or [], "applied": bool(s.get("applied")), "dry_run": bool(s.get("dry_run")), "labels": {**LABELS, slot_field: slot_label}, "recording_url": s.get("recording_url"), "recording_seconds": s.get("recording_seconds"),
+            "voice": s.get("voice"), "rep_phone": s.get("rep_phone"), "industry": s.get("industry")}
 
 
 # ---------------------------------------------------------------- placing the call
@@ -100,11 +104,12 @@ async def start(db, me: dict, dry_run: bool = False) -> dict:
     if not from_number:
         raise RuntimeError("No number to call you from yet, ask your admin to assign one")
     store = await db.stores.find_one({"_id": ObjectId(me["store_id"])}, {"name": 1, "locale": 1}) if ObjectId.is_valid(str(me.get("store_id") or "")) else None
+    industry = (await ind.va_industry_for(db, me))["key"]
     now = _now()
     token = uuid.uuid4().hex
     await hangup_live(db, str(me["_id"]), "restarted")
     doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "from_number": from_number, "store_id": me.get("store_id"),
-           "store_name": (store or {}).get("name") or "the store", "role_title": me.get("title") or "", "locale": loc.key_of(store),
+           "store_name": (store or {}).get("name") or "the store", "role_title": me.get("title") or "", "locale": loc.key_of(store), "industry": industry,
            "status": "dialing", "token": token, "turns": [], "covered": [], "dry_run": bool(dry_run), "created_at": now, "updated_at": now}
     res = await db[COLL].insert_one(doc)
     sid = str(res.inserted_id)
@@ -206,17 +211,19 @@ async def relay_setup(db, sid: str, msg: dict):
 def _system(s: dict, minutes: float, rep_turns: int) -> str:
     first = _first(s.get("rep_name")) or "the rep"
     covered = set(s.get("covered") or [])
-    left = [f"{k}: {label}" for k, label in TOPICS if k not in covered]
-    done = [k for k in TOPIC_KEYS if k in covered]
+    tops = topics(s.get("industry"))
+    left = [f"{k}: {label}" for k, label in tops if k not in covered]
+    done = [k for k, _ in tops if k in covered]
     out_of_time = minutes >= MAX_MINUTES or rep_turns >= MAX_REP_TURNS or not left
     if out_of_time:
         pace = "TIME IS UP: do not ask anything new. Thank them by name, tell them their assistant and card will be ready in the app in a minute, say goodbye, set ended to true."
     elif minutes >= WRAP_AFTER_MINUTES:
         pace = f"You are {minutes:.0f} minutes in: ask at most one or two more of the most valuable topics left, then wrap up warmly and set ended to true."
     else:
-        pace = f"You are {minutes:.0f} minutes in. Keep a relaxed pace, one question at a time."
+        pace = f"You are {minutes:.0f} minutes in. Keep a relaxed pace, one question at a time, about five minutes total."
+    business = ind.va(s.get("industry"))["business"]
     return (f"You are Jessi, the friendly onboarding host at I'm On Social, on a LIVE phone call interviewing {first}"
-            f"{', ' + s['role_title'] if s.get('role_title') else ''} at {s.get('store_name') or 'their store'}. "
+            f"{', ' + s['role_title'] if s.get('role_title') else ''} at {s.get('store_name') or 'their ' + business}. "
             "Purpose: learn who they really are so we can write their AI assistant's persona, their bio and their business card in THEIR voice. "
             "STYLE: warm, curious, quick. React to what they just said in a few words (never repeat it back in full), then ask ONE question. "
             "1 to 2 short spoken sentences, under 40 words total, contractions, no lists, never say 'great question', never coach, never sell, no em dashes. "
@@ -247,7 +254,7 @@ async def relay_turn(db, sid: str, heard: str) -> dict:
         data = {}
     say = no_em_dash(str(data.get("say") or "")).strip() or "Sorry, I lost you for a second. Tell me that one more time?"
     ended = bool(data.get("ended")) or minutes >= MAX_MINUTES + 1
-    covered = [k for k in (data.get("covered") or []) if k in TOPIC_KEYS]
+    covered = [k for k in (data.get("covered") or []) if k in {t for t, _ in topics(s.get("industry"))}]
     sets = {"updated_at": now}
     if ended:
         sets["status"] = "ending"
@@ -344,14 +351,17 @@ async def apply_session(db, s: dict) -> dict:
 
 async def extract(s: dict) -> dict:
     first = _first(s.get("rep_name")) or "the rep"
+    slot_field, slot_question, _ = slot(s.get("industry"))
     transcript = "\n".join(f"{'JESSI' if t['role'] == 'jessi' else first.upper()}: {t['text']}" for t in s.get("turns") or [])
-    system = (f"You turn an onboarding interview transcript into {first}'s AI assistant profile for a sales app. Use ONLY what {first} said (Jessi's lines are just questions); "
+    slot_desc = f"vehicles ({slot_question}), " if slot_field == "vehicles" else ""
+    interests_desc = f"interests (list; {slot_question})" if slot_field == "interests" else "interests (list, only if they came up)"
+    system = (f"You turn an onboarding interview transcript into {first}'s AI assistant profile for a business texting app. Use ONLY what {first} said (Jessi's lines are just questions); "
               "leave a field empty (\"\" or []) when the interview did not cover it, never invent. Write in their own words and rhythm where possible. Speech-to-text mistakes are likely, fix them silently. No em dashes, no cliches like passionate or dedicated. "
               "Return ONLY JSON with exactly these keys: "
               "bio (3 to 5 sentences, FIRST PERSON, warm and specific, for their public business card and landing page: who they are, how long, what they are known for, one personal touch such as family, hobby or hometown, and why customers pick them), "
-              "professional_identity (job title as it would read on a card, e.g. Sales Consultant), hometown, family_info, vehicles (what they drive and dream vehicle), years_experience (e.g. 12 years), personal_motto, ideal_customer, "
-              "never_say (words or topics they avoid with customers), custom_phrases (their go-to phrases, comma separated), greeting_style (how they open a text, use {name} for the customer's name, e.g. Hey {name}!), signature (how they sign off, or empty), "
-              "hobbies (list of short strings), fun_facts (list), specialties (list), interests (list), "
+              f"professional_identity (job title as it would read on a card, e.g. Sales Consultant), hometown, family_info, {slot_desc}years_experience (e.g. 12 years), personal_motto (only if they said one), ideal_customer (only if it came up), "
+              "never_say (words or topics they avoid with customers), "
+              f"hobbies (list of short strings), fun_facts (list), specialties (list, what they are known for, only if it came up), {interests_desc}, "
               "tone (one of casual, friendly, professional, formal), humor_level (one of none, light, some, lots), response_length (one of brief, balanced, detailed), emoji_usage (one of never, minimal, moderate, frequent), "
               "highlights (5 to 8 short plain sentences of what Jessi learned, written to the rep as 'you', e.g. You have sold trucks in Ogden for 12 years).")
     data = await _llm_json(system, f"INTERVIEW TRANSCRIPT:\n{transcript[:14000]}", timeout=90)
@@ -361,6 +371,8 @@ async def extract(s: dict) -> dict:
         if isinstance(v, dict):
             v = ", ".join(str(x) for x in v.values() if x)
         out[k] = no_em_dash(", ".join(str(x) for x in v) if isinstance(v, list) else str(v or "")).strip()[:1200 if k == "bio" else 300]
+    if slot_field != "vehicles":
+        out["vehicles"] = ""
     for k in PERSONA_LIST:
         v = data.get(k)
         items = v if isinstance(v, list) else ([x.strip() for x in str(v).split(",")] if v else [])
