@@ -330,6 +330,18 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .page-hero h1{font-size:46px;font-weight:900;line-height:1.08;letter-spacing:-.035em;margin-bottom:14px;max-width:820px}
 .page-hero-sub{font-size:18px;color:var(--text-2);line-height:1.6;max-width:720px}
 .hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;align-items:center}
+.meaning{max-width:1240px;margin:0 auto 34px;padding:0 24px}
+.meaning-box{position:relative;border:1px solid rgba(201,169,98,.45);background:linear-gradient(180deg,rgba(201,169,98,.10),rgba(201,169,98,.03));border-radius:22px;padding:30px 34px;display:grid;grid-template-columns:1.25fr 1fr;gap:28px;align-items:center}
+.meaning-box .sec-tag{margin-bottom:10px}
+.meaning h2{font-size:26px;font-weight:900;letter-spacing:-.025em;line-height:1.2;margin-bottom:12px}
+.meaning h2 em{font-style:normal;color:#8a6d2b}
+.meaning p{font-size:16px;color:var(--text-2);line-height:1.65}
+.meaning p+p{margin-top:10px}
+.pitch{border-left:3px solid var(--gold);padding:6px 0 6px 20px}
+.pitch .q{font-size:22px;font-weight:700;line-height:1.4;color:var(--text);letter-spacing:-.01em}
+.pitch .q strong{display:block;font-size:13px;letter-spacing:3px;font-weight:800;margin-bottom:8px}
+.pitch .q strong{color:#8a6d2b}
+.pitch .l{font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-3);margin-top:10px}
 .pill{font-size:13px;font-weight:600;color:var(--text-2);background:var(--bg-2);border:1px solid var(--border-2);border-radius:980px;padding:7px 14px}
 .pill.gold{color:#8a6d2b;background:rgba(201,169,98,.12);border-color:rgba(201,169,98,.35)}
 .legend{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto;align-items:center;font-size:12px;color:var(--text-3)}
@@ -365,10 +377,11 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 .ft-copy{font-size:12px;color:var(--text-3)}
 .ft-links{display:flex;gap:18px}.ft-links a{font-size:13px;color:var(--text-3);text-decoration:none}.ft-links a:hover{color:var(--blue)}
 @media(max-width:1000px){.wrap{grid-template-columns:1fr}.toc{position:static;flex-direction:row;flex-wrap:wrap}.toc-t{display:none}.toc a em{display:none}}
-@media(max-width:768px){.page-hero{padding:110px 20px 24px}.page-hero h1{font-size:30px}.page-hero-sub{font-size:15.5px}.wrap{padding:0 14px 60px;gap:20px}.logo img{height:56px}.nav-cta{display:none}
+@media(max-width:1000px){.meaning-box{grid-template-columns:1fr}}
+@media(max-width:768px){.meaning{padding:0 14px;margin-bottom:22px}.meaning-box{padding:20px;border-radius:16px}.meaning h2{font-size:21px}.meaning p{font-size:14.5px}.pitch .q{font-size:17px}.page-hero{padding:110px 20px 24px}.page-hero h1{font-size:30px}.page-hero-sub{font-size:15.5px}.wrap{padding:0 14px 60px;gap:20px}.logo img{height:56px}.nav-cta{display:none}
 .row{grid-template-columns:1fr}.row.hdr{display:none}.c-name{border-right:none;padding-bottom:6px}.c-what{padding-top:6px}.c-why{border-left:none;border-top:1px dashed var(--border)}
 .lbl{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);margin-bottom:4px}.grp-head h2{font-size:23px}.legend{margin-left:0}}
-@media print{nav,.toc,.btn-print,footer,.hero-meta .pill.gold{display:none!important}.page-hero{padding:0 0 16px}.page-hero h1{font-size:26px}.page-hero-sub{font-size:13px}.wrap{display:block;padding:0}.grp{margin-bottom:22px;padding-top:6px;break-inside:auto}.grp-head h2{font-size:18px}.grp-head p{font-size:12px}
+@media print{nav,.toc,.btn-print,footer,.hero-meta .pill.gold{display:none!important}.meaning{padding:0;margin-bottom:14px}.meaning-box{padding:12px 16px;grid-template-columns:1.3fr 1fr;gap:16px;border-radius:8px;background:none}.meaning h2{font-size:15px;margin-bottom:6px}.meaning p{font-size:11px;line-height:1.45}.pitch .q{font-size:12.5px}.pitch .l{font-size:9px}.page-hero{padding:0 0 16px}.page-hero h1{font-size:26px}.page-hero-sub{font-size:13px}.wrap{display:block;padding:0}.grp{margin-bottom:22px;padding-top:6px;break-inside:auto}.grp-head h2{font-size:18px}.grp-head p{font-size:12px}
 .rows{border-radius:6px}.row{break-inside:avoid}.row>div{padding:8px 10px;font-size:10.5px;line-height:1.4}.c-name h3{font-size:11.5px;margin:0 0 4px}.row.hdr>div{padding:5px 10px;font-size:9px}.aud{font-size:8.5px;border:1px solid var(--c)}body{color:#000}}
 </style>
 </head>
@@ -390,6 +403,20 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     <span class="pill">{{TOTAL}} features</span><span class="pill">11 areas</span><span class="pill gold">Internal review copy</span>
     <div class="legend">Who it is for: <span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span><span class="aud" style="--c:#34C759">Customer-facing</span>
       <button class="btn-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Print / save PDF</button></div>
+  </div>
+</section>
+<section class="meaning">
+  <div class="meaning-box">
+    <div>
+      <div class="sec-tag" style="color:#C9A962">Why "I'm On Social"?</div>
+      <h2>Because relationships don't run <em>from 9 to 5.</em></h2>
+      <p><strong>I'm On</strong> means always on: remembering, listening, following up, and staying connected. <strong>Social</strong> means the human relationships that drive business, not social media.</p>
+      <p>I'm On Social uses AI to create 24/7 social engagement, helping you remember every relationship, know when to reach out, and stay connected long after the first conversation or sale. Every feature on this sheet is one more way the system stays on so the salesperson can stay human.</p>
+    </div>
+    <div class="pitch">
+      <div class="q"><strong>I'M ON SOCIAL</strong><br>You make the connection.<br>We help keep it alive.</div>
+      <div class="l">The one-line positioning</div>
+    </div>
   </div>
 </section>
 <div class="wrap">
