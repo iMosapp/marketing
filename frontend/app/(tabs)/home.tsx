@@ -1003,63 +1003,13 @@ function HomeScreen() {
         </TouchableOpacity>
 
         {!simpleHome && (<>
-        {/* ── QUICK ACTIONS — compact row, SOLD! front and center ── */}
-        <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 16 }}>
-          {[
-            { key: 'sold', icon: 'trophy', label: 'SOLD!', color: '#C9A962', hero: true, onPress: () => router.push('/sold-quick' as any) },
-            { key: 'new-contact', icon: 'person-add', label: 'Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
-            { key: 'card', icon: 'card', label: 'Card', color: '#007AFF', onPress: () => setShowSharePicker(true) },
-            { key: 'review', icon: 'star', label: 'Review', color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
-          ].map(t => (
-            <TouchableOpacity
-              key={t.key}
-              onPress={t.onPress}
-              activeOpacity={0.75}
-              style={{
-                flex: 1,
-                backgroundColor: t.color + (t.hero ? '20' : '12'),
-                borderWidth: 1.5,
-                borderColor: t.color + (t.hero ? '77' : '35'),
-                borderRadius: 14,
-                paddingVertical: 12,
-                alignItems: 'center',
-                gap: 5,
-              }}
-              testID={`quick-action-${t.key}`}
-              dataSet={{ testid: `quick-action-${t.key}` } as any}
-            >
-              <Ionicons name={t.icon as any} size={22} color={t.color} />
-              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 13, fontWeight: '800', color: t.hero ? t.color : colors.text }}>
-                {t.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* ── WEEKLY WINS — Monday morning recap ── */}
         <WeeklyWinsCard userId={user?._id || ''} forceShow={winsParam === '1'} />
 
         {/* ── HOT VEHICLES — what shoppers are opening and asking about this week ── */}
         <HotVehiclesCard userId={user?._id || ''} variant="home" />
 
-        {streak && (
-          <TouchableOpacity
-            onPress={() => router.push('/touchpoints')}
-            style={{ marginHorizontal: 16, marginBottom: 14, borderRadius: 16,
-              backgroundColor: streak.streak >= 3 ? '#FF950018' : streak.at_risk ? '#FF3B3012' : colors.card,
-              borderWidth: 1.5, borderColor: streak.streak >= 3 ? '#FF9500' : streak.at_risk ? '#FF3B30' : colors.border,
-              flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10 }}
-          >
-            <Text style={{ fontSize: 26 }}>{streak.emoji}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: streak.streak >= 3 ? '#FF9500' : streak.at_risk ? '#FF3B30' : colors.text }}>
-                {streak.label}
-              </Text>
-              {streak.at_risk && <Text style={{ fontSize: 12, color: '#FF3B30', marginTop: 1 }}>Reach out to someone to keep it going</Text>}
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-          </TouchableOpacity>
-        )}
+        {/* streak card hidden for now (June 2026): bring back by rendering `streak` here */}
 
         {/* ── MY MONTH SALES WIDGET ── */}
         {soldPerf && (
@@ -1395,10 +1345,11 @@ function HomeScreen() {
       {/* ── Floating quick actions (secondary actions) ── */}
       <QuickActionsFab
         actions={[
-          ...(simpleHome ? [{ key: 'sold', icon: 'trophy', label: 'SOLD!', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) }] : []),
           { key: 'dates-calendar', icon: 'calendar', label: 'Calendar', color: '#AF52DE', onPress: () => router.push('/dates-calendar' as any) },
-          { key: 'send-photo', icon: 'camera', label: 'Send Photo', color: '#32ADE6', onPress: () => router.push('/quick-send/photo' as any) },
-          { key: 'voice-note', icon: 'mic', label: 'Voice Note', color: '#34C759', onPress: () => openActionPicker('voice', 'Voice Note — pick a person') },
+          { key: 'review', icon: 'star', label: 'Review', color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
+          { key: 'card', icon: 'card', label: 'Card', color: '#007AFF', onPress: () => setShowSharePicker(true) },
+          { key: 'new-contact', icon: 'person-add', label: 'Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
+          { key: 'sold', icon: 'trophy', label: 'SOLD!', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
           { key: 'make-call', icon: 'call', label: 'Make a Call', color: '#30B0C7', onPress: () => router.push('/(tabs)/dialer' as any) },
         ]}
       />
