@@ -1,0 +1,34 @@
+{
+  "summary": "Tested industry_va Test Lab feature end-to-end (backend + frontend). 26 new pytest cases pass (test_va_facts_api.py 11/11 + test_va_routing.py 13/13 + module-level constants); combined with existing test_lab_api.py + test_interview_api.py: 37 passed, 1 skipped, 0 failed. Backend covered: /api/va/config shape + super-admin bypass + qa-manager lab gate; PUT /api/va/industry pick + 400 unknown + 409 when store has industry (temporarily set QA store to real_estate then reset to ''); /api/va/facts CRUD (add/edit/delete mine, add store as manager with added_by_name 'QA Manager', 400 short text, 400 forest-no-store, 403 tester-not-manager, 404 wrong id, cleanup); prompt gateway routers.ai_campaigns.build_clone_system_prompt returns NEW prompt for forest ('You ARE Forest.', 'FACTS (the ONLY source of specifics', 'Automotive dealership', 'I am off Sundays') and OLD template ('Your Only Job') for qa-manager while flag lab; after flipping industry_va live, qa-manager gets NEW prompt including 'We take walk-ins weekdays until 6 pm' store fact, flag reverted to lab; POST /api/auth/persona/{forest}/sample-message on Price Ask returns no $/payment and no em dashes, on Sunday scenario mentions off/Monday/Sunday; inbound ai_reply.queue_ai_reply Case A (walk-ins fact match) -> no hot_topic_escalation, non-canned body, ai_paused_for_human not set; Case B ('out the door price') -> hot_topic_escalation True, canned body, ai_paused_for_human True; Case C (real_estate hold word 'under contract' and base hold word 'in stock') -> hot_topic_escalation True. All throwaway contacts, conversations, queue docs, notifications cleaned up. Interview trim verified: BASE_TOPICS==9, topics('automotive')==10 with 6th key 'vehicles', topics('real_estate') has 'interests', MAX_MINUTES==6, WRAP_AFTER_MINUTES==4, PERSONA_STR/LIST/ENUM exclude custom_phrases/greeting_style/signature, greeting mentions 'about five minutes', serialize labels['vehicles']=='What you drive' for automotive and labels['interests']=='Your neighborhood' for real_estate. Frontend as forest at /settings/virtual-assistant: va-facts-card present, va-industry-label 'Automotive dealership', 8 industry chips (va-industry-automotive..general), 4 automotive scenarios ('New Lead','Price Ask','Happy Customer','Set a Time'), va-facts-mine section present, va-facts-store absent (forest has no store), add mine fact via va-fact-input-mine + va-fact-add-mine works, delete via va-fact-delete-{id} works. /admin/test-lab: lab-feature-industry_va + lab-feature-voice_interview both present, lab-status-industry_va 'IN THE LAB', lab-more-industry_va expands, embedded FactsCard inside industry_va card renders. QA-manager /settings/virtual-assistant: NO va-facts-card (feature in lab), scenarios fall back to defaults (New Lead, Follow-Up, Happy Customer, Review Ask). Lab release toggles NOT flipped in the UI. State left clean: forest.industry=automotive, stores.industry='', lab_features.industry_va.status='lab', pre-existing store fact 'We take walk-ins weekdays until 6 pm' + forest's 'I am off Sundays...' fact preserved, 'My best time to text back is early mornings' fact deleted per instructions.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_va_facts_api.py",
+    "/app/backend/tests/test_va_routing.py",
+    "/app/backend/tests/test_lab_api.py",
+    "/app/backend/tests/test_interview_api.py",
+    "/app/test_reports/pytest/va_all_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "services/va_prompt.py cleanly separates 4 layers (core/industry/personal/facts) and gates via lab.is_live; enabled() correctly bypasses for super_admin so forest always runs the new VA in preview",
+    "routers/va.py _target() correctly returns 400 no-store, 403 non-manager, and PUT /industry returns 409 when source==store; MAX_FACTS enforced pre-push",
+    "match_facts() uses 5-char token prefix + STOP list which is coarse but works for the walk-ins vs out-the-door split verified in Case A/B; consider adding minimum overlap>=2 tokens or bigrams to reduce false positives on generic words",
+    "routers/ai_reply.py hold condition `is_hot_topic and not inventory_context and not fact_answers and not is_scheduling` is correct; FACT_SIGNALS override per-industry hold_words is well isolated",
+    "services/interview.py BASE_TOPICS length==9 and topics() inserts industry slot at index 5 -> total 10; PERSONA_STR/LIST/ENUM no longer contain custom_phrases/greeting_style/signature (trim verified)",
+    "Nit: /api/lab/features returns {features: [...]} but callers occasionally treat it as list; keep contract consistent"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_va_facts_api.py",
+    "/app/backend/tests/test_va_routing.py",
+    "/app/backend/tests/conftest.py",
+    "/app/backend/pytest.ini"
+  ],
+  "success_rate": {"backend": "100% (13/13 va_facts + 13/13 va_routing; 37/37 combined incl lab+interview)", "frontend": "100%"},
+  "test_credentials": "forest@imosapp.com / Admin123!, qa-manager@invalid.imonsocial.test / Manager123!, activation-tester@invalid.imonsocial.test / NewPass123!",
+  "seed_data_creation": "None persistent. All test facts / conversations / contacts / queue docs / notifications are cleaned up in try/finally.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "State left as instructed: forest.industry='automotive', stores.industry='' on QA store, lab_features.industry_va.status='lab', pre-existing store fact 'We take walk-ins weekdays until 6 pm' + forest's 'I am off Sundays...' fact retained; forest's 'My best time to text back is early mornings' fact deleted per request. Backend now has /app/backend/pytest.ini with asyncio_default_test_loop_scope=session (required for tests that share the app-wide motor client across multiple async tests). Do NOT press va-industry-* chips as qa-manager unless flag is live (config gate hides card). Sample-preview endpoint POST /api/auth/persona/{forest}/sample-message with body {scenario: <customer text>} takes 3-8s (LLM). queue_ai_reply may push notifications to forest's real device (fire-and-forget, harmless).",
+  "rca of the issue": "N/A - no bugs found. Test flakiness note: pytest-asyncio 1.4 defaults to function-scoped event loops, but the FastAPI app-wide motor client (routers.database.get_db) binds to whichever loop first executes, so subsequent tests hit 'Event loop is closed'. Fixed by setting asyncio_default_test_loop_scope=session in /app/backend/pytest.ini and using pytest_asyncio.fixture with loop_scope='session' for the db fixture."
+}

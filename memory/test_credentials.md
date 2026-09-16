@@ -89,3 +89,9 @@
 - NEVER press "Call me" / "Redo" as forest (real phone 801-634-9122). activation-tester (500-555-0006) is safe: the call fails "Your phone was busy" in ~30-45 s and exercises the failed state. `POST /api/interview/start {"dry_run": true}` is super-admin only.
 - Full no-phone simulation (websocket + LLM + persona build + dry run + lab flags): `cd /app/backend && python tests/interview_sim.py` (~2.5 min; `--keep` leaves the tester's completed sessions for UI checks at `/interview/review`). Pytests from testing agents: `tests/test_interview_api.py`, `tests/test_lab_api.py`.
 - Voice ID: `PICOVOICE_ACCESS_KEY` is empty in preview -> status `not_configured` everywhere (expected, not a bug).
+
+## Industry VA + facts (Sep 2026)
+- Test Lab feature `industry_va` is `lab` by default: only forest (super_admin) runs the new 4-layer prompt and sees `va-facts-card` on `/settings/virtual-assistant` and inside `/admin/test-lab`. qa-manager / activation-tester see nothing until `PUT /api/lab/features/industry_va {"status":"live"}` (flip back to `lab` after tests).
+- forest has NO store, so his industry is his own pick (`users.industry`, currently `automotive`; `PUT /api/va/industry`) and he cannot add store facts (400). qa-manager (store_manager on 69a0b7095fddcede09591668) adds store facts (`scope: "store"`); activation-tester gets 403 on store facts, 200 on `mine`.
+- Preview data to keep: store fact "We take walk-ins weekdays until 6 pm" on the QA store, forest fact "I am off Sundays, I answer texts Monday morning". Delete anything else you add.
+- Backend tests: `cd /app/backend && set -a && . ./.env && set +a && python -m pytest tests/test_va_facts_api.py tests/test_va_routing.py` (routing tests call `queue_ai_reply` in-process with throwaway contacts; LLM ~5 s per case, cleaned up).
