@@ -1,186 +1,149 @@
 {
-  "app_context": {
-    "name": "i'M On Social (iMOS)",
-    "type": "mobile_web_app",
-    "theme": "dark",
-    "accent_color": "#C9A962",
-    "type_scale": {
-      "header": 28,
-      "title": 20,
-      "nav": 17,
-      "row_title": 16,
-      "body": 15,
-      "secondary": 13,
-      "eyebrow": 12,
-      "badges": 11
+  "design_system": {
+    "theme": "dark_first",
+    "backgrounds": {
+      "app_bg": "#000000",
+      "surface_base": "#0B0B0C",
+      "card_bg": "#1C1C1E",
+      "card_bg_elevated": "#2C2C2E",
+      "glass_bg": "rgba(28, 28, 30, 0.75)"
     },
-    "copy_rule": "NO EM DASHES IN ANY PROPOSED COPY EVER"
+    "colors": {
+      "gold_accent": "#C9A962",
+      "gold_subtle": "rgba(201, 169, 98, 0.15)",
+      "gold_border": "rgba(201, 169, 98, 0.35)",
+      "system_blue": "#007AFF",
+      "system_blue_subtle": "rgba(0, 122, 255, 0.15)",
+      "system_green": "#34C759",
+      "system_green_subtle": "rgba(52, 199, 89, 0.15)",
+      "system_red": "#FF3B30",
+      "system_orange": "#FF9500",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#8E8E93",
+      "text_tertiary": "#636366",
+      "border_subtle": "rgba(255, 255, 255, 0.10)"
+    },
+    "typography": {
+      "font_family": "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif",
+      "heading_h1": {
+        "font_size": "22px",
+        "font_weight": "700",
+        "line_height": "28px",
+        "letter_spacing": "-0.4px"
+      },
+      "heading_h2": {
+        "font_size": "17px",
+        "font_weight": "600",
+        "line_height": "22px",
+        "letter_spacing": "-0.2px"
+      },
+      "section_label": {
+        "font_size": "11px",
+        "font_weight": "700",
+        "text_transform": "uppercase",
+        "letter_spacing": "0.8px"
+      },
+      "body_primary": {
+        "font_size": "15px",
+        "font_weight": "400",
+        "line_height": "20px"
+      },
+      "body_medium": {
+        "font_size": "15px",
+        "font_weight": "600",
+        "line_height": "20px"
+      },
+      "caption_meta": {
+        "font_size": "13px",
+        "font_weight": "400",
+        "line_height": "16px"
+      },
+      "badge_text": {
+        "font_size": "12px",
+        "font_weight": "600"
+      }
+    },
+    "spacing_scale": {
+      "screen_padding": "16px",
+      "card_padding": "14px 16px",
+      "gap_tight": "6px",
+      "gap_medium": "12px",
+      "gap_large": "16px",
+      "section_margin": "16px"
+    },
+    "surface_treatment_rules": {
+      "rule_1_standard_card": "Use #1C1C1E with 1px border border_subtle and rounded-2xl (16px) for standard grouping blocks.",
+      "rule_2_gold_card": "Reserve gold borders and gold subtles strictly for high-value AI / 'Ask Jessi' / 'Deal Status' highlights. Max 1 gold card visible on screen at any time to avoid visual competition.",
+      "rule_3_flat_rows": "Inside cards or lists, use flat 1px subtle divider lines instead of nesting cards inside cards.",
+      "rule_4_header_glass": "Header and bottom composer use blur background rgba(28,28,30,0.85) with backdrop-filter blur(20px) and bottom/top border rgba(255,255,255,0.1)."
+    }
   },
-  "information_architecture_proposal": {
-    "summary": "Consolidate all lead-related flows into a primary 'Leads' hub section while deduplicating scattered items across Manage, Settings, and Admin. Daily salesperson workflows stay accessible in 'My Brand' and 'My Tools' without duplicate clutter.",
-    "section_order": [
+  "layout_architecture": {
+    "screen": "Contact Detail Screen (/app/frontend/app/contact/[id].tsx or component tree)",
+    "top_to_bottom_blueprint": [
       {
-        "id": "leads",
-        "title": "Leads",
-        "icon": "flame",
-        "color": "#FF3B30",
-        "subtitle": "Queue, retries, source tracking and auto-text rules",
-        "defaultExpanded": true,
-        "items": [
-          {
-            "id": "internet_leads",
-            "title": "Internet Leads",
-            "subtitle": "Shared lead queue, speed-to-lead and call retries report",
-            "route": "/leads",
-            "icon": "globe",
-            "color": "#FF3B30",
-            "visibility": "all_users"
-          },
-          {
-            "id": "call_retries",
-            "title": "Call Retries",
-            "subtitle": "Voicemail retry cadence and auto just-tried-you text",
-            "route": "/settings/call-retries",
-            "icon": "call",
-            "color": "#FF9F0A",
-            "visibility": "all_users"
-          },
-          {
-            "id": "lead_source_queue",
-            "title": "Lead Source Queue",
-            "subtitle": "Inbound lead status and queued auto-text logs",
-            "route": "/admin/internet-leads",
-            "icon": "flash",
-            "color": "#C9A962",
-            "visibility": "managers_only"
-          },
-          {
-            "id": "lead_source_config",
-            "title": "Lead Source Config",
-            "subtitle": "ADF webhooks, texting windows and call ladder",
-            "route": "/admin/lead-sources",
-            "icon": "megaphone",
-            "color": "#5856D6",
-            "visibility": "managers_only"
-          },
-          {
-            "id": "team_availability",
-            "title": "Team Availability",
-            "subtitle": "Shift status driving active lead distribution",
-            "route": "/admin/team-availability",
-            "icon": "radio-button-on",
-            "color": "#34C759",
-            "visibility": "managers_only"
-          }
-        ]
+        "position": 1,
+        "component": "Header",
+        "description": "Sticky top bar with back navigation, contact name title, open in Inbox icon, and Edit trigger."
       },
       {
-        "id": "my_brand",
-        "title": "My Brand",
-        "icon": "sparkles",
-        "color": "#C9A962",
-        "subtitle": "Personal cards, link pages, showcases and templates",
-        "defaultExpanded": true
+        "position": 2,
+        "component": "HeroSection",
+        "description": "Unified Hero Card: Clean avatar + Touchpoint counter pill, Contact full name (22px bold), Gold Vehicle Badge tag, location/occupation/relationship duration meta line, clean 4-stat metrics row (Touchpoints, Messages, Clicks, Campaigns), and organized metadata pills (Tags, Dates, Active Campaigns) separated by category."
       },
       {
-        "id": "manage",
-        "title": "Manage",
-        "icon": "settings-outline",
-        "color": "#8E8E93",
-        "subtitle": "Tags, search, inventory, reviews and campaigns",
-        "items": [
-          "Tags",
-          "Calendar",
-          "Keyword Auto-Tags",
-          "Keyword Search",
-          "Inventory",
-          "Campaigns (Managers)",
-          "Review Center",
-          "Showcase",
-          "Review Links"
-        ]
+        "position": 3,
+        "component": "RelationshipHealthBadge",
+        "description": "Integrated Health Pill (Opportunity/Advocate/Warm/Cooling/Cold) with subtle color-coded dot and last engagement timestamp."
       },
       {
-        "id": "my_tools",
-        "title": "My Tools",
-        "icon": "apps",
-        "color": "#007AFF",
-        "subtitle": "Daily touchpoints, AI assistants and team chat"
+        "position": 4,
+        "component": "QuickActionsRow",
+        "description": "5 primary actions: Call, Text (scrolls to composer), Voice Note/Record, Add Task, Mark Sold (Gold accent). Replaced duplicate email with voice note."
       },
       {
-        "id": "performance",
-        "title": "My Performance",
-        "icon": "stats-chart",
-        "color": "#34C759",
-        "subtitle": "Personal metrics, team sales, engagement and health"
+        "position": 5,
+        "component": "ContactTasksCard",
+        "description": "Up Next Action Card: Display active open tasks for this contact or 'No pending tasks' with '+ Add Task' quick button."
       },
       {
-        "id": "learning",
-        "title": "Learning",
-        "icon": "school",
-        "color": "#FF9500",
-        "subtitle": "Training hub, SOPs and video guides"
+        "position": 6,
+        "component": "IntelTeaserAndChatCard",
+        "description": "Merged Jessi Briefing Teaser & 'Ask Jessi' prompt into one cohesive AI Intelligence Card. Shows 1 key insight line with expandable full briefing + instant Ask Jessi search bar."
       },
       {
-        "id": "settings",
-        "title": "Settings",
-        "icon": "settings",
-        "color": "#8E8E93",
-        "subtitle": "Security, schedule, notification alerts and support"
+        "position": 7,
+        "component": "TabNavigation",
+        "description": "Segmented tab bar: [Details] [Calls] [Feed]. Sticky below hero/AI cards."
       },
       {
-        "id": "admin_hub",
-        "title": "Admin",
-        "icon": "shield-half",
-        "color": "#FF3B30",
-        "subtitle": "Store setup, account management and internal operations",
-        "groups": [
-          "Set Up",
-          "Account Management",
-          "Internal Operations"
-        ]
+        "position": 8,
+        "component": "TabContentArea",
+        "sub_tabs": {
+          "Details": "Clean list grouping: 1. Action Progress Tracker, 2. Personal Intelligence Facts, 3. Vehicle & Purchase History, 4. Important Dates & Opt-ins, 5. Campaign Enrollments, 6. Share & CRM Export.",
+          "Calls": "List of recorded calls & voice notes with audio waveform playback, transcription toggle, and summary notes.",
+          "Feed": "Chronological searchable timeline of all touchpoints (SMS, calls, cards, AI triggers) with date grouping and filter pills."
+        }
+      },
+      {
+        "position": 9,
+        "component": "StickyBottomComposer",
+        "description": "Bottom fixed bar with SMS/Email mode selector, smart suggestion sparkle button, text input, quick media/card attachments toggle, and primary send button."
       }
     ]
   },
-  "tile_grid_recommendation": {
-    "title": "WHAT DO YOU WANT TO DO?",
-    "layout": "2 columns, 6 tiles",
-    "tiles": [
-      { "label": "Internet Leads", "sub": "Incoming lead queue", "icon": "flame", "color": "#FF3B30", "route": "/leads" },
-      { "label": "Send a Blast", "sub": "Mass text", "icon": "megaphone", "color": "#FF9500", "route": "/broadcast/new" },
-      { "label": "Share My Card", "sub": "Text digital card", "icon": "id-card", "color": "#C9A962", "route": "/quick-send/digitalcard" },
-      { "label": "Get Reviews", "sub": "Send review link", "icon": "star", "color": "#FFD60A", "route": "/quick-send/review" },
-      { "label": "My Numbers", "sub": "How am I doing?", "icon": "stats-chart", "color": "#34C759", "route": "/touchpoints/performance" },
-      { "label": "Inventory", "sub": "What is on the lot", "icon": "car-sport", "color": "#32ADE6", "route": "/inventory" }
-    ]
-  },
-  "duplicates_resolution": {
-    "broadcast": "Kept as tile action and inside Campaigns section; removed secondary standalone duplicate inside My Brand menu.",
-    "inventory": "Kept as top tile action for quick access and inside Manage section for full lot browsing.",
-    "calendar": "Consolidated under Manage for daily activity scheduling; removed duplicate calendar entry from personal Settings.",
-    "call_retries": "Moved to new Leads section as core rep setting; removed duplicate from Settings.",
-    "leaderboard": "Personal rep position stays in My Performance; cross-account organization ranking stays in Admin > Account Management.",
-    "imos_demo_leads": "Lead Attribution and Hot Leads remain strictly in Admin > Account Management under title 'iMOS Website Leads' to avoid confusion with dealership sales leads."
-  },
-  "visual_and_ui_guidance": {
-    "leads_section_styling": "Uses flame red (#FF3B30) icon background and badge border. Default expanded on Hub load for immediate visibility.",
-    "badge_treatment": "Red numeric badge pill (#FF3B30) for waiting leads count on Internet Leads row and Leads section header pill.",
-    "admin_grouping": "Admin sections remain visually distinct with dark translucent background, muted text label headers, and shield-half red emblem.",
-    "type_scale_adherence": "Strictly adheres to 28 header, 20 title, 17 nav, 16 row title, 15 body, 13 secondary, 12 eyebrow, 11 badge scale."
-  },
-  "implementation_blueprint": {
-    "file_target": "/app/frontend/app/(tabs)/more.tsx",
-    "changes": [
-      "Add 'leads' section object with Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, and Team Availability.",
-      "Remove Internet Leads from 'manage' section.",
-      "Remove Call Retries from 'settings' section.",
-      "Remove Lead Source Queue, Lead Source Config, and Team Availability from 'setup_manage' section.",
-      "Update taskGrid array to feature 'Internet Leads' as the top-left primary action tile."
-    ]
-  },
-  "GENERAL UI UX DESIGN GUIDELINES": {
-    "data_testid_rule": "All interactive buttons, headers, tiles, and input elements must include a data-testid attribute in kebab-case format.",
-    "no_transparent_overlays": "Never use completely transparent backgrounds for dropdowns, headers, or overlays.",
-    "micro_interactions": "Ensure proper activeOpacity, touch feedback, and smooth LayoutAnimation transitions for section toggles."
+  "instructions_to_main_agent": [
+    "Ensure all interactive elements have data-testid attributes formatted in kebab-case (e.g., data-testid='quick-action-call-button', data-testid='tab-details', data-testid='composer-send-button').",
+    "Do NOT use complete transparent backgrounds for headers or overlays that have content scrolling under them.",
+    "Do NOT introduce duplicate email or text buttons across the hero and quick actions; keep quick actions focused on direct actions (Call, Text, Record, Task, Sold).",
+    "Maintain the dark theme palette (#000000 base, #1C1C1E surface, #C9A962 gold accent) strictly.",
+    "Ensure responsive layout optimization for mobile web viewports with comfortable touch targets (minimum 44x44px).",
+    "Use smooth micro-interactions (collapsible sections with chevron indicators, active tab indicator transitions, micro scale feedback on tap)."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": {
+    "data_testid_requirement": "All buttons, inputs, tab items, cards, and interactive controls must have data-testid.",
+    "no_transparent_overlays": "Never set background to transparent on floating/fixed headers, dropdowns, or modals.",
+    "spacing_rhythm": "Use 12px-16px gap between stacked sections, 14px-16px internal card padding.",
+    "gold_accent_usage": "Use gold (#C9A962) strictly for high-value actions (Mark Sold, Ask Jessi primary, Vehicle model tag)."
   }
 }

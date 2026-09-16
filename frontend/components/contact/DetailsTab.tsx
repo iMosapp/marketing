@@ -89,11 +89,27 @@ export default function DetailsTab(props: any) {
     voiceNotes, voiceNotesLoading, isRecording, recordingTime, uploadingVoiceNote,
     playingNoteId, showAllNotes, startRecording, stopRecording, playVoiceNote,
     deleteVoiceNote, formatRecordingTime, maxRecordingSeconds,
-    referrals, contactEnrollments, toggleDateOptin, reloadContact, header,
+    referrals, contactEnrollments, toggleDateOptin, reloadContact, checklist, stats, onDatePress,
   } = props;
   const router = useRouter();
   const [bdayModalOpen, setBdayModalOpen] = useState(false);
   const [savingBday, setSavingBday] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const paused = (k: string) => (contact.disabled_automations || []).includes(k);
+  const dateRow = (key: string, icon: any, color: string, label: string, value: Date, kind?: string) => {
+    const isPaused = kind ? paused(kind) : false;
+    const inner = (
+      <>
+        <Ionicons name={icon} size={16} color={isPaused ? '#8E8E93' : color} />
+        <Text style={s.viewRowLabel}>{label}{isPaused ? '  ·  paused' : ''}</Text>
+        <Text style={[s.viewRowValue, isPaused && { color: '#8E8E93' }]}>{format(value, 'MMM d, yyyy')}</Text>
+        {kind ? <Ionicons name="chevron-forward" size={14} color="#8E8E93" style={{ marginLeft: 6 }} /> : null}
+      </>
+    );
+    return kind ? (
+      <TouchableOpacity key={key} style={s.viewRow} onPress={() => onDatePress?.(kind, label, color, value)} testID={`date-row-${key}`} dataSet={{ testid: `date-row-${key}` } as any}>{inner}</TouchableOpacity>
+    ) : <View key={key} style={s.viewRow}>{inner}</View>;
+  };
 
   const saveBirthday = async (dateStr: string | null) => {
     setSavingBday(true);
@@ -107,97 +123,16 @@ export default function DetailsTab(props: any) {
 
   return (
     <>
-      {/* Relationship Intel brief + action tracker (passed in from the screen) */}
-      {header}
-
-      {/* Personal Intelligence (from voice memo extraction) */}
+      <View style={{ height: 10 }} />
+      {/* Personal: what matters to them (from voice memos + edits) */}
       <PersonalIntelSection contactId={contactId} userId={userId} colors={colors} />
 
-      {/* Voice Notes — full history, all visible */}
-      <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
-          <View style={s.sectionHeaderRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.sectionHeader}>Relationship Voice Memos</Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                Spouse · Kids · Pets · Hobbies · What matters to them
-              </Text>
-            </View>
-            <Text style={s.sectionHeaderCount}>{voiceNotes.length}</Text>
-          </View>
-
-          {isRecording ? (
-            <View style={s.vnRecording} data-testid="voice-recording-indicator">
-              <View style={s.vnRecordingDot} />
-              <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
-              <Text style={s.vnRecordingLimit}>/ {formatRecordingTime(maxRecordingSeconds)}</Text>
-              <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} data-testid="stop-recording-btn">
-                <Ionicons name="stop" size={18} color={colors.text} />
-                <Text style={s.vnStopText}>Stop</Text>
-              </TouchableOpacity>
-            </View>
-          ) : uploadingVoiceNote ? (
-            <View style={s.vnRecording}>
-              <ActivityIndicator size="small" color="#34C759" />
-              <Text style={[s.vnRecordingTime, { marginLeft: 8 }]}>Saving & transcribing...</Text>
-            </View>
-          ) : (
-            <TouchableOpacity style={s.vnRecordBtn} onPress={startRecording} data-testid="start-recording-btn">
-              <Ionicons name="mic" size={20} color="#34C759" />
-              <Text style={s.vnRecordText}>Record a Voice Note</Text>
-            </TouchableOpacity>
-          )}
-
-          {voiceNotesLoading ? (
-            <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 12 }} />
-          ) : voiceNotes.length > 0 ? (
-            <View style={{ marginTop: 12 }}>
-              {(showAllNotes ? voiceNotes : voiceNotes.slice(0, 1)).map((note: any, i: number) => {
-                const isPlaying = playingNoteId === note.id;
-                return (
-                  <View key={note.id} style={s.vnCard} data-testid={`voice-note-${i}`}>
-                    <View style={s.vnCardHeader}>
-                      <TouchableOpacity
-                        style={[s.vnPlayBtn, isPlaying && s.vnPlayBtnActive]}
-                        onPress={() => playVoiceNote(note.id, note.audio_url)}
-                        data-testid={`play-voice-note-${i}`}
-                      >
-                        <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={isPlaying ? '#000' : '#34C759'} />
-                      </TouchableOpacity>
-                      <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={s.vnCardDate}>{formatEventTime(note.created_at)}</Text>
-                        <Text style={s.vnCardDuration}>{formatRecordingTime(Math.round(note.duration))}</Text>
-                      </View>
-                      <TouchableOpacity
-                        onPress={(e: any) => {
-                          e.stopPropagation?.();
-                          deleteVoiceNote(note.id);
-                        }}
-                        style={{ padding: 12, margin: -8, zIndex: 10 }}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        data-testid={`delete-voice-note-${i}`}
-                      >
-                        <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-                      </TouchableOpacity>
-                    </View>
-                    {note.transcript ? (
-                      <Text style={s.vnTranscript}>
-                        {note.transcript}
-                      </Text>
-                    ) : (
-                      <Text style={[s.vnTranscript, { fontStyle: 'italic', color: colors.textTertiary }]}>Transcribing...</Text>
-                    )}
-                    {note.transcript && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                        <Ionicons name="sparkles" size={11} color="#AF52DE" />
-                        <Text style={{ fontSize: 11, color: '#AF52DE', fontStyle: 'italic' }}>AI has learned from this memo</Text>
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          ) : null}
+      {contact.notes ? (
+        <View style={s.section}>
+          <Text style={s.sectionHeader}>Notes</Text>
+          <Text style={s.viewText}>{contact.notes}</Text>
         </View>
+      ) : null}
 
       {/* Purchase History */}
       {!isNewContact && (
@@ -209,14 +144,6 @@ export default function DetailsTab(props: any) {
           focusPurchaseId={props.focusPurchaseId}
         />
       )}
-
-      {/* Notes (editable view in details) */}
-      {contact.notes ? (
-        <View style={s.section}>
-          <Text style={s.sectionHeader}>Notes</Text>
-          <Text style={s.viewText}>{contact.notes}</Text>
-        </View>
-      ) : null}
 
       {/* Important Dates */}
       <View style={s.section}>
@@ -243,20 +170,8 @@ export default function DetailsTab(props: any) {
               <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
             </TouchableOpacity>
           )}
-          {contact.anniversary && (
-            <View style={s.viewRow}>
-              <Ionicons name="heart" size={16} color="#FF2D55" />
-              <Text style={s.viewRowLabel}>Anniversary</Text>
-              <Text style={s.viewRowValue}>{format(contact.anniversary, 'MMM d, yyyy')}</Text>
-            </View>
-          )}
-          {contact.date_sold && (
-            <View style={s.viewRow}>
-              <Ionicons name="car" size={16} color="#34C759" />
-              <Text style={s.viewRowLabel}>Date Sold</Text>
-              <Text style={s.viewRowValue}>{format(contact.date_sold, 'MMM d, yyyy')}</Text>
-            </View>
-          )}
+          {contact.anniversary && dateRow('anniversary', 'heart', '#FF2D55', 'Anniversary', contact.anniversary, 'anniversary')}
+          {contact.date_sold && dateRow('sold', 'car', '#34C759', 'Date sold', contact.date_sold, 'sold_date')}
           {contact.custom_dates.map((cd: any, i: number) => cd.date && (
             <View key={i} style={s.viewRow}>
               <Ionicons name="calendar-outline" size={16} color="#007AFF" />
@@ -313,6 +228,92 @@ export default function DetailsTab(props: any) {
           })()}
         </View>
 
+      {/* Voice Notes — full history, all visible */}
+      <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
+          <View style={s.sectionHeaderRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.sectionHeader}>Voice memos</Text>
+            </View>
+            <Text style={s.sectionHeaderCount}>{voiceNotes.length}</Text>
+          </View>
+
+          {isRecording ? (
+            <View style={s.vnRecording} data-testid="voice-recording-indicator">
+              <View style={s.vnRecordingDot} />
+              <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
+              <Text style={s.vnRecordingLimit}>/ {formatRecordingTime(maxRecordingSeconds)}</Text>
+              <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} data-testid="stop-recording-btn">
+                <Ionicons name="stop" size={18} color={colors.text} />
+                <Text style={s.vnStopText}>Stop</Text>
+              </TouchableOpacity>
+            </View>
+          ) : uploadingVoiceNote ? (
+            <View style={s.vnRecording}>
+              <ActivityIndicator size="small" color="#34C759" />
+              <Text style={[s.vnRecordingTime, { marginLeft: 8 }]}>Saving & transcribing...</Text>
+            </View>
+          ) : (
+            <TouchableOpacity style={s.vnRecordBtn} onPress={startRecording} data-testid="start-recording-btn">
+              <Ionicons name="mic" size={20} color="#34C759" />
+              <Text style={s.vnRecordText}>Record a voice memo</Text>
+            </TouchableOpacity>
+          )}
+
+          {voiceNotesLoading ? (
+            <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 12 }} />
+          ) : voiceNotes.length > 0 ? (
+            <View style={{ marginTop: 12 }}>
+              {(showAllNotes ? voiceNotes : voiceNotes.slice(0, 1)).map((note: any, i: number) => {
+                const isPlaying = playingNoteId === note.id;
+                return (
+                  <View key={note.id} style={s.vnCard} data-testid={`voice-note-${i}`}>
+                    <View style={s.vnCardHeader}>
+                      <TouchableOpacity
+                        style={[s.vnPlayBtn, isPlaying && s.vnPlayBtnActive]}
+                        onPress={() => playVoiceNote(note.id, note.audio_url)}
+                        data-testid={`play-voice-note-${i}`}
+                      >
+                        <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={isPlaying ? '#000' : '#34C759'} />
+                      </TouchableOpacity>
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={s.vnCardDate}>{formatEventTime(note.created_at)}</Text>
+                        <Text style={s.vnCardDuration}>{formatRecordingTime(Math.round(note.duration))}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={(e: any) => {
+                          e.stopPropagation?.();
+                          deleteVoiceNote(note.id);
+                        }}
+                        style={{ padding: 12, margin: -8, zIndex: 10 }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        data-testid={`delete-voice-note-${i}`}
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                      </TouchableOpacity>
+                    </View>
+                    {note.transcript ? (
+                      <Text style={s.vnTranscript}>
+                        {note.transcript}
+                      </Text>
+                    ) : (
+                      <Text style={[s.vnTranscript, { fontStyle: 'italic', color: colors.textTertiary }]}>Transcribing...</Text>
+                    )}
+                    {note.transcript && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                        <Ionicons name="sparkles" size={11} color="#AF52DE" />
+                        <Text style={{ fontSize: 11, color: '#AF52DE', fontStyle: 'italic' }}>AI has learned from this memo</Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+        </View>
+
+      {/* Follow-up checklist (what has gone out to this customer) */}
+      {checklist}
+
       <BirthdayModal
         visible={bdayModalOpen}
         onClose={() => setBdayModalOpen(false)}
@@ -322,28 +323,6 @@ export default function DetailsTab(props: any) {
         colors={colors}
         saving={savingBday}
       />
-
-      {/* Share the contact's full profile (vcf / link / text) */}
-      {!isNewContact && (
-        <ShareProfileSection
-          userId={userId}
-          contactId={contactId}
-          contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()}
-          colors={colors}
-          s={s}
-        />
-      )}
-
-      {/* Push to CRM as ADF/XML lead */}
-      {!isNewContact && (
-        <CrmPushSection
-          userId={userId}
-          contactId={contactId}
-          contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()}
-          colors={colors}
-          s={s}
-        />
-      )}
 
       {/* Referrals */}
       {(contact.referred_by_name || referrals.length > 0) && (
@@ -378,19 +357,40 @@ export default function DetailsTab(props: any) {
         <View style={s.section}>
           <Text style={s.sectionHeader}>Campaigns</Text>
           {contactEnrollments.map((e: any, i: number) => (
-            <View key={i} style={s.campaignCard}>
-              <View style={[s.quickActionIcon, { backgroundColor: e.status === 'completed' ? '#34C75920' : '#007AFF20' }]}>
-                <Ionicons name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} size={18}
-                  color={e.status === 'completed' ? '#34C759' : '#007AFF'} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={s.campaignName}>{e.campaign_name}</Text>
-                <Text style={s.campaignSub}>
-                  {e.status === 'completed' ? 'Completed' : `Step ${e.current_step} of ${e.total_steps}`}
-                </Text>
-              </View>
+            <View key={i} style={s.viewRow} data-testid={`campaign-row-${i}`}>
+              <Ionicons name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} size={16} color={e.status === 'completed' ? '#34C759' : '#007AFF'} />
+              <Text style={[s.viewRowLabel, { color: colors.text }]} numberOfLines={1}>{e.campaign_name}</Text>
+              <Text style={[s.viewRowValue, { color: colors.textSecondary, fontWeight: '500' }]}>{e.status === 'completed' ? 'Done' : `Step ${e.current_step} of ${e.total_steps}`}</Text>
             </View>
           ))}
+        </View>
+      )}
+
+      {/* Relationship numbers, in plain words */}
+      {!isNewContact && stats && (
+        <View style={s.section} data-testid="contact-stats-row">
+          <Text style={s.sectionHeader}>Relationship</Text>
+          <Text style={[s.viewText, { color: colors.textSecondary }]}>
+            {[[stats.total_touchpoints, 'touch', 'touches'], [stats.messages_sent, 'message', 'messages'], [stats.link_clicks, 'link click', 'link clicks'], [stats.campaigns, 'campaign', 'campaigns'], [stats.referral_count ?? contact.referral_count ?? 0, 'referral', 'referrals']]
+              .map(([n, one, many]: any) => `${n || 0} ${n === 1 ? one : many}`).join('  ·  ')}
+          </Text>
+        </View>
+      )}
+
+      {/* More: share this profile, push to a CRM */}
+      {!isNewContact && (
+        <View style={s.section}>
+          <TouchableOpacity onPress={() => setShowMore(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }} testID="details-more-toggle" dataSet={{ testid: 'details-more-toggle' } as any}>
+            <Text style={[s.sectionHeader, { marginBottom: 0, flex: 1 }]}>More</Text>
+            <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Share profile · Push to CRM</Text>
+            <Ionicons name={showMore ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+          {showMore && (
+            <View style={{ marginHorizontal: -16, marginTop: 8 }}>
+              <ShareProfileSection userId={userId} contactId={contactId} contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()} colors={colors} s={s} />
+              <CrmPushSection userId={userId} contactId={contactId} contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()} colors={colors} s={s} />
+            </View>
+          )}
         </View>
       )}
     </>

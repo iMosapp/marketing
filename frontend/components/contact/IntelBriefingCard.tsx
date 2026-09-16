@@ -98,7 +98,7 @@ function timeAgo(iso: string): string {
   return d === 1 ? 'yesterday' : `${d}d ago`;
 }
 
-export default function IntelBriefingCard({ colors, intelData, refreshing, onRefresh, userId, contactId, onUpdate, onDetailsChanged }: any) {
+export default function IntelBriefingCard({ colors, intelData, refreshing, onRefresh, userId, contactId, onUpdate, onDetailsChanged, embedded }: any) {
   const [expanded, setExpanded] = useState(false);
   const [deciding, setDeciding] = useState(false);
   const summary: string = intelData?.summary || '';
@@ -123,10 +123,9 @@ export default function IntelBriefingCard({ colors, intelData, refreshing, onRef
   const keyFacts = (sections['Key Facts'] || []).slice(0, 2);
   const nextUp = (sections['Before Your Next Interaction'] || [])[0];
 
-  const card = {
-    marginHorizontal: 16, marginBottom: 12, padding: 14, borderRadius: 16,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: `${GOLD}30`,
-  };
+  const card = embedded
+    ? { padding: 14 }
+    : { marginHorizontal: 16, marginBottom: 12, padding: 14, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: `${GOLD}30` };
 
   return (
     <View style={card} testID="intel-briefing-card" dataSet={{ testid: 'intel-briefing-card' }}>

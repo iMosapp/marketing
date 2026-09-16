@@ -27,7 +27,7 @@ export const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-start', gap: 14,
   },
   heroAvatarContainer: { position: 'relative' },
-  heroAvatar: { width: 68, height: 68, borderRadius: 18, borderWidth: 2, borderColor: '#C9A962', resizeMode: 'cover' as const },
+  heroAvatar: { width: 64, height: 64, borderRadius: 20, borderWidth: 1.5, borderColor: '#C9A962', resizeMode: 'cover' as const },
   heroAvatarPlaceholder: {
     width: 68, height: 68, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
@@ -48,7 +48,7 @@ export const getS = (colors: any) => StyleSheet.create({
   },
   touchpointBadgeText: { fontSize: 11, fontWeight: '800', color: colors.text },
   heroInfo: { flex: 1, paddingTop: 2 },
-  heroName: { fontSize: 20, fontWeight: '700', marginBottom: 4, color: colors.text },
+  heroName: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, lineHeight: 27, marginBottom: 3, color: colors.text },
   heroTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   heroTag: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
@@ -70,7 +70,7 @@ export const getS = (colors: any) => StyleSheet.create({
   heroHighlightText: { fontSize: 15, color: '#C9A962', fontWeight: '600' },
   heroMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   heroMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  heroMetaText: { fontSize: 13, color: colors.textTertiary },
+  heroMetaText: { fontSize: 13, lineHeight: 18, color: colors.textSecondary, marginTop: 3 },
   heroStatsLine: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap',
     marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
@@ -81,12 +81,12 @@ export const getS = (colors: any) => StyleSheet.create({
   heroStatLbl: { fontSize: 13, color: colors.textTertiary },
   heroStatDot: { fontSize: 13, color: colors.textTertiary, marginHorizontal: 1 },
 
-  heroTagsStrip: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 4 },
+  heroTagsStrip: { paddingTop: 10, paddingBottom: 2 },
   heroTagsStripHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   heroTagsStripTitle: { fontSize: 12, fontWeight: '700', color: '#FF9500', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 },
   heroTagsStripAdd: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#007AFF15', alignItems: 'center', justifyContent: 'center' },
-  heroTagChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
-  heroTagChipText: { fontSize: 13, fontWeight: '600', maxWidth: 140, color: colors.text, lineHeight: 18 },
+  heroTagChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1 },
+  heroTagChipText: { fontSize: 12.5, fontWeight: '600', maxWidth: 140, color: colors.text, lineHeight: 17 },
   heroTagsEmpty: { fontSize: 13, color: colors.textTertiary, fontStyle: 'italic', paddingBottom: 4 },
 
   heroCampaignsStrip: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4, borderTopWidth: 1, borderTopColor: colors.border },
@@ -214,9 +214,9 @@ export const getS = (colors: any) => StyleSheet.create({
   feedDateText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 },
   feedDateCount: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, backgroundColor: colors.surface },
 
-  progressSection: { marginHorizontal: 16, marginBottom: 12, borderRadius: 14, padding: 12 },
+  progressSection: { marginHorizontal: 16, marginBottom: 16 },
   progressHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  progressLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  progressLabel: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 },
   progressBarBg: { flex: 1, height: 4, backgroundColor: colors.surface, borderRadius: 2, overflow: 'hidden' },
   progressBarFill: { height: 4, backgroundColor: '#C9A962', borderRadius: 2 },
   progressRow: { flexDirection: 'row', gap: 8 },
@@ -226,7 +226,7 @@ export const getS = (colors: any) => StyleSheet.create({
   progressText: { fontSize: 11, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' },
 
   section: { marginHorizontal: 16, marginBottom: 16 },
-  sectionHeader: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
+  sectionHeader: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   sectionHeaderCount: { fontSize: 12, color: colors.textTertiary },
 

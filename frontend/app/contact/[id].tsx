@@ -63,8 +63,7 @@ import PickerModals from '../../components/contact/PickerModals';
 import DateModals from '../../components/contact/DateModals';
 import AddTaskModal from '../../components/contact/AddTaskModal';
 import GalleryModal from '../../components/contact/GalleryModal';
-import IntelBriefingCard from '../../components/contact/IntelBriefingCard';
-import IntelTeaser from '../../components/contact/IntelTeaser';
+import JessiCard from '../../components/contact/JessiCard';
 import { HealthBadge } from '../../components/contact/HealthBadge';
 import QuickActionsRow from '../../components/contact/QuickActionsRow';
 import { ConversationRecorder } from '../../components/thread/ConversationRecorder';
@@ -2641,7 +2640,6 @@ function ContactDetailScreen() {
                       showSimpleAlert('No Phone', 'This contact has no phone number saved.');
                     }
                   }}
-                  onEmail={() => { setComposerMode('email'); composerInputRef.current?.focus(); }}
                   onNote={onPress}
                   onTask={() => setShowAddTask(true)}
                   showSold={!contact.tags.includes('Sold')}
@@ -2665,33 +2663,20 @@ function ContactDetailScreen() {
             />
           )}
 
-          {/* ===== ONE-LINE INTEL TEASER (full brief lives in Details) ===== */}
+          {/* ===== JESSI: the one gold card (brief + ask) ===== */}
           {!isNewContact && !isEditing && (
-            <IntelTeaser
+            <JessiCard
               colors={colors}
               intelData={intelData}
               refreshing={intelRefreshing}
               onRefresh={refreshIntel}
+              firstName={contact.first_name}
+              onAsk={() => setShowAsk(true)}
+              userId={user?._id}
+              contactId={id as string}
+              onUpdate={(patch: any) => setIntelData((prev: any) => ({ ...(prev || {}), ...patch }))}
+              onDetailsChanged={() => loadContact()}
             />
-          )}
-
-          {/* ===== ASK JESSI: grounded chat over every touchpoint ===== */}
-          {!isNewContact && !isEditing && (
-            <TouchableOpacity
-              onPress={() => setShowAsk(true)}
-              activeOpacity={0.8}
-              style={{ marginHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#C9A96214', borderWidth: 1, borderColor: '#C9A96266', borderRadius: 16, padding: 12 }}
-              testID="contact-ask-jessi-btn" dataSet={{ testid: 'contact-ask-jessi-btn' } as any}
-            >
-              <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#C9A96226', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="sparkles" size={19} color="#C9A962" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Ask Jessi about {contact.first_name || 'this customer'}</Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Every text, call and voice note in one answer, with the exact moment cited</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#C9A962" />
-            </TouchableOpacity>
           )}
 
           {/* ===== DETAILS / CALLS / FEED TAB BAR ===== */}
@@ -2833,26 +2818,15 @@ function ContactDetailScreen() {
               referrals={referrals}
               contactEnrollments={contactEnrollments}
               toggleDateOptin={toggleDateOptin}
-              header={(
+              stats={stats}
+              onDatePress={handleAutomationChipPress}
+              checklist={(
                 <>
-              {/* ===== RELATIONSHIP INTEL BRIEFING (lives with its sources) ===== */}
-              <IntelBriefingCard
-                  colors={colors}
-                  intelData={intelData}
-                  refreshing={intelRefreshing}
-                  onRefresh={refreshIntel}
-                  userId={user?._id}
-                  contactId={id as string}
-                  onUpdate={(patch: any) => setIntelData((prev: any) => ({ ...(prev || {}), ...patch }))}
-                  onDetailsChanged={() => loadContact()}
-                />
-
-
               {/* ===== ACTION PROGRESS TRACKER ===== */}
               {actionProgress.length > 0 && (
                 <View style={s.progressSection} data-testid="action-progress">
                   <View style={s.progressHeader}>
-                    <Text style={s.progressLabel}>{progressCompleted}/{progressTotal} Actions</Text>
+                    <Text style={s.progressLabel}>Follow-up checklist · {progressCompleted}/{progressTotal}</Text>
                     <View style={s.progressBarBg}>
                       <View style={[s.progressBarFill, { width: `${progressTotal > 0 ? (progressCompleted / progressTotal) * 100 : 0}%` }]} />
                     </View>
