@@ -1860,6 +1860,7 @@ async def get_thread_messages(conversation_id: str):
         "ai_summary": m.get("ai_summary", ""),
         "has_recording": m.get("has_recording", False),
         "recording_url": m.get("recording_url"),
+        "voice_verified": m.get("voice_verified"),
         "score_pct": m.get("score_pct"),
         "evaluation_id": m.get("evaluation_id"),
         "transcript": m.get("transcript", ""),

@@ -6,6 +6,7 @@ import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import api from '../../services/api';
 import { ScorePill } from '../scorecards/ScoreRing';
 import { EvaluationSheet } from '../scorecards/EvaluationSheet';
+import { VoiceIdBadge } from '../calls/VoiceIdBadge';
 
 export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date }) => {
   const [showEval, setShowEval] = useState(false);
@@ -40,8 +41,11 @@ export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date })
             </Text>
           </View>
           {hasRecording && (
-            <View style={{ backgroundColor: callColor + '20', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-              <Text style={{ fontSize: 11, color: callColor, fontWeight: '700' }}>✓ Recorded</Text>
+            <View style={{ alignItems: 'flex-end', gap: 4 }}>
+              <View style={{ backgroundColor: callColor + '20', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 11, color: callColor, fontWeight: '700' }}>✓ Recorded</Text>
+              </View>
+              <VoiceIdBadge item={item} id={item.call_sid || item._id || 'thread'} />
             </View>
           )}
         </View>

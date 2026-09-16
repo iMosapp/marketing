@@ -228,3 +228,13 @@ async def rep_channel(db, user_id: str, wav_paths) -> Optional[dict]:
     elif r is not None and (l is None or r - l >= MIN_GAP) and r >= THRESHOLD:
         channel = 1
     return {"channel": channel, "scores": [l, r], "threshold": THRESHOLD}
+
+
+def badge(check: Optional[dict]) -> dict:
+    """Fields a call card shows: voice_verified True when the rep's own voice print matched their channel, False when checked and it did not, None when never checked."""
+    if not check:
+        return {"voice_verified": None, "voice_score": None}
+    ch = check.get("channel")
+    if ch is None:
+        return {"voice_verified": False, "voice_score": None}
+    return {"voice_verified": True, "voice_score": (check.get("scores") or [None, None])[ch]}

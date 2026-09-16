@@ -356,7 +356,7 @@ async def get_voice_notes(user_id: str, contact_id: str):
     db = get_db()
     notes = await db.voice_notes.find(
         {"contact_id": contact_id, "user_id": user_id},
-        {"_id": 1, "audio_url": 1, "transcript": 1, "summary": 1, "title": 1, "kind": 1, "duration": 1, "created_at": 1, "contact_id": 1, "user_id": 1, "highlights": 1},
+        {"_id": 1, "audio_url": 1, "transcript": 1, "summary": 1, "title": 1, "kind": 1, "duration": 1, "created_at": 1, "contact_id": 1, "user_id": 1, "highlights": 1, "voice_id.verified": 1},
     ).sort("created_at", -1).to_list(100)
 
     def _hl(h: dict) -> dict:
@@ -375,6 +375,7 @@ async def get_voice_notes(user_id: str, contact_id: str):
             "kind": n.get("kind", "memo"),
             "duration": n.get("duration", 0),
             "highlights": [_hl(h) for h in (n.get("highlights") or [])],
+            "voice_verified": (n.get("voice_id") or {}).get("verified"),
             "created_at": n["created_at"].isoformat() if n.get("created_at") else "",
         }
         for n in notes

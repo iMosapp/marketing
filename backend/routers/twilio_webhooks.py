@@ -1633,6 +1633,8 @@ async def handle_recording_complete(
 
         # ── Save everything ────────────────────────────────────────────────────
         dur = int(RecordingDuration or 0)
+        from services import voice_id as _vid_badge
+        vbadge = _vid_badge.badge(voice_check)
 
         # call_logs collection
         await db.call_logs.insert_one({
@@ -1647,6 +1649,7 @@ async def handle_recording_complete(
             "transcript":       transcript,
             "transcript_segments": transcript_segments,
             "voice_id":         voice_check,
+            **vbadge,
             "ai_summary":       ai_summary,
             "direction":        direction,
             "timestamp":        now,
@@ -1728,6 +1731,7 @@ async def handle_recording_complete(
                         "recording_url": RecordingUrl,
                         "transcript":    transcript,
                         "ai_summary":    ai_summary,
+                        **vbadge,
                     }},
                     upsert=False,
                 )

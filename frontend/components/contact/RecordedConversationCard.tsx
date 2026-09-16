@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
+import { VoiceIdBadge } from '../calls/VoiceIdBadge';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -49,6 +50,7 @@ export const RecordedConversationCard = ({ note, colors, onDelete, onRename }: {
           <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
             {note.title ? 'Recorded conversation · ' : ''}{note.duration ? `${fmtDur(note.duration)} · ` : ''}{note.created_at ? new Date(note.created_at).toLocaleString() : ''} · in person
           </Text>
+          <VoiceIdBadge item={note} id={`convo-${note.id}`} style={{ marginTop: 5 }} />
         </View>
         <TouchableOpacity onPress={() => setShowPlayer(p => !p)} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: showPlayer ? GOLD : GOLD + '22', alignItems: 'center', justifyContent: 'center' }} {...tid(`recorded-convo-play-${note.id}`)}>
           <Ionicons name={showPlayer ? 'close' : 'play'} size={18} color={showPlayer ? '#111' : GOLD} />

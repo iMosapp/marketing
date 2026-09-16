@@ -9,6 +9,7 @@ import { CallTranscript } from '../CallTranscript';
 import { ScorePill } from '../scorecards/ScoreRing';
 import { EvaluationSheet } from '../scorecards/EvaluationSheet';
 import { RecordedConversationCard } from './RecordedConversationCard';
+import { VoiceIdBadge } from '../calls/VoiceIdBadge';
 
 const when = (x: any) => { try { return new Date(x.timestamp || x.created_at || 0).getTime(); } catch { return 0; } };
 
@@ -71,6 +72,7 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh,
                   </Text>
                   <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>{date}</Text>
                 </View>
+                <VoiceIdBadge item={call} id={call.call_sid || String(i)} />
                 {!hasData && isRecent && (
                   <View style={{ backgroundColor: '#FF950015', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
                     <Text style={{ fontSize: 11, color: '#FF9500', fontWeight: '700' }}>PROCESSING</Text>
