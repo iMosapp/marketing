@@ -519,6 +519,7 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
         "customer_reply":        {"msg": "replied to your message",        "icon": "chatbubble",   "color": "#34C759"},
         "digital_card_saved":    {"msg": "saved your contact info",        "icon": "person-add",   "color": "#007AFF"},
         "vcard_download":        {"msg": "downloaded your contact card",   "icon": "download",     "color": "#5856D6"},
+        "review_submitted":      {"msg": "left you a review ⭐",           "icon": "star",         "color": "#FFD60A"},
         # Legacy names
         "card_viewed":           {"msg": "viewed your card",               "icon": "eye",          "color": "#FF9500"},
         "link_clicked":          {"msg": "clicked your link",              "icon": "hand-right",   "color": "#C9A962"},
@@ -613,6 +614,18 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
                 "timestamp":    ts.isoformat() if ts else None,
                 "event_type":   evt.get("event_type"),
             })
+
+        # Sales are the biggest win of all; they live on the contact, not in contact_events
+        sold = await db.contacts.find({"user_id": user_id, "date_sold": {"$gte": cutoff}}, {"first_name": 1, "last_name": 1, "vehicle": 1, "date_sold": 1}).sort("date_sold", -1).limit(limit).to_list(limit)
+        for c in sold:
+            ts = c.get("date_sold")
+            if ts and ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or "A customer"
+            wins.append({"contact_id": str(c["_id"]), "contact_name": name, "message": f"You sold {name}{' a ' + c['vehicle'] if c.get('vehicle') else ''} 🏆",
+                         "icon": "trophy", "color": "#C9A962", "timestamp": ts.isoformat() if ts else None, "event_type": "sold"})
+        wins.sort(key=lambda w: w.get("timestamp") or "", reverse=True)
+        wins = wins[:limit]
 
     except Exception as e:
         logger.warning(f"[Home] Wins feed error: {e}")

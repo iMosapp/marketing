@@ -26,12 +26,10 @@ import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { UniversalShareModal } from '../../components/UniversalShareModal';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
-import { HomeSmartBar } from '../../components/home/HomeSmartBar';
 import { LeadsWaitingStrip } from '../../components/home/LeadsWaitingStrip';
 import { ReplyHealthCard } from '../../components/home/ReplyHealthCard';
 import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
 import { HotVehiclesCard } from '../../components/home/HotVehiclesCard';
-import { BookOfBusinessCard } from '../../components/home/BookOfBusinessCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 import { NeedsReplyCard } from '../../components/home/NeedsReplyCard';
 import { WelcomeTour, shouldShowWelcomeTour, markWelcomeTourSeen } from '../../components/home/WelcomeTour';
@@ -844,6 +842,16 @@ function HomeScreen() {
         onPress: () => router.push('/(tabs)/touchpoints?period=today' as any),
       };
     }
+    if (new Date().getDate() % 2 === 1) {
+      return {
+        icon: 'people', color: '#007AFF',
+        label: 'All caught up! Ask for a referral',
+        sub: 'Your happiest customers know your next one',
+        btn: 'Pick One',
+        skipKey: null as string | null,
+        onPress: () => router.push('/advocates' as any),
+      };
+    }
     return {
       icon: 'star', color: '#C9A962',
       label: 'All caught up!',
@@ -934,31 +942,6 @@ function HomeScreen() {
         {/* ── AI REPLY HEALTH — failed sends in the last day ── */}
         <ReplyHealthCard userId={user?._id || ''} />
 
-        {/* ── SMART CARDS — same treatment as Contacts ── */}
-        <HomeSmartBar
-          items={[
-            {
-              key: 'today', label: 'Today', icon: 'checkbox', color: '#C9A962',
-              value: `${completedToday.size}/${my3.length || 3}`,
-              onPress: () => scrollRef.current?.scrollTo({ y: Math.max(my3Y.current - 8, 0), animated: true }),
-            },
-            {
-              key: 'overdue', label: 'Overdue', icon: 'time', color: '#FF453A',
-              value: taskSummary?.overdue || 0,
-              onPress: () => router.push('/(tabs)/touchpoints?period=today' as any),
-            },
-            {
-              key: 'hot', label: 'Hot Leads', icon: 'flame', color: '#FF9500',
-              value: hotContactCount ?? '—',
-              onPress: () => router.push({ pathname: '/(tabs)/contacts', params: { smart: 'hot' } } as any),
-            },
-            {
-              key: 'sold', label: 'Sold This Mo', icon: 'trophy', color: '#34C759',
-              value: soldPerf?.current_month?.total || 0,
-              onPress: () => router.push('/sales-list?type=sold' as any),
-            },
-          ]}
-        />
         </>)}
 
         {/* ── DO THIS NEXT — one clear action ─── */}
@@ -1002,16 +985,7 @@ function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {!simpleHome && (<>
-        {/* ── WEEKLY WINS — Monday morning recap ── */}
-        <WeeklyWinsCard userId={user?._id || ''} forceShow={winsParam === '1'} />
-
-        {/* ── HOT VEHICLES — what shoppers are opening and asking about this week ── */}
-        <HotVehiclesCard userId={user?._id || ''} variant="home" />
-
-        {/* streak card hidden for now (June 2026): bring back by rendering `streak` here */}
-
-        {/* ── MY MONTH SALES WIDGET ── */}
+        {/* ── THIS MONTH — sold front and center, right under the action ── */}
         {soldPerf && (
           <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#C9A96230' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 6 }}>
@@ -1032,7 +1006,7 @@ function HomeScreen() {
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {[
-                { label: 'Sold', value: soldPerf.current_month?.total || 0, color: '#C9A962', icon: 'checkmark-circle',
+                { label: 'Sold', value: soldPerf.current_month?.total || 0, color: '#C9A962', icon: 'trophy', hero: true,
                   onPress: () => router.push('/sales-list?type=sold' as any) },
                 { label: 'Referrals', value: soldPerf.current_month?.referrals || 0, color: '#007AFF', icon: 'people',
                   onPress: () => router.push('/sales-list?type=referrals' as any) },
@@ -1041,12 +1015,12 @@ function HomeScreen() {
               ].map((stat, i) => (
                 <TouchableOpacity
                   key={i}
-                  style={{ flex: 1, backgroundColor: stat.color + '12', borderRadius: 12, padding: 12, alignItems: 'center', gap: 4 }}
+                  style={{ flex: (stat as any).hero ? 1.5 : 1, backgroundColor: stat.color + ((stat as any).hero ? '20' : '12'), borderWidth: (stat as any).hero ? 1.5 : 0, borderColor: stat.color + '66', borderRadius: 12, padding: 12, alignItems: 'center', gap: 4 }}
                   onPress={stat.onPress}
                   data-testid={`sold-stat-${stat.label.toLowerCase()}`}
                 >
-                  <Ionicons name={stat.icon as any} size={20} color={stat.color} />
-                  <Text style={{ fontSize: 20, fontWeight: '800', color: stat.color }}>{stat.value}</Text>
+                  <Ionicons name={stat.icon as any} size={(stat as any).hero ? 22 : 20} color={stat.color} />
+                  <Text style={{ fontSize: (stat as any).hero ? 28 : 20, fontWeight: '800', color: stat.color }}>{stat.value}</Text>
                   <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit>{stat.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -1058,7 +1032,6 @@ function HomeScreen() {
             )}
           </View>
         )}
-        </>)}
 
         {/* ── MY 3 FOR TODAY ────────────────────────────── */}
         <View
@@ -1069,7 +1042,7 @@ function HomeScreen() {
             <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Your 3 for Today</Text>
               <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>
-                {my3.length > 0 ? '30 seconds each. Keep the streak alive.' : 'Analysing your relationships...'}
+                {my3.length > 0 ? '30 seconds each.' : 'Analysing your relationships...'}
               </Text>
             </View>
             <TouchableOpacity onPress={() => router.push('/people-today' as any)} style={{ flexShrink: 0, marginRight: 8 }} testID="see-all-people-today">
@@ -1158,10 +1131,25 @@ function HomeScreen() {
 
         {simpleHome && <NeedsReplyCard userId={user?._id || ''} />}
 
-        {!simpleHome && (<>
-        {/* ── BOOK OF BUSINESS (Relationship Health) ─────── */}
-        <BookOfBusinessCard userId={user?._id || ''} />
+        {/* ── RECENT WINS — the reward, right under the work ── */}
+        {winsFeed.length > 0 && (
+          <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Recent Wins</Text>
+            {winsFeed.slice(0, 5).map((win: any, i: number) => (
+              <TouchableOpacity key={i} onPress={() => win.contact_id && router.push(`/contact/${win.contact_id}`)}
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, gap: 10, borderBottomWidth: i < Math.min(winsFeed.length, 5) - 1 ? 0.5 : 0, borderBottomColor: colors.border }}>
+                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: win.color + '20', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Ionicons name={win.icon as any} size={14} color={win.color} />
+                </View>
+                <Text style={{ flex: 1, fontSize: 15, color: colors.text, fontWeight: '500', lineHeight: 20 }} numberOfLines={2}>{win.message}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 0, marginLeft: 4 }}>{getRelativeTime(win.timestamp)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
+
+        {!simpleHome && (<>
         {/* ── HOT OPPORTUNITIES ─────────────────────────────── */}
         {hotOpps.length > 0 && (
           <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: '#FF3B300D', borderRadius: 16, padding: 16, borderWidth: 1.5, borderColor: '#FF3B3030' }}>
@@ -1197,146 +1185,12 @@ function HomeScreen() {
           </View>
         )}
 
-        {/* ── WINS FEED ─────────────────────────────────── */}
-        {winsFeed.length > 0 && (
-          <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Recent Wins 🎯</Text>
-            {winsFeed.slice(0, 5).map((win: any, i: number) => (
-              <TouchableOpacity key={i} onPress={() => win.contact_id && router.push(`/contact/${win.contact_id}`)}
-                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, gap: 10, borderBottomWidth: i < Math.min(winsFeed.length, 5) - 1 ? 0.5 : 0, borderBottomColor: colors.border }}>
-                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: win.color + '20', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Ionicons name={win.icon as any} size={14} color={win.color} />
-                </View>
-                <Text style={{ flex: 1, fontSize: 15, color: colors.text, fontWeight: '500', lineHeight: 20 }} numberOfLines={2}>{win.message}</Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 0, marginLeft: 4 }}>{getRelativeTime(win.timestamp)}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+        {/* ── HOT VEHICLES — what shoppers are opening and asking about this week ── */}
+        <HotVehiclesCard userId={user?._id || ''} variant="home" />
 
-        <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, marginBottom: 16 }} />
+        {/* ── WEEKLY WINS — Monday morning recap ── */}
+        <WeeklyWinsCard userId={user?._id || ''} forceShow={winsParam === '1'} />
 
-        {/* ===== YOUR DAY SECTION ===== */}
-        <View style={styles.activitySection} data-testid="your-day-section">
-          <View style={styles.activityHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Day</Text>
-          </View>
-
-          {/* Today's Touchpoints Tile */}
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/touchpoints?period=today' as any)}
-            activeOpacity={0.85}
-            style={{ backgroundColor: colors.card, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: colors.border, marginBottom: 12 }}
-            data-testid="touchpoints-tile"
-          >
-            {/* Title row */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(201,169,98,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="checkbox-outline" size={22} color={colors.accent} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Today&apos;s Touchpoints</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
-                    <View style={{ backgroundColor: 'rgba(201,169,98,0.12)', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 }}>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: colors.accent }}>{taskSummary?.pending_today || pendingTasks.length} pending</Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-            </View>
-
-            {/* Mini Scoreboard — 2 rows of 3 so labels never wrap */}
-            <View style={{ gap: 6, marginBottom: 14 }}>
-              {(() => {
-                const stats = [
-                  { label: 'CALLS', color: '#007AFF', val: taskSummary?.activity?.calls || 0 },
-                  { label: 'TEXTS', color: '#34C759', val: taskSummary?.activity?.texts || 0 },
-                  { label: 'EMAILS', color: '#5AC8FA', val: taskSummary?.activity?.emails || 0 },
-                  { label: 'CARDS', color: '#C9A962', val: taskSummary?.activity?.cards || 0 },
-                  { label: 'CLICKS', color: '#FF375F', val: taskSummary?.activity?.clicks || 0 },
-                  { label: 'LEADS', color: '#32ADE6', val: taskSummary?.activity?.new_leads || 0 },
-                ];
-                return [0, 1].map(row => (
-                  <View key={row} style={{ flexDirection: 'row', gap: 6 }}>
-                    {stats.slice(row * 3, row * 3 + 3).map(s => (
-                      <View key={s.label} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 4 }}>
-                        <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }} numberOfLines={1}>{s.val}</Text>
-                        <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.5 }} numberOfLines={1}>{s.label}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ));
-              })()}
-            </View>
-
-            {/* Progress */}
-            <View style={{ backgroundColor: colors.border, borderRadius: 5, height: 6, overflow: 'hidden', marginBottom: 6 }}>
-              <View style={{ height: '100%', backgroundColor: colors.accent, borderRadius: 5, width: `${taskSummary?.progress_pct || 0}%` }} />
-            </View>
-            <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 4 }}>
-              {taskSummary?.completed_today || 0} of {taskSummary?.total_today || 0} today&apos;s touchpoints
-            </Text>
-            {(taskSummary?.overdue || 0) > 0 && (
-              <Text style={{ fontSize: 13, color: '#FF9500', textAlign: 'center', marginBottom: 12, fontWeight: '600' }}>
-                + {taskSummary.overdue} overdue from past days
-              </Text>
-            )}
-            {(taskSummary?.overdue || 0) === 0 && <View style={{ marginBottom: 12 }} />}
-
-            {/* Top 3 task previews */}
-            {pendingTasks.slice(0, 3).map((task, idx) => {
-              const ti = getTaskIcon(task);
-              const dueDate = task.due_date ? new Date(task.due_date) : null;
-              const isOverdue = dueDate && dueDate.getTime() < Date.now() && new Date().setHours(0,0,0,0) > dueDate.getTime();
-              const badgeLabel = isOverdue ? 'High' : task.source === 'campaign' ? 'Campaign' : task.type === 'birthday' ? 'Birthday' : task.type === 'anniversary' ? 'Anniversary' : task.priority === 'high' ? 'High' : '';
-              const badgeColor = isOverdue ? '#FF3B30' : task.source === 'campaign' ? '#AF52DE' : task.type === 'birthday' ? '#34C759' : task.priority === 'high' ? '#FF9500' : '#8E8E93';
-              return (
-                <View key={task._id || idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}>
-                  <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `${ti.color}18`, alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name={ti.icon as any} size={14} color={ti.color} />
-                  </View>
-                  <Text style={{ fontSize: 15, color: '#ccc', flex: 1 }} numberOfLines={1}>{task.title}</Text>
-                  {badgeLabel ? (
-                    <View style={{ backgroundColor: `${badgeColor}18`, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4 }}>
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: badgeColor }}>{badgeLabel}</Text>
-                    </View>
-                  ) : null}
-                </View>
-              );
-            })}
-            {pendingTasks.length === 0 && !loadingTasks && (
-              <Text style={{ fontSize: 15, color: colors.textTertiary, textAlign: 'center', paddingVertical: 8 }}>No touchpoints for today</Text>
-            )}
-            {loadingTasks && pendingTasks.length === 0 && (
-              <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 4 }} />
-            )}
-          </TouchableOpacity>
-
-          {/* Activity Feed tile — demoted to smaller card */}
-
-          {/* ===== SEO HEALTH WIDGET ===== */}
-          {seoScore && (
-            <TouchableOpacity
-              onPress={() => router.push('/seo-health')}
-              activeOpacity={0.85}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border, marginBottom: 12 }}
-              data-testid="seo-health-widget"
-            >
-              <View style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 3, borderColor: seoScore.grade_color, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 17, fontWeight: '900', color: seoScore.grade_color }}>{seoScore.total_score}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>SEO Health</Text>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 1 }}>{seoScore.grade}{seoScore.tips?.length > 0 ? ` \u00B7 ${seoScore.tips.length} tips to improve` : ''}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#48484A" />
-            </TouchableOpacity>
-          )}
-
-          {/* Activity Feed tile */}
-        </View>
         </>)}
         </>
         )}
