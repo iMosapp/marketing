@@ -72,7 +72,7 @@ async def put_connection(body: ConnectBody, request: Request):
         raise HTTPException(status_code=400, detail="Paste the Private Integration Token")
     location_id = body.location_id.strip()
     if len(location_id) < 8:
-        raise HTTPException(status_code=400, detail="That does not look like a Location ID")
+        raise HTTPException(status_code=400, detail="That does not look like a GoHighLevel Location ID (Settings > Business Profile)")
     if body.lead_source_id and not ObjectId.is_valid(body.lead_source_id):
         raise HTTPException(status_code=400, detail="Bad lead source")
     try:
