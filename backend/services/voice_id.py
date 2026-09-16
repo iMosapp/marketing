@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 VERSION = 1
 THRESHOLD = float(os.environ.get("VOICE_ID_THRESHOLD", "0.6"))
 MIN_GAP = 0.15  # two channels: the rep's channel must beat the other by this much
-WARMUP_FRAMES = 30  # Eagle scores settle after ~1 s of voice
+WARMUP_CHUNKS = 1  # Eagle scores settle after the first second of voice; chunks are 1 s
 
 
 def configured() -> bool:
@@ -26,6 +26,40 @@ def configured() -> bool:
 
 def _key() -> str:
     return os.environ["PICOVOICE_ACCESS_KEY"]
+
+
+def _lib_kwargs() -> dict:
+    """pveagle only knows x86_64 and Raspberry Pi CPUs; on any other aarch64 Linux box (Graviton, Neoverse...) use its generic ARMv8 build."""
+    import platform
+    import pveagle
+    from pveagle._util import default_library_path
+    if platform.system() != "Linux" or platform.machine() != "aarch64":
+        return {}
+    try:
+        default_library_path()
+        return {}
+    except Exception:
+        return {"library_path": os.path.join(os.path.dirname(pveagle.__file__), "lib/raspberry-pi/cortex-a76-aarch64/libpv_eagle.so")}
+
+
+def available() -> Optional[str]:
+    """None when Eagle can load here, else the reason (bad key, unsupported CPU...). Cached after the first try."""
+    global _AVAILABLE
+    if not configured():
+        return "PICOVOICE_ACCESS_KEY is not set"
+    if _AVAILABLE is None:
+        try:
+            import pveagle
+            p = pveagle.create_profiler(_key(), **_lib_kwargs())
+            p.delete()
+            _AVAILABLE = ""
+        except Exception as e:
+            _AVAILABLE = str(e).split("\n")[0][:200] or type(e).__name__
+            logger.warning(f"[VoiceID] Eagle unavailable on this server: {_AVAILABLE}")
+    return _AVAILABLE or None
+
+
+_AVAILABLE: Optional[str] = None
 
 
 def _ffmpeg() -> str:
@@ -59,7 +93,7 @@ def _frames(pcm: bytes, n: int):
 def enroll(pcm: bytes) -> dict:
     """Blocking. {"profile": bytes | None, "percent": float}; profile is None until Eagle heard enough clean speech."""
     import pveagle
-    profiler = pveagle.create_profiler(_key(), min_enrollment_chunks=3)
+    profiler = pveagle.create_profiler(_key(), min_enrollment_chunks=3, **_lib_kwargs())
     try:
         pct = 0.0
         for f in _frames(pcm, profiler.frame_length):
@@ -73,13 +107,13 @@ def enroll(pcm: bytes) -> dict:
 
 
 def score(pcm: bytes, profiles: list) -> list:
-    """Blocking. One similarity score (0..1) per profile, median over voiced frames after warm-up; None = no usable voice."""
+    """Blocking. One similarity score (0..1) per profile, median over voiced chunks after warm-up; None = no usable voice."""
     import pveagle
-    eagle = pveagle.create_recognizer(_key())
+    eagle = pveagle.create_recognizer(_key(), **_lib_kwargs())
     try:
         profs = [pveagle.EagleProfile.from_bytes(b) for b in profiles]
         per = [[] for _ in profs]
-        for f in _frames(pcm, eagle.frame_length):
+        for f in _frames(pcm, max(eagle.min_process_samples, 16000)):
             r = eagle.process(f, profs)
             if r is None:
                 continue
@@ -87,7 +121,7 @@ def score(pcm: bytes, profiles: list) -> list:
                 per[i].append(float(v))
         out = []
         for xs in per:
-            xs = xs[WARMUP_FRAMES:] if len(xs) > WARMUP_FRAMES * 2 else xs
+            xs = xs[WARMUP_CHUNKS:] if len(xs) > WARMUP_CHUNKS * 2 else xs
             out.append(round(sorted(xs)[len(xs) // 2], 3) if xs else None)
         return out
     finally:
@@ -98,16 +132,18 @@ def summary(user: Optional[dict]) -> dict:
     """What the app shows: never the profile bytes."""
     v = (user or {}).get("voice_id") or {}
     at = v.get("enrolled_at") or v.get("attempted_at")
-    return {"configured": configured(), "status": v.get("status") or ("none" if configured() else "not_configured"),
+    ready = available() is None
+    return {"configured": ready, "status": v.get("status") or ("none" if ready else "not_configured"),
             "enrolled": bool(v.get("profile")), "percent": v.get("percent"), "at": at.isoformat() if hasattr(at, "isoformat") else at,
-            "source": v.get("source"), "seconds": v.get("seconds"), "error": v.get("error")}
+            "source": v.get("source"), "seconds": v.get("seconds"), "error": v.get("error") or (None if ready else available())}
 
 
 async def enroll_user(db, user_id: str, audio: bytes, source: str = "interview", seconds: Optional[float] = None) -> dict:
     """Build (or rebuild) the rep's voice print from single-speaker audio and store it on the user."""
     now = datetime.now(timezone.utc)
-    if not configured():
-        state = {"status": "not_configured", "attempted_at": now, "source": source}
+    reason = await asyncio.to_thread(available)
+    if reason:
+        state = {"status": "not_configured", "attempted_at": now, "source": source, "error": reason}
         await db.users.update_one({"_id": ObjectId(user_id), "voice_id.profile": {"$exists": False}}, {"$set": {"voice_id": state}})
         return summary({"voice_id": state})
     try:

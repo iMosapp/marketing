@@ -1,5 +1,6 @@
 """Test Lab: new features land here first so the owner can try them on their own account before anyone else sees them.
 A feature is `lab` (only visible inside the Test Lab, super admins) until it is flipped to `live` (everyone)."""
+import asyncio
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -50,12 +51,17 @@ async def visible(db, user: Optional[dict], key: str) -> bool:
 
 
 async def list_features(db) -> list:
+    from services import voice_id
     st = await statuses(db)
     out = []
     for f in FEATURES:
         s = st.get(f["key"]) or {}
         at = s.get("changed_at")
-        out.append({**f, "status": s.get("status") or "lab", "changed_at": at.isoformat() if hasattr(at, "isoformat") else at, "changed_by": s.get("changed_by_name")})
+        row = {**f, "status": s.get("status") or "lab", "changed_at": at.isoformat() if hasattr(at, "isoformat") else at, "changed_by": s.get("changed_by_name")}
+        if f["key"] == "voice_interview":
+            reason = await asyncio.to_thread(voice_id.available)
+            row["needs"] = f"Voice ID is not running on this server: {reason}" if reason else None
+        out.append(row)
     return out
 
 

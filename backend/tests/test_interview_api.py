@@ -38,8 +38,8 @@ def test_status_shape(auth_headers):
     assert r.status_code == 200, r.text
     d = r.json()
     assert "session" in d and "voice" in d and "phone" in d and "can_call" in d and "persona_filled" in d
-    assert d["voice"]["configured"] is False
-    assert d["voice"]["status"] == "not_configured"
+    assert d["voice"]["configured"] is True  # PICOVOICE_ACCESS_KEY set and Eagle loads on this server
+    assert d["voice"]["status"] == "none"
     assert d["voice"]["enrolled"] is False
     assert d["phone"] == "(500) •••-0006"
     assert d["can_call"] is True
@@ -104,7 +104,7 @@ def test_delete_voice_noop(auth_headers):
     assert r.status_code == 200
     d = r.json()
     assert d["ok"] is True
-    assert d["voice"]["status"] == "not_configured"
+    assert d["voice"]["status"] == "none"
 
 
 # ---- public twiml token gating ----
