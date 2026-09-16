@@ -83,3 +83,9 @@
 - Admin: forest -> Hub/Tools > Manage > "Courses & Certification" (`/admin/courses`); managers (qa-manager) see the list + can enroll their store's reps but cannot create/edit/retire. Rep: activation-tester -> `/scripts` "MY COURSES" strip -> `/courses/{id}`.
 - Preview leftover course "QA Inbound Sales" (no enrollments). Do NOT press `enrollment-call-now` / `person-shop-now` (real Twilio calls).
 - Fast certification without the LLM: `cd /app/backend && python -c` calling `services.courses.record_result(db, {"_id": ObjectId(), "enrollment_id": eid, "script_id": challenge_id}, 90)` per challenge (see `tests/test_courses_certification.py`). Public page `/certificate/{token}` (no login).
+
+## Voice Interview + Test Lab (Sep 2026)
+- Test Lab: forest -> My Profile > "Test Lab" row (or Hub > Internal Operations > Test Lab) = `/admin/test-lab`, super_admin only. `voice_interview` is in `lab` status by default (reps do not see the InterviewCard; `GET /api/interview/status` .available false). Flip via `lab-release-voice_interview` or `PUT /api/lab/features/voice_interview {"status":"live"}`; leave it `lab` after tests.
+- NEVER press "Call me" / "Redo" as forest (real phone 801-634-9122). activation-tester (500-555-0006) is safe: the call fails "Your phone was busy" in ~30-45 s and exercises the failed state. `POST /api/interview/start {"dry_run": true}` is super-admin only.
+- Full no-phone simulation (websocket + LLM + persona build + dry run + lab flags): `cd /app/backend && python tests/interview_sim.py` (~2.5 min; `--keep` leaves the tester's completed sessions for UI checks at `/interview/review`). Pytests from testing agents: `tests/test_interview_api.py`, `tests/test_lab_api.py`.
+- Voice ID: `PICOVOICE_ACCESS_KEY` is empty in preview -> status `not_configured` everywhere (expected, not a bug).
