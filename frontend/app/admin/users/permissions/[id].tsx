@@ -8,12 +8,17 @@ import { useAuthStore } from '../../../../store/authStore';
 import { useThemeStore } from '../../../../store/themeStore';
 import { showSimpleAlert } from '../../../../services/alert';
 
+// Each switch adds one tile to a rep's Tools tab (reps start with My Profile & Card, My VA and Settings only).
 const SECTIONS = [
   {
     key: 'my_tools', title: 'My Tools', icon: 'apps', color: '#007AFF',
     items: [
       { key: 'touchpoints', label: "Today's Touchpoints", icon: 'checkbox-outline' },
       { key: 'ask_jessi', label: 'Ask Jessi', icon: 'sparkles' },
+      { key: 'ai_followups', label: 'AI Follow-ups', icon: 'flash' },
+      { key: 'internet_leads', label: 'Internet Leads', icon: 'flame' },
+      { key: 'inventory', label: 'Inventory', icon: 'car-sport' },
+      { key: 'keyword_search', label: 'Keyword Search', icon: 'search-circle' },
       { key: 'training_hub', label: 'Training Hub', icon: 'school' },
       { key: 'team_chat', label: 'Team Chat', icon: 'chatbox-ellipses' },
     ],
@@ -23,23 +28,24 @@ const SECTIONS = [
     items: [
       { key: 'campaign_builder', label: 'Campaign Builder', icon: 'chatbubbles' },
       { key: 'campaign_dashboard', label: 'Campaign Dashboard', icon: 'speedometer' },
-      { key: 'broadcast', label: 'Broadcast', icon: 'megaphone' },
+      { key: 'broadcast', label: 'Broadcast (Send a Blast)', icon: 'megaphone' },
       { key: 'date_triggers', label: 'Date Triggers', icon: 'calendar-outline' },
     ],
   },
   {
-    key: 'content', title: 'Content', icon: 'color-palette', color: '#AF52DE',
+    key: 'content', title: 'Content & Brand', icon: 'color-palette', color: '#AF52DE',
     items: [
-      { key: 'sms_templates', label: 'SMS Templates', icon: 'document-text' },
+      { key: 'sms_templates', label: 'My Templates (SMS & email)', icon: 'document-text' },
       { key: 'email_templates', label: 'Email Templates', icon: 'mail-outline' },
       { key: 'card_templates', label: 'Card Templates', icon: 'color-palette-outline' },
-      { key: 'manage_showcase', label: 'Manage Showcase', icon: 'images' },
+      { key: 'manage_showcase', label: 'My Showcase (manage gallery)', icon: 'images' },
+      { key: 'brand_pages', label: 'Brand extras: Print QR, Share the App, Email Signature', icon: 'qr-code-outline' },
     ],
   },
   {
     key: 'insights', title: 'Insights', icon: 'stats-chart', color: '#34C759',
     items: [
-      { key: 'my_performance', label: 'My Performance', icon: 'stats-chart' },
+      { key: 'my_performance', label: 'My Numbers, Call Scores, Scripts & Practice', icon: 'stats-chart' },
       { key: 'activity_reports', label: 'Activity Reports', icon: 'bar-chart' },
       { key: 'email_analytics', label: 'Email Analytics', icon: 'bar-chart' },
       { key: 'leaderboard', label: 'Leaderboard', icon: 'podium' },

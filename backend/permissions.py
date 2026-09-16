@@ -4,34 +4,41 @@ Supports section-level master toggles + individual item overrides.
 Role-based templates provide tiered access: user < store_manager < org_admin < super_admin.
 """
 
-# Base permissions for regular users (salespeople)
+# Base permissions for regular users (salespeople).
+# June 2026: a rep's Tools tab is three tiles (My Profile & Card, My VA, Settings). Everything below is OFF until a manager
+# flips it on in Team Members -> Permissions; each switch adds one tile to that rep's Tools.
 _USER_PERMISSIONS = {
     "my_tools": {
         "_enabled": True,
-        "touchpoints": True,
-        "ask_jessi": True,
-        "training_hub": True,
-        "team_chat": True,
+        "touchpoints": False,
+        "ask_jessi": False,
+        "ai_followups": False,
+        "training_hub": False,
+        "team_chat": False,
+        "inventory": False,
+        "internet_leads": False,
+        "keyword_search": False,
     },
     "campaigns": {
         "_enabled": True,
-        "campaign_builder": True,
-        "campaign_dashboard": True,
+        "campaign_builder": False,
+        "campaign_dashboard": False,
         "broadcast": False,
-        "date_triggers": True,
+        "date_triggers": False,
     },
     "content": {
         "_enabled": True,
-        "sms_templates": True,
-        "email_templates": True,
+        "sms_templates": False,
+        "email_templates": False,
         "card_templates": False,
-        "manage_showcase": True,
+        "manage_showcase": False,
+        "brand_pages": False,
     },
     "insights": {
         "_enabled": True,
-        "my_performance": True,
-        "activity_reports": True,
-        "email_analytics": True,
+        "my_performance": False,
+        "activity_reports": False,
+        "email_analytics": False,
         "leaderboard": False,
         "lead_attribution": False,
     },
@@ -49,6 +56,10 @@ _STORE_MANAGER_PERMISSIONS = {
         "ask_jessi": True,
         "training_hub": True,
         "team_chat": True,
+        "ai_followups": True,
+        "inventory": True,
+        "internet_leads": True,
+        "keyword_search": True,
     },
     "campaigns": {
         "_enabled": True,
@@ -63,6 +74,7 @@ _STORE_MANAGER_PERMISSIONS = {
         "email_templates": True,
         "card_templates": True,
         "manage_showcase": True,
+        "brand_pages": True,
     },
     "insights": {
         "_enabled": True,
@@ -97,6 +109,10 @@ _ORG_ADMIN_PERMISSIONS = {
         "ask_jessi": True,
         "training_hub": True,
         "team_chat": True,
+        "ai_followups": True,
+        "inventory": True,
+        "internet_leads": True,
+        "keyword_search": True,
     },
     "campaigns": {
         "_enabled": True,
@@ -111,6 +127,7 @@ _ORG_ADMIN_PERMISSIONS = {
         "email_templates": True,
         "card_templates": True,
         "manage_showcase": True,
+        "brand_pages": True,
     },
     "insights": {
         "_enabled": True,
@@ -145,6 +162,10 @@ _SUPER_ADMIN_PERMISSIONS = {
         "ask_jessi": True,
         "training_hub": True,
         "team_chat": True,
+        "ai_followups": True,
+        "inventory": True,
+        "internet_leads": True,
+        "keyword_search": True,
     },
     "campaigns": {
         "_enabled": True,
@@ -159,6 +180,7 @@ _SUPER_ADMIN_PERMISSIONS = {
         "email_templates": True,
         "card_templates": True,
         "manage_showcase": True,
+        "brand_pages": True,
     },
     "insights": {
         "_enabled": True,

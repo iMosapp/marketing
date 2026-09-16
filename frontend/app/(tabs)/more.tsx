@@ -274,6 +274,7 @@ export default function MoreScreen() {
   // Feature permissions from user object (merged with defaults on login)
   const perms = user?.feature_permissions || {};
   const perm = (section: string, item?: string): boolean => {
+    if (repPreview) return false;  // "View as Rep" shows a brand-new rep: nothing unlocked yet
     const sec = perms[section];
     if (!sec || !sec._enabled) return false;
     if (!item) return true;
@@ -663,17 +664,6 @@ export default function MoreScreen() {
     }))),
     ...allSections.flatMap(s => s.items),
   ];
-  const hubQ = hubSearch.trim().toLowerCase();
-  const seenTitles = new Set<string>();
-  const searchResults = hubQ
-    ? searchIndex.filter(i => {
-        if (seenTitles.has(i.title)) return false;
-        const hit = i.title.toLowerCase().includes(hubQ) || i.subtitle.toLowerCase().includes(hubQ);
-        if (hit) seenTitles.add(i.title);
-        return hit;
-      })
-    : [];
-
   // Big "What do you want to do?" task tiles
   const taskGrid = [
     { icon: 'flame', label: 'Internet Leads', sub: 'Incoming lead queue', color: '#FF3B30', route: '/leads', badge: leadsWaiting },
@@ -718,37 +708,56 @@ export default function MoreScreen() {
     const go = (route: string, title: string, icon: string, color: string, subtitle: string) => () => { trackVisit({ title, icon, color, subtitle }); router.push(route as any); };
     const mk = (folder: string, title: string, subtitle: string, icon: string, color: string, route: string, badge?: number): HubApp =>
       ({ id: hubSlug(title), title, subtitle, icon, color, folder, badge, onPress: go(route, title, icon, color, subtitle) });
-    simpleFolders = [
-      { id: 'today', title: 'Today', icon: 'sunny', color: '#FF9F0A' },
-      { id: 'my_brand', title: 'My Brand', icon: 'sparkles', color: '#C9A962' },
-      { id: 'learning', title: 'Learning', icon: 'school', color: '#FF9500' },
-      { id: 'settings', title: 'Settings', icon: 'settings', color: '#8E8E93' },
+    // Three tiles by default. Every other tile appears only when a manager flips its switch (Team Members -> Permissions).
+    const core = [
+      mk('loose', 'My Profile & Card', 'Photo, title, digital card, link page', 'person-circle', '#C9A962', '/my-profile'),
+      mk('loose', 'My VA', 'How Jessi sounds when she texts for you', 'sparkles', '#AF52DE', '/settings/virtual-assistant'),
+      mk('loose', 'Settings', 'Notifications, hours, Face ID, calendar, help', 'settings', '#8E8E93', '/settings'),
     ];
-    simpleApps = [
-      mk('today', 'Touchpoints', 'Today\'s tasks and follow-ups', 'checkbox', '#C9A962', '/(tabs)/touchpoints'),
-      mk('today', 'Calendar', 'Appointments, birthdays and sold dates', 'calendar', '#AF52DE', '/dates-calendar'),
-      mk('today', 'My Numbers', 'Streak, month sales, how am I doing', 'stats-chart', '#34C759', '/touchpoints/performance'),
-      mk('today', 'AI Follow-ups', 'Smart outreach suggestions', 'sparkles', '#FF9F0A', '/(tabs)/ai-outreach'),
-      mk('my_brand', 'My Digital Card', 'How customers see you', 'id-card', '#C9A962', '/my-profile'),
-      mk('my_brand', 'Share My Card', 'Text your card to a customer', 'paper-plane', '#C9A962', '/quick-send/digitalcard'),
-      mk('my_brand', 'Get Reviews', 'Send your review link', 'star', '#FFD60A', '/quick-send/review'),
-      mk('my_brand', 'My Showcase', 'Your customer gallery', 'images', '#34C759', '/showroom-manage'),
-      mk('my_brand', 'My Link Page', 'All your links in one spot', 'link', '#007AFF', '/settings/link-page'),
-      mk('my_brand', 'Share the App', 'Your install link + QR, see who installed', 'phone-portrait-outline', '#34C759', '/share-app'),
-      mk('my_brand', 'My Print QR', 'Your QR for cards & flyers, see who scanned', 'qr-code-outline', '#C9A962', '/my-print-qr'),
-      mk('learning', 'Training Hub', 'Learn the app in short lessons', 'school', '#FF9500', '/training-hub'),
-      mk('learning', 'Help Center', 'How-to guides and FAQs', 'help-circle', '#32ADE6', '/help'),
-      mk('learning', 'Report a Bug', 'Flag an issue or share feedback', 'bug', '#FF453A', '/report-bug'),
-      mk('settings', 'My Profile', 'Your info and public pages', 'person', '#C9A962', '/my-profile'),
-      mk('settings', 'My VA', 'Your AI assistant, Jessi', 'sparkles', '#AF52DE', '/settings/virtual-assistant'),
-      mk('settings', 'Notifications', 'SMS alerts, push and quiet times', 'notifications', '#FF9F0A', '/settings/notifications'),
-      mk('settings', 'My Schedule', 'Work hours and quiet times', 'time', '#32ADE6', '/settings/schedule'),
-      mk('settings', 'My Templates', 'SMS and email templates', 'document-text', '#AF52DE', '/settings/templates'),
-      mk('settings', 'Security', 'Password and Face ID', 'lock-closed', '#8E8E93', '/settings/security'),
-      mk('loose', 'Inventory', 'What\'s on the lot', 'car-sport', '#32ADE6', '/inventory'),
+    const unlocked: HubApp[] = [
+      ...(perm('my_tools', 'touchpoints') ? [mk('loose', 'Touchpoints', "Today's tasks and follow-ups", 'checkbox', '#C9A962', '/(tabs)/touchpoints')] : []),
+      ...(perm('my_tools', 'ask_jessi') ? [mk('loose', 'Ask Jessi', 'Your AI assistant', 'chatbubble-ellipses', '#C9A962', '/jessie')] : []),
+      ...(perm('my_tools', 'ai_followups') ? [mk('loose', 'AI Follow-ups', 'Smart outreach suggestions', 'flash', '#FF9F0A', '/(tabs)/ai-outreach')] : []),
+      ...(perm('my_tools', 'internet_leads') ? [mk('loose', 'Internet Leads', 'Incoming lead queue', 'flame', '#FF3B30', '/leads', leadsWaiting || undefined)] : []),
+      ...(perm('my_tools', 'inventory') ? [mk('loose', 'Inventory', "What's on the lot", 'car-sport', '#32ADE6', '/inventory')] : []),
+      ...(perm('my_tools', 'keyword_search') ? [mk('loose', 'Keyword Search', 'Find any word in texts and calls', 'search-circle', '#32ADE6', '/keyword-search')] : []),
+      ...(perm('my_tools', 'training_hub') ? [mk('loose', 'Training Hub', 'Learn the app in short lessons', 'school', '#FF9500', '/training-hub')] : []),
+      ...(perm('my_tools', 'team_chat') ? [mk('loose', 'Team Chat', 'Internal team messaging', 'chatbox-ellipses', '#5856D6', '/(tabs)/team')] : []),
+      ...(perm('campaigns', 'broadcast') ? [mk('loose', 'Send a Blast', 'Mass text from your number', 'megaphone', '#FF9500', '/broadcast/new')] : []),
+      ...(perm('campaigns', 'campaign_dashboard') ? [mk('loose', 'Campaign Dashboard', 'Enrollments and performance', 'speedometer', '#5AC8FA', '/campaigns/dashboard')] : []),
+      ...(perm('campaigns', 'date_triggers') ? [mk('loose', 'Date Triggers', 'Birthdays and anniversaries', 'calendar-outline', '#FF9500', '/settings/date-triggers')] : []),
+      ...(perm('content', 'sms_templates') ? [mk('loose', 'My Templates', 'SMS and email templates', 'document-text', '#AF52DE', '/settings/templates')] : []),
+      ...(perm('content', 'card_templates') ? [mk('loose', 'Card Templates', 'Thank-you and congrats card designs', 'color-palette-outline', '#FF9500', '/settings/card-templates')] : []),
+      ...(perm('content', 'manage_showcase') ? [mk('loose', 'My Showcase', 'Your customer gallery', 'images', '#34C759', '/showroom-manage')] : []),
+      ...(perm('content', 'brand_pages') ? [
+        mk('loose', 'My Print QR', 'Your QR for cards and flyers', 'qr-code-outline', '#C9A962', '/my-print-qr'),
+        mk('loose', 'Share the App', 'Your install link + QR', 'phone-portrait-outline', '#34C759', '/share-app'),
+        mk('loose', 'Email Signature', 'Copy and paste into your email', 'mail-outline', '#5856D6', '/email-signature'),
+      ] : []),
+      ...(perm('insights', 'my_performance') ? [
+        mk('loose', 'My Numbers', 'Day, week, month performance', 'stats-chart', '#34C759', '/touchpoints/performance'),
+        mk('loose', 'My Call Scores', 'How your recorded calls grade out', 'clipboard-outline', '#C9A962', '/scorecards/my'),
+        mk('loose', 'Scripts & Practice', 'Phone scripts and practice calls', 'school', '#C9A962', '/scripts'),
+      ] : []),
+      ...(perm('insights', 'leaderboard') ? [mk('loose', 'Leaderboard', 'Where you stand on the team', 'podium', '#AF52DE', '/admin/leaderboard')] : []),
+      ...(perm('insights', 'activity_reports') ? [mk('loose', 'Activity Reports', 'Detailed activity analytics', 'bar-chart', '#007AFF', '/reports/activity')] : []),
+      ...(perm('insights', 'email_analytics') ? [mk('loose', 'Email Analytics', 'Opens, clicks and engagement', 'trending-up', '#FF2D55', '/settings/email-analytics')] : []),
     ];
-    hubDefaultLoose = ['inventory'];
+    simpleFolders = [];
+    simpleApps = [...core, ...unlocked];
+    hubDefaultLoose = simpleApps.map(a => a.id);
   }
+
+  const hubQ = hubSearch.trim().toLowerCase();
+  const seenTitles = new Set<string>();
+  const searchResults = hubQ
+    ? (simpleTools ? simpleApps.map(a => ({ icon: a.icon, title: a.title, subtitle: a.subtitle, color: a.color, onPress: a.onPress } as MenuItem)) : searchIndex).filter(i => {
+        if (seenTitles.has(i.title)) return false;
+        const hit = i.title.toLowerCase().includes(hubQ) || i.subtitle.toLowerCase().includes(hubQ);
+        if (hit) seenTitles.add(i.title);
+        return hit;
+      })
+    : [];
 
   function openExternal(url: string) {
     // Append self_preview=1 so tracking ignores salesperson viewing their own page
@@ -1032,7 +1041,7 @@ export default function MoreScreen() {
             <Ionicons name="search" size={17} color={hubQ ? '#C9A962' : colors.textSecondary} />
             <TextInput
               style={[styles.hubSearchInput, { color: colors.text }]}
-              placeholder="Search anything… broadcast, reviews, tags"
+              placeholder={simpleTools ? 'Search your tools' : 'Search anything… broadcast, reviews, tags'}
               placeholderTextColor={colors.textTertiary}
               value={hubSearch}
               onChangeText={setHubSearch}
@@ -1148,7 +1157,7 @@ export default function MoreScreen() {
           apps={simpleTools ? simpleApps : hubApps}
           folderDefs={simpleTools ? simpleFolders : hubFolderDefs}
           defaultLoose={hubDefaultLoose}
-          userId={simpleTools ? `${String(user?._id || 'anon')}:rep` : String(user?._id || 'anon')}
+          userId={simpleTools ? `${String(user?._id || 'anon')}:rep3` : String(user?._id || 'anon')}
           remoteLayout={simpleTools ? null : ((user as any)?.hub_layout || null)}
           colors={colors}
           onDragging={setHubDragging}

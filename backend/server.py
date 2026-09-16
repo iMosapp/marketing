@@ -10,7 +10,7 @@ from bson import ObjectId
 import os
 import logging
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 class UTCDateTimeEncoder(json.JSONEncoder):
@@ -1564,6 +1564,19 @@ async def startup_event():
 
     import asyncio as _aio3
     _aio3.create_task(_backfill_account_ids())
+
+    # ── One-time reset (June 2026): reps start from the three-tile Tools tab; managers unlock switches per rep ──
+    async def _reset_rep_tools_switches():
+        try:
+            db = get_db()
+            if await db.settings.find_one({"key": "migration_rep_tools_reset_2026_06"}):
+                return
+            res = await db.users.update_many({"role": "user", "feature_permissions": {"$exists": True}}, {"$unset": {"feature_permissions": ""}})
+            await db.settings.update_one({"key": "migration_rep_tools_reset_2026_06"}, {"$set": {"value": {"reset": res.modified_count, "at": datetime.now(timezone.utc).isoformat()}}}, upsert=True)
+            logger.info(f"Rep Tools reset: cleared feature_permissions on {res.modified_count} reps")
+        except Exception as e:
+            logger.warning(f"Rep Tools reset skipped: {e}")
+    _aio3.create_task(_reset_rep_tools_switches())
     # Enforces: one phone number = one named contact = one conversation.
     # Safe to run on every startup — skips already-merged contacts.
     async def _consolidate_phone_contacts():
