@@ -19,6 +19,7 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
   const [rows, setRows] = useState<Proposal[] | null>(null);
   const [sheet, setSheet] = useState(false);
   const [per, setPer] = useState<Record<string, string>>(Object.fromEntries(depts.map((d, i) => [d.key, String(client.plan.per_month?.[d.key] ?? (i === 0 ? 20 : 10))])));
+  const [textPer, setTextPer] = useState<Record<string, string>>(Object.fromEntries(depts.map(d => [d.key, String(client.plan.text_per_month?.[d.key] ?? 0)])));
   const [f, setF] = useState({ price: String(client.plan.price_monthly || 400), term: '3', notes: '', contact_name: client.contact_name, contact_email: client.contact_email });
   const [busy, setBusy] = useState(false);
   const [sendFor, setSendFor] = useState<Proposal | null>(null);
@@ -29,7 +30,7 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
   const create = async () => {
     setBusy(true);
     try {
-      await api.post(`/shop-clients/${client.id}/proposals`, { per_month: Object.fromEntries(depts.map(d => [d.key, Number(per[d.key]) || 0])), price_monthly: Number(f.price) || 0, term_months: Number(f.term) || 3, notes: f.notes, contact_name: f.contact_name, contact_email: f.contact_email });
+      await api.post(`/shop-clients/${client.id}/proposals`, { per_month: Object.fromEntries(depts.map(d => [d.key, Number(per[d.key]) || 0])), text_per_month: Object.fromEntries(depts.map(d => [d.key, Number(textPer[d.key]) || 0])), price_monthly: Number(f.price) || 0, term_months: Number(f.term) || 3, notes: f.notes, contact_name: f.contact_name, contact_email: f.contact_email });
       setSheet(false); load(); onChanged(); showToast('Proposal ready. Send it or copy the link.', 'success');
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not create', 'error'); }
     finally { setBusy(false); }
@@ -51,7 +52,7 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
           <View key={p.id} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 8 }} {...tid(`proposal-${p.id}`)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{money(p.terms.price_monthly, client.currency)}/mo · {perMonthText(termsPer(p.terms), ' + ', depts)}</Text>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{money(p.terms.price_monthly, client.currency)}/mo · {perMonthText(termsPer(p.terms), ' + ', depts)}{Object.values((p.terms as any).text_per_month || {}).some((n: any) => n > 0) ? ` + ${perMonthText((p.terms as any).text_per_month, ' + ', depts)} by text` : ''}</Text>
                 <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{p.terms.term_months} month term · to {p.contact_name || p.contact_email || 'no contact'}{p.sent_at ? ` · sent ${fmtWhen(p.sent_at)}` : ''}{p.viewed_at ? ` · opened ${fmtWhen(p.viewed_at)}` : ''}</Text>
               </View>
               <View style={{ paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: st.color + '22', justifyContent: 'center' }} {...tid(`proposal-status-${p.id}`)}><Text style={{ fontSize: 11, fontWeight: '800', color: st.color }}>{st.label}</Text></View>
@@ -73,6 +74,10 @@ export const BillingTab = ({ client, colors, onChanged }: { client: Client; colo
         <Label t="SHOPS PER MONTH, BY DEPARTMENT" colors={colors} />
         <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
           {depts.map(d => <View key={d.key} style={{ flex: 1, minWidth: 100 }}><Field label={d.label.toUpperCase()} value={per[d.key] ?? ''} onChange={(v: string) => setPer({ ...per, [d.key]: v.replace(/\D/g, '') })} colors={colors} keyboardType="number-pad" testID={`proposal-per-${d.key}`} /></View>)}
+        </View>
+        <Label t="TEXT SHOPS PER MONTH (OPTIONAL)" colors={colors} />
+        <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+          {depts.map(d => <View key={d.key} style={{ flex: 1, minWidth: 100 }}><Field label={`${d.label.toUpperCase()} TEXTS`} value={textPer[d.key] ?? ''} onChange={(v: string) => setTextPer({ ...textPer, [d.key]: v.replace(/\D/g, '') })} colors={colors} keyboardType="number-pad" placeholder="0" testID={`proposal-text-${d.key}`} /></View>)}
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1 }}><Field label="$ / MONTH" value={f.price} onChange={(v: string) => setF({ ...f, price: v.replace(/[^\d.]/g, '') })} colors={colors} keyboardType="decimal-pad" testID="proposal-price" /></View>

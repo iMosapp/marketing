@@ -20,6 +20,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
   const [f, setF] = useState({ name: '', phone: '', department: firstDept, title: '', notes: '' });
   const [busy, setBusy] = useState(false);
   const [calling, setCalling] = useState<string | null>(null);
+  const [texting, setTexting] = useState<string | null>(null);
   const [sendingCard, setSendingCard] = useState<string | null>(null);
   const [cardKey, setCardKey] = useState(0);
   const copyKickoff = async () => { if (!kickoffUrl) return; await Clipboard.setStringAsync(kickoffUrl); showToast('Setup link copied', 'success'); };
@@ -42,6 +43,12 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not place the call', 'error'); }
     finally { setCalling(null); }
   }, undefined, 'Call now');
+  const textShop = (p: Person) => showConfirm(`Text shop ${p.name.split(' ')[0]} right now?`, `The AI ${client.customer_noun || 'shopper'} texts ${fmtPhone(p.phone)} from the shop number like a real lead and keeps the thread going as they reply. They have 4 hours to answer each text; the shop is graded on reply speed and quality when the shopper wraps up, or when you tap End & grade under Shops. No reply at all scores 0%.`, async () => {
+    setTexting(p.id);
+    try { await api.post(`/shop-clients/${client.id}/calls/shop-now`, { target_id: p.id, channel: 'text' }); showToast(`Texting ${p.name.split(' ')[0]} now`, 'success'); onShopStarted(); }
+    catch (e: any) { showToast(e?.response?.data?.detail || 'Could not send the text', 'error'); }
+    finally { setTexting(null); }
+  }, undefined, 'Text now');
   const sendCard = (p: Person) => showConfirm(`Text the contact card to ${p.name.split(' ')[0]}?`, `${fmtPhone(p.phone)} gets a text from the shop number with a link to save it as a contact${p.contact_card_ok ? ' (they already got one)' : ''}.`, async () => {
     setSendingCard(p.id);
     try { const r = await api.post(`/shop-clients/${client.id}/contact-card/send`, { target_ids: [p.id] }); showToast(r.data.sent ? `Contact card sent to ${p.name.split(' ')[0]}` : r.data.failed[0]?.error || 'Could not send', r.data.sent ? 'success' : 'error'); onChanged(); setCardKey(k => k + 1); }
@@ -55,7 +62,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
     <View style={{ gap: 16 }}>
       <TouchableOpacity onPress={() => open()} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: GOLD + '1A', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: GOLD + '66' }} {...tid('people-add')}>
         <Ionicons name="person-add" size={20} color={GOLD} />
-        <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Add someone to shop</Text><Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Name, cell and department. We only call; the only text they ever get is the contact card if you send it.</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Add someone to shop</Text><Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Name, cell and department. Shops reach them by call or by text, always from the shop number.</Text></View>
         <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
       </TouchableOpacity>
       {people.length === 0 && <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 }} {...tid('people-empty')}>Nobody to shop yet. Add the {depts.map(d => d.label.toLowerCase()).join(' and ')} people the {client.industry && client.industry !== 'automotive' ? 'account' : 'store'} wants evaluated.</Text>}
@@ -92,9 +99,14 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
                 <TouchableOpacity onPress={() => open(p)} hitSlop={8} {...tid(`person-edit-${p.id}`)}><Ionicons name="create-outline" size={20} color={colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => remove(p)} hitSlop={8} {...tid(`person-remove-${p.id}`)}><Ionicons name="trash-outline" size={19} color={RED} /></TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => shopNow(p)} disabled={calling === p.id} style={{ height: 38, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: calling === p.id ? 0.6 : 1 }} {...tid(`person-shop-now-${p.id}`)}>
-                <Ionicons name="call" size={15} color="#111" /><Text style={{ fontSize: 13.5, fontWeight: '800', color: '#111' }}>{calling === p.id ? 'Placing the call…' : 'Shop now'}</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity onPress={() => shopNow(p)} disabled={calling === p.id} style={{ flex: 1.3, height: 38, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: calling === p.id ? 0.6 : 1 }} {...tid(`person-shop-now-${p.id}`)}>
+                  <Ionicons name="call" size={15} color="#111" /><Text style={{ fontSize: 13.5, fontWeight: '800', color: '#111' }}>{calling === p.id ? 'Placing the call…' : 'Shop now'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => textShop(p)} disabled={texting === p.id} style={{ flex: 1, height: 38, borderRadius: 12, borderWidth: 1, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: texting === p.id ? 0.6 : 1 }} {...tid(`person-text-shop-${p.id}`)}>
+                  <Ionicons name="chatbubbles" size={15} color={GOLD} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: GOLD }}>{texting === p.id ? 'Sending…' : 'Text shop'}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
         </View>

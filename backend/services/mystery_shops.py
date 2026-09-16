@@ -18,6 +18,7 @@ from services import industries as ind
 from services import locales as loc
 from services import scripts as scr
 from services import scorecards as sc
+from services import text_shops as tx
 from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 DEPARTMENTS = ind.dept_keys("automotive")  # automotive keys; use ind.* for anything industry-aware
 DEPT_LABEL = ind.label_map()
 ALL_DEPARTMENTS = ind.all_dept_keys()
-CALL_STATUSES_OPEN = ["scheduled", "dialing", "live", "grading"]
+CALL_STATUSES_OPEN = ["scheduled", "dialing", "live", "ending", "grading"]
 DEFAULT_HOURS = {"start": "09:00", "end": "18:00", "days": [0, 1, 2, 3, 4, 5]}
 ALWAYS_OPEN = {"start": "00:00", "end": "23:59", "days": [0, 1, 2, 3, 4, 5, 6]}
 
@@ -236,6 +237,12 @@ def plan_per_month(client: dict) -> dict:
     return {k: int(plan.get(f"{k}_per_month") or 0) for k in ind.dept_keys(ind.key_of(client)) if plan.get(f"{k}_per_month") is not None}
 
 
+def plan_text_per_month(client: dict) -> dict:
+    """Text (SMS) shops per department, on top of the calls."""
+    per = ((client.get("plan") or {}).get("text_per_month")) or {}
+    return {k: int(v or 0) for k, v in per.items()} if isinstance(per, dict) else {}
+
+
 def terms_per_month(t: dict) -> dict:
     per = (t or {}).get("per_month")
     if isinstance(per, dict) and per:
@@ -283,7 +290,7 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
            "locale": lc, "language": loc.get(lc)["language"], "currency": loc.get(lc)["currency"], "currency_symbol": loc.get(lc)["symbol"], "country": loc.get(lc)["country"], "locale_label": loc.get(lc)["label"], "vat_id": c.get("vat_id", ""),
            "number_state": {"own": bool((c.get("number") or {}).get("sid")), "needs_local_number": loc.get(lc)["country"] != "US" and not c.get("from_number"), "error": (c.get("number_error") or {}).get("error")},
            "contact_name": c.get("contact_name", ""), "contact_email": c.get("contact_email", ""), "contact_phone": c.get("contact_phone", ""), "contact_title": c.get("contact_title", ""),
-           "plan": {"per_month": plan_per_month(c), "sales_per_month": plan_per_month(c).get("sales", 0), "service_per_month": plan_per_month(c).get("service", 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
+           "plan": {"per_month": plan_per_month(c), "text_per_month": plan_text_per_month(c), "sales_per_month": plan_per_month(c).get("sales", 0), "service_per_month": plan_per_month(c).get("service", 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
            "industry": ind.key_of(c), "industry_label": ind.get(ind.key_of(c))["label"], "departments": ind.dept_options(ind.key_of(c)), "offering": ind.get(ind.key_of(c))["offering"], "customer_noun": ind.get(ind.key_of(c))["customer"],
            "hours": _hours(c), "vehicles": offerings_of(c), "offerings": offerings_of(c), "active": c.get("active", True), "record_calls": c.get("record_calls", True), "notes": c.get("notes", ""),
            "from_number": c.get("from_number") or "", "report_token": c.get("report_token"), "scorecards": c.get("scorecards") or {}, "billing": c.get("billing") or {},
@@ -312,7 +319,8 @@ def serialize_call(s: dict) -> dict:
             "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
             "score_pct": s.get("score_pct"), "adherence_pct": s.get("adherence_pct"), "evaluation_id": s.get("evaluation_id"), "recording_url": s.get("recording_url"),
             "recording_seconds": s.get("recording_seconds"), "turns": len(s.get("turns") or []), "manual": bool(s.get("manual")), "demo": bool(s.get("demo")),
-            "score_url": f"{scr._app_url()}/shop-score/{s['score_token']}" if s.get("score_token") else None, "score_sms_status": s.get("score_sms_status"), "score_views": s.get("score_views") or 0}
+            "score_url": f"{scr._app_url()}/shop-score/{s['score_token']}" if s.get("score_token") else None, "score_sms_status": s.get("score_sms_status"), "score_views": s.get("score_views") or 0,
+            "channel": "text" if s.get("mode") == "text" else "call", "text": tx.stats(s) if s.get("mode") == "text" else None}
 
 
 # ---------------------------------------------------------------- challenge rotation
@@ -434,7 +442,8 @@ def month_bounds(month: Optional[str], tz: ZoneInfo) -> tuple:
     return start.astimezone(timezone.utc), end.astimezone(timezone.utc)
 
 
-async def create_shop_call(db, client: dict, target: dict, when: datetime, created_by: Optional[str] = None, manual: bool = False, script: Optional[dict] = None) -> Optional[dict]:
+async def create_shop_call(db, client: dict, target: dict, when: datetime, created_by: Optional[str] = None, manual: bool = False, script: Optional[dict] = None, mode: str = "phone") -> Optional[dict]:
+    """mode 'phone' = the AI calls; 'text' = the AI texts like a lead and the thread is graded (speed by the clock, quality by AI)."""
     script = script or await pick_challenge(db, client, target)
     if not script:
         return None
@@ -444,9 +453,10 @@ async def create_shop_call(db, client: dict, target: dict, when: datetime, creat
     pool_cb = [c for c in (script.get("curveballs") or []) if str(c).strip()] or ind.dept(dept, industry).get("curveballs", [])
     curve = random.sample(pool_cb, k=min(len(pool_cb), random.choice([0, 1, 1, 2])))
     now = _now()
-    doc = {"kind": "mystery_shop", "mode": "phone", "status": "scheduled", "user_id": None, "client_id": str(client["_id"]), "target_id": str(target["_id"]),
+    direction = script.get("direction") if script.get("direction") in ("inbound", "outbound") else "inbound"
+    doc = {"kind": "mystery_shop", "mode": "text" if mode == "text" else "phone", "status": "scheduled", "user_id": None, "client_id": str(client["_id"]), "target_id": str(target["_id"]),
            "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "department": dept, "industry": industry, "store_id": None, "store_name": client.get("name") or f"the {ind.get(industry)['place']}", "locale": loc.key_of(client),
-           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": script.get("direction") if script.get("direction") in ("inbound", "outbound") else "inbound", "persona": persona, "curveballs": curve,
+           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": "inbound" if mode == "text" else direction, "persona": persona, "curveballs": curve,
            "assignment_id": None, "scheduled_for": when, "attempts": 0, "max_attempts": 3, "manual": manual, "token": uuid.uuid4().hex, "turns": [],
            "created_by": created_by, "created_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
@@ -460,19 +470,22 @@ async def plan_month(db, client: dict, month: Optional[str] = None, created_by: 
     tz = _tz(client)
     start, end = month_bounds(month, tz)
     now = _now()
-    per = plan_per_month(client)
+    per, text_per = plan_per_month(client), plan_text_per_month(client)
     created = {k: 0 for k in ind.dept_keys(ind.key_of(client))}
-    for dept in ind.dept_keys(ind.key_of(client)):
-        quota = int(per.get(dept) or 0)
+    created_text = {k: 0 for k in ind.dept_keys(ind.key_of(client))}
+    for dept, mode in [(d, m) for d in ind.dept_keys(ind.key_of(client)) for m in ("phone", "text")]:
+        quota = int((text_per if mode == "text" else per).get(dept) or 0)
         if quota <= 0:
             continue
-        existing = await db.roleplay_sessions.count_documents({"kind": "mystery_shop", "client_id": str(client["_id"]), "department": dept, "scheduled_for": {"$gte": start, "$lt": end}, "status": {"$ne": "canceled"}})
+        mode_q = {"mode": "text"} if mode == "text" else {"mode": {"$ne": "text"}}
+        q = {"kind": "mystery_shop", "client_id": str(client["_id"]), "department": dept, "scheduled_for": {"$gte": start, "$lt": end}, "status": {"$ne": "canceled"}, **mode_q}
+        existing = await db.roleplay_sessions.count_documents(q)
         missing = quota - existing
         targets = await db.shop_targets.find({"client_id": str(client["_id"]), "department": dept, "active": {"$ne": False}}).to_list(200)
         if missing <= 0 or not targets:
             continue
         counts = {}
-        async for s in db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": str(client["_id"]), "department": dept, "scheduled_for": {"$gte": start, "$lt": end}, "status": {"$ne": "canceled"}}, {"target_id": 1}):
+        async for s in db.roleplay_sessions.find(q, {"target_id": 1}):
             counts[s.get("target_id")] = counts.get(s.get("target_id"), 0) + 1
         targets.sort(key=lambda t: counts.get(str(t["_id"]), 0))
         from_dt = max(now + timedelta(minutes=30), start)
@@ -488,9 +501,9 @@ async def plan_month(db, client: dict, month: Optional[str] = None, created_by: 
             slots += [next_slot(client, from_dt, min_gap_minutes=0) for _ in range(missing - len(slots))]
         for i, when in enumerate(slots):
             t = targets[i % len(targets)]
-            if await create_shop_call(db, client, t, when, created_by=created_by):
-                created[dept] += 1
-    return created
+            if await create_shop_call(db, client, t, when, created_by=created_by, mode=mode):
+                (created_text if mode == "text" else created)[dept] += 1
+    return {**created, **({"text": created_text} if any(created_text.values()) else {})}
 
 
 # ---------------------------------------------------------------- placing + outcomes
@@ -630,6 +643,8 @@ async def send_contact_cards(db, client: dict, targets: list, me: dict) -> list:
 
 
 async def place_shop_call(db, call: dict) -> bool:
+    if call.get("mode") == "text":
+        return await tx.start_text_shop(db, call)
     from services.lead_call_engine import _twilio_client
     client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])})
     tw = _twilio_client()
@@ -665,7 +680,8 @@ async def dial_now(db, call: dict) -> bool:
 
 OUTCOME_LABEL = {"voicemail": "Went to voicemail", "no-answer": "No answer", "busy": "Line was busy", "failed": "The call could not be placed", "canceled": "The call was cancelled", "hung_up": "Hung up before the shop started",
                  "no_response": "Went to voicemail or wasn't ready", "postponed": "Asked us to call back later",
-                 "carrier_declined": "Carrier spam filter declined the call", "declined": "Declined before it rang (carrier spam filter or the phone itself)"}
+                 "carrier_declined": "Carrier spam filter declined the call", "declined": "Declined before it rang (carrier spam filter or the phone itself)",
+                 "no_reply": f"No reply to the text in {tx.REPLY_WINDOW_MIN // 60} hours"}
 
 
 async def postpone_call(db, call: dict, hours: int = 2):
@@ -739,6 +755,10 @@ async def run_due_calls(db, limit: int = 3) -> int:
         await sweep_stuck_calls(db)
     except Exception as e:
         logger.warning(f"[MysteryShop] sweep failed: {e}")
+    try:
+        await tx.sweep(db)
+    except Exception as e:
+        logger.warning(f"[MysteryShop] text sweep failed: {e}")
     due = await db.roleplay_sessions.find({"kind": "mystery_shop", "status": "scheduled", "scheduled_for": {"$lte": now}}).sort("scheduled_for", 1).limit(limit * 3).to_list(limit * 3)
     placed = 0
     for call in due:
@@ -751,7 +771,8 @@ async def run_due_calls(db, limit: int = 3) -> int:
         if not call.get("manual") and not client.get("demo") and not in_hours(client, now):
             await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"scheduled_for": next_slot(client, now, min_gap_minutes=0), "updated_at": now}})
             continue
-        busy = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": call["target_id"], "status": {"$in": ["dialing", "live", "grading"]}}, {"_id": 1})
+        mode_q = {"mode": "text"} if call.get("mode") == "text" else {"mode": {"$ne": "text"}}
+        busy = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": call["target_id"], "status": {"$in": ["dialing", "live", "ending", "grading"]}, **mode_q}, {"_id": 1})
         if busy:
             await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"scheduled_for": now + timedelta(minutes=45), "updated_at": now}})
             continue
@@ -1002,13 +1023,14 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     criteria = sorted([{**d, "pass_pct": round(100 * d["passed"] / d["total"])} for d in crit.values() if d["total"]], key=lambda d: (d["pass_pct"], -d["total"]))
     scores = [c.get("score_pct") for c in done]
     by_dept = {}
-    per = plan_per_month(client)
+    per, text_per = plan_per_month(client), plan_text_per_month(client)
     depts = list(dict.fromkeys(ind.dept_keys(ind.key_of(client)) + [c.get("department") for c in calls if c.get("department")]))
     for d in depts:
         dc = [c for c in done if c.get("department") == d]
-        if not per.get(d) and not dc and not any(c.get("department") == d for c in calls):
+        if not per.get(d) and not text_per.get(d) and not dc and not any(c.get("department") == d for c in calls):
             continue
-        by_dept[d] = {"label": ind.dept_label(d), "planned": int(per.get(d) or 0), "scheduled": len([c for c in calls if c.get("department") == d and c.get("status") in CALL_STATUSES_OPEN]),
+        by_dept[d] = {"label": ind.dept_label(d), "planned": int(per.get(d) or 0) + int(text_per.get(d) or 0), "planned_calls": int(per.get(d) or 0), "planned_texts": int(text_per.get(d) or 0),
+                      "text_completed": len([c for c in dc if c.get("mode") == "text"]), "scheduled": len([c for c in calls if c.get("department") == d and c.get("status") in CALL_STATUSES_OPEN]),
                       "completed": len(dc), "unreachable": len([c for c in calls if c.get("department") == d and c.get("status") == "unreachable"]), "avg_score": _pct([c.get("score_pct") for c in dc]),
                       "people": len({c["target_id"] for c in dc}), "criteria": [cr for cr in criteria if cr["department"] == d]}
     call_rows = []
@@ -1057,7 +1079,9 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
             "month": start.astimezone(tz).strftime("%Y-%m"), "month_label": label, "prev_month_label": prev_label, "language": lang, "generated_at": _now().isoformat(),
             "summary": {"completed": len(done), "planned": sum(v["planned"] for v in by_dept.values()), "scheduled": len([c for c in calls if c.get("status") in CALL_STATUSES_OPEN]),
                         "unreachable": len([c for c in calls if c.get("status") == "unreachable"]), "avg_score": _pct(scores), "avg_adherence": _pct([c.get("adherence_pct") for c in done]),
-                        "people_shopped": len({r["target_id"] for r in rows if r["completed"]}), "needs_training": len([r for r in rows if r["needs_training"]])},
+                        "people_shopped": len({r["target_id"] for r in rows if r["completed"]}), "needs_training": len([r for r in rows if r["needs_training"]]),
+                        "text_shops": len([c for c in done if c.get("mode") == "text"]), "text_no_reply": len([c for c in done if c.get("mode") == "text" and c.get("outcome") == "no_reply"]),
+                        "avg_first_reply_s": _pct([tx.stats(c)["first_reply_s"] for c in done if c.get("mode") == "text" and tx.stats(c)["first_reply_s"] is not None])},
             "by_department": by_dept, "people": rows, "criteria": criteria, "coaching_themes": [{"text": k, "count": v} for k, v in sorted(themes.items(), key=lambda kv: -kv[1])[:6]], "calls": call_rows}
 
 
@@ -1228,8 +1252,10 @@ def proposal_text(p: dict, locale: Optional[str] = None) -> list:
     term = int(t.get("term_months") or 3)
     tr = lambda k, **kw: i18n.t(lang, k, **kw)
     per_text = per_month_text_for(per, locale, " and " if en else " en ")
+    text_per = {k: int(v or 0) for k, v in ((t.get("text_per_month") or {}) if isinstance(t.get("text_per_month"), dict) else {}).items() if int(v or 0) > 0}
+    what = tr("prop.what.body", client=p.get("client_name"), per=per_text) + (tr("prop.what.text", per=per_month_text_for(text_per, locale, " and " if en else " en ")) if text_per else "")
     return [
-        (tr("prop.what.title"), tr("prop.what.body", client=p.get("client_name"), per=per_text)),
+        (tr("prop.what.title"), what),
         (tr("prop.report.title"), tr("prop.report.body")),
         (tr("prop.invest.title"), tr("prop.invest.body", price=price_s, term=term)),
         (tr("prop.part.title"), tr("prop.part.body")),
@@ -1420,7 +1446,7 @@ async def ensure_demo_client(db, me: dict) -> dict:
     return doc
 
 
-async def demo_shop(db, me: dict, name: str, phone: str, department: str, title: str, store_name: str, vehicle: str, script: Optional[dict], text_scorecard: bool, industry: Optional[str] = None) -> dict:
+async def demo_shop(db, me: dict, name: str, phone: str, department: str, title: str, store_name: str, vehicle: str, script: Optional[dict], text_scorecard: bool, industry: Optional[str] = None, mode: str = "phone") -> dict:
     c = await ensure_demo_client(db, me)
     industry = industry if industry in ind.INDUSTRIES else ind.industry_of_dept(department)
     cid, now = str(c["_id"]), _now()
@@ -1433,7 +1459,7 @@ async def demo_shop(db, me: dict, name: str, phone: str, department: str, title:
         t = await db.shop_targets.find_one({"_id": res.inserted_id})
     place = f"your {ind.get(industry)['business']}"
     persona_client = {**c, "industry": industry, "name": store_name or place, "vehicles": [vehicle] if vehicle else []}
-    call = await create_shop_call(db, persona_client, t, now, created_by=str(me["_id"]), manual=True, script=script)
+    call = await create_shop_call(db, persona_client, t, now, created_by=str(me["_id"]), manual=True, script=script, mode=mode)
     if not call:
         return {"error": f"No {ind.dept_label(department)} challenges for {ind.get(industry)['label']} yet. Open the Challenge Library and let Jessi write the starters."}
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"demo": True, "notify_sms": bool(text_scorecard), "store_name": store_name or f"the {ind.get(industry)['business']}"}})
@@ -1451,7 +1477,8 @@ def scorecard_sms(s: dict, ev: dict, url: str, course_line: str = "", lang: str 
     first = (s.get("rep_name") or "").split(" ")[0] or ("daar" if lang == "nl" else "there")
     pct = ev.get("score_pct")
     store = "" if s.get("demo") else tr("sms.for", store=str(s.get("store_name") or ("jullie vestiging" if lang == "nl" else "your store")))
-    lines = [tr("sms.intro", name=first, store=store) + " " + (tr("sms.scored", pct=int(pct)) if pct is not None else tr("sms.ready"))]
+    text = s.get("mode") == "text"
+    lines = [tr("sms.intro_text" if text else "sms.intro", name=first, store=store) + " " + (tr("sms.scored", pct=int(pct)) if pct is not None else tr("sms.ready"))]
     good, fix = _short_criteria(ev, True), _short_criteria(ev, False)
     if good:
         lines.append(tr("sms.nailed", items=", ".join(good)))
@@ -1459,7 +1486,7 @@ def scorecard_sms(s: dict, ev: dict, url: str, course_line: str = "", lang: str 
         lines.append(tr("sms.workon", items=", ".join(fix)))
     if course_line:
         lines.append(course_line)
-    lines.append(tr("sms.link", url=url))
+    lines.append(tr("sms.link_text" if text else "sms.link", url=url))
     return no_em_dash("\n".join(lines))
 
 
@@ -1529,7 +1556,8 @@ def public_score(s: dict, ev: dict, client: dict) -> dict:
             "wins": ev.get("wins") or [], "coaching": ev.get("coaching") or [], "customer_sentiment": ev.get("customer_sentiment") or "",
             "results": [{"text": r.get("text"), "passed": bool(r.get("passed")), "critical": bool(r.get("critical")), "evidence": r.get("evidence") or ""} for r in (ev.get("results") or [])],
             "recording_url": s.get("recording_url"), "recording_seconds": s.get("recording_seconds"), "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
-            "adherence": {k: (ev.get("adherence") or {}).get(k) for k in ("score_pct", "hits", "misses", "summary")}}
+            "adherence": {k: (ev.get("adherence") or {}).get(k) for k in ("score_pct", "hits", "misses", "summary")},
+            "channel": "text" if s.get("mode") == "text" else "call", "text": tx.stats(s) if s.get("mode") == "text" else None, "transcript_turns": tx.transcript_turns(s) if s.get("mode") == "text" else None}
 
 
 # ---------------------------------------------------------------- AI challenge generator

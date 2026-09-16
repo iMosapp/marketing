@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Platform, Linking, ScrollView } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { CallDetailSheet } from './CallsTab';
 import { PersonDetailSheet } from './PersonDetailSheet';
-import { Label, Stat, Bar, StatusChip, deptLabel, scoreColor, GOLD, RED, GREEN, AMBER, tid } from './shared';
+import { Label, Stat, Bar, StatusChip, deptLabel, scoreColor, GOLD, RED, GREEN, AMBER, tid , replyDur } from './shared';
 import { makeT, fmtWhenL, type Lang } from './i18n';
 
 export type Criterion = { text: string; critical: boolean; passed: number; total: number; pass_pct: number; department: string; department_label?: string };
@@ -13,7 +13,7 @@ const MEDAL = ['#C9A962', '#A8A9AD', '#CD7F32'];
 
 export type Report = {
   client: { id: string; name: string; brand: string; city: string; state: string; contact_name: string; locale?: string; language?: string }; month: string; month_label: string; prev_month_label?: string; language?: string; generated_at: string;
-  summary: { completed: number; planned: number; scheduled: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; people_shopped: number; needs_training: number };
+  summary: { completed: number; planned: number; scheduled: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; people_shopped: number; needs_training: number; text_shops?: number; text_no_reply?: number; avg_first_reply_s?: number | null };
   by_department: Record<string, { label?: string; planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null; people?: number; criteria?: Criterion[]; coaching_themes?: Theme[]; leaderboard?: LeaderRow[] }>;
   people: { key?: string; target_id?: string; name: string; department: string; department_label?: string; title: string; shops: number; completed: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; best: number | null; worst: number | null; critical_misses: number; needs_training: boolean; last_shop: string | null; coaching: string[] }[];
   criteria: Criterion[];
@@ -169,6 +169,7 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
           <Stat label={tr('rep.people')} value={String(filtered ? v.peopleShopped : s.people_shopped)} colors={colors} testID="report-stat-people" />
         )}
         <Stat label={tr('rep.need')} value={String(filtered ? v.needsTraining : s.needs_training)} colors={colors} tone={(filtered ? v.needsTraining : s.needs_training) ? RED : GREEN} testID="report-stat-training" />
+        {!!s.text_shops && !filtered && <Stat label={tr('rep.text_reply')} value={`${s.avg_first_reply_s != null ? replyDur(s.avg_first_reply_s, lang) : '–'}${s.text_no_reply ? ` · ${tr('rep.text_noreply', { n: s.text_no_reply })}` : ''}`} colors={colors} tone={s.avg_first_reply_s == null ? undefined : s.avg_first_reply_s <= 300 ? GREEN : s.text_no_reply ? RED : GOLD} testID="report-stat-text" />}
       </View>
       {agent !== 'all' && delta != null && (
         <Text style={{ fontSize: 13, fontWeight: '700', color: delta >= 0 ? GREEN : RED, marginTop: -8 }} {...tid('report-compare-line')}>
@@ -246,13 +247,14 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
           <TouchableOpacity key={c.id || i} onPress={() => setOpen(c)} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 4 }} {...tid(`report-call-${i}`)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14.5, fontWeight: '800', color: colors.text }}>{c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {labelOf(c.department || 'sales')}</Text></Text>
+                <Text style={{ fontSize: 14.5, fontWeight: '800', color: colors.text }}>{c.channel === 'text' && <Ionicons name="chatbubbles" size={12} color={GOLD} />}{c.channel === 'text' ? ' ' : ''}{c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {labelOf(c.department || 'sales')}{c.channel === 'text' ? ` · ${tr('rep.texted')}` : ''}</Text></Text>
                 <Text style={{ fontSize: 12.5, color: colors.textSecondary }} numberOfLines={1}>{c.script_title} · {fmtWhenL(c.ended_at || c.scheduled_for, lang)}</Text>
               </View>
               {c.status === 'completed' ? <Text style={{ fontSize: 18, fontWeight: '800', color: scoreColor(c.score_pct) }}>{c.score_pct != null ? `${c.score_pct}%` : '–'}</Text> : <StatusChip status={c.status} colors={colors} lang={lang} />}
             </View>
             {!!c.summary && <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }} numberOfLines={2}>{c.summary}</Text>}
             {!!c.recording_url && <Text style={{ fontSize: 11.5, fontWeight: '700', color: GOLD }}><Ionicons name="play" size={10} color={GOLD} /> {tr('rep.inside')}</Text>}
+            {c.channel === 'text' && c.status === 'completed' && <Text style={{ fontSize: 11.5, fontWeight: '700', color: c.text?.first_reply_s == null ? RED : c.text.first_reply_s <= 300 ? GREEN : GOLD }}>{c.text?.first_reply_s == null ? tr('tx.noreply') : tr('tx.first', { d: replyDur(c.text.first_reply_s, lang) })}</Text>}
           </TouchableOpacity>
         ))}
       </View>

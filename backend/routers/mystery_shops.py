@@ -19,6 +19,7 @@ from services import mystery_shops as ms
 from services import shop_report_mail as srm
 from services import scorecards as sc
 from services import scripts as scr
+from services import text_shops as tx
 from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
@@ -113,6 +114,7 @@ class DemoBody(BaseModel):
     vehicle: Optional[str] = ""
     script_id: Optional[str] = None
     text_scorecard: bool = True
+    channel: Optional[str] = "call"
 
 
 class PersonBody(BaseModel):
@@ -127,6 +129,7 @@ class PersonBody(BaseModel):
 class ShopNowBody(BaseModel):
     target_id: str
     script_id: Optional[str] = None
+    channel: Optional[str] = "call"
 
 
 class PlanBody(BaseModel):
@@ -158,6 +161,7 @@ class ProposalBody(BaseModel):
     sales_per_month: Optional[int] = 0
     service_per_month: Optional[int] = 0
     per_month: Optional[dict] = None
+    text_per_month: Optional[dict] = None
     price_monthly: float
     term_months: int = 3
     notes: Optional[str] = ""
@@ -216,7 +220,9 @@ def _client_fields(body: ClientBody) -> dict:
     if "plan" in d:
         p = d["plan"] or {}
         per = p.get("per_month") if isinstance(p.get("per_month"), dict) else {k: p.get(f"{k}_per_month") for k in ("sales", "service") if p.get(f"{k}_per_month") is not None}
-        d["plan"] = {"per_month": {k: max(0, min(200, int(v or 0))) for k, v in per.items() if k in ind.all_dept_keys()}, "price_monthly": max(0.0, float(p.get("price_monthly") or 0))}
+        text_per = p.get("text_per_month") if isinstance(p.get("text_per_month"), dict) else {}
+        d["plan"] = {"per_month": {k: max(0, min(200, int(v or 0))) for k, v in per.items() if k in ind.all_dept_keys()}, "text_per_month": {k: max(0, min(200, int(v or 0))) for k, v in text_per.items() if k in ind.all_dept_keys()},
+                     "price_monthly": max(0.0, float(p.get("price_monthly") or 0))}
     if "hours" in d:
         h = {**ms.DEFAULT_HOURS, **(d["hours"] or {})}
         d["hours"] = {"start": str(h.get("start") or "09:00")[:5], "end": str(h.get("end") or "18:00")[:5], "days": sorted({int(x) for x in (h.get("days") or []) if 0 <= int(x) <= 6})}
@@ -497,18 +503,19 @@ async def demo_shop(body: DemoBody, request: Request):
     phone = _phone(body.phone or "")
     industry = body.industry if body.industry in ind.INDUSTRIES else ind.industry_of_dept(body.department)
     dept = body.department if body.department in ind.dept_keys(industry) else ind.dept_keys(industry)[0]
-    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "rep_phone": phone, "status": {"$in": ["dialing", "live", "grading"]}}):
-        raise HTTPException(status_code=409, detail=f"{name} is already on a shop call")
+    mode = "text" if body.channel == "text" else "phone"
+    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "rep_phone": phone, "status": {"$in": ["dialing", "live", "ending", "grading"]}, **({"mode": "text"} if mode == "text" else {"mode": {"$ne": "text"}})}):
+        raise HTTPException(status_code=409, detail=f"{name} is already in a text shop" if mode == "text" else f"{name} is already on a shop call")
     script = None
     if body.script_id:
         script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop", "active": {"$ne": False}})
         if not script:
             raise HTTPException(status_code=404, detail="That challenge is gone, pick another")
-    r = await ms.demo_shop(db, me, name, phone, dept, (body.title or "").strip()[:60], (body.store_name or "").strip()[:80], (body.vehicle or "").strip()[:80], script, body.text_scorecard, industry)
+    r = await ms.demo_shop(db, me, name, phone, dept, (body.title or "").strip()[:60], (body.store_name or "").strip()[:80], (body.vehicle or "").strip()[:80], script, body.text_scorecard, industry, mode)
     if r.get("error"):
         raise HTTPException(status_code=400, detail=r["error"])
     if not r.get("ok"):
-        raise HTTPException(status_code=503, detail=(r.get("call") or {}).get("fail_reason") or "The call could not be placed")
+        raise HTTPException(status_code=503, detail=(r.get("call") or {}).get("fail_reason") or ("The text could not be sent" if mode == "text" else "The call could not be placed"))
     return {"call": ms.serialize_call(r["call"]), "client_id": r["client_id"]}
 
 
@@ -905,18 +912,19 @@ async def shop_now(cid: str, body: ShopNowBody, request: Request):
     t = await db.shop_targets.find_one({"_id": _oid(body.target_id, "Person"), "client_id": cid})
     if not t:
         raise HTTPException(status_code=404, detail="Person not found")
-    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": body.target_id, "status": {"$in": ["dialing", "live", "grading"]}}):
-        raise HTTPException(status_code=409, detail=f"{t['name']} is already on a shop call")
+    mode = "text" if body.channel == "text" else "phone"
+    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": body.target_id, "status": {"$in": ["dialing", "live", "ending", "grading"]}, **({"mode": "text"} if mode == "text" else {"mode": {"$ne": "text"}})}):
+        raise HTTPException(status_code=409, detail=f"{t['name']} is already in a text shop, end it first" if mode == "text" else f"{t['name']} is already on a shop call")
     script = None
     if body.script_id:
         script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop"})
-    call = await ms.create_shop_call(db, c, t, datetime.now(timezone.utc), created_by=str(me["_id"]), manual=True, script=script)
+    call = await ms.create_shop_call(db, c, t, datetime.now(timezone.utc), created_by=str(me["_id"]), manual=True, script=script, mode=mode)
     if not call:
         raise HTTPException(status_code=400, detail=f"No {ind.dept_label(t.get('department'))} challenges in the pool yet. Open the Challenge Library and let Jessi write the starters.")
     ok = await ms.dial_now(db, call)
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
     if not ok:
-        raise HTTPException(status_code=503, detail=s.get("fail_reason") or "The call could not be placed")
+        raise HTTPException(status_code=503, detail=s.get("fail_reason") or ("The text could not be sent" if mode == "text" else "The call could not be placed"))
     return ms.serialize_call(s)
 
 
@@ -939,7 +947,7 @@ async def get_call(sid: str, request: Request):
     s = await scr.reconcile_dialing(db, s)
     ev = await db.call_evaluations.find_one({"_id": ObjectId(s["evaluation_id"])}) if s.get("evaluation_id") and ObjectId.is_valid(str(s["evaluation_id"])) else None
     out = ms.serialize_call(s)
-    out.update({"persona": s.get("persona"), "transcript_turns": [scr._turn_out(t) for t in s.get("turns", [])], "attempt_history": [{**h, "at": h["at"].isoformat()} for h in s.get("attempt_history", []) if h.get("at")],
+    out.update({"persona": s.get("persona"), "transcript_turns": tx.transcript_turns(s), "attempt_history": [{**h, "at": h["at"].isoformat()} for h in s.get("attempt_history", []) if h.get("at")],
                 "evaluation": {"id": str(ev["_id"]), "score_pct": ev.get("score_pct"), "scorecard_name": ev.get("scorecard_name"), "critical_misses": sc.miss_labels(ev), "summary": ev.get("summary"),
                                "wins": ev.get("wins") or [], "coaching": ev.get("coaching") or [], "results": ev.get("results") or [], "adherence": ev.get("adherence") or {}, "customer_sentiment": ev.get("customer_sentiment")} if ev else None})
     return out
@@ -969,7 +977,19 @@ async def retry_call(sid: str, request: Request):
     await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": datetime.now(timezone.utc), "attempts": 0, "manual": True, "fail_reason": None, "outcome": None, "turns": [], "updated_at": datetime.now(timezone.utc)}})
     call = await db.roleplay_sessions.find_one({"_id": s["_id"]})
     if not await ms.dial_now(db, call):
-        raise HTTPException(status_code=503, detail="The call could not be placed")
+        raise HTTPException(status_code=503, detail="The text could not be sent" if s.get("mode") == "text" else "The call could not be placed")
+    return ms.serialize_call(await db.roleplay_sessions.find_one({"_id": s["_id"]}))
+
+
+@router.post("/calls/{sid}/end")
+async def end_text_shop(sid: str, request: Request):
+    """Stop waiting on a live text shop and grade what happened so far."""
+    await require_admin(request)
+    db = get_db()
+    s = await db.roleplay_sessions.find_one({"_id": _oid(sid, "Call"), "kind": "mystery_shop", "mode": "text"})
+    if not s or s.get("status") not in ("live", "ending"):
+        raise HTTPException(status_code=409, detail="Only a live text shop can be ended")
+    await tx.finish(db, sid, "ended_by_admin")
     return ms.serialize_call(await db.roleplay_sessions.find_one({"_id": s["_id"]}))
 
 
@@ -1307,13 +1327,14 @@ async def create_proposal(cid: str, body: ProposalBody, request: Request):
     keys = ind.dept_keys(ind.key_of(c))
     per = body.per_month if isinstance(body.per_month, dict) and body.per_month else {"sales": body.sales_per_month or 0, "service": body.service_per_month or 0}
     per = {k: max(0, min(200, int(v or 0))) for k, v in per.items() if k in keys}
-    if not any(per.values()):
+    text_per = {k: max(0, min(200, int(v or 0))) for k, v in (body.text_per_month or {}).items() if k in keys} if isinstance(body.text_per_month, dict) else {}
+    if not any(per.values()) and not any(text_per.values()):
         raise HTTPException(status_code=400, detail="Set how many shops per month")
     doc = {"client_id": cid, "client_name": c.get("name"), "contact_name": (body.contact_name or c.get("contact_name") or "").strip(), "contact_email": (body.contact_email or c.get("contact_email") or "").strip().lower(),
-           "terms": {"per_month": per, "sales_per_month": per.get("sales", 0), "service_per_month": per.get("service", 0), "price_monthly": round(float(body.price_monthly), 2), "term_months": max(1, min(24, body.term_months)), "notes": no_em_dash(body.notes or "")[:1500]},
+           "terms": {"per_month": per, "text_per_month": text_per, "sales_per_month": per.get("sales", 0), "service_per_month": per.get("service", 0), "price_monthly": round(float(body.price_monthly), 2), "term_months": max(1, min(24, body.term_months)), "notes": no_em_dash(body.notes or "")[:1500]},
            "status": "draft", "token": uuid.uuid4().hex, "sender_id": str(me["_id"]), "sender_name": me.get("name") or "I'm On Social", "locale": loc.key_of(c), "created_at": now, "updated_at": now}
     res = await db.shop_proposals.insert_one(doc)
-    await db.shop_clients.update_one({"_id": c["_id"]}, {"$set": {"plan": {"per_month": per, "price_monthly": doc["terms"]["price_monthly"]}}})
+    await db.shop_clients.update_one({"_id": c["_id"]}, {"$set": {"plan": {"per_month": per, "text_per_month": text_per, "price_monthly": doc["terms"]["price_monthly"]}}})
     p = await db.shop_proposals.find_one({"_id": res.inserted_id})
     return {**ms.serialize_proposal(p), "url": f"{scr._app_url()}/proposal/{p['token']}"}
 
@@ -1414,6 +1435,7 @@ async def public_proposal(token: str):
     out["kickoff_url"] = await _kickoff_for(db, p) if p.get("status") in ("signed", "paid") else None
     pack = ind.translated(ind.key_of(c), loc.key_of(c))
     out["per_month"] = ms.terms_per_month(p.get("terms") or {})
+    out["text_per_month"] = {k: int(v or 0) for k, v in ((p.get("terms") or {}).get("text_per_month") or {}).items()}
     out["departments"] = ind.dept_options_for(ind.key_of(c), loc.key_of(c))
     out["offering"] = pack["offering"]
     out["business_noun"] = pack["business"]

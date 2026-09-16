@@ -12,6 +12,7 @@ import { copyToClipboard } from '../utils/clipboard';
 import api from '../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import { resolveUserPhotoUrlHiRes, resolvePhotoUrl } from '../utils/photoUrl';
+import { InterviewCard } from '../components/profile/InterviewCard';
 
 const PROD_BASE = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
 
@@ -198,6 +199,9 @@ export default function MyProfileScreen() {
             <Text style={styles.actionBtnText}>My VA</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Jessi onboarding interview */}
+        <InterviewCard />
 
         {/* Finish profile nudge */}
         {!profileComplete && (

@@ -49,6 +49,11 @@ T = {
         # scorecard text to the person who was shopped
         "sms.intro": "Hey {name}, that practice call just now was from I'm On Social{store}.", "sms.for": " for {store}", "sms.scored": "You scored {pct}%.", "sms.ready": "Your scorecard is ready.",
         "sms.nailed": "Nailed: {items}.", "sms.workon": "Work on: {items}.", "sms.link": "Full scorecard + recording: {url}",
+        "sms.intro_text": "Hey {name}, those texts just now were a practice shop from I'm On Social{store}.", "sms.link_text": "Full scorecard + the thread: {url}",
+        "prop.what.text": " Plus {per} text shops a month: our shopper texts the person like a real lead and we grade how fast and how well they reply.",
+        "tx.under_min": "under a minute", "tx.h": "h", "tx.noreply.evidence": "No reply", "tx.first_after": "First reply after {d}", "tx.pace": "Slowest reply {d}, average {avg}",
+        "tx.noreply.summary": "{name} never replied. The shopper texted at {time} and gave up after {hours} hours of silence. A real lead would have bought somewhere else.",
+        "tx.noreply.coaching": "Answer every text lead within 5 minutes, even if it is only 'Got it, give me a few minutes and I will get you an answer.'",
         "sms.course": "{course}: {done} of {total} passed.", "sms.course_retry": " You need {need}% on this one, we will call again with it.",
         "vcf.sms": "Hi {name}, {sender} here with I'm On Social. {store} signed the team up for practice calls and scorecards from this number. Save it as a contact so you know it's us when we call: {url}",
         "vcf.note": "Practice calls and scorecard texts for {store} come from this number. I'm On Social.", "vcf.note_generic": "Practice calls and scorecard texts from I'm On Social come from this number.",
@@ -107,6 +112,11 @@ T = {
         "pmail.small": "Ondertekenen duurt ongeveer een minuut. Je eerste factuur komt direct daarna per e-mail en de shops starten zodra die betaald is. Vragen? Beantwoord gewoon deze mail.",
         "sms.intro": "Hoi {name}, dat oefengesprek van net kwam van I'm On Social{store}.", "sms.for": " voor {store}", "sms.scored": "Je scoorde {pct}%.", "sms.ready": "Je scorekaart staat klaar.",
         "sms.nailed": "Goed gedaan: {items}.", "sms.workon": "Werk aan: {items}.", "sms.link": "Volledige scorekaart + opname: {url}",
+        "sms.intro_text": "Hoi {name}, die berichten van net waren een oefenshop van I'm On Social{store}.", "sms.link_text": "Volledige scorekaart + het gesprek: {url}",
+        "prop.what.text": " Plus {per} sms-shops per maand: onze shopper stuurt de medewerker een bericht zoals een echte lead en we beoordelen hoe snel en hoe goed die reageert.",
+        "tx.under_min": "minder dan een minuut", "tx.h": "u", "tx.noreply.evidence": "Geen reactie", "tx.first_after": "Eerste reactie na {d}", "tx.pace": "Traagste reactie {d}, gemiddeld {avg}",
+        "tx.noreply.summary": "{name} heeft niet gereageerd. De shopper stuurde om {time} een bericht en gaf het na {hours} uur stilte op. Een echte lead had ergens anders gekocht.",
+        "tx.noreply.coaching": "Reageer binnen 5 minuten op elke lead die een bericht stuurt, al is het maar 'Ik kijk het even na, je hoort zo van me.'",
         "sms.course": "{course}: {done} van {total} gehaald.", "sms.course_retry": " Je hebt {need}% nodig op deze, we bellen er nog een keer mee.",
         "vcf.sms": "Hoi {name}, {sender} hier van I'm On Social. {store} heeft het team aangemeld voor oefengesprekken en scorekaarten vanaf dit nummer. Sla het op als contact, dan weet je dat wij het zijn als we bellen: {url}",
         "vcf.note": "Oefengesprekken en scorekaart-berichten voor {store} komen van dit nummer. I'm On Social.", "vcf.note_generic": "Oefengesprekken en scorekaart-berichten van I'm On Social komen van dit nummer.",
@@ -131,6 +141,7 @@ T["en-GB"] = {
     "prop.invest.body": "{price} per month, billed monthly by invoice (card or Bacs bank transfer) for an initial term of {term} months, then month to month. The first invoice is sent as soon as this proposal is signed and shops begin once it is paid.",
     "prop.agree.body": "By typing your name and signing below you agree to these terms on behalf of the business. This electronic signature is legally binding under the UK eIDAS Regulation and the Electronic Communications Act 2000.",
     "sms.intro": "Hi {name}, that practice call just now was from I'm On Social{store}.",
+    "sms.intro_text": "Hi {name}, those texts just now were a practice shop from I'm On Social{store}.",
 }
 T["en-IE"] = {
     **T["en-GB"],

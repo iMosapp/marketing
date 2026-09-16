@@ -358,15 +358,17 @@ def grader_language_rule(language: Optional[str]) -> str:
     return GRADER_LANGUAGE.get(lang) or GRADER_LANGUAGE.get(lang[:2]) or ""
 
 
-def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None, language: Optional[str] = None) -> str:
+def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None, language: Optional[str] = None, channel: str = "call") -> str:
     from services import industries as ind
     coach = "dealership call-quality coach" if (industry or ind.DEFAULT_INDUSTRY) == "automotive" else f"{ind.get(industry)['label'].lower()} call-quality coach"
     crit_lines = "\n".join(
         f'- id "{c["id"]}": {c["text"]}' + (" (CRITICAL)" if c.get("critical") else "") + (f' | coaching hint: {c["hint"]}' if c.get("hint") else "")
         for c in card.get("criteria") or []
     )
+    text = channel == "text"
+    medium = f"a text message (SMS) conversation ({max(1, duration_s // 60)} min from first text to last)" if text else f"a recorded {direction} phone call ({duration_s}s)"
     return (
-        f"You are a {coach} grading a recorded {direction} phone call ({duration_s}s) between the rep {rep_name} "
+        f"You are a {coach} grading {medium} between the rep {rep_name} "
         f"and the customer {contact_name} using the '{card.get('name')}' scorecard ({card.get('department') or 'Sales'} department).\n\n"
         "CRITERIA to grade (each must appear in your results):\n" + crit_lines + "\n\n"
         "RULES:\n"
@@ -378,7 +380,9 @@ def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str,
         "- wins = 1 or 2 specific things the rep did well.\n"
         "- coaching = 2 or 3 specific, kind, actionable tips tied to what was missed, each one sentence, written to the rep as 'you'.\n"
         "- Never use em dashes or en dashes anywhere. Use commas or periods.\n"
-        "- If the recording is a voicemail, hold music or the customer never speaks, set call_type to \"no_conversation\" and grade what you can.\n"
+        + ("- This was a TEXT thread: the customer texted first like a real text lead. '[replied after N min]' notes show how long the rep took; the reply-speed criteria are measured by the system, so grade the other criteria on what the rep wrote. "
+           "Phone-only behaviours do not apply to texts: pass them when the rep did the text equivalent, and use null only when a criterion truly cannot apply to a text conversation.\n"
+           if text else "- If the recording is a voicemail, hold music or the customer never speaks, set call_type to \"no_conversation\" and grade what you can.\n")
         + grader_language_rule(language) + "\n"
         "Respond with ONLY valid JSON in exactly this shape:\n"
         '{"summary": "...", "wins": ["..."], "coaching": ["..."], "customer_sentiment": "positive|neutral|negative", '
@@ -407,13 +411,13 @@ def _parse_json(raw: str) -> dict:
     return {}
 
 
-async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None, language: Optional[str] = None) -> dict:
+async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name: str, direction: str, duration_s: int, industry: Optional[str] = None, language: Optional[str] = None, channel: str = "call") -> dict:
     api_key = os.environ.get("EMERGENT_LLM_KEY", "")
     if not api_key:
         raise RuntimeError("EMERGENT_LLM_KEY not set")
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     chat = LlmChat(api_key=api_key, session_id=f"scorecard-{uuid.uuid4().hex[:12]}",
-                   system_message=_grader_prompt(card, rep_name, contact_name, direction, duration_s, industry, language)).with_model(*MODEL)
+                   system_message=_grader_prompt(card, rep_name, contact_name, direction, duration_s, industry, language, channel)).with_model(*MODEL)
     resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"TRANSCRIPT:\n{transcript[:24000]}")), timeout=60.0)
     text = resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
     data = _parse_json(text)

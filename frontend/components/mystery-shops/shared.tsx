@@ -12,7 +12,8 @@ export const BLUE = '#0A84FF';
 export const LIGHT = { bg: '#F6F4EE', card: '#FFFFFF', border: '#E4DFD2', text: '#161616', textSecondary: '#6B6B6B', surface: '#F1EEE6' };
 export const fmtHour = (hm: string) => { const [h, m] = (hm || '09:00').split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; const hh = h % 12 || 12; return m ? `${hh}:${String(m).padStart(2, '0')} ${ap}` : `${hh} ${ap}`; };
 
-export type Plan = { per_month: Record<string, number>; sales_per_month: number; service_per_month: number; price_monthly: number };
+export type Plan = { per_month: Record<string, number>; text_per_month?: Record<string, number>; sales_per_month: number; service_per_month: number; price_monthly: number };
+export type TextStats = { replies: number; customer_texts: number; first_reply_s: number | null; avg_reply_s: number | null; max_reply_s: number | null; waiting_since: string | null; end_reason?: string | null };
 export type Dept = { key: string; label: string; call?: string; rep?: string; challenges?: number };
 export type Offering = { label: string; plural: string; hint: string; field: string; field_help: string };
 export type Industry = { key: string; label: string; business: string; place: string; customer: string; offering: Offering; departments: Dept[] };
@@ -33,6 +34,7 @@ export type ShopCall = {
   id: string; target_id: string; target_name: string; department: string; department_label?: string; industry?: string; customer_noun?: string; status: string; outcome?: string | null; fail_reason?: string | null; script_id: string; script_title: string; persona_name?: string;
   curveballs: string[]; scheduled_for: string | null; attempts: number; started_at: string | null; ended_at: string | null; score_pct: number | null; adherence_pct: number | null; evaluation_id?: string | null;
   recording_url?: string | null; recording_seconds?: number | null; turns: number; manual: boolean; demo?: boolean; score_url?: string | null; score_sms_status?: string | null; score_views?: number;
+  channel?: 'call' | 'text'; text?: TextStats | null;
 };
 export type ChallengeReview = { status: 'approved' | 'needs_review'; by_name?: string; at?: string | null };
 export type Challenge = { id: string; title: string; department: string; department_label?: string; industry?: string; direction?: 'inbound' | 'outbound'; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean; language?: string; source_slug?: string | null; review?: ChallengeReview | null };
@@ -91,7 +93,7 @@ export const monthLabel = (key: string) => { const [y, m] = key.split('-').map(N
 export const scoreColor = (pct?: number | null) => (pct == null ? '#8E8E93' : pct >= 85 ? GREEN : pct >= 70 ? AMBER : RED);
 
 export const STATUS: Record<string, { label: string; color: string; icon: any }> = {
-  scheduled: { label: 'Scheduled', color: BLUE, icon: 'time-outline' }, dialing: { label: 'Calling now', color: GOLD, icon: 'call' }, live: { label: 'On the call', color: GREEN, icon: 'radio' },
+  scheduled: { label: 'Scheduled', color: BLUE, icon: 'time-outline' }, dialing: { label: 'Calling now', color: GOLD, icon: 'call' }, live: { label: 'On the call', color: GREEN, icon: 'radio' }, ending: { label: 'Wrapping up', color: GREEN, icon: 'chatbubble-ellipses' },
   grading: { label: 'Grading', color: PURPLE, icon: 'hourglass' }, completed: { label: 'Done', color: GREEN, icon: 'checkmark-circle' }, unreachable: { label: 'Unreachable', color: RED, icon: 'call-outline' },
   failed: { label: 'Failed', color: RED, icon: 'alert-circle' }, canceled: { label: 'Canceled', color: '#8E8E93', icon: 'close-circle' }, abandoned: { label: 'Hung up', color: RED, icon: 'call-outline' },
 };
@@ -121,9 +123,15 @@ export const Chip = ({ label, active, onPress, colors, testID, color = GOLD, sma
   </TouchableOpacity>
 );
 
-export const StatusChip = ({ status, colors, lang }: { status: string; colors: any; lang?: string }) => {
-  const s = STATUS[status] || { label: status, color: colors.textSecondary, icon: 'ellipse' };
-  const label = lang && lang !== 'en' ? makeT(lang)(`status.${status}`) : s.label;
+// Reply time in plain words: 'under a minute', '3 min', '1 h 5 min'
+export const replyDur = (secs?: number | null, lang?: string) => { if (secs == null) return ''; if (secs < 60) return lang === 'nl' ? 'minder dan een minuut' : 'under a minute'; const m = Math.round(secs / 60); return m >= 60 ? `${Math.floor(m / 60)} ${lang === 'nl' ? 'u' : 'h'} ${m % 60} min` : `${m} min`; };
+export const minutesSince = (iso?: string | null) => (iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0);
+export const isTextLive = (c: { channel?: string; status: string }) => c.channel === 'text' && (c.status === 'live' || c.status === 'ending');
+
+export const StatusChip = ({ status, colors, lang, channel }: { status: string; colors: any; lang?: string; channel?: string }) => {
+  const base = STATUS[status] || { label: status, color: colors.textSecondary, icon: 'ellipse' };
+  const s = channel === 'text' && status === 'live' ? { ...base, label: 'Texting', icon: 'chatbubbles' } : base;
+  const label = lang && lang !== 'en' ? makeT(lang)(channel === 'text' && status === 'live' ? 'status.texting' : `status.${status}`) : s.label;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: s.color + '22' }} {...tid(`shop-status-${status}`)}>
       <Ionicons name={s.icon} size={12} color={s.color} /><Text style={{ fontSize: 11, fontWeight: '800', color: s.color }}>{label.startsWith('status.') ? s.label : label}</Text>

@@ -11,6 +11,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 import api from '../../services/api';
 import { resolveUserPhotoUrl } from '../../utils/photoUrl';
+import { InterviewCard } from '../../components/profile/InterviewCard';
 
 // ── Scenarios the user can preview ────────────────────────────────────────────
 const SCENARIOS = [
@@ -189,6 +190,9 @@ export default function VirtualAssistantScreen() {
           </View>
           <Text style={[s.completenessLabel, { color: label.color }]}>{label.text}</Text>
         </View>
+
+        {/* Jessi onboarding interview */}
+        <InterviewCard compact />
 
         {/* Personality Chips */}
         {traitChips.length > 0 && (

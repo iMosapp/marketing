@@ -711,12 +711,28 @@ async def save_recording(db, sid: str, recording_url: str, duration: Optional[st
     await db.call_evaluations.update_one({"roleplay_session_id": sid}, {"$set": {"recording_url": sets["recording_url"]}})
 
 
-def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None, locale: Optional[str] = None) -> str:
+def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None, locale: Optional[str] = None, channel: str = "call") -> str:
     from services import industries as ind
     industry = industry or (ind.industry_of_dept(department) if department else ind.DEFAULT_INDUSTRY)
     pack = ind.get(industry)
     rep_role = ind.dept(department, industry)["rep"] if department else ("a salesperson" if industry == "automotive" else "an employee")
     who = "a real car shopper" if industry == "automotive" else f"a real {pack['customer']} of a {pack['label'].lower()} business"
+    if channel == "text":
+        return (f"You are {persona.get('name', 'a customer')}, {who} texting (SMS) with {rep_first}, {rep_role} at {store_name}. "
+                f"YOU texted the {pack['business']} first, like a real lead who found them online, so you drive what you want. "
+                "Stay fully in character as a real customer: never admit you are an AI, a bot or a shopper, even if asked directly; a real customer would just sound confused and keep going. "
+                "This is an SMS thread: write like a real person texts. 1 or 2 short sentences, under 240 characters, casual, contractions, no sign-off, no lists, no emojis unless the rep used one first. "
+                "Answer what they asked and add at most one thing. A real text lead takes several exchanges: price, availability, a time to come in, your trade, hours. "
+                "If a reply took the rep a long time (noted like [replied after 40 min]) you may mention it once, mildly, the way a real person would. "
+                + loc.language_rule(locale)
+                + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
+                f"OBJECTIONS YOU RAISE (one at a time, only when it fits): {'; '.join(persona.get('objections') or [])}. "
+                + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
+                + "RULES: Never narrate, never break character, never coach. Volunteer a little, not everything. If the rep earns it (clear answers, offers specific times), agree to come in and end warmly with a short final text. "
+                  "If the rep is pushy, vague or throws out a blind number, push back; if they keep it up, lose interest and end politely. "
+                  "Set ended to true on your closing text only: after the appointment or next step is set, after you decline for good, or when the rep clearly ends the conversation. Never end before exchange 4 unless the rep is rude. "
+                  "No em dashes. Return ONLY JSON: {\"say\": \"your text message\", \"ended\": true|false, \"mood\": \"warm|neutral|guarded|annoyed\"}. "
+                + f"The employee's script (they may or may not follow it): {script.get('title', '')}: {script.get('purpose', '')}")
     return (f"You are {persona.get('name', 'a customer')}, {who} on a phone call with {rep_first}, {rep_role} at {store_name}. "
             + (f"YOU placed this call to the {pack['business']}, so you drive the reason for calling. " if direction == "inbound" else "The employee called YOU, so they drive the conversation and you react. ")
             + ("The rep was told this is a practice call, but you stay fully in character as a real customer: never admit you are an AI, a recording or a shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery else "")
@@ -801,6 +817,7 @@ async def grade_session(db, session: dict) -> dict:
     """Score with the store's scorecard (same grader as real calls) + script adherence + coaching, stored as a call_evaluation."""
     from services import scorecards as sc
     script = await db.scripts.find_one({"_id": ObjectId(session["script_id"])}) or {}
+    from services import text_shops as tx
     shop = session.get("kind") == "mystery_shop"
     rep = ({"name": session.get("rep_name") or "Rep"} if shop else await db.users.find_one({"_id": ObjectId(session["user_id"])})) or {}
     rep_first = (rep.get("first_name") or (rep.get("name") or "Rep").split(" ")[0])
@@ -814,10 +831,13 @@ async def grade_session(db, session: dict) -> dict:
         ended = ended.replace(tzinfo=timezone.utc)
     duration_s = int((ended - started).total_seconds()) if started else 0
     persona = session.get("persona") or {}
+    text = shop and session.get("mode") == "text"
     card = None
     if shop:
         from services.mystery_shops import scorecard_for
         card = await scorecard_for(db, session)
+        if text and card:
+            card = tx.speed_card(card, session.get("locale"))
     elif script.get("scorecard_id") and ObjectId.is_valid(str(script["scorecard_id"])):
         card = await db.scorecards.find_one({"_id": ObjectId(script["scorecard_id"]), "active": {"$ne": False}})
     elif script.get("pool") == "mystery_shop" and script.get("department"):
@@ -826,9 +846,12 @@ async def grade_session(db, session: dict) -> dict:
     if not card and not shop:
         card = await sc.pick_scorecard(db, rep, None)
     graded = None
-    if card and card.get("criteria") and len(rep_turns) >= 2:
+    if card and card.get("criteria") and len(rep_turns) >= (1 if text else 2):
         try:
-            graded = await sc.grade_with_ai(card, transcript.replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60), industry=session.get("industry"), language=loc.dialect(session.get("locale")))
+            graded = await sc.grade_with_ai(card, (tx.grader_transcript(session) if text else transcript).replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60),
+                                            industry=session.get("industry"), language=loc.dialect(session.get("locale")), channel="text" if text else "call")
+            if text and graded:
+                tx.apply_speed(session, graded)
         except Exception as e:
             logger.warning(f"[Roleplay] scorecard grading failed: {e}")
     adherence = await _grade_adherence(script, transcript, rep_first) if len(rep_turns) >= 1 else {"score_pct": None, "hits": [], "misses": [], "coaching": [], "summary": "Too short to grade."}
@@ -845,6 +868,7 @@ async def grade_session(db, session: dict) -> dict:
         "summary": (graded or {}).get("summary") or adherence.get("summary") or "", "wins": (graded or {}).get("wins") or adherence.get("hits") or [],
         "coaching": ((graded or {}).get("coaching") or []) + adherence.get("coaching", []), "customer_sentiment": (graded or {}).get("customer_sentiment") or "",
         "call_type": "mystery_shop" if shop else "roleplay", "script_id": session["script_id"], "script_title": session.get("script_title"),
+        "channel": "text" if text else "call", **({"text_stats": tx.stats(session)} if text else {}),
         "adherence": adherence, "transcript": transcript, "model": MODEL[1], "graded_by": "ai", "created_at": now, "updated_at": now, "alerts_sent_at": None, "alerted_user_ids": [],
     }
     res = await db.call_evaluations.update_one({"call_sid": ev["call_sid"]}, {"$set": ev}, upsert=True)

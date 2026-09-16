@@ -6,7 +6,7 @@ import { useToast } from '../common/Toast';
 import { Sheet, Field, Label, Chip, GoldButton, GOLD, tid, industries, industryOf, deptsFor, loadIndustries, stripTitlePrefix, type Challenge } from './shared';
 
 type Props = { visible: boolean; onClose: () => void; colors: any; onStarted: (clientId: string, callId: string) => void };
-const blank = { name: '', phone: '', industry: 'automotive', department: 'sales', title: '', store_name: '', vehicle: '', script_id: null as string | null, text: true };
+const blank = { name: '', phone: '', industry: 'automotive', department: 'sales', title: '', store_name: '', vehicle: '', script_id: null as string | null, text: true, channel: 'call' as 'call' | 'text' };
 
 // Shop anyone on the spot: no client, no proposal. Pick the industry, the department, and the call lands in the built-in "Quick shops" bucket.
 export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) => {
@@ -36,16 +36,25 @@ export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) =>
   const go = async () => {
     setBusy(true);
     try {
-      const r = await api.post('/shop-clients/demo', { name: f.name.trim(), phone: f.phone, industry: f.industry, department: f.department, title: f.title, store_name: f.store_name, vehicle: f.vehicle, script_id: f.script_id, text_scorecard: f.text });
-      showToast(`Calling ${f.name.trim().split(' ')[0]} now`, 'success'); onClose(); onStarted(r.data.client_id, r.data.call.id);
-    } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not place the call', 'error'); }
+      const r = await api.post('/shop-clients/demo', { name: f.name.trim(), phone: f.phone, industry: f.industry, department: f.department, title: f.title, store_name: f.store_name, vehicle: f.vehicle, script_id: f.script_id, text_scorecard: f.text, channel: f.channel });
+      showToast(`${f.channel === 'text' ? 'Texting' : 'Calling'} ${f.name.trim().split(' ')[0]} now`, 'success'); onClose(); onStarted(r.data.client_id, r.data.call.id);
+    } catch (e: any) { showToast(e?.response?.data?.detail || (f.channel === 'text' ? 'Could not send the text' : 'Could not place the call'), 'error'); }
     finally { setBusy(false); }
   };
 
   return (
     <Sheet visible={visible} onClose={onClose} title="Quick shop" colors={colors} testID="demo-sheet"
-      footer={<GoldButton label={ready ? `Call ${f.name.trim().split(' ')[0] || 'them'} now` : 'Name and cell number first'} onPress={go} busy={busy} disabled={!ready || challenges !== null && pool.length === 0} testID="demo-call" icon="call" />}>
-      <Text style={{ fontSize: 13.5, color: colors.textSecondary, lineHeight: 19 }}>A real practice call, no client account needed. It dials the second you tap, any hour of any day; nothing is held for business hours or put on a schedule. Jessi announces the practice call and whether it's inbound or outbound; they press 1 or say ready and the AI {ind.customer} comes on. The call is recorded and graded, and if you leave the text on they get their scorecard by SMS a minute after hanging up. If they don't pick up or press 2, the shop waits in Quick shops for you to tap Try again.</Text>
+      footer={<GoldButton label={ready ? `${f.channel === 'text' ? 'Text' : 'Call'} ${f.name.trim().split(' ')[0] || 'them'} now` : 'Name and cell number first'} onPress={go} busy={busy} disabled={!ready || challenges !== null && pool.length === 0} testID="demo-call" icon={f.channel === 'text' ? 'chatbubbles' : 'call'} />}>
+      <View style={{ gap: 6 }}>
+        <Label t="HOW" colors={colors} />
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Chip label="Call" active={f.channel === 'call'} onPress={() => set('channel', 'call')} colors={colors} testID="demo-channel-call" />
+          <Chip label="Text" active={f.channel === 'text'} onPress={() => set('channel', 'text')} colors={colors} testID="demo-channel-text" />
+        </View>
+      </View>
+      <Text style={{ fontSize: 13.5, color: colors.textSecondary, lineHeight: 19 }} {...tid('demo-how-text')}>{f.channel === 'text'
+        ? `A real text lead, no client account needed. The AI ${ind.customer} texts them from the shop number the second you tap, like someone who found them online, and keeps the thread going as they reply (it takes a human minute to answer). They have 4 hours to reply to each text; when the shopper wraps up, or you tap End & grade, the thread is graded: reply speed by the clock, quality by the scorecard. No reply at all scores 0%. Leave the text on and they get their scorecard by SMS right after.`
+        : `A real practice call, no client account needed. It dials the second you tap, any hour of any day; nothing is held for business hours or put on a schedule. Jessi announces the practice call and whether it's inbound or outbound; they press 1 or say ready and the AI ${ind.customer} comes on. The call is recorded and graded, and if you leave the text on they get their scorecard by SMS a minute after hanging up. If they don't pick up or press 2, the shop waits in Quick shops for you to tap Try again.`}</Text>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <View style={{ flex: 1.2 }}><Field label="WHO" value={f.name} onChange={(v: string) => set('name', v)} colors={colors} placeholder="Sam Seller" testID="demo-name" /></View>
         <View style={{ flex: 1 }}><Field label="CELL" value={f.phone} onChange={(v: string) => set('phone', v)} colors={colors} placeholder="(801) 555-0100" keyboardType="phone-pad" testID="demo-phone" /></View>
@@ -76,7 +85,7 @@ export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) =>
       </View>
       <TouchableOpacity onPress={() => set('text', !f.text)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }} {...tid('demo-text-row')}>
         <Ionicons name="chatbubble-ellipses" size={18} color={GOLD} />
-        <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Text them their scorecard after</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>Score, top win, top fix and a link to the full scorecard with the recording. Sent from your number.</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Text them their scorecard after</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>Score, top win, top fix and a link to the full scorecard with the {f.channel === 'text' ? 'thread' : 'recording'}. Sent from the shop number.</Text></View>
         <Switch value={f.text} onValueChange={(v) => set('text', v)} {...tid('demo-text-toggle')} />
       </TouchableOpacity>
     </Sheet>

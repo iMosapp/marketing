@@ -722,6 +722,9 @@ api_router.include_router(contact_ask_router.router)
 from routers import scripts as scripts_router
 api_router.include_router(scripts_router.router)
 api_router.include_router(scripts_router.relay_router)
+from routers import interview as interview_router
+api_router.include_router(interview_router.router)
+api_router.include_router(interview_router.public)
 from routers import mystery_shops as mystery_shops_router
 api_router.include_router(mystery_shops_router.router)
 api_router.include_router(mystery_shops_router.public_router)

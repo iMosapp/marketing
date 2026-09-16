@@ -186,6 +186,15 @@ async def incoming_message(
             media_type="application/xml"
         )
 
+    # ── A text shop in progress? The rep is answering the AI shopper on the shop number: never route it to a person. ──
+    try:
+        from services.text_shops import handle_inbound as _shop_text
+        if await _shop_text(db, to_phone, from_phone, Body or "", MessageSid, num_media):
+            logger.info(f"[Webhook] Inbound {to_phone} <- {from_phone} handled by text mystery shop")
+            return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>', media_type="application/xml")
+    except Exception as shop_err:
+        logger.error(f"[Webhook] Text shop routing failed, falling back: {shop_err}")
+
     try:
         # ── Step 0: Shared inbox number? (Sales / Service / BDC line worked by a team) ──
         # Unassigned thread -> handled entirely by the inbox (VA reply + "tap to claim" pushes).
@@ -1458,6 +1467,7 @@ async def handle_recording_complete(
     async def _transcribe_and_save():
         transcript = (TranscriptionText or "").strip()
         transcript_segments = []
+        voice_check = None
         ai_summary = ""
         now        = datetime.utcnow()
 
@@ -1527,6 +1537,14 @@ async def handle_recording_complete(
                                 # Dual-channel: LEFT = parent leg, RIGHT = dialed party.
                                 # Outbound click-to-call: parent = rep. Inbound: parent = customer.
                                 left_name, right_name = (rep_name, cust_name) if direction == "outbound" else (cust_name, rep_name)
+                                # Voice ID: when the rep has a voice print, let their voice decide which channel is theirs
+                                try:
+                                    from services import voice_id as _vid
+                                    voice_check = await _vid.rep_channel(db, user_id, split_paths)
+                                except Exception as v_err:
+                                    logger.debug(f"[VoiceID] channel check skipped: {v_err}")
+                                if voice_check and voice_check.get("channel") is not None:
+                                    left_name, right_name = (rep_name, cust_name) if voice_check["channel"] == 0 else (cust_name, rep_name)
 
                                 async def _tx_verbose(p):
                                     with open(p, "rb") as af:
@@ -1628,6 +1646,7 @@ async def handle_recording_complete(
             "duration_s":       dur,
             "transcript":       transcript,
             "transcript_segments": transcript_segments,
+            "voice_id":         voice_check,
             "ai_summary":       ai_summary,
             "direction":        direction,
             "timestamp":        now,

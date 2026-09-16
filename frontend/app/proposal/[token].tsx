@@ -9,7 +9,7 @@ import { GOLD, GREEN, RED, tid, type Dept } from '../../components/mystery-shops
 import { makeT, moneyL, langOf } from '../../components/mystery-shops/i18n';
 
 const L = { bg: '#F6F4EE', card: '#FFFFFF', border: '#E4DFD2', text: '#161616', textSecondary: '#6B6B6B' };
-type P = { status: string; terms: any; currency?: string; language?: string; per_month?: Record<string, number>; departments?: Dept[]; offering?: { label: string; plural: string }; business_noun?: string; client_name: string; contact_name: string; contact_email: string; sender_name: string; sections: { title: string; body: string }[]; signer?: any; signed_at?: string | null; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number }; kickoff_url?: string | null };
+type P = { status: string; terms: any; currency?: string; language?: string; per_month?: Record<string, number>; text_per_month?: Record<string, number>; departments?: Dept[]; offering?: { label: string; plural: string }; business_noun?: string; client_name: string; contact_name: string; contact_email: string; sender_name: string; sections: { title: string; body: string }[]; signer?: any; signed_at?: string | null; invoice?: { hosted_invoice_url?: string; status?: string; amount?: number }; kickoff_url?: string | null };
 
 // The client GM opens this from the proposal email: read, type name, agree, sign. Stripe emails the first invoice right after. Renders in the client's language.
 export default function PublicProposal() {
@@ -47,7 +47,8 @@ export default function PublicProposal() {
   const per: Record<string, number> = p?.per_month && Object.keys(p.per_month).length ? p.per_month : { sales: t.sales_per_month || 0, service: t.service_per_month || 0 };
   const label = (k: string) => (p?.departments || []).find(d => d.key === k)?.label?.toLowerCase() || k.replace(/^[a-z]+_/, '').replace(/_/g, ' ');
   const money = (n?: number | null) => moneyL(n, p?.currency, lang);
-  const tiles = [...Object.entries(per).filter(([, n]) => (n || 0) > 0).map(([k, n]) => [String(n), tr('prop.tile.shops', { dept: label(k) })]), [money(t.price_monthly), tr('prop.tile.month')], [tr('prop.tile.term_v', { n: t.term_months }), tr('prop.tile.term')]];
+  const textPer: Record<string, number> = p?.text_per_month || {};
+  const tiles = [...Object.entries(per).filter(([, n]) => (n || 0) > 0).map(([k, n]) => [String(n), tr('prop.tile.shops', { dept: label(k) })]), ...Object.entries(textPer).filter(([, n]) => (n || 0) > 0).map(([k, n]) => [String(n), tr('prop.tile.texts', { dept: label(k) })]), [money(t.price_monthly), tr('prop.tile.month')], [tr('prop.tile.term_v', { n: t.term_months }), tr('prop.tile.term')]];
   const canSign = agree && name.trim().length >= 3 && email.includes('@');
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: L.bg }}>

@@ -240,6 +240,17 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
     result = await db.voice_notes.insert_one(note_doc)
     note_id = str(result.inserted_id)
 
+    async def _voice_check():
+        from services import voice_id
+        try:
+            v = await voice_id.verify_user(db, user_id, audio_bytes)
+        except Exception as e:
+            logger.debug(f"[VoiceID] voice note check skipped: {e}")
+            return
+        if v:
+            await db.voice_notes.update_one({"_id": result.inserted_id}, {"$set": {"voice_id": v}})
+    asyncio.create_task(_voice_check())
+
     # Recorded conversations: summary + every commitment becomes a task on the rep's list
     summary, title, highlights, new_tasks = "", "", [], []
     if is_convo and transcript and len(transcript.strip()) >= 40:

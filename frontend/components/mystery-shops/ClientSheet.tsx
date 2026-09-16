@@ -7,7 +7,7 @@ import { Sheet, Field, Label, Chip, GoldButton, DAYS, GOLD, AMBER, tid, industri
 
 type Props = { visible: boolean; onClose: () => void; colors: any; client?: Client | null; onSaved: (c: Client) => void; defaultFrom?: string };
 
-const blank = { name: '', industry: 'automotive', locale: 'en-US', vat_id: '', brand: '', city: '', state: '', contact_name: '', contact_email: '', contact_phone: '', contact_title: '', per: { sales: '20', service: '20' } as Record<string, string>, price: '400', start: '09:00', end: '18:00', days: [0, 1, 2, 3, 4, 5], vehicles: '', from_number: '', record: true, notes: '', timezone: 'America/Denver' };
+const blank = { name: '', industry: 'automotive', locale: 'en-US', vat_id: '', brand: '', city: '', state: '', contact_name: '', contact_email: '', contact_phone: '', contact_title: '', per: { sales: '20', service: '20' } as Record<string, string>, textPer: {} as Record<string, string>, price: '400', start: '09:00', end: '18:00', days: [0, 1, 2, 3, 4, 5], vehicles: '', from_number: '', record: true, notes: '', timezone: 'America/Denver' };
 
 // Create / edit a client account: industry, who they are, the plan they bought (shops per department), when we may call, what the caller can mention.
 export const ClientSheet = ({ visible, onClose, colors, client, onSaved, defaultFrom }: Props) => {
@@ -24,7 +24,7 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
     if (!visible) return;
     Promise.all([loadIndustries(), loadLocales()]).then(() => setTick(t => t + 1));
     if (client) setF({ name: client.name, industry: client.industry || 'automotive', locale: client.locale || 'en-US', vat_id: client.vat_id || '', brand: client.brand, city: client.city, state: client.state, contact_name: client.contact_name, contact_email: client.contact_email, contact_phone: client.contact_phone, contact_title: client.contact_title,
-      per: Object.fromEntries(Object.entries(client.plan.per_month || {}).map(([k, v]) => [k, String(v)])), price: String(client.plan.price_monthly), start: client.hours.start, end: client.hours.end, days: client.hours.days, vehicles: (client.offerings || client.vehicles || []).join('\n'),
+      per: Object.fromEntries(Object.entries(client.plan.per_month || {}).map(([k, v]) => [k, String(v)])), textPer: Object.fromEntries(Object.entries(client.plan.text_per_month || {}).map(([k, v]) => [k, String(v)])), price: String(client.plan.price_monthly), start: client.hours.start, end: client.hours.end, days: client.hours.days, vehicles: (client.offerings || client.vehicles || []).join('\n'),
       from_number: client.from_number || '', record: client.record_calls, notes: client.notes || '', timezone: client.timezone, text_scorecards: !!client.text_scorecards });
     else setF(blank);
   }, [visible, client?.id]);
@@ -37,8 +37,9 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
     setBusy(true);
     try {
       const per_month = Object.fromEntries(depts.map(d => [d.key, Number(f.per?.[d.key]) || 0]));
+      const text_per_month = Object.fromEntries(depts.map(d => [d.key, Number(f.textPer?.[d.key]) || 0]));
       const payload = { name: f.name, industry: f.industry, locale: f.locale, vat_id: f.vat_id || '', brand: f.brand, city: f.city, state: f.state, timezone: f.timezone, contact_name: f.contact_name, contact_email: f.contact_email.trim(), contact_phone: f.contact_phone, contact_title: f.contact_title,
-        plan: { per_month, price_monthly: Number(f.price) || 0 }, hours: { start: f.start, end: f.end, days: f.days },
+        plan: { per_month, text_per_month, price_monthly: Number(f.price) || 0 }, hours: { start: f.start, end: f.end, days: f.days },
         vehicles: f.vehicles.split('\n').map((v: string) => v.trim()).filter(Boolean), from_number: f.from_number || '', record_calls: f.record, notes: f.notes, text_scorecards: !!f.text_scorecards };
       const res = client ? await api.put(`/shop-clients/${client.id}`, payload) : await api.post('/shop-clients', payload);
       onSaved(res.data); onClose(); showToast(client ? 'Saved' : 'Client added', 'success');
@@ -79,6 +80,10 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
         <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
           {depts.map(d => <View key={d.key} style={{ flex: 1, minWidth: 110 }}><Field label={d.label.toUpperCase()} value={f.per?.[d.key] ?? ''} onChange={(v: string) => set('per', { ...(f.per || {}), [d.key]: v.replace(/\D/g, '') })} colors={colors} keyboardType="number-pad" testID={`client-plan-${d.key}`} /></View>)}
           <View style={{ flex: 1, minWidth: 110 }}><Field label={`PRICE (${loc.symbol}/MO)`} value={f.price} onChange={(v: string) => set('price', v.replace(/[^\d.]/g, ''))} colors={colors} keyboardType="decimal-pad" testID="client-plan-price" /></View>
+        </View>
+        <Label t="TEXT SHOPS PER MONTH (THE SHOPPER TEXTS LIKE A LEAD, OPTIONAL)" colors={colors} />
+        <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+          {depts.map(d => <View key={d.key} style={{ flex: 1, minWidth: 110 }}><Field label={`${d.label.toUpperCase()} TEXTS`} value={f.textPer?.[d.key] ?? ''} onChange={(v: string) => set('textPer', { ...(f.textPer || {}), [d.key]: v.replace(/\D/g, '') })} colors={colors} keyboardType="number-pad" placeholder="0" testID={`client-plan-text-${d.key}`} /></View>)}
         </View>
       </View>
       <View style={{ gap: 8 }}>
