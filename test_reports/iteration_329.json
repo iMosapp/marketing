@@ -1,0 +1,33 @@
+{
+  "summary": "Full backend + frontend verification of the four-feature release bundle (industry_va LIVE, voice coverage report, Dutch speed-to-lead, email mystery shops). All pytest suites pass (test_email_shops 4/4, test_dutch_speed_to_lead 5/5, test_va_facts_api+test_va_routing 24/24, test_text_shops+test_lab_api+test_interview_api 17 passed 1 skipped). Live API checks pass for lab defaults (industry_va=live, voice_interview=lab), va/config toggle round-trip (ended LIVE), coverage endpoint (qa-manager=9 reps, forest=88 reps, activation-tester=403, days=500 clamps to 90), Dutch flow helpers, hydrate_intake_text nl, va_prompt build_text locale, email shop CRUD/validation (person add with email, invalid email 400, empty email shop-now 400, demo without email 400, shop-now email returns 503 with INBOUND_EMAIL_DOMAIN hint as designed, text shop-now unchanged 200), and inbound webhook fallthrough for unknown session returns 'unmatched'. Frontend verified: voice-coverage-card on /admin/manage-team shows 0/88 enrolled, 2 recorded, 0 verified/mismatched, toggle expands rows; mystery-shops People tab shows QA Email Person with email in subtitle and Email shop button; edit sheet has person-email field; Quick shop sheet has demo-channel-call/text/email chips, picking Email reveals demo-email, how-text mentions '30 minutes'; /settings/virtual-assistant shows va-facts-card; /admin/test-lab shows industry_va LIVE.",
+  "backend_issues": {"critical": [], "minor": [
+    {"endpoint": "GET /api/interview/coverage?days=0", "issue": "days=0 returns 7 (implementation uses `int(days or 7)` so 0->7); spec expected clamp to 1. Minor discrepancy vs review spec, not user-facing."}
+  ]},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_email_shops.py",
+    "/app/backend/tests/test_dutch_speed_to_lead.py",
+    "/app/backend/tests/test_va_facts_api.py",
+    "/app/backend/tests/test_va_routing.py",
+    "/app/backend/tests/test_text_shops.py",
+    "/app/backend/tests/test_lab_api.py",
+    "/app/backend/tests/test_interview_api.py"
+  ],
+  "action_items": [
+    "OPTIONAL: adjust coverage days clamp so days=0 -> 1 to match spec (routers/interview.py line 73: replace `int(days or 7)` with `int(days) if days is not None else 7` before max/min); low priority.",
+    "OPTIONAL: 'Email <name> now' button uses first token (e.g., 'Email QA now' for 'QA Demo E'); spec wording implies full name. Cosmetic only."
+  ],
+  "critical_code_review_comments": [
+    "coverage days handling short-circuits on 0 via `days or 7`; harmless but confusing.",
+    "'Show all N' expand in VoiceCoverageCard rendered 264 row-testid nodes for 88 reps (RN-web renders multiple testid children per row) - not a bug, just an FYI for future selector counts.",
+    "Email-shop 503 path returns detail with setup guidance; UI surfaces it via API error toast (raw detail visible in console); consider a friendlier toast copy in future."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "forest@imosapp.com / Admin123!, qa-manager@invalid.imonsocial.test / Manager123!, activation-tester@invalid.imonsocial.test / NewPass123!",
+  "seed_data_creation": "Created + deleted person 'QA Email API' (pid 6aaaec1231d37fe649b9fa6b) under client 6aa6d7dfb4c41decb2734ec4; created + deleted db.inbound_email_unmatched row with email_id 'qa-email-1'; one qa_test text shop-now call was queued for that person (target was deleted; residual call log may exist under target_id 6aaaec1231d37fe649b9fa6b if it wasn't cascade-cleaned).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "industry_va left LIVE, voice_interview lab (unchanged). QA store locale unchanged. No live phone/text shops placed against real numbers. All 4 release features verified end-to-end.",
+  "rca of the issue": "N/A - no critical issues"
+}

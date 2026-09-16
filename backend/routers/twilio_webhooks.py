@@ -722,6 +722,11 @@ async def incoming_message(
                 {"contact_id": contact_id, "status": "pending"},
                 {"$set": {"status": "cancelled", "cancel_reason": "contact_opted_out"}}
             )
+            try:
+                from services.compliance import add_dnc
+                await add_dnc(db, from_phone, "stop", campaign_id=None, note="Texted STOP")
+            except Exception as de:
+                logger.warning(f"[Webhook] DNC add after STOP failed: {de}")
             logger.info(f"[Webhook] {from_phone} opted out (STOP)")
             return Response(
                 content='<?xml version="1.0" encoding="UTF-8"?><Response><Message>You have been unsubscribed. Reply START to re-subscribe.</Message></Response>',

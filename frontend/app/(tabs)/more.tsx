@@ -74,6 +74,7 @@ export default function MoreScreen() {
   const [hubSearch, setHubSearch] = useState('');
   const [hubDragging, setHubDragging] = useState(false);
   const [leadsWaiting, setLeadsWaiting] = useState(0);
+  const [dialerOn, setDialerOn] = useState(false);
   const sectionRefs = useRef<Record<string, View | null>>({});
   const scrollRef = useRef<ScrollView>(null);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
@@ -124,6 +125,7 @@ export default function MoreScreen() {
     useCallback(() => {
       if (user?._id) {
         api.get(`/leads/queue/${user._id}/summary`).then(r => setLeadsWaiting((r.data?.waiting || 0) + (r.data?.mine_waiting || 0))).catch(() => {});
+        api.get('/dialer/config').then(r => setDialerOn(!!r.data?.available)).catch(() => setDialerOn(false));
       }
       if (user?.role === 'super_admin' || originalUser?.role === 'super_admin') {
         fetchPendingCount();
@@ -366,6 +368,10 @@ export default function MoreScreen() {
       { icon: 'globe', title: 'Internet Leads', subtitle: 'Shared lead queue, speed to lead and call retries report', onPress: () => router.push('/leads' as any), color: '#FF3B30', badge: leadsWaiting || undefined },
       { icon: 'call', title: 'Call Retries', subtitle: 'Voicemail retry timing and the auto "just tried you" text', onPress: () => router.push('/settings/call-retries' as any), color: '#FF9F0A' },
     ];
+    if (dialerOn) {
+      leadItems.push({ icon: 'keypad', title: 'Power Dialer', subtitle: 'Press 1, ring up to 3 leads, first live answer is on your phone', onPress: () => router.push('/dialer' as any), color: '#C9A962' });
+      if (isAdmin) leadItems.push({ icon: 'git-network', title: 'GoHighLevel', subtitle: 'Connect a sub-account: import tags, sync outcomes, webhook leads', onPress: () => router.push('/admin/ghl' as any), color: '#0A84FF' });
+    }
     if (isAdmin && perm('admin')) {
       if (perm('admin', 'contact_tags')) {
         leadItems.push(

@@ -647,6 +647,11 @@ from routers import lead_queue
 api_router.include_router(lead_queue.router)
 from routers import lead_call_webhooks
 api_router.include_router(lead_call_webhooks.router)
+from routers import dialer as dialer_router, dialer_webhooks, ghl as ghl_router
+api_router.include_router(dialer_router.router)
+api_router.include_router(dialer_webhooks.router)
+api_router.include_router(ghl_router.router)
+api_router.include_router(ghl_router.public)
 api_router.include_router(ai_reply.router)
 api_router.include_router(home_intelligence.router)
 api_router.include_router(relationship_health.router)

@@ -2125,6 +2125,19 @@ def start_scheduler():
         misfire_grace_time=30,
     )
 
+    # Every 15 seconds — power dialer housekeeping (stuck bursts, idle sessions)
+    async def _dialer_sweep():
+        from services.dialer import sweep
+        from routers.database import get_db
+        await sweep(get_db())
+    scheduler.add_job(
+        safe_job(_dialer_sweep),
+        IntervalTrigger(seconds=15),
+        id="dialer_sweep",
+        replace_existing=True,
+        misfire_grace_time=30,
+    )
+
     # Every 30 seconds — release overnight intake texts once the customer's texting window opens (staggered)
     from routers.lead_intake import process_lead_deferred_actions as _lead_deferred
     scheduler.add_job(

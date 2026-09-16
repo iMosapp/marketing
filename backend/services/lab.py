@@ -27,6 +27,20 @@ FEATURES = [
                      "Text your own work number from another phone: ask something a fact covers (answered, you get an FYI push) and something it does not (you get a You're Needed push).",
                      "Check nothing car-specific leaks into a non-automotive store: switch the store's industry on the admin store page and generate again."],
      "added": "2026-09-17", "default": "live"},
+    {"key": "power_dialer", "name": "Power Dialer + GoHighLevel", "icon": "call",
+     "tagline": "Call through a list of 1,000 leads fast: you press 1, we ring up to 3 at once, the first live answer is on your phone. Built inside TCPA and TSR limits, with GoHighLevel sync.",
+     "description": "A manager builds a campaign (CSV, a GoHighLevel tag, or your own tagged contacts), sets B2B or consumer, lines (1-3), calling hours, attempts and whether calls record. "
+                    "A rep starts a session: the dialer rings their cell once and they stay on for the whole session. Press 1 (or tap Dial next) = you launched the calls, so no call is ever placed without a human. "
+                    "The first lead that answers is on your phone instantly; the other ringing lines are cancelled. If two people answer at the same time the second hears the required "
+                    "'this was a call from <store> at <number>, press 9 to be removed' message and it counts against the campaign's 3% abandonment budget, which throttles you back to one line. "
+                    "Every dial is logged (local time, state, outcome, disposition) and kept. Leads outside their state's legal calling hours, over the daily cap, on your Do Not Call list or on the "
+                    "National Registry are skipped automatically. Interested / Call back turns the lead into a contact in your book and, when GoHighLevel is connected, adds a note, tags and a pipeline opportunity there.",
+     "how_to_test": ["Tools > Power Dialer > New campaign. Import 3-5 leads by CSV using your own and a teammate's cells (never a stranger). Pick 2 lines and B2B.",
+                     "Tap Start dialing. Your phone rings, pick up, then press 1 (or tap Dial next). Both test phones ring; answer one. The other stops ringing. Hang up and mark the outcome.",
+                     "Answer BOTH phones at once: the second one hears the abandonment message; press 9 on it and check the number shows under Do Not Call.",
+                     "Try a campaign with Press 1 to accept: when a lead answers your phone says the name, you press 1 to talk.",
+                     "Tools > GoHighLevel: paste a Location ID + Private Integration Token, import a tag into a campaign, mark a lead Interested and check the note + tag in GHL."],
+     "added": "2026-06-20", "needs": "Reps need their cell number on their profile and a work number (caller ID). Consumer (B2C) lists should have the National DNC Registry loaded under Do Not Call."},
 ]
 STATUSES = ("lab", "live")
 SETTINGS_KEY = "lab_features"
