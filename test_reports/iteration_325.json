@@ -1,0 +1,47 @@
+{
+  "summary": "Frontend regression test of cleaned-up Contact Detail screen. Verified hero/health/quick-actions/jessi-card/tabs/details-order/edit/composer/tabs for Bridger Demo-Units (sold) and Bud (expected non-sold). Core layout and interactions work; found minor missing testids and one potential regression around qa-sold-btn on Bud.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Bud contact QuickActionsRow", "issue": "Only 4 QA buttons rendered (Text/Call/Record/Task). Spec expects 5 including gold qa-sold-btn for a not-yet-sold contact. Either Bud is inadvertently flagged sold in seed data OR the 'show Sold button when !sold' logic regressed.", "selector": "[data-testid=\"qa-sold-btn\"]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "testability_issues": [
+    "Missing testids on header edit-flow buttons: contact-edit-button / contact-save-button / contact-cancel-button not present on DOM (Edit/Save/Cancel text buttons work but automation must fall back to text selectors).",
+    "The following documented testids are not queryable via document.querySelector on the DOM even though the underlying UI renders (likely React Native <View>/<Text> where data-testid attribute isn't forwarded by RN-Web): contact-hero, contact-name, contact-meta-line, hero-tags-strip, hero-add-tag-btn, contact-tab-bar, date-row-anniversary, anniversary-optin-switch, start-recording-btn, action-progress, contact-stats-row, campaign-row-N. This breaks automation hooks even though the feature works.",
+    "Working testids confirmed: contact-health-badge, quick-actions-row, qa-text-btn, qa-call-btn, qa-note-btn, qa-task-btn, qa-sold-btn (when shown), jessi-card, contact-ask-jessi-btn, intel-teaser, intel-teaser-expanded, intel-briefing-card, tab-details, tab-calls, tab-feed, date-row-sold, details-more-toggle, add-birthday-btn."
+  ],
+  "verified_pass": [
+    "Hero shows name 'Bridger Demo-Units', gold vehicle line '2022 Toyota Supra', meta '2 day relationship', tags strip with 'Sold' + '+ Tag'. No cryptic tchs/msgs/clks in hero.",
+    "Health badge: single line 'Opportunity · Active now - recent engagement signal'.",
+    "Quick actions for sold contact: exactly 4 buttons [qa-text-btn, qa-call-btn, qa-note-btn, qa-task-btn]; no qa-email-btn, no qa-sold-btn.",
+    "qa-text-btn focuses composer textarea; qa-task-btn opens Add Task modal.",
+    "Jessi card is the only gold-bordered card above tabs. Ask button text 'Ask about Bridger'. Tapping intel-teaser expands intel-teaser-expanded and renders exactly 1 intel-briefing-card (with 'RELATIONSHIP INTEL' header) INSIDE the jessi card; collapsing returns count to 0. No second intel-briefing-card exists in Details tab.",
+    "Details tab is default active. Vertical order matches spec: PERSONAL INTELLIGENCE -> PURCHASE HISTORY (2022 Toyota Supra Sep 1 2026, 2022 Road Glide Jul 13 2026) -> IMPORTANT DATES (Add birthday, Date sold Sep 1 2026 with chevron, Anniversary text + card switch) -> VOICE MEMOS ('Record a voice memo') -> FOLLOW-UP CHECKLIST -> CAMPAIGNS (flat rows, 6 total) -> RELATIONSHIP stats -> MORE toggle.",
+    "date-row-sold tap opens 'Date sold Automation' sheet with Edit Date / Pause Auto-Card / Cancel.",
+    "details-more-toggle toggles 'Share Profile' visibility on tap.",
+    "Calls tab renders '0 calls / No calls yet' empty state; Feed tab renders Campaign Journey with 6 campaigns and search.",
+    "Edit mode header opens form (First Name Bridger, Last Name Demo-Units, Phone, Email, Vehicle, Employment) with Save/Cancel; Cancel returns to view with hero intact.",
+    "Composer shows SMS/Email switch, input, attachment icons, and round call button; switching visible in screenshots."
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "Confirm whether Bud is intentionally sold in seed data; if not, restore qa-sold-btn rendering for non-sold contacts.",
+    "Add data-testid attributes on the edit-mode header buttons: contact-edit-button, contact-save-button, contact-cancel-button.",
+    "Investigate why data-testid props on certain <View>/<Text> nodes in HeroSection, DetailsTab, and tab-bar wrapper aren't hitting the DOM on RN-Web. Consider using RN's testID prop (which RN-Web forwards to data-testid) instead of raw data-testid on <View>/<Text>, or ensure the intended element is a Pressable/div."
+  ],
+  "critical_code_review_comments": [
+    "app/contact/[id].tsx is very large (>2700 lines); still could benefit from further modularization even though HeroSection/DetailsTab/JessiCard have been split out.",
+    "Mixed use of testID vs data-testid on RN components leads to unreliable DOM testability; standardize on testID prop for cross-platform consistency."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "~92%"},
+  "test_credentials": "forest@imosapp.com / Admin123!",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Contact detail cleanup verified for sold contact (Bridger Demo-Units id 6aa7425eefb7a2e43806c16e). Layout, jessi single-card pattern, intel expand/collapse, tab switching, date-sold sheet, more-toggle, edit mode, composer all work. Two follow-ups: (1) Bud (id 69a496841603573df5a41723) shows 4 QA buttons instead of 5 (missing qa-sold-btn) — verify seed status; (2) several testids not forwarded to DOM on RN-Web View/Text nodes.",
+  "rca of the issue": "React Native Web forwards testID -> data-testid but doesn't always forward raw data-testid props on View/Text; hence some elements are invisible to automation. For the Bud QA regression, likely the sold check condition uses a broader flag than expected."
+}

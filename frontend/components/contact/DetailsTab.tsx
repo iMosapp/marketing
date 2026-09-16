@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Switch, Modal, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import { tid } from '../scripts/shared';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { formatEventTime } from '../../utils/contactHelpers';
@@ -42,7 +43,7 @@ function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }:
                 backgroundColor: colors.surface, color: colors.text, border: '1px solid #3A3A3C',
                 fontSize: 17, marginBottom: 12, marginTop: 4,
               }}
-              data-testid="birthday-date-input"
+              {...tid('birthday-date-input')}
             />
           ) : (
             <DateTimePicker
@@ -188,7 +189,7 @@ export default function DetailsTab(props: any) {
             return (
               <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.15)' }}>
                 {contact.birthday && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} data-testid="birthday-optin-row">
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} {...tid('birthday-optin-row')}>
                     <Ionicons name={bOn ? 'notifications' : 'notifications-off'} size={16} color={bOn ? '#34C759' : '#8E8E93'} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.viewRowLabel} numberOfLines={1}>Birthday text + card</Text>
@@ -201,12 +202,12 @@ export default function DetailsTab(props: any) {
                       onValueChange={(v: boolean) => toggleDateOptin('birthday', v)}
                       trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }}
                       thumbColor={bOn ? '#34C759' : '#f4f3f4'}
-                      data-testid="birthday-optin-switch"
+                      {...tid('birthday-optin-switch')}
                     />
                   </View>
                 )}
                 {(contact.date_sold || contact.anniversary) && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} data-testid="anniversary-optin-row">
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} {...tid('anniversary-optin-row')}>
                     <Ionicons name={aOn ? 'notifications' : 'notifications-off'} size={16} color={aOn ? '#34C759' : '#8E8E93'} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.viewRowLabel} numberOfLines={1}>Anniversary text + card</Text>
@@ -219,7 +220,7 @@ export default function DetailsTab(props: any) {
                       onValueChange={(v: boolean) => toggleDateOptin('anniversary', v)}
                       trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }}
                       thumbColor={aOn ? '#34C759' : '#f4f3f4'}
-                      data-testid="anniversary-optin-switch"
+                      {...tid('anniversary-optin-switch')}
                     />
                   </View>
                 )}
@@ -229,7 +230,7 @@ export default function DetailsTab(props: any) {
         </View>
 
       {/* Voice Notes — full history, all visible */}
-      <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
+      <View style={[s.section, { paddingTop: 4 }]} {...tid('voice-notes-section')}>
           <View style={s.sectionHeaderRow}>
             <View style={{ flex: 1 }}>
               <Text style={s.sectionHeader}>Voice memos</Text>
@@ -238,11 +239,11 @@ export default function DetailsTab(props: any) {
           </View>
 
           {isRecording ? (
-            <View style={s.vnRecording} data-testid="voice-recording-indicator">
+            <View style={s.vnRecording} {...tid('voice-recording-indicator')}>
               <View style={s.vnRecordingDot} />
               <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
               <Text style={s.vnRecordingLimit}>/ {formatRecordingTime(maxRecordingSeconds)}</Text>
-              <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} data-testid="stop-recording-btn">
+              <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} {...tid('stop-recording-btn')}>
                 <Ionicons name="stop" size={18} color={colors.text} />
                 <Text style={s.vnStopText}>Stop</Text>
               </TouchableOpacity>
@@ -253,7 +254,7 @@ export default function DetailsTab(props: any) {
               <Text style={[s.vnRecordingTime, { marginLeft: 8 }]}>Saving & transcribing...</Text>
             </View>
           ) : (
-            <TouchableOpacity style={s.vnRecordBtn} onPress={startRecording} data-testid="start-recording-btn">
+            <TouchableOpacity style={s.vnRecordBtn} onPress={startRecording} {...tid('start-recording-btn')}>
               <Ionicons name="mic" size={20} color="#34C759" />
               <Text style={s.vnRecordText}>Record a voice memo</Text>
             </TouchableOpacity>
@@ -266,12 +267,12 @@ export default function DetailsTab(props: any) {
               {(showAllNotes ? voiceNotes : voiceNotes.slice(0, 1)).map((note: any, i: number) => {
                 const isPlaying = playingNoteId === note.id;
                 return (
-                  <View key={note.id} style={s.vnCard} data-testid={`voice-note-${i}`}>
+                  <View key={note.id} style={s.vnCard} {...tid(`voice-note-${i}`)}>
                     <View style={s.vnCardHeader}>
                       <TouchableOpacity
                         style={[s.vnPlayBtn, isPlaying && s.vnPlayBtnActive]}
                         onPress={() => playVoiceNote(note.id, note.audio_url)}
-                        data-testid={`play-voice-note-${i}`}
+                        {...tid(`play-voice-note-${i}`)}
                       >
                         <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={isPlaying ? '#000' : '#34C759'} />
                       </TouchableOpacity>
@@ -286,7 +287,7 @@ export default function DetailsTab(props: any) {
                         }}
                         style={{ padding: 12, margin: -8, zIndex: 10 }}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        data-testid={`delete-voice-note-${i}`}
+                        {...tid(`delete-voice-note-${i}`)}
                       >
                         <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                       </TouchableOpacity>
@@ -357,7 +358,7 @@ export default function DetailsTab(props: any) {
         <View style={s.section}>
           <Text style={s.sectionHeader}>Campaigns</Text>
           {contactEnrollments.map((e: any, i: number) => (
-            <View key={i} style={s.viewRow} data-testid={`campaign-row-${i}`}>
+            <View key={i} style={s.viewRow} {...tid(`campaign-row-${i}`)}>
               <Ionicons name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} size={16} color={e.status === 'completed' ? '#34C759' : '#007AFF'} />
               <Text style={[s.viewRowLabel, { color: colors.text }]} numberOfLines={1}>{e.campaign_name}</Text>
               <Text style={[s.viewRowValue, { color: colors.textSecondary, fontWeight: '500' }]}>{e.status === 'completed' ? 'Done' : `Step ${e.current_step} of ${e.total_steps}`}</Text>
@@ -368,7 +369,7 @@ export default function DetailsTab(props: any) {
 
       {/* Relationship numbers, in plain words */}
       {!isNewContact && stats && (
-        <View style={s.section} data-testid="contact-stats-row">
+        <View style={s.section} {...tid('contact-stats-row')}>
           <Text style={s.sectionHeader}>Relationship</Text>
           <Text style={[s.viewText, { color: colors.textSecondary }]}>
             {[[stats.total_touchpoints, 'touch', 'touches'], [stats.messages_sent, 'message', 'messages'], [stats.link_clicks, 'link click', 'link clicks'], [stats.campaigns, 'campaign', 'campaigns'], [stats.referral_count ?? contact.referral_count ?? 0, 'referral', 'referrals']]

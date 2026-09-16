@@ -64,6 +64,7 @@ import DateModals from '../../components/contact/DateModals';
 import AddTaskModal from '../../components/contact/AddTaskModal';
 import GalleryModal from '../../components/contact/GalleryModal';
 import JessiCard from '../../components/contact/JessiCard';
+import { tid } from '../../components/scripts/shared';
 import { HealthBadge } from '../../components/contact/HealthBadge';
 import QuickActionsRow from '../../components/contact/QuickActionsRow';
 import { ConversationRecorder } from '../../components/thread/ConversationRecorder';
@@ -2541,19 +2542,19 @@ function ContactDetailScreen() {
         keyboardVerticalOffset={0}
       >
         {/* HEADER */}
-        <View style={[s.header, { borderBottomColor: colors.border }]} data-testid="contact-detail-header">
-          <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} data-testid="contact-back-button">
+        <View style={[s.header, { borderBottomColor: colors.border }]} {...tid('contact-detail-header')}>
+          <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} {...tid('contact-back-button')}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[s.headerTitle, { color: colors.text }]} numberOfLines={1}>{isNewContact ? 'New Contact' : fullName}</Text>
           {isEditing ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               {!isNewContact && (
-                <TouchableOpacity onPress={() => { setIsEditing(false); loadContact(); }} style={s.headerBtn} data-testid="contact-cancel-button">
+                <TouchableOpacity onPress={() => { setIsEditing(false); loadContact(); }} style={s.headerBtn} {...tid('contact-cancel-button')}>
                   <Text style={[s.headerAction, { color: colors.textSecondary }]}>Cancel</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity onPress={handleSave} style={[s.headerBtn, { backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 }]} disabled={saving} data-testid="contact-save-button">
+              <TouchableOpacity onPress={handleSave} style={[s.headerBtn, { backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 }]} disabled={saving} {...tid('contact-save-button')}>
                 {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={[s.headerAction, { color: '#000', fontWeight: '700' }]}>Save</Text>}
               </TouchableOpacity>
             </View>
@@ -2572,7 +2573,7 @@ function ContactDetailScreen() {
                   {openingInbox ? <ActivityIndicator size="small" color="#C9A962" /> : <Ionicons name="chatbubbles" size={22} color="#C9A962" />}
                 </TouchableOpacity>
               )}
-              <TouchableOpacity onPress={() => setIsEditing(true)} style={s.headerBtn} data-testid="contact-edit-button">
+              <TouchableOpacity onPress={() => setIsEditing(true)} style={s.headerBtn} {...tid('contact-edit-button')}>
                 <Text style={s.headerAction}>Edit</Text>
               </TouchableOpacity>
             </View>
@@ -2681,7 +2682,7 @@ function ContactDetailScreen() {
 
           {/* ===== DETAILS / CALLS / FEED TAB BAR ===== */}
           {!isNewContact && !isEditing && (
-            <View style={s.tabBar} data-testid="contact-tab-bar">
+            <View style={s.tabBar} {...tid('contact-tab-bar')}>
               <TouchableOpacity
                 style={[s.tabBtn, contactTab === 'details' && s.tabBtnActive]}
                 onPress={() => setContactTab('details')}

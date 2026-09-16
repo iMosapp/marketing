@@ -5,6 +5,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { tid } from '../scripts/shared';
 import { Image } from 'expo-image';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { getTimeInSystem, getTimeInSystemLabel } from '../../utils/contactHelpers';
@@ -20,10 +21,10 @@ export default function HeroSection(props: any) {
   ].filter(Boolean);
 
   return (
-    <View style={[s.heroSection, { backgroundColor: colors.bg }]} data-testid="contact-hero">
+    <View style={[s.heroSection, { backgroundColor: colors.bg }]} {...tid('contact-hero')}>
       <View style={s.heroRow}>
         <View style={s.heroAvatarContainer}>
-          <TouchableOpacity onPress={isEditing ? pickImage : viewFullPhoto} activeOpacity={isEditing ? 0.7 : 0.8} data-testid="contact-avatar-btn">
+          <TouchableOpacity onPress={isEditing ? pickImage : viewFullPhoto} activeOpacity={isEditing ? 0.7 : 0.8} {...tid('contact-avatar-btn')}>
             {contact.photo ? (
               <Image source={{ uri: resolvePhotoUrl(contact.photo) }} style={s.heroAvatar} />
             ) : (
@@ -32,12 +33,12 @@ export default function HeroSection(props: any) {
             {isEditing && <View style={s.heroCameraBadge}><Ionicons name="camera" size={12} color={colors.text} /></View>}
           </TouchableOpacity>
           {!isNewContact && stats.total_touchpoints > 0 && (
-            <View style={s.touchpointBadge} data-testid="touchpoint-badge"><Text style={s.touchpointBadgeText}>{stats.total_touchpoints}</Text></View>
+            <View style={s.touchpointBadge} {...tid('touchpoint-badge')}><Text style={s.touchpointBadgeText}>{stats.total_touchpoints}</Text></View>
           )}
         </View>
 
         <View style={s.heroInfo}>
-          <Text style={[s.heroName, { color: colors.text }]} data-testid="contact-name" numberOfLines={2}>{fullName}</Text>
+          <Text style={[s.heroName, { color: colors.text }]} {...tid('contact-name')} numberOfLines={2}>{fullName}</Text>
           {contact.vehicle ? (
             <View style={s.heroHighlight}>
               <Ionicons name="car-sport" size={13} color="#C9A962" />
@@ -45,13 +46,13 @@ export default function HeroSection(props: any) {
             </View>
           ) : null}
           {meta.length > 0 && (
-            <Text style={s.heroMetaText} numberOfLines={2} data-testid="contact-meta-line">{meta.join('  ·  ')}</Text>
+            <Text style={s.heroMetaText} numberOfLines={2} {...tid('contact-meta-line')}>{meta.join('  ·  ')}</Text>
           )}
         </View>
       </View>
 
       {!isNewContact && !isEditing && contact.linked_user_id && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#007AFF15', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginTop: 10, borderWidth: 1, borderColor: '#007AFF30' }} data-testid="linked-account-card">
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#007AFF15', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginTop: 10, borderWidth: 1, borderColor: '#007AFF30' }} {...tid('linked-account-card')}>
           <Ionicons name="shield-checkmark" size={18} color="#007AFF" />
           <View style={{ marginLeft: 8, flex: 1 }}>
             <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 13 }}>{(ROLE_TAGS[`imos_${contact.linked_role}`] || 'User')} Account</Text>
@@ -63,7 +64,7 @@ export default function HeroSection(props: any) {
       )}
 
       {!isNewContact && (
-        <View style={s.heroTagsStrip} data-testid="hero-tags-strip">
+        <View style={s.heroTagsStrip} {...tid('hero-tags-strip')}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 16, alignItems: 'center' }}>
             {contact.tags.map((tag: string, i: number) => {
               const info = availableTags.find((t: any) => t.name === tag);
@@ -75,7 +76,7 @@ export default function HeroSection(props: any) {
                 </View>
               );
             })}
-            <TouchableOpacity onPress={onAddTag} style={[s.heroTagChip, { borderColor: colors.border, backgroundColor: 'transparent', gap: 4 }]} data-testid="hero-add-tag-btn">
+            <TouchableOpacity onPress={onAddTag} style={[s.heroTagChip, { borderColor: colors.border, backgroundColor: 'transparent', gap: 4 }]} {...tid('hero-add-tag-btn')}>
               <Ionicons name="add" size={13} color={colors.textSecondary} />
               <Text style={[s.heroTagChipText, { color: colors.textSecondary }]}>{contact.tags.length ? 'Tag' : 'Add a tag'}</Text>
             </TouchableOpacity>
