@@ -44,25 +44,37 @@ def _persona_filled(user: dict) -> int:
     return sum(1 for k in ("bio", "specialties", "tone", "hobbies", "years_experience", "ideal_customer", "never_say", "family_info", "vehicles", "personal_motto", "humor_level") if (p.get(k) if not isinstance(p.get(k), list) else len(p.get(k) or [])))
 
 
+class StartBody(BaseModel):
+    dry_run: bool = False
+
+
 @router.get("/status")
 async def status(request: Request):
-    """Everything the interview card needs: the latest session, Voice ID state, whether we can call."""
+    """Everything the interview card needs: the latest session, Voice ID state, whether we can call, whether the feature is live."""
     me = await _resolve(request)
     db = get_db()
+    from services import lab
     s = await svc.latest(db, str(me["_id"]))
     user = await db.users.find_one({"_id": ObjectId(str(me["_id"]))}, {"voice_id": 1, "persona": 1, "phone": 1, "persona_interviewed_at": 1})
     phone = (user or {}).get("phone") or ""
     return {"session": svc.serialize(s), "voice": voice_id.summary(user), "phone": _mask(phone), "can_call": len("".join(c for c in phone if c.isdigit())) >= 10,
+            "available": await lab.visible(db, me, "voice_interview"), "is_super_admin": me.get("role") == "super_admin",
             "persona_filled": _persona_filled(user or {}), "interviewed_at": (user or {}).get("persona_interviewed_at").isoformat() if (user or {}).get("persona_interviewed_at") else None}
 
 
 @router.post("/start")
-async def start(request: Request):
+async def start(request: Request, body: Optional[StartBody] = None):
     me = await _resolve(request)
+    from services.lab import visible
     from services.lead_flows import user_store_id
     me["store_id"] = user_store_id(me)
+    dry = bool(body and body.dry_run)
+    if dry and me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Test runs are for the Test Lab")
+    if not dry and not await visible(get_db(), me, "voice_interview") and me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="The interview is not open yet")
     try:
-        return await svc.start(get_db(), me)
+        return await svc.start(get_db(), me, dry_run=dry)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
@@ -108,6 +120,17 @@ async def rebuild(sid: str, request: Request):
     if not out:
         raise HTTPException(status_code=502, detail="Jessi could not write your profile from this call, try again in a minute")
     return svc.serialize(out)
+
+
+@router.post("/sessions/{sid}/apply")
+async def apply_now(sid: str, request: Request):
+    """Test Lab run the rep liked: put the write-up on their profile after all."""
+    me = await _resolve(request)
+    db = get_db()
+    s = await _mine(db, sid, me)
+    if s.get("status") != "completed" or not s.get("extracted"):
+        raise HTTPException(status_code=400, detail="Nothing to save yet, the write-up is not finished")
+    return svc.serialize(await svc.apply_session(db, s))
 
 
 @router.delete("/voice")

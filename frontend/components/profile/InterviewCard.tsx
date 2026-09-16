@@ -11,11 +11,11 @@ import { GOLD, GREEN, RED, tid, fmtClock } from '../scripts/shared';
 export type InterviewSession = {
   id: string; status: string; call_status?: string | null; fail_reason?: string | null; elapsed_s: number; rep_turns: number;
   covered: string[]; topics_total: number; highlights: string[]; applied_fields: string[]; extracted?: Record<string, any> | null;
-  labels: Record<string, string>; ended_at?: string | null; voice?: any; turns?: { role: string; text: string; at?: string }[];
+  labels: Record<string, string>; ended_at?: string | null; voice?: any; turns?: { role: string; text: string; at?: string }[]; dry_run?: boolean; applied?: boolean;
 };
 export type InterviewStatus = {
   session: InterviewSession | null; voice: { configured: boolean; status: string; enrolled: boolean; percent?: number | null; at?: string | null; error?: string | null };
-  phone: string; can_call: boolean; persona_filled: number; interviewed_at?: string | null;
+  phone: string; can_call: boolean; persona_filled: number; interviewed_at?: string | null; available: boolean; is_super_admin?: boolean;
 };
 
 const ACTIVE = ['dialing', 'live', 'ending', 'building'];
@@ -50,7 +50,7 @@ export function useInterviewStatus() {
   return { data, loading, reload: load, setData };
 }
 
-export function InterviewCard({ compact }: { compact?: boolean }) {
+export function InterviewCard({ compact, dryRun }: { compact?: boolean; dryRun?: boolean }) {
   const router = useRouter();
   const { colors } = useThemeStore();
   const setUser = useAuthStore((s: any) => s.setUser);
@@ -73,7 +73,7 @@ export function InterviewCard({ compact }: { compact?: boolean }) {
     if (active) wasActive.current = true;
     else if (wasActive.current && s?.status === 'completed') {
       wasActive.current = false;
-      api.get('/auth/me').then(r => { if (r.data?.user) setUser({ ...user, ...r.data.user }); }).catch(() => {});
+      if (s.applied) api.get('/auth/me').then(r => { if (r.data?.user) setUser({ ...user, ...r.data.user }); }).catch(() => {});
       router.push(`/interview/review?session=${s.id}` as any);
     }
   }, [active, s?.status]);
@@ -81,7 +81,7 @@ export function InterviewCard({ compact }: { compact?: boolean }) {
   const start = async () => {
     setBusy(true);
     try {
-      const r = await api.post('/interview/start');
+      const r = await api.post('/interview/start', { dry_run: !!dryRun });
       setData(d => d ? { ...d, session: r.data } : d);
       await reload();
     } catch (e: any) {
@@ -89,11 +89,12 @@ export function InterviewCard({ compact }: { compact?: boolean }) {
       setData(d => d ? { ...d, session: { ...(d.session || { id: '', elapsed_s: 0, rep_turns: 0, covered: [], topics_total: 17, highlights: [], applied_fields: [], labels: {} }), status: 'failed', fail_reason: msg } as any } : d);
     } finally { setBusy(false); }
   };
-  const confirmRedo = () => showConfirm('Redo the interview?', 'Jessi calls you again and updates your VA with what you say. Anything she learns replaces the old answers.', start, undefined, 'Call me');
-  const hangup = () => { if (!s) return; showConfirm('Hang up?', s.rep_turns >= 3 ? 'Jessi will build your VA from what you said so far.' : 'The call ends and nothing is saved yet.', async () => { try { await api.post(`/interview/sessions/${s.id}/hangup`); } catch { /* poll decides */ } reload(); }, undefined, 'Hang up'); };
+  const confirmRedo = () => showConfirm(dryRun ? 'Run the interview again?' : 'Redo the interview?', dryRun ? 'Jessi calls you again. Nothing is saved to your profile unless you tap Save afterwards.' : 'Jessi calls you again and updates your VA with what you say. Anything she learns replaces the old answers.', start, undefined, 'Call me');
+  const hangup = () => { if (!s) return; showConfirm('Hang up?', s.rep_turns >= 3 ? (dryRun ? 'Jessi will write up what you said so far (nothing saved to your profile).' : 'Jessi will build your VA from what you said so far.') : 'The call ends and nothing is saved yet.', async () => { try { await api.post(`/interview/sessions/${s.id}/hangup`); } catch { /* poll decides */ } reload(); }, undefined, 'Hang up'); };
 
   if (loading || !data) return null;
-  const done = s?.status === 'completed' || !!data.interviewed_at;
+  if (!dryRun && !data.available) return null;
+  const done = s?.status === 'completed' || (!dryRun && !!data.interviewed_at);
   const st = StyleSheet.create({
     card: { marginHorizontal: compact ? 0 : 16, marginTop: compact ? 0 : 14, marginBottom: compact ? 16 : 0, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: `${GOLD}55` },
     title: { fontSize: 15, fontWeight: '800', color: colors.text },
@@ -113,8 +114,10 @@ export function InterviewCard({ compact }: { compact?: boolean }) {
         <Ionicons name={onCall ? 'call' : 'mic'} size={20} color={GOLD} />
       </Animated.View>
       <View style={{ flex: 1 }}>
-        <Text style={st.title}>{done && !active ? 'Jessi knows you' : 'Let Jessi interview you'}</Text>
-        {!active && <Text style={st.sub}>{done ? `${data.persona_filled} of 11 things your VA knows came from you.` : 'A 10 minute phone call. Jessi asks about you, then writes your VA, bio and card in your voice. She learns your voice too, so we always know when it is you on a call.'}</Text>}
+        <Text style={st.title}>{dryRun ? (done && !active ? 'Test run done' : 'Test the interview') : done && !active ? 'Jessi knows you' : 'Let Jessi interview you'}</Text>
+        {!active && <Text style={st.sub}>{dryRun
+          ? (done ? 'Nothing was saved to your profile. Open the write-up to read it or save it.' : `Jessi calls ${data.phone}, interviews you for about 10 minutes and writes up what she learned. Nothing is saved to your profile unless you tap Save afterwards.`)
+          : done ? `${data.persona_filled} of 11 things your VA knows came from you.` : 'A 10 minute phone call. Jessi asks about you, then writes your VA, bio and card in your voice. She learns your voice too, so we always know when it is you on a call.'}</Text>}
       </View>
     </View>
   );
@@ -128,7 +131,7 @@ export function InterviewCard({ compact }: { compact?: boolean }) {
           {s.status === 'building' ? <ActivityIndicator color={GOLD} /> : <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: s.status === 'live' ? GREEN : GOLD }} />}
           <View style={{ flex: 1 }}>
             <Text style={st.status} {...tid('interview-status')}>{label}</Text>
-            <Text style={st.meta}>{s.status === 'building' ? 'About a minute. Your VA, bio and card are being written.' : s.status === 'live' ? `${s.covered.length} of ${s.topics_total} topics · pick up ${data.phone}` : `Calling ${data.phone}`}</Text>
+            <Text style={st.meta}>{s.status === 'building' ? (dryRun ? 'About a minute. Jessi is writing up what she learned (not saved to your profile).' : 'About a minute. Your VA, bio and card are being written.') : s.status === 'live' ? `${s.covered.length} of ${s.topics_total} topics · pick up ${data.phone}` : `Calling ${data.phone}`}</Text>
           </View>
         </View>
         {s.status !== 'building' && (
@@ -146,7 +149,7 @@ export function InterviewCard({ compact }: { compact?: boolean }) {
     <View style={st.card} {...tid('interview-card')}>
       {header}
       {failed && <Text style={{ fontSize: 12, color: RED, marginTop: 10, lineHeight: 17 }} {...tid('interview-fail-reason')}>{s.fail_reason || 'The call ended early'}</Text>}
-      {done && (
+      {done && !dryRun && (
         <View style={st.pill} {...tid('interview-voice-pill')}>
           <Ionicons name={data.voice.enrolled ? 'shield-checkmark' : 'shield-outline'} size={13} color={data.voice.enrolled ? GREEN : colors.textSecondary} />
           <Text style={{ fontSize: 12, fontWeight: '700', color: data.voice.enrolled ? GREEN : colors.textSecondary }}>{voiceLabel(data.voice) || 'Voice ID pending'}</Text>
@@ -164,7 +167,7 @@ export function InterviewCard({ compact }: { compact?: boolean }) {
             <Text style={[st.ghostText, { color: '#000' }]}>What Jessi learned</Text>
           </TouchableOpacity>
           <TouchableOpacity style={st.ghost} onPress={confirmRedo} disabled={busy} {...tid('interview-redo-btn')}>
-            {busy ? <ActivityIndicator size="small" color={GOLD} /> : <><Ionicons name="refresh" size={15} color={GOLD} /><Text style={st.ghostText}>Redo</Text></>}
+            {busy ? <ActivityIndicator size="small" color={GOLD} /> : <><Ionicons name="refresh" size={15} color={GOLD} /><Text style={st.ghostText}>{dryRun ? 'Run again' : 'Redo'}</Text></>}
           </TouchableOpacity>
         </View>
       ) : (

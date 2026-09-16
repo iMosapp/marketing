@@ -725,6 +725,8 @@ api_router.include_router(scripts_router.relay_router)
 from routers import interview as interview_router
 api_router.include_router(interview_router.router)
 api_router.include_router(interview_router.public)
+from routers import lab as lab_router
+api_router.include_router(lab_router.router)
 from routers import mystery_shops as mystery_shops_router
 api_router.include_router(mystery_shops_router.router)
 api_router.include_router(mystery_shops_router.public_router)

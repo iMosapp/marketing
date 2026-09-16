@@ -81,12 +81,13 @@ def serialize(s: Optional[dict]) -> Optional[dict]:
             "turns": [{"role": t["role"], "text": t["text"], "at": t["at"].isoformat() if hasattr(t.get("at"), "isoformat") else t.get("at")} for t in s.get("turns") or []],
             "rep_turns": sum(1 for t in s.get("turns") or [] if t["role"] == "rep"),
             "covered": s.get("covered") or [], "topics_total": len(TOPICS), "extracted": s.get("extracted") or None, "highlights": s.get("highlights") or [],
-            "applied_fields": s.get("applied_fields") or [], "labels": LABELS, "recording_url": s.get("recording_url"), "recording_seconds": s.get("recording_seconds"),
+            "applied_fields": s.get("applied_fields") or [], "applied": bool(s.get("applied")), "dry_run": bool(s.get("dry_run")), "labels": LABELS, "recording_url": s.get("recording_url"), "recording_seconds": s.get("recording_seconds"),
             "voice": s.get("voice"), "rep_phone": s.get("rep_phone")}
 
 
 # ---------------------------------------------------------------- placing the call
-async def start(db, me: dict) -> dict:
+async def start(db, me: dict, dry_run: bool = False) -> dict:
+    """dry_run = Test Lab: the whole call and the write-up happen, nothing touches the profile until the rep taps Save."""
     from routers.twilio_webhooks import normalize_phone
     from services.lead_call_engine import _twilio_client
     rep_phone = normalize_phone(me.get("phone") or "")
@@ -104,7 +105,7 @@ async def start(db, me: dict) -> dict:
     await hangup_live(db, str(me["_id"]), "restarted")
     doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "from_number": from_number, "store_id": me.get("store_id"),
            "store_name": (store or {}).get("name") or "the store", "role_title": me.get("title") or "", "locale": loc.key_of(store),
-           "status": "dialing", "token": token, "turns": [], "covered": [], "created_at": now, "updated_at": now}
+           "status": "dialing", "token": token, "turns": [], "covered": [], "dry_run": bool(dry_run), "created_at": now, "updated_at": now}
     res = await db[COLL].insert_one(doc)
     sid = str(res.inserted_id)
     base = f"{_app_url()}/api/interview/call"
@@ -318,18 +319,26 @@ async def finalize(db, sid: str, reason: str) -> Optional[dict]:
 async def build(db, s: dict) -> Optional[dict]:
     try:
         extracted = await extract(s)
-        applied = await apply(db, s["user_id"], extracted)
+        applied = [] if s.get("dry_run") else await apply(db, s["user_id"], extracted)
     except Exception as e:
         logger.warning(f"[Interview] building persona failed for {s['_id']}: {e}")
         await db[COLL].update_one({"_id": s["_id"]}, {"$set": {"status": "failed", "fail_reason": "Jessi could not write your profile from the call. The interview is saved, tap Rebuild", "updated_at": _now()}})
         return None
     await db[COLL].update_one({"_id": s["_id"]}, {"$set": {"status": "completed", "extracted": {k: v for k, v in extracted.items() if k != "highlights"}, "highlights": extracted.get("highlights") or [],
-                                                           "applied_fields": applied, "built_at": _now(), "updated_at": _now()}})
+                                                           "applied_fields": applied, "applied": not s.get("dry_run"), "built_at": _now(), "updated_at": _now()}})
     try:
         from routers.push_notifications import send_push_to_user
-        await send_push_to_user(s["user_id"], "Your VA is ready", "Jessi turned your interview into your assistant, bio and card. Take a look.", "/interview/review", "sparkles")
+        body = "Test run done: see what Jessi learned, nothing was saved yet." if s.get("dry_run") else "Jessi turned your interview into your assistant, bio and card. Take a look."
+        await send_push_to_user(s["user_id"], "Your VA is ready" if not s.get("dry_run") else "Interview test finished", body, f"/interview/review?session={s['_id']}", "sparkles")
     except Exception as e:
         logger.debug(f"[Interview] push failed: {e}")
+    return await db[COLL].find_one({"_id": s["_id"]})
+
+
+async def apply_session(db, s: dict) -> dict:
+    """Test Lab follow-up: the rep liked the write-up and wants it on their profile after all."""
+    applied = await apply(db, s["user_id"], {**(s.get("extracted") or {}), "highlights": s.get("highlights") or []})
+    await db[COLL].update_one({"_id": s["_id"]}, {"$set": {"applied_fields": applied, "applied": True, "applied_at": _now(), "updated_at": _now()}})
     return await db[COLL].find_one({"_id": s["_id"]})
 
 

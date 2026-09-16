@@ -200,7 +200,19 @@ export default function MyProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Jessi onboarding interview */}
+        {/* Test Lab (app owner): try new things before reps see them */}
+        {user?.role === 'super_admin' && (
+          <TouchableOpacity style={[styles.nudge, { borderColor: '#C9A96260' }]} onPress={() => router.push('/admin/test-lab' as any)} data-testid="profile-test-lab-link">
+            <Ionicons name="flask" size={16} color="#C9A962" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.nudgeText, { fontWeight: '800', color: colors.text }]}>Test Lab</Text>
+              <Text style={styles.nudgeText}>Try new features on your account before anyone else sees them</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#C9A962" />
+          </TouchableOpacity>
+        )}
+
+        {/* Jessi onboarding interview (hidden until released from the Test Lab) */}
         <InterviewCard />
 
         {/* Finish profile nudge */}

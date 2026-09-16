@@ -129,6 +129,46 @@ async def main():
         rb = requests.post(f"{API}/api/interview/sessions/{sid}/rebuild", headers=h, timeout=180)
         assert rb.status_code == 200 and rb.json()["status"] == "completed" and rb.json()["extracted"]["bio"], rb.text[:200]
         print("status/session/rebuild endpoints ok; persona_filled =", st["persona_filled"])
+        # --- Test Lab dry run: same transcript, nothing applied until /apply
+        marker = f"marker-{uuid.uuid4().hex[:6]}"
+        await db.users.update_one({"_id": rep["_id"]}, {"$set": {"persona.hometown": marker}})
+        dry_tok = uuid.uuid4().hex
+        dry = await db.interview_sessions.insert_one({**{k: v for k, v in s.items() if k not in ("_id", "extracted", "highlights", "applied_fields", "applied", "built_at", "status", "token", "ended_at", "end_reason")},
+                                                      "status": "live", "token": dry_tok, "dry_run": True, "qa_sim": True, "created_at": datetime.now(timezone.utc)})
+        assert requests.post(f"{API}/api/interview/call/status/{dry.inserted_id}?t={dry_tok}", data={"CallStatus": "completed", "CallSid": "CA_sim2"}, timeout=30).status_code == 204
+        for _ in range(60):
+            await asyncio.sleep(2)
+            d = await db.interview_sessions.find_one({"_id": dry.inserted_id})
+            if d["status"] in ("completed", "failed", "abandoned"):
+                break
+        assert d["status"] == "completed" and d["applied_fields"] == [] and d.get("applied") is False and d["extracted"]["bio"], (d["status"], d.get("applied_fields"))
+        u = await db.users.find_one({"_id": rep["_id"]}, {"persona.hometown": 1})
+        assert u["persona"]["hometown"] == marker, "dry run must not touch the profile"
+        ser = requests.get(f"{API}/api/interview/sessions/{dry.inserted_id}", headers=h, timeout=30).json()
+        assert ser["dry_run"] is True and ser["applied"] is False
+        ap = requests.post(f"{API}/api/interview/sessions/{dry.inserted_id}/apply", headers=h, timeout=60)
+        assert ap.status_code == 200 and ap.json()["applied"] is True and "hometown" in ap.json()["applied_fields"], ap.text[:200]
+        u = await db.users.find_one({"_id": rep["_id"]}, {"persona.hometown": 1})
+        assert u["persona"]["hometown"] == d["extracted"]["hometown"] != marker
+        print("dry run ok: nothing applied until /apply, then persona updated")
+        # --- Test Lab flags
+        adm = requests.post(f"{API}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30).json()
+        ah = {"Authorization": f"Bearer {adm['token']}"}
+        feats = requests.get(f"{API}/api/lab/features", headers=ah, timeout=30).json()["features"]
+        vi = next(f for f in feats if f["key"] == "voice_interview")
+        was = vi["status"]
+        assert requests.get(f"{API}/api/lab/features", headers=h, timeout=30).status_code == 403
+        assert requests.put(f"{API}/api/lab/features/voice_interview", json={"status": "bogus"}, headers=ah, timeout=30).status_code == 400
+        assert requests.put(f"{API}/api/lab/features/nope", json={"status": "live"}, headers=ah, timeout=30).status_code == 404
+        r = requests.put(f"{API}/api/lab/features/voice_interview", json={"status": "live"}, headers=ah, timeout=30)
+        assert r.status_code == 200 and r.json()["status"] == "live" and r.json()["changed_by"]
+        assert requests.get(f"{API}/api/interview/status", headers=h, timeout=30).json()["available"] is True
+        requests.put(f"{API}/api/lab/features/voice_interview", json={"status": "lab"}, headers=ah, timeout=30)
+        assert requests.get(f"{API}/api/interview/status", headers=h, timeout=30).json()["available"] is False
+        assert requests.post(f"{API}/api/interview/start", json={"dry_run": True}, headers=h, timeout=30).status_code == 403, "dry runs are super-admin only"
+        assert requests.post(f"{API}/api/interview/start", json={}, headers=h, timeout=30).status_code == 403, "not released -> reps cannot start"
+        requests.put(f"{API}/api/lab/features/voice_interview", json={"status": was}, headers=ah, timeout=30)
+        print("lab flags ok (restored to", was + ")")
         print("ALL OK")
     finally:
         if "--keep" in sys.argv:
