@@ -179,6 +179,7 @@ def assistant_instructions(cfg: dict, user: dict, language: str = "English", con
             "- A correction changes a task already requested.\n"
             "- The rep picks one of several people the backend listed, spells a name, or says the person you found is the wrong one. Delegate again right away; the backend matches names loosely (Tod and Todd, Berry and Barry), so a spelled name or a last name settles it.\n\n"
             "Names: when the backend lists several people, read the names with what tells them apart (last name, spelling, vehicle) and ask which one. Never pick one yourself. "
+            "When the backend says it used one of several records for the same name, pass that on in one short sentence ('you have two Tod Berrys, I used the one with the Tahoe, say the other one to switch') and carry on. "
             "If the rep says it is the wrong person, apologise in two or three words and ask for the last name or the spelling.\n\n"
             "Do not delegate to the backend when:\n"
             "- The rep greets you, thanks you, or asks you to repeat a result already provided.\n"
@@ -356,7 +357,9 @@ Tools:
 - answer: anything else (how the app works, small talk that needs facts, their numbers). args: {"say": "<the answer in at most 60 spoken words>"}
 - open_screen: the rep wants something SHOWN on their phone screen: open / pull up / show / bring up / go to a person's record, a text thread, their tasks, home or the inbox. args: {"what": "contact|thread|tasks|home|inbox", "name": "<the person, empty for tasks/home/inbox>"}
 
-Rules: "pull up Mike" or "show me Sarah" means open_screen (they want to see it); "tell me about Mike" or "what did Sarah buy" means recall_person (they want to hear it). If a person's name is unclear, still pick the tool with your best reading of the name. Names: pass first AND last name whenever the rep said both. If the rep spells a name ("T-O-D", "J E S S I E", "B as in boy, E, R..."), args.name MUST use exactly those letters for that part (J E S S I E -> Jessie, never Jesse) plus the other name part (e.g. "Jessie Walters"). If Jessi just listed several people and the rep picks one ("the second one", "the one with the Tahoe", "Berry", "not Snow, the other Todd"), args.name is that person's full name exactly as listed. If the rep says the last match was the wrong person, do not reuse it: use the corrected name they gave. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
+Every tool that takes a "name" also takes "hint": how the rep pointed at ONE of several records Jessi listed, verbatim and short: "the first one", "the second one", "the other one", "the one with the Tahoe", "ending in 0100", "the Berry one", "the newer one". Empty when the rep did not pick.
+
+Rules: "pull up Mike" or "show me Sarah" means open_screen (they want to see it); "tell me about Mike" or "what did Sarah buy" means recall_person (they want to hear it). If a person's name is unclear, still pick the tool with your best reading of the name. Names: pass first AND last name whenever the rep said both. If the rep spells a name ("T-O-D", "J E S S I E", "B as in boy, E, R..."), args.name MUST use exactly those letters for that part (J E S S I E -> Jessie, never Jesse) plus the other name part (e.g. "Jessie Walters"). If Jessi just listed several people and the rep picks one ("the second one", "the one with the Tahoe", "Berry", "not Snow, the other Todd"), args.name is that person's full name exactly as listed AND args.hint is how they picked. If Jessi said she used one of several records and the rep says "the other one" / "no, the other Tod", keep the same tool and name and set hint to "the other one". If the rep says the last match was the wrong person, do not reuse it: use the corrected name they gave. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
 
 
 def _first_last(c: dict) -> str:
@@ -450,7 +453,7 @@ async def _find(db, user_id: str, name: str, limit: int = 5) -> list:
     keep = [(s, cid) for s, cid in scored[:limit] if s >= 0.78]
     if not keep:
         return []
-    rows = await db.contacts.find({"_id": {"$in": [cid for _, cid in keep]}}, {"first_name": 1, "last_name": 1, "phone": 1, "vehicle": 1, "email": 1, "tags": 1, "created_at": 1}).to_list(limit)
+    rows = await db.contacts.find({"_id": {"$in": [cid for _, cid in keep]}}, {"first_name": 1, "last_name": 1, "phone": 1, "vehicle": 1, "vehicle_interest": 1, "email": 1, "tags": 1, "created_at": 1, "updated_at": 1, "last_activity_at": 1, "organization_name": 1, "lead_source_name": 1}).to_list(limit)
     by_id = {r["_id"]: r for r in rows}
     out = []
     for s, cid in keep:
@@ -473,10 +476,75 @@ def _match_line(c: dict, spell_first: bool = False) -> str:
 
 
 def _choices(rows: list) -> str:
-    """Spoken list of candidates; when two share a first name that is spelled differently (Tod/Todd) the spelling is read out."""
+    """Spoken list of candidates; when two share a first name that is spelled differently (Tod/Todd) the spelling is read out,
+    and same-name records get what tells them apart (vehicle, phone, last activity)."""
     firsts = [_norm(c.get("first_name") or "") for c in rows]
     spell = any(firsts.count(f) == 1 and any(_soundex(f) == _soundex(g) and f != g for g in firsts) for f in firsts)
-    return "; ".join(_match_line(c, spell_first=spell) for c in rows[:4])
+    same = len({_norm(_first_last(c)) for c in rows}) == 1
+    return "; ".join((f"{_first_last(c)} {_describe(c)}" if same else _match_line(c, spell_first=spell)) for c in rows[:4])
+
+
+def _when(c: dict) -> Optional[datetime]:
+    for k in ("last_activity_at", "updated_at", "created_at"):
+        v = c.get(k)
+        if isinstance(v, str):
+            try:
+                v = datetime.fromisoformat(v.replace("Z", "+00:00"))
+            except ValueError:
+                v = None
+        if isinstance(v, datetime):
+            return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+    return None
+
+
+def _describe(c: dict) -> str:
+    bits = []
+    if c.get("vehicle") or c.get("vehicle_interest"):
+        bits.append(f"with the {c.get('vehicle') or c.get('vehicle_interest')}")
+    if c.get("phone"):
+        bits.append(f"at {_fmt_phone(c['phone'])}")
+    w = _when(c)
+    if w:
+        days = max(0, (_now() - w).days)
+        bits.append("active today" if days == 0 else f"active {days} day{'s' if days != 1 else ''} ago")
+    return ", ".join(bits) or "with no phone on file"
+
+
+def _digits(s: str) -> str:
+    return re.sub(r"\D", "", s or "")
+
+
+ORDINALS = {"first": 0, "1st": 0, "one": 0, "1": 0, "second": 1, "2nd": 1, "two": 1, "2": 1, "third": 2, "3rd": 2, "three": 2, "3": 2, "fourth": 3, "4th": 3, "four": 3, "4": 3, "last": -1}
+
+
+def _apply_hint(hint: str, rows: list, last_pick: Optional[str] = None) -> Optional[dict]:
+    """The rep's way of pointing at one of several records: an ordinal, 'the other one', phone digits, a vehicle or email word, a last name."""
+    h = (hint or "").lower().strip()
+    if not h or not rows:
+        return None
+    if any(w in h for w in ("other", "not that", "switch", "different one", "wrong one")) and last_pick:
+        for r in rows:
+            if str(r["_id"]) != last_pick:
+                return r
+    for w in re.findall(r"[a-z0-9]+", h):
+        if w in ORDINALS and (w not in ("one",) or h.strip() in ("one", "the one", "number one")):
+            i = ORDINALS[w]
+            if -len(rows) <= i < len(rows):
+                return rows[i]
+    digs = _digits(h)
+    if len(digs) >= 3:
+        for r in rows:
+            if _digits(r.get("phone") or "").endswith(digs[-4:] if len(digs) >= 4 else digs):
+                return r
+    words = [w for w in re.findall(r"[a-z]+", h) if w not in STOP_WORDS and w not in ORDINALS and len(w) > 2]
+    for r in rows:
+        hay = " ".join(str(r.get(k) or "") for k in ("vehicle", "vehicle_interest", "email", "organization_name", "lead_source_name")).lower() + " " + " ".join(r.get("tags") or []).lower()
+        if any(w in hay for w in words):
+            return r
+    for r in rows:
+        if any(_sim(w, r.get("last_name") or "") >= 0.85 for w in words):
+            return r
+    return None
 
 
 def _same_person(contact: dict, name: str) -> bool:
@@ -489,18 +557,70 @@ def _same_person(contact: dict, name: str) -> bool:
     return _score(words, contact) >= 0.85 and (_sim(words[-1], last) >= 0.8 or _sim(words[-1], first) >= 0.8)
 
 
-async def _resolve(db, user_id: str, name: str, focus: Optional[dict] = None):
-    """One contact, or a spoken disambiguation string. The focus contact wins whenever the spoken name fits them."""
-    if focus and _same_person(focus, name):
+async def _remember(db, live: Optional[dict], choices: list, pick: Optional[dict], question: str = "") -> None:
+    """What Jessi just listed / picked, so 'the second one' or 'the other one' lands on the same records next turn."""
+    if not live:
+        return
+    sets = {"last_choices": [str(c["_id"]) for c in choices], "last_pick": str(pick["_id"]) if pick else None, "last_question_name": question}
+    live.update(sets)
+    await db[COLL].update_one({"_id": live["_id"]}, {"$set": sets})
+
+
+def _with_note(text: str, contact: Optional[dict]) -> str:
+    return f"{text} {contact['_note']}" if contact and contact.get("_note") else text
+
+
+async def _resolve(db, user_id: str, name: str, focus: Optional[dict] = None, hint: str = "", live: Optional[dict] = None):
+    """One contact, or a spoken disambiguation string. Never loops: a hint ('the second one', 'ending in 0100', 'the Tahoe one') picks from
+    the records Jessi just listed; same-name duplicates collapse (same phone) or default to the most active one with a 'say the other one' note;
+    a question is never asked twice in a row for the same name. The focus contact wins whenever the spoken name fits them."""
+    hint = (hint or "").strip()
+    if live and hint and live.get("last_choices"):
+        rows = await db.contacts.find({"_id": {"$in": [ObjectId(x) for x in live["last_choices"] if ObjectId.is_valid(x)]}}).to_list(10)
+        rows.sort(key=lambda r: live["last_choices"].index(str(r["_id"])))
+        words = _name_words(name)
+        if words and not any(_score(words, r) >= 0.8 for r in rows):
+            rows = []  # the list Jessi read out was about someone else; do not pick from it
+        picked = _apply_hint(hint, rows, live.get("last_pick"))
+        if picked:
+            await _remember(db, live, rows, picked)
+            return picked, None
+    if focus and _same_person(focus, name) and not hint:
         return focus, None
     rows = await _find(db, user_id, name)
     if not rows:
         return None, f"I could not find anyone named {name} in your contacts. Want me to try a different spelling, or spell it for me?"
     best = rows[0].get("_score", 1.0)
-    runner = rows[1].get("_score", 0.0) if len(rows) > 1 else 0.0
-    if len(rows) > 1 and (best < 0.86 or runner >= 0.85 or best - runner < 0.1):
-        return None, f"I found {len(rows)} people close to {name}: {_choices(rows)}. Which one?"
-    return rows[0], None
+    top = [r for r in rows if r.get("_score", 1.0) >= max(0.85, best - 0.1)] or rows[:1]
+    if hint:
+        picked = _apply_hint(hint, top, live.get("last_pick") if live else None)
+        if picked:
+            await _remember(db, live, top, picked)
+            return picked, None
+    # records that are the same person twice (same name, same phone) collapse into the most active one
+    seen, uniq = {}, []
+    for r in sorted(top, key=lambda r: _when(r) or datetime.min.replace(tzinfo=timezone.utc), reverse=True):
+        key = (_norm(_first_last(r)), _digits(r.get("phone") or "")[-10:])
+        if key in seen:
+            continue
+        seen[key] = True
+        uniq.append(r)
+    top = uniq
+    if len(top) == 1 and best >= 0.86:
+        await _remember(db, live, top, top[0])
+        return top[0], None
+    same_name = len({_norm(_first_last(r)) for r in top}) == 1
+    asked_before = bool(live and live.get("last_question_name") == _norm(name) and live.get("last_choices"))
+    if same_name or asked_before:
+        # duplicates of one person, or the rep repeated the name after being asked: go with the most active record and say so
+        chosen = top[0]
+        await _remember(db, live, top, chosen)
+        others = "; ".join(f"{_first_last(r)} {_describe(r)}" for r in top[1:3])
+        chosen["_note"] = (f"Heads up, you have {len(top)} records for {_first_last(chosen)}; I used the one {_describe(chosen)}. The other {'one is' if len(top) == 2 else 'ones are'} {others}. Say 'the other one' to switch."
+                           if same_name else f"I went with {_first_last(chosen)} {_describe(chosen)}. Say 'the other one' if you meant someone else.")
+        return chosen, None
+    await _remember(db, live, top, None, _norm(name))
+    return None, f"I found {len(top)} people close to {name}: {_choices(top)}. Which one? You can say the last name, 'the first one', or the last four of the phone."
 
 
 async def _who_today(db, user: dict) -> str:
@@ -518,8 +638,8 @@ async def _who_today(db, user: dict) -> str:
     return "Your three for today. " + " ".join(lines) + " Want me to pull anyone up or text one of them?"
 
 
-async def _recall(db, user: dict, name: str, focus: Optional[dict] = None):
-    contact, err = await _resolve(db, str(user["_id"]), name, focus)
+async def _recall(db, user: dict, name: str, focus: Optional[dict] = None, hint: str = "", live: Optional[dict] = None):
+    contact, err = await _resolve(db, str(user["_id"]), name, focus, hint, live)
     if err:
         return err, None
     from services.contact_ask import build_record
@@ -528,7 +648,7 @@ async def _recall(db, user: dict, name: str, focus: Optional[dict] = None):
     timeline = rec.get("timeline") or ""
     facts = await _llm("You turn a CRM record into what a sharp assistant would SAY out loud to the salesperson about this person. At most 90 words, plain sentences, most useful first: what they bought or want, when you last talked and about what, anything personal worth remembering, open tasks. No headings, no markdown, no phone numbers.",
                        f"PROFILE:\n{rec.get('profile', '')[:4000]}\n\nRECENT TIMELINE (newest last):\n{timeline[-6000:]}", timeout=40)
-    return no_em_dash(facts.strip()), contact
+    return _with_note(no_em_dash(facts.strip()), contact), contact
 
 
 def _open_target(kind: str, contact: Optional[dict] = None, task: Optional[dict] = None) -> dict:
@@ -549,15 +669,15 @@ def _screen_of(what: str) -> str:
     return "contact"
 
 
-async def _open_screen(db, user: dict, args: dict, focus: Optional[dict] = None):
+async def _open_screen(db, user: dict, args: dict, focus: Optional[dict] = None, live: Optional[dict] = None):
     screen = _screen_of(args.get("what") or "")
     if screen in ("tasks", "home", "inbox"):
         return {"tasks": "Your tasks are up on your screen.", "home": "Home is up.", "inbox": "Your inbox is up."}[screen], _open_target(screen)
-    contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus)
+    contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus, args.get("hint") or "", live)
     if err:
         return err, None
     first = contact.get("first_name") or _first_last(contact)
-    return (f"{first}'s text thread is up on your screen." if screen == "thread" else f"{first} is up on your screen."), _open_target(screen, contact)
+    return _with_note(f"{first}'s text thread is up on your screen." if screen == "thread" else f"{first} is up on your screen.", contact), _open_target(screen, contact)
 
 
 async def _draft(db, user: dict, contact: dict, intent: str, wording: str = "") -> str:
@@ -584,12 +704,12 @@ async def _send_now(db, user: dict, pending: dict) -> str:
     return f"Sent to {pending['name']}." if ok else f"That text did not go out: {str((r or {}).get('error') or 'unknown error')[:140]}"
 
 
-async def _reminder(db, user: dict, args: dict, focus: Optional[dict] = None):
+async def _reminder(db, user: dict, args: dict, focus: Optional[dict] = None, live: Optional[dict] = None):
     from routers.tasks import create_task
     name = (args.get("name") or "").strip()
     contact = None
     if name or focus:
-        contact, err = await _resolve(db, str(user["_id"]), name, focus)
+        contact, err = await _resolve(db, str(user["_id"]), name, focus, args.get("hint") or "", live)
         if err:
             return err, None
     when = None
@@ -610,7 +730,7 @@ async def _reminder(db, user: dict, args: dict, focus: Optional[dict] = None):
                                                 "action_type": action, "due_date": when.astimezone(timezone.utc).isoformat(), "has_time": True, "priority": "medium"})
     spoken_when = local.strftime("%A at %-I:%M %p") if local.hour or local.minute else local.strftime("%A")
     who = f" for {_first_last(contact)}" if contact else ""
-    return (f"Done. Reminder set{who}: {title}, {spoken_when}." if task else "I could not save that reminder."), task
+    return (_with_note(f"Done. Reminder set{who}: {title}, {spoken_when}.", contact) if task else "I could not save that reminder."), task
 
 
 async def _answer(user: dict, say: str, question: str) -> str:
@@ -651,16 +771,16 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
         if tool == "who_today":
             result = await _who_today(db, user)
         elif tool == "find_person":
-            contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus)
+            contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus, args.get("hint") or "", live)
             if contact:
-                result, opened = f"Found {_match_line(contact)}. They are up on your screen.", _open_target("contact", contact)
+                result, opened = _with_note(f"Found {_match_line(contact)}. They are up on your screen.", contact), _open_target("contact", contact)
             else:
                 result = err
         elif tool == "recall_person":
-            result, contact = await _recall(db, user, args.get("name") or ("" if focus else _last_rep_text(transcript)), focus)
+            result, contact = await _recall(db, user, args.get("name") or ("" if focus else _last_rep_text(transcript)), focus, args.get("hint") or "", live)
             opened = _open_target("contact", contact) if contact else None
         elif tool in ("send_text", "draft_message"):
-            contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus)
+            contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus, args.get("hint") or "", live)
             if err:
                 result = err
             elif not contact.get("phone"):
@@ -668,11 +788,11 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             else:
                 content = await _draft(db, user, contact, args.get("intent") or "", args.get("message") or "")
                 new_pending = {"type": "send_text", "contact_id": str(contact["_id"]), "name": _first_last(contact), "content": content, "at": _now().isoformat()}
-                result = (f"Here is the text for {contact.get('first_name')}: \"{content}\" Say yes and I will send it, or tell me what to change." if tool == "send_text"
-                          else f"Here is a draft for {contact.get('first_name')}: \"{content}\" Want me to send it, or will you?")
+                result = _with_note(f"Here is the text for {contact.get('first_name')}: \"{content}\" Say yes and I will send it, or tell me what to change." if tool == "send_text"
+                                    else f"Here is a draft for {contact.get('first_name')}: \"{content}\" Want me to send it, or will you?", contact)
                 opened = _open_target("thread", contact)
         elif tool == "set_reminder":
-            result, task = await _reminder(db, user, args, focus)
+            result, task = await _reminder(db, user, args, focus, live)
             opened = _open_target("task", task=task) if task else None
         elif tool == "confirm":
             if pending and pending.get("type") == "send_text":
@@ -685,7 +805,7 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             result = "Okay, cancelled. Nothing was sent." if pending else "Nothing to cancel."
             new_pending = None
         elif tool == "open_screen":
-            result, opened = await _open_screen(db, user, args, focus)
+            result, opened = await _open_screen(db, user, args, focus, live)
         else:
             result = await _answer(user, args.get("say") or "", _last_rep_text(transcript))
     except Exception as e:

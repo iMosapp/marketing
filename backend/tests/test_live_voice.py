@@ -4,7 +4,7 @@ import os
 import pytest
 import requests
 from bson import ObjectId
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -167,6 +167,52 @@ async def test_fuzzy_name_resolution():
         assert rows[0]["_score"] >= 0.9 and all("_score" in r for r in rows)
     finally:
         await db.contacts.delete_many({"_id": {"$in": ids}})
+
+
+async def test_duplicates_never_loop():
+    """Two 'Tod Berry' records: no question, the most active one is used with a 'say the other one' note; hints pick; exact clones collapse;
+    a name that was already asked about is not asked again."""
+    db = get_db()
+    user = await _tester(db)
+    uid = str(user["_id"])
+    live = await _seed_live(db, user)
+    now = datetime.now(timezone.utc)
+    extra = [{"first_name": "Tod", "last_name": "Berry", "phone": "+15005550401", "vehicle": "2024 Tahoe", "last_activity_at": now},
+             {"first_name": "Tod", "last_name": "Berry", "phone": "+15005550402", "vehicle": "2019 Silverado", "last_activity_at": now - timedelta(days=40)},
+             {"first_name": "Jesse", "last_name": "Pinkman", "phone": "+15005550403", "last_activity_at": now},
+             {"first_name": "Jesse", "last_name": "Pinkman", "phone": "(500) 555-0403", "last_activity_at": now - timedelta(days=3)},
+             {"first_name": "Jessie", "last_name": "Walters", "phone": "+15005550404"}]
+    ids = [(await db.contacts.insert_one({**c, "user_id": uid, "created_at": now})).inserted_id for c in extra]
+    try:
+        c, err = await lv._resolve(db, uid, "Tod Berry", live=live)
+        assert c and str(c["_id"]) == str(ids[0]) and err is None, "most recently active duplicate wins, no question"
+        assert "you have 2 records for Tod Berry" in c["_note"] and "2024 Tahoe" in c["_note"] and "Say 'the other one'" in c["_note"]
+        assert live["last_pick"] == str(ids[0]) and live["last_choices"] == [str(ids[0]), str(ids[1])]
+        c, err = await lv._resolve(db, uid, "Tod Berry", hint="the other one", live=live)
+        assert c and str(c["_id"]) == str(ids[1]), "'the other one' switches to the record not used"
+        c, err = await lv._resolve(db, uid, "Tod Berry", hint="the one with the Tahoe", live=live)
+        assert c and str(c["_id"]) == str(ids[0])
+        c, err = await lv._resolve(db, uid, "Tod Berry", hint="ending in 0402", live=live)
+        assert c and str(c["_id"]) == str(ids[1])
+        # exact clones (same name, same phone) are one person: silent
+        c, err = await lv._resolve(db, uid, "Jesse Pinkman", live=live)
+        assert c and c["last_name"] == "Pinkman" and not c.get("_note") and err is None
+        # different people: asked once, ordinal pick works, and repeating the bare name is not asked again
+        c, err = await lv._resolve(db, uid, "Jesse", live=live)
+        assert c is None and "Which one" in err and "the first one" in err
+        assert live["last_question_name"] == "jesse" and len(live["last_choices"]) == 2
+        c, err = await lv._resolve(db, uid, "Jesse", hint="the second one", live=live)
+        assert c and str(c["_id"]) == live["last_choices"][1] and err is None
+        c, err = await lv._resolve(db, uid, "Jesse", live=live)
+        assert c is None and "Which one" in err, "a fresh ask after a pick is fine"
+        c, err = await lv._resolve(db, uid, "Jesse", live=live)
+        assert c and err is None and "I went with" in c["_note"], "asked twice in a row -> go with the best and say so"
+        # the delegation log carries the pick through find_person with a hint (faked brain not needed: direct call)
+        stored = await lv.get_live(db, live["live_id"])
+        assert stored["last_pick"] == str(c["_id"])
+    finally:
+        await db.contacts.delete_many({"_id": {"$in": ids}})
+        await db[lv.COLL].delete_one({"live_id": live["live_id"]})
 
 
 async def test_open_targets_for_the_screen(monkeypatch):
