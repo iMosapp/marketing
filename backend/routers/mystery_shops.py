@@ -216,6 +216,8 @@ class KickoffBody(BaseModel):
 
 def _client_fields(body: ClientBody) -> dict:
     d = {k: v for k, v in body.dict().items() if v is not None}
+    if "live_calls" in body.model_fields_set:  # tri-state: None = follow the Test Lab switch again
+        d["live_calls"] = body.live_calls
     if "name" in d:
         d["name"] = d["name"].strip()[:120]
     if "industry" in d:

@@ -1,0 +1,26 @@
+{
+  "summary": "Iteration 333 — LIVE SHOP CALLS + JESSI OPENS THINGS end-to-end verified. Backend unit tests pass (test_live_shops.py 5/5 + test_live_voice.py 6/6 = 11/11 in 30.4s). New API iter333 tests 5/5 pass covering /api/lab/features (live_shop_calls status=lab with OPENAI_API_KEY needs; jessi_live_voice needs OPENAI_API_KEY), shop-clients tri-state live_calls (PUT true->true, PUT false->false, PUT null silently ignored so value remains false; GET exposes client.live_calls), /api/live-voice/config forest (available=true, configured=false), /api/live-voice/session -> 503 with OPENAI_API_KEY reason. Frontend flows via fake WebRTC + route interception (contact/thread/task/pill controls) all PASS: session.started -> 'Listening · gleam', live-caption-rep after transcript delta; contact delegate -> URL /contact/6aa413008f0d53e3f2261853 + pill '· Sarah'; __dcSent contains session.instructions.append, session.thinking.append (id item_1), session.commentary.append (id item_1), session.thinking.append (id null, UI context); thread delegate -> URL /thread/{id} + '· Sarah'; task delegate -> URL /touchpoints?highlight={id} + pill '· Reminder' + 'JESSI OPENED THIS' pinned-task-label + task-card-{id} with gold border (visible in screenshot); pill click re-expands sheet, collapse shrinks, pill-end sends session.close (last __dcSent type = 'session.close'); after session.closed emit the pill auto-dismisses in ~4s while app stays on /touchpoints. Ask sheet on /thread/{sarah}: thread-ask-jessi-btn -> ask-talk-live gold button visible -> opens live-jessi-sheet with title 'Talk about Sarah'. Admin: /admin/mystery-shops/6aa6d7dfb4c41decb2734ec4 -> shop-client-edit -> ClientSheet modal shows client-live-calls-toggle (English US locale). /admin/test-lab shows lab-feature-live_shop_calls with 'Mystery shop calls on GPT-Live' phrase. /admin/voice-lab loads and voice-audition button is disabled (aria-disabled=true) as expected without key. Home renders normally with talk-to-jessi-btn (verified in flow 1). Cleanup: test task deleted; QA Jeep 979a client.live_calls left as false.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_live_shops.py",
+    "/app/backend/tests/test_live_voice.py",
+    "/app/backend/tests/test_live_shops_api_iter333.py",
+    "/app/test_reports/pytest/iter333_live_shops_api.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "shop-clients PUT correctly treats live_calls: null as no-op (Optional None skipped) — confirmed via API; last set value persists.",
+    "live_shops.enabled() + lab flag jessi_live_voice + live_shop_calls both surface OPENAI_API_KEY as the 'needs' string — consistent UX contract in preview.",
+    "LiveJessiProvider delegation contract emits (in order) session.instructions.append + session.thinking.append(delegation_id) + session.commentary.append(delegation_id) + session.thinking.append(null, UI context) — verified via data-channel capture.",
+    "Touchpoints highlight param wires TaskCard highlight=true (gold border, left border 3px) and shows pinned-task-label — clean implementation."
+  ],
+  "updated_files": ["/app/backend/tests/test_live_shops_api_iter333.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "forest@imosapp.com / Admin123! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created transient forest task (title 'QA Jessi reminder', id 6aac2c1e90717e5ab0280d12) used for the task-open flow; deleted after test. QA Jeep 979a live_calls restored to false.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "OPENAI_API_KEY is intentionally empty; use the fake RTCPeerConnection + page.route interception recipe for /api/live-voice/{config,session,{id}/events,{id}/delegate}. Sarah Tester contact id 6aa413008f0d53e3f2261853. English demo client QA Jeep 979a id 6aa6d7dfb4c41decb2734ec4 — leave live_calls=false. Correct Ask button testid is thread-ask-jessi-btn (not thread-ask-btn as in the spec).",
+  "rca of the issue": "n/a — both features work as specified."
+}

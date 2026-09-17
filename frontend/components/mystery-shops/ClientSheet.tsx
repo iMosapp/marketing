@@ -40,7 +40,7 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
       const text_per_month = Object.fromEntries(depts.map(d => [d.key, Number(f.textPer?.[d.key]) || 0]));
       const payload = { name: f.name, industry: f.industry, locale: f.locale, vat_id: f.vat_id || '', brand: f.brand, city: f.city, state: f.state, timezone: f.timezone, contact_name: f.contact_name, contact_email: f.contact_email.trim(), contact_phone: f.contact_phone, contact_title: f.contact_title,
         plan: { per_month, text_per_month, price_monthly: Number(f.price) || 0 }, hours: { start: f.start, end: f.end, days: f.days },
-        vehicles: f.vehicles.split('\n').map((v: string) => v.trim()).filter(Boolean), from_number: f.from_number || '', record_calls: f.record, notes: f.notes, text_scorecards: !!f.text_scorecards, ...(f.live_calls === null || f.live_calls === undefined ? {} : { live_calls: !!f.live_calls }) };
+        vehicles: f.vehicles.split('\n').map((v: string) => v.trim()).filter(Boolean), from_number: f.from_number || '', record_calls: f.record, notes: f.notes, text_scorecards: !!f.text_scorecards, live_calls: f.live_calls === undefined ? null : f.live_calls };
       const res = client ? await api.put(`/shop-clients/${client.id}`, payload) : await api.post('/shop-clients', payload);
       onSaved(res.data); onClose(); showToast(client ? 'Saved' : 'Client added', 'success');
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not save', 'error'); }
@@ -111,10 +111,16 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
         <Switch value={!!f.text_scorecards} onValueChange={(v) => set('text_scorecards', v)} {...tid('client-text-scorecards-toggle')} />
       </View>
       {(f.locale || 'en-US').startsWith('en') && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
-          <Ionicons name="radio" size={18} color={GOLD} />
-          <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>GPT-Live shopper</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>{f.live_calls === null || f.live_calls === undefined ? 'Follows the Test Lab switch. Turn on to try the full-duplex shopper on this client only.' : f.live_calls ? 'Phone shops for this client run on GPT-Live, whatever the Test Lab says.' : 'Phone shops for this client stay on the classic relay, whatever the Test Lab says.'}</Text></View>
-          <Switch value={!!f.live_calls} onValueChange={(v) => set('live_calls', v)} {...tid('client-live-calls-toggle')} />
+        <View style={{ gap: 10, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }} {...tid('client-live-calls')}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Ionicons name="radio" size={18} color={GOLD} />
+            <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>GPT-Live shopper</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>{f.live_calls === null || f.live_calls === undefined ? 'Follows the Test Lab switch. Pick On to try the full-duplex shopper on this client only.' : f.live_calls ? 'Phone shops for this client run on GPT-Live, whatever the Test Lab says.' : 'Phone shops for this client stay on the classic relay, whatever the Test Lab says.'}</Text></View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            <Chip label="Follow Test Lab" small active={f.live_calls === null || f.live_calls === undefined} onPress={() => set('live_calls', null)} colors={colors} testID="client-live-calls-lab" />
+            <Chip label="On" small active={f.live_calls === true} onPress={() => set('live_calls', true)} colors={colors} testID="client-live-calls-on" />
+            <Chip label="Off" small active={f.live_calls === false} onPress={() => set('live_calls', false)} colors={colors} testID="client-live-calls-off" />
+          </View>
         </View>
       )}
       <Field label="NOTES" value={f.notes} onChange={(v: string) => set('notes', v)} colors={colors} multiline placeholder={`Anything the ${ind.customer} should know about this ${ind.business}`} testID="client-notes" />
