@@ -128,7 +128,7 @@ def grader_transcript(s: dict) -> str:
 def _system(script: dict, s: dict) -> str:
     rep_first = (s.get("rep_name") or "the salesperson").split(" ")[0]
     return scr._customer_system(script, s.get("persona") or {}, s.get("store_name") or "the business", rep_first, s.get("curveballs") or [], live=False, direction="inbound",
-                                mystery=True, industry=s.get("industry"), department=s.get("department"), locale=s.get("locale"), channel="email")
+                                mystery=True, industry=s.get("industry"), department=s.get("department"), locale=s.get("locale"), channel="email", covert=bool(s.get("lead_shop_id")))
 
 
 async def opening_email(db, s: dict, client: dict) -> dict:
@@ -158,7 +158,7 @@ async def _send(db, s: dict, subject: str, body: str) -> dict:
     import resend
     resend.api_key = key
     sid = str(s["_id"])
-    payload = {"from": from_address(s), "to": [s["rep_email"]], "reply_to": shop_address(sid), "subject": subject, "text": body,
+    payload = {"from": s.get("lead_from") or from_address(s), "to": [s["rep_email"]], "reply_to": s.get("lead_reply_to") or shop_address(sid), "subject": subject, "text": body,
                "headers": {"X-Entity-Ref-ID": f"shop-{sid}-{len(s.get('turns') or [])}"}}
     try:
         r = await asyncio.to_thread(resend.Emails.send, payload)

@@ -186,6 +186,15 @@ async def incoming_message(
             media_type="application/xml"
         )
 
+    # ── A lead-shop shopper number? The store is texting the AI persona back. ──
+    try:
+        from services.lead_shops import inbound_text as _lead_shop_text
+        if await _lead_shop_text(db, to_phone, from_phone, Body or "", MessageSid, num_media):
+            logger.info(f"[Webhook] Inbound {to_phone} <- {from_phone} handled by lead shop")
+            return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>', media_type="application/xml")
+    except Exception as ls_err:
+        logger.error(f"[Webhook] Lead shop routing failed, falling back: {ls_err}")
+
     # ── A text shop in progress? The rep is answering the AI shopper on the shop number: never route it to a person. ──
     try:
         from services.text_shops import handle_inbound as _shop_text
@@ -194,6 +203,15 @@ async def incoming_message(
             return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>', media_type="application/xml")
     except Exception as shop_err:
         logger.error(f"[Webhook] Text shop routing failed, falling back: {shop_err}")
+
+    # ── The rep answering Jessi's "reply with a photo for your card" text on their own work number ──
+    try:
+        from services.photo_request import handle_inbound as _photo_reply
+        if await _photo_reply(db, to_phone, from_phone, Body or "", media_urls, media_types, MessageSid):
+            logger.info(f"[Webhook] Inbound {to_phone} <- {from_phone} handled as a card photo reply")
+            return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>', media_type="application/xml")
+    except Exception as pr_err:
+        logger.error(f"[Webhook] Photo request routing failed, falling back: {pr_err}")
 
     try:
         # ── Step 0: Shared inbox number? (Sales / Service / BDC line worked by a team) ──
@@ -2035,6 +2053,16 @@ async def handle_inbound_voice(
     from_phone = normalize_phone(From)
 
     logger.info(f"[Voice] Inbound call from {from_phone} to {to_phone} | SID={CallSid}")
+
+    # A lead-shop shopper number: the store is calling the AI persona back, answer in character.
+    try:
+        from services.lead_shops import inbound_call as _lead_shop_call
+        lead_twiml = await _lead_shop_call(db, to_phone, from_phone, CallSid)
+        if lead_twiml:
+            logger.info(f"[Voice] {to_phone} is a lead-shop shopper number, answering in persona")
+            return Response(content=lead_twiml, media_type="application/xml")
+    except Exception as ls_err:
+        logger.error(f"[Voice] lead shop routing failed, falling back: {ls_err}")
 
     # A shop number is a caller ID, never a person: callbacks get a neutral voicemail, no rep cell rings.
     from services.mystery_shops import is_shop_number

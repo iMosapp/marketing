@@ -10,6 +10,7 @@ import { ClientSheet } from '../../../components/mystery-shops/ClientSheet';
 import { DemoShopSheet } from '../../../components/mystery-shops/DemoShopSheet';
 import { ShopNumberSheet, type NumberState } from '../../../components/mystery-shops/ShopNumberSheet';
 import { ImportSheet } from '../../../components/mystery-shops/ImportSheet';
+import { ShopperPoolCard } from '../../../components/mystery-shops/lead-shops/ShopperPoolCard';
 import { Bar, money, scoreColor, fmtPhone, perMonthText, loadIndustries, afterModal, GOLD, GREEN, RED, PURPLE, BLUE, tid, type Client } from '../../../components/mystery-shops/shared';
 
 export default function MysteryShopClients() {
@@ -40,7 +41,7 @@ export default function MysteryShopClients() {
       <ScreenHeader title="Mystery Shop Clients" subtitle={clients ? `${stores} account${stores === 1 ? '' : 's'} · ${money(mrr)}/mo` : undefined} testID="shop-clients-header" right={<HeaderIconButton icon="add-circle" onPress={() => setSheet(true)} testID="shop-clients-add" />} />
       {clients === null ? <ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /> : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60, gap: 12 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={GOLD} />}>
-          <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>Businesses that pay you to phone-shop their people. Jessi calls their cells at random times inside business hours, announces the practice call, and when they press 1 the AI customer comes on. Every call is graded, and the account gets a live report link plus a monthly PDF. Works for any industry: dealerships, brokerages, home services, practices and more.</Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>Businesses that pay you to shop their people. Jessi calls, texts or emails their reps as a practice shop, or drops a covert internet lead into their CRM (Lead Shops) and grades how the whole store responds. Every shop is graded, and the account gets a live report link plus a monthly PDF. Works for any industry: dealerships, brokerages, home services, practices and more.</Text>
           <TouchableOpacity onPress={() => setDemo(true)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: GOLD, borderRadius: 16, padding: 14 }} {...tid('shop-demo')}>
             <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#11111122', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="call" size={20} color="#111" /></View>
             <View style={{ flex: 1 }}>
@@ -65,6 +66,7 @@ export default function MysteryShopClients() {
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
+          <ShopperPoolCard colors={colors} />
           <TouchableOpacity onPress={() => setImportSheet(true)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border }} {...tid('shop-import')}>
             <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: BLUE + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="cloud-upload-outline" size={20} color={BLUE} /></View>
             <View style={{ flex: 1 }}>

@@ -2187,6 +2187,13 @@ def start_scheduler():
         await run_due_calls(get_db())
     scheduler.add_job(safe_job(_shop_calls_due), IntervalTrigger(seconds=120), id="mystery_shop_dialer", replace_existing=True, misfire_grace_time=60)
 
+    # Every minute — lead shops whose window closed, and closing shops whose conversations finished grading
+    async def _lead_shops_sweep():
+        from routers.database import get_db
+        from services.lead_shops import sweep
+        await sweep(get_db())
+    scheduler.add_job(safe_job(_lead_shops_sweep), IntervalTrigger(seconds=60), id="lead_shops_sweep", replace_existing=True, misfire_grace_time=60)
+
     # Every 6 hours — keep every active mystery shop client's month scheduled up to its plan
     async def _shop_plan():
         from routers.database import get_db

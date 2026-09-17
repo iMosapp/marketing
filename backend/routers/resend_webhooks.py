@@ -121,6 +121,14 @@ async def ingest_received_email(db, email: dict, email_id: str) -> dict:
     to_list = email.get("to") or []
     subject = (email.get("subject") or "").strip()
     body = clean_reply(email.get("text") or _strip_html(email.get("html") or ""))
+    # Lead shop: the store (or its CRM) emailed the shopper persona at their own address
+    from services import lead_shops as ls
+    cc_list = email.get("cc") if isinstance(email.get("cc"), list) else []
+    lead_shop = await ls.lead_shop_for_email(db, list(to_list) + cc_list)
+    if lead_shop:
+        await ls.inbound_email(db, lead_shop, from_email, subject, body, email_id)
+        logger.info(f"[ResendInbound] {from_email} -> lead shop {lead_shop['_id']}")
+        return {"status": "lead_shop", "lead_shop_id": str(lead_shop["_id"])}
     # Email mystery shop reply (shop+<session>@): the shopper's thread, never a customer conversation
     from services import email_shops as ems
     shop_sid = ems.session_id_from(list(to_list) + (email.get("cc") if isinstance(email.get("cc"), list) else []))

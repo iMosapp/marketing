@@ -320,6 +320,11 @@ async def finalize(db, sid: str, reason: str) -> Optional[dict]:
     if sum(1 for t in s.get("turns", []) if t.get("role") == "rep") < MIN_REP_TURNS:
         await db[COLL].update_one({"_id": s["_id"]}, {"$set": {"status": "abandoned", "fail_reason": "The call ended before we got going. Tap Call me to try again", "updated_at": _now()}})
         return None
+    try:
+        from services import photo_request
+        await photo_request.ask(db, s)
+    except Exception as e:
+        logger.warning(f"[Interview] photo request text failed: {e}")
     return await build(db, s)
 
 
@@ -336,6 +341,8 @@ async def build(db, s: dict) -> Optional[dict]:
     try:
         from routers.push_notifications import send_push_to_user
         body = "Test run done: see what Jessi learned, nothing was saved yet." if s.get("dry_run") else "Jessi turned your interview into your assistant, bio and card. Take a look."
+        if not s.get("dry_run") and await db.photo_requests.find_one({"session_id": str(s["_id"]), "status": "open"}, {"_id": 1}):
+            body = "Jessi turned your interview into your assistant, bio and card. Reply to her text with a photo to finish the card."
         await send_push_to_user(s["user_id"], "Your VA is ready" if not s.get("dry_run") else "Interview test finished", body, f"/interview/review?session={s['_id']}", "sparkles")
     except Exception as e:
         logger.debug(f"[Interview] push failed: {e}")

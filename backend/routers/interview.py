@@ -57,8 +57,9 @@ async def status(request: Request):
     s = await svc.latest(db, str(me["_id"]))
     user = await db.users.find_one({"_id": ObjectId(str(me["_id"]))}, {"voice_id": 1, "persona": 1, "phone": 1, "persona_interviewed_at": 1})
     phone = (user or {}).get("phone") or ""
+    from services import photo_request
     return {"session": svc.serialize(s), "voice": voice_id.summary(user), "phone": _mask(phone), "can_call": len("".join(c for c in phone if c.isdigit())) >= 10,
-            "available": await lab.visible(db, me, "voice_interview"), "is_super_admin": me.get("role") == "super_admin",
+            "available": await lab.visible(db, me, "voice_interview"), "is_super_admin": me.get("role") == "super_admin", "photo_request": await photo_request.summary(db, str(me["_id"])),
             "persona_filled": _persona_filled(user or {}), "interviewed_at": (user or {}).get("persona_interviewed_at").isoformat() if (user or {}).get("persona_interviewed_at") else None}
 
 

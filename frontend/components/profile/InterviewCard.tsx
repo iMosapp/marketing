@@ -16,6 +16,7 @@ export type InterviewSession = {
 export type InterviewStatus = {
   session: InterviewSession | null; voice: { configured: boolean; status: string; enrolled: boolean; percent?: number | null; at?: string | null; error?: string | null };
   phone: string; can_call: boolean; persona_filled: number; interviewed_at?: string | null; available: boolean; is_super_admin?: boolean;
+  photo_request?: { status: 'open' | 'done' | 'expired'; had_photo: boolean; asked_at?: string | null; photo_saved_at?: string | null; sms_ok: boolean; to_phone?: string } | null;
 };
 
 const ACTIVE = ['dialing', 'live', 'ending', 'building'];
@@ -145,10 +146,18 @@ export function InterviewCard({ compact, dryRun }: { compact?: boolean; dryRun?:
   }
 
   const failed = s && (s.status === 'failed' || s.status === 'abandoned');
+  const pr = data.photo_request;
+  const photoRow = pr && (pr.status === 'open' || pr.status === 'done') && s && s.status === 'completed' ? (
+    <View style={[st.pill, { backgroundColor: pr.status === 'done' ? `${GREEN}18` : `${GOLD}18`, alignSelf: 'stretch' }]} {...tid(pr.status === 'done' ? 'interview-photo-done' : 'interview-photo-hint')}>
+      <Ionicons name={pr.status === 'done' ? 'checkmark-circle' : 'camera'} size={13} color={pr.status === 'done' ? GREEN : GOLD} />
+      <Text style={{ fontSize: 12, fontWeight: '700', color: pr.status === 'done' ? GREEN : GOLD, flex: 1 }}>{pr.status === 'done' ? 'Your card photo came in by text' : pr.sms_ok ? `Check your texts: reply to Jessi with a photo and it goes on your card${pr.had_photo ? ' (replaces the current one)' : ''}` : 'Jessi could not text you for a photo. Add one under My Profile.'}</Text>
+    </View>
+  ) : null;
   return (
     <View style={st.card} {...tid('interview-card')}>
       {header}
       {failed && <Text style={{ fontSize: 12, color: RED, marginTop: 10, lineHeight: 17 }} {...tid('interview-fail-reason')}>{s.fail_reason || 'The call ended early'}</Text>}
+      {photoRow}
       {done && !dryRun && (
         <View style={st.pill} {...tid('interview-voice-pill')}>
           <Ionicons name={data.voice.enrolled ? 'shield-checkmark' : 'shield-outline'} size={13} color={data.voice.enrolled ? GREEN : colors.textSecondary} />

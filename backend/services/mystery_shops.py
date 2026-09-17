@@ -788,6 +788,11 @@ async def run_due_calls(db, limit: int = 3) -> int:
         await ems.sweep(db)
     except Exception as e:
         logger.warning(f"[MysteryShop] email sweep failed: {e}")
+    try:
+        from services.lead_shops import sweep as lead_shop_sweep
+        await lead_shop_sweep(db)
+    except Exception as e:
+        logger.warning(f"[MysteryShop] lead shop sweep failed: {e}")
     due = await db.roleplay_sessions.find({"kind": "mystery_shop", "status": "scheduled", "scheduled_for": {"$lte": now}}).sort("scheduled_for", 1).limit(limit * 3).to_list(limit * 3)
     placed = 0
     for call in due:
@@ -1541,6 +1546,13 @@ async def after_graded(db, sid: str):
     s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)})
     if not s or s.get("kind") != "mystery_shop" or s.get("status") != "completed":
         return
+    if s.get("lead_shop_id"):
+        from services.lead_shops import child_finished
+        try:
+            await child_finished(db, s)
+        except Exception as e:
+            logger.warning(f"[MysteryShop] lead shop follow-up failed for {sid}: {e}")
+        return  # the store never learns it was shopped: no scorecard text, the lead shop reports as a whole
     client = await db.shop_clients.find_one({"_id": _oid(s["client_id"])}) or {}
     ev = await db.call_evaluations.find_one({"_id": ObjectId(s["evaluation_id"])}) if s.get("evaluation_id") and ObjectId.is_valid(str(s["evaluation_id"])) else None
     if not ev:

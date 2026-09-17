@@ -711,16 +711,19 @@ async def save_recording(db, sid: str, recording_url: str, duration: Optional[st
     await db.call_evaluations.update_one({"roleplay_session_id": sid}, {"$set": {"recording_url": sets["recording_url"]}})
 
 
-def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None, locale: Optional[str] = None, channel: str = "call") -> str:
+def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None, locale: Optional[str] = None, channel: str = "call", covert: bool = False) -> str:
     from services import industries as ind
     industry = industry or (ind.industry_of_dept(department) if department else ind.DEFAULT_INDUSTRY)
     pack = ind.get(industry)
     rep_role = ind.dept(department, industry)["rep"] if department else ("a salesperson" if industry == "automotive" else "an employee")
     who = "a real car shopper" if industry == "automotive" else f"a real {pack['customer']} of a {pack['label'].lower()} business"
+    # covert = a lead shop: you sent an inquiry online, the business is following up, and nobody there knows it is a shop
+    lead_ctx = (f"You sent the {pack['business']} an inquiry online (an internet lead) and now THEY are following up with you, so they lead and you react like a real, interested but busy person. "
+                "Nobody at the business knows this is a shop: stay fully in character as a real customer; never admit you are an AI, a bot or a shopper, even if asked directly. ")
     if channel == "email":
         return (f"You are {persona.get('name', 'a customer')}, {who} emailing {rep_first}, {rep_role} at {store_name}. "
-                f"YOU emailed the {pack['business']} first, like a real internet lead who found them online, so you drive what you want. "
-                "Stay fully in character as a real customer: never admit you are an AI, a bot or a shopper, even if asked directly; a real customer would just sound confused and keep going. "
+                + (lead_ctx if covert else f"YOU emailed the {pack['business']} first, like a real internet lead who found them online, so you drive what you want. ")
+                + "Stay fully in character as a real customer: never admit you are an AI, a bot or a shopper, even if asked directly; a real customer would just sound confused and keep going. "
                 "This is an EMAIL thread: write like a real person emails a business from their phone. A one-line greeting, 2 to 5 short sentences, plain words, contractions, then sign off with just your first name. "
                 "No subject line inside the body (the first email's subject goes in the separate subject field), no letter formality, no bullet lists, no emojis. "
                 "Answer what they asked and add at most one or two things. A real email lead takes a few exchanges: price, availability, what is included, a time to come in, your trade, financing. "
@@ -736,8 +739,8 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
                 + f"The employee's script (they may or may not follow it): {script.get('title', '')}: {script.get('purpose', '')}")
     if channel == "text":
         return (f"You are {persona.get('name', 'a customer')}, {who} texting (SMS) with {rep_first}, {rep_role} at {store_name}. "
-                f"YOU texted the {pack['business']} first, like a real lead who found them online, so you drive what you want. "
-                "Stay fully in character as a real customer: never admit you are an AI, a bot or a shopper, even if asked directly; a real customer would just sound confused and keep going. "
+                + (lead_ctx if covert else f"YOU texted the {pack['business']} first, like a real lead who found them online, so you drive what you want. ")
+                + "Stay fully in character as a real customer: never admit you are an AI, a bot or a shopper, even if asked directly; a real customer would just sound confused and keep going. "
                 "This is an SMS thread: write like a real person texts. 1 or 2 short sentences, under 240 characters, casual, contractions, no sign-off, no lists, no emojis unless the rep used one first. "
                 "Answer what they asked and add at most one thing. A real text lead takes several exchanges: price, availability, a time to come in, your trade, hours. "
                 "If a reply took the rep a long time (noted like [replied after 40 min]) you may mention it once, mildly, the way a real person would. "
@@ -751,8 +754,8 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
                   "No em dashes. Return ONLY JSON: {\"say\": \"your text message\", \"ended\": true|false, \"mood\": \"warm|neutral|guarded|annoyed\"}. "
                 + f"The employee's script (they may or may not follow it): {script.get('title', '')}: {script.get('purpose', '')}")
     return (f"You are {persona.get('name', 'a customer')}, {who} on a phone call with {rep_first}, {rep_role} at {store_name}. "
-            + (f"YOU placed this call to the {pack['business']}, so you drive the reason for calling. " if direction == "inbound" else "The employee called YOU, so they drive the conversation and you react. ")
-            + ("The rep was told this is a practice call, but you stay fully in character as a real customer: never admit you are an AI, a recording or a shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery else "")
+            + (lead_ctx if covert else (f"YOU placed this call to the {pack['business']}, so you drive the reason for calling. " if direction == "inbound" else "The employee called YOU, so they drive the conversation and you react. "))
+            + ("The rep was told this is a practice call, but you stay fully in character as a real customer: never admit you are an AI, a recording or a shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery and not covert else "")
             + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "
                "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " + numbers_rule(locale) if live else "")
             + loc.language_rule(locale)
@@ -814,7 +817,7 @@ async def customer_turn(db, session: dict, rep_text: str) -> dict:
     user = f"CALL SO FAR:\n{history}\nREP: {rep_text}\n\n(This is exchange {exchanges}. Reply as the customer." + (" You are out of time: wrap up in one sentence, say goodbye and set ended to true.)" if out_of_time else ")")
     try:
         data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the business", rep_first, session.get("curveballs") or [], live, session.get("direction") or "outbound", session.get("kind") == "mystery_shop",
-                                                session.get("industry"), session.get("department") if session.get("kind") == "mystery_shop" else None, session.get("locale")), user, timeout=45)
+                                                session.get("industry"), session.get("department") if session.get("kind") == "mystery_shop" else None, session.get("locale"), covert=bool(session.get("lead_shop_id"))), user, timeout=45)
     except Exception as e:
         logger.warning(f"[Roleplay] customer turn failed: {e}")
         data = {}

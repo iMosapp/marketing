@@ -112,7 +112,7 @@ def transcript_turns(s: dict) -> list:
 def _system(script: dict, s: dict) -> str:
     rep_first = (s.get("rep_name") or "the salesperson").split(" ")[0]
     return scr._customer_system(script, s.get("persona") or {}, s.get("store_name") or "the business", rep_first, s.get("curveballs") or [], live=False, direction="inbound",
-                                mystery=True, industry=s.get("industry"), department=s.get("department"), locale=s.get("locale"), channel="text")
+                                mystery=True, industry=s.get("industry"), department=s.get("department"), locale=s.get("locale"), channel="text", covert=bool(s.get("lead_shop_id")))
 
 
 async def opening_text(db, s: dict, client: dict) -> str:
