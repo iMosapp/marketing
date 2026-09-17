@@ -16,6 +16,7 @@ from emergentintegrations.llm.openai import OpenAITextToSpeech
 
 from routers.database import get_db
 from utils.text_sanitize import no_em_dash, clean_ai_text
+from services.llm_models import JESSI_CHAT_MODEL
 
 # ─────────────────────────────────────────────────────────
 # Deep knowledge base — covers every feature, screen, flow
@@ -792,7 +793,7 @@ async def chat_with_jessie(user_id: str, user_message: str, current_page: str = 
         api_key=api_key,
         session_id=session["session_id"],
         system_message=system_prompt,
-    ).with_model("openai", "gpt-4o-mini")
+    ).with_model(*JESSI_CHAT_MODEL)
 
     # Save user message
     await save_message(user_id, "user", user_message)

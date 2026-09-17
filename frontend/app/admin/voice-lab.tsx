@@ -129,7 +129,7 @@ export default function VoiceLab() {
               {saving ? <ActivityIndicator color={GREEN} /> : <Text style={{ color: dirty ? GREEN : colors.textSecondary, fontWeight: '800', fontSize: 15 }}>{dirty ? 'Save for everyone' : 'Saved'}</Text>}
             </TouchableOpacity>
           </View>
-          {!liveSupported() && <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 }} {...tid('voice-web-only')}>{Platform.OS === 'web' ? 'This browser has no microphone access.' : 'Auditions run in the web app (Safari or Chrome) for now.'}</Text>}
+          {!liveSupported() && <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 }} {...tid('voice-web-only')}>{Platform.OS === 'web' ? 'This browser has no microphone access.' : 'Update the app from the App Store to audition her here.'}</Text>}
           {saved?.updated_at && <Text style={{ fontSize: 11, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 }} {...tid('voice-saved-at')}>Saved {new Date(saved.updated_at).toLocaleString()}{saved.updated_by ? ` by ${saved.updated_by}` : ''}</Text>}
 
           <View style={card}>

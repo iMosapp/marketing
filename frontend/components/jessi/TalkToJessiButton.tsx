@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
 import { showAlert } from '../../services/alert';
 import { GOLD, tid } from '../scripts/shared';
-import { liveSupported } from '../../hooks/useLiveJessi';
+import { liveSupported, LIVE_UNSUPPORTED_TITLE, LIVE_UNSUPPORTED_BODY } from '../../hooks/useLiveJessi';
 import { useLiveJessiLauncher } from './LiveJessiProvider';
 import { useLiveConfig } from './useLiveConfig';
 
@@ -21,7 +21,7 @@ export const TalkToJessiButton = () => {
   const press = () => {
     if (!config.configured) { router.push('/admin/voice-lab' as any); return; }
     if (!liveSupported()) {
-      showAlert('Live Jessi is on the web app for now', 'Open app.imonsocial.com in Safari or Chrome to talk to her live. Opening the current Ask Jessi instead.', [{ text: 'OK', onPress: () => router.push('/jessie' as any) }]);
+      showAlert(LIVE_UNSUPPORTED_TITLE, `${LIVE_UNSUPPORTED_BODY} Opening the typed Ask Jessi instead.`, [{ text: 'OK', onPress: () => router.push('/jessie' as any) }]);
       return;
     }
     jessi.open({ options: { mode: 'assistant' }, onClose: reload });

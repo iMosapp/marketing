@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import api from '../services/api';
+import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, nativeRtcMissing } from './liveRtc';
 
 export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
@@ -23,10 +24,15 @@ export const openLabel = (t: OpenTarget) => {
   return 'Opened Home';
 };
 
-export const liveSupported = () =>
-  Platform.OS === 'web' && typeof window !== 'undefined' && !!(window as any).RTCPeerConnection && !!(navigator as any)?.mediaDevices?.getUserMedia;
+// Web: any browser with WebRTC + a mic. Native: only binaries built with react-native-webrtc (older App Store builds get false).
+export const liveSupported = () => !!getRtc();
+export const liveNeedsAppUpdate = () => Platform.OS !== 'web' && nativeRtcMissing;
+export const LIVE_UNSUPPORTED_TITLE = Platform.OS === 'web' ? 'This browser cannot do live voice' : 'Update the app to talk to Jessi here';
+export const LIVE_UNSUPPORTED_BODY = Platform.OS === 'web'
+  ? 'Live Jessi needs a browser with a microphone (Chrome, Safari or Edge).'
+  : 'This version of the app was built before live voice. Update I\'m On Social from the App Store, or open app.imonsocial.com in Safari to talk to her now.';
 
-// One live GPT-Live-1 conversation: browser WebRTC for audio, data channel for events, our backend for every fact.
+// One live GPT-Live-1 conversation: WebRTC for audio (browser or react-native-webrtc), data channel for events, our backend for every fact.
 // `onOpen` fires when the backend wants something on the rep's screen (a contact, a thread, a task).
 export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void } = {}) {
   const [state, setState] = useState<LiveState>('idle');
@@ -40,10 +46,10 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   const onOpenRef = useRef(handlers.onOpen);
   onOpenRef.current = handlers.onOpen;
 
-  const pc = useRef<RTCPeerConnection | null>(null);
-  const dc = useRef<RTCDataChannel | null>(null);
-  const mic = useRef<MediaStream | null>(null);
-  const audioEl = useRef<HTMLAudioElement | null>(null);
+  const pc = useRef<any>(null);
+  const dc = useRef<any>(null);
+  const mic = useRef<any>(null);
+  const detachAudio = useRef<(() => void) | null>(null);
   const liveId = useRef('');
   const rowsRef = useRef<CaptionRow[]>([]);
   const queue = useRef<any[]>([]);
@@ -71,13 +77,15 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
 
   const cleanup = useCallback(() => {
     [flushTimer, idleTimer, tick, closeTimer, startTimer].forEach(t => { if (t.current) { clearTimeout(t.current); clearInterval(t.current); t.current = null; } });
-    mic.current?.getTracks().forEach(t => t.stop());
+    mic.current?.getTracks().forEach((t: any) => t.stop());
     mic.current = null;
     try { dc.current?.close(); } catch { /* noop */ }
     try { pc.current?.close(); } catch { /* noop */ }
     dc.current = null;
     pc.current = null;
-    if (audioEl.current) { audioEl.current.srcObject = null; audioEl.current.remove(); audioEl.current = null; }
+    detachAudio.current?.();
+    detachAudio.current = null;
+    stopAudioSession();
   }, []);
 
   const queueRow = (row: CaptionRow) => queue.current.push({ type: 'transcript', role: row.role, text: row.text, start_ms: row.start_ms, end_ms: row.end_ms });
@@ -193,7 +201,8 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   };
 
   const start = useCallback(async (opts: LiveOptions) => {
-    if (!liveSupported()) { setError('Live Jessi needs a browser with a microphone (Chrome, Safari or Edge).'); setState('error'); return; }
+    const rtc = getRtc();
+    if (!rtc) { setError(LIVE_UNSUPPORTED_BODY); setState('error'); return; }
     finalized.current = false;
     rowsRef.current = [];
     queue.current = [];
@@ -201,22 +210,15 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     liveId.current = '';
     setRows([]); setError(''); setSeconds(0); setWorking(''); setCloseReason(''); setState('connecting');
     try {
-      const connection = new RTCPeerConnection();
+      startAudioSession();
+      const connection = new rtc.PeerConnection();
       pc.current = connection;
-      const audio = document.createElement('audio');
-      audio.autoplay = true;
-      audio.style.display = 'none';
-      document.body.appendChild(audio);
-      audioEl.current = audio;
-      connection.addEventListener('track', (e: any) => {
-        audio.srcObject = e.streams?.[0] || new MediaStream([e.track]);
-        audio.play().catch(() => { /* autoplay blocked: user already tapped, so this rarely fires */ });
-      });
-      mic.current = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } as any });
-      mic.current.getAudioTracks().forEach(t => connection.addTrack(t, mic.current as MediaStream));
+      detachAudio.current = attachRemoteAudio(connection);
+      mic.current = await rtc.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } as any });
+      mic.current.getAudioTracks().forEach((t: any) => connection.addTrack(t, mic.current));
       const channel = connection.createDataChannel('oai-events');
       dc.current = channel;
-      channel.addEventListener('message', (e: any) => onMessage(e.data));
+      channel.addEventListener('message', (e: any) => onMessage(typeof e.data === 'string' ? e.data : String(e.data ?? '')));
       channel.addEventListener('close', () => { if (!finalized.current) finish('connection_lost'); });
       connection.addEventListener('connectionstatechange', () => {
         if (['failed', 'disconnected'].includes(connection.connectionState) && !finalized.current) finish('connection_lost');
@@ -245,7 +247,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       capRef.current = r.data.cap_left_s ?? null;
       setCapLeft(capRef.current);
       setVoice(r.data.voice || '');
-      await connection.setRemoteDescription({ type: 'answer', sdp: r.data.sdp });
+      await connection.setRemoteDescription(rtc.answer(r.data.sdp));
       startTimer.current = setTimeout(() => { if (!finalized.current) { setError('Jessi did not pick up. Try again.'); setState('error'); finish('no_start'); } }, 20000);
     } catch (e: any) {
       const detail = e?.response?.data?.detail || e?.message || 'Could not start the conversation';

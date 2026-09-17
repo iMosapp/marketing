@@ -8,7 +8,7 @@ import { useToast } from '../common/Toast';
 import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { AnswerText, type Citation } from './AnswerText';
 import { showAlert } from '../../services/alert';
-import { liveSupported } from '../../hooks/useLiveJessi';
+import { liveSupported, LIVE_UNSUPPORTED_TITLE, LIVE_UNSUPPORTED_BODY } from '../../hooks/useLiveJessi';
 import { useLiveJessiLauncher } from '../jessi/LiveJessiProvider';
 import { useLiveConfig } from '../jessi/useLiveConfig';
 
@@ -37,7 +37,7 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
   const { config: liveCfg } = useLiveConfig();
   const canTalk = !!liveCfg?.available && !!liveCfg?.configured;
   const talk = () => {
-    if (!liveSupported()) { showAlert('Live Jessi is on the web app for now', 'Open app.imonsocial.com in Safari or Chrome to talk to her about this customer. Type your question below in the meantime.'); return; }
+    if (!liveSupported()) { showAlert(LIVE_UNSUPPORTED_TITLE, `${LIVE_UNSUPPORTED_BODY} Type your question below in the meantime.`); return; }
     onClose();
     jessi.open({ options: { mode: 'assistant', contactId }, title: `Talk about ${ov?.contact.first_name || 'this customer'}` });
   };

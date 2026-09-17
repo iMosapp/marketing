@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
 import { GOLD, GREEN, tid } from '../scripts/shared';
-import { liveSupported } from '../../hooks/useLiveJessi';
+import { liveSupported, LIVE_UNSUPPORTED_TITLE } from '../../hooks/useLiveJessi';
 import { useLiveJessiLauncher } from './LiveJessiProvider';
 import { useLiveConfig } from './useLiveConfig';
 
@@ -25,7 +25,7 @@ export const VoiceLabCard = () => {
   return (
     <View style={{ gap: 8 }} {...tid('voice-lab-card')}>
       <Tile icon="options" color={GOLD} title="Jessi Voice Lab" sub={config ? `Voice: ${config.voice}. Pick her voice, energy and pacing, audition her` : 'Pick her voice, energy and pacing'} onPress={() => router.push('/admin/voice-lab' as any)} testID="voice-lab-open" />
-      <Tile icon="mic" color={GREEN} title="Talk to Jessi now" sub={ready ? (liveSupported() ? 'Live conversation with the saved settings' : 'Web browser only for now') : 'Waiting for OPENAI_API_KEY on the server'} onPress={() => jessi.open({ options: { mode: 'assistant' }, onClose: reload })} testID="voice-lab-talk" disabled={!ready || !liveSupported()} />
+      <Tile icon="mic" color={GREEN} title="Talk to Jessi now" sub={ready ? (liveSupported() ? 'Live conversation with the saved settings' : LIVE_UNSUPPORTED_TITLE) : 'Waiting for OPENAI_API_KEY on the server'} onPress={() => jessi.open({ options: { mode: 'assistant' }, onClose: reload })} testID="voice-lab-talk" disabled={!ready || !liveSupported()} />
     </View>
   );
 };

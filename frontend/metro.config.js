@@ -28,4 +28,11 @@ config.resolver = {
 
 config.maxWorkers = 2;
 
+// react-native-webrtc imports "event-target-shim/index", which the package's exports map (v6) does not list.
+const baseResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  const name = moduleName === 'event-target-shim/index' ? 'event-target-shim' : moduleName;
+  return baseResolveRequest ? baseResolveRequest(context, name, platform) : context.resolveRequest(context, name, platform);
+};
+
 module.exports = config;

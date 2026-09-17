@@ -28,11 +28,13 @@
       "bundleIdentifier": "com.imonsocial.app",
       "buildNumber": "1",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "NSCameraUsageDescription": "I'm On Social uses your camera to take delivery photos with customers, capture profile photos, and create personalized congratulations cards. Photos are stored securely and used only for the contact records and cards you create.",
         "NSPhotoLibraryUsageDescription": "I'm On Social accesses your photo library so you can attach delivery photos to customer records, upload your profile picture, and add images to congratulations cards sent to customers.",
         "NSContactsUsageDescription": "I'm On Social imports your phone contacts so you can quickly add existing clients to your contact database, find customers by name or number, and start building relationships. Contact names, phone numbers, and emails are stored securely on our servers and used only for your relationship management activities.",
-        "NSMicrophoneUsageDescription": "I'm On Social uses your microphone to record voice notes attached to customer records and to capture voice memos about sales interactions. Recordings are stored on our secure servers and associated only with the contact record you specify.",
+        "NSMicrophoneUsageDescription": "I'm On Social uses your microphone to record voice notes attached to customer records, capture voice memos about sales interactions, and talk with Jessi, your live voice assistant, in real time. Recordings are stored on our secure servers and associated only with the contact record you specify.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false,
           "NSExceptionDomains": {
@@ -119,7 +121,14 @@
       ],
       "@react-native-community/datetimepicker",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "I'm On Social uses your camera to take delivery photos with customers, capture profile photos, and create personalized congratulations cards. Photos are stored securely and used only for the contact records and cards you create.",
+          "microphonePermission": "I'm On Social uses your microphone to record voice notes attached to customer records, capture voice memos about sales interactions, and talk with Jessi, your live voice assistant, in real time. Recordings are stored on our secure servers and associated only with the contact record you specify."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
