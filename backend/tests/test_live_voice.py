@@ -182,3 +182,56 @@ async def test_events_and_admin_api(forest_h, tester_h):
         requests.put(f"{BASE}/api/live-voice/admin/config", headers=forest_h, json={k: before[k] for k in lv.DEFAULTS}, timeout=30)
     finally:
         await db[lv.COLL].delete_one({"live_id": live["live_id"]})
+
+
+async def test_focus_contact_from_ask_button(monkeypatch):
+    """Opened from Sarah Tester's thread: pronouns and name-less requests resolve to her, other names still search."""
+    db = get_db()
+    user = await _tester(db)
+    sarah = "6aa413008f0d53e3f2261853"
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-fake")
+    captured = {}
+
+    class FakeResp:
+        status_code = 201
+        text = ""
+
+        def json(self):
+            return {"session": {"id": "live_focus"}, "transport": {"type": "webrtc", "sdp": "v=0 answer"}}
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, json=None, headers=None):
+            captured.update(json)
+            return FakeResp()
+
+    monkeypatch.setattr(lv.httpx, "AsyncClient", FakeClient)
+    out = await lv.create_session(db, user, "assistant", "v=0 offer", None, sarah)
+    live = await lv.get_live(db, out["live_id"])
+    try:
+        assert out["contact_name"] == "Sarah Tester" and "Sarah" in out["greeting"]
+        assert "Sarah Tester is the person in focus" in captured["session"]["instructions"]
+        assert "Sarah Tester's conversation" in captured["session"]["input"][0]["content"][0]["text"]
+        assert live["contact_id"] == sarah and live["contact_name"] == "Sarah Tester"
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "What do we know about her?"}], "f1")
+        assert r["tool"] in ("recall_person", "find_person") and r["content"]
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "Text her that the paperwork is ready."}], "f2")
+        assert r["tool"] == "send_text" and r["pending"]
+        live = await lv.get_live(db, live["live_id"])
+        assert live["pending"]["contact_id"] == sarah
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "Never mind. Pull up Mike Tester instead."}], "f3")
+        assert "Mike" in r["content"]
+        # unknown contact id -> plain session, no focus
+        out2 = await lv.create_session(db, user, "assistant", "v=0 offer", None, "000000000000000000000000")
+        assert out2["contact_name"] is None and "Home screen" in captured["session"]["input"][0]["content"][0]["text"]
+        await db[lv.COLL].delete_one({"live_id": out2["live_id"]})
+    finally:
+        await db[lv.COLL].delete_one({"live_id": out["live_id"]})

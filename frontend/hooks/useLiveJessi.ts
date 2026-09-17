@@ -4,7 +4,7 @@ import api from '../services/api';
 
 export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
-export type LiveOptions = { mode: 'assistant' | 'lab'; overrides?: Record<string, any> };
+export type LiveOptions = { mode: 'assistant' | 'lab'; overrides?: Record<string, any>; contactId?: string };
 
 const TOOL_LABELS: Record<string, string> = {
   who_today: 'Pulled up your people for today', find_person: 'Looked them up', recall_person: 'Read their history', send_text: 'Text ready to send',
@@ -218,7 +218,7 @@ export function useLiveJessi() {
       }
       const sdp = connection.localDescription?.sdp;
       if (!sdp) throw new Error('Missing local SDP offer');
-      const r = await api.post('/live-voice/session', { mode: opts.mode, sdp, overrides: opts.overrides || null }, { timeout: 40000 });
+      const r = await api.post('/live-voice/session', { mode: opts.mode, sdp, overrides: opts.overrides || null, contact_id: opts.contactId || null }, { timeout: 40000 });
       liveId.current = r.data.live_id;
       greeting.current = r.data.greeting || 'Hey, it is Jessi.';
       idleCloseS.current = Number(r.data.idle_close_s || 25);

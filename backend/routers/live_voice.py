@@ -19,6 +19,7 @@ class SessionBody(BaseModel):
     mode: str = "assistant"
     sdp: str
     overrides: Optional[dict] = None
+    contact_id: Optional[str] = None
 
 
 class DelegateBody(BaseModel):
@@ -39,6 +40,7 @@ class ConfigBody(BaseModel):
     daily_cap_min: Optional[int] = None
     idle_close_s: Optional[int] = None
     greeting: Optional[str] = None
+    contact_greeting: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -85,7 +87,7 @@ async def start_session(body: SessionBody, request: Request):
     if not body.sdp.strip():
         raise HTTPException(status_code=400, detail="An SDP offer is required")
     try:
-        return await lv.create_session(db, me, body.mode, body.sdp, body.overrides)
+        return await lv.create_session(db, me, body.mode, body.sdp, body.overrides, body.contact_id)
     except lv.LiveUnavailable as e:
         raise HTTPException(status_code=503, detail=str(e))
     except lv.LiveCapReached as e:

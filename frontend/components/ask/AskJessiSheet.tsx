@@ -7,6 +7,10 @@ import { useThemeStore } from '../../store/themeStore';
 import { useToast } from '../common/Toast';
 import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { AnswerText, type Citation } from './AnswerText';
+import { showAlert } from '../../services/alert';
+import { liveSupported } from '../../hooks/useLiveJessi';
+import { LiveJessiSheet } from '../jessi/LiveJessiSheet';
+import { useLiveConfig } from '../jessi/useLiveConfig';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -29,6 +33,13 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
   const [showHistory, setShowHistory] = useState(false);
   const [drafting, setDrafting] = useState<string | null>(null);
   const [draftPreview, setDraftPreview] = useState<{ text: string; conversation_id: string | null } | null>(null);
+  const [live, setLive] = useState(false);
+  const { config: liveCfg } = useLiveConfig();
+  const canTalk = !!liveCfg?.available && !!liveCfg?.configured;
+  const talk = () => {
+    if (!liveSupported()) { showAlert('Live Jessi is on the web app for now', 'Open app.imonsocial.com in Safari or Chrome to talk to her about this customer. Type your question below in the meantime.'); return; }
+    setLive(true);
+  };
   const scrollRef = useRef<ScrollView>(null);
   const seekRef = useRef<((ms: number) => void) | null>(null);
 
@@ -119,6 +130,11 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
                 <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }} numberOfLines={1} {...tid('ask-title')}>Ask Jessi about {first}</Text>
                 {st && <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('ask-stats')}>{st.texts} texts · {st.calls} call{st.calls === 1 ? '' : 's'} · {st.voice_notes} voice note{st.voice_notes === 1 ? '' : 's'}{st.conversations ? ` · ${st.conversations} recorded` : ''}{st.events ? ` · ${st.events} events` : ''}</Text>}
               </View>
+              {canTalk && (
+                <TouchableOpacity onPress={talk} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 16, backgroundColor: GOLD }} {...tid('ask-talk-live')}>
+                  <Ionicons name="mic" size={15} color="#111" /><Text style={{ fontSize: 12.5, fontWeight: '800', color: '#111' }}>Talk</Text>
+                </TouchableOpacity>
+              )}
               {(ov?.sessions?.length || 0) > 0 && (
                 <TouchableOpacity onPress={() => setShowHistory(h => !h)} hitSlop={8} style={{ padding: 6 }} {...tid('ask-history')}><Ionicons name="time-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>
               )}
@@ -147,6 +163,16 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
                   <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>
                     I've read every text, call transcript and voice note with {first}. Ask me anything about the relationship and I'll point you to the exact moment.
                   </Text>
+                  {canTalk && (
+                    <TouchableOpacity onPress={talk} style={{ backgroundColor: GOLD, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid('ask-talk-live-starter')}>
+                      <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="mic" size={15} color={GOLD} /></View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>Talk it through with Jessi</Text>
+                        <Text style={{ fontSize: 11.5, color: '#111', opacity: 0.75 }}>Live voice. She already knows this is {first}.</Text>
+                      </View>
+                      <Ionicons name="arrow-forward" size={14} color="#111" />
+                    </TouchableOpacity>
+                  )}
                   {ov.starters.map(s0 => (
                     <TouchableOpacity key={s0} onPress={() => ask(s0)} style={{ backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid('ask-starter')}>
                       <Ionicons name="sparkles-outline" size={15} color={GOLD} />
@@ -226,6 +252,7 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
           </View>
         </KeyboardAvoidingView>
       </View>
+      <LiveJessiSheet visible={live} onClose={() => setLive(false)} options={{ mode: 'assistant', contactId }} title={`Talk about ${first}`} />
     </Modal>
   );
 };

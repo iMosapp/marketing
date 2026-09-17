@@ -46,7 +46,7 @@ VOICES = [
 ]
 VOICE_IDS = {v["id"] for v in VOICES}
 DEFAULTS = {"voice": "gleam", "energy": 4, "pacing": 4, "playful": 3, "brevity": 4, "daily_cap_min": 15, "idle_close_s": 25,
-            "greeting": "Hey {first}, it's Jessi. Who are we talking about today?", "notes": ""}
+            "greeting": "Hey {first}, it's Jessi. Who are we talking about today?", "contact_greeting": "Hey {first}. {contact} is up. What do you want to know?", "notes": ""}
 SLIDERS = ("energy", "pacing", "playful", "brevity")
 ENERGY = {1: "calm and steady", 2: "relaxed and easy", 3: "warm and engaged", 4: "upbeat and energetic", 5: "high-energy and lively"}
 PACING = {1: "slow and unhurried", 2: "measured", 3: "a natural pace", 4: "quick-moving, no dead air", 5: "fast and clipped"}
@@ -107,6 +107,8 @@ def clean_config(patch: dict, base: Optional[dict] = None) -> dict:
             pass
     if isinstance(patch.get("greeting"), str):
         cfg["greeting"] = patch["greeting"].strip()[:220] or DEFAULTS["greeting"]
+    if isinstance(patch.get("contact_greeting"), str):
+        cfg["contact_greeting"] = patch["contact_greeting"].strip()[:220] or DEFAULTS["contact_greeting"]
     if isinstance(patch.get("notes"), str):
         cfg["notes"] = patch["notes"].strip()[:600]
     return cfg
@@ -144,8 +146,16 @@ def rep_line(user: dict) -> str:
     return f"You are talking with {first}{f', {role}' if role else ''}{f' at {org}' if org else ''}. Use their first name now and then, not every sentence."
 
 
-def assistant_instructions(cfg: dict, user: dict, language: str = "English") -> str:
-    return (personality(cfg) + "\n" + rep_line(user) + f"\nSpeak {language} unless the rep switches.\n\n"
+def focus_line(contact: Optional[dict]) -> str:
+    if not contact:
+        return ""
+    name = _first_last(contact)
+    return (f"\nThe rep opened you from {name}'s record, so {name} is the person in focus: 'he', 'she', 'they', 'this customer' or 'this person' means {name} "
+            f"unless the rep clearly names someone else. Anything about {name} (history, texting them, a reminder) goes to the backend.\n")
+
+
+def assistant_instructions(cfg: dict, user: dict, language: str = "English", contact: Optional[dict] = None) -> str:
+    return (personality(cfg) + "\n" + rep_line(user) + focus_line(contact) + f"\nSpeak {language} unless the rep switches.\n\n"
             "Backchannel policy: Use moderate backchannels. Acknowledge naturally without competing with the main response.\n\n"
             "Interruption policy: Stop speaking when the rep interrupts. Listen to what they say.\n\n"
             "Delegation policy:\n"
@@ -168,15 +178,48 @@ def assistant_instructions(cfg: dict, user: dict, language: str = "English") -> 
             "While the backend works, keep it short: a quick 'one sec, pulling that up' is plenty.")
 
 
-def lab_instructions(cfg: dict, user: dict) -> str:
-    return (assistant_instructions(cfg, user) +
+def lab_instructions(cfg: dict, user: dict, contact: Optional[dict] = None) -> str:
+    return (assistant_instructions(cfg, user, contact=contact) +
             f"\n\nThis is an audition in the Jessi Voice Lab: {(user.get('name') or 'the admin').split(' ')[0]} is choosing your voice and energy. "
             "Say hello first, mention one thing you can do in a single sentence, then behave exactly as you would with a rep.")
 
 
-def greeting_text(cfg: dict, user: dict) -> str:
+def greeting_text(cfg: dict, user: dict, contact: Optional[dict] = None) -> str:
     first = (user.get("name") or "").split(" ")[0] or "there"
+    if contact:
+        return (cfg.get("contact_greeting") or DEFAULTS["contact_greeting"]).replace("{first}", first).replace("{contact}", contact.get("first_name") or _first_last(contact))
     return (cfg.get("greeting") or DEFAULTS["greeting"]).replace("{first}", first)
+
+
+async def focus_contact(db, user: dict, contact_id: Optional[str]) -> Optional[dict]:
+    """The contact the rep opened Jessi from: theirs, or one they can see through a shared inbox / team."""
+    if not contact_id or not ObjectId.is_valid(str(contact_id)):
+        return None
+    c = await db.contacts.find_one({"_id": ObjectId(str(contact_id))})
+    if not c:
+        return None
+    if c.get("user_id") == str(user["_id"]) or user.get("role") in ("super_admin", "admin", "org_admin", "store_manager", "manager"):
+        return c
+    shared = await db.conversations.find_one({"contact_id": str(c["_id"]), "$or": [{"user_id": str(user["_id"])}, {"assigned_user_id": str(user["_id"])}]}, {"_id": 1})
+    return c if shared else None
+
+
+async def focus_brief(db, contact: dict) -> str:
+    """A few plain lines about the focus contact so GPT-Live can follow the conversation; facts still come from the backend."""
+    from services.contact_ask import build_record
+    try:
+        rec = await build_record(db, contact)
+    except Exception:
+        rec = {}
+    bits = [f"Contact in focus: {_first_last(contact)}."]
+    if contact.get("vehicle"):
+        bits.append(f"Vehicle: {contact['vehicle']}.")
+    if contact.get("tags"):
+        bits.append("Tags: " + ", ".join(str(t) for t in contact["tags"][:6]) + ".")
+    profile = (rec.get("profile") or "").strip()
+    if profile:
+        bits.append(profile[:700])
+    return " ".join(bits)[:1200]
 
 
 # ── usage / cap ───────────────────────────────────────────────────────────────
@@ -195,7 +238,7 @@ async def usage_summary(db, user_id: str, cfg: dict) -> dict:
 
 
 # ── session creation ──────────────────────────────────────────────────────────
-async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optional[dict] = None) -> dict:
+async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optional[dict] = None, contact_id: Optional[str] = None) -> dict:
     reason = configured()
     if reason:
         raise LiveUnavailable(reason)
@@ -215,11 +258,13 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
     usage = await usage_summary(db, uid, cfg)
     if mode == "assistant" and usage["left_s"] <= 0:
         raise LiveCapReached(f"You have used today's {cfg['daily_cap_min']} minutes of live Jessi. It resets at midnight.")
-    instructions = lab_instructions(cfg, user) if mode == "lab" else assistant_instructions(cfg, user)
+    contact = await focus_contact(db, user, contact_id)
+    instructions = lab_instructions(cfg, user, contact) if mode == "lab" else assistant_instructions(cfg, user, contact=contact)
     tz = await _tz(user)
     now_local = _now().astimezone(tz).strftime("%A %B %d, %Y, %-I:%M %p")
+    where = f"Their app is open on {_first_last(contact)}'s conversation. {await focus_brief(db, contact)}" if contact else "Their app is open on the Home screen."
     session = {"model": MODEL, "instructions": instructions, "audio": {"output": {"voice": cfg["voice"]}}, "delegation": {"type": "client"},
-               "input": [{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": f"Right now it is {now_local} for the rep. Their app is open on the Home screen."}]}]}
+               "input": [{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": f"Right now it is {now_local} for the rep. {where}"}]}]}
     body = {"session": session, "transport": {"type": "webrtc", "sdp": sdp}}
     headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY'].strip()}", "Content-Type": "application/json", "OpenAI-Safety-Identifier": f"imos-{uid[-8:]}"}
     try:
@@ -237,11 +282,13 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
     data = resp.json()
     live_id = uuid.uuid4().hex[:12]
     doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "mode": mode, "openai_session_id": (data.get("session") or {}).get("id"), "voice": cfg["voice"],
+           "contact_id": str(contact["_id"]) if contact else None, "contact_name": _first_last(contact) if contact else None,
            "config": {k: cfg[k] for k in DEFAULTS}, "status": "open", "started_at": _now(), "ended_at": None, "seconds": 0, "cost_usd": 0.0, "close_reason": None,
            "transcript": [], "delegations": [], "pending": None, "created_at": _now(), "updated_at": _now()}
     await db[COLL].insert_one(doc)
     logger.info(f"[Live] {mode} session {live_id} for {uid} voice={cfg['voice']}")
-    return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": (data.get("transport") or {}).get("sdp"), "greeting": greeting_text(cfg, user),
+    return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": (data.get("transport") or {}).get("sdp"), "greeting": greeting_text(cfg, user, contact),
+            "contact_name": _first_last(contact) if contact else None,
             "idle_close_s": cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": cfg["voice"]}
 
 
@@ -273,7 +320,7 @@ async def record_events(db, live: dict, events: list) -> dict:
 
 
 def serialize(s: dict, full: bool = False) -> dict:
-    out = {"live_id": s.get("live_id"), "user_id": s.get("user_id"), "user_name": s.get("user_name"), "mode": s.get("mode"), "voice": s.get("voice"), "status": s.get("status"),
+    out = {"live_id": s.get("live_id"), "user_id": s.get("user_id"), "user_name": s.get("user_name"), "mode": s.get("mode"), "voice": s.get("voice"), "status": s.get("status"), "contact_name": s.get("contact_name"),
            "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
            "seconds": int(s.get("seconds") or 0), "cost_usd": round(float(s.get("cost_usd") or 0), 4), "close_reason": s.get("close_reason"),
            "turns": len(s.get("transcript") or []), "delegations": len(s.get("delegations") or []), "tools": [d.get("tool") for d in (s.get("delegations") or [])]}
@@ -299,7 +346,7 @@ Tools:
 - cancel: the rep said no / hold on / never mind to a PENDING action. args: {}
 - answer: anything else (how the app works, small talk that needs facts, their numbers). args: {"say": "<the answer in at most 60 spoken words>"}
 
-Rules: if a person's name is unclear, still pick the tool with your best reading of the name. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
+Rules: if a person's name is unclear, still pick the tool with your best reading of the name. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
 
 
 def _first_last(c: dict) -> str:
@@ -331,8 +378,18 @@ def _match_line(c: dict) -> str:
     return ", ".join(bits)
 
 
-async def _resolve(db, user_id: str, name: str):
-    """One contact, or a spoken disambiguation string."""
+def _same_person(contact: dict, name: str) -> bool:
+    n = (name or "").strip().lower()
+    if not n:
+        return True
+    first = (contact.get("first_name") or "").strip().lower()
+    return n == _first_last(contact).lower() or (bool(first) and n.split()[0] == first)
+
+
+async def _resolve(db, user_id: str, name: str, focus: Optional[dict] = None):
+    """One contact, or a spoken disambiguation string. The focus contact wins whenever the spoken name fits them."""
+    if focus and _same_person(focus, name):
+        return focus, None
     rows = await _find(db, user_id, name)
     if not rows:
         return None, f"I could not find anyone named {name} in your contacts. Want me to try a different spelling?"
@@ -356,8 +413,8 @@ async def _who_today(db, user: dict) -> str:
     return "Your three for today. " + " ".join(lines) + " Want me to pull anyone up or text one of them?"
 
 
-async def _recall(db, user: dict, name: str) -> str:
-    contact, err = await _resolve(db, str(user["_id"]), name)
+async def _recall(db, user: dict, name: str, focus: Optional[dict] = None) -> str:
+    contact, err = await _resolve(db, str(user["_id"]), name, focus)
     if err:
         return err
     from services.contact_ask import build_record
@@ -392,12 +449,12 @@ async def _send_now(db, user: dict, pending: dict) -> str:
     return f"Sent to {pending['name']}." if ok else f"That text did not go out: {str((r or {}).get('error') or 'unknown error')[:140]}"
 
 
-async def _reminder(db, user: dict, args: dict) -> str:
+async def _reminder(db, user: dict, args: dict, focus: Optional[dict] = None) -> str:
     from routers.tasks import create_task
     name = (args.get("name") or "").strip()
     contact = None
-    if name:
-        contact, err = await _resolve(db, str(user["_id"]), name)
+    if name or focus:
+        contact, err = await _resolve(db, str(user["_id"]), name, focus)
         if err:
             return err
     when = None
@@ -443,11 +500,13 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
     t0 = _now()
     convo = "\n".join(f"{'JESSI' if t.get('role') == 'assistant' else 'REP'}: {str(t.get('text', ''))[:400]}" for t in (transcript or [])[-16:])
     pending = live.get("pending")
+    focus = await focus_contact(db, user, live.get("contact_id")) if live.get("contact_id") else None
+    focus_txt = f"FOCUS CONTACT: {_first_last(focus)} (the rep opened Jessi from this person's record)" if focus else "FOCUS CONTACT: none"
     tz = await _tz(user)
     tz_line = f"NOW (rep's local time, {getattr(tz, 'key', 'UTC')}): {_now().astimezone(tz).strftime('%A %Y-%m-%d %H:%M')}. Return when_iso in this local time without a Z suffix."
     plan = {}
     try:
-        plan = await _llm_json(BRAIN_SYSTEM, f"{tz_line}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
+        plan = await _llm_json(BRAIN_SYSTEM, f"{tz_line}\n{focus_txt}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
     except Exception as e:
         logger.warning(f"[Live] brain plan failed: {e}")
     tool = plan.get("tool") if plan.get("tool") in TOOLS else "answer"
@@ -457,12 +516,12 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
         if tool == "who_today":
             result = await _who_today(db, user)
         elif tool == "find_person":
-            rows = await _find(db, str(user["_id"]), args.get("name") or "")
+            rows = [focus] if focus and _same_person(focus, args.get("name") or "") else await _find(db, str(user["_id"]), args.get("name") or "")
             result = ("I found " + "; ".join(_match_line(c) for c in rows[:4]) + ". Which one did you mean?") if rows else f"No one named {args.get('name')} in your contacts."
         elif tool == "recall_person":
-            result = await _recall(db, user, args.get("name") or _last_rep_text(transcript))
+            result = await _recall(db, user, args.get("name") or ("" if focus else _last_rep_text(transcript)), focus)
         elif tool in ("send_text", "draft_message"):
-            contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "")
+            contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus)
             if err:
                 result = err
             elif not contact.get("phone"):
@@ -473,7 +532,7 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
                 result = (f"Here is the text for {contact.get('first_name')}: \"{content}\" Say yes and I will send it, or tell me what to change." if tool == "send_text"
                           else f"Here is a draft for {contact.get('first_name')}: \"{content}\" Want me to send it, or will you?")
         elif tool == "set_reminder":
-            result = await _reminder(db, user, args)
+            result = await _reminder(db, user, args, focus)
         elif tool == "confirm":
             if pending and pending.get("type") == "send_text":
                 result = await _send_now(db, user, pending)

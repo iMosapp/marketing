@@ -11,7 +11,7 @@ import { SessionsList } from '../../components/jessi/SessionsList';
 import { LiveJessiSheet } from '../../components/jessi/LiveJessiSheet';
 import { liveSupported } from '../../hooks/useLiveJessi';
 
-type Cfg = { voice: string; energy: number; pacing: number; playful: number; brevity: number; daily_cap_min: number; idle_close_s: number; greeting: string; notes: string; updated_at?: string | null; updated_by?: string | null };
+type Cfg = { voice: string; energy: number; pacing: number; playful: number; brevity: number; daily_cap_min: number; idle_close_s: number; greeting: string; contact_greeting: string; notes: string; updated_at?: string | null; updated_by?: string | null };
 type Meta = { voices: Voice[]; labels: Record<string, Record<string, string>>; configured: boolean; reason?: string | null; price_per_min: number; model: string; lab_live: boolean };
 const LEVELS: { key: keyof Cfg; label: string }[] = [{ key: 'energy', label: 'Energy' }, { key: 'pacing', label: 'Pacing' }, { key: 'playful', label: 'Playfulness' }, { key: 'brevity', label: 'Brevity' }];
 
@@ -102,6 +102,9 @@ export default function VoiceLab() {
             <Text style={h}>OPENING LINE</Text>
             <TextInput value={cfg.greeting} onChangeText={t => set({ greeting: t })} style={input} maxLength={220} {...tid('voice-greeting')} />
             <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 6 }}>{'{first}'} becomes the rep's first name. She paraphrases a little; that is the point.</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text, marginTop: 14, marginBottom: 6 }}>When opened from a contact (the Ask button)</Text>
+            <TextInput value={cfg.contact_greeting} onChangeText={t => set({ contact_greeting: t })} style={input} maxLength={220} {...tid('voice-contact-greeting')} />
+            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 6 }}>{'{contact}'} becomes that customer's first name. She already knows who they are, so "text him" or "what did he buy" just works.</Text>
           </View>
 
           <View style={card}>
