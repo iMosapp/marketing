@@ -133,6 +133,58 @@ async def test_brain_who_today_recall_text_confirm_reminder():
         await db.messages.delete_many({"conversation_id": {"$in": [str(c["_id"]) async for c in db.conversations.find({"user_id": str(user["_id"]), "contact_id": "6aa413008f0d53e3f2261854"})]}, "created_at": {"$gte": live["started_at"]}})
 
 
+async def test_open_targets_for_the_screen(monkeypatch):
+    """Every tool that touches a person tells the app what to put on screen; open_screen does it on request. Brain + recall LLM are faked."""
+    import services.scripts as scr
+    db = get_db()
+    user = await _tester(db)
+    live = await _seed_live(db, user)
+    plans = []
+
+    async def fake_plan(system, prompt, timeout=30):
+        return plans.pop(0)
+
+    async def fake_llm(system, prompt, timeout=40):
+        return "She bought a 2024 Tahoe last spring and asked about a hitch."
+
+    monkeypatch.setattr(scr, "_llm_json", fake_plan)
+    monkeypatch.setattr(scr, "_llm", fake_llm)
+    created_tasks_before = {t["_id"] async for t in db.tasks.find({"user_id": str(user["_id"])}, {"_id": 1})}
+    try:
+        plans.append({"tool": "open_screen", "args": {"what": "contact", "name": "Sarah Tester"}})
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "Pull up Sarah Tester."}], "o1")
+        assert r["tool"] == "open_screen" and r["open"]["kind"] == "contact" and r["open"]["name"] == "Sarah Tester" and r["open"]["first"] == "Sarah"
+        assert ObjectId.is_valid(r["open"]["id"]) and "up on your screen" in r["content"]
+        plans.append({"tool": "open_screen", "args": {"what": "thread", "name": "Sarah Tester"}})
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "Open her text thread."}], "o2")
+        assert r["open"]["kind"] == "thread" and "thread" in r["content"]
+        plans.append({"tool": "open_screen", "args": {"what": "tasks", "name": ""}})
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "Show me my tasks."}], "o3")
+        assert r["open"] == {"kind": "tasks"} and "tasks" in r["content"].lower()
+        plans.append({"tool": "open_screen", "args": {"what": "contact", "name": "Zebulon Quixote"}})
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "Pull up Zebulon Quixote."}], "o4")
+        assert r["open"] is None and "could not find" in r["content"].lower()
+        plans.append({"tool": "recall_person", "args": {"name": "Mike Tester"}})
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "What did Mike Tester buy?"}], "o5")
+        assert r["open"]["kind"] == "contact" and r["open"]["id"] == "6aa413008f0d53e3f2261854" and "Tahoe" in r["content"]
+        plans.append({"tool": "send_text", "args": {"name": "Sarah Tester", "message": "Hey Sarah, quick check-in on the Tahoe. Any questions?", "intent": "check in"}})
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "Text Sarah Tester: hey Sarah, quick check-in on the Tahoe, any questions?"}], "o6")
+        assert r["open"]["kind"] == "thread" and r["pending"] is True
+        plans.append({"tool": "set_reminder", "args": {"name": "Dana Tester", "when_iso": "2030-01-04T14:00:00", "note": "Call Dana about the trade-in", "action": "call"}})
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "Remind me to call Dana Tester Friday at 2."}], "o7")
+        assert r["open"]["kind"] == "task" and ObjectId.is_valid(r["open"]["id"]) and r["open"]["name"].startswith("Call Dana")
+        assert await db.tasks.find_one({"_id": ObjectId(r["open"]["id"])})
+        plans.append({"tool": "who_today", "args": {}})
+        r = await lv.delegate(db, live, user, [{"role": "rep", "text": "Who is up today?"}], "o8")
+        assert r["open"] is None
+        live = await lv.get_live(db, live["live_id"])
+        assert live["delegations"][0]["open"]["kind"] == "contact" and live["delegations"][2]["open"] == {"kind": "tasks"}
+        assert "open_screen" in lv.BRAIN_SYSTEM and "Open on screen" in lv.assistant_instructions(lv.DEFAULTS, user)
+    finally:
+        await db[lv.COLL].delete_one({"live_id": live["live_id"]})
+        await db.tasks.delete_many({"user_id": str(user["_id"]), "_id": {"$nin": list(created_tasks_before)}})
+
+
 async def test_events_and_admin_api(forest_h, tester_h):
     db = get_db()
     user = await _tester(db)

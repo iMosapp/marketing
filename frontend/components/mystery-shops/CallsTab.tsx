@@ -115,6 +115,11 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <ChannelPill c={d} lang={lang} testID={isEmail ? 'shop-call-email-badge' : isText ? 'shop-call-text-badge' : 'shop-call-phone-badge'} />
                 <StatusChip status={d.status} colors={colors} lang={lang} channel={d.channel} />
+                {(d as any).live_transport === 'gpt-live' && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: GREEN + '22' }} {...tid('shop-call-live-badge')}>
+                    <Ionicons name="radio" size={12} color={GREEN} /><Text style={{ fontSize: 11, fontWeight: '800', color: GREEN }}>GPT-Live{(d as any).live_voice ? ` · ${(d as any).live_voice}` : ''}</Text>
+                  </View>
+                )}
               </View>
               {!!d.script_title && <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }} {...tid('shop-call-script')}>{d.script_title}</Text>}
               {!!speed && <Text style={{ fontSize: 12.5, fontWeight: '700', color: isTextLive(d) && d.text?.first_reply_s == null ? GOLD : d.text?.first_reply_s == null ? RED : d.text.first_reply_s <= (isEmail ? 1800 : 300) ? GREEN : GOLD }} {...tid('shop-call-speed')}>{speed}</Text>}

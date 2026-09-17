@@ -5,7 +5,6 @@ the browser forwards each delegation with the running transcript, the brain here
 send a text, set a reminder, draft, or a plain answer), runs it against the rep's real data and returns a short,
 verified result that GPT-Live paraphrases aloud. Personality (voice, energy, pacing, playfulness, brevity) lives in
 settings.jessi_voice and is edited in the admin Voice Lab."""
-import asyncio
 import json
 import logging
 import os
@@ -52,7 +51,9 @@ ENERGY = {1: "calm and steady", 2: "relaxed and easy", 3: "warm and engaged", 4:
 PACING = {1: "slow and unhurried", 2: "measured", 3: "a natural pace", 4: "quick-moving, no dead air", 5: "fast and clipped"}
 PLAYFUL = {1: "all business", 2: "mostly serious", 3: "lightly playful when it fits", 4: "playful", 5: "very playful, quick with a one-liner"}
 BREVITY = {1: "take your time and explain fully", 2: "a few sentences", 3: "two or three short sentences", 4: "one or two short sentences, then let them talk", 5: "as few words as possible"}
-TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer")
+TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen")
+SCREENS = {"contact": ("contact", "record", "profile", "person", "page", "card"), "thread": ("thread", "conversation", "texts", "messages", "text", "chat"),
+           "tasks": ("tasks", "task", "reminders", "touchpoints", "to-dos", "todos"), "home": ("home", "today"), "inbox": ("inbox",)}
 
 
 class LiveUnavailable(Exception):
@@ -165,10 +166,14 @@ def assistant_instructions(cfg: dict, user: dict, language: str = "English", con
             "- Text: send a text message to one of the rep's contacts. The backend always reads the wording back first and only sends after the rep says yes.\n"
             "- Reminder: set a reminder or task, for example call someone Friday afternoon.\n"
             "- Draft: write a message the rep can send.\n"
-            "- App help: how any part of I'm On Social works, and the rep's own numbers.\n\n"
+            "- App help: how any part of I'm On Social works, and the rep's own numbers.\n"
+            "- Open on screen: pull up a person's record, their text thread, or the rep's tasks on the phone screen. "
+            "The app also follows along on its own: when the backend looks someone up, drafts a text or sets a reminder, that person's record, thread or the task opens on the rep's screen. "
+            "You may mention it in a few words (for example 'she is up on your screen'), never in detail.\n\n"
             "Delegate to the backend when:\n"
             "- The rep names a person or asks who they should talk to or follow up with.\n"
             "- The rep asks to text, remind, draft, look something up, or asks about their numbers or how the app works.\n"
+            "- The rep asks to open, pull up, show or go to something on the screen.\n"
             "- The rep confirms or cancels an action you read back (yes, send it / no, hold on).\n"
             "- A correction changes a task already requested.\n\n"
             "Do not delegate to the backend when:\n"
@@ -345,8 +350,9 @@ Tools:
 - confirm: the rep just said yes / send it / do it to an action that is PENDING. args: {}
 - cancel: the rep said no / hold on / never mind to a PENDING action. args: {}
 - answer: anything else (how the app works, small talk that needs facts, their numbers). args: {"say": "<the answer in at most 60 spoken words>"}
+- open_screen: the rep wants something SHOWN on their phone screen: open / pull up / show / bring up / go to a person's record, a text thread, their tasks, home or the inbox. args: {"what": "contact|thread|tasks|home|inbox", "name": "<the person, empty for tasks/home/inbox>"}
 
-Rules: if a person's name is unclear, still pick the tool with your best reading of the name. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
+Rules: "pull up Mike" or "show me Sarah" means open_screen (they want to see it); "tell me about Mike" or "what did Sarah buy" means recall_person (they want to hear it). If a person's name is unclear, still pick the tool with your best reading of the name. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
 
 
 def _first_last(c: dict) -> str:
@@ -413,17 +419,46 @@ async def _who_today(db, user: dict) -> str:
     return "Your three for today. " + " ".join(lines) + " Want me to pull anyone up or text one of them?"
 
 
-async def _recall(db, user: dict, name: str, focus: Optional[dict] = None) -> str:
+async def _recall(db, user: dict, name: str, focus: Optional[dict] = None):
     contact, err = await _resolve(db, str(user["_id"]), name, focus)
     if err:
-        return err
+        return err, None
     from services.contact_ask import build_record
     from services.scripts import _llm
     rec = await build_record(db, contact)
     timeline = rec.get("timeline") or ""
     facts = await _llm("You turn a CRM record into what a sharp assistant would SAY out loud to the salesperson about this person. At most 90 words, plain sentences, most useful first: what they bought or want, when you last talked and about what, anything personal worth remembering, open tasks. No headings, no markdown, no phone numbers.",
                        f"PROFILE:\n{rec.get('profile', '')[:4000]}\n\nRECENT TIMELINE (newest last):\n{timeline[-6000:]}", timeout=40)
-    return no_em_dash(facts.strip())
+    return no_em_dash(facts.strip()), contact
+
+
+def _open_target(kind: str, contact: Optional[dict] = None, task: Optional[dict] = None) -> dict:
+    """What the app should put on the rep's screen: {kind contact|thread|task|tasks|home|inbox, id, name}."""
+    out = {"kind": kind}
+    if contact:
+        out.update(id=str(contact["_id"]), name=_first_last(contact), first=contact.get("first_name") or "")
+    if task:
+        out.update(id=str(task.get("_id") or task.get("id") or ""), name=task.get("title") or "", contact_id=task.get("contact_id") or "")
+    return out
+
+
+def _screen_of(what: str) -> str:
+    tokens = re.findall(r"[a-z-]+", (what or "").lower())
+    for screen, words in SCREENS.items():
+        if any(t in words or t.rstrip("s") in words for t in tokens):
+            return screen
+    return "contact"
+
+
+async def _open_screen(db, user: dict, args: dict, focus: Optional[dict] = None):
+    screen = _screen_of(args.get("what") or "")
+    if screen in ("tasks", "home", "inbox"):
+        return {"tasks": "Your tasks are up on your screen.", "home": "Home is up.", "inbox": "Your inbox is up."}[screen], _open_target(screen)
+    contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus)
+    if err:
+        return err, None
+    first = contact.get("first_name") or _first_last(contact)
+    return (f"{first}'s text thread is up on your screen." if screen == "thread" else f"{first} is up on your screen."), _open_target(screen, contact)
 
 
 async def _draft(db, user: dict, contact: dict, intent: str, wording: str = "") -> str:
@@ -449,14 +484,14 @@ async def _send_now(db, user: dict, pending: dict) -> str:
     return f"Sent to {pending['name']}." if ok else f"That text did not go out: {str((r or {}).get('error') or 'unknown error')[:140]}"
 
 
-async def _reminder(db, user: dict, args: dict, focus: Optional[dict] = None) -> str:
+async def _reminder(db, user: dict, args: dict, focus: Optional[dict] = None):
     from routers.tasks import create_task
     name = (args.get("name") or "").strip()
     contact = None
     if name or focus:
         contact, err = await _resolve(db, str(user["_id"]), name, focus)
         if err:
-            return err
+            return err, None
     when = None
     tz = await _tz(user)
     try:
@@ -475,7 +510,7 @@ async def _reminder(db, user: dict, args: dict, focus: Optional[dict] = None) ->
                                                 "action_type": action, "due_date": when.astimezone(timezone.utc).isoformat(), "has_time": True, "priority": "medium"})
     spoken_when = local.strftime("%A at %-I:%M %p") if local.hour or local.minute else local.strftime("%A")
     who = f" for {_first_last(contact)}" if contact else ""
-    return f"Done. Reminder set{who}: {title}, {spoken_when}." if task else "I could not save that reminder."
+    return (f"Done. Reminder set{who}: {title}, {spoken_when}." if task else "I could not save that reminder."), task
 
 
 async def _answer(user: dict, say: str, question: str) -> str:
@@ -511,15 +546,19 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
         logger.warning(f"[Live] brain plan failed: {e}")
     tool = plan.get("tool") if plan.get("tool") in TOOLS else "answer"
     args = plan.get("args") if isinstance(plan.get("args"), dict) else {}
-    result, new_pending, kind = "", pending, "commentary"
+    result, new_pending, kind, opened = "", pending, "commentary", None
     try:
         if tool == "who_today":
             result = await _who_today(db, user)
         elif tool == "find_person":
             rows = [focus] if focus and _same_person(focus, args.get("name") or "") else await _find(db, str(user["_id"]), args.get("name") or "")
-            result = ("I found " + "; ".join(_match_line(c) for c in rows[:4]) + ". Which one did you mean?") if rows else f"No one named {args.get('name')} in your contacts."
+            if len(rows) == 1:
+                result, opened = f"Found {_match_line(rows[0])}. They are up on your screen.", _open_target("contact", rows[0])
+            else:
+                result = ("I found " + "; ".join(_match_line(c) for c in rows[:4]) + ". Which one did you mean?") if rows else f"No one named {args.get('name')} in your contacts."
         elif tool == "recall_person":
-            result = await _recall(db, user, args.get("name") or ("" if focus else _last_rep_text(transcript)), focus)
+            result, contact = await _recall(db, user, args.get("name") or ("" if focus else _last_rep_text(transcript)), focus)
+            opened = _open_target("contact", contact) if contact else None
         elif tool in ("send_text", "draft_message"):
             contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus)
             if err:
@@ -531,17 +570,22 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
                 new_pending = {"type": "send_text", "contact_id": str(contact["_id"]), "name": _first_last(contact), "content": content, "at": _now().isoformat()}
                 result = (f"Here is the text for {contact.get('first_name')}: \"{content}\" Say yes and I will send it, or tell me what to change." if tool == "send_text"
                           else f"Here is a draft for {contact.get('first_name')}: \"{content}\" Want me to send it, or will you?")
+                opened = _open_target("thread", contact)
         elif tool == "set_reminder":
-            result = await _reminder(db, user, args, focus)
+            result, task = await _reminder(db, user, args, focus)
+            opened = _open_target("task", task=task) if task else None
         elif tool == "confirm":
             if pending and pending.get("type") == "send_text":
                 result = await _send_now(db, user, pending)
+                opened = {"kind": "thread", "id": pending["contact_id"], "name": pending.get("name") or "", "first": (pending.get("name") or "").split(" ")[0]}
                 new_pending = None
             else:
                 result = "There is nothing waiting for a yes right now. What would you like me to do?"
         elif tool == "cancel":
             result = "Okay, cancelled. Nothing was sent." if pending else "Nothing to cancel."
             new_pending = None
+        elif tool == "open_screen":
+            result, opened = await _open_screen(db, user, args, focus)
         else:
             result = await _answer(user, args.get("say") or "", _last_rep_text(transcript))
     except Exception as e:
@@ -549,9 +593,9 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
         result = "Something went wrong on my side pulling that up. Try me again in a second."
     result = no_em_dash((result or "").strip()[:1400])
     ms = int((_now() - t0).total_seconds() * 1000)
-    await db[COLL].update_one({"_id": live["_id"]}, {"$push": {"delegations": {"id": delegation_id, "tool": tool, "args": args, "result": result, "ms": ms, "at": _now()}}, "$set": {"pending": new_pending, "updated_at": _now()}})
-    logger.info(f"[Live] {live['live_id']} {tool} in {ms}ms")
-    return {"tool": tool, "content": result, "kind": kind, "pending": bool(new_pending), "ms": ms}
+    await db[COLL].update_one({"_id": live["_id"]}, {"$push": {"delegations": {"id": delegation_id, "tool": tool, "args": args, "result": result, "open": opened, "ms": ms, "at": _now()}}, "$set": {"pending": new_pending, "updated_at": _now()}})
+    logger.info(f"[Live] {live['live_id']} {tool} in {ms}ms" + (f" -> open {opened['kind']}" if opened else ""))
+    return {"tool": tool, "content": result, "kind": kind, "pending": bool(new_pending), "open": opened, "ms": ms}
 
 
 # ── admin views ───────────────────────────────────────────────────────────────

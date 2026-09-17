@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { ToastProvider } from '../components/common/Toast';
+import { LiveJessiProvider } from '../components/jessi/LiveJessiProvider';
 import JessieFloatingChat, { JESSI_BAR_HEIGHT } from '../components/JessieFloatingChat';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { initGlobalErrorHandlers } from '../services/errorReporter';
@@ -307,6 +308,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
         <SafeAreaProvider>
           <ToastProvider>
+            <LiveJessiProvider>
             <View style={{ flex: 1 }}>
               <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
                 <Stack.Screen name="index" options={{ animation: 'none' }} />
@@ -324,6 +326,7 @@ export default function RootLayout() {
                 <Stack.Screen name="l/[username]" />
               </Stack>
             </View>
+            </LiveJessiProvider>
             {/* Jessi floating chat hidden — causes keyboard offset issues */}
             {/* {showJessi && (
               <ErrorBoundary>

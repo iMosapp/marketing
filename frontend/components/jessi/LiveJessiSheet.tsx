@@ -2,20 +2,22 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, Modal, TouchableOpacity, ScrollView, Animated, Easing, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GOLD, GREEN, RED, tid } from '../scripts/shared';
-import { useLiveJessi, LiveOptions } from '../../hooks/useLiveJessi';
+import type { LiveJessi } from '../../hooks/useLiveJessi';
 
-type Props = { visible: boolean; onClose: () => void; options: LiveOptions; title?: string };
+type Props = { visible: boolean; onClose: () => void; live: LiveJessi; title?: string; onRetry: () => void; onCollapse?: () => void };
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-const REASONS: Record<string, string> = { idle: 'Closed after a quiet spell', daily_cap: "Today's minutes are used up", connection_lost: 'The connection dropped', close_requested: 'Conversation ended', expired: 'Session limit reached', content: 'Ended by the safety filter', no_start: 'Jessi did not pick up', unmounted: 'Closed' };
+export const REASONS: Record<string, string> = { idle: 'Closed after a quiet spell', daily_cap: "Today's minutes are used up", connection_lost: 'The connection dropped', close_requested: 'Conversation ended', expired: 'Session limit reached', content: 'Ended by the safety filter', no_start: 'Jessi did not pick up', unmounted: 'Closed' };
 
-// Full-screen live conversation: gold orb, live captions, one End button. Starts as soon as it opens.
-export const LiveJessiSheet = ({ visible, onClose, options, title = 'Talk to Jessi' }: Props) => {
-  const live = useLiveJessi();
+export const statusText = (live: LiveJessi) =>
+  live.state === 'connecting' ? 'Connecting to Jessi' : live.state === 'ending' ? 'Wrapping up' : live.state === 'live' ? (live.working || 'Listening') : live.state === 'ended' ? (REASONS[live.closeReason] || 'Conversation ended') : 'Could not connect';
+
+// Full-screen live conversation: gold orb, live captions, one End button. The session itself lives in LiveJessiProvider,
+// so shrinking this sheet (chevron) keeps Jessi talking while the app navigates underneath.
+export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi', onRetry, onCollapse }: Props) => {
   const pulse = useRef(new Animated.Value(1)).current;
   const scroll = useRef<ScrollView>(null);
 
-  useEffect(() => { if (visible) live.start(options); }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (live.state !== 'live') { pulse.stopAnimation(); pulse.setValue(1); return; }
     const loop = Animated.loop(Animated.sequence([
@@ -29,15 +31,20 @@ export const LiveJessiSheet = ({ visible, onClose, options, title = 'Talk to Jes
 
   const end = () => { if (live.state === 'live' || live.state === 'connecting') live.stop('close_requested'); else onClose(); };
   const busy = live.state === 'connecting' || live.state === 'ending';
-  const status = live.state === 'connecting' ? 'Connecting to Jessi' : live.state === 'ending' ? 'Wrapping up' : live.state === 'live' ? (live.working || 'Listening') : live.state === 'ended' ? (REASONS[live.closeReason] || 'Conversation ended') : 'Could not connect';
+  const canCollapse = !!onCollapse && (live.state === 'live' || live.state === 'connecting');
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={end} presentationStyle="fullScreen">
+    <Modal visible={visible} animationType="slide" onRequestClose={canCollapse ? onCollapse : end} presentationStyle="fullScreen">
       <View style={{ flex: 1, backgroundColor: '#0B0B0D' }} {...tid('live-jessi-sheet')}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: 18, paddingBottom: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: 18, paddingBottom: 8, gap: 10 }}>
+          {canCollapse && (
+            <TouchableOpacity onPress={onCollapse} hitSlop={10} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' }} {...tid('live-jessi-collapse')}>
+              <Ionicons name="chevron-down" size={22} color="#D5D5DA" />
+            </TouchableOpacity>
+          )}
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }} {...tid('live-jessi-title')}>{title}</Text>
-            <Text style={{ color: '#8E8E93', fontSize: 12, marginTop: 2 }} {...tid('live-jessi-status')}>{status}{live.voice ? ` · ${live.voice}` : ''}</Text>
+            <Text style={{ color: '#8E8E93', fontSize: 12, marginTop: 2 }} {...tid('live-jessi-status')}>{statusText(live)}{live.voice ? ` · ${live.voice}` : ''}</Text>
           </View>
           <View style={{ backgroundColor: live.state === 'live' ? `${GREEN}22` : '#1C1C1E', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 6 }} {...tid('live-jessi-timer')}>
             {live.state === 'live' && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: GREEN }} />}
@@ -52,6 +59,7 @@ export const LiveJessiSheet = ({ visible, onClose, options, title = 'Talk to Jes
             </View>
           </Animated.View>
           {live.capLeft !== null && live.state === 'live' && <Text style={{ color: '#8E8E93', fontSize: 11, marginTop: 10 }} {...tid('live-jessi-cap')}>{Math.max(0, Math.floor((live.capLeft - live.seconds) / 60))} min left today</Text>}
+          {canCollapse && <Text style={{ color: '#5A5A5F', fontSize: 11, marginTop: 8 }} {...tid('live-jessi-collapse-hint')}>Say "pull up Sarah" or "open her thread" and the app follows along</Text>}
         </View>
 
         <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 10 }} {...tid('live-jessi-captions')}>
@@ -66,7 +74,7 @@ export const LiveJessiSheet = ({ visible, onClose, options, title = 'Talk to Jes
 
         <View style={{ padding: 18, paddingBottom: 30, gap: 10 }}>
           {(live.state === 'error' || live.state === 'ended') && (
-            <TouchableOpacity onPress={() => live.start(options)} style={{ borderRadius: 26, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: `${GOLD}66` }} {...tid('live-jessi-retry')}>
+            <TouchableOpacity onPress={onRetry} style={{ borderRadius: 26, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: `${GOLD}66` }} {...tid('live-jessi-retry')}>
               <Text style={{ color: GOLD, fontWeight: '800', fontSize: 15 }}>Talk again</Text>
             </TouchableOpacity>
           )}

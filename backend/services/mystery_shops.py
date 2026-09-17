@@ -316,7 +316,7 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
            "contact_name": c.get("contact_name", ""), "contact_email": c.get("contact_email", ""), "contact_phone": c.get("contact_phone", ""), "contact_title": c.get("contact_title", ""),
            "plan": {"per_month": plan_per_month(c), "text_per_month": plan_text_per_month(c), "email_per_month": plan_email_per_month(c), "sales_per_month": plan_per_month(c).get("sales", 0), "service_per_month": plan_per_month(c).get("service", 0), "price_monthly": float((c.get("plan") or {}).get("price_monthly") or 0)},
            "industry": ind.key_of(c), "industry_label": ind.get(ind.key_of(c))["label"], "departments": ind.dept_options(ind.key_of(c)), "offering": ind.get(ind.key_of(c))["offering"], "customer_noun": ind.get(ind.key_of(c))["customer"],
-           "hours": _hours(c), "vehicles": offerings_of(c), "offerings": offerings_of(c), "active": c.get("active", True), "record_calls": c.get("record_calls", True), "notes": c.get("notes", ""),
+           "hours": _hours(c), "vehicles": offerings_of(c), "offerings": offerings_of(c), "active": c.get("active", True), "record_calls": c.get("record_calls", True), "live_calls": c.get("live_calls"), "notes": c.get("notes", ""),
            "from_number": c.get("from_number") or "", "report_token": c.get("report_token"), "scorecards": c.get("scorecards") or {}, "billing": c.get("billing") or {},
            "demo": bool(c.get("demo")), "text_scorecards": bool(c.get("text_scorecards")),
            "created_at": c.get("created_at").isoformat() if c.get("created_at") else None}
@@ -345,7 +345,8 @@ def serialize_call(s: dict) -> dict:
             "recording_seconds": s.get("recording_seconds"), "turns": len(s.get("turns") or []), "manual": bool(s.get("manual")), "demo": bool(s.get("demo")),
             "score_url": f"{scr._app_url()}/shop-score/{s['score_token']}" if s.get("score_token") else None, "score_sms_status": s.get("score_sms_status"), "score_views": s.get("score_views") or 0,
             "channel": s.get("mode") if s.get("mode") in ("text", "email") else "call", "text": tx.stats(s) if s.get("mode") in ("text", "email") else None,
-            "subject": s.get("subject") if s.get("mode") == "email" else None, "rep_email": s.get("rep_email") if s.get("mode") == "email" else None}
+            "subject": s.get("subject") if s.get("mode") == "email" else None, "rep_email": s.get("rep_email") if s.get("mode") == "email" else None,
+            "live_transport": s.get("live_transport"), "live_voice": s.get("live_voice")}
 
 
 # ---------------------------------------------------------------- challenge rotation

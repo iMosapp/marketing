@@ -8,7 +8,7 @@ import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { GOLD, GREEN, RED, tid } from '../../components/scripts/shared';
 import { VoicePicker, LevelRow, Voice } from '../../components/jessi/VoiceLabControls';
 import { SessionsList } from '../../components/jessi/SessionsList';
-import { LiveJessiSheet } from '../../components/jessi/LiveJessiSheet';
+import { useLiveJessiLauncher } from '../../components/jessi/LiveJessiProvider';
 import { liveSupported } from '../../hooks/useLiveJessi';
 
 type Cfg = { voice: string; energy: number; pacing: number; playful: number; brevity: number; daily_cap_min: number; idle_close_s: number; greeting: string; contact_greeting: string; notes: string; updated_at?: string | null; updated_by?: string | null };
@@ -23,8 +23,9 @@ export default function VoiceLab() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState('');
-  const [audition, setAudition] = useState(false);
+  const jessi = useLiveJessiLauncher();
   const [refreshKey, setRefreshKey] = useState(0);
+  const audition = () => cfg && jessi.open({ options: { mode: 'lab', overrides: cfg }, title: `Audition · ${cfg.voice}`, onClose: () => setRefreshKey(k => k + 1) });
 
   useEffect(() => {
     api.get('/live-voice/admin/config').then(r => { setCfg(r.data.config); setSaved(r.data.config); setMeta(r.data); })
@@ -120,7 +121,7 @@ export default function VoiceLab() {
 
           {!!error && <Text style={{ color: RED, marginBottom: 10 }} {...tid('voice-lab-error')}>{error}</Text>}
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-            <TouchableOpacity onPress={() => setAudition(true)} disabled={!meta.configured || !liveSupported()} style={{ flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: 'center', backgroundColor: GOLD, opacity: !meta.configured || !liveSupported() ? 0.5 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }} {...tid('voice-audition')}>
+            <TouchableOpacity onPress={audition} disabled={!meta.configured || !liveSupported()} style={{ flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: 'center', backgroundColor: GOLD, opacity: !meta.configured || !liveSupported() ? 0.5 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }} {...tid('voice-audition')}>
               <Ionicons name="mic" size={18} color="#0B0B0D" />
               <Text style={{ color: '#0B0B0D', fontWeight: '800', fontSize: 15 }}>Audition{dirty ? ' (unsaved)' : ''}</Text>
             </TouchableOpacity>
@@ -137,7 +138,6 @@ export default function VoiceLab() {
           </View>
         </ScrollView>
       )}
-      {cfg && <LiveJessiSheet visible={audition} onClose={() => { setAudition(false); setRefreshKey(k => k + 1); }} options={{ mode: 'lab', overrides: cfg }} title={`Audition · ${cfg.voice}`} />}
     </SafeAreaView>
   );
 }

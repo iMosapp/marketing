@@ -101,6 +101,7 @@ class ClientBody(BaseModel):
     offerings: Optional[list] = None
     active: Optional[bool] = None
     record_calls: Optional[bool] = None
+    live_calls: Optional[bool] = None
     notes: Optional[str] = None
     from_number: Optional[str] = None
     scorecards: Optional[dict] = None

@@ -54,6 +54,17 @@ FEATURES = [
                      "Say 'remind me to call Sam Friday at 2'. Check Touchpoints.",
                      "Save the config, then use the gold Talk to Jessi button on Home. Check the session shows up under Recent conversations with minutes and cost."],
      "added": "2026-06-21", "needs": "Needs OPENAI_API_KEY (your own OpenAI project key) in the backend environment. GPT-Live-1 is English only for now; Dutch keeps the current flow."},
+    {"key": "live_shop_calls", "name": "Mystery shop calls on GPT-Live", "icon": "call",
+     "tagline": "English shop calls (and lead-shop callbacks) get a full-duplex shopper who interrupts, hesitates and reacts in real time instead of the turn-by-turn relay.",
+     "description": "When the rep presses 1, the call is bridged straight to OpenAI GPT-Live-1 over Twilio Media Streams (raw phone audio, no transcription hop). The shopper persona, "
+                    "curveballs and the store's script go in as spoken instructions; the transcript comes back live and lands in the same place the grader reads, so scorecards, "
+                    "reports and recordings work exactly as before. The shopper says goodbye and hangs up on her own; the 15-minute ceiling still applies. Dutch shops stay on "
+                    "ConversationRelay. Before releasing, you can switch single clients on or off with the 'GPT-Live shopper' toggle in the client editor (that toggle also wins after release).",
+     "how_to_test": ["Open a client, edit it and switch on GPT-Live shopper, then Quick shop yourself (500-555 numbers never connect, so use your own cell once).",
+                     "Talk over the shopper mid-sentence: she should stop and listen. Ask a blind price question: she should push back.",
+                     "Say goodbye: the line should drop within a couple of seconds and the shop grades like before (Shops tab, scorecard text).",
+                     "Check the client report: recording, transcript and score all present; the shop row shows GPT-Live."],
+     "added": "2026-06-21", "needs": "Needs OPENAI_API_KEY in the backend environment. English clients only."},
 ]
 STATUSES = ("lab", "live")
 SETTINGS_KEY = "lab_features"
@@ -92,7 +103,7 @@ async def list_features(db) -> list:
         if f["key"] == "voice_interview":
             reason = await asyncio.to_thread(voice_id.available)
             row["needs"] = f"Voice ID is not running on this server: {reason}" if reason else None
-        elif f["key"] == "jessi_live_voice":
+        elif f["key"] in ("jessi_live_voice", "live_shop_calls"):
             from services import live_voice
             row["needs"] = live_voice.configured()
         out.append(row)

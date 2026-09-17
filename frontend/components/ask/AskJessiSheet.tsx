@@ -9,7 +9,7 @@ import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { AnswerText, type Citation } from './AnswerText';
 import { showAlert } from '../../services/alert';
 import { liveSupported } from '../../hooks/useLiveJessi';
-import { LiveJessiSheet } from '../jessi/LiveJessiSheet';
+import { useLiveJessiLauncher } from '../jessi/LiveJessiProvider';
 import { useLiveConfig } from '../jessi/useLiveConfig';
 
 const GOLD = '#C9A962';
@@ -33,12 +33,13 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
   const [showHistory, setShowHistory] = useState(false);
   const [drafting, setDrafting] = useState<string | null>(null);
   const [draftPreview, setDraftPreview] = useState<{ text: string; conversation_id: string | null } | null>(null);
-  const [live, setLive] = useState(false);
+  const jessi = useLiveJessiLauncher();
   const { config: liveCfg } = useLiveConfig();
   const canTalk = !!liveCfg?.available && !!liveCfg?.configured;
   const talk = () => {
     if (!liveSupported()) { showAlert('Live Jessi is on the web app for now', 'Open app.imonsocial.com in Safari or Chrome to talk to her about this customer. Type your question below in the meantime.'); return; }
-    setLive(true);
+    onClose();
+    jessi.open({ options: { mode: 'assistant', contactId }, title: `Talk about ${ov?.contact.first_name || 'this customer'}` });
   };
   const scrollRef = useRef<ScrollView>(null);
   const seekRef = useRef<((ms: number) => void) | null>(null);
@@ -252,7 +253,6 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
           </View>
         </KeyboardAvoidingView>
       </View>
-      <LiveJessiSheet visible={live} onClose={() => setLive(false)} options={{ mode: 'assistant', contactId }} title={`Talk about ${first}`} />
     </Modal>
   );
 };

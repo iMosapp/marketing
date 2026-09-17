@@ -5,18 +5,30 @@ import api from '../services/api';
 export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
 export type LiveOptions = { mode: 'assistant' | 'lab'; overrides?: Record<string, any>; contactId?: string };
+export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox'; id?: string; name?: string; first?: string; contact_id?: string };
 
 const TOOL_LABELS: Record<string, string> = {
   who_today: 'Pulled up your people for today', find_person: 'Looked them up', recall_person: 'Read their history', send_text: 'Text ready to send',
-  draft_message: 'Draft ready', set_reminder: 'Reminder set', confirm: 'Sent', cancel: 'Cancelled', answer: 'Answered',
+  draft_message: 'Draft ready', set_reminder: 'Reminder set', confirm: 'Sent', cancel: 'Cancelled', answer: 'Answered', open_screen: 'Opened it',
 };
 const ROW_GAP_MS = 1500;
+
+export const openLabel = (t: OpenTarget) => {
+  const who = t.first || (t.name || '').split(' ')[0];
+  if (t.kind === 'contact') return who ? `Opened ${who}` : 'Opened the contact';
+  if (t.kind === 'thread') return who ? `Opened ${who}'s thread` : 'Opened the thread';
+  if (t.kind === 'task') return 'Opened the reminder';
+  if (t.kind === 'tasks') return 'Opened your tasks';
+  if (t.kind === 'inbox') return 'Opened the inbox';
+  return 'Opened Home';
+};
 
 export const liveSupported = () =>
   Platform.OS === 'web' && typeof window !== 'undefined' && !!(window as any).RTCPeerConnection && !!(navigator as any)?.mediaDevices?.getUserMedia;
 
 // One live GPT-Live-1 conversation: browser WebRTC for audio, data channel for events, our backend for every fact.
-export function useLiveJessi() {
+// `onOpen` fires when the backend wants something on the rep's screen (a contact, a thread, a task).
+export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void } = {}) {
   const [state, setState] = useState<LiveState>('idle');
   const [rows, setRows] = useState<CaptionRow[]>([]);
   const [error, setError] = useState('');
@@ -25,6 +37,8 @@ export function useLiveJessi() {
   const [capLeft, setCapLeft] = useState<number | null>(null);
   const [closeReason, setCloseReason] = useState('');
   const [voice, setVoice] = useState('');
+  const onOpenRef = useRef(handlers.onOpen);
+  onOpenRef.current = handlers.onOpen;
 
   const pc = useRef<RTCPeerConnection | null>(null);
   const dc = useRef<RTCDataChannel | null>(null);
@@ -114,15 +128,21 @@ export function useLiveJessi() {
     setWorking('Working on it');
     send({ type: 'session.thinking.append', event_id: `ack_${delegationId}`, delegation_id: delegationId, content: 'The backend is on it. It takes a few seconds; keep it short while you wait, and never invent the result.' });
     let content = 'Something went wrong on my side pulling that up. Try me again in a second.';
+    let opened: OpenTarget | null = null;
     try {
       const transcript = rowsRef.current.map(r => ({ role: r.role, text: r.text }));
       const r = await api.post(`/live-voice/${liveId.current}/delegate`, { delegation_id: delegationId, transcript }, { timeout: 60000 });
       content = r.data?.content || content;
-      setWorking(TOOL_LABELS[r.data?.tool] || 'Done');
+      opened = r.data?.open?.kind ? (r.data.open as OpenTarget) : null;
+      setWorking(opened ? openLabel(opened) : (TOOL_LABELS[r.data?.tool] || 'Done'));
     } catch (e: any) {
       if (e?.response?.status === 429 || e?.response?.status === 409) content = e.response.data?.detail || content;
     }
     send({ type: 'session.commentary.append', event_id: `res_${delegationId}`, delegation_id: delegationId, content });
+    if (opened) {
+      try { onOpenRef.current?.(opened); } catch { /* navigation is best effort */ }
+      send({ type: 'session.thinking.append', event_id: `ui_${delegationId}`, delegation_id: null, content: `The app just ${openLabel(opened).toLowerCase()} on the rep's screen; they can see it now.` });
+    }
     setTimeout(() => setWorking(''), 1200);
   };
 
@@ -240,3 +260,5 @@ export function useLiveJessi() {
 
   return { state, rows, error, seconds, working, capLeft, closeReason, voice, start, stop, liveId: liveId.current };
 }
+
+export type LiveJessi = ReturnType<typeof useLiveJessi>;

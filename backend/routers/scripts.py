@@ -541,6 +541,9 @@ async def relay_gate(sid: str, t: str, request: Request):
         return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
     if choice == "go":
         await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"gate_passed_at": datetime.now(timezone.utc), "gate_via": "dtmf" if form.get("Digits") else "speech", "updated_at": datetime.now(timezone.utc)}})
+        from services import live_shops
+        if await live_shops.enabled(db, s):
+            return _twiml(live_shops.shop_go_twiml(s))
         return _twiml(svc.shop_go_twiml(s))
     from services.mystery_shops import postpone_call, record_outcome
     if choice == "later":
@@ -662,4 +665,47 @@ async def relay_ws(ws: WebSocket, sid: str, token: str):
     except Exception as e:
         logger.warning(f"[Roleplay] relay websocket ended for {sid}: {e}")
     finally:
+        asyncio.create_task(svc.finalize_session(db, sid, "websocket_closed"))
+
+
+@relay_router.websocket("/stream/{sid}/{token}")
+async def stream_ws(ws: WebSocket, sid: str, token: str):
+    """Twilio Media Streams <-> GPT-Live: the shopper talks in full duplex, we relay audio and keep the transcript."""
+    from services import live_shops
+    db = get_db()
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid), "token": token, "mode": "phone"}) if ObjectId.is_valid(sid) else None
+    if not s:
+        await ws.close(code=1008)
+        return
+    await ws.accept()
+    closed = {"v": False}
+
+    async def send(msg: dict):
+        if not closed["v"]:
+            await ws.send_text(json.dumps(msg))
+
+    async def close_ws():
+        if not closed["v"]:
+            closed["v"] = True
+            try:
+                await ws.close()
+            except Exception:
+                pass
+
+    bridge = live_shops.Bridge(db, s, send, close_ws)
+    try:
+        while not bridge.closed:
+            raw = await ws.receive_text()
+            try:
+                msg = json.loads(raw)
+            except ValueError:
+                continue
+            await bridge.on_twilio(msg)
+    except WebSocketDisconnect:
+        closed["v"] = True
+    except Exception as e:
+        logger.warning(f"[LiveShop] stream websocket ended for {sid}: {e}")
+    finally:
+        closed["v"] = True
+        await bridge.close("websocket_closed")
         asyncio.create_task(svc.finalize_session(db, sid, "websocket_closed"))

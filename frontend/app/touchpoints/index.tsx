@@ -89,7 +89,8 @@ function getDueLabel(task: any) {
 function TouchpointsScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
-  const { period: periodParam } = useLocalSearchParams<{ period?: string }>();
+  const { period: periodParam, highlight } = useLocalSearchParams<{ period?: string; highlight?: string }>();
+  const [pinned, setPinned] = useState<any | null>(null);
   const user = useAuthStore((s) => s.user);
   const [tasks, setTasks] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
@@ -106,9 +107,18 @@ function TouchpointsScreen() {
       ]);
       setTasks(Array.isArray(t) ? t : []);
       setSummary(s);
+      // Jessi (or a deep link) pointed at one task: make sure it is on screen even when it is not due today
+      if (highlight) {
+        const here = (Array.isArray(t) ? t : []).find((x: any) => x._id === highlight);
+        if (here) setPinned(here);
+        else {
+          const up = await tasksAPI.getFiltered(user._id, 'upcoming', 100).catch(() => []);
+          setPinned((Array.isArray(up) ? up : []).find((x: any) => x._id === highlight) || null);
+        }
+      } else setPinned(null);
     } catch (e) { console.error(e); }
     setLoading(false);
-  }, [user?._id]);
+  }, [user?._id, highlight]);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
@@ -285,9 +295,9 @@ function TouchpointsScreen() {
     return true;
   });
 
-  // Group into overdue and today
-  const overdueTasks = filtered.filter(t => isOverdue(t));
-  const todayTasks = filtered.filter(t => !isOverdue(t));
+  // Group into overdue and today (a highlighted task is pinned on top instead)
+  const overdueTasks = filtered.filter(t => isOverdue(t) && t._id !== highlight);
+  const todayTasks = filtered.filter(t => !isOverdue(t) && t._id !== highlight);
 
   // Filter counts
   const filterCounts: Record<string, number> = {
@@ -440,6 +450,14 @@ function TouchpointsScreen() {
             </Text>
           )}
 
+          {/* Pinned (Jessi just opened this one) */}
+          {pinned && (
+            <>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962', letterSpacing: 1.5, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }} data-testid="pinned-task-label">Jessi opened this</Text>
+              <TaskCard key={pinned._id} task={pinned} colors={colors} highlight onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} onJustTried={handleJustTried} />
+            </>
+          )}
+
           {/* Overdue Section */}
           {overdueTasks.length > 0 && (
             <>
@@ -456,7 +474,7 @@ function TouchpointsScreen() {
             </>
           )}
 
-          {filtered.length === 0 && (
+          {filtered.length === 0 && !pinned && (
             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
               <Ionicons name="checkmark-done-circle-outline" size={48} color={colors.textTertiary} />
               <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textSecondary, marginTop: 12 }}>All caught up!</Text>
@@ -494,8 +512,8 @@ function TouchpointsScreen() {
   );
 }
 
-function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft, onJustTried }: {
-  task: any; colors: any; onComplete: (id: string) => void; onSnooze: (id: string) => void; onCall: (t: any) => void; onText: (t: any) => void; onDraft: (t: any) => void; onJustTried?: (t: any) => void;
+function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft, onJustTried, highlight }: {
+  task: any; colors: any; onComplete: (id: string) => void; onSnooze: (id: string) => void; onCall: (t: any) => void; onText: (t: any) => void; onDraft: (t: any) => void; onJustTried?: (t: any) => void; highlight?: boolean;
 }) {
   const overdue = isOverdue(task);
   const highPri = task.priority === 'high' && !overdue;
@@ -570,9 +588,9 @@ function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft,
 
   const wrapperStyle = {
     marginHorizontal: 16, marginBottom: 10, borderRadius: 14, overflow: 'hidden' as const,
-    borderWidth: 1, borderColor: colors.border,
-    borderLeftWidth: overdue ? 3 : highPri ? 3 : 1,
-    borderLeftColor: overdue ? '#FF3B30' : highPri ? '#FF9500' : colors.border,
+    borderWidth: highlight ? 1.5 : 1, borderColor: highlight ? '#C9A962' : colors.border,
+    borderLeftWidth: highlight ? 3 : overdue ? 3 : highPri ? 3 : 1,
+    borderLeftColor: highlight ? '#C9A962' : overdue ? '#FF3B30' : highPri ? '#FF9500' : colors.border,
   };
 
   if (IS_WEB) {
