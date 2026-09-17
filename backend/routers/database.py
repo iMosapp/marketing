@@ -23,8 +23,8 @@ def get_db():
         if mongo_url:
             _client = AsyncIOMotorClient(
                 mongo_url,
-                serverSelectionTimeoutMS=30000,
-                connectTimeoutMS=30000,
+                serverSelectionTimeoutMS=10000,
+                connectTimeoutMS=10000,
                 maxPoolSize=50,
                 minPoolSize=5,
                 retryWrites=True,

@@ -17,13 +17,14 @@ interface ErrorReport {
   error_message: string;
   error_stack?: string;
   component_stack?: string;
-  error_type: 'render_crash' | 'unhandled_rejection' | 'api_error' | 'js_error';
+  error_type: 'render_crash' | 'unhandled_rejection' | 'api_error' | 'js_error' | 'server_crash' | 'network_error';
   page?: string;
   extra?: Record<string, any>;
 }
 
 // Debounce: don't flood the server with duplicate errors
 const _recentErrors = new Set<string>();
+const _outage = { at: 0, folded: 0 };
 
 function _dedupeKey(msg: string): string {
   return msg.slice(0, 120);
@@ -48,12 +49,23 @@ export async function reportError(report: ErrorReport) {
   try {
     const key = _dedupeKey(report.error_message);
     if (_recentErrors.has(key)) return; // skip duplicate within session
-    
+
     // Skip benign errors that aren't real problems
     const msg = report.error_message.toLowerCase();
     if (msg.includes('abort') && msg.includes('cancellation of share')) return;
     if (msg.includes('user denied') || msg.includes('user cancelled')) return;
-    
+
+    // One outage = one report. While the server is unreachable every poller on the page fails in the same second;
+    // fold those into the first report (with a count) instead of seven near-identical rows.
+    const outage = report.error_type === 'server_crash' || report.error_type === 'network_error';
+    if (outage) {
+      const now = Date.now();
+      if (now - _outage.at < 60000) { _outage.folded += 1; return; }
+      _outage.at = now;
+      report = { ...report, extra: { ...(report.extra || {}), folded_since_last: _outage.folded } };
+      _outage.folded = 0;
+    }
+
     _recentErrors.add(key);
     // Auto-clear after 60s so repeated errors eventually get re-reported
     setTimeout(() => _recentErrors.delete(key), 60000);

@@ -554,9 +554,19 @@ async def api_health_deep():
         from fastapi.responses import JSONResponse
         return JSONResponse(
             status_code=503,
-            content={"status": "degraded", "issues": issues, **details}
+            content={"status": "degraded", "issues": issues, **details, **_process_info()}
         )
-    return {"status": "healthy", **details}
+    return {"status": "healthy", **details, **_process_info()}
+
+
+def _process_info() -> dict:
+    """Uptime + memory so a restart loop (OOM, crash, redeploy) is visible from outside."""
+    import resource
+    started = getattr(app.state, "start_time", None)
+    rss_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return {"pid": os.getpid(), "uptime_s": int(time.time() - started) if started else None,
+            "started_at": datetime.fromtimestamp(started, tz=timezone.utc).isoformat() if started else None,
+            "rss_mb": round(rss_kb / 1024) if rss_kb else None}
 
 @api_router.get("/build-version")
 async def build_version():
@@ -1496,6 +1506,17 @@ app.include_router(api_router)
 app.include_router(short_urls.router)
 
 # ============= STARTUP EVENT =============
+@app.exception_handler(Exception)
+async def _unhandled_exception(request: Request, exc: Exception):
+    """A database blip must come back as a retryable 503 with a real message, not a bare 500 the client cannot act on."""
+    from pymongo.errors import PyMongoError
+    if isinstance(exc, PyMongoError):
+        logger.warning(f"[DB] {type(exc).__name__} on {request.method} {request.url.path}: {str(exc)[:160]}")
+        return _JSONResponse(status_code=503, content={"detail": "The database did not answer in time. Please try again in a moment.", "retryable": True}, headers={"Retry-After": "3"})
+    logger.exception(f"[Unhandled] {type(exc).__name__} on {request.method} {request.url.path}: {str(exc)[:200]}")
+    return _JSONResponse(status_code=500, content={"detail": "Something went wrong on our side. It has been logged.", "error": type(exc).__name__})
+
+
 @app.on_event("startup")
 async def startup_event():
     import time

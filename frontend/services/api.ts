@@ -29,21 +29,21 @@ const api = axios.create({
   },
 });
 
-// Automatic retry on network error (PWA wakeup from sleep causes brief connection drops)
+// Automatic retry on network error (PWA wakeup from sleep causes brief connection drops) and on a
+// backend blip (502/503/504/52x from the edge while the server restarts, or a retryable "database busy" 503)
+const GATEWAY_STATUSES = new Set([502, 503, 504, 520, 521, 522, 523, 524]);
 api.interceptors.response.use(
   response => response,
   async (error) => {
     const config = error.config;
-    // Only retry GET requests on network errors (not 4xx/5xx server errors)
-    if (
-      config &&
-      !config._retried &&
-      config.method === 'get' &&
-      (!error.response || error.code === 'ERR_NETWORK' || error.message?.includes('Network Error'))
-    ) {
+    const status = error.response?.status;
+    const blip = !error.response || error.code === 'ERR_NETWORK' || error.message?.includes('Network Error');
+    const gateway = status !== undefined && GATEWAY_STATUSES.has(status);
+    // Only retry GET requests (idempotent); never retry ordinary 4xx/5xx application errors
+    if (config && !config._retried && config.method === 'get' && (blip || gateway)) {
       config._retried = true;
-      // Wait 1.5 seconds then retry once — handles PWA waking from iOS background
-      await new Promise(r => setTimeout(r, 1500));
+      // Wait then retry once — handles PWA waking from iOS background and a server that is coming back up
+      await new Promise(r => setTimeout(r, gateway ? 2500 : 1500));
       return api(config);
     }
     return Promise.reject(error);
@@ -179,7 +179,7 @@ api.interceptors.response.use(
             }
           } catch {}
 
-          const isGateway = status === 502 || status === 503 || status === 504;
+          const isGateway = status === 502 || status === 503 || status === 504 || (status >= 520 && status <= 524);
           reportError({
             error_message: `API ${status}${isGateway ? ' (GATEWAY/CRASH)' : ''}${impersonationContext}: ${error.config?.method?.toUpperCase()} ${error.config?.url} — ${JSON.stringify(error.response.data)?.slice(0, 400)}`,
             error_type: isGateway ? 'server_crash' : 'api_error',
@@ -188,6 +188,7 @@ api.interceptors.response.use(
               url: error.config?.url,
               method: error.config?.method,
               is_gateway_error: isGateway,
+              retried: !!error.config?._retried,
               impersonation: impersonationContext || 'none',
               page: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
             },
