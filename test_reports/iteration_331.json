@@ -1,0 +1,28 @@
+{
+  "summary": "Full-stack review of Lead Shops (feature A) + InterviewCard photo hint (feature B). Backend regressions (test_lead_shops.py, test_photo_request.py, text_shops fast cases) all pass individually. Added /app/backend/tests/test_lead_shops_review_iter100.py covering guards + full manual lead shop lifecycle (create manual -> pool cell +15005550311 -> delivered -> inbound Twilio text webhook routed as text_shop -> counts.text=1 -> not leaked as inbound contact -> close -> LLM-graded -> pool row reset). 9/9 passing. Frontend: verified shopper-pool-card summary/toggle/buy button, /admin/mystery-shops/<QAJeep>?tab=leads shows lead-setup-card + Send-a-lead card + RUNNING (Priya) + COMPLETED (Sam 62%) rows with correct channel chips; detail sheet for Sam shows all bars (speed 38, effort 33, coverage 67, persistence 100), channel rows (call 100/text 0/email 15), 2 conversations, timeline events, ADF preview contains <adf>+Sam, Re-score works and toasts 'Re-scored', delete visible (not clicked); live Priya detail shows status Live 23h 36m left, channel chips 'Nothing yet'/'First text after 7 min'/'Nothing yet', 2 timeline events, lead-close button present (NOT clicked). Setup sheet fields all present; changing first_call_min to 4 saved and process line updated; invalid email produces 'not an email' toast; restored. New-lead sheet has every testid. InterviewCard: with seeded interview_sessions + photo_requests(open) the interview-photo-hint pill appears with correct copy; flipping to done switches to interview-photo-done. Docs cleaned up.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "tests/test_lead_shops.py::test_lead_shop_api", "issue": "Fails when run in same pytest session as test_lead_shop_lifecycle due to shared client_id lead_email state being wiped by prior test; passes standalone. Pre-existing suite ordering flakiness, not a product bug."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_lead_shops_review_iter100.py",
+    "/app/backend/tests/test_lead_shops.py",
+    "/app/backend/tests/test_photo_request.py",
+    "/app/backend/tests/test_text_shops.py"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "test_lead_shops.py has state coupling between test_lead_shop_lifecycle (wipes client.lead_email) and test_lead_shop_api (expects it) - consider fixture-based reset for isolation."
+  ],
+  "updated_files": ["/app/backend/tests/test_lead_shops_review_iter100.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Super admin forest@imosapp.com / Admin123!; QA manager qa-manager@invalid.imonsocial.test / Manager123!",
+  "seed_data_creation": "Re-ran /app/backend/tests/seed_lead_shop_demo.py (idempotent). My e2e test created & deleted a throwaway lead shop for QA Jeep and reset the +15005550311 pool row cooldown_until back to null; live Priya + completed Sam seeds left intact.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Seed IDs shift each reseed; look them up via GET /api/lead-shops?client_id=6aa6d7dfb4c41decb2734ec4. Login token key is 'token' (not 'access_token'). Buy-number endpoint requires JSON body {} (Pydantic BuyBody); missing body returns 422 not 400. Do NOT confirm 'Buy another number' - LEAD_SHOP_BUY_NUMBERS guard returns 400 'switched off'. When cleaning up my manual shop, DELETE also frees the seeded pool row; my fixture explicitly resets phone_number_pool row for +15005550311 back to available with cooldown_until=null.",
+  "rca of the issue": "N/A - no bugs found."
+}
