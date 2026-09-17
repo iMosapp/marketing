@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import re
+from difflib import SequenceMatcher
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -175,7 +176,10 @@ def assistant_instructions(cfg: dict, user: dict, language: str = "English", con
             "- The rep asks to text, remind, draft, look something up, or asks about their numbers or how the app works.\n"
             "- The rep asks to open, pull up, show or go to something on the screen.\n"
             "- The rep confirms or cancels an action you read back (yes, send it / no, hold on).\n"
-            "- A correction changes a task already requested.\n\n"
+            "- A correction changes a task already requested.\n"
+            "- The rep picks one of several people the backend listed, spells a name, or says the person you found is the wrong one. Delegate again right away; the backend matches names loosely (Tod and Todd, Berry and Barry), so a spelled name or a last name settles it.\n\n"
+            "Names: when the backend lists several people, read the names with what tells them apart (last name, spelling, vehicle) and ask which one. Never pick one yourself. "
+            "If the rep says it is the wrong person, apologise in two or three words and ask for the last name or the spelling.\n\n"
             "Do not delegate to the backend when:\n"
             "- The rep greets you, thanks you, or asks you to repeat a result already provided.\n"
             "- You need a brief clarification to understand who or what they mean.\n\n"
@@ -352,7 +356,7 @@ Tools:
 - answer: anything else (how the app works, small talk that needs facts, their numbers). args: {"say": "<the answer in at most 60 spoken words>"}
 - open_screen: the rep wants something SHOWN on their phone screen: open / pull up / show / bring up / go to a person's record, a text thread, their tasks, home or the inbox. args: {"what": "contact|thread|tasks|home|inbox", "name": "<the person, empty for tasks/home/inbox>"}
 
-Rules: "pull up Mike" or "show me Sarah" means open_screen (they want to see it); "tell me about Mike" or "what did Sarah buy" means recall_person (they want to hear it). If a person's name is unclear, still pick the tool with your best reading of the name. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
+Rules: "pull up Mike" or "show me Sarah" means open_screen (they want to see it); "tell me about Mike" or "what did Sarah buy" means recall_person (they want to hear it). If a person's name is unclear, still pick the tool with your best reading of the name. Names: pass first AND last name whenever the rep said both. If the rep spells a name ("T-O-D", "J E S S I E", "B as in boy, E, R..."), args.name MUST use exactly those letters for that part (J E S S I E -> Jessie, never Jesse) plus the other name part (e.g. "Jessie Walters"). If Jessi just listed several people and the rep picks one ("the second one", "the one with the Tahoe", "Berry", "not Snow, the other Todd"), args.name is that person's full name exactly as listed. If the rep says the last match was the wrong person, do not reuse it: use the corrected name they gave. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
 
 
 def _first_last(c: dict) -> str:
@@ -364,19 +368,103 @@ def _fmt_phone(p: str) -> str:
     return f"({d[-10:-7]}) {d[-7:-4]}-{d[-4:]}" if len(d) >= 10 else (p or "")
 
 
+def _norm(s: str) -> str:
+    return re.sub(r"[^a-z]", "", (s or "").lower())
+
+
+def _soundex(s: str) -> str:
+    s = _norm(s)
+    if not s:
+        return ""
+    codes = {**dict.fromkeys("bfpv", "1"), **dict.fromkeys("cgjkqsxz", "2"), **dict.fromkeys("dt", "3"), "l": "4", **dict.fromkeys("mn", "5"), "r": "6"}
+    out, last = s[0].upper(), codes.get(s[0], "")
+    for ch in s[1:]:
+        code = codes.get(ch, "")
+        if code and code != last:
+            out += code
+        if ch not in "hw":
+            last = code
+    return (out + "000")[:4]
+
+
+def _sim(a: str, b: str) -> float:
+    """How alike two spoken name parts are: exact 1.0; Tod/Todd, Berry/Barry, Jesse/Jessie land around 0.9.
+    A part the rep spelled out (marked with a leading '=') must match exactly to score high."""
+    strict = a.startswith("=")
+    a, b = _norm(a), _norm(b)
+    if not a or not b:
+        return 0.0
+    if a == b:
+        return 1.0
+    score = SequenceMatcher(None, a, b).ratio()
+    if strict:
+        return score * 0.7
+    if min(len(a), len(b)) >= 3 and (a.startswith(b) or b.startswith(a)):
+        score = max(score, 0.9)
+    if _soundex(a) == _soundex(b):
+        score = max(score, 0.88)
+    return score
+
+
+def _despell(name: str) -> str:
+    """'Tod, T-O-D Berry' -> 'Tod =TOD Berry': letters the rep spelled out become one word again, marked as spelled."""
+    s = re.sub(r"\b([A-Za-z])(?:[\s\-\.,]+([A-Za-z])\b)+", lambda m: "=" + re.sub(r"[\s\-\.,]", "", m.group(0)), name or "")
+    return re.sub(r"[^\w\s'\-=]", " ", s)
+
+
+STOP_WORDS = {"the", "one", "guy", "lady", "customer", "and", "not", "no", "other", "yes", "mean", "meant", "i", "want", "pull", "up", "open", "with", "spelled", "spelt", "like", "in", "as", "boy"}
+
+
+def _name_words(name: str) -> list:
+    """Distinct name parts, spelled versions ('=tod') replacing their spoken twin, junk words dropped."""
+    out: dict = {}
+    for w in re.split(r"\s+", _despell(name).strip()):
+        key = _norm(w)
+        if not w or not key or key in STOP_WORDS:
+            continue
+        if key not in out or w.startswith("="):
+            out[key] = w
+    return list(out.values())[:3]
+
+
+def _score(words: list, c: dict) -> float:
+    first, last = c.get("first_name") or "", c.get("last_name") or ""
+    if not words:
+        return 0.0
+    if len(words) == 1:
+        return max(_sim(words[0], first), 0.92 * _sim(words[0], last))
+    direct = (_sim(words[0], first) + _sim(words[-1], last)) / 2
+    swapped = (_sim(words[0], last) + _sim(words[-1], first)) / 2
+    full = SequenceMatcher(None, _norm("".join(words)), _norm(first + last)).ratio() * (0.7 if any(w.startswith("=") for w in words) else 1.0)
+    return max(direct, swapped, full)
+
+
 async def _find(db, user_id: str, name: str, limit: int = 5) -> list:
-    words = [w for w in re.split(r"\s+", (name or "").strip()) if w]
+    """Fuzzy, spoken-name lookup over the rep's contacts: mishearings (Berry/Barry), spellings (Tod/Todd, Jesse/Jessie) and
+    spelled-out letters all land on the right people. Each row carries `_score`; rows come back best first."""
+    words = _name_words(name)
     if not words:
         return []
-    q = {"user_id": user_id, "$and": [{"$or": [{"first_name": {"$regex": re.escape(w), "$options": "i"}}, {"last_name": {"$regex": re.escape(w), "$options": "i"}}]} for w in words[:3]]}
-    rows = await db.contacts.find(q, {"first_name": 1, "last_name": 1, "phone": 1, "vehicle": 1, "email": 1, "tags": 1, "created_at": 1}).limit(limit).to_list(limit)
-    if not rows and len(words) > 1:  # "Jim Carter" misheard as "Jim Carver": fall back to the first name only
-        rows = await db.contacts.find({"user_id": user_id, "first_name": {"$regex": f"^{re.escape(words[0])}", "$options": "i"}}, {"first_name": 1, "last_name": 1, "phone": 1, "vehicle": 1}).limit(limit).to_list(limit)
-    return rows
+    cands = await db.contacts.find({"user_id": user_id}, {"first_name": 1, "last_name": 1}).limit(25000).to_list(25000)
+    scored = sorted(((_score(words, c), c["_id"]) for c in cands), key=lambda x: -x[0])
+    keep = [(s, cid) for s, cid in scored[:limit] if s >= 0.78]
+    if not keep:
+        return []
+    rows = await db.contacts.find({"_id": {"$in": [cid for _, cid in keep]}}, {"first_name": 1, "last_name": 1, "phone": 1, "vehicle": 1, "email": 1, "tags": 1, "created_at": 1}).to_list(limit)
+    by_id = {r["_id"]: r for r in rows}
+    out = []
+    for s, cid in keep:
+        if cid in by_id:
+            out.append({**by_id[cid], "_score": round(s, 3)})
+    return out
 
 
-def _match_line(c: dict) -> str:
-    bits = [_first_last(c)]
+def _spell(word: str) -> str:
+    return "-".join(ch.upper() for ch in word if ch.isalpha())
+
+
+def _match_line(c: dict, spell_first: bool = False) -> str:
+    bits = [_first_last(c) + (f" ({_spell(c.get('first_name') or '')})" if spell_first and c.get("first_name") else "")]
     if c.get("vehicle"):
         bits.append(str(c["vehicle"]))
     if c.get("phone"):
@@ -384,12 +472,21 @@ def _match_line(c: dict) -> str:
     return ", ".join(bits)
 
 
+def _choices(rows: list) -> str:
+    """Spoken list of candidates; when two share a first name that is spelled differently (Tod/Todd) the spelling is read out."""
+    firsts = [_norm(c.get("first_name") or "") for c in rows]
+    spell = any(firsts.count(f) == 1 and any(_soundex(f) == _soundex(g) and f != g for g in firsts) for f in firsts)
+    return "; ".join(_match_line(c, spell_first=spell) for c in rows[:4])
+
+
 def _same_person(contact: dict, name: str) -> bool:
-    n = (name or "").strip().lower()
-    if not n:
+    words = _name_words(name)
+    if not words:
         return True
-    first = (contact.get("first_name") or "").strip().lower()
-    return n == _first_last(contact).lower() or (bool(first) and n.split()[0] == first)
+    first, last = contact.get("first_name") or "", contact.get("last_name") or ""
+    if len(words) == 1:
+        return _sim(words[0], first) >= 0.85 or _sim(words[0], last) >= 0.9
+    return _score(words, contact) >= 0.85 and (_sim(words[-1], last) >= 0.8 or _sim(words[-1], first) >= 0.8)
 
 
 async def _resolve(db, user_id: str, name: str, focus: Optional[dict] = None):
@@ -398,9 +495,11 @@ async def _resolve(db, user_id: str, name: str, focus: Optional[dict] = None):
         return focus, None
     rows = await _find(db, user_id, name)
     if not rows:
-        return None, f"I could not find anyone named {name} in your contacts. Want me to try a different spelling?"
-    if len(rows) > 1 and not (len(name.split()) > 1 and _first_last(rows[0]).lower() == name.strip().lower()):
-        return None, f"I found {len(rows)} people close to {name}: " + "; ".join(_match_line(c) for c in rows[:4]) + ". Which one?"
+        return None, f"I could not find anyone named {name} in your contacts. Want me to try a different spelling, or spell it for me?"
+    best = rows[0].get("_score", 1.0)
+    runner = rows[1].get("_score", 0.0) if len(rows) > 1 else 0.0
+    if len(rows) > 1 and (best < 0.86 or runner >= 0.85 or best - runner < 0.1):
+        return None, f"I found {len(rows)} people close to {name}: {_choices(rows)}. Which one?"
     return rows[0], None
 
 
@@ -552,11 +651,11 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
         if tool == "who_today":
             result = await _who_today(db, user)
         elif tool == "find_person":
-            rows = [focus] if focus and _same_person(focus, args.get("name") or "") else await _find(db, str(user["_id"]), args.get("name") or "")
-            if len(rows) == 1:
-                result, opened = f"Found {_match_line(rows[0])}. They are up on your screen.", _open_target("contact", rows[0])
+            contact, err = await _resolve(db, str(user["_id"]), args.get("name") or "", focus)
+            if contact:
+                result, opened = f"Found {_match_line(contact)}. They are up on your screen.", _open_target("contact", contact)
             else:
-                result = ("I found " + "; ".join(_match_line(c) for c in rows[:4]) + ". Which one did you mean?") if rows else f"No one named {args.get('name')} in your contacts."
+                result = err
         elif tool == "recall_person":
             result, contact = await _recall(db, user, args.get("name") or ("" if focus else _last_rep_text(transcript)), focus)
             opened = _open_target("contact", contact) if contact else None

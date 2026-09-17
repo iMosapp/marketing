@@ -133,6 +133,42 @@ async def test_brain_who_today_recall_text_confirm_reminder():
         await db.messages.delete_many({"conversation_id": {"$in": [str(c["_id"]) async for c in db.conversations.find({"user_id": str(user["_id"]), "contact_id": "6aa413008f0d53e3f2261854"})]}, "created_at": {"$gte": live["started_at"]}})
 
 
+async def test_fuzzy_name_resolution():
+    """Todd Berry spoken -> Tod Berry (one D) found, not Todd Snow; 'Todd' alone asks; spelled letters win; Jesse/Jessie handled."""
+    db = get_db()
+    user = await _tester(db)
+    uid = str(user["_id"])
+    extra = [{"first_name": "Todd", "last_name": "Snow", "phone": "+15005550301"}, {"first_name": "Tod", "last_name": "Berry", "phone": "+15005550302", "vehicle": "2024 Tahoe"},
+             {"first_name": "Jesse", "last_name": "Pinkman", "phone": "+15005550303"}, {"first_name": "Jessie", "last_name": "Walters", "phone": "+15005550304"}]
+    ids = [(await db.contacts.insert_one({**c, "user_id": uid, "created_at": datetime.now(timezone.utc)})).inserted_id for c in extra]
+    try:
+        c, err = await lv._resolve(db, uid, "Todd Berry")
+        assert c and c["last_name"] == "Berry" and c["first_name"] == "Tod" and err is None
+        c, err = await lv._resolve(db, uid, "Todd Barry")
+        assert c and c["last_name"] == "Berry"
+        c, err = await lv._resolve(db, uid, "Todd")
+        assert c is None and "Todd Snow (T-O-D-D)" in err and "Tod Berry (T-O-D)" in err and "Which one" in err
+        c, err = await lv._resolve(db, uid, "Tod, T-O-D")
+        assert c and c["last_name"] == "Berry", "spelling it out settles it"
+        c, err = await lv._resolve(db, uid, "Jesse")
+        assert c is None and "Jesse Pinkman" in err and "Jessie Walters" in err
+        c, err = await lv._resolve(db, uid, "Jesse Walters")
+        assert c and c["first_name"] == "Jessie"
+        c, err = await lv._resolve(db, uid, "Sara Tester")
+        assert c and c["first_name"] == "Sarah"
+        c, err = await lv._resolve(db, uid, "Zebulon Quixote")
+        assert c is None and "spell it" in err
+        focus = await db.contacts.find_one({"_id": ids[0]})
+        c, err = await lv._resolve(db, uid, "Todd Berry", focus)
+        assert c and c["last_name"] == "Berry", "a different last name beats the focus contact"
+        c, err = await lv._resolve(db, uid, "Todd", focus)
+        assert c and c["last_name"] == "Snow", "first name alone stays with the focus contact"
+        rows = await lv._find(db, uid, "Todd Berry")
+        assert rows[0]["_score"] >= 0.9 and all("_score" in r for r in rows)
+    finally:
+        await db.contacts.delete_many({"_id": {"$in": ids}})
+
+
 async def test_open_targets_for_the_screen(monkeypatch):
     """Every tool that touches a person tells the app what to put on screen; open_screen does it on request. Brain + recall LLM are faked."""
     import services.scripts as scr
