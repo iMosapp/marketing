@@ -41,6 +41,19 @@ FEATURES = [
                      "Try a campaign with Press 1 to accept: when a lead answers your phone says the name, you press 1 to talk.",
                      "Tools > GoHighLevel: paste a Location ID + Private Integration Token, import a tag into a campaign, mark a lead Interested and check the note + tag in GHL."],
      "added": "2026-06-20", "needs": "Reps need their cell number on their profile and a work number (caller ID). Consumer (B2C) lists should have the National DNC Registry loaded under Do Not Call."},
+    {"key": "jessi_live_voice", "name": "Talk to Jessi (live voice)", "icon": "radio",
+     "tagline": "A real conversation with Jessi on the Home screen: full duplex, you can interrupt her, and she pulls your real people, sends texts and sets reminders while you talk.",
+     "description": "Talk to Jessi runs on OpenAI GPT-Live-1: the model listens and speaks at the same time, so there is no record-and-wait. Jessi handles the talking; every fact comes from our backend. "
+                    "When you name a person, ask who to talk to today, ask to text or remind someone, or ask how something works, GPT-Live hands the request to our brain, which reads the live transcript, "
+                    "runs the real tool (your daily three, the contact record, a draft, a task) and hands back a short verified result she says out loud. Texts are always read back and only sent after you say yes. "
+                    "The Voice Lab lets you pick her voice (13 options), energy, pacing, playfulness and brevity, and audition her in the browser before reps hear her. Web and PWA first: on the iPhone app "
+                    "the button opens the current Ask Jessi until the next App Store build.",
+     "how_to_test": ["Open the Voice Lab, pick a voice and energy, tap Audition and just talk: ask who you should talk to today, then ask about one of them by name.",
+                     "Interrupt her mid-sentence. She should stop and listen.",
+                     "Say 'text Sam and tell him the part came in'. She reads the text back; say yes and check the thread.",
+                     "Say 'remind me to call Sam Friday at 2'. Check Touchpoints.",
+                     "Save the config, then use the gold Talk to Jessi button on Home. Check the session shows up under Recent conversations with minutes and cost."],
+     "added": "2026-06-21", "needs": "Needs OPENAI_API_KEY (your own OpenAI project key) in the backend environment. GPT-Live-1 is English only for now; Dutch keeps the current flow."},
 ]
 STATUSES = ("lab", "live")
 SETTINGS_KEY = "lab_features"
@@ -79,6 +92,9 @@ async def list_features(db) -> list:
         if f["key"] == "voice_interview":
             reason = await asyncio.to_thread(voice_id.available)
             row["needs"] = f"Voice ID is not running on this server: {reason}" if reason else None
+        elif f["key"] == "jessi_live_voice":
+            from services import live_voice
+            row["needs"] = live_voice.configured()
         out.append(row)
     return out
 

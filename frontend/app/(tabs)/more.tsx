@@ -582,6 +582,7 @@ export default function MoreScreen() {
       { icon: 'ticket', title: 'Discount Codes', subtitle: 'Promo codes', onPress: () => router.push('/admin/discount-codes'), color: '#5856D6' },
       { icon: 'storefront', title: 'Mystery Shops', subtitle: 'Client stores you phone-shop: people, challenge calls, reports, billing', onPress: () => router.push('/admin/mystery-shops' as any), color: '#C9A962' },
       { icon: 'flask', title: 'Test Lab', subtitle: 'Try new features on your account before reps see them', onPress: () => router.push('/admin/test-lab' as any), color: '#C9A962' },
+      { icon: 'radio', title: 'Jessi Voice Lab', subtitle: 'Pick her live voice, energy and pacing, audition her', onPress: () => router.push('/admin/voice-lab' as any), color: '#C9A962' },
       // System
       { icon: 'mail', title: 'Shared Inboxes', subtitle: 'Department numbers, members, routing', onPress: () => router.push('/inboxes' as any), color: '#007AFF' },
       { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts between users', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },

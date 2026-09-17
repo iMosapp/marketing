@@ -10,6 +10,7 @@ import { GOLD, GREEN, RED, tid, fmtDate } from '../../components/scripts/shared'
 import { InterviewCard } from '../../components/profile/InterviewCard';
 import { FactsCard } from '../../components/va/FactsCard';
 import { DialerLabCard } from '../../components/dialer/DialerLabCard';
+import { VoiceLabCard } from '../../components/jessi/VoiceLabCard';
 
 type Feature = { key: string; name: string; icon: string; tagline: string; description: string; how_to_test: string[]; added: string; needs?: string; status: 'lab' | 'live'; changed_at?: string | null; changed_by?: string | null };
 
@@ -17,6 +18,7 @@ const TRY: Record<string, React.ComponentType> = {
   voice_interview: () => <InterviewCard compact dryRun />,
   industry_va: () => <FactsCard />,
   power_dialer: () => <DialerLabCard />,
+  jessi_live_voice: () => <VoiceLabCard />,
 };
 
 export default function TestLab() {

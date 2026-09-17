@@ -28,6 +28,7 @@ import { UniversalShareModal } from '../../components/UniversalShareModal';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 import { LeadsWaitingStrip } from '../../components/home/LeadsWaitingStrip';
 import { ReplyHealthCard } from '../../components/home/ReplyHealthCard';
+import { TalkToJessiButton } from '../../components/jessi/TalkToJessiButton';
 import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
 import { HotVehiclesCard } from '../../components/home/HotVehiclesCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
@@ -934,6 +935,9 @@ function HomeScreen() {
           </View>
         ) : (
         <>
+
+        {/* ── TALK TO JESSI — live voice (Test Lab gated) ── */}
+        <TalkToJessiButton />
 
         {!simpleHome && (<>
         {/* ── LEADS WAITING — shared queue + my unanswered internet leads ── */}
