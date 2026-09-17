@@ -18,6 +18,7 @@ AI Modes (per campaign):
 import asyncio
 import logging
 import os
+from services.llm_models import CUSTOMER_TEXT_MODEL
 import random
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -783,7 +784,7 @@ async def queue_ai_reply(
             api_key=emergent_key,
             session_id=session_id,
             system_message=system_prompt,
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
 
         response = await asyncio.wait_for(
             chat.send_message(UserMessage(text=user_prompt)),
@@ -1616,7 +1617,7 @@ async def send_silence_followups():
                 api_key=os.environ.get("EMERGENT_LLM_KEY",""),
                 session_id=f"followup-{_uuid2.uuid4().hex[:10]}",
                 system_message=system_prompt,
-            ).with_model("openai","gpt-5.2")
+            ).with_model(*CUSTOMER_TEXT_MODEL)
 
             result = await asyncio.wait_for(
                 chat.send_message(UserMessage(text=f"Recent conversation:\n{ctx}\n\nWrite one warm follow-up sentence.")),
@@ -1735,7 +1736,7 @@ async def send_silence_followups():
                 api_key=os.environ.get("EMERGENT_LLM_KEY",""),
                 session_id=f"followup-{_uuid2.uuid4().hex[:10]}",
                 system_message=system_prompt,
-            ).with_model("openai","gpt-5.2")
+            ).with_model(*CUSTOMER_TEXT_MODEL)
 
             reply_text = await asyncio.wait_for(
                 chat.send_message(UserMessage(text=f"Recent conversation:\n{ctx}\n\nWrite one warm follow-up sentence.")),

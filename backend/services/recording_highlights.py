@@ -14,7 +14,9 @@ from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
 
-MODEL = ("openai", "gpt-5.2")
+from services.llm_models import CUSTOMER_TEXT_MODEL
+
+MODEL = ("openai", "gpt-5.2")  # conversation analysis; the nudge text the customer reads uses CUSTOMER_TEXT_MODEL
 MAX_TASKS = 5
 ACTION_TYPE = {"call": "call", "text": "text", "email": "email", "appointment": "appointment", "task": "manual"}
 TASK_TYPE = {"call": "call", "appointment": "appointment"}
@@ -174,7 +176,7 @@ async def draft_nudge_text(task: dict, first: str, rep_first: str, tz: str) -> s
                        system_message=(f"You write the one text message car salesperson {rep_first} sends customer {first} right now to keep a promise made in person. "
                                        "The promise is due right now, so the text delivers it or moves it forward today (never repeat the original deadline like 'by tomorrow', never say 'keeping my promise'). "
                                        "Under 300 characters, warm and plain, first name once, specific to the promise. If a number or detail is not known, say you are pulling it together now and ask what you need, "
-                                       "never invent figures and never use placeholders in brackets. No greeting longer than 'Hi {first},', no sign-off, no em dashes or en dashes. Return only the text.")).with_model(*MODEL)
+                                       "never invent figures and never use placeholders in brackets. No greeting longer than 'Hi {first},', no sign-off, no em dashes or en dashes. Return only the text.")).with_model(*CUSTOMER_TEXT_MODEL)
         resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"Promise: {title}\nWhat was said: {detail}\nKind: {action}\nDue: {when}")), timeout=40)
         text = no_em_dash((resp if isinstance(resp, str) else getattr(resp, "text", "") or "").strip().strip('"'))
         text = re.sub(r"\[[^\]]*\]", "", text).strip()

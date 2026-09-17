@@ -12,6 +12,7 @@ from typing import Optional
 from bson import ObjectId
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from services.llm_models import CUSTOMER_TEXT_MODEL
 from routers.database import get_db
 from utils.text_sanitize import no_em_dash, clean_ai_text
 
@@ -174,7 +175,7 @@ async def generate_suggestions(user_id: str, contact_id: str) -> dict:
         api_key=api_key,
         session_id=session_id,
         system_message=OUTREACH_SYSTEM_PROMPT,
-    ).with_model("openai", "gpt-5.2")
+    ).with_model(*CUSTOMER_TEXT_MODEL)
 
     response_text = await chat.send_message(UserMessage(text=full_prompt))
 

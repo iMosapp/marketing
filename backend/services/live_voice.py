@@ -466,10 +466,11 @@ async def _draft(db, user: dict, contact: dict, intent: str, wording: str = "") 
         return no_em_dash(wording.strip()[:400])
     from services.contact_ask import build_record
     from services.scripts import _llm
+    from services.llm_models import CUSTOMER_TEXT_MODEL
     rec = await build_record(db, contact)
     rep_first = (user.get("name") or "").split(" ")[0]
     text = (await _llm(f"Write ONE text message from {rep_first} (a salesperson) to their customer {contact.get('first_name')}. Under 240 characters, sounds human, first name only, no emojis, no signature, no em dashes, references something real from the record when it helps. Output only the message.",
-                       f"Goal: {intent or 'friendly check-in'}\n\nPROFILE:\n{rec.get('profile', '')[:2500]}\n\nRECENT:\n{(rec.get('timeline') or '')[-2500:]}", timeout=40)).strip().strip('"')[:400]
+                       f"Goal: {intent or 'friendly check-in'}\n\nPROFILE:\n{rec.get('profile', '')[:2500]}\n\nRECENT:\n{(rec.get('timeline') or '')[-2500:]}", timeout=40, model=CUSTOMER_TEXT_MODEL)).strip().strip('"')[:400]
     return await clean_ai_text(text, str(user["_id"]))
 
 

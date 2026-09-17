@@ -12,6 +12,7 @@ in the Unassigned inbox queue.
 import asyncio
 import logging
 import os
+from services.llm_models import CUSTOMER_TEXT_MODEL
 import re
 import math
 import xml.etree.ElementTree as ET
@@ -466,7 +467,7 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
                 api_key=emergent_key,
                 session_id=f"lead-first-msg-{lead.get('phone','')}",
                 system_message=system_prompt,
-            ).with_model("openai", "gpt-5.2")
+            ).with_model(*CUSTOMER_TEXT_MODEL)
 
             response = await chat.send_message(UserMessage(text=user_msg))
             msg = response.strip() if isinstance(response, str) else (

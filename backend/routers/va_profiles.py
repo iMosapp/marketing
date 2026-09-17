@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from bson import ObjectId
+from services.llm_models import CUSTOMER_TEXT_MODEL
 import logging
 
 from routers.database import get_db
@@ -146,7 +147,7 @@ async def preview_va_profile(profile_id: str, x_user_id: str = Header(None, alia
             api_key=emergent_key,
             session_id=f"va-preview-{_uuid.uuid4().hex[:10]}",
             system_message=system_prompt,
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
 
         result = await _aio.wait_for(
             chat.send_message(UserMessage(text='A customer just texted: "Hey, I saw you had a truck available — what can you tell me about it?"')),

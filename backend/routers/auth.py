@@ -1197,13 +1197,14 @@ async def generate_va_sample_message(user_id: str, data: dict):
 
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
+        from services.llm_models import CUSTOMER_TEXT_MODEL
 
         emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
         chat = LlmChat(
             api_key=emergent_key,
             session_id=f"va-preview-{user_id}",
             system_message=system_prompt,
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
 
         response = await chat.send_message(UserMessage(text=scenario))
         reply = response.strip() if isinstance(response, str) else (response.text.strip() if hasattr(response, "text") else str(response))

@@ -5,6 +5,7 @@ then a contact + inbox thread is created automatically.
 """
 
 import os
+from services.llm_models import CUSTOMER_TEXT_MODEL
 import uuid
 import logging
 from datetime import datetime, timezone
@@ -130,7 +131,7 @@ async def send_message(request: Request):
             api_key=api_key,
             session_id=f"chat_widget_{session_id}",
             system_message=JESSI_SYSTEM_PROMPT
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
 
         # Build conversation context
         msg_count = len([m for m in session["messages"] if m["role"] == "visitor"])

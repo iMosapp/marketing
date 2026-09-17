@@ -17,7 +17,9 @@ from utils.text_sanitize import no_em_dash
 logger = logging.getLogger(__name__)
 
 SESS = "contact_ask_sessions"
-MODEL = ("openai", "gpt-5.2")
+from services.llm_models import CUSTOMER_TEXT_MODEL
+
+MODEL = ("openai", "gpt-5.2")  # rep-facing Q&A; the draft the customer reads uses CUSTOMER_TEXT_MODEL
 CHAR_BUDGET = 70000
 CITE_RE = re.compile(r"\[([TCVEK])(\d+)(?:@(\d+(?::\d{2})?))?\]")
 
@@ -309,7 +311,7 @@ async def draft_text(user: dict, contact: dict, answer: str, question: str = "")
                    system_message=(f"You write text messages a car salesperson named {rep_first} sends to a customer named {first}. "
                                    "Given the salesperson's internal notes below, write ONE friendly, natural SMS to the customer that follows up on them: "
                                    "warm, specific, one clear next step or question, 1 to 3 sentences, under 300 characters, first person, no sign-off block, no hashtags, "
-                                   "no internal jargon, never mention AI, transcripts, recordings or notes. Never use em dashes or en dashes. Return ONLY the text message.")).with_model(*MODEL)
+                                   "no internal jargon, never mention AI, transcripts, recordings or notes. Never use em dashes or en dashes. Return ONLY the text message.")).with_model(*CUSTOMER_TEXT_MODEL)
     resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"Rep's question: {question[:300]}\n\nInternal notes:\n{clean[:3000]}")), timeout=45.0)
     text = resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
     return no_em_dash(text.strip().strip('"'))[:600]

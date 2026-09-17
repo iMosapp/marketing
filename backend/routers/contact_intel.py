@@ -5,6 +5,7 @@ Generates an on-demand AI briefing about a contact using all available data.
 import asyncio
 import json
 import os
+from services.llm_models import CUSTOMER_TEXT_MODEL
 import logging
 from datetime import datetime, timezone
 from bson import ObjectId
@@ -475,7 +476,7 @@ Return ONLY the message text, nothing else. No quotes, no explanation."""
             api_key=api_key,
             session_id=f"suggest_{contact_id}_{user_id}",
             system_message=system_prompt
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
 
         prompt = f"Suggest a message to send to this contact:\n\n{contact_data}{actions_text}"
         response = await chat.send_message(UserMessage(text=prompt))

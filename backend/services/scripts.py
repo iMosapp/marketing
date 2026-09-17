@@ -164,9 +164,9 @@ def _json(raw: str) -> dict:
     return {}
 
 
-async def _llm(system: str, user: str, timeout: int = 75) -> str:
+async def _llm(system: str, user: str, timeout: int = 75, model: tuple = MODEL) -> str:
     from emergentintegrations.llm.chat import LlmChat, UserMessage
-    chat = LlmChat(api_key=os.environ["EMERGENT_LLM_KEY"], session_id=f"scripts-{uuid.uuid4().hex[:8]}", system_message=system).with_model(*MODEL)
+    chat = LlmChat(api_key=os.environ["EMERGENT_LLM_KEY"], session_id=f"scripts-{uuid.uuid4().hex[:8]}", system_message=system).with_model(*model)
     resp = await asyncio.wait_for(chat.send_message(UserMessage(text=user)), timeout=timeout)
     return resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
 

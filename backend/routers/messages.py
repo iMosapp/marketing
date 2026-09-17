@@ -17,6 +17,7 @@ import asyncio
 from models import Message, MessageCreate
 from routers.database import get_db, get_data_filter, increment_user_stat
 from services.tag_workflows import initial_ai_state
+from services.llm_models import CUSTOMER_TEXT_MODEL
 from utils.text_sanitize import no_em_dash, clean_ai_text
 from services.twilio_service import send_sms, get_twilio_status, normalize_phone, TWILIO_PHONE_NUMBER
 
@@ -1936,7 +1937,7 @@ async def get_ai_suggestion_smart(conversation_id: str):
             api_key=emergent_key,
             session_id=f"suggest-{_uuid.uuid4().hex[:12]}",
             system_message=system_prompt,
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
 
         response = await asyncio.wait_for(
             chat.send_message(UserMessage(text=user_prompt)),

@@ -5,6 +5,7 @@ AI Campaign Engine  - Powers intelligent, personalized campaign messaging.
 - Campaign AI reply handling (virtual assistant)
 """
 import os
+from services.llm_models import CUSTOMER_TEXT_MODEL
 import random
 import logging
 from datetime import datetime, timezone
@@ -354,7 +355,7 @@ Write ONLY the message text. No quotes, no explanation. Make it sound like it's 
             api_key=emergent_key,
             session_id=f"campaign-gen-{user_id}-{contact_id}",
             system_message=system_prompt,
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
         response = await chat.send_message(UserMessage(text=user_prompt))
         generated = await clean_ai_text(response.strip().strip('"').strip("'"), user_id)
         return {"success": True, "message": generated, "channel": channel}
@@ -424,7 +425,7 @@ Reply naturally and briefly as me. Just the reply text, nothing else."""
             api_key=emergent_key,
             session_id=f"campaign-reply-{user_id}-{contact_id}",
             system_message=system_prompt,
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
         response = await chat.send_message(UserMessage(text=user_prompt))
         generated = await clean_ai_text(response.strip().strip('"').strip("'"), user_id)
 
@@ -464,7 +465,7 @@ async def preview_ai_clone(user_id: str, data: dict):
             api_key=emergent_key,
             session_id=f"clone-preview-{user_id}",
             system_message=system_prompt,
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
         response = await chat.send_message(UserMessage(text=test_message))
         return {"success": True, "response": await clean_ai_text(response.strip(), user_id)}
     except Exception as e:

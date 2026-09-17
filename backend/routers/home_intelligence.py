@@ -8,6 +8,7 @@ Powers the addictive daily habit loop:
 """
 import logging
 import os
+from services.llm_models import CUSTOMER_TEXT_MODEL
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from bson import ObjectId
@@ -870,7 +871,7 @@ async def draft_message(user_id: str, contact_id: str, reason: str = "", context
             api_key=api_key,
             session_id=f"homedraft_{user_id}_{_secrets.token_hex(4)}",
             system_message=DRAFT_SYSTEM_PROMPT,
-        ).with_model("openai", "gpt-5.2")
+        ).with_model(*CUSTOMER_TEXT_MODEL)
         text = await asyncio.wait_for(chat.send_message(UserMessage(text=prompt)), timeout=12.0)
         text = (text or "").strip().strip('"').strip()
         from utils.text_sanitize import clean_ai_text
