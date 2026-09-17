@@ -127,8 +127,16 @@ export const Chip = ({ label, active, onPress, colors, testID, color = GOLD, sma
 export const replyDur = (secs?: number | null, lang?: string) => { if (secs == null) return ''; if (secs < 60) return lang === 'nl' ? 'minder dan een minuut' : 'under a minute'; const m = Math.round(secs / 60); return m >= 60 ? `${Math.floor(m / 60)} ${lang === 'nl' ? 'u' : 'h'} ${m % 60} min` : `${m} min`; };
 export const minutesSince = (iso?: string | null) => (iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0);
 export const isThread = (c: { channel?: string }) => c.channel === 'text' || c.channel === 'email';
-export const channelIcon = (c: { channel?: string }): any => (c.channel === 'email' ? 'mail' : 'chatbubbles');
-export const channelWord = (c: { channel?: string }) => (c.channel === 'email' ? 'email' : 'text');
+export const channelIcon = (c: { channel?: string }): any => (c.channel === 'email' ? 'mail' : c.channel === 'text' ? 'chatbubbles' : 'call');
+export const channelWord = (c: { channel?: string }) => (c.channel === 'email' ? 'email' : c.channel === 'text' ? 'text' : 'call');
+export const channelKey = (c: { channel?: string }): 'call' | 'text' | 'email' => (c.channel === 'email' ? 'email' : c.channel === 'text' ? 'text' : 'call');
+// "Call" / "Text shop" / "Email shop": every row, title and PDF line names the channel so a text is never read as a phone call
+export const channelLabel = (c: { channel?: string }, lang: string = 'en') => makeT(lang as any)(`ch.${channelKey(c)}`);
+export const ChannelPill = ({ c, colors, lang = 'en', testID }: { c: { channel?: string }; colors?: any; lang?: string; testID?: string }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: GOLD + '22' }} {...tid(testID || `channel-pill-${channelKey(c)}`)}>
+    <Ionicons name={channelIcon(c)} size={12} color={GOLD} /><Text style={{ fontSize: 11, fontWeight: '800', color: GOLD }}>{makeT(lang as any)(channelKey(c) === 'call' ? 'call.badge' : channelKey(c) === 'email' ? 'em.badge' : 'tx.badge')}</Text>
+  </View>
+);
 export const isTextLive = (c: { channel?: string; status: string }) => isThread(c) && (c.status === 'live' || c.status === 'ending');
 
 export const StatusChip = ({ status, colors, lang, channel }: { status: string; colors: any; lang?: string; channel?: string }) => {

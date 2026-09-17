@@ -7,7 +7,7 @@ import api from '../../services/api';
 import { CallRecordingPlayer } from '../../components/CallRecordingPlayer';
 import { ScoreRing } from '../../components/scorecards/ScoreRing';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
-import { Label, deptLabel, replyDur, LIGHT, GOLD, GREEN, RED, tid } from '../../components/mystery-shops/shared';
+import { Label, ChannelPill, channelKey, deptLabel, replyDur, LIGHT, GOLD, GREEN, RED, tid } from '../../components/mystery-shops/shared';
 import { makeT, langOf, fmtWhenL } from '../../components/mystery-shops/i18n';
 
 const Card = ({ children, testID }: { children: React.ReactNode; testID: string }) => (
@@ -38,7 +38,8 @@ export default function PublicShopScore() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
                   <ScoreRing pct={d.score_pct} size={104} stroke={9} colors={LIGHT} label={tr('sc.score')} testID="score-ring" />
                   <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={{ fontSize: wide ? 26 : 22, fontWeight: '800', color: LIGHT.text }} {...tid('score-title')}>{d.first_name ? tr('sc.title', { name: d.first_name }) : tr('sc.title_generic')}</Text>
+                    <ChannelPill c={d} lang={lang} testID={`score-channel-${channelKey(d)}`} />
+                    <Text style={{ fontSize: wide ? 26 : 22, fontWeight: '800', color: LIGHT.text }} {...tid('score-title')}>{d.first_name ? tr(d.channel === 'text' ? 'sc.title_text' : d.channel === 'email' ? 'sc.title_email' : 'sc.title', { name: d.first_name }) : tr('sc.title_generic')}</Text>
                     <Text style={{ fontSize: 13.5, color: LIGHT.textSecondary, lineHeight: 19 }} {...tid('score-meta')}>{d.department_label || deptLabel(d.department)} · {d.challenge_title}{d.persona_name ? ` · ${tr('sc.was', { customer: d.customer_noun || 'shopper', name: d.persona_name.split(' ')[0] })}` : ''}{d.ended_at ? ` · ${fmtWhenL(d.ended_at, lang)}` : ''}{d.store_name ? ` · ${d.store_name}` : ''}</Text>
                   </View>
                 </View>

@@ -31,6 +31,11 @@ def mode_of(channel: Optional[str]) -> str:
     return channel if channel in ("text", "email") else "phone"
 
 
+def channel_of(s: dict) -> str:
+    """call | text | email, from a session's stored mode (phone shops predate the mode field)."""
+    return s.get("mode") if s.get("mode") in ("text", "email") else "call"
+
+
 def mode_q(mode: Optional[str]) -> dict:
     """Same-mode query: a person can be on one call, one text thread and one email thread at the same time."""
     m = mode_of(mode if mode in MODES else "phone")
@@ -940,7 +945,7 @@ async def person_history(db, client: dict, target_id: str, months: int = 6) -> O
     all_scores = [c.get("score_pct") for c in done]
     # the line to compare against: every completed shop on this account in the same window, overall + per department + per month
     window_start = datetime(int(buckets[0]["month"][:4]), int(buckets[0]["month"][5:]), 1, tzinfo=tz).astimezone(timezone.utc)
-    store_done = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "status": "completed", "$or": [{"ended_at": {"$gte": window_start}}, {"scheduled_for": {"$gte": window_start}}]},
+    store_done = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "lead_shop_id": None, "status": "completed", "$or": [{"ended_at": {"$gte": window_start}}, {"scheduled_for": {"$gte": window_start}}]},
                                                  {"score_pct": 1, "department": 1, "ended_at": 1, "scheduled_for": 1, "target_id": 1}).to_list(2000)
     store_by_dept: dict = {}
     store_by_month: dict = {}
@@ -1008,7 +1013,7 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     tz = _tz(client)
     start, end = month_bounds(month, tz)
     cid = str(client["_id"])
-    calls = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "scheduled_for": {"$gte": start, "$lt": end}, "status": {"$ne": "canceled"}}).sort("scheduled_for", 1).to_list(500)
+    calls = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "lead_shop_id": None, "scheduled_for": {"$gte": start, "$lt": end}, "status": {"$ne": "canceled"}}).sort("scheduled_for", 1).to_list(500)
     done = [c for c in calls if c.get("status") == "completed"]
     ev_ids = [ObjectId(c["evaluation_id"]) for c in done if c.get("evaluation_id") and ObjectId.is_valid(str(c["evaluation_id"]))]
     evals = {str(e["_id"]): e for e in await db.call_evaluations.find({"_id": {"$in": ev_ids}}).to_list(500)} if ev_ids else {}
@@ -1019,10 +1024,11 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     for c in calls:
         dept = c.get("department") or (targets.get(c["target_id"]) or {}).get("department") or "sales"
         p = people.setdefault((c["target_id"], dept), {"key": f"{c['target_id']}:{dept}", "target_id": c["target_id"], "name": c.get("rep_name"), "department": dept, "department_label": ind.dept_label(dept),
-                                                        "shops": 0, "completed": 0, "unreachable": 0, "scores": [], "adherence": [], "critical_misses": 0, "last_shop": None, "coaching": []})
+                                                        "shops": 0, "completed": 0, "unreachable": 0, "scores": [], "adherence": [], "critical_misses": 0, "last_shop": None, "coaching": [], "channels": {"call": 0, "text": 0, "email": 0}})
         p["shops"] += 1
         if c.get("status") == "completed":
             p["completed"] += 1
+            p["channels"][channel_of(c)] += 1
             p["scores"].append(c.get("score_pct"))
             p["adherence"].append(c.get("adherence_pct"))
             ev = evals.get(str(c.get("evaluation_id")))
@@ -1055,6 +1061,17 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
             d["passed"] += 1 if r.get("passed") else 0
     criteria = sorted([{**d, "pass_pct": round(100 * d["passed"] / d["total"])} for d in crit.values() if d["total"]], key=lambda d: (d["pass_pct"], -d["total"]))
     scores = [c.get("score_pct") for c in done]
+    # one bucket per channel: the same shop is never read as a phone call when it was a text or an email
+    by_channel = {}
+    for ch in ("call", "text", "email"):
+        rows_ch = [c for c in calls if channel_of(c) == ch]
+        done_ch = [c for c in rows_ch if c.get("status") == "completed"]
+        if not rows_ch:
+            continue
+        firsts = [tx.stats(c)["first_reply_s"] for c in done_ch if ch != "call" and tx.stats(c)["first_reply_s"] is not None]
+        by_channel[ch] = {"total": len(rows_ch), "completed": len(done_ch), "avg_score": _pct([c.get("score_pct") for c in done_ch]),
+                          "no_reply": len([c for c in done_ch if ch != "call" and c.get("outcome") == "no_reply"]) if ch != "call" else 0,
+                          "avg_first_reply_s": round(sum(firsts) / len(firsts)) if firsts else None}
     by_dept = {}
     per, text_per = plan_per_month(client), plan_text_per_month(client)
     depts = list(dict.fromkeys(ind.dept_keys(ind.key_of(client)) + [c.get("department") for c in calls if c.get("department")]))
@@ -1089,7 +1106,7 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     p_start, p_end = month_bounds(prev_month, tz)
     prev_label = p_start.astimezone(tz).strftime("%b")
     prev_scores: dict = {}
-    for c in await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "status": "completed", "scheduled_for": {"$gte": p_start, "$lt": p_end}}, {"target_id": 1, "department": 1, "score_pct": 1}).to_list(500):
+    for c in await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "lead_shop_id": None, "status": "completed", "scheduled_for": {"$gte": p_start, "$lt": p_end}}, {"target_id": 1, "department": 1, "score_pct": 1}).to_list(500):
         prev_scores.setdefault((c["target_id"], c.get("department") or "sales"), []).append(c.get("score_pct"))
     for d, dv in by_dept.items():
         dv["leaderboard"] = leaderboard([r for r in rows if r["department"] == d], {k[0]: v for k, v in prev_scores.items() if k[1] == d}, prev_label)
@@ -1116,7 +1133,8 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
                         "text_shops": len([c for c in done if c.get("mode") == "text"]), "text_no_reply": len([c for c in done if c.get("mode") == "text" and c.get("outcome") == "no_reply"]),
                         "avg_first_reply_s": _pct([tx.stats(c)["first_reply_s"] for c in done if c.get("mode") == "text" and tx.stats(c)["first_reply_s"] is not None]),
                         "email_shops": len([c for c in done if c.get("mode") == "email"]), "email_no_reply": len([c for c in done if c.get("mode") == "email" and c.get("outcome") == "no_reply"]),
-                        "avg_first_email_reply_s": _pct([tx.stats(c)["first_reply_s"] for c in done if c.get("mode") == "email" and tx.stats(c)["first_reply_s"] is not None])},
+                        "avg_first_email_reply_s": _pct([tx.stats(c)["first_reply_s"] for c in done if c.get("mode") == "email" and tx.stats(c)["first_reply_s"] is not None]),
+                        "by_channel": by_channel},
             "by_department": by_dept, "people": rows, "criteria": criteria, "coaching_themes": [{"text": k, "count": v} for k, v in sorted(themes.items(), key=lambda kv: -kv[1])[:6]], "calls": call_rows}
 
 
@@ -1156,6 +1174,20 @@ def report_pdf(report: dict) -> bytes:
         pdf.set_xy(x + 3, y + 10); pdf.set_font("Helvetica", "", 8); pdf.set_text_color(*MUTED); pdf.cell(w - 6, 6, txt(lab.upper()))
     pdf.set_y(y + 24)
 
+    mix = s.get("by_channel") or {}
+    if mix and (len(mix) > 1 or "call" not in mix):
+        # the same month can hold phone calls, text threads and email threads: never let a text read as a call
+        def ch_line(ch, v):
+            bits = [f"{tr(f'pdf.ch.{ch}')}: {v['completed']}" + (f"/{v['total']}" if v["total"] != v["completed"] else "")]
+            bits.append(tr("pdf.ch.avg", v=v["avg_score"]) if v.get("avg_score") is not None else tr("pdf.ch.none"))
+            if ch != "call" and v.get("avg_first_reply_s") is not None:
+                bits.append(tr("pdf.ch.first", d=tx.dur(v["avg_first_reply_s"], lang)))
+            if v.get("no_reply"):
+                bits.append(tr("pdf.ch.unanswered", n=v["no_reply"]))
+            return ", ".join(bits)
+        pdf.set_font("Helvetica", "B", 8.5); pdf.set_text_color(*GOLD); pdf.cell(0, 5, txt(tr("pdf.mix").upper()), new_x="LMARGIN", new_y="NEXT")
+        p("   |   ".join(ch_line(ch, v) for ch, v in mix.items()), 9.5, INK)
+        pdf.ln(2)
     depts = [(k, v) for k, v in (report.get("by_department") or {}).items() if v.get("planned") or v.get("completed") or v.get("scheduled") or v.get("unreachable")]
     if depts:
         # one card per department (sales, service, parts, collision... whatever the industry pack + this month's shops contain)
@@ -1245,10 +1277,15 @@ def report_pdf(report: dict) -> bytes:
         h(tr("pdf.every"), 13)
         for cr in done:
             when = datetime.fromisoformat(cr["ended_at"]) if cr.get("ended_at") else None
+            ch = cr.get("channel") or "call"
+            pdf.set_font("Helvetica", "B", 8.5); pdf.set_text_color(*GOLD); pdf.cell(pdf.get_string_width(txt(tr(f"pdf.tag.{ch}"))) + 4, 6, txt(tr(f"pdf.tag.{ch}")))
             pdf.set_font("Helvetica", "B", 11); pdf.set_text_color(*INK)
             head = f"{cr['target_name']}  |  {ind.dept_label_for(cr.get('department') or 'sales', report['client'].get('locale'))}  |  {cr['script_title']}"
             pdf.cell(0, 6, txt(head + (f"  |  {cr['score_pct']}%" if cr["score_pct"] is not None else "")), new_x="LMARGIN", new_y="NEXT")
             p((when.strftime("%b %d, %I:%M %p UTC") if when else "") + (f"  |  {'Beller' if lang == 'nl' else 'Shopper'}: {cr['persona_name']}" if cr.get("persona_name") else ""), 8.5, MUTED)
+            if ch != "call" and cr.get("text"):
+                st = cr["text"]
+                p(tr("pdf.thread", first=tx.dur(st["first_reply_s"], lang), slow=tx.dur(st.get("max_reply_s"), lang), n=st.get("replies") or 0) if st.get("first_reply_s") is not None else tr("pdf.thread_none"), 8.5, GREEN if st.get("first_reply_s") is not None and st["first_reply_s"] <= (1800 if ch == "email" else 300) else RED if st.get("first_reply_s") is None else GOLD, "B")
             if cr.get("summary"):
                 p(cr["summary"], 9.5)
             if cr.get("critical_misses"):

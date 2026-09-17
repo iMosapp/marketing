@@ -109,6 +109,10 @@
 - Creating a lead shop with method `adf` sends a REAL email via Resend to the client's `lead_email` (use @invalid.imonsocial.test); method `manual` sends nothing until `POST /{id}/delivered`. The seeded free number is consumed by the first shop you create; delete that shop (`lead-delete`, only when not live) or close it to return the number (14-day cooldown -> set `cooldown_until` null in the DB to reuse).
 - Simulate the store: call/text webhooks with To=<shopper number> (`POST /api/webhooks/twilio/incoming` form From=+18015550140&To=+15005550311&Body=...), email via `services.lead_shops.inbound_email`. Backend tests: `python -m pytest tests/test_lead_shops.py` (3, fakes for Resend/Twilio/LLM; the API case seeds its own pool row +15005550301).
 
+## Channel-aware reports (Sep 2026)
+- `python tests/seed_channel_mix.py` (idempotent, `--wipe`) gives QA Jeep 979a one completed TEXT and one completed EMAIL shop this month; prints the two `/shop-score/<token>` links, the `/shop-report/<token>` link and the Shops tab URL. `python -m pytest tests/test_report_channels.py` seeds + wipes on its own.
+- Lead-shop child sessions (`lead_shop_id` set) are excluded from the store report / Shops list / weekly digest by design.
+
 ## Interview photo request (Sep 2026)
 - After `interview.finalize` Jessi texts the rep from `session.from_number` asking for a card photo (`photo_requests` collection, 48 h). Reply with an image to that number -> `routers/profile._save_profile_photo` -> `users.photo_url`. `GET /api/interview/status` has `photo_request {status open|done|expired, had_photo, sms_ok}`; the InterviewCard shows `interview-photo-hint` / `interview-photo-done` on a completed session.
 - Tests: `python -m pytest tests/test_photo_request.py` (2: in-process flow + real webhook e2e using `/api/public/shop-contact/logo.png` as the MMS; restores activation-tester's photo fields afterwards). In preview the outbound text to 500-555 numbers fails harmlessly (`sms.ok false`).

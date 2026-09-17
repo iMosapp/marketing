@@ -10,6 +10,7 @@ from bson import ObjectId
 
 from services import i18n
 from services import industries as ind
+from services import locales as loc
 from services import mystery_shops as ms
 from services import scripts as scr
 
@@ -49,6 +50,9 @@ def summary_line(rep: dict) -> str:
     line = f"{rep['month_label'][:1].upper() + rep['month_label'][1:]}: " + ", ".join(parts) + "."
     if len(depts) > 1:
         line += " " + " · ".join(depts) + "."
+    mix = s.get("by_channel") or {}
+    if len(mix) > 1:
+        line += " " + " · ".join(f"{i18n.t(lang, f'pdf.ch.{k}')} {v['completed']}" + (f" ({i18n.t(lang, 'pdf.ch.avg', v=v['avg_score'])})" if v.get("avg_score") is not None else "") for k, v in mix.items()) + "."
     return line
 
 
@@ -188,7 +192,7 @@ def last_week(client: dict, now: Optional[datetime] = None) -> tuple:
 
 async def week_shops(db, client: dict, start, end) -> list:
     cid = str(client["_id"])
-    calls = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "status": {"$in": ["completed", "unreachable"]},
+    calls = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "lead_shop_id": None, "status": {"$in": ["completed", "unreachable"]},
                                              "$or": [{"ended_at": {"$gte": start, "$lt": end}}, {"ended_at": None, "scheduled_for": {"$gte": start, "$lt": end}}]}).sort("ended_at", -1).to_list(200)
     ev_ids = [ObjectId(c["evaluation_id"]) for c in calls if c.get("evaluation_id") and ObjectId.is_valid(str(c["evaluation_id"]))]
     evals = {str(e["_id"]): e for e in await db.call_evaluations.find({"_id": {"$in": ev_ids}}, {"summary": 1, "critical_misses": 1, "coaching": 1}).to_list(300)} if ev_ids else {}
@@ -196,6 +200,7 @@ async def week_shops(db, client: dict, start, end) -> list:
     for c in calls:
         ev = evals.get(str(c.get("evaluation_id"))) or {}
         rows.append({"name": c.get("rep_name") or "Unknown", "department": ind.dept_label_for(c.get("department") or "sales", client.get("locale")), "script": c.get("script_title") or "Shop", "status": c.get("status"),
+                     "channel": ms.channel_of(c), "channel_label": i18n.t(loc.dialect(loc.key_of(client)), f"pdf.tag.{ms.channel_of(c)}").title(),
                      "score": c.get("score_pct"), "when": c.get("ended_at") or c.get("scheduled_for"), "summary": ev.get("summary") or "", "critical": len(ev.get("critical_misses") or []),
                      "tip": (ev.get("coaching") or [""])[0]})
     return rows
@@ -251,7 +256,7 @@ def digest_html(client: dict, rows: list, line: str, label: str, url: str, logo_
         score = (f"{r['score']}%" if r["score"] is not None else "-") if r["status"] == "completed" else "n/r"
         summ = f'<br><span style="font-size:12px;color:#444">{ms._esc(r["summary"][:160])}</span>' if r.get("summary") else ""
         trs.append(f'<tr style="border-top:1px solid #eee"><td style="padding:9px 6px;font-size:14px;color:#111"><b>{ms._esc(r["name"])}</b><br>'
-                   f'<span style="font-size:12px;color:#777">{ms._esc(r["department"])} · {ms._esc(r["script"])} · {when}</span>{summ}</td>'
+                   f'<span style="font-size:12px;color:#777"><b style="color:#C9A962">{ms._esc(r.get("channel_label") or "")}</b> · {ms._esc(r["department"])} · {ms._esc(r["script"])} · {when}</span>{summ}</td>'
                    f'<td style="padding:9px 6px;text-align:right;white-space:nowrap;font-size:18px;font-weight:800;color:{_score_color(r["score"]) if r["status"] == "completed" else "#999"}">{score}</td></tr>')
     table = "".join(trs) or f'<tr><td style="padding:12px 6px;color:#777;font-size:14px">{tr("mail.week.none")}</td></tr>'
     return f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f5f3ee">
@@ -263,7 +268,7 @@ def digest_html(client: dict, rows: list, line: str, label: str, url: str, logo_
       <h1 style="font-size:20px;line-height:1.3;margin:0 0 6px;color:#111">{ms._esc(client.get('name'))}: {ms._esc(label)}</h1>
       <p style="font-size:15px;line-height:1.65;margin:0 0 14px;color:#1a1a1a">{("Goedemorgen " if lang == "nl" else "Morning ") + ms._esc(first)}. {ms._esc(line)}</p>
       <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 6px">{table}</table>
-      <p style="margin:22px 0 10px;text-align:center"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px;display:inline-block;font-size:15px">{"Luister de gesprekken en lees de coaching" if lang == "nl" else "Hear the calls and read the coaching"}</a></p>
+      <p style="margin:22px 0 10px;text-align:center"><a href="{url}" style="background:#C9A962;color:#111;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px;display:inline-block;font-size:15px">{tr("mail.week.button")}</a></p>
       <p style="font-size:12.5px;color:#666;line-height:1.6;margin:0">{"Dit is het korte maandagoverzicht. De volledige maand-pdf komt nog steeds op de 1e als je die aan hebt staan. Beantwoord deze mail met vragen." if lang == "nl" else "This is the quick Monday loop. The full monthly PDF still arrives on the 1st if you have it on. Reply to this email with any questions."}</p>
     </div>
   </div>

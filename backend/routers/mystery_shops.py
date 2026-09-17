@@ -926,7 +926,7 @@ async def list_calls(cid: str, request: Request, month: Optional[str] = None):
     db = get_db()
     c = await _client(db, cid)
     start, end = ms.month_bounds(month, ms._tz(c))
-    rows = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "scheduled_for": {"$gte": start, "$lt": end}}).sort("scheduled_for", -1).to_list(500)
+    rows = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": cid, "lead_shop_id": None, "scheduled_for": {"$gte": start, "$lt": end}}).sort("scheduled_for", -1).to_list(500)
     return {"calls": [ms.serialize_call(s) for s in rows], "month": start.astimezone(ms._tz(c)).strftime("%Y-%m")}
 
 

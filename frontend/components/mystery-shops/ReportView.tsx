@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Platform, Linking, ScrollView } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { CallDetailSheet } from './CallsTab';
 import { PersonDetailSheet } from './PersonDetailSheet';
-import { Label, Stat, Bar, StatusChip, deptLabel, scoreColor, GOLD, RED, GREEN, AMBER, tid , replyDur } from './shared';
+import { Label, Stat, Bar, StatusChip, deptLabel, scoreColor, channelIcon, channelKey, channelLabel, GOLD, RED, GREEN, AMBER, tid , replyDur } from './shared';
 import { makeT, fmtWhenL, type Lang } from './i18n';
 
 export type Criterion = { text: string; critical: boolean; passed: number; total: number; pass_pct: number; department: string; department_label?: string };
@@ -13,8 +13,8 @@ const MEDAL = ['#C9A962', '#A8A9AD', '#CD7F32'];
 
 export type Report = {
   client: { id: string; name: string; brand: string; city: string; state: string; contact_name: string; locale?: string; language?: string }; month: string; month_label: string; prev_month_label?: string; language?: string; generated_at: string;
-  summary: { completed: number; planned: number; scheduled: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; people_shopped: number; needs_training: number; text_shops?: number; text_no_reply?: number; avg_first_reply_s?: number | null };
-  by_department: Record<string, { label?: string; planned: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null; people?: number; criteria?: Criterion[]; coaching_themes?: Theme[]; leaderboard?: LeaderRow[] }>;
+  summary: { completed: number; planned: number; scheduled: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; people_shopped: number; needs_training: number; text_shops?: number; text_no_reply?: number; avg_first_reply_s?: number | null; email_shops?: number; email_no_reply?: number; avg_first_email_reply_s?: number | null };
+  by_department: Record<string, { label?: string; planned: number; planned_calls?: number; planned_texts?: number; scheduled: number; completed: number; unreachable: number; avg_score: number | null; people?: number; criteria?: Criterion[]; coaching_themes?: Theme[]; leaderboard?: LeaderRow[] }>;
   people: { key?: string; target_id?: string; name: string; department: string; department_label?: string; title: string; shops: number; completed: number; unreachable: number; avg_score: number | null; avg_adherence: number | null; best: number | null; worst: number | null; critical_misses: number; needs_training: boolean; last_shop: string | null; coaching: string[] }[];
   criteria: Criterion[];
   coaching_themes: Theme[];
@@ -41,6 +41,23 @@ const themesFrom = (done: any[]): Theme[] => {
   for (const c of done) for (const tip of (c.coaching || []).slice(0, 3)) { const k = String(tip).trim().replace(/\.$/, ''); m.set(k, (m.get(k) || 0) + 1); }
   return [...m.entries()].map(([text, count]) => ({ text, count })).sort((a, b) => b.count - a.count).slice(0, 6);
 };
+// People rows rebuilt from a filtered set of shops (the server's rows mix every channel, so a "Texts only" view needs its own).
+const peopleFrom = (calls: any[], base: Report['people']): Report['people'] => {
+  const m = new Map<string, any>();
+  for (const c of calls) {
+    const dept = c.department || 'sales';
+    const k = `${c.target_id}:${dept}`;
+    const b = base.find(p => p.key === k) || base.find(p => p.name === c.target_name && p.department === dept);
+    const p = m.get(k) || { key: k, target_id: c.target_id, name: c.target_name, department: dept, title: b?.title || '', shops: 0, completed: 0, unreachable: 0, scores: [] as number[], critical_misses: 0, needs_training: false, last_shop: null, avg_adherence: null, worst: null, coaching: [] as string[] };
+    p.shops += 1;
+    if (c.status === 'completed') { p.completed += 1; if (typeof c.score_pct === 'number') p.scores.push(c.score_pct); p.critical_misses += (c.critical_misses || []).length; p.coaching.push(...(c.coaching || []).slice(0, 2)); p.last_shop = c.ended_at || p.last_shop; }
+    else if (c.status === 'unreachable') p.unreachable += 1;
+    m.set(k, p);
+  }
+  return [...m.values()].map(p => { const a = avg(p.scores); return { ...p, avg_score: a, best: p.scores.length ? Math.max(...p.scores) : null, needs_training: !!(p.completed && ((a != null && a < 70) || p.critical_misses >= 2)), coaching: p.coaching.slice(0, 3) }; })
+    .sort((a, b) => (a.avg_score == null ? 1 : 0) - (b.avg_score == null ? 1 : 0) || (b.avg_score || 0) - (a.avg_score || 0));
+};
+const CH_KEYS = ['call', 'text', 'email'] as const;
 
 // Ranked rows for one department: medals for the top three, badges for top score / most improved / most shops. Tap a name for their history.
 const Leaderboard = ({ dept, label, rows, prevLabel, colors, onPerson, lang }: { dept: string; label: string; rows: LeaderRow[]; prevLabel?: string; colors: any; onPerson?: (id: string, name: string) => void; lang: Lang }) => {
@@ -100,16 +117,18 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
   const [person, setPerson] = useState<{ id: string; name: string } | null>(null);
   const [dept, setDept] = useState('all');
   const [agent, setAgent] = useState('all');
+  const [channel, setChannel] = useState<'all' | 'call' | 'text' | 'email'>('all');
   const labelOf = (d: string) => report.by_department[d]?.label || deptLabel(d);
-  const filtered = !!(dept !== 'all' || agent !== 'all');
+  const filtered = !!(dept !== 'all' || agent !== 'all' || channel !== 'all');
 
   const v = useMemo(() => {
     const inDept = (d?: string) => dept === 'all' || (d || 'sales') === dept;
-    const calls = report.calls.filter(c => inDept(c.department) && (agent === 'all' || c.target_name === agent));
+    const inCh = (c: any) => channel === 'all' || channelKey(c) === channel;
+    const calls = report.calls.filter(c => inDept(c.department) && inCh(c) && (agent === 'all' || c.target_name === agent));
     const done = calls.filter(c => c.status === 'completed');
-    const people = report.people.filter(p => inDept(p.department) && (agent === 'all' || p.name === agent));
-    // the line to compare against: everyone in the same department scope, all agents
-    const storeDone = report.calls.filter(c => c.status === 'completed' && inDept(c.department));
+    const people = channel === 'all' ? report.people.filter(p => inDept(p.department) && (agent === 'all' || p.name === agent)) : peopleFrom(calls, report.people);
+    // the line to compare against: everyone in the same department (and channel) scope, all agents
+    const storeDone = report.calls.filter(c => c.status === 'completed' && inDept(c.department) && inCh(c));
     const storeAvg = avg(storeDone.map(c => c.score_pct));
     const myAvg = avg(done.map(c => c.score_pct));
     const critGroups: { key: string; title: string; rows: Criterion[]; shops: number }[] = [];
@@ -122,7 +141,7 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
       if (!critGroups.length && report.criteria.length) critGroups.push({ key: 'all', title: tr('rep.misses_team'), rows: report.criteria, shops: report.summary.completed });
       if (!themeGroups.length && report.coaching_themes.length) themeGroups.push({ key: 'all', title: tr('rep.themes'), rows: report.coaching_themes });
     } else {
-      const who = agent !== 'all' ? agent.toUpperCase() : labelOf(dept).toUpperCase();
+      const who = agent !== 'all' ? agent.toUpperCase() : dept !== 'all' ? labelOf(dept).toUpperCase() : tr(`rep.${channel}s` as any).toUpperCase();
       const rows = criteriaFrom(done, labelOf);
       const depts = [...new Set(rows.map(r => r.department))];
       for (const d of depts) {
@@ -134,12 +153,16 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
       if (th.length) themeGroups.push({ key: 'filtered', title: agent !== 'all' ? tr('rep.coach_who', { who }) : tr('rep.themes_dept', { who }), rows: th });
     }
     return { calls, done, people, storeAvg, myAvg, critGroups, themeGroups, needsTraining: people.filter(p => p.needs_training).length, peopleShopped: new Set(people.filter(p => p.completed).map(p => p.target_id || p.name)).size };
-  }, [report, dept, agent, lang]);
+  }, [report, dept, agent, channel, lang]);
 
   const deptItems = [{ key: 'all', label: tr('rep.all_depts') }, ...Object.entries(report.by_department).filter(([, x]) => x.completed || x.scheduled || x.planned || x.unreachable).map(([d, x]) => ({ key: d, label: labelOf(d), count: x.completed }))];
   const agentItems = [{ key: 'all', label: tr('rep.everyone') }, ...[...new Set(report.people.filter(p => dept === 'all' || p.department === dept).map(p => p.name))].sort().map(n => ({ key: n, label: n, count: report.calls.filter(c => c.target_name === n && c.status === 'completed' && (dept === 'all' || (c.department || 'sales') === dept)).length }))];
+  // one bucket per channel that actually ran this month: count, average and (for threads) first-reply speed
+  const mix = CH_KEYS.map(k => { const rows = report.calls.filter(c => channelKey(c) === k && (dept === 'all' || (c.department || 'sales') === dept)); const done = rows.filter(c => c.status === 'completed'); return { key: k, label: tr(`rep.${k}s` as any), total: rows.length, done: done.length, avg: avg(done.map(c => c.score_pct)), noReply: done.filter(c => c.text?.first_reply_s == null && k !== 'call').length, firstReply: avg(done.map(c => c.text?.first_reply_s).filter((x: any) => typeof x === 'number')) }; }).filter(m => m.total > 0);
+  const chItems = [{ key: 'all', label: tr('rep.all_channels') }, ...mix.map(m => ({ key: m.key, label: m.label, count: m.done }))];
   const s = report.summary;
-  const planned = dept === 'all' ? s.planned : report.by_department[dept]?.planned || 0;
+  const depScope = Object.entries(report.by_department).filter(([d]) => dept === 'all' || d === dept).map(([, x]) => x);
+  const planned = channel === 'all' ? (dept === 'all' ? s.planned : report.by_department[dept]?.planned || 0) : depScope.reduce((n, x) => n + (channel === 'call' ? x.planned_calls || 0 : channel === 'text' ? x.planned_texts || 0 : 0), 0);
   const delta = v.myAvg != null && v.storeAvg != null ? v.myAvg - v.storeAvg : null;
   const shopsN = (n: number) => (n === 1 ? tr('rep.shops_1') : tr('rep.shops_n', { n }));
   const critN = (n: number) => (n === 1 ? tr('rep.crit_1') : tr('rep.crit_n', { n }));
@@ -147,12 +170,13 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
 
   return (
     <View style={{ gap: 18 }} {...tid('shop-report')}>
-      {(deptItems.length > 2 || agentItems.length > 2) && (
+      {(deptItems.length > 2 || agentItems.length > 2 || mix.length > 1) && (
         <View style={{ gap: 8 }} {...tid('report-filters')}>
+          {mix.length > 1 && <ChipRow items={chItems} value={channel} onChange={k => setChannel(k as any)} colors={colors} testPrefix="report-filter-channel" />}
           {deptItems.length > 2 && <ChipRow items={deptItems} value={dept} onChange={k => { setDept(k); if (k !== 'all' && agent !== 'all' && !report.people.some(p => p.name === agent && p.department === k)) setAgent('all'); }} colors={colors} testPrefix="report-filter-dept" />}
           {agentItems.length > 2 && <ChipRow items={agentItems} value={agent} onChange={setAgent} colors={colors} testPrefix="report-filter-agent" />}
           {filtered && (
-            <TouchableOpacity onPress={() => { setDept('all'); setAgent('all'); }} style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4 }} {...tid('report-filter-clear')}>
+            <TouchableOpacity onPress={() => { setDept('all'); setAgent('all'); setChannel('all'); }} style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4 }} {...tid('report-filter-clear')}>
               <Ionicons name="close-circle" size={14} color={GOLD} />
               <Text style={{ fontSize: 12.5, fontWeight: '800', color: GOLD }}>{tr('rep.show_all')}</Text>
             </TouchableOpacity>
@@ -170,14 +194,30 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
         )}
         <Stat label={tr('rep.need')} value={String(filtered ? v.needsTraining : s.needs_training)} colors={colors} tone={(filtered ? v.needsTraining : s.needs_training) ? RED : GREEN} testID="report-stat-training" />
         {!!s.text_shops && !filtered && <Stat label={tr('rep.text_reply')} value={`${s.avg_first_reply_s != null ? replyDur(s.avg_first_reply_s, lang) : '–'}${s.text_no_reply ? ` · ${tr('rep.text_noreply', { n: s.text_no_reply })}` : ''}`} colors={colors} tone={s.avg_first_reply_s == null ? undefined : s.avg_first_reply_s <= 300 ? GREEN : s.text_no_reply ? RED : GOLD} testID="report-stat-text" />}
+        {!!s.email_shops && !filtered && <Stat label={tr('rep.email_reply')} value={`${s.avg_first_email_reply_s != null ? replyDur(s.avg_first_email_reply_s, lang) : '–'}${s.email_no_reply ? ` · ${tr('rep.text_noreply', { n: s.email_no_reply })}` : ''}`} colors={colors} tone={s.avg_first_email_reply_s == null ? undefined : s.avg_first_email_reply_s <= 1800 ? GREEN : s.email_no_reply ? RED : GOLD} testID="report-stat-email" />}
       </View>
+      {mix.length > 1 && agent === 'all' && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: -6 }} {...tid('report-channel-mix')}>
+          {mix.map(m => {
+            const on = channel === m.key;
+            return (
+              <TouchableOpacity key={m.key} onPress={() => setChannel(on ? 'all' : m.key)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, backgroundColor: on ? GOLD + '22' : colors.card, borderWidth: 1, borderColor: on ? GOLD : colors.border }} {...tid(`report-mix-${m.key}`)}>
+                <Ionicons name={channelIcon({ channel: m.key })} size={13} color={GOLD} />
+                <Text style={{ fontSize: 12.5, fontWeight: '800', color: colors.text }}>{m.label} {m.done}</Text>
+                <Text style={{ fontSize: 12.5, fontWeight: '800', color: scoreColor(m.avg) }}>{m.avg != null ? `${m.avg}%` : tr('rep.ch_none')}</Text>
+                {m.key !== 'call' && m.done > 0 && <Text style={{ fontSize: 11.5, color: m.noReply ? RED : colors.textSecondary }}>· {m.firstReply != null ? tr('tx.first', { d: replyDur(m.firstReply, lang) }) : tr('tx.noreply')}{m.noReply ? ` · ${tr('rep.text_noreply', { n: m.noReply })}` : ''}</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
       {agent !== 'all' && delta != null && (
         <Text style={{ fontSize: 13, fontWeight: '700', color: delta >= 0 ? GREEN : RED, marginTop: -8 }} {...tid('report-compare-line')}>
           <Ionicons name={delta >= 0 ? 'trending-up' : 'trending-down'} size={13} color={delta >= 0 ? GREEN : RED} /> {tr('rep.compare', { name: agent, n: Math.abs(delta), s: Math.abs(delta) === 1 ? '' : lang === 'nl' ? 'en' : 's', dir: delta >= 0 ? tr('rep.above') : tr('rep.below'), who: storeWord.toLowerCase(), exact: delta === 0 ? tr('rep.exact') : '' })}
         </Text>
       )}
 
-      {dept === 'all' && agent === 'all' && (
+      {dept === 'all' && agent === 'all' && channel === 'all' && (
         <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
           {Object.entries(report.by_department).map(([d, x]) => (
             <TouchableOpacity key={d} onPress={() => setDept(d)} style={{ flex: 1, minWidth: 150, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border, gap: 4 }} {...tid(`report-dept-${d}`)}>
@@ -189,7 +229,7 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
         </View>
       )}
 
-      {agent === 'all' && Object.entries(report.by_department).filter(([d, x]) => (dept === 'all' || d === dept) && x.leaderboard?.length).map(([d, x]) => (
+      {agent === 'all' && channel === 'all' && Object.entries(report.by_department).filter(([d, x]) => (dept === 'all' || d === dept) && x.leaderboard?.length).map(([d, x]) => (
         <Leaderboard key={d} dept={d} label={labelOf(d)} rows={x.leaderboard!} prevLabel={report.prev_month_label} colors={colors} lang={lang} onPerson={personPath ? (id, name) => setPerson({ id, name }) : undefined} />
       ))}
 
@@ -247,14 +287,14 @@ export const ReportView = ({ report, colors, compact, personPath, lang = 'en' }:
           <TouchableOpacity key={c.id || i} onPress={() => setOpen(c)} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 4 }} {...tid(`report-call-${i}`)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14.5, fontWeight: '800', color: colors.text }}>{(c.channel === 'text' || c.channel === 'email') && <Ionicons name={c.channel === 'email' ? 'mail' : 'chatbubbles'} size={12} color={GOLD} />}{c.channel === 'text' || c.channel === 'email' ? ' ' : ''}{c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {labelOf(c.department || 'sales')}{c.channel === 'text' ? ` · ${tr('rep.texted')}` : c.channel === 'email' ? ` · ${tr('rep.emailed')}` : ''}</Text></Text>
+                <Text style={{ fontSize: 14.5, fontWeight: '800', color: colors.text }}><Ionicons name={channelIcon(c)} size={12} color={GOLD} /> {c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {channelLabel(c, lang)} · {labelOf(c.department || 'sales')}</Text></Text>
                 <Text style={{ fontSize: 12.5, color: colors.textSecondary }} numberOfLines={1}>{c.script_title} · {fmtWhenL(c.ended_at || c.scheduled_for, lang)}</Text>
               </View>
-              {c.status === 'completed' ? <Text style={{ fontSize: 18, fontWeight: '800', color: scoreColor(c.score_pct) }}>{c.score_pct != null ? `${c.score_pct}%` : '–'}</Text> : <StatusChip status={c.status} colors={colors} lang={lang} />}
+              {c.status === 'completed' ? <Text style={{ fontSize: 18, fontWeight: '800', color: scoreColor(c.score_pct) }}>{c.score_pct != null ? `${c.score_pct}%` : '–'}</Text> : <StatusChip status={c.status} colors={colors} lang={lang} channel={c.channel} />}
             </View>
             {!!c.summary && <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }} numberOfLines={2}>{c.summary}</Text>}
             {!!c.recording_url && <Text style={{ fontSize: 11.5, fontWeight: '700', color: GOLD }}><Ionicons name="play" size={10} color={GOLD} /> {tr('rep.inside')}</Text>}
-            {(c.channel === 'text' || c.channel === 'email') && c.status === 'completed' && <Text style={{ fontSize: 11.5, fontWeight: '700', color: c.text?.first_reply_s == null ? RED : c.text.first_reply_s <= (c.channel === 'email' ? 1800 : 300) ? GREEN : GOLD }}>{c.text?.first_reply_s == null ? tr('tx.noreply') : tr('tx.first', { d: replyDur(c.text.first_reply_s, lang) })}</Text>}
+            {(c.channel === 'text' || c.channel === 'email') && c.status === 'completed' && <Text style={{ fontSize: 11.5, fontWeight: '700', color: c.text?.first_reply_s == null ? RED : c.text.first_reply_s <= (c.channel === 'email' ? 1800 : 300) ? GREEN : GOLD }}>{c.text?.first_reply_s == null ? tr('tx.noreply') : tr('tx.first', { d: replyDur(c.text.first_reply_s, lang) })}<Text style={{ color: GOLD }}> · {tr('rep.thread_inside')}</Text></Text>}
           </TouchableOpacity>
         ))}
       </View>

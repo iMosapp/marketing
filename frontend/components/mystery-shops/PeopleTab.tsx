@@ -113,11 +113,9 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
                 <TouchableOpacity onPress={() => textShop(p)} disabled={texting === p.id} style={{ flex: 1, height: 38, borderRadius: 12, borderWidth: 1, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: texting === p.id ? 0.6 : 1 }} {...tid(`person-text-shop-${p.id}`)}>
                   <Ionicons name="chatbubbles" size={15} color={GOLD} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: GOLD }}>{texting === p.id ? 'Sending…' : 'Text shop'}</Text>
                 </TouchableOpacity>
-                {!!p.email && (
-                  <TouchableOpacity onPress={() => emailShop(p)} disabled={emailing === p.id} style={{ flex: 1, height: 38, borderRadius: 12, borderWidth: 1, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: emailing === p.id ? 0.6 : 1 }} {...tid(`person-email-shop-${p.id}`)}>
-                    <Ionicons name="mail" size={15} color={GOLD} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: GOLD }}>{emailing === p.id ? 'Sending…' : 'Email shop'}</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity onPress={() => (p.email ? emailShop(p) : (showToast(`Add ${p.name.split(' ')[0]}'s work email first, then Email shop lights up`, 'info'), open(p)))} disabled={emailing === p.id} style={{ flex: 1, height: 38, borderRadius: 12, borderWidth: 1, borderColor: p.email ? GOLD : colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: emailing === p.id ? 0.6 : 1 }} {...tid(`person-email-shop-${p.id}`)}>
+                  <Ionicons name={p.email ? 'mail' : 'mail-outline'} size={15} color={p.email ? GOLD : colors.textSecondary} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: p.email ? GOLD : colors.textSecondary }}>{emailing === p.id ? 'Sending…' : p.email ? 'Email shop' : 'Add email'}</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ))}

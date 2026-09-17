@@ -52,9 +52,9 @@ def _now():
 def configured() -> Optional[str]:
     """None when email shops can run, else the reason."""
     if not (os.environ.get("RESEND_API_KEY") or "").strip():
-        return "Email is not configured (RESEND_API_KEY)"
+        return "Email shops are not switched on for this server yet: the email key (RESEND_API_KEY) is missing from the deployed environment. Phone and text shops still work."
     if not (os.environ.get("INBOUND_EMAIL_DOMAIN") or "").strip():
-        return "Email shops need a receiving domain: set INBOUND_EMAIL_DOMAIN and point Resend's email.received webhook at /api/webhooks/resend/inbound"
+        return "Email shops are not switched on for this server yet: the receiving domain (INBOUND_EMAIL_DOMAIN, with Resend's email.received webhook pointed at /api/webhooks/resend/inbound) is missing from the deployed environment. Phone and text shops still work."
     return None
 
 
