@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 332 — Jessi Live Voice feature (backend + frontend) tested end-to-end. Backend regression (test_live_voice.py + test_lab_api.py) 11/11 passed. New API surface tests (test_live_voice_api_iter332.py) 12/12 passed covering /api/live-voice/config, /admin/config GET+PUT (incl. invalid voice 400 + qa-manager 403), /admin/preview, /session (503 for forest with OPENAI_API_KEY reason, 403 lab+assistant for rep, 400 empty sdp), and /api/lab/features containing jessi_live_voice with status 'lab' and needs mentioning OPENAI_API_KEY. Frontend verified as forest on preview: Home shows gold Talk to Jessi row with LIVE pill and 'Needs OPENAI_API_KEY...' subtext (data-testid talk-to-jessi-btn), tap navigates to /admin/voice-lab. Voice Lab renders all expected data-testids: header, needs-key banner, intro, 13 voice tiles (Gleam default), 4 level rows with pills, gold hints (level-energy-hint changed from 'upbeat and energetic' to 'high-energy and lively' on tap of level-energy-5), notes, voice-preview updated (contained 'high-energy and lively' and 'quick-moving, no dead air'), greeting, cap pills, idle pills, Audition button disabled (aria-disabled=true), Save button became 'Save for everyone', save persisted after reload, and voice-saved-at showed 'Saved 9/17/2026, 4:31:00 PM by forest@imosapp.com'. Defaults restored (Gleam, energy 4, pacing 4, playful 3, brevity 4, cap 15, idle 25) via PUT /admin/config. Recent Conversations block renders with stats tiles voice-stat-today/week/month and empty state ('No conversations yet'). Test Lab /admin/test-lab shows lab-feature-jessi_live_voice with 'IN THE LAB' status, lab-more-jessi_live_voice expands to reveal voice-lab-card containing voice-lab-open and voice-lab-talk (disabled, 'Waiting for OPENAI_API_KEY on the server'). Rep (activation-tester) Home correctly does NOT render the Talk to Jessi button. All observed behaviour matches the intended 'needs key' states — feature is a PASS.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/more (Tools tab)", "issues": ["'Jessi Voice Lab' tile exists in more.tsx line 585 inside the Internal Operations section, but on the landing Tools grid it is not directly visible — reachable only after drilling into a category. The task expected it 'next to Test Lab' on the Tools tab. Likely a discoverability concern rather than a defect — main agent to confirm placement."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_live_voice.py",
+    "/app/backend/tests/test_lab_api.py",
+    "/app/backend/tests/test_live_voice_api_iter332.py",
+    "/app/test_reports/pytest/iter332_live_voice_api.xml"
+  ],
+  "action_items": [
+    "Optional: verify the 'Jessi Voice Lab' tile is visible from the Tools tab landing (currently nested inside a category)."
+  ],
+  "critical_code_review_comments": [
+    "clean_config service correctly clamps out-of-range level values (verified via 400 on voice='nope' and successful energy=2 update). No _id leakage observed in JSON responses.",
+    "Voice Lab persistence uses PUT /api/live-voice/admin/config with updated_by set to the caller email — verified.",
+    "Live voice session endpoint returns 503 (not 500) when OPENAI_API_KEY absent with a clear reason string — good UX contract for the UI."
+  ],
+  "updated_files": ["/app/backend/tests/test_live_voice_api_iter332.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "None. test_live_voice.py brain test uses harmless Twilio 500-555 numbers and cleans up its own task.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Feature is behind lab flag jessi_live_voice (status=lab). OPENAI_API_KEY is intentionally absent — all 503/403/disabled states are expected. If key is added in a future iteration, re-test session creation (should return SDP answer) and Audition button becomes enabled.",
+  "rca of the issue": "n/a — feature works as specified in the 'needs key' state."
+}
