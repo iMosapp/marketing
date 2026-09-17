@@ -56,6 +56,12 @@ async def status(request: Request):
     from services import lab
     s = await svc.latest(db, str(me["_id"]))
     user = await db.users.find_one({"_id": ObjectId(str(me["_id"]))}, {"voice_id": 1, "persona": 1, "phone": 1, "persona_interviewed_at": 1})
+    if s and s.get("status") == "completed" and not (user or {}).get("voice_id", {}).get("profile") and not voice_id.available():
+        # the server can do Voice ID now but this rep was interviewed before it could: enroll from the kept recording, wait a bit for it
+        task = asyncio.ensure_future(svc.reenroll_from_recording(db, str(me["_id"])))
+        done, _ = await asyncio.wait({task}, timeout=12)
+        if done and task.result():
+            user = await db.users.find_one({"_id": ObjectId(str(me["_id"]))}, {"voice_id": 1, "persona": 1, "phone": 1, "persona_interviewed_at": 1})
     phone = (user or {}).get("phone") or ""
     from services import photo_request
     return {"session": svc.serialize(s), "voice": voice_id.summary(user), "phone": _mask(phone), "can_call": len("".join(c for c in phone if c.isdigit())) >= 10,

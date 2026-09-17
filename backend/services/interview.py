@@ -309,6 +309,31 @@ async def save_recording(db, sid: str, recording_url: str, duration: Optional[st
     await db[COLL].update_one({"_id": s["_id"]}, {"$set": {"voice": voice, "updated_at": _now()}})
 
 
+async def reenroll_from_recording(db, user_id: str) -> Optional[dict]:
+    """Voice ID was not configured on the server when the rep did their interview: enroll now from the recording we kept
+    instead of making them redo the call. Runs once per recording (stamped on the session)."""
+    if voice_id.available():
+        return None
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"voice_id": 1})
+    if (user or {}).get("voice_id", {}).get("profile") or (user or {}).get("voice_id", {}).get("status") in ("enrolled", "partial", "failed", "too_short"):
+        return None
+    s = await db[COLL].find_one({"user_id": user_id, "status": "completed", "recording_url": {"$regex": "^/api/images/"}, "voice_reenroll_at": None}, sort=[("created_at", -1)])
+    if not s:
+        return None
+    await db[COLL].update_one({"_id": s["_id"]}, {"$set": {"voice_reenroll_at": _now()}})
+    from utils.image_storage import get_object
+    try:
+        audio, _ = await asyncio.to_thread(get_object, s["recording_url"].replace("/api/images/", "", 1))
+    except Exception as e:
+        logger.warning(f"[Interview] re-enroll: recording for {s['_id']} not readable: {e}")
+        return None
+    secs = s.get("recording_seconds")
+    voice = await voice_id.enroll_user(db, user_id, audio, "interview", secs) if (secs or 0) >= 20 or not secs else {**voice_id.summary(None), "status": "too_short", "error": "The call was too short to learn your voice"}
+    await db[COLL].update_one({"_id": s["_id"]}, {"$set": {"voice": voice, "updated_at": _now()}})
+    logger.info(f"[Interview] re-enrolled Voice ID for {user_id} from the stored interview recording: {voice.get('status')}")
+    return voice
+
+
 # ---------------------------------------------------------------- after the call: transcript -> persona
 async def finalize(db, sid: str, reason: str) -> Optional[dict]:
     """Call over: build the persona once, whoever gets here first."""

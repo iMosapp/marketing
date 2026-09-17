@@ -22,10 +22,10 @@ export type InterviewStatus = {
 const ACTIVE = ['dialing', 'live', 'ending', 'building'];
 const CALL_LABEL: Record<string, string> = { queued: 'Calling your phone…', initiated: 'Calling your phone…', ringing: 'Ringing… pick up', 'in-progress': 'On the line' };
 
-export const voiceLabel = (v: InterviewStatus['voice'] | undefined) => {
+export const voiceLabel = (v: InterviewStatus['voice'] | undefined, admin?: boolean) => {
   if (!v) return '';
   if (v.enrolled) return 'Voice ID on';
-  if (v.status === 'not_configured') return 'Voice ID: coming soon';
+  if (v.status === 'not_configured') return v.configured ? 'Voice ID: learning your voice from your interview recording…' : admin ? `Voice ID off on this server: ${v.error || 'PICOVOICE_ACCESS_KEY missing'}` : 'Voice ID: coming soon';
   if (v.status === 'partial') return `Voice ID: needs a longer call (${Math.round(v.percent || 0)}%)`;
   if (v.status === 'too_short') return 'Voice ID: call was too short';
   if (v.status === 'failed') return 'Voice ID: could not learn your voice yet';
@@ -161,7 +161,7 @@ export function InterviewCard({ compact, dryRun }: { compact?: boolean; dryRun?:
       {done && !dryRun && (
         <View style={st.pill} {...tid('interview-voice-pill')}>
           <Ionicons name={data.voice.enrolled ? 'shield-checkmark' : 'shield-outline'} size={13} color={data.voice.enrolled ? GREEN : colors.textSecondary} />
-          <Text style={{ fontSize: 12, fontWeight: '700', color: data.voice.enrolled ? GREEN : colors.textSecondary }}>{voiceLabel(data.voice) || 'Voice ID pending'}</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: data.voice.enrolled ? GREEN : colors.textSecondary, flex: 1 }}>{voiceLabel(data.voice, data.is_super_admin) || 'Voice ID pending'}</Text>
         </View>
       )}
       {!data.can_call ? (
