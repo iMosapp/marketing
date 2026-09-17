@@ -6,12 +6,12 @@ import { GOLD, GREEN, RED, tid } from '../scripts/shared';
 import type { LiveJessi, OpenTarget } from '../../hooks/useLiveJessi';
 import { statusText } from './LiveJessiSheet';
 
-type Props = { live: LiveJessi; target: OpenTarget | null; onExpand: () => void; onEnd: () => void };
+type Props = { live: LiveJessi; target: OpenTarget | null; who?: string; onExpand: () => void; onEnd: () => void };
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 // Jessi shrunk to a floating bar while the app shows what she opened. Tap it to bring the full sheet back.
-export const LiveJessiPill = ({ live, target, onExpand, onEnd }: Props) => {
+export const LiveJessiPill = ({ live, target, who = 'Jessi', onExpand, onEnd }: Props) => {
   const insets = useSafeAreaInsets();
   const pulse = useRef(new Animated.Value(1)).current;
   const rise = useRef(new Animated.Value(0)).current;
@@ -31,8 +31,8 @@ export const LiveJessiPill = ({ live, target, onExpand, onEnd }: Props) => {
     return () => loop.stop();
   }, [isLive, pulse]);
 
-  const where = target?.kind === 'contact' || target?.kind === 'thread' ? (target.first || target.name || '') : target?.kind === 'task' ? 'Reminder' : target?.kind === 'tasks' ? 'Tasks' : target?.kind === 'inbox' ? 'Inbox' : target?.kind === 'home' ? 'Home' : '';
-  const line = live.working || (last ? `${last.role === 'rep' ? 'You' : 'Jessi'}: ${last.text}` : statusText(live));
+  const where = target?.kind === 'contact' || target?.kind === 'thread' ? (target.first || target.name || '') : target?.kind === 'task' ? 'Reminder' : target?.kind === 'tasks' ? 'Tasks' : target?.kind === 'inbox' ? 'Inbox' : target?.kind === 'home' ? 'Home' : target?.kind === 'duplicates' ? 'Duplicates' : '';
+  const line = live.working || (last ? `${last.role === 'rep' ? 'You' : who}: ${last.text}` : statusText(live, who));
 
   return (
     <Animated.View pointerEvents="box-none" style={{ position: 'absolute', left: 12, right: 12, bottom: (insets.bottom || (Platform.OS === 'web' ? 12 : 0)) + 84, zIndex: 9999, elevation: 30, opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }] }}>
@@ -42,7 +42,7 @@ export const LiveJessiPill = ({ live, target, onExpand, onEnd }: Props) => {
         </Animated.View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>Jessi</Text>
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>{who}</Text>
             {isLive && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: GREEN }} />}
             <Text style={{ color: isLive ? GREEN : '#8E8E93', fontSize: 11, fontWeight: '700', fontVariant: ['tabular-nums'] }} {...tid('live-jessi-pill-timer')}>{fmt(live.seconds)}</Text>
             {!!where && <Text style={{ color: GOLD, fontSize: 11, fontWeight: '700' }} numberOfLines={1} {...tid('live-jessi-pill-where')}>· {where}</Text>}

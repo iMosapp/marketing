@@ -27,7 +27,8 @@ PRICE_PER_MIN = 0.05
 SETTINGS_KEY = "jessi_voice"
 COLL = "live_sessions"
 LAB_KEY = "jessi_live_voice"
-MODES = ("assistant", "lab")
+MODES = ("assistant", "lab", "shopper")
+SHOPPER_IDLE_S = 45
 
 VOICES = [
     {"id": "gleam", "name": "Gleam", "accent": "North American", "tone": "feminine", "natural": True},
@@ -52,7 +53,7 @@ ENERGY = {1: "calm and steady", 2: "relaxed and easy", 3: "warm and engaged", 4:
 PACING = {1: "slow and unhurried", 2: "measured", 3: "a natural pace", 4: "quick-moving, no dead air", 5: "fast and clipped"}
 PLAYFUL = {1: "all business", 2: "mostly serious", 3: "lightly playful when it fits", 4: "playful", 5: "very playful, quick with a one-liner"}
 BREVITY = {1: "take your time and explain fully", 2: "a few sentences", 3: "two or three short sentences", 4: "one or two short sentences, then let them talk", 5: "as few words as possible"}
-TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen")
+TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates")
 SCREENS = {"contact": ("contact", "record", "profile", "person", "page", "card"), "thread": ("thread", "conversation", "texts", "messages", "text", "chat"),
            "tasks": ("tasks", "task", "reminders", "touchpoints", "to-dos", "todos"), "home": ("home", "today"), "inbox": ("inbox",)}
 
@@ -170,11 +171,13 @@ def assistant_instructions(cfg: dict, user: dict, language: str = "English", con
             "- App help: how any part of I'm On Social works, and the rep's own numbers.\n"
             "- Open on screen: pull up a person's record, their text thread, or the rep's tasks on the phone screen. "
             "The app also follows along on its own: when the backend looks someone up, drafts a text or sets a reminder, that person's record, thread or the task opens on the rep's screen. "
-            "You may mention it in a few words (for example 'she is up on your screen'), never in detail.\n\n"
+            "You may mention it in a few words (for example 'she is up on your screen'), never in detail.\n"
+            "- Duplicates: find double records in the rep's contacts (same person saved twice) and merge them. The backend reads back which records go together and merges only after the rep says yes.\n\n"
             "Delegate to the backend when:\n"
             "- The rep names a person or asks who they should talk to or follow up with.\n"
             "- The rep asks to text, remind, draft, look something up, or asks about their numbers or how the app works.\n"
             "- The rep asks to open, pull up, show or go to something on the screen.\n"
+            "- The rep asks about duplicates, double records, or says 'merge them' / 'combine them' / 'clean that up' after you mentioned two records for one name.\n"
             "- The rep confirms or cancels an action you read back (yes, send it / no, hold on).\n"
             "- A correction changes a task already requested.\n"
             "- The rep picks one of several people the backend listed, spells a name, or says the person you found is the wrong one. Delegate again right away; the backend matches names loosely (Tod and Todd, Berry and Barry), so a spelled name or a last name settles it.\n\n"
@@ -269,12 +272,19 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
     if mode == "assistant" and usage["left_s"] <= 0:
         raise LiveCapReached(f"You have used today's {cfg['daily_cap_min']} minutes of live Jessi. It resets at midnight.")
     contact = await focus_contact(db, user, contact_id)
-    instructions = lab_instructions(cfg, user, contact) if mode == "lab" else assistant_instructions(cfg, user, contact=contact)
+    shop = None
+    if mode == "shopper":
+        from services import live_shops
+        shop = await live_shops.audition(db, user, overrides or {})
+        instructions, voice = shop["instructions"], shop["voice"]
+    else:
+        instructions, voice = (lab_instructions(cfg, user, contact) if mode == "lab" else assistant_instructions(cfg, user, contact=contact)), cfg["voice"]
     tz = await _tz(user)
     now_local = _now().astimezone(tz).strftime("%A %B %d, %Y, %-I:%M %p")
     where = f"Their app is open on {_first_last(contact)}'s conversation. {await focus_brief(db, contact)}" if contact else "Their app is open on the Home screen."
-    session = {"model": MODEL, "instructions": instructions, "audio": {"output": {"voice": cfg["voice"]}}, "delegation": {"type": "client"},
-               "input": [{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": f"Right now it is {now_local} for the rep. {where}"}]}]}
+    context = f"Right now it is {now_local}." if shop else f"Right now it is {now_local} for the rep. {where}"
+    session = {"model": MODEL, "instructions": instructions, "audio": {"output": {"voice": voice}}, "delegation": {"type": "client"},
+               "input": [{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": context}]}]}
     body = {"session": session, "transport": {"type": "webrtc", "sdp": sdp}}
     headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY'].strip()}", "Content-Type": "application/json", "OpenAI-Safety-Identifier": f"imos-{uid[-8:]}"}
     try:
@@ -291,15 +301,16 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         raise LiveUnavailable(f"OpenAI refused the live session ({resp.status_code}): {msg}")
     data = resp.json()
     live_id = uuid.uuid4().hex[:12]
-    doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "mode": mode, "openai_session_id": (data.get("session") or {}).get("id"), "voice": cfg["voice"],
-           "contact_id": str(contact["_id"]) if contact else None, "contact_name": _first_last(contact) if contact else None,
+    doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "mode": mode, "openai_session_id": (data.get("session") or {}).get("id"), "voice": voice,
+           "contact_id": str(contact["_id"]) if contact else None, "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None,
            "config": {k: cfg[k] for k in DEFAULTS}, "status": "open", "started_at": _now(), "ended_at": None, "seconds": 0, "cost_usd": 0.0, "close_reason": None,
            "transcript": [], "delegations": [], "pending": None, "created_at": _now(), "updated_at": _now()}
     await db[COLL].insert_one(doc)
-    logger.info(f"[Live] {mode} session {live_id} for {uid} voice={cfg['voice']}")
-    return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": (data.get("transport") or {}).get("sdp"), "greeting": greeting_text(cfg, user, contact),
-            "contact_name": _first_last(contact) if contact else None,
-            "idle_close_s": cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": cfg["voice"]}
+    logger.info(f"[Live] {mode} session {live_id} for {uid} voice={voice}")
+    greet = shop["greet_instruction"] if shop else None
+    return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": (data.get("transport") or {}).get("sdp"), "greeting": greeting_text(cfg, user, contact), "greet_instruction": greet,
+            "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None,
+            "idle_close_s": SHOPPER_IDLE_S if shop else cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": voice}
 
 
 async def get_live(db, live_id: str) -> Optional[dict]:
@@ -331,6 +342,7 @@ async def record_events(db, live: dict, events: list) -> dict:
 
 def serialize(s: dict, full: bool = False) -> dict:
     out = {"live_id": s.get("live_id"), "user_id": s.get("user_id"), "user_name": s.get("user_name"), "mode": s.get("mode"), "voice": s.get("voice"), "status": s.get("status"), "contact_name": s.get("contact_name"),
+           "shopper": s.get("shopper"),
            "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
            "seconds": int(s.get("seconds") or 0), "cost_usd": round(float(s.get("cost_usd") or 0), 4), "close_reason": s.get("close_reason"),
            "turns": len(s.get("transcript") or []), "delegations": len(s.get("delegations") or []), "tools": [d.get("tool") for d in (s.get("delegations") or [])]}
@@ -356,6 +368,8 @@ Tools:
 - cancel: the rep said no / hold on / never mind to a PENDING action. args: {}
 - answer: anything else (how the app works, small talk that needs facts, their numbers). args: {"say": "<the answer in at most 60 spoken words>"}
 - open_screen: the rep wants something SHOWN on their phone screen: open / pull up / show / bring up / go to a person's record, a text thread, their tasks, home or the inbox. args: {"what": "contact|thread|tasks|home|inbox", "name": "<the person, empty for tasks/home/inbox>"}
+- find_duplicates: the rep asks whether they have duplicates / double records / the same person twice, or wants to clean up their contacts. args: {}
+- merge_duplicates: the rep wants two or more records of ONE person combined: "merge them", "combine those", "make Tod one record", "clean up Tod Berry", or "merge them" right after Jessi mentioned she found two records for a name. args: {"name": "<the person as spoken, empty when they mean the records Jessi just mentioned>"}
 
 Every tool that takes a "name" also takes "hint": how the rep pointed at ONE of several records Jessi listed, verbatim and short: "the first one", "the second one", "the other one", "the one with the Tahoe", "ending in 0100", "the Berry one", "the newer one". Empty when the rep did not pick.
 
@@ -616,7 +630,7 @@ async def _resolve(db, user_id: str, name: str, focus: Optional[dict] = None, hi
         chosen = top[0]
         await _remember(db, live, top, chosen)
         others = "; ".join(f"{_first_last(r)} {_describe(r)}" for r in top[1:3])
-        chosen["_note"] = (f"Heads up, you have {len(top)} records for {_first_last(chosen)}; I used the one {_describe(chosen)}. The other {'one is' if len(top) == 2 else 'ones are'} {others}. Say 'the other one' to switch."
+        chosen["_note"] = (f"Heads up, you have {len(top)} records for {_first_last(chosen)}; I used the one {_describe(chosen)}. The other {'one is' if len(top) == 2 else 'ones are'} {others}. Say 'the other one' to switch, or 'merge them' to make it one record."
                            if same_name else f"I went with {_first_last(chosen)} {_describe(chosen)}. Say 'the other one' if you meant someone else.")
         return chosen, None
     await _remember(db, live, top, None, _norm(name))
@@ -749,10 +763,83 @@ def _last_rep_text(transcript: list) -> str:
     return ""
 
 
+# ── duplicates ────────────────────────────────────────────────────────────────
+def _set_line(s: dict) -> str:
+    return f"{s['name']} ({len(s['contacts'])} records)"
+
+
+async def _find_duplicates(db, user: dict, live: Optional[dict]):
+    from services import duplicates as dups
+    sets = await dups.find_sets(db, str(user["_id"]))
+    if live is not None:
+        live["_dup_sets"] = sets
+    if not sets:
+        return "No duplicates. Everyone in your book is one record.", None
+    head = ", ".join(_set_line(s) for s in sets[:4])
+    more = f", and {len(sets) - 4} more" if len(sets) > 4 else ""
+    return (f"You have {len(sets)} set{'s' if len(sets) != 1 else ''} of duplicates: {head}{more}. "
+            f"Say 'merge {sets[0]['name'].split(' ')[0]}' and I will read back what goes together first, or clean them up on the screen. It is up now."), {"kind": "duplicates"}
+
+
+def _pick_set(sets: list, name: str, live: Optional[dict]) -> Optional[dict]:
+    words = _name_words(name)
+    if words:
+        scored = sorted(((max(_score(words, r) for r in s["_rows"]), s) for s in sets), key=lambda x: -x[0])
+        return scored[0][1] if scored and scored[0][0] >= 0.8 else None
+    last = (live or {}).get("last_choices") or []
+    for s in sets:  # "merge them" after Jessi used one of several records for a name
+        if any(str(r["_id"]) in last for r in s["_rows"]):
+            return s
+    return sets[0] if len(sets) == 1 else None
+
+
+async def _merge_duplicates(db, user: dict, args: dict, live: Optional[dict]):
+    from services import duplicates as dups
+    name = (args.get("name") or "").strip()
+    sets = await dups.find_sets(db, str(user["_id"]))
+    if not sets:
+        return "No duplicates to merge. Everyone in your book is already one record.", None, None
+    s = _pick_set(sets, name, live)
+    if not s:
+        if name:
+            return f"I do not see duplicate records for {name}. What I do see: {', '.join(_set_line(x) for x in sets[:4])}. Which one should I merge?", None, None
+        return f"Which one? You have {', '.join(_set_line(x) for x in sets[:4])}.", None, None
+    rows = s["_rows"]
+    keep, rest = rows[0], rows[1:]
+    others = "; ".join(f"one {_describe(r)}" if _norm(_first_last(r)) == _norm(_first_last(keep)) else f"{_first_last(r)} {_describe(r)}" for r in rest[:3])
+    pending = {"type": "merge", "name": s["name"], "ids": [str(r["_id"]) for r in rows], "content": f"merge {len(rows)} records for {s['name']}", "at": _now().isoformat()}
+    return (f"I found {len(rows)} records for {s['name']}: the one {_describe(keep)}, and {others}. I would keep the first and fold the rest into it; every text, task and note comes along. "
+            "Say yes to merge them, or no to leave it."), pending, {"kind": "contact", "id": str(keep["_id"]), "name": _first_last(keep), "first": keep.get("first_name") or ""}
+
+
+async def _merge_now(db, user: dict, pending: dict):
+    from services import duplicates as dups
+    try:
+        r = await dups.merge_set(db, str(user["_id"]), pending["ids"])
+    except Exception as e:
+        return f"That merge did not go through: {str(getattr(e, 'detail', None) or e)[:140]}", None
+    moved = r["records_migrated"]
+    return (f"Done. {pending['name']} is one record now" + (f", {moved} text{'s' if moved != 1 else ''}, tasks and notes moved over." if moved else ".")), {"kind": "contact", "id": r["primary_id"], "name": pending["name"], "first": pending["name"].split(" ")[0]}
+
+
+async def _shopper_delegation(db, live: dict, transcript: list, delegation_id: Optional[str], t0: datetime) -> dict:
+    """Audition of the mystery shopper: no tools. The one delegation means 'I said goodbye, hang up'; anything earlier is told to stay in character."""
+    from services.live_shops import call_over
+    turns = [{"role": "customer" if t.get("role") == "assistant" else "rep", "text": str(t.get("text") or "")} for t in transcript or []]
+    over = await call_over(turns)
+    tool = "hang_up" if over else "stay_in_character"
+    content = "The line is disconnecting now. Say nothing more." if over else "There is no backend help on this call. Stay in character, answer from what you know as this customer, and keep the conversation going."
+    ms = int((_now() - t0).total_seconds() * 1000)
+    await db[COLL].update_one({"_id": live["_id"]}, {"$push": {"delegations": {"id": delegation_id, "tool": tool, "args": {}, "result": content, "open": None, "ms": ms, "at": _now()}}, "$set": {"updated_at": _now()}})
+    return {"tool": tool, "content": content, "kind": "thinking", "pending": False, "open": None, "end": over, "ms": ms}
+
+
 async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: Optional[str]) -> dict:
     """One delegation from GPT-Live: plan a tool from the transcript, run it, hand back a short spoken result."""
     from services.scripts import _llm_json
     t0 = _now()
+    if live.get("mode") == "shopper":
+        return await _shopper_delegation(db, live, transcript, delegation_id, t0)
     convo = "\n".join(f"{'JESSI' if t.get('role') == 'assistant' else 'REP'}: {str(t.get('text', ''))[:400]}" for t in (transcript or [])[-16:])
     pending = live.get("pending")
     focus = await focus_contact(db, user, live.get("contact_id")) if live.get("contact_id") else None
@@ -799,13 +886,21 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
                 result = await _send_now(db, user, pending)
                 opened = {"kind": "thread", "id": pending["contact_id"], "name": pending.get("name") or "", "first": (pending.get("name") or "").split(" ")[0]}
                 new_pending = None
+            elif pending and pending.get("type") == "merge":
+                result, opened = await _merge_now(db, user, pending)
+                new_pending = None
             else:
                 result = "There is nothing waiting for a yes right now. What would you like me to do?"
         elif tool == "cancel":
-            result = "Okay, cancelled. Nothing was sent." if pending else "Nothing to cancel."
+            result = ("Okay, cancelled. Nothing was merged." if pending.get("type") == "merge" else "Okay, cancelled. Nothing was sent.") if pending else "Nothing to cancel."
             new_pending = None
         elif tool == "open_screen":
             result, opened = await _open_screen(db, user, args, focus, live)
+        elif tool == "find_duplicates":
+            result, opened = await _find_duplicates(db, user, live)
+        elif tool == "merge_duplicates":
+            result, new_pending, opened = await _merge_duplicates(db, user, args, live)
+            new_pending = new_pending or pending
         else:
             result = await _answer(user, args.get("say") or "", _last_rep_text(transcript))
     except Exception as e:

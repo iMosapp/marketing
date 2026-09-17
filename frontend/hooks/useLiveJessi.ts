@@ -5,12 +5,13 @@ import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, nativeR
 
 export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
-export type LiveOptions = { mode: 'assistant' | 'lab'; overrides?: Record<string, any>; contactId?: string };
-export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox'; id?: string; name?: string; first?: string; contact_id?: string };
+export type LiveOptions = { mode: 'assistant' | 'lab' | 'shopper'; overrides?: Record<string, any>; contactId?: string };
+export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates'; id?: string; name?: string; first?: string; contact_id?: string };
 
 const TOOL_LABELS: Record<string, string> = {
   who_today: 'Pulled up your people for today', find_person: 'Looked them up', recall_person: 'Read their history', send_text: 'Text ready to send',
-  draft_message: 'Draft ready', set_reminder: 'Reminder set', confirm: 'Sent', cancel: 'Cancelled', answer: 'Answered', open_screen: 'Opened it',
+  draft_message: 'Draft ready', set_reminder: 'Reminder set', confirm: 'Done', cancel: 'Cancelled', answer: 'Answered', open_screen: 'Opened it',
+  find_duplicates: 'Checked for duplicates', merge_duplicates: 'Merge ready, say yes', hang_up: 'The shopper hung up', stay_in_character: 'Staying in character',
 };
 const ROW_GAP_MS = 1500;
 
@@ -21,6 +22,7 @@ export const openLabel = (t: OpenTarget) => {
   if (t.kind === 'task') return 'Opened the reminder';
   if (t.kind === 'tasks') return 'Opened your tasks';
   if (t.kind === 'inbox') return 'Opened the inbox';
+  if (t.kind === 'duplicates') return 'Opened your duplicates';
   return 'Opened Home';
 };
 
@@ -59,6 +61,8 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   const secondsRef = useRef(0);
   const finalized = useRef(false);
   const greeting = useRef('');
+  const greetInstruction = useRef('');
+  const modeRef = useRef<LiveOptions['mode']>('assistant');
   const startedAt = useRef(0);
   const tick = useRef<any>(null);
   const closeTimer = useRef<any>(null);
@@ -133,24 +137,30 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   };
 
   const handleDelegation = async (delegationId: string) => {
-    setWorking('Working on it');
-    send({ type: 'session.thinking.append', event_id: `ack_${delegationId}`, delegation_id: delegationId, content: 'The backend is on it. It takes a few seconds; keep it short while you wait, and never invent the result.' });
+    const shopper = modeRef.current === 'shopper';
+    setWorking(shopper ? 'Thinking' : 'Working on it');
+    if (!shopper) send({ type: 'session.thinking.append', event_id: `ack_${delegationId}`, delegation_id: delegationId, content: 'The backend is on it. It takes a few seconds; keep it short while you wait, and never invent the result.' });
     let content = 'Something went wrong on my side pulling that up. Try me again in a second.';
     let opened: OpenTarget | null = null;
+    let kind = 'commentary';
+    let end = false;
     try {
       const transcript = rowsRef.current.map(r => ({ role: r.role, text: r.text }));
       const r = await api.post(`/live-voice/${liveId.current}/delegate`, { delegation_id: delegationId, transcript }, { timeout: 60000 });
       content = r.data?.content || content;
+      kind = r.data?.kind === 'thinking' ? 'thinking' : 'commentary';
+      end = !!r.data?.end;
       opened = r.data?.open?.kind ? (r.data.open as OpenTarget) : null;
       setWorking(opened ? openLabel(opened) : (TOOL_LABELS[r.data?.tool] || 'Done'));
     } catch (e: any) {
       if (e?.response?.status === 429 || e?.response?.status === 409) content = e.response.data?.detail || content;
     }
-    send({ type: 'session.commentary.append', event_id: `res_${delegationId}`, delegation_id: delegationId, content });
+    send({ type: kind === 'thinking' ? 'session.thinking.append' : 'session.commentary.append', event_id: `res_${delegationId}`, delegation_id: delegationId, content });
     if (opened) {
       try { onOpenRef.current?.(opened); } catch { /* navigation is best effort */ }
       send({ type: 'session.thinking.append', event_id: `ui_${delegationId}`, delegation_id: null, content: `The app just ${openLabel(opened).toLowerCase()} on the rep's screen; they can see it now.` });
     }
+    if (end) setTimeout(() => stop('close_requested'), 2500);
     setTimeout(() => setWorking(''), 1200);
   };
 
@@ -163,7 +173,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
         setState('live');
         startedAt.current = Date.now();
         send({ type: 'session.instructions.append', event_id: 'greet_1', delegation_id: null,
-          content: `Greet the rep immediately in English without waiting for them to speak. Say, in your own words: "${greeting.current}". Then pause and listen.` });
+          content: greetInstruction.current || `Greet the rep immediately in English without waiting for them to speak. Say, in your own words: "${greeting.current}". Then pause and listen.` });
         tick.current = setInterval(() => { if (!secondsRef.current) setSeconds(Math.round((Date.now() - startedAt.current) / 1000)); }, 1000);
         flushTimer.current = setInterval(flush, 6000);
         resetIdle();
@@ -203,6 +213,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   const start = useCallback(async (opts: LiveOptions) => {
     const rtc = getRtc();
     if (!rtc) { setError(LIVE_UNSUPPORTED_BODY); setState('error'); return; }
+    modeRef.current = opts.mode;
     finalized.current = false;
     rowsRef.current = [];
     queue.current = [];
@@ -243,6 +254,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       const r = await api.post('/live-voice/session', { mode: opts.mode, sdp, overrides: opts.overrides || null, contact_id: opts.contactId || null }, { timeout: 40000 });
       liveId.current = r.data.live_id;
       greeting.current = r.data.greeting || 'Hey, it is Jessi.';
+      greetInstruction.current = r.data.greet_instruction || '';
       idleCloseS.current = Number(r.data.idle_close_s || 25);
       capRef.current = r.data.cap_left_s ?? null;
       setCapLeft(capRef.current);

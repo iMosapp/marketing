@@ -4,17 +4,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { GOLD, GREEN, RED, tid } from '../scripts/shared';
 import type { LiveJessi } from '../../hooks/useLiveJessi';
 
-type Props = { visible: boolean; onClose: () => void; live: LiveJessi; title?: string; onRetry: () => void; onCollapse?: () => void };
+type Props = { visible: boolean; onClose: () => void; live: LiveJessi; title?: string; who?: string; hint?: string; onRetry: () => void; onCollapse?: () => void };
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-export const REASONS: Record<string, string> = { idle: 'Closed after a quiet spell', daily_cap: "Today's minutes are used up", connection_lost: 'The connection dropped', close_requested: 'Conversation ended', expired: 'Session limit reached', content: 'Ended by the safety filter', no_start: 'Jessi did not pick up', unmounted: 'Closed' };
+export const REASONS: Record<string, string> = { idle: 'Closed after a quiet spell', daily_cap: "Today's minutes are used up", connection_lost: 'The connection dropped', close_requested: 'Conversation ended', expired: 'Session limit reached', content: 'Ended by the safety filter', no_start: 'did not pick up', unmounted: 'Closed' };
 
-export const statusText = (live: LiveJessi) =>
-  live.state === 'connecting' ? 'Connecting to Jessi' : live.state === 'ending' ? 'Wrapping up' : live.state === 'live' ? (live.working || 'Listening') : live.state === 'ended' ? (REASONS[live.closeReason] || 'Conversation ended') : 'Could not connect';
+export const statusText = (live: LiveJessi, who = 'Jessi') =>
+  live.state === 'connecting' ? `Connecting to ${who}` : live.state === 'ending' ? 'Wrapping up' : live.state === 'live' ? (live.working || 'Listening') : live.state === 'ended' ? (live.closeReason === 'no_start' ? `${who} did not pick up` : REASONS[live.closeReason] || 'Conversation ended') : 'Could not connect';
 
 // Full-screen live conversation: gold orb, live captions, one End button. The session itself lives in LiveJessiProvider,
 // so shrinking this sheet (chevron) keeps Jessi talking while the app navigates underneath.
-export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi', onRetry, onCollapse }: Props) => {
+export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi', who = 'Jessi', hint, onRetry, onCollapse }: Props) => {
   const pulse = useRef(new Animated.Value(1)).current;
   const scroll = useRef<ScrollView>(null);
 
@@ -44,7 +44,7 @@ export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi'
           )}
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }} {...tid('live-jessi-title')}>{title}</Text>
-            <Text style={{ color: '#8E8E93', fontSize: 12, marginTop: 2 }} {...tid('live-jessi-status')}>{statusText(live)}{live.voice ? ` · ${live.voice}` : ''}</Text>
+            <Text style={{ color: '#8E8E93', fontSize: 12, marginTop: 2 }} {...tid('live-jessi-status')}>{statusText(live, who)}{live.voice ? ` · ${live.voice}` : ''}</Text>
           </View>
           <View style={{ backgroundColor: live.state === 'live' ? `${GREEN}22` : '#1C1C1E', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 6 }} {...tid('live-jessi-timer')}>
             {live.state === 'live' && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: GREEN }} />}
@@ -59,11 +59,11 @@ export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi'
             </View>
           </Animated.View>
           {live.capLeft !== null && live.state === 'live' && <Text style={{ color: '#8E8E93', fontSize: 11, marginTop: 10 }} {...tid('live-jessi-cap')}>{Math.max(0, Math.floor((live.capLeft - live.seconds) / 60))} min left today</Text>}
-          {canCollapse && <Text style={{ color: '#5A5A5F', fontSize: 11, marginTop: 8 }} {...tid('live-jessi-collapse-hint')}>Say "pull up Sarah" or "open her thread" and the app follows along</Text>}
+          {canCollapse && !hint && <Text style={{ color: '#5A5A5F', fontSize: 11, marginTop: 8 }} {...tid('live-jessi-collapse-hint')}>Say "pull up Sarah" or "open her thread" and the app follows along</Text>}
         </View>
 
         <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 10 }} {...tid('live-jessi-captions')}>
-          {live.rows.length === 0 && live.state === 'live' && <Text style={{ color: '#5A5A5F', fontSize: 13, textAlign: 'center', marginTop: 10 }}>Just talk. Ask who you should reach out to today, or say a name.</Text>}
+          {live.rows.length === 0 && live.state === 'live' && <Text style={{ color: '#5A5A5F', fontSize: 13, textAlign: 'center', marginTop: 10 }} {...tid('live-jessi-hint')}>{hint || 'Just talk. Ask who you should reach out to today, or say a name.'}</Text>}
           {live.rows.map(r => (
             <View key={r.id} style={{ alignSelf: r.role === 'rep' ? 'flex-end' : 'flex-start', maxWidth: '86%', backgroundColor: r.role === 'rep' ? '#1F1F23' : `${GOLD}1F`, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: r.role === 'rep' ? '#2C2C2E' : `${GOLD}40` }} {...tid(`live-caption-${r.role}`)}>
               <Text style={{ color: r.role === 'rep' ? '#D5D5DA' : '#F3E6C4', fontSize: 14, lineHeight: 20 }}>{r.text}</Text>

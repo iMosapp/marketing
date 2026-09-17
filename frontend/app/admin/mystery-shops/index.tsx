@@ -10,6 +10,7 @@ import { ClientSheet } from '../../../components/mystery-shops/ClientSheet';
 import { DemoShopSheet } from '../../../components/mystery-shops/DemoShopSheet';
 import { ShopNumberSheet, type NumberState } from '../../../components/mystery-shops/ShopNumberSheet';
 import { ImportSheet } from '../../../components/mystery-shops/ImportSheet';
+import { ShopperAuditionSheet } from '../../../components/mystery-shops/ShopperAuditionSheet';
 import { ShopperPoolCard } from '../../../components/mystery-shops/lead-shops/ShopperPoolCard';
 import { Bar, money, scoreColor, fmtPhone, perMonthText, loadIndustries, afterModal, GOLD, GREEN, RED, PURPLE, BLUE, tid, type Client } from '../../../components/mystery-shops/shared';
 
@@ -24,6 +25,7 @@ export default function MysteryShopClients() {
   const [demo, setDemo] = useState(false);
   const [numberSheet, setNumberSheet] = useState(false);
   const [importSheet, setImportSheet] = useState(false);
+  const [audition, setAudition] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -79,6 +81,14 @@ export default function MysteryShopClients() {
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
+          <TouchableOpacity onPress={() => setAudition(true)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border }} {...tid('shop-audition-card')}>
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="headset" size={20} color={GOLD} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Hear the shopper yourself</Text>
+              <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>A live shop call in your browser, you play the rep. Pick the challenge and the voice, interrupt her, hear her hang up.</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => setImportSheet(true)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border }} {...tid('shop-import')}>
             <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: BLUE + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="cloud-upload-outline" size={20} color={BLUE} /></View>
             <View style={{ flex: 1 }}>
@@ -141,6 +151,7 @@ export default function MysteryShopClients() {
       <DemoShopSheet visible={demo} onClose={() => setDemo(false)} colors={colors} onStarted={(clientId) => afterModal(() => router.push(`/admin/mystery-shops/${clientId}?tab=calls` as any))} />
       <ShopNumberSheet visible={numberSheet} onClose={() => setNumberSheet(false)} colors={colors} onChanged={onNumberChanged} />
       <ImportSheet visible={importSheet} onClose={() => { setImportSheet(false); load(); }} colors={colors} onDone={() => load()} />
+      <ShopperAuditionSheet visible={audition} onClose={() => setAudition(false)} colors={colors} />
     </SafeAreaView>
   );
 }

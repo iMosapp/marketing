@@ -37,7 +37,7 @@ interface DuplicateContact {
 interface DuplicateSet {
   phone: string;
   contacts: DuplicateContact[];
-  reason?: 'phone' | 'name';
+  reason?: 'phone' | 'name' | 'email';
   reason_label?: string;
 }
 
@@ -222,8 +222,8 @@ export default function DuplicatesScreen() {
     return (
       <View style={styles.setCard} data-testid={`duplicate-set-${item.phone}`}>
         <View style={styles.setHeader}>
-          <Ionicons name={item.reason === 'name' ? 'person-outline' : 'call-outline'} size={16} color={colors.textSecondary} />
-          <Text style={styles.setPhone}>{item.reason === 'name' ? (item.reason_label || 'Same name, different number') : formatPhone(item.phone)}</Text>
+          <Ionicons name={item.reason === 'name' ? 'person-outline' : item.reason === 'email' ? 'mail-outline' : 'call-outline'} size={16} color={colors.textSecondary} />
+          <Text style={styles.setPhone}>{item.reason && item.reason !== 'phone' ? (item.reason_label || 'Same name, different number') : formatPhone(item.phone)}</Text>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{contacts.length} records</Text>
           </View>
@@ -270,7 +270,7 @@ export default function DuplicatesScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={styles.title}>Duplicate Contacts</Text>
-          <Text style={styles.subtitle}>Same number in any format, or same name from a lead form</Text>
+          <Text style={styles.subtitle}>Same number, same email, or the same name spelled two ways</Text>
         </View>
         <TouchableOpacity
           onPress={handleNormalizeAll}

@@ -4,7 +4,7 @@ import { useLiveJessi, LiveOptions, OpenTarget } from '../../hooks/useLiveJessi'
 import { LiveJessiSheet } from './LiveJessiSheet';
 import { LiveJessiPill } from './LiveJessiPill';
 
-export type LiveLaunch = { options: LiveOptions; title?: string; onClose?: () => void };
+export type LiveLaunch = { options: LiveOptions; title?: string; who?: string; hint?: string; onClose?: () => void };
 type Ctx = { open: (launch: LiveLaunch) => void; active: boolean };
 
 const LiveJessiContext = createContext<Ctx>({ open: () => {}, active: false });
@@ -17,6 +17,7 @@ export const pathFor = (t: OpenTarget): string | null => {
   if (t.kind === 'tasks') return '/touchpoints';
   if (t.kind === 'home') return '/(tabs)/home';
   if (t.kind === 'inbox') return '/(tabs)/inbox';
+  if (t.kind === 'duplicates') return '/contacts/duplicates';
   return null;
 };
 
@@ -72,10 +73,10 @@ export const LiveJessiProvider = ({ children }: { children: React.ReactNode }) =
     <LiveJessiContext.Provider value={{ open, active: !!launch }}>
       {children}
       {launch && (
-        <LiveJessiSheet visible={expanded} live={live} title={launch.title} onClose={close} onRetry={() => live.start(launch.options)}
+        <LiveJessiSheet visible={expanded} live={live} title={launch.title} who={launch.who} hint={launch.hint} onClose={close} onRetry={() => live.start(launch.options)}
           onCollapse={() => setExpanded(false)} />
       )}
-      {launch && !expanded && <LiveJessiPill live={live} target={target} onExpand={() => setExpanded(true)} onEnd={() => (live.state === 'live' || live.state === 'connecting' ? live.stop('close_requested') : close())} />}
+      {launch && !expanded && <LiveJessiPill live={live} target={target} who={launch.who} onExpand={() => setExpanded(true)} onEnd={() => (live.state === 'live' || live.state === 'connecting' ? live.stop('close_requested') : close())} />}
     </LiveJessiContext.Provider>
   );
 };

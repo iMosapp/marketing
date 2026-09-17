@@ -363,6 +363,16 @@ async def live_status(request: Request):
     return await live_shops.status(get_db())
 
 
+@router.get("/audition/options")
+async def audition_options(request: Request):
+    """What the shopper audition sheet needs: the English GPT-Live voices (shop pools first) and whether the server has the key."""
+    await require_admin(request)
+    from services import live_shops, live_voice
+    pools = [*live_shops.FEMININE, *live_shops.MASCULINE, *live_shops.UK_VOICES["female"], *live_shops.UK_VOICES["male"]]
+    voices = [v for v in live_voice.VOICES if v["id"] in pools] + [v for v in live_voice.VOICES if v["id"] not in pools and "Portuguese" not in v["accent"]]
+    return {"voices": voices, "configured": not live_voice.configured(), "reason": live_voice.configured()}
+
+
 @router.get("/number")
 async def shop_number(request: Request):
     """Which number every shop call and scorecard text comes from, plus every number on the Twilio account to pick from."""

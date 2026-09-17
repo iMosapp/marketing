@@ -80,7 +80,7 @@ async def config(request: Request):
 async def start_session(body: SessionBody, request: Request):
     me = await _resolve(request)
     db = get_db()
-    if body.mode == "lab" and not _is_super(me):
+    if body.mode in ("lab", "shopper") and not _is_super(me):
         raise HTTPException(status_code=403, detail="The Voice Lab is for the app owner")
     if body.mode == "assistant" and not await _available(db, me):
         raise HTTPException(status_code=403, detail="Live Jessi is not switched on for your account yet")

@@ -108,6 +108,46 @@ def opening_line(session: dict) -> str:
     return (session.get("persona") or {}).get("opening_line") or "Hi, I'm calling about a car I saw online."
 
 
+async def audition(db, user: dict, o: dict) -> dict:
+    """A browser audition of the GPT-Live shopper (the admin plays the rep): same persona, curveballs, instructions and voice pool as a real shop call."""
+    import random
+    from services import industries as ind
+    from services import mystery_shops as ms
+    o = o or {}
+    industry = o.get("industry") if o.get("industry") in ind.INDUSTRIES else None
+    department = (o.get("department") or "").strip() or None
+    script = await db.scripts.find_one({"_id": ObjectId(str(o["script_id"]))}) if ObjectId.is_valid(str(o.get("script_id") or "")) else None
+    if not script:
+        pool = await ms.challenge_pool(db, None, department, industry, language="en", approved_only=True)
+        if not pool:
+            raise ValueError("No English challenges for that department yet. Open the Challenge library and let Jessi write the starters first.")
+        script = random.choice(pool)
+    department = script.get("department") or department or "sales"
+    industry = script.get("industry") or industry or ind.industry_of_dept(department)
+    store = (o.get("store_name") or "").strip() or f"the {ind.get(industry)['business']}"
+    offering = (o.get("offering") or "").strip()
+    persona = ms.fill_persona(script.get("persona") or {}, {"industry": industry, "name": store, "vehicles": [offering] if offering else []}, department)
+    pool_cb = [c for c in (script.get("curveballs") or []) if str(c).strip()] or ind.dept(department, industry).get("curveballs", [])
+    curve = random.sample(pool_cb, k=min(len(pool_cb), random.choice([0, 1, 1, 2])))
+    direction = o.get("direction") if o.get("direction") in ("inbound", "outbound") else (script.get("direction") if script.get("direction") in ("inbound", "outbound") else "inbound")
+    session = {"_id": ObjectId(), "kind": "mystery_shop", "mode": "phone", "direction": direction, "locale": "en-US", "department": department, "industry": industry,
+               "rep_name": user.get("name") or "the rep", "store_name": store, "persona": persona, "curveballs": curve, "script_id": str(script["_id"]), "script_title": script.get("title")}
+    voice = o.get("voice") if o.get("voice") in lv.VOICE_IDS else voice_for(session)
+    first = (user.get("name") or "the admin").split(" ")[0]
+    rep_role = ind.dept(department, industry)["rep"]
+    text = (instructions(script, session) +
+            f"\n\nThis is a browser audition, not a phone line: {first}, the app owner, is playing {rep_role} to hear how you sound. "
+            "Treat it exactly like the real call above; every rule applies, including hanging up by delegating once right after your goodbye.")
+    line = opening_line(session)
+    if direction == "inbound":
+        greet = f'You placed this call, so the rep answers first. Wait for them to pick up and greet you, then open with, in your own words: "{line}". If they stay silent for a few seconds, go ahead and open anyway.'
+    else:
+        greet = f'The rep just called you back and you picked up. Your first spoken line, immediately and verbatim: "{line}". Then listen.'
+    return {"instructions": text, "voice": voice, "greet_instruction": greet,
+            "meta": {"script_id": str(script["_id"]), "script_title": script.get("title"), "persona_name": persona.get("name"), "direction": direction, "department": department,
+                     "industry": industry, "curveballs": curve, "opening_line": line}}
+
+
 def instructions(script: dict, session: dict) -> str:
     """The shopper persona for a spoken, full-duplex call (no JSON, no turn loop)."""
     from services import industries as ind
