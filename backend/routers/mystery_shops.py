@@ -524,8 +524,9 @@ async def demo_shop(body: DemoBody, request: Request):
         raise HTTPException(status_code=400, detail="An email shop needs their email address")
     if mode == "email" and ems.configured():
         raise HTTPException(status_code=503, detail=ems.configured())
-    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "rep_phone": phone, "status": {"$in": ["dialing", "live", "ending", "grading"]}, **ms.mode_q(mode)}):
-        raise HTTPException(status_code=409, detail=f"{name} is already in {'an email' if mode == 'email' else 'a text'} shop" if mode != "phone" else f"{name} is already on a shop call")
+    busy = await ms.busy_with(db, {"rep_phone": phone, **ms.mode_q(mode)})
+    if busy:
+        raise HTTPException(status_code=409, detail=ms.busy_label(busy, name, mode))
     script = None
     if body.script_id:
         script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop", "active": {"$ne": False}})
@@ -946,8 +947,9 @@ async def shop_now(cid: str, body: ShopNowBody, request: Request):
         raise HTTPException(status_code=400, detail=f"{t['name']} has no email address yet. Add it under People first.")
     if mode == "email" and ems.configured():
         raise HTTPException(status_code=503, detail=ems.configured())
-    if await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": body.target_id, "status": {"$in": ["dialing", "live", "ending", "grading"]}, **ms.mode_q(mode)}):
-        raise HTTPException(status_code=409, detail=f"{t['name']} is already in {'an email' if mode == 'email' else 'a text'} shop, end it first" if mode != "phone" else f"{t['name']} is already on a shop call")
+    busy = await ms.busy_with(db, {"target_id": body.target_id, **ms.mode_q(mode)})
+    if busy:
+        raise HTTPException(status_code=409, detail=ms.busy_label(busy, t["name"], mode))
     script = None
     if body.script_id:
         script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop"})

@@ -14,12 +14,13 @@ export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) =>
   const [f, setF] = useState(blank);
   const [challenges, setChallenges] = useState<Challenge[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const [, setTick] = useState(0);
-  const set = (k: string, v: any) => setF(x => ({ ...x, [k]: v }));
+  const set = (k: string, v: any) => { setError(''); setF(x => ({ ...x, [k]: v })); };
   const ind = industryOf(f.industry);
   const depts = deptsFor(f.industry);
 
-  useEffect(() => { if (visible) { setF(blank); loadIndustries().then(() => setTick(t => t + 1)); } }, [visible]);
+  useEffect(() => { if (visible) { setF(blank); setError(''); loadIndustries().then(() => setTick(t => t + 1)); } }, [visible]);
   useEffect(() => {
     if (!visible) return;
     setChallenges(null); set('script_id', null);
@@ -34,16 +35,20 @@ export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) =>
   const rep = (depts.find(d => d.key === f.department)?.rep || 'a rep').replace(/^(a|an) /, '');
 
   const go = async () => {
-    setBusy(true);
+    setBusy(true); setError('');
     try {
       const r = await api.post('/shop-clients/demo', { name: f.name.trim(), phone: f.phone, email: f.email.trim(), industry: f.industry, department: f.department, title: f.title, store_name: f.store_name, vehicle: f.vehicle, script_id: f.script_id, text_scorecard: f.text, channel: f.channel });
       showToast(`${f.channel === 'text' ? 'Texting' : f.channel === 'email' ? 'Emailing' : 'Calling'} ${f.name.trim().split(' ')[0]} now`, 'success'); onClose(); onStarted(r.data.client_id, r.data.call.id);
-    } catch (e: any) { showToast(e?.response?.data?.detail || (f.channel === 'text' ? 'Could not send the text' : f.channel === 'email' ? 'Could not send the email' : 'Could not place the call'), 'error'); }
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || (!e?.response ? 'No connection to the server, try again in a moment' : f.channel === 'text' ? 'Could not send the text' : f.channel === 'email' ? 'Could not send the email' : 'Could not place the call');
+      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      showToast(typeof msg === 'string' ? msg : 'Could not start the shop', 'error');
+    }
     finally { setBusy(false); }
   };
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Quick shop" colors={colors} testID="demo-sheet"
+    <Sheet visible={visible} onClose={onClose} title="Quick shop" colors={colors} testID="demo-sheet" error={error}
       footer={<GoldButton label={ready ? `${f.channel === 'text' ? 'Text' : f.channel === 'email' ? 'Email' : 'Call'} ${f.name.trim().split(' ')[0] || 'them'} now` : f.channel === 'email' ? 'Name, cell and email first' : 'Name and cell number first'} onPress={go} busy={busy} disabled={!ready || challenges !== null && pool.length === 0} testID="demo-call" icon={f.channel === 'text' ? 'chatbubbles' : f.channel === 'email' ? 'mail' : 'call'} />}>
       <View style={{ gap: 6 }}>
         <Label t="HOW" colors={colors} />

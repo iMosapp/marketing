@@ -155,7 +155,7 @@ export const StatusChip = ({ status, colors, lang, channel }: { status: string; 
 // screen is left under an invisible, touch-eating modal until the app is killed. Run the follow-up after the dismiss animation.
 export const afterModal = (fn: () => void) => setTimeout(fn, Platform.OS === 'ios' ? 450 : 50);
 
-export const Sheet = ({ visible, onClose, title, colors, children, testID, footer }: { visible: boolean; onClose: () => void; title: string; colors: any; children: React.ReactNode; testID: string; footer?: React.ReactNode }) => {
+export const Sheet = ({ visible, onClose, title, colors, children, testID, footer, error }: { visible: boolean; onClose: () => void; title: string; colors: any; children: React.ReactNode; testID: string; footer?: React.ReactNode; error?: string }) => {
   const scrollRef = useRef<ScrollView>(null);
   const offsetY = useRef(0);
   const footerH = useRef(0);
@@ -194,7 +194,14 @@ export const Sheet = ({ visible, onClose, title, colors, children, testID, foote
               <ScrollView ref={scrollRef} onScroll={(e) => { offsetY.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}
                 contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20, gap: 16 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">{children}</ScrollView>
             </SheetScrollCtx.Provider>
-            {footer && <View onLayout={(e) => { footerH.current = e.nativeEvent.layout.height; }} style={{ padding: 16, paddingBottom: Platform.OS === 'ios' ? 30 : 16, borderTopWidth: 1, borderTopColor: colors.border }}>{footer}</View>}
+            {footer && <View onLayout={(e) => { footerH.current = e.nativeEvent.layout.height; }} style={{ padding: 16, paddingBottom: Platform.OS === 'ios' ? 30 : 16, borderTopWidth: 1, borderTopColor: colors.border, gap: 10 }}>
+              {/* toasts sit underneath a modal, so anything that went wrong is shown right here, above the button */}
+              {!!error && <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: `${RED}18`, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: `${RED}55` }} {...tid(`${testID}-error`)}>
+                <Ionicons name="alert-circle" size={16} color={RED} style={{ marginTop: 1 }} />
+                <Text style={{ flex: 1, fontSize: 13, color: colors.text, lineHeight: 18 }}>{error}</Text>
+              </View>}
+              {footer}
+            </View>}
           </View>
         </View>
       </KeyboardAvoidingView>

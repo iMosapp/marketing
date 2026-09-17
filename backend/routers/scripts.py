@@ -520,19 +520,45 @@ def _twiml(xml: str) -> Response:
     return Response(content=xml, media_type="application/xml")
 
 
+async def _line_problem(s: dict, where: str, e: Exception) -> Response:
+    """A webhook bug must never reach the caller as Twilio's 'application error': log it, park the shop with the reason, say sorry, hang up."""
+    logger.exception(f"[Roleplay] {where} failed for {s.get('_id')}: {e}")
+    db = get_db()
+    try:
+        if s.get("kind") == "mystery_shop" and s.get("status") in ("dialing", "live"):
+            from services.mystery_shops import record_outcome
+            await record_outcome(db, s, "failed", f"The line had a problem ({type(e).__name__})")
+        elif s.get("status") in ("dialing", "live"):
+            await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "failed", "fail_reason": f"The practice line had a problem ({type(e).__name__})", "updated_at": datetime.now(timezone.utc)}})
+    except Exception as e2:
+        logger.warning(f"[Roleplay] could not park {s.get('_id')} after {where} failure: {e2}")
+    nl = svc.loc.language(s.get("locale")) == "nl"
+    return _twiml(svc.say_hangup_twiml("Sorry, de oefenlijn had een probleem. Probeer het over een minuut opnieuw." if nl else "Sorry, the practice line had a problem. Please try again in a minute.", s.get("locale")))
+
+
 @relay_router.post("/twiml/{sid}")
 async def relay_twiml(sid: str, t: str, request: Request):
     """Practice calls go straight to the AI customer. Shop calls open with Jessi's announcement and wait for press 1 / 'ready' (see /gate)."""
     s = await _phone_session(sid, t)
-    if s.get("kind") == "mystery_shop":
-        return _twiml(svc.shop_gate_twiml(s))
-    return _twiml(svc.relay_twiml(s))
+    try:
+        if s.get("kind") == "mystery_shop":
+            return _twiml(svc.shop_gate_twiml(s))
+        return _twiml(svc.relay_twiml(s))
+    except Exception as e:
+        return await _line_problem(s, "twiml", e)
 
 
 @relay_router.post("/gate/{sid}")
 async def relay_gate(sid: str, t: str, request: Request):
     """What the rep did with the announcement: 1/ready -> ring + live customer; 2/not now -> back in 2 h; nothing (voicemail, ignored) -> polite goodbye, no grade, no text."""
     s = await _phone_session(sid, t)
+    try:
+        return await _gate(s, sid, request)
+    except Exception as e:
+        return await _line_problem(s, "gate", e)
+
+
+async def _gate(s: dict, sid: str, request: Request) -> Response:
     form = await request.form()
     choice = svc.gate_choice(form.get("Digits") or "", form.get("SpeechResult") or "")
     db = get_db()
@@ -541,9 +567,12 @@ async def relay_gate(sid: str, t: str, request: Request):
         return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
     if choice == "go":
         await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"gate_passed_at": datetime.now(timezone.utc), "gate_via": "dtmf" if form.get("Digits") else "speech", "updated_at": datetime.now(timezone.utc)}})
-        from services import live_shops
-        if await live_shops.enabled(db, s):
-            return _twiml(live_shops.shop_go_twiml(s))
+        try:
+            from services import live_shops
+            if await live_shops.enabled(db, s):
+                return _twiml(live_shops.shop_go_twiml(s))
+        except Exception as e:  # the GPT-Live path is optional: any hiccup there falls back to the classic relay shopper
+            logger.exception(f"[MysteryShop] live shop gate failed for {sid}, using the relay: {e}")
         return _twiml(svc.shop_go_twiml(s))
     from services.mystery_shops import postpone_call, record_outcome
     if choice == "later":
@@ -565,6 +594,13 @@ async def relay_ring():
 @relay_router.post("/after/{sid}")
 async def relay_after(sid: str, t: str, request: Request):
     s = await _phone_session(sid, t)
+    try:
+        return await _after(s, sid, request)
+    except Exception as e:
+        return await _line_problem(s, "after", e)
+
+
+async def _after(s: dict, sid: str, request: Request) -> Response:
     form = await request.form()
     if form.get("SessionStatus") == "failed":
         logger.warning(f"[Roleplay] ConversationRelay failed for {sid}: {form.get('ErrorCode')} {form.get('ErrorMessage')}")
@@ -585,6 +621,14 @@ async def relay_after(sid: str, t: str, request: Request):
 @relay_router.post("/status/{sid}")
 async def relay_status(sid: str, t: str, request: Request):
     s = await _phone_session(sid, t)
+    try:
+        await _status(s, sid, request)
+    except Exception as e:  # never let a status bookkeeping bug make Twilio retry or leave the row stuck: log and move on
+        logger.exception(f"[Roleplay] status webhook failed for {sid}: {e}")
+    return Response(content="", status_code=204)
+
+
+async def _status(s: dict, sid: str, request: Request) -> None:
     form = await request.form()
     status = form.get("CallStatus") or ""
     db = get_db()
@@ -607,7 +651,6 @@ async def relay_status(sid: str, t: str, request: Request):
     elif status == "completed":
         await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": sets})
         asyncio.create_task(svc.finalize_session(db, sid, "call_completed"))
-    return Response(content="", status_code=204)
 
 
 @relay_router.post("/recording/{sid}")

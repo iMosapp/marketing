@@ -577,12 +577,19 @@ async def start_phone_session(db, me: dict, script: dict, assignment: Optional[d
 
 
 async def reconcile_dialing(db, s: dict) -> dict:
-    """Status callbacks can be lost; after 30s of dialing ask Twilio directly so the app never spins forever."""
+    """Status callbacks can be lost; after 30s of dialing (or on a 'live' call we are asked about) ask Twilio directly so the app never spins forever."""
     started = s.get("started_at")
     if started and started.tzinfo is None:
         started = started.replace(tzinfo=timezone.utc)
-    if s.get("mode") != "phone" or s.get("status") != "dialing" or not s.get("call_sid") or not started or (_now() - started).total_seconds() < 30:
+    if s.get("mode") != "phone" or s.get("status") not in ("dialing", "live") or not s.get("call_sid") or not started or (_now() - started).total_seconds() < 30:
         return s
+    if s.get("status") == "live":
+        # a live call that is still talking updates itself; only ask Twilio about one that has gone quiet
+        touched = s.get("updated_at") or started
+        if touched.tzinfo is None:
+            touched = touched.replace(tzinfo=timezone.utc)
+        if (_now() - touched).total_seconds() < 60:
+            return s
     from services.lead_call_engine import _twilio_client
     client = _twilio_client()
     if client is None:
@@ -601,7 +608,8 @@ async def reconcile_dialing(db, s: dict) -> dict:
         sets.update(status="failed", fail_reason=fail_label(call.status, s.get("from_number")))
     elif call.status == "in-progress":
         sets["status"] = "live"
-    elif call.status == "completed":
+    elif call.status in ("completed", "canceled"):
+        # the call is over on Twilio's side but our hang-up callback never landed: close it out now
         await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": sets})
         await finalize_session(db, str(s["_id"]), "reconciled_completed")
         return await db.roleplay_sessions.find_one({"_id": s["_id"]})

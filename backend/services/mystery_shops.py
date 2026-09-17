@@ -709,6 +709,32 @@ async def dial_now(db, call: dict) -> bool:
     return await place_shop_call(db, call)
 
 
+async def busy_with(db, query: dict) -> Optional[dict]:
+    """The shop that blocks a new one for this person, if any. A phone shop still marked dialing/live is checked with Twilio first,
+    so a lost hang-up callback (backend restart, deploy) can never lock someone out of 'Shop now' for 20 minutes."""
+    s = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "status": {"$in": ["dialing", "live", "ending", "grading"]}, **query})
+    if s and s.get("mode", "phone") == "phone" and s.get("status") in ("dialing", "live"):
+        try:
+            s = await scr.reconcile_dialing(db, {**s, "updated_at": s.get("started_at") or s.get("updated_at")})
+        except Exception as e:
+            logger.warning(f"[MysteryShop] reconcile before shop failed: {e}")
+        if not s or s.get("status") not in ("dialing", "live", "ending", "grading"):
+            return None
+    return s
+
+
+def busy_label(s: dict, name: str, mode: str) -> str:
+    if mode != "phone":
+        return f"{name} is already in {'an email' if mode == 'email' else 'a text'} shop, end it first"
+    if s.get("status") in ("ending", "grading"):
+        return f"{name}'s last shop call is being graded, give it a minute"
+    started = s.get("started_at") or s.get("updated_at")
+    if started and started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    ago = f" (started {max(1, int((_now() - started).total_seconds() // 60))} min ago)" if started else ""
+    return f"{name} is already on a shop call{ago}"
+
+
 OUTCOME_LABEL = {"voicemail": "Went to voicemail", "no-answer": "No answer", "busy": "Line was busy", "failed": "The call could not be placed", "canceled": "The call was cancelled", "hung_up": "Hung up before the shop started",
                  "no_response": "Went to voicemail or wasn't ready", "postponed": "Asked us to call back later",
                  "carrier_declined": "Carrier spam filter declined the call", "declined": "Declined before it rang (carrier spam filter or the phone itself)",
