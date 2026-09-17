@@ -37,17 +37,45 @@ def _now():
     return datetime.now(timezone.utc)
 
 
-async def enabled(db, session: dict) -> bool:
-    """English + OPENAI_API_KEY + (client override, else the Test Lab flag)."""
-    if loc.language(session.get("locale")) != "en" or lv.configured():
-        return False
+NO_KEY = "OPENAI_API_KEY is missing on this server"
+LAB_OFF = "the Test Lab switch 'Mystery shop calls on GPT-Live' is off"
+
+
+async def decide(db, session: dict) -> tuple[bool, str]:
+    """(GPT-Live?, why): English + OPENAI_API_KEY + (client override, else the Test Lab switch, live by default)."""
+    if loc.language(session.get("locale")) != "en":
+        return False, "not an English shop, Dutch stays on ConversationRelay"
+    if lv.configured():
+        return False, NO_KEY
     client = None
     if session.get("client_id") and ObjectId.is_valid(str(session["client_id"])):
         client = await db.shop_clients.find_one({"_id": ObjectId(str(session["client_id"]))}, {"live_calls": 1})
     override = (client or {}).get("live_calls")
-    if override is True or override is False:
-        return override
-    return await lab.is_live(db, LAB_KEY)
+    if override is True:
+        return True, "switched on for this client"
+    if override is False:
+        return False, "switched off for this client (GPT-Live shopper: Off)"
+    if await lab.is_live(db, LAB_KEY):
+        return True, "on for every English shop"
+    return False, LAB_OFF
+
+
+async def enabled(db, session: dict) -> bool:
+    return (await decide(db, session))[0]
+
+
+async def status(db) -> dict:
+    """What the admin screen shows: is the GPT-Live shopper on for English shops right now, and if not, why."""
+    reason = lv.configured()
+    lab_live = await lab.is_live(db, LAB_KEY)
+    return {"on": not reason and lab_live, "configured": not reason, "lab_live": lab_live,
+            "reason": NO_KEY if reason else (None if lab_live else LAB_OFF),
+            "clients_on": await db.shop_clients.count_documents({"live_calls": True}),
+            "clients_off": await db.shop_clients.count_documents({"live_calls": False})}
+
+
+async def mark_relay(db, session: dict, why: str):
+    await db.roleplay_sessions.update_one({"_id": session["_id"]}, {"$set": {"live_transport": "relay", "live_skip_reason": why, "updated_at": _now()}})
 
 
 def voice_for(session: dict) -> str:

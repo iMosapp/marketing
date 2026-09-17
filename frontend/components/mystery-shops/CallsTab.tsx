@@ -120,7 +120,13 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }
                     <Ionicons name="radio" size={12} color={GREEN} /><Text style={{ fontSize: 11, fontWeight: '800', color: GREEN }}>GPT-Live{(d as any).live_voice ? ` · ${(d as any).live_voice}` : ''}</Text>
                   </View>
                 )}
+                {(d as any).live_transport === 'relay' && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: colors.border }} {...tid('shop-call-relay-badge')}>
+                    <Ionicons name="swap-horizontal" size={12} color={colors.textSecondary} /><Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary }}>Classic relay</Text>
+                  </View>
+                )}
               </View>
+              {(d as any).live_transport === 'relay' && !!(d as any).live_skip_reason && <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('shop-call-relay-reason')}>Not on GPT-Live: {(d as any).live_skip_reason}</Text>}
               {!!d.script_title && <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }} {...tid('shop-call-script')}>{d.script_title}</Text>}
               {!!speed && <Text style={{ fontSize: 12.5, fontWeight: '700', color: isTextLive(d) && d.text?.first_reply_s == null ? GOLD : d.text?.first_reply_s == null ? RED : d.text.first_reply_s <= (isEmail ? 1800 : 300) ? GREEN : GOLD }} {...tid('shop-call-speed')}>{speed}</Text>}
               <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{fmtWhenL(d.ended_at || d.started_at || d.scheduled_for, lang)}{d.persona_name || d.persona?.name ? ` · ${who} ${(d.persona_name || d.persona?.name)}` : ''}{d.attempts > 1 ? ` · ${tr('call.tries', { n: d.attempts })}` : ''}</Text>

@@ -346,7 +346,7 @@ def serialize_call(s: dict) -> dict:
             "score_url": f"{scr._app_url()}/shop-score/{s['score_token']}" if s.get("score_token") else None, "score_sms_status": s.get("score_sms_status"), "score_views": s.get("score_views") or 0,
             "channel": s.get("mode") if s.get("mode") in ("text", "email") else "call", "text": tx.stats(s) if s.get("mode") in ("text", "email") else None,
             "subject": s.get("subject") if s.get("mode") == "email" else None, "rep_email": s.get("rep_email") if s.get("mode") == "email" else None,
-            "live_transport": s.get("live_transport"), "live_voice": s.get("live_voice")}
+            "live_transport": s.get("live_transport"), "live_voice": s.get("live_voice"), "live_skip_reason": s.get("live_skip_reason")}
 
 
 # ---------------------------------------------------------------- challenge rotation

@@ -19,6 +19,7 @@ export default function MysteryShopClients() {
   const [clients, setClients] = useState<Client[] | null>(null);
   const [defaultFrom, setDefaultFrom] = useState('');
   const [numberSaved, setNumberSaved] = useState<boolean | null>(null);
+  const [live, setLive] = useState<{ on: boolean; configured: boolean; lab_live: boolean; reason: string | null; clients_on: number; clients_off: number } | null>(null);
   const [sheet, setSheet] = useState(false);
   const [demo, setDemo] = useState(false);
   const [numberSheet, setNumberSheet] = useState(false);
@@ -30,6 +31,7 @@ export default function MysteryShopClients() {
     finally { setRefreshing(false); }
     loadIndustries();
     api.get('/shop-clients/number').then(r => setNumberSaved(r.data.source === 'saved')).catch(() => setNumberSaved(false));
+    api.get('/shop-clients/live-status').then(r => setLive(r.data)).catch(() => setLive(null));
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const onNumberChanged = (s: NumberState) => { setDefaultFrom(s.current || ''); setNumberSaved(s.source === 'saved'); };
@@ -67,6 +69,16 @@ export default function MysteryShopClients() {
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
           <ShopperPoolCard colors={colors} />
+          {!!live && (
+            <TouchableOpacity onPress={() => router.push('/admin/test-lab' as any)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: live.on ? GREEN + '66' : RED + '66' }} {...tid('shop-live-card')}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: (live.on ? GREEN : RED) + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="radio" size={20} color={live.on ? GREEN : RED} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }} {...tid('shop-live-title')}>{live.on ? 'Shoppers talk on GPT-Live' : 'GPT-Live shopper is OFF'}</Text>
+                <Text style={{ fontSize: 12.5, color: colors.textSecondary }} {...tid('shop-live-sub')}>{live.on ? `Every English phone shop gets the full-duplex shopper.${live.clients_off ? ` ${live.clients_off} client${live.clients_off === 1 ? '' : 's'} switched off.` : ''} Dutch stays on the classic relay.` : `English shops fall back to the classic relay: ${live.reason}.${live.clients_on ? ` ${live.clients_on} client${live.clients_on === 1 ? '' : 's'} switched on anyway.` : ''}`}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={() => setImportSheet(true)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border }} {...tid('shop-import')}>
             <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: BLUE + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="cloud-upload-outline" size={20} color={BLUE} /></View>
             <View style={{ flex: 1 }}>

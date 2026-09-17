@@ -59,12 +59,13 @@ FEATURES = [
      "description": "When the rep presses 1, the call is bridged straight to OpenAI GPT-Live-1 over Twilio Media Streams (raw phone audio, no transcription hop). The shopper persona, "
                     "curveballs and the store's script go in as spoken instructions; the transcript comes back live and lands in the same place the grader reads, so scorecards, "
                     "reports and recordings work exactly as before. The shopper says goodbye and hangs up on her own; the 15-minute ceiling still applies. Dutch shops stay on "
-                    "ConversationRelay. Before releasing, you can switch single clients on or off with the 'GPT-Live shopper' toggle in the client editor (that toggle also wins after release).",
-     "how_to_test": ["Open a client, edit it and switch on GPT-Live shopper, then Quick shop yourself (500-555 numbers never connect, so use your own cell once).",
+                    "ConversationRelay. This is ON for every English shop as soon as the server has the key; flip it back to Lab to send everyone to the classic relay, "
+                    "or switch single clients on or off with the 'GPT-Live shopper' toggle in the client editor (that toggle always wins).",
+     "how_to_test": ["Quick shop yourself (500-555 numbers never connect, so use your own cell once). The call detail shows a green GPT-Live badge, or the reason it fell back.",
                      "Talk over the shopper mid-sentence: she should stop and listen. Ask a blind price question: she should push back.",
                      "Say goodbye: the line should drop within a couple of seconds and the shop grades like before (Shops tab, scorecard text).",
                      "Check the client report: recording, transcript and score all present; the shop row shows GPT-Live."],
-     "added": "2026-06-21", "needs": "Needs OPENAI_API_KEY in the backend environment. English clients only."},
+     "added": "2026-06-21", "default": "live", "needs": "Needs OPENAI_API_KEY in the backend environment. English clients only."},
 ]
 STATUSES = ("lab", "live")
 SETTINGS_KEY = "lab_features"

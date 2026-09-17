@@ -355,6 +355,14 @@ async def _number_state(db) -> dict:
             "clients_with_own_number": [{"id": str(c["_id"]), "name": c.get("name"), "from_number": c.get("from_number")} for c in await db.shop_clients.find({"from_number": {"$nin": ["", None]}}, {"name": 1, "from_number": 1}).to_list(100)]}
 
 
+@router.get("/live-status")
+async def live_status(request: Request):
+    """Is the GPT-Live shopper on for English shop calls on this server, and if not, why."""
+    await require_admin(request)
+    from services import live_shops
+    return await live_shops.status(get_db())
+
+
 @router.get("/number")
 async def shop_number(request: Request):
     """Which number every shop call and scorecard text comes from, plus every number on the Twilio account to pick from."""

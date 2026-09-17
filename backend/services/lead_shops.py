@@ -319,8 +319,11 @@ async def inbound_call(db, to_phone: str, from_phone: str, call_sid: str) -> Opt
     if client.get("record_calls", True) and call_sid:
         asyncio.create_task(_record_call(call_sid, str(res.inserted_id), doc["token"]))
     from services import live_shops
-    if await live_shops.enabled(db, doc):
+    use_live, why = await live_shops.decide(db, doc)
+    logger.info(f"[LeadShop] callback {res.inserted_id}: {'GPT-Live' if use_live else 'classic relay'} ({why})")
+    if use_live:
         return live_shops.stream_twiml(doc)
+    await live_shops.mark_relay(db, doc, why)
     return scr.relay_twiml(doc)
 
 

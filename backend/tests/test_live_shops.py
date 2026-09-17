@@ -76,9 +76,31 @@ async def test_enabled_client_override_and_lab_flag(monkeypatch):
         assert await ls.enabled(db, _session(str(cid))) is False
         await db.shop_clients.update_one({"_id": cid}, {"$set": {"live_calls": None}})
         assert await ls.enabled(db, _session(str(cid))) == await lab.is_live(db, ls.LAB_KEY), "no override -> Test Lab flag decides"
+        assert lab._default(ls.LAB_KEY) == "live", "GPT-Live is the default for English shops once the key is there"
+        saved = ((await lab.statuses(db)).get(ls.LAB_KEY) or {}).get("status")
+        try:
+            await db.settings.update_one({"key": lab.SETTINGS_KEY}, {"$unset": {f"value.{ls.LAB_KEY}": ""}})
+            on, why = await ls.decide(db, _session(str(cid)))
+            assert on is True and why == "on for every English shop"
+            st = await ls.status(db)
+            assert st["on"] is True and st["configured"] is True and st["reason"] is None
+        finally:
+            if saved:
+                await db.settings.update_one({"key": lab.SETTINGS_KEY}, {"$set": {f"value.{ls.LAB_KEY}.status": saved}}, upsert=True)
         monkeypatch.setenv("OPENAI_API_KEY", "")
         await db.shop_clients.update_one({"_id": cid}, {"$set": {"live_calls": True}})
-        assert await ls.enabled(db, _session(str(cid))) is False, "no key -> never"
+        on, why = await ls.decide(db, _session(str(cid)))
+        assert on is False and why == ls.NO_KEY, "no key -> never"
+        st = await ls.status(db)
+        assert st["on"] is False and st["reason"] == ls.NO_KEY
+        s = _session(str(cid))
+        await db.roleplay_sessions.insert_one(s)
+        try:
+            await ls.mark_relay(db, s, why)
+            row = await db.roleplay_sessions.find_one({"_id": s["_id"]})
+            assert row["live_transport"] == "relay" and row["live_skip_reason"] == ls.NO_KEY
+        finally:
+            await db.roleplay_sessions.delete_one({"_id": s["_id"]})
     finally:
         await db.shop_clients.delete_one({"_id": cid})
 

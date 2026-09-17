@@ -567,12 +567,19 @@ async def _gate(s: dict, sid: str, request: Request) -> Response:
         return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
     if choice == "go":
         await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"gate_passed_at": datetime.now(timezone.utc), "gate_via": "dtmf" if form.get("Digits") else "speech", "updated_at": datetime.now(timezone.utc)}})
+        from services import live_shops
         try:
-            from services import live_shops
-            if await live_shops.enabled(db, s):
+            use_live, why = await live_shops.decide(db, s)
+            logger.info(f"[MysteryShop] gate {sid}: {'GPT-Live' if use_live else 'classic relay'} ({why})")
+            if use_live:
                 return _twiml(live_shops.shop_go_twiml(s))
         except Exception as e:  # the GPT-Live path is optional: any hiccup there falls back to the classic relay shopper
             logger.exception(f"[MysteryShop] live shop gate failed for {sid}, using the relay: {e}")
+            why = f"GPT-Live setup failed ({type(e).__name__})"
+        try:
+            await live_shops.mark_relay(db, s, why)
+        except Exception as e:
+            logger.warning(f"[MysteryShop] could not stamp the relay reason on {sid}: {e}")
         return _twiml(svc.shop_go_twiml(s))
     from services.mystery_shops import postpone_call, record_outcome
     if choice == "later":
