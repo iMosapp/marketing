@@ -1,0 +1,40 @@
+{
+  "summary": "Frontend-only pass on restructured Contact Detail page (/contact/{id}) at 390x844 as forest@imosapp.com viewing Forest Ward (69a0c06f7626f14d125f8c34) and Sarah Tester (6aa413008f0d53e3f2261853). All requested testids render; task strip expand/collapse, snapshot toggle, Ask Jessi sheet, tabs, history filters (All/Texts/Calls/Memos/Tasks), composer collapse/expand with draft persistence, ?purchase= → Profile, ?capture=true → Memos, and Edit/Cancel regression all work. One minor testability bug found and fixed: refresh-calls-btn was declared with data-testid directly on a TouchableOpacity, which RNW does not always forward; switched to testID + dataSet to match repo convention (Refresh button was visible/functional, just not queryable).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CallsTab", "issue": "refresh-calls-btn used raw data-testid on TouchableOpacity so was not queryable via data-testid selector (button was visible/working). FIXED by switching to testID+dataSet.", "selector": "[data-testid=refresh-calls-btn]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "observations": [
+    "Feed counts on Forest: All=100, Texts=72 (<=All ✓), Tasks=3, Calls=9.",
+    "Snapshot lines drives/last-touch/jessi/numbers render; personal line not present (no personal data key) — spec says 'may be absent'. Full intel expands with Personal Intelligence add-btn when no data; toggles closed again cleanly.",
+    "Hero shows exactly 2 tag chips for Forest Ward (VIP, sold) so +N chip not exercised — Forest has ≤3 tags. Sarah has 1 tag. Did not add QA tags to avoid state pollution; hero-more-tags-btn / hero-less-tags-btn code path not exercised end-to-end.",
+    "automations-toggle: only anniversary-optin-row shown; birthday-optin-row absent because Forest has no birthday stored — component instead surfaces an 'Add birthday' prompt row (expected behaviour, not a bug).",
+    "Composer: contact-composer, composer-collapse-btn, composer-mode-sms, composer-mode-email render; typing draft then collapsing shows draft text in the Message… bar (verified: 'DraftHelloTest'). composer-input data-testid is set on the RN <TextInput>; RNW inconsistently forwards data-testid to <textarea>. Not always queryable via [data-testid=composer-input] but textarea works and draft persists — flagging for main agent to align with testID+dataSet convention.",
+    "Sarah Tester (no tasks) contact loads: no contact-tasks-card rendered (correct).",
+    "Deep links: ?purchase=abc → Profile tab active with profile-contact-section visible ✓, ?capture=true → History › Memos with voice-notes-section visible ✓; auto-recording was not triggered on this run.",
+    "Regression: Edit → Cancel round trip works. Console shows benign 404 'Contact not found' during route swap transitions (previous contact still fetching); no unhandled JS errors."
+  ],
+  "critical_code_review_comments": [
+    "Mixed testability conventions inside contact/* components: some use data-testid prop (unreliable on RN core primitives via RNW), others use testID + dataSet + tid(). Recommend standardising on testID+dataSet (or tid()) for all React Native primitives so query_selector('[data-testid=…]') is deterministic. Impacts: composer-input, refresh-calls-btn (already fixed), and any TextInput/TouchableOpacity that only sets data-testid.",
+    "Console produces 404 'Contact not found' warnings when navigating between contacts in the same session — a stale fetch continues after route changes. Consider AbortController on the useEffect cleanup in /app/frontend/app/contact/[id].tsx to avoid noisy errors and potential race conditions on very slow networks.",
+    "profile-dates-section: when a contact has no birthday, the 'Add birthday' row replaces the birthday-optin toggle. Consider also exposing the optin row (disabled) so users understand the automation exists but requires a date — small UX and testability improvement."
+  ],
+  "updated_files": ["/app/frontend/components/contact/CallsTab.tsx"],
+  "test_report_links": [],
+  "action_items": [
+    "Align composer-input (and any other RN primitives using raw data-testid) to testID + dataSet + tid() so tests can target them reliably.",
+    "Optionally clean up stale contact fetches on route change to eliminate 404 console errors.",
+    "Optional UX: still show birthday auto-text opt-in when birthday is missing (disabled) instead of hiding the row entirely — otherwise QA scripts expecting birthday-optin-row on every contact fail as they did here."
+  ],
+  "success_rate": {"backend": "n/a", "frontend": "~95%"},
+  "test_credentials": "forest@imosapp.com / Admin123! used per /app/memory/test_credentials.md (also referenced activation-tester creds but did not need to log in as them — Forest admin could read Sarah).",
+  "seed_data_creation": "None. No tasks, tags, memos, or messages were created/modified. No SMS/email/call was sent.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Contact detail page restructure verified. Use history.pushState + popstate for in-app nav on web. testids that use raw data-testid on RN primitives may not be queryable — prefer testID+dataSet. Forest Ward tags <=3 so +N tag chip not exercised; if you need to test hero-more-tags-btn, add ≥4 tags to a QA contact and clean up. Do NOT toggle auto-text switches or send messages on Forest.",
+  "rca of the issue": "refresh-calls-btn: React Native Web only forwards `data-testid` reliably when it appears in the component's dataSet or via testID convention; setting it directly on TouchableOpacity's props is silently dropped by some RN versions used here. Fix was to switch to testID + dataSet like the rest of the file."
+}

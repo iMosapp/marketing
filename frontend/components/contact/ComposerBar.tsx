@@ -127,7 +127,8 @@ export default function ComposerBar(props: any) {
           multiline
           maxLength={1600}
           scrollEnabled
-          data-testid="composer-input"
+          testID="composer-input"
+          dataSet={{ testid: 'composer-input' } as any}
         />
         <View style={[s.composerToolbar, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
           <View style={s.composerTools}>

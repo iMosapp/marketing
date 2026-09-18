@@ -26,7 +26,8 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh,
         <TouchableOpacity
           onPress={onRefresh}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-          data-testid="refresh-calls-btn"
+          testID="refresh-calls-btn"
+          dataSet={{ testid: 'refresh-calls-btn' } as any}
         >
           <Ionicons name="refresh" size={14} color={colors.accent} />
           <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>Refresh</Text>
