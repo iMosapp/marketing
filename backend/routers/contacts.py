@@ -1073,7 +1073,7 @@ async def set_date_sold(user_id: str, contact_id: str, data: dict = Body(...)):
     if not await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"_id": 1}):
         raise HTTPException(status_code=404, detail="Contact not found")
     title = (data.get("title") or data.get("vehicle") or "").strip() or None
-    outcome = await sales.record_sale(db, contact_id, day, title=title, category=data.get("category") or "vehicle")
+    outcome = await sales.record_sale(db, contact_id, day, title=title, category=data.get("category") or "vehicle", notes=(data.get("notes") or "").strip(), source=data.get("source") or "wizard")
     # Marking sold IS the Sold workflow: add the tag if missing and run the store rulebook (idempotent)
     workflow = []
     try:

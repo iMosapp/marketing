@@ -14,6 +14,8 @@ const TOOL_LABELS: Record<string, string> = {
   draft_message: 'Draft ready', set_reminder: 'Reminder set', confirm: 'Done', cancel: 'Cancelled', answer: 'Answered', open_screen: 'Opened it',
   find_duplicates: 'Checked for duplicates', merge_duplicates: 'Merge ready, say yes', hang_up: 'The shopper hung up', stay_in_character: 'Staying in character',
   next_stop: 'Next stop', find_mentions: 'Searched your conversations',
+  call_person: 'Calling, your phone will ring', add_note: 'Note saved', tag_person: 'Tag updated', mark_sold: 'Sale ready, say yes', finish_task: 'Reminder updated',
+  update_contact: 'Record updated', book_appointment: 'Appointment ready, say yes', enroll_campaign: 'Enrollment ready, say yes', send_card: 'Text ready to send',
 };
 const ROW_GAP_MS = 1500;
 

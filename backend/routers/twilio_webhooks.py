@@ -1192,14 +1192,13 @@ async def initiate_outbound_call(request: Request):
     
     Body: { rep_user_id, customer_phone, contact_id (optional), conversation_id (optional) }
     """
-    import asyncio as _aio
     body = await request.json()
-    rep_user_id    = body.get("rep_user_id", "")
-    customer_phone = body.get("customer_phone", "")
-    contact_id     = body.get("contact_id", "")
-    conversation_id = body.get("conversation_id", "")  # thread to log the call in
-    task_id        = body.get("task_id", "")  # task the rep tapped Call from (auto-completes once connected)
+    return await place_click_to_call(body.get("rep_user_id", ""), body.get("customer_phone", ""), body.get("contact_id", ""), body.get("conversation_id", ""), body.get("task_id", ""))
 
+
+async def place_click_to_call(rep_user_id: str, customer_phone: str, contact_id: str = "", conversation_id: str = "", task_id: str = "") -> dict:
+    """Rings the rep's cell from their business number; press 1 bridges to the customer. Used by the app and by Live Jessi ("call Bud")."""
+    import asyncio as _aio
     if not rep_user_id or not customer_phone:
         raise HTTPException(status_code=400, detail="rep_user_id and customer_phone required")
 

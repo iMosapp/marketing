@@ -230,12 +230,21 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
         raise HTTPException(status_code=500, detail="Failed to store audio")
 
     transcript = await _transcribe_audio(audio_bytes, filename, kind)
+    return await _store_note(db, user_id, contact_id, transcript, kind, duration, audio_url, stored_path, audio_bytes)
+
+
+async def create_text_memo(db, user_id: str, contact_id: str, text: str, source: str = "jessi") -> dict:
+    """A memo dictated to Jessi (or typed): no audio, otherwise the exact voice-note pipeline (timeline event, personal-detail extraction)."""
+    return await _store_note(db, user_id, contact_id, (text or "").strip(), "memo", 0.0, None, None, None, source=source)
+
+
+async def _store_note(db, user_id: str, contact_id: str, transcript: str, kind: str, duration: float, audio_url, stored_path, audio_bytes, source: str = "app") -> dict:
     is_convo = kind == "conversation"
 
     now = datetime.now(timezone.utc)
     note_doc = {
         "contact_id": contact_id, "user_id": user_id, "audio_url": audio_url, "audio_path": stored_path,
-        "transcript": transcript, "summary": "", "kind": kind, "duration": round(duration, 1), "created_at": now,
+        "transcript": transcript, "summary": "", "kind": kind, "duration": round(duration, 1), "created_at": now, "source": source,
     }
     result = await db.voice_notes.insert_one(note_doc)
     note_id = str(result.inserted_id)
@@ -249,7 +258,8 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
             return
         if v:
             await db.voice_notes.update_one({"_id": result.inserted_id}, {"$set": {"voice_id": v}})
-    asyncio.create_task(_voice_check())
+    if audio_bytes:
+        asyncio.create_task(_voice_check())
 
     # Recorded conversations: summary + every commitment becomes a task on the rep's list
     summary, title, highlights, new_tasks = "", "", [], []
@@ -262,12 +272,12 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
         user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "org_id": 1, "name": 1})
         await db.contact_events.insert_one({
             "event_type": "conversation_recorded" if is_convo else "voice_note",
-            "title": "In-person conversation recorded" if is_convo else "Voice Note Recorded",
+            "title": "In-person conversation recorded" if is_convo else ("Note dictated to Jessi" if source == "jessi" else "Voice Note Recorded"),
             "description": (summary or transcript)[:200] if (summary or transcript) else ("Conversation recorded" if is_convo else "Audio memo recorded"),
             "contact_id": contact_id, "user_id": user_id, "org_id": (user_doc or {}).get("org_id", ""),
             "channel": "voice_note", "category": "voice_note", "icon": "people" if is_convo else "mic", "color": "#C9A962" if is_convo else "#34C759",
             "content": summary or transcript or "",
-            "metadata": {"voice_note_id": note_id, "duration": round(duration, 1), "kind": kind},
+            "metadata": {"voice_note_id": note_id, "duration": round(duration, 1), "kind": kind, "source": source},
             "timestamp": now, "created_at": now,
         })
     except Exception as e:
