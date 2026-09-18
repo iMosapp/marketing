@@ -1,23 +1,31 @@
 /**
- * DetailsTab — voice memos, personal intel, purchases, dates, referrals & campaigns.
+ * DetailsTab ("Profile") — the record, in reading order: how to reach them, important dates, purchases, tags, notes, referrals,
+ * campaigns, then a folded "More" (follow-up checklist, share profile, push to CRM).
+ * Personal intelligence + relationship numbers live in the Snapshot card; voice memos live under History › Memos.
  * Extracted from contact/[id].tsx (render-only; all state lives in the parent).
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Switch, Modal, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Modal, Platform, Linking } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { tid } from '../scripts/shared';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
-import { formatEventTime } from '../../utils/contactHelpers';
 import { contactsAPI } from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
-import PersonalIntelSection from '../PersonalIntelSection';
 import PurchaseHistorySection from './PurchaseHistorySection';
 import CrmPushSection from './CrmPushSection';
 import ShareProfileSection from './ShareProfileSection';
 
+const ROLE_TAGS: Record<string, string> = { imos_user: 'User', imos_super_admin: 'Super Admin', imos_org_admin: 'Admin', imos_store_manager: 'Manager' };
 const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+export function prettyPhone(p?: string): string {
+  const d = String(p || '').replace(/\D/g, '');
+  if (d.length === 11 && d.startsWith('1')) return `(${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+  return p || '';
+}
 
 function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }: any) {
   const [dateStr, setDateStr] = useState('');
@@ -38,11 +46,7 @@ function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }:
               type="date"
               value={dateStr}
               onChange={(e: any) => setDateStr(e.target.value)}
-              style={{
-                width: '100%', padding: 12, borderRadius: 10,
-                backgroundColor: colors.surface, color: colors.text, border: '1px solid #3A3A3C',
-                fontSize: 17, marginBottom: 12, marginTop: 4,
-              }}
+              style={{ width: '100%', padding: 12, borderRadius: 10, backgroundColor: colors.surface, color: colors.text, border: '1px solid #3A3A3C', fontSize: 17, marginBottom: 12, marginTop: 4 }}
               {...tid('birthday-date-input')}
             />
           ) : (
@@ -58,23 +62,11 @@ function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }:
           )}
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
             {current ? (
-              <TouchableOpacity
-                style={[s.labelBtn, { backgroundColor: colors.surface }]}
-                onPress={() => onSave(null)}
-                disabled={saving}
-                testID="birthday-clear-btn"
-                dataSet={{ testid: 'birthday-clear-btn' }}
-              >
+              <TouchableOpacity style={[s.labelBtn, { backgroundColor: colors.surface }]} onPress={() => onSave(null)} disabled={saving} testID="birthday-clear-btn" dataSet={{ testid: 'birthday-clear-btn' }}>
                 <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 16, fontWeight: '600', color: '#FF3B30' }}>Clear</Text>
               </TouchableOpacity>
             ) : null}
-            <TouchableOpacity
-              style={[s.labelBtn, { backgroundColor: dateStr ? '#FF9500' : 'rgba(128,128,128,0.3)' }]}
-              onPress={() => dateStr && onSave(dateStr)}
-              disabled={saving || !dateStr}
-              testID="birthday-save-btn"
-              dataSet={{ testid: 'birthday-save-btn' }}
-            >
+            <TouchableOpacity style={[s.labelBtn, { backgroundColor: dateStr ? '#FF9500' : 'rgba(128,128,128,0.3)' }]} onPress={() => dateStr && onSave(dateStr)} disabled={saving || !dateStr} testID="birthday-save-btn" dataSet={{ testid: 'birthday-save-btn' }}>
               <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 16, fontWeight: '700', color: '#000' }}>{saving ? 'Saving...' : 'Save'}</Text>
             </TouchableOpacity>
           </View>
@@ -84,19 +76,33 @@ function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }:
   );
 }
 
+function ContactRow({ s, icon, color, label, value, onPress, testid }: any) {
+  if (!value) return null;
+  const inner = (
+    <>
+      <Ionicons name={icon} size={16} color={color} />
+      <Text style={s.viewRowLabel}>{label}</Text>
+      <Text style={[s.viewRowValue, { flexShrink: 1, textAlign: 'right' }]} numberOfLines={2}>{value}</Text>
+    </>
+  );
+  return onPress
+    ? <TouchableOpacity style={s.viewRow} onPress={onPress} testID={testid} dataSet={{ testid } as any}>{inner}</TouchableOpacity>
+    : <View style={s.viewRow} testID={testid} dataSet={{ testid } as any}>{inner}</View>;
+}
+
 export default function DetailsTab(props: any) {
   const {
     s, colors, contact, contactId, userId, isNewContact,
-    voiceNotes, voiceNotesLoading, isRecording, recordingTime, uploadingVoiceNote,
-    playingNoteId, showAllNotes, startRecording, stopRecording, playVoiceNote,
-    deleteVoiceNote, formatRecordingTime, maxRecordingSeconds,
-    referrals, contactEnrollments, toggleDateOptin, reloadContact, checklist, stats, onDatePress,
+    referrals, contactEnrollments, toggleDateOptin, reloadContact, checklist, onDatePress,
+    availableTags = [], onAddTag, onCall, onEmail,
   } = props;
   const router = useRouter();
   const [bdayModalOpen, setBdayModalOpen] = useState(false);
   const [savingBday, setSavingBday] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [showAutomations, setShowAutomations] = useState(false);
   const paused = (k: string) => (contact.disabled_automations || []).includes(k);
+
   const dateRow = (key: string, icon: any, color: string, label: string, value: Date, kind?: string) => {
     const isPaused = kind ? paused(kind) : false;
     const inner = (
@@ -122,220 +128,143 @@ export default function DetailsTab(props: any) {
     setSavingBday(false);
   };
 
+  const tl = (contact.tags || []).map((t: string) => (t || '').toLowerCase());
+  const bOn = tl.includes('birthday');
+  const aOn = tl.includes('anniversary');
+  const address = [contact.address_street, [contact.address_city, contact.address_state].filter(Boolean).join(', '), contact.address_zip].filter(Boolean).join(' · ');
+  const extraPhones = (contact.phones || []).filter((p: any) => p?.value && p.value !== contact.phone);
+  const extraEmails = (contact.emails || []).filter((e: any) => e?.value && e.value !== contact.email);
+  const work = [contact.occupation, contact.employer || contact.organization_name].filter(Boolean).join(' at ');
+  const openMaps = () => Linking.openURL(`https://maps.apple.com/?q=${encodeURIComponent(address.replace(/ · /g, ' '))}`).catch(() => {});
+
   return (
     <>
       <View style={{ height: 10 }} />
-      {/* Personal: what matters to them (from voice memos + edits) */}
-      <PersonalIntelSection contactId={contactId} userId={userId} colors={colors} />
+
+      {/* How to reach them */}
+      <View style={s.section} {...tid('profile-contact-section')}>
+        <Text style={s.sectionHeader}>Contact</Text>
+        <ContactRow s={s} icon="call" color="#32ADE6" label="Mobile" value={prettyPhone(contact.phone)} onPress={onCall} testid="profile-row-phone" />
+        {extraPhones.map((p: any, i: number) => <ContactRow key={`p${i}`} s={s} icon="call-outline" color="#32ADE6" label={p.label || 'Phone'} value={prettyPhone(p.value)} testid={`profile-row-phone-${i}`} />)}
+        <ContactRow s={s} icon="mail" color="#AF52DE" label="Email" value={contact.email} onPress={onEmail} testid="profile-row-email" />
+        {extraEmails.map((e: any, i: number) => <ContactRow key={`e${i}`} s={s} icon="mail-outline" color="#AF52DE" label={e.label || 'Email'} value={e.value} testid={`profile-row-email-${i}`} />)}
+        <ContactRow s={s} icon="location" color="#FF9500" label="Address" value={address} onPress={address ? openMaps : undefined} testid="profile-row-address" />
+        <ContactRow s={s} icon="briefcase" color="#C9A962" label="Work" value={work} testid="profile-row-work" />
+        <ContactRow s={s} icon="car-sport" color="#C9A962" label="Vehicle" value={contact.vehicle} testid="profile-row-vehicle" />
+        <ContactRow s={s} icon="people" color="#34C759" label="Referred by" value={contact.referred_by_name} onPress={contact.referred_by ? () => router.push(`/contact/${contact.referred_by}`) : undefined} testid="profile-row-referred-by" />
+        {!contact.phone && !contact.email && !address && !work && !contact.vehicle && (
+          <Text style={{ fontSize: 13, color: colors.textTertiary }} {...tid('profile-contact-empty')}>No phone or email yet. Tap Edit to add them.</Text>
+        )}
+      </View>
+
+      {/* Important Dates */}
+      <View style={s.section} {...tid('profile-dates-section')}>
+        <Text style={s.sectionHeader}>Important Dates</Text>
+        {contact.birthday ? (
+          <TouchableOpacity style={s.viewRow} onPress={() => setBdayModalOpen(true)} testID="birthday-row" dataSet={{ testid: 'birthday-row' }}>
+            <Ionicons name="gift" size={16} color="#FF9500" />
+            <Text style={s.viewRowLabel}>Birthday</Text>
+            <Text style={s.viewRowValue}>{format(contact.birthday, 'MMM d, yyyy')}</Text>
+            <Ionicons name="pencil" size={12} color="#8E8E93" style={{ marginLeft: 6 }} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }} onPress={() => setBdayModalOpen(true)} testID="add-birthday-btn" dataSet={{ testid: 'add-birthday-btn' }}>
+            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#FF950022', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="gift" size={14} color="#FF9500" />
+            </View>
+            <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '600', color: '#FF9500' }}>Add birthday</Text>
+            <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, color: '#8E8E93', flex: 1 }} numberOfLines={1}>unlocks auto birthday texts</Text>
+            <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+          </TouchableOpacity>
+        )}
+        {contact.anniversary && dateRow('anniversary', 'heart', '#FF2D55', 'Anniversary', contact.anniversary, 'anniversary')}
+        {contact.date_sold && dateRow('sold', 'car', '#34C759', 'Date sold', contact.date_sold, 'sold_date')}
+        {(contact.custom_dates || []).map((cd: any, i: number) => cd.date && (
+          <View key={i} style={s.viewRow}>
+            <Ionicons name="calendar-outline" size={16} color="#007AFF" />
+            <Text style={s.viewRowLabel}>{cd.name}</Text>
+            <Text style={s.viewRowValue}>{format(cd.date, 'MMM d, yyyy')}</Text>
+          </View>
+        ))}
+
+        {/* Automations: one summary row, toggles behind it. Date sends fire ONLY when these are ON. */}
+        {(contact.birthday || contact.date_sold || contact.anniversary) && (
+          <>
+            <TouchableOpacity onPress={() => setShowAutomations(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 }} testID="automations-toggle" dataSet={{ testid: 'automations-toggle' } as any}>
+              <Ionicons name="notifications-outline" size={16} color={colors.textSecondary} />
+              <Text style={[s.viewRowLabel, { flex: 1 }]} numberOfLines={1}>
+                Auto texts{contact.birthday ? ` · Birthday ${bOn ? 'ON' : 'off'}` : ''}{(contact.date_sold || contact.anniversary) ? ` · Anniversary ${aOn ? 'ON' : 'off'}` : ''}
+              </Text>
+              <Ionicons name={showAutomations ? 'chevron-up' : 'chevron-down'} size={14} color="#8E8E93" />
+            </TouchableOpacity>
+            {showAutomations && (
+              <View style={{ paddingLeft: 26 }}>
+                {contact.birthday && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} {...tid('birthday-optin-row')}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.viewRowLabel} numberOfLines={1}>Birthday text + card</Text>
+                      <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>{bOn ? 'Sends automatically on their birthday' : 'OFF, nothing sends'}</Text>
+                    </View>
+                    <Switch value={bOn} onValueChange={(v: boolean) => toggleDateOptin('birthday', v)} trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }} thumbColor={bOn ? '#34C759' : '#f4f3f4'} {...tid('birthday-optin-switch')} />
+                  </View>
+                )}
+                {(contact.date_sold || contact.anniversary) && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} {...tid('anniversary-optin-row')}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.viewRowLabel} numberOfLines={1}>Anniversary text + card</Text>
+                      <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>{aOn ? 'Sends yearly with their car photo' : 'OFF, nothing sends'}</Text>
+                    </View>
+                    <Switch value={aOn} onValueChange={(v: boolean) => toggleDateOptin('anniversary', v)} trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }} thumbColor={aOn ? '#34C759' : '#f4f3f4'} {...tid('anniversary-optin-switch')} />
+                  </View>
+                )}
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
+      {/* Purchases */}
+      {!isNewContact && (
+        <PurchaseHistorySection contactId={contactId} userId={userId} colors={colors} onChanged={() => reloadContact?.()} focusPurchaseId={props.focusPurchaseId} />
+      )}
+
+      {/* Tags: all of them (the hero shows the first three) */}
+      {!isNewContact && (
+        <View style={s.section} {...tid('profile-tags-section')}>
+          <View style={s.sectionHeaderRow}>
+            <Text style={[s.sectionHeader, { marginBottom: 0 }]}>Tags</Text>
+            <Text style={s.sectionHeaderCount}>{(contact.tags || []).length}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {(contact.tags || []).map((tag: string, i: number) => {
+              const info = availableTags.find((t: any) => t.name === tag);
+              const chipColor = info?.color || colors.textSecondary;
+              return (
+                <View key={`tag-${i}`} style={[s.heroTagChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10` }]} {...tid(`profile-tag-${i}`)}>
+                  <Ionicons name={(info?.icon || 'pricetag') as any} size={12} color={chipColor} />
+                  <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{ROLE_TAGS[tag] || tag}</Text>
+                </View>
+              );
+            })}
+            <TouchableOpacity onPress={onAddTag} style={[s.heroTagChip, { borderColor: colors.border, backgroundColor: 'transparent', gap: 4 }]} {...tid('profile-add-tag-btn')}>
+              <Ionicons name="add" size={13} color={colors.textSecondary} />
+              <Text style={[s.heroTagChipText, { color: colors.textSecondary }]}>{(contact.tags || []).length ? 'Tag' : 'Add a tag'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {contact.notes ? (
-        <View style={s.section}>
+        <View style={s.section} {...tid('profile-notes-section')}>
           <Text style={s.sectionHeader}>Notes</Text>
           <Text style={s.viewText}>{contact.notes}</Text>
         </View>
       ) : null}
 
-      {/* Purchase History */}
-      {!isNewContact && (
-        <PurchaseHistorySection
-          contactId={contactId}
-          userId={userId}
-          colors={colors}
-          onChanged={() => reloadContact?.()}
-          focusPurchaseId={props.focusPurchaseId}
-        />
-      )}
-
-      {/* Important Dates */}
-      <View style={s.section}>
-          <Text style={s.sectionHeader}>Important Dates</Text>
-          {contact.birthday ? (
-            <TouchableOpacity style={s.viewRow} onPress={() => setBdayModalOpen(true)} testID="birthday-row" dataSet={{ testid: 'birthday-row' }}>
-              <Ionicons name="gift" size={16} color="#FF9500" />
-              <Text style={s.viewRowLabel}>Birthday</Text>
-              <Text style={s.viewRowValue}>{format(contact.birthday, 'MMM d, yyyy')}</Text>
-              <Ionicons name="pencil" size={12} color="#8E8E93" style={{ marginLeft: 6 }} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}
-              onPress={() => setBdayModalOpen(true)}
-              testID="add-birthday-btn"
-              dataSet={{ testid: 'add-birthday-btn' }}
-            >
-              <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#FF950022', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="gift" size={14} color="#FF9500" />
-              </View>
-              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '600', color: '#FF9500' }}>Add birthday</Text>
-              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, color: '#8E8E93', flex: 1 }} numberOfLines={1}>unlocks auto birthday texts</Text>
-              <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
-            </TouchableOpacity>
-          )}
-          {contact.anniversary && dateRow('anniversary', 'heart', '#FF2D55', 'Anniversary', contact.anniversary, 'anniversary')}
-          {contact.date_sold && dateRow('sold', 'car', '#34C759', 'Date sold', contact.date_sold, 'sold_date')}
-          {contact.custom_dates.map((cd: any, i: number) => cd.date && (
-            <View key={i} style={s.viewRow}>
-              <Ionicons name="calendar-outline" size={16} color="#007AFF" />
-              <Text style={s.viewRowLabel}>{cd.name}</Text>
-              <Text style={s.viewRowValue}>{format(cd.date, 'MMM d, yyyy')}</Text>
-            </View>
-          ))}
-
-          {/* Opt-in toggles: date sends fire ONLY when these are ON */}
-          {(() => {
-            const tl = (contact.tags || []).map((t: string) => (t || '').toLowerCase());
-            const bOn = tl.includes('birthday');
-            const aOn = tl.includes('anniversary');
-            return (
-              <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.15)' }}>
-                {contact.birthday && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} {...tid('birthday-optin-row')}>
-                    <Ionicons name={bOn ? 'notifications' : 'notifications-off'} size={16} color={bOn ? '#34C759' : '#8E8E93'} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.viewRowLabel} numberOfLines={1}>Birthday text + card</Text>
-                      <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>
-                        {bOn ? 'Sends automatically on their birthday' : 'OFF — nothing sends'}
-                      </Text>
-                    </View>
-                    <Switch
-                      value={bOn}
-                      onValueChange={(v: boolean) => toggleDateOptin('birthday', v)}
-                      trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }}
-                      thumbColor={bOn ? '#34C759' : '#f4f3f4'}
-                      {...tid('birthday-optin-switch')}
-                    />
-                  </View>
-                )}
-                {(contact.date_sold || contact.anniversary) && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} {...tid('anniversary-optin-row')}>
-                    <Ionicons name={aOn ? 'notifications' : 'notifications-off'} size={16} color={aOn ? '#34C759' : '#8E8E93'} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.viewRowLabel} numberOfLines={1}>Anniversary text + card</Text>
-                      <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>
-                        {aOn ? 'Sends yearly with their car photo' : 'OFF — nothing sends'}
-                      </Text>
-                    </View>
-                    <Switch
-                      value={aOn}
-                      onValueChange={(v: boolean) => toggleDateOptin('anniversary', v)}
-                      trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }}
-                      thumbColor={aOn ? '#34C759' : '#f4f3f4'}
-                      {...tid('anniversary-optin-switch')}
-                    />
-                  </View>
-                )}
-              </View>
-            );
-          })()}
-        </View>
-
-      {/* Voice Notes — full history, all visible */}
-      <View style={[s.section, { paddingTop: 4 }]} {...tid('voice-notes-section')}>
-          <View style={s.sectionHeaderRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.sectionHeader}>Voice memos</Text>
-            </View>
-            <Text style={s.sectionHeaderCount}>{voiceNotes.length}</Text>
-          </View>
-
-          {isRecording ? (
-            <View style={s.vnRecording} {...tid('voice-recording-indicator')}>
-              <View style={s.vnRecordingDot} />
-              <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
-              <Text style={s.vnRecordingLimit}>/ {formatRecordingTime(maxRecordingSeconds)}</Text>
-              <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} {...tid('stop-recording-btn')}>
-                <Ionicons name="stop" size={18} color={colors.text} />
-                <Text style={s.vnStopText}>Stop</Text>
-              </TouchableOpacity>
-            </View>
-          ) : uploadingVoiceNote ? (
-            <View style={s.vnRecording}>
-              <ActivityIndicator size="small" color="#34C759" />
-              <Text style={[s.vnRecordingTime, { marginLeft: 8 }]}>Saving & transcribing...</Text>
-            </View>
-          ) : (
-            <TouchableOpacity style={s.vnRecordBtn} onPress={startRecording} {...tid('start-recording-btn')}>
-              <Ionicons name="mic" size={20} color="#34C759" />
-              <Text style={s.vnRecordText}>Record a voice memo</Text>
-            </TouchableOpacity>
-          )}
-
-          {voiceNotesLoading ? (
-            <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 12 }} />
-          ) : voiceNotes.length > 0 ? (
-            <View style={{ marginTop: 12 }}>
-              {(showAllNotes ? voiceNotes : voiceNotes.slice(0, 1)).map((note: any, i: number) => {
-                const isPlaying = playingNoteId === note.id;
-                return (
-                  <View key={note.id} style={s.vnCard} {...tid(`voice-note-${i}`)}>
-                    <View style={s.vnCardHeader}>
-                      <TouchableOpacity
-                        style={[s.vnPlayBtn, isPlaying && s.vnPlayBtnActive]}
-                        onPress={() => playVoiceNote(note.id, note.audio_url)}
-                        {...tid(`play-voice-note-${i}`)}
-                      >
-                        <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={isPlaying ? '#000' : '#34C759'} />
-                      </TouchableOpacity>
-                      <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={s.vnCardDate}>{formatEventTime(note.created_at)}</Text>
-                        <Text style={s.vnCardDuration}>{formatRecordingTime(Math.round(note.duration))}</Text>
-                      </View>
-                      <TouchableOpacity
-                        onPress={(e: any) => {
-                          e.stopPropagation?.();
-                          deleteVoiceNote(note.id);
-                        }}
-                        style={{ padding: 12, margin: -8, zIndex: 10 }}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        {...tid(`delete-voice-note-${i}`)}
-                      >
-                        <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-                      </TouchableOpacity>
-                    </View>
-                    {note.transcript ? (
-                      <Text style={s.vnTranscript}>
-                        {note.transcript}
-                      </Text>
-                    ) : (
-                      <Text style={[s.vnTranscript, { fontStyle: 'italic', color: colors.textTertiary }]}>Transcribing...</Text>
-                    )}
-                    {note.transcript && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                        <Ionicons name="sparkles" size={11} color="#AF52DE" />
-                        <Text style={{ fontSize: 11, color: '#AF52DE', fontStyle: 'italic' }}>AI has learned from this memo</Text>
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          ) : null}
-        </View>
-
-      {/* Follow-up checklist (what has gone out to this customer) */}
-      {checklist}
-
-      <BirthdayModal
-        visible={bdayModalOpen}
-        onClose={() => setBdayModalOpen(false)}
-        onSave={saveBirthday}
-        current={contact.birthday}
-        s={s}
-        colors={colors}
-        saving={savingBday}
-      />
-
       {/* Referrals */}
-      {(contact.referred_by_name || referrals.length > 0) && (
+      {(contact.referral_count > 0 || referrals.length > 0) && (
         <View style={s.section}>
           <Text style={s.sectionHeader}>Referrals</Text>
-          {contact.referred_by_name && (
-            <View style={s.viewRow}>
-              <Ionicons name="people" size={16} color="#34C759" />
-              <Text style={s.viewRowLabel}>Referred by</Text>
-              <Text style={s.viewRowValue}>{contact.referred_by_name}</Text>
-            </View>
-          )}
           {contact.referral_count > 0 && (
             <View style={s.viewRow}>
               <Ionicons name="trophy" size={16} color="#FF9500" />
@@ -367,33 +296,25 @@ export default function DetailsTab(props: any) {
         </View>
       )}
 
-      {/* Relationship numbers, in plain words */}
-      {!isNewContact && stats && (
-        <View style={s.section} {...tid('contact-stats-row')}>
-          <Text style={s.sectionHeader}>Relationship</Text>
-          <Text style={[s.viewText, { color: colors.textSecondary }]}>
-            {[[stats.total_touchpoints, 'touch', 'touches'], [stats.messages_sent, 'message', 'messages'], [stats.link_clicks, 'link click', 'link clicks'], [stats.campaigns, 'campaign', 'campaigns'], [stats.referral_count ?? contact.referral_count ?? 0, 'referral', 'referrals']]
-              .map(([n, one, many]: any) => `${n || 0} ${n === 1 ? one : many}`).join('  ·  ')}
-          </Text>
-        </View>
-      )}
-
-      {/* More: share this profile, push to a CRM */}
+      {/* More: follow-up checklist, share this profile, push to a CRM */}
       {!isNewContact && (
         <View style={s.section}>
           <TouchableOpacity onPress={() => setShowMore(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }} testID="details-more-toggle" dataSet={{ testid: 'details-more-toggle' } as any}>
             <Text style={[s.sectionHeader, { marginBottom: 0, flex: 1 }]}>More</Text>
-            <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Share profile · Push to CRM</Text>
+            <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Checklist · Share profile · Push to CRM</Text>
             <Ionicons name={showMore ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
           </TouchableOpacity>
           {showMore && (
-            <View style={{ marginHorizontal: -16, marginTop: 8 }}>
+            <View style={{ marginHorizontal: -16, marginTop: 12 }} {...tid('details-more-body')}>
+              {checklist}
               <ShareProfileSection userId={userId} contactId={contactId} contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()} colors={colors} s={s} />
               <CrmPushSection userId={userId} contactId={contactId} contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()} colors={colors} s={s} />
             </View>
           )}
         </View>
       )}
+
+      <BirthdayModal visible={bdayModalOpen} onClose={() => setBdayModalOpen(false)} onSave={saveBirthday} current={contact.birthday} s={s} colors={colors} saving={savingBday} />
     </>
   );
 }

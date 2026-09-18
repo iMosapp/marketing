@@ -1,24 +1,29 @@
 /**
- * HeroSection — who this is, in one glance: photo, name, vehicle, where they are, how long you've known them, tags.
- * Dates and campaign progress live in Details (Important Dates / Campaigns); relationship numbers live in Details too.
+ * HeroSection — who this is, in one glance: photo, name, what they drive + when they bought, where they are, the top three tags (+N for the rest).
+ * Relationship numbers live in the Snapshot card; every tag lives under Profile › Tags.
  */
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
 import { tid } from '../scripts/shared';
 import { Image } from 'expo-image';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
-import { getTimeInSystem, getTimeInSystemLabel } from '../../utils/contactHelpers';
 
 const ROLE_TAGS: Record<string, string> = { imos_user: 'User', imos_super_admin: 'Super Admin', imos_org_admin: 'Admin', imos_store_manager: 'Manager' };
+const MAX_TAGS = 3;
 
 export default function HeroSection(props: any) {
   const { s, colors, contact, stats, isEditing, isNewContact, fullName, initials, availableTags, pickImage, viewFullPhoto, onAddTag } = props;
+  const [allTags, setAllTags] = useState(false);
+  const soldLine = contact.date_sold ? `Sold ${format(new Date(contact.date_sold), 'MMM d')}` : '';
   const meta = [
     [contact.address_city, contact.address_state].filter(Boolean).join(', '),
     [contact.occupation, contact.employer || contact.organization_name].filter(Boolean).join(' at '),
-    !isNewContact && stats?.created_at ? `${getTimeInSystem(stats.created_at)} ${getTimeInSystemLabel(stats.created_at)} relationship` : '',
   ].filter(Boolean);
+  const tags: string[] = contact.tags || [];
+  const shown = allTags || isEditing ? tags : tags.slice(0, MAX_TAGS);
+  const hidden = tags.length - shown.length;
 
   return (
     <View style={[s.heroSection, { backgroundColor: colors.bg }]} {...tid('contact-hero')}>
@@ -39,14 +44,15 @@ export default function HeroSection(props: any) {
 
         <View style={s.heroInfo}>
           <Text style={[s.heroName, { color: colors.text }]} {...tid('contact-name')} numberOfLines={2}>{fullName}</Text>
-          {contact.vehicle ? (
-            <View style={s.heroHighlight}>
+          {(contact.vehicle || soldLine) ? (
+            <View style={s.heroHighlight} {...tid('contact-highlight-line')}>
               <Ionicons name="car-sport" size={13} color="#C9A962" />
-              <Text style={s.heroHighlightText} numberOfLines={1}>{contact.vehicle}</Text>
+              {!!contact.vehicle && <Text style={[s.heroHighlightText, { flexShrink: 1 }]} numberOfLines={1}>{contact.vehicle}</Text>}
+              {!!soldLine && <Text style={[s.heroHighlightText, { flexShrink: 0 }]} numberOfLines={1}>{contact.vehicle ? `  ·  ${soldLine}` : soldLine}</Text>}
             </View>
           ) : null}
           {meta.length > 0 && (
-            <Text style={s.heroMetaText} numberOfLines={2} {...tid('contact-meta-line')}>{meta.join('  ·  ')}</Text>
+            <Text style={s.heroMetaText} numberOfLines={1} {...tid('contact-meta-line')}>{meta.join('  ·  ')}</Text>
           )}
         </View>
       </View>
@@ -65,8 +71,8 @@ export default function HeroSection(props: any) {
 
       {!isNewContact && (
         <View style={s.heroTagsStrip} {...tid('hero-tags-strip')}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 16, alignItems: 'center' }}>
-            {contact.tags.map((tag: string, i: number) => {
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+            {shown.map((tag: string, i: number) => {
               const info = availableTags.find((t: any) => t.name === tag);
               const chipColor = info?.color || colors.textSecondary;
               return (
@@ -76,11 +82,21 @@ export default function HeroSection(props: any) {
                 </View>
               );
             })}
+            {hidden > 0 && (
+              <TouchableOpacity onPress={() => setAllTags(true)} style={[s.heroTagChip, { borderColor: colors.border, backgroundColor: colors.card }]} {...tid('hero-more-tags-btn')}>
+                <Text style={[s.heroTagChipText, { color: colors.textSecondary }]}>+{hidden}</Text>
+              </TouchableOpacity>
+            )}
+            {allTags && tags.length > MAX_TAGS && (
+              <TouchableOpacity onPress={() => setAllTags(false)} style={[s.heroTagChip, { borderColor: colors.border, backgroundColor: 'transparent' }]} {...tid('hero-less-tags-btn')}>
+                <Text style={[s.heroTagChipText, { color: colors.textSecondary }]}>Less</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={onAddTag} style={[s.heroTagChip, { borderColor: colors.border, backgroundColor: 'transparent', gap: 4 }]} {...tid('hero-add-tag-btn')}>
               <Ionicons name="add" size={13} color={colors.textSecondary} />
-              <Text style={[s.heroTagChipText, { color: colors.textSecondary }]}>{contact.tags.length ? 'Tag' : 'Add a tag'}</Text>
+              <Text style={[s.heroTagChipText, { color: colors.textSecondary }]}>{tags.length ? 'Tag' : 'Add a tag'}</Text>
             </TouchableOpacity>
-          </ScrollView>
+          </View>
         </View>
       )}
     </View>

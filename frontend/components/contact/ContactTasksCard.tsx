@@ -61,7 +61,7 @@ function ActionBtn({ icon, label, onPress, primary, green, testid, colors }: any
   );
 }
 
-export default function ContactTasksCard({ colors, userId, contactId, contact, featuredTaskId, refreshKey, onAddTask, showToast }: any) {
+export default function ContactTasksCard({ colors, userId, contactId, contact, featuredTaskId, refreshKey, onAddTask, showToast, compact }: any) {
   const router = useRouter();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -69,6 +69,7 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
   const [showAll, setShowAll] = useState(false);
   const [draftItem, setDraftItem] = useState<any>(null);
   const [undo, setUndo] = useState<any>(null);
+  const [open, setOpen] = useState(!compact);
   const undoTimer = useRef<any>(null);
 
   const load = useCallback(async () => {
@@ -181,12 +182,78 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
   const fKind = featured ? taskKind(featured) : 'task';
   const accent = fw?.overdue ? RED : GOLD;
 
+  // Compact "Next move" strip: one line, one button; tap the row for the full card (other tasks, snooze, invites).
+  if (compact && !open && featured && fw) {
+    const isCall = fKind === 'call';
+    return (
+      <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: `${accent}70`, overflow: 'hidden' }} testID="contact-tasks-card" dataSet={{ testid: 'contact-tasks-card' } as any}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10 }} testID="contact-task-strip" dataSet={{ testid: 'contact-task-strip' } as any}>
+          <TouchableOpacity onPress={() => setOpen(true)} activeOpacity={0.7} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }} testID="contact-task-strip-open" dataSet={{ testid: 'contact-task-strip-open' } as any}>
+            <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: `${accent}20`, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={(TYPE_ICON[fKind] || 'checkbox') as any} size={15} color={accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.7, color: accent }} numberOfLines={1} testID="contact-task-when" dataSet={{ testid: 'contact-task-when' } as any}>
+                {fw.overdue ? fw.text.toUpperCase() : `NEXT MOVE · ${fw.text.toUpperCase()}`}{others.length ? `  ·  +${others.length} more` : ''}
+              </Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 1 }} numberOfLines={1} testID="contact-task-title" dataSet={{ testid: 'contact-task-title' } as any}>{featured.title}</Text>
+            </View>
+            <Ionicons name="chevron-down" size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => isCall ? call(featured) : writeIt(featured)}
+            activeOpacity={0.75}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: GOLD }}
+            testID={isCall ? 'contact-task-call-btn' : 'contact-task-write-btn'} dataSet={{ testid: isCall ? 'contact-task-call-btn' : 'contact-task-write-btn' } as any}
+          >
+            <Ionicons name={isCall ? 'call' : 'sparkles'} size={13} color="#000" />
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>{isCall ? 'Call' : 'Write It'}</Text>
+          </TouchableOpacity>
+        </View>
+        {undo && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 9, backgroundColor: undo._undoKind === 'snooze' ? `${GOLD}15` : `${GREEN}15`, borderTopWidth: 1, borderTopColor: colors.border }} testID="contact-task-undo-bar" dataSet={{ testid: 'contact-task-undo-bar' } as any}>
+            <Text style={{ fontSize: 13, color: undo._undoKind === 'snooze' ? GOLD : GREEN, fontWeight: '700', flex: 1, marginRight: 10 }} numberOfLines={1}>
+              {undo._undoKind === 'snooze' ? `Snoozed to ${undo._label}: ${undo.title}` : `Done: ${undo.title}`}
+            </Text>
+            <TouchableOpacity onPress={undoLast} testID="contact-task-undo-btn" dataSet={{ testid: 'contact-task-undo-btn' } as any}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: GOLD }}>Undo</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <DraftMessageSheet userId={userId} item={draftItem} onClose={() => setDraftItem(null)} hideViewContact />
+      </View>
+    );
+  }
+  if (compact && !open && !featured) {
+    // only the undo bar is left (last task just completed)
+    return (
+      <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }} testID="contact-tasks-card" dataSet={{ testid: 'contact-tasks-card' } as any}>
+        {undo && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 9, backgroundColor: undo._undoKind === 'snooze' ? `${GOLD}15` : `${GREEN}15` }} testID="contact-task-undo-bar" dataSet={{ testid: 'contact-task-undo-bar' } as any}>
+            <Text style={{ fontSize: 13, color: undo._undoKind === 'snooze' ? GOLD : GREEN, fontWeight: '700', flex: 1, marginRight: 10 }} numberOfLines={1}>
+              {undo._undoKind === 'snooze' ? `Snoozed to ${undo._label}: ${undo.title}` : `Done: ${undo.title}`}
+            </Text>
+            <TouchableOpacity onPress={undoLast} testID="contact-task-undo-btn" dataSet={{ testid: 'contact-task-undo-btn' } as any}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: GOLD }}>Undo</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View
       style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: `${accent}70`, overflow: 'hidden' }}
       testID="contact-tasks-card"
       dataSet={{ testid: 'contact-tasks-card' } as any}
     >
+      {compact && (
+        <TouchableOpacity onPress={() => setOpen(false)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingTop: 10 }} testID="contact-task-strip-close" dataSet={{ testid: 'contact-task-strip-close' } as any}>
+          <Text style={{ flex: 1, fontSize: 11, fontWeight: '800', letterSpacing: 0.7, color: colors.textSecondary }}>NEXT MOVES · {tasks.length}</Text>
+          <Ionicons name="chevron-up" size={16} color={colors.textTertiary} />
+        </TouchableOpacity>
+      )}
       {featured && fw && (
         <View style={{ flexDirection: 'row', gap: 12, padding: 14 }} testID="contact-task-featured" dataSet={{ testid: 'contact-task-featured' } as any}>
           <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `${accent}20`, alignItems: 'center', justifyContent: 'center' }}>

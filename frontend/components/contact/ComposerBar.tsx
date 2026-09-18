@@ -19,7 +19,7 @@ export default function ComposerBar(props: any) {
     showAISuggestion, setShowAISuggestion, aiSuggestion, setAiSuggestion,
     loadingAI, loadAISuggestionForComposer, handleComposerSend,
     handleAttachPhoto, onOpenTemplates, onOpenReviewLinks, openBusinessCardPicker,
-    handleVoiceToText, isVoiceRecording, voiceTranscribing, inputRef,
+    handleVoiceToText, isVoiceRecording, voiceTranscribing, inputRef, onCollapse,
   } = props;
   const router = useRouter();
 
@@ -31,6 +31,11 @@ export default function ComposerBar(props: any) {
     <View style={s.composerContainer} data-testid="contact-composer">
       {/* SMS/Email mode toggle */}
       <View style={s.composerModeRow}>
+        {onCollapse && (
+          <TouchableOpacity onPress={onCollapse} style={[s.composerCallBtn, { marginRight: 6 }]} data-testid="composer-collapse-btn" testID="composer-collapse-btn" dataSet={{ testid: 'composer-collapse-btn' } as any} accessibilityLabel="Hide composer">
+            <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[s.composerModeBtn, composerMode === 'sms' && s.composerModeBtnActive]}
           onPress={() => setComposerMode('sms')}

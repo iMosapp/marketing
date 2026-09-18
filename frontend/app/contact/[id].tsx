@@ -53,17 +53,17 @@ import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import HeroSection from '../../components/contact/HeroSection';
 import EditFormTop from '../../components/contact/EditFormTop';
 import EditFormBottom from '../../components/contact/EditFormBottom';
-import FeedTab from '../../components/contact/FeedTab';
 import DetailsTab from '../../components/contact/DetailsTab';
-import CallsTab from '../../components/contact/CallsTab';
+import HistoryTab, { matchesHistoryFilter, type HistoryFilter } from '../../components/contact/HistoryTab';
 import { AskJessiSheet } from '../../components/ask/AskJessiSheet';
 import ComposerBar from '../../components/contact/ComposerBar';
+import ComposerCollapsed from '../../components/contact/ComposerCollapsed';
 import ShareModals from '../../components/contact/ShareModals';
 import PickerModals from '../../components/contact/PickerModals';
 import DateModals from '../../components/contact/DateModals';
 import AddTaskModal from '../../components/contact/AddTaskModal';
 import GalleryModal from '../../components/contact/GalleryModal';
-import JessiCard from '../../components/contact/JessiCard';
+import SnapshotCard from '../../components/contact/SnapshotCard';
 import { tid } from '../../components/scripts/shared';
 import { HealthBadge } from '../../components/contact/HealthBadge';
 import QuickActionsRow from '../../components/contact/QuickActionsRow';
@@ -224,10 +224,24 @@ function ContactDetailScreen() {
   const [loadingMoreEvents, setLoadingMoreEvents] = useState(false);
   const EVENT_PAGE_SIZE = 100;
 
-  // Tab state for Feed vs Details
-  const [contactTab, setContactTab] = useState<'feed' | 'details' | 'calls'>('details');
+  // Tabs: Profile (the record) vs History (everything that happened), with History filter chips
+  const [contactTab, setContactTab] = useState<'profile' | 'history'>('profile');
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all');
+  const [composerOpen, setComposerOpen] = useState(false);
   const [callLogs, setCallLogs] = useState<any[]>([]);
   const [callLogsLoading, setCallLogsLoading] = useState(false);
+  const loadCallLogs = useCallback(async () => {
+    if (!user?._id || !id) return;
+    setCallLogsLoading(true);
+    try {
+      const res = await api.get(`/calls/${user._id}/contact/${id}`);
+      const all = [...(res.data.recordings || []), ...(res.data.calls || [])];
+      all.sort((a: any, b: any) => { try { return new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime(); } catch { return 0; } });
+      setCallLogs(all);
+    } catch {}
+    setCallLogsLoading(false);
+  }, [user?._id, id]);
+  useEffect(() => { if (contactTab === 'history' && historyFilter === 'calls' && callLogs.length === 0 && !callLogsLoading) loadCallLogs(); }, [contactTab, historyFilter]);
 
   // Suggested actions & log reply
   const [suggestedActions, setSuggestedActions] = useState<any[]>([]);
@@ -260,16 +274,16 @@ function ContactDetailScreen() {
   const [showSoldModal, setShowSoldModal] = useState(false);
   const [soldWorkflowResult, setSoldWorkflowResult] = useState<any>(null);
 
-  // Computed: filtered events for search (must come after state declarations)
+  // Computed: filtered events for search + the History chip (must come after state declarations)
   const feedQuery = feedSearch.toLowerCase().trim();
-  const filteredEvents = feedQuery
-    ? events.filter(e =>
-        (e.title || '').toLowerCase().includes(feedQuery) ||
-        (e.description || '').toLowerCase().includes(feedQuery) ||
-        (e.event_type || '').toLowerCase().includes(feedQuery) ||
-        (getEventTitle(e)).toLowerCase().includes(feedQuery)
-      )
-    : events;
+  const filteredEvents = events.filter(e =>
+    (historyFilter === 'all' || historyFilter === 'calls' || historyFilter === 'memos' || matchesHistoryFilter(e, historyFilter)) &&
+    (!feedQuery ||
+      (e.title || '').toLowerCase().includes(feedQuery) ||
+      (e.description || '').toLowerCase().includes(feedQuery) ||
+      (e.event_type || '').toLowerCase().includes(feedQuery) ||
+      (getEventTitle(e)).toLowerCase().includes(feedQuery))
+  );
 
   // Modals
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -445,6 +459,7 @@ function ContactDetailScreen() {
 
   // Composer state (inline inbox)
   const [composerMessage, setComposerMessage] = useState('');
+  useEffect(() => { if (composerMessage.trim() && !composerOpen) setComposerOpen(true); }, [composerMessage]);
   const [composerInputHeight, setComposerInputHeight] = useState(44);
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
   const [composerSending, setComposerSending] = useState(false);
@@ -524,13 +539,13 @@ function ContactDetailScreen() {
     }, [id, user])
   );
 
-  // Deep link from Sold Units (?purchase=<record id>): always land on Details, where Purchase History lives
-  useEffect(() => { if (urlPurchase && !isNewContact) setContactTab('details'); }, [urlPurchase]);
+  // Deep link from Sold Units (?purchase=<record id>): always land on Profile, where Purchase History lives
+  useEffect(() => { if (urlPurchase && !isNewContact) setContactTab('profile'); }, [urlPurchase]);
 
   // Auto-open voice recorder when deep-linked with ?capture=true (from post-sale notification)
   useEffect(() => {
     if (capture === 'true' && !isNewContact) {
-      setContactTab('details');
+      setContactTab('history'); setHistoryFilter('memos');
       // Small delay so the tab renders before we start recording
       setTimeout(() => {
         startRecording();
@@ -2633,7 +2648,7 @@ function ContactDetailScreen() {
                   colors={colors}
                   isRecording={live}
                   noteLabel={label}
-                  onText={() => { setComposerMode('sms'); composerInputRef.current?.focus(); }}
+                  onText={() => { setComposerMode('sms'); setComposerOpen(true); setTimeout(() => composerInputRef.current?.focus(), 80); }}
                   onCall={() => {
                     if (contact.phone) {
                       router.push({ pathname: '/call-screen', params: { phone: contact.phone, contact_name: fullName, contact_id: id as string } } as any);
@@ -2650,9 +2665,10 @@ function ContactDetailScreen() {
             />
           )}
 
-          {/* ===== UP NEXT: open tasks for this contact ===== */}
+          {/* ===== NEXT MOVE: the one most urgent open task, one line, one button (tap for the rest) ===== */}
           {!isNewContact && !isEditing && (
             <ContactTasksCard
+              compact
               colors={colors}
               userId={user?._id || ''}
               contactId={id as string}
@@ -2664,10 +2680,13 @@ function ContactDetailScreen() {
             />
           )}
 
-          {/* ===== JESSI: the one gold card (brief + ask) ===== */}
+          {/* ===== SNAPSHOT: the one gold card (drives · last touch · personal · Jessi · numbers, unfolds to full intel) ===== */}
           {!isNewContact && !isEditing && (
-            <JessiCard
+            <SnapshotCard
               colors={colors}
+              contact={contact}
+              stats={stats}
+              events={events}
               intelData={intelData}
               refreshing={intelRefreshing}
               onRefresh={refreshIntel}
@@ -2677,44 +2696,26 @@ function ContactDetailScreen() {
               contactId={id as string}
               onUpdate={(patch: any) => setIntelData((prev: any) => ({ ...(prev || {}), ...patch }))}
               onDetailsChanged={() => loadContact()}
+              voiceNotesCount={voiceNotes.filter((n: any) => n.kind !== 'conversation').length}
             />
           )}
 
-          {/* ===== DETAILS / CALLS / FEED TAB BAR ===== */}
+          {/* ===== PROFILE / HISTORY TAB BAR ===== */}
           {!isNewContact && !isEditing && (
             <View style={s.tabBar} {...tid('contact-tab-bar')}>
               <TouchableOpacity
-                style={[s.tabBtn, contactTab === 'details' && s.tabBtnActive]}
-                onPress={() => setContactTab('details')}
-                testID="tab-details" dataSet={{ testid: 'tab-details' } as any}
+                style={[s.tabBtn, contactTab === 'profile' && s.tabBtnActive]}
+                onPress={() => setContactTab('profile')}
+                testID="tab-profile" dataSet={{ testid: 'tab-profile' } as any}
               >
-                <Text style={[s.tabBtnText, contactTab === 'details' && s.tabBtnTextActive]}>Details</Text>
+                <Text style={[s.tabBtnText, contactTab === 'profile' && s.tabBtnTextActive]}>Profile</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[s.tabBtn, contactTab === 'calls' && s.tabBtnActive]}
-                onPress={async () => {
-                  setContactTab('calls');
-                  if (callLogs.length === 0 && !callLogsLoading) {
-                    setCallLogsLoading(true);
-                    try {
-                      const res = await api.get(`/calls/${user?._id}/contact/${id}`);
-                      const all = [...(res.data.recordings || []), ...(res.data.calls || [])];
-                      all.sort((a: any, b: any) => { try { return new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime(); } catch { return 0; } });
-                      setCallLogs(all);
-                    } catch {}
-                    setCallLogsLoading(false);
-                  }
-                }}
-                testID="tab-calls" dataSet={{ testid: 'tab-calls' } as any}
+                style={[s.tabBtn, contactTab === 'history' && s.tabBtnActive]}
+                onPress={() => setContactTab('history')}
+                testID="tab-history" dataSet={{ testid: 'tab-history' } as any}
               >
-                <Text style={[s.tabBtnText, contactTab === 'calls' && s.tabBtnTextActive]}>Calls</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.tabBtn, contactTab === 'feed' && s.tabBtnActive]}
-                onPress={() => setContactTab('feed')}
-                testID="tab-feed" dataSet={{ testid: 'tab-feed' } as any}
-              >
-                <Text style={[s.tabBtnText, contactTab === 'feed' && s.tabBtnTextActive]}>Feed</Text>
+                <Text style={[s.tabBtnText, contactTab === 'history' && s.tabBtnTextActive]}>History</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -2743,57 +2744,36 @@ function ContactDetailScreen() {
             />
           )}
 
-          {/* ===== FEED TAB ===== */}
-          {!isNewContact && !isEditing && contactTab === 'feed' && (
-            <FeedTab
-              s={s}
+          {/* ===== HISTORY TAB (feed · texts · calls · memos · tasks) ===== */}
+          {!isNewContact && !isEditing && contactTab === 'history' && (
+            <HistoryTab
               colors={colors}
-              contact={contact}
-              user={user}
-              contactId={id as string}
-              isNewContact={isNewContact}
-              openInboxThread={openInboxThread}
-              openingInbox={openingInbox}
-              suggestedActions={suggestedActions}
-              handleSuggestedAction={handleSuggestedAction}
-              taskTitle={taskTitle}
-              prefill={prefill}
-              setSoldWorkflowResult={setSoldWorkflowResult}
-              setShowSoldModal={setShowSoldModal}
-              loadContact={loadContact}
-              showToast={showToast}
-              loadCampaignsAndEnrollments={loadCampaignsAndEnrollments}
-              setComposerMessage={setComposerMessage}
-              setComposerMode={setComposerMode}
-              events={events}
-              feedSearch={feedSearch}
-              setFeedSearch={setFeedSearch}
-              feedQuery={feedQuery}
-              filteredEvents={filteredEvents}
-              eventDateGroups={eventDateGroups}
-              eventsLoading={eventsLoading}
-              expandedEvents={expandedEvents}
-              setExpandedEvents={setExpandedEvents}
-              collapsedDateGroups={collapsedDateGroups}
-              setCollapsedDateGroups={setCollapsedDateGroups}
-              hasMoreEvents={hasMoreEvents}
-              loadMoreEvents={loadMoreEvents}
-              loadingMoreEvents={loadingMoreEvents}
-              showLogReply={showLogReply}
-              setShowLogReply={setShowLogReply}
-              replyText={replyText}
-              setReplyText={setReplyText}
-              replyPhoto={replyPhoto}
-              setReplyPhoto={setReplyPhoto}
-              submittingReply={submittingReply}
-              handleLogReply={handleLogReply}
-              pickReplyPhoto={pickReplyPhoto}
-              setShowAddTask={setShowAddTask}
+              filter={historyFilter}
+              setFilter={setHistoryFilter}
+              feedProps={{
+                s, colors, contact, user, contactId: id as string, isNewContact,
+                openInboxThread, openingInbox, suggestedActions, handleSuggestedAction,
+                taskTitle, prefill, setSoldWorkflowResult, setShowSoldModal, loadContact, showToast,
+                loadCampaignsAndEnrollments, setComposerMessage, setComposerMode,
+                events, feedSearch, setFeedSearch, feedQuery, filteredEvents, eventDateGroups,
+                eventsLoading, expandedEvents, setExpandedEvents, collapsedDateGroups, setCollapsedDateGroups,
+                hasMoreEvents, loadMoreEvents, loadingMoreEvents,
+                showLogReply, setShowLogReply, replyText, setReplyText, replyPhoto, setReplyPhoto,
+                submittingReply, handleLogReply, pickReplyPhoto, setShowAddTask,
+              }}
+              callsProps={{
+                colors, callLogs, voiceNotes, callLogsLoading,
+                onDeleteVoiceNote: deleteVoiceNote, onRenameVoiceNote: renameVoiceNote, onRefresh: loadCallLogs,
+              }}
+              memosProps={{
+                s, colors, voiceNotes, voiceNotesLoading, isRecording, recordingTime, uploadingVoiceNote, playingNoteId,
+                startRecording, stopRecording, playVoiceNote, deleteVoiceNote, formatRecordingTime, maxRecordingSeconds: MAX_RECORDING_SECONDS,
+              }}
             />
           )}
 
-          {/* ===== DETAILS TAB ===== */}
-          {!isNewContact && !isEditing && contactTab === 'details' && (
+          {/* ===== PROFILE TAB ===== */}
+          {!isNewContact && !isEditing && contactTab === 'profile' && (
             <DetailsTab
               s={s}
               colors={colors}
@@ -2803,24 +2783,17 @@ function ContactDetailScreen() {
               contactId={id as string}
               userId={user?._id || ''}
               isNewContact={isNewContact}
-              voiceNotes={voiceNotes}
-              voiceNotesLoading={voiceNotesLoading}
-              isRecording={isRecording}
-              recordingTime={recordingTime}
-              uploadingVoiceNote={uploadingVoiceNote}
-              playingNoteId={playingNoteId}
-              showAllNotes={showAllNotes}
-              startRecording={startRecording}
-              stopRecording={stopRecording}
-              playVoiceNote={playVoiceNote}
-              deleteVoiceNote={deleteVoiceNote}
-              formatRecordingTime={formatRecordingTime}
-              maxRecordingSeconds={MAX_RECORDING_SECONDS}
               referrals={referrals}
               contactEnrollments={contactEnrollments}
               toggleDateOptin={toggleDateOptin}
-              stats={stats}
               onDatePress={handleAutomationChipPress}
+              availableTags={availableTags}
+              onAddTag={() => { loadTags(); setShowTagPicker(true); }}
+              onCall={() => {
+                if (contact.phone) router.push({ pathname: '/call-screen', params: { phone: contact.phone, contact_name: fullName, contact_id: id as string } } as any);
+                else showSimpleAlert('No Phone', 'This contact has no phone number saved.');
+              }}
+              onEmail={() => { setComposerMode('email'); setComposerOpen(true); setTimeout(() => composerInputRef.current?.focus(), 80); }}
               checklist={(
                 <>
               {/* ===== ACTION PROGRESS TRACKER ===== */}
@@ -2876,36 +2849,28 @@ function ContactDetailScreen() {
             />
           )}
 
-          {/* ===== CALLS TAB ===== */}
-          {!isNewContact && !isEditing && contactTab === 'calls' && (
-            <CallsTab
-              colors={colors}
-              callLogs={callLogs}
-              voiceNotes={voiceNotes}
-              onDeleteVoiceNote={deleteVoiceNote}
-              onRenameVoiceNote={renameVoiceNote}
-              callLogsLoading={callLogsLoading}
-              onRefresh={async () => {
-                setCallLogsLoading(true);
-                try {
-                  const res = await api.get(`/calls/${user?._id}/contact/${id}`);
-                  const all = [...(res.data.recordings || []), ...(res.data.calls || [])];
-                  all.sort((a: any, b: any) => { try { return new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime(); } catch { return 0; } });
-                  setCallLogs(all);
-                } catch {}
-                setCallLogsLoading(false);
-              }}
-            />
-          )}
-
           <View style={{ height: 140 }} />
         </ScrollView>
 
         {!isNewContact && <AskJessiSheet visible={showAsk} onClose={() => setShowAsk(false)} contactId={id as string} />}
 
-        {/* ===== INLINE COMPOSER (Inbox-Style) ===== */}
-        {!isNewContact && !isEditing && (
+        {/* ===== COMPOSER: one quiet bar at rest, the full inbox-style composer when opened ===== */}
+        {!isNewContact && !isEditing && !composerOpen && (
+          <ComposerCollapsed
+            s={s}
+            colors={colors}
+            firstName={contact.first_name}
+            draft={composerMessage.trim()}
+            onOpen={() => { setComposerOpen(true); setTimeout(() => composerInputRef.current?.focus(), 80); }}
+            onCall={() => {
+              if (contact.phone) router.push({ pathname: '/call-screen', params: { phone: contact.phone, contact_name: fullName, contact_id: id as string } } as any);
+              else showSimpleAlert('No Phone', 'This contact has no phone number saved.');
+            }}
+          />
+        )}
+        {!isNewContact && !isEditing && composerOpen && (
           <ComposerBar
+            onCollapse={() => setComposerOpen(false)}
             s={s}
             colors={colors}
             contact={contact}

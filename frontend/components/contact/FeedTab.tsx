@@ -26,8 +26,11 @@ export default function FeedTab(props: any) {
     showLogReply, setShowLogReply, replyText, setReplyText,
     replyPhoto, setReplyPhoto, submittingReply, handleLogReply, pickReplyPhoto,
     setShowAddTask, openInboxThread, openingInbox,
+    filter = 'all',
   } = props;
   const router = useRouter();
+  const showExtras = filter === 'all';
+  const FILTER_LABEL: Record<string, string> = { all: 'Activity', texts: 'Texts & emails', tasks: 'Tasks & appointments' };
   const MESSAGE_EVENTS = new Set(['sms_sent', 'personal_sms', 'customer_reply', 'campaign_message_sent', 'broadcast_sent', 'ai_reply_sent', 'message_sent', 'message_received']);
   const isMessageEvent = (evt: any) => MESSAGE_EVENTS.has(evt.event_type) || evt.category === 'message' || evt.direction === 'inbound';
   const inboxStatus = contact?.ai_mode === 'auto' || contact?.ai_mode === 'auto_reply' ? 'Jessi is handling this thread' : 'Full two-way conversation, Jessi drafts and history';
@@ -35,7 +38,7 @@ export default function FeedTab(props: any) {
   return (
     <>
       {/* Open the real conversation (inbox thread) for this contact */}
-      {!isNewContact && !!contact?.phone && openInboxThread && (
+      {showExtras && !isNewContact && !!contact?.phone && openInboxThread && (
         <TouchableOpacity
           onPress={openInboxThread}
           disabled={openingInbox}
@@ -61,7 +64,7 @@ export default function FeedTab(props: any) {
       )}
 
       {/* Suggested Actions (inline at top of feed) */}
-      {suggestedActions.length > 0 && (
+      {showExtras && suggestedActions.length > 0 && (
         <View style={[s.section, { paddingTop: 4 }]} data-testid="suggested-actions">
           {suggestedActions.map((action: any, i: number) => (
             <TouchableOpacity
@@ -92,7 +95,7 @@ export default function FeedTab(props: any) {
       )}
 
       {/* Pinned Notes (view-only, inside feed) */}
-      {contact.notes ? (
+      {showExtras && contact.notes ? (
         <View style={[s.section, { paddingTop: 0 }]} data-testid="pinned-notes">
           <View style={s.pinnedNote}>
             <Ionicons name="document-text" size={14} color="#C9A962" style={{ marginTop: 2 }} />
@@ -123,7 +126,7 @@ export default function FeedTab(props: any) {
       ) : null}
 
       {/* Sold Workflow Status */}
-      {!isNewContact && contact.sold_workflow_status && contact.sold_workflow_status !== 'not_applicable' && (
+      {showExtras && !isNewContact && contact.sold_workflow_status && contact.sold_workflow_status !== 'not_applicable' && (
         <View style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: colors.card, borderRadius: 12, padding: 14 }} data-testid="sold-workflow-status">
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -181,7 +184,7 @@ export default function FeedTab(props: any) {
       )}
 
       {/* Campaign Journey — upcoming campaign activities */}
-      {!isNewContact && user && (
+      {showExtras && !isNewContact && user && (
         <CampaignJourney
           userId={user._id}
           contactId={contactId}
@@ -196,8 +199,8 @@ export default function FeedTab(props: any) {
       {/* Relationship Feed (Activity) */}
       <View style={[s.section, { paddingTop: 0 }]} data-testid="activity-feed">
         <View style={s.sectionHeaderRow}>
-          <Text style={s.sectionHeader}>Activity</Text>
-          <Text style={s.sectionHeaderCount}>{events.length} events</Text>
+          <Text style={s.sectionHeader}>{FILTER_LABEL[filter] || 'Activity'}</Text>
+          <Text style={s.sectionHeaderCount} testID="feed-event-count" dataSet={{ testid: 'feed-event-count' } as any}>{filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}</Text>
         </View>
 
         {/* Feed Action Row */}
@@ -288,8 +291,8 @@ export default function FeedTab(props: any) {
         ) : filteredEvents.length === 0 ? (
           <View style={s.emptyFeed}>
             <Ionicons name={feedQuery ? 'search-outline' : 'time-outline'} size={36} color={colors.surface} />
-            <Text style={s.emptyFeedText}>{feedQuery ? 'No matching events' : 'No activity yet'}</Text>
-            <Text style={s.emptyFeedSub}>{feedQuery ? 'No results for "' + feedSearch + '"' : 'Send a message or enroll in a campaign to get started'}</Text>
+            <Text style={s.emptyFeedText}>{feedQuery ? 'No matching events' : filter === 'texts' ? 'No texts or emails yet' : filter === 'tasks' ? 'No tasks yet' : 'No activity yet'}</Text>
+            <Text style={s.emptyFeedSub}>{feedQuery ? 'No results for "' + feedSearch + '"' : filter === 'texts' ? 'Every text and email you exchange lands here' : filter === 'tasks' ? 'Tasks you create and complete for them show here' : 'Send a message or enroll in a campaign to get started'}</Text>
           </View>
         ) : (
           <View style={s.feedTimeline}>
