@@ -983,9 +983,12 @@ function ThreadScreen() {
           intent: data.intent || '',
         });
         setShowAISuggestion(true);
+      } else {
+        showSimpleAlert('Jessi', 'Could not draft a reply right now. Give it another tap in a moment.');
       }
     } catch (error) {
       console.error('Failed to get AI suggestion:', error);
+      showSimpleAlert('Jessi', 'Could not draft a reply right now. Give it another tap in a moment.');
     } finally {
       setLoadingAI(false);
     }

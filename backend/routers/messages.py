@@ -1916,20 +1916,20 @@ async def get_ai_suggestion_smart(conversation_id: str):
             except Exception:
                 pass
 
-        # Pull last 6 messages for context
+        # Pull the last 12 messages for context: the draft has to answer what the customer actually said
         recent_msgs = await db.messages.find(
-            {"conversation_id": conversation_id}
-        ).sort("timestamp", -1).limit(6).to_list(6)
+            {"conversation_id": conversation_id, "sender": {"$ne": "ai_draft"}}
+        ).sort("timestamp", -1).limit(12).to_list(12)
         recent_msgs.reverse()
         conv_lines = "\n".join(
-            f"{'Me' if m.get('sender') in ('user','ai') else 'Customer'}: {(m.get('content') or '')[:200]}"
-            for m in recent_msgs if m.get('content')
+            f"{'Me' if m.get('sender') in ('user','ai') else 'Customer'}: {(m.get('content') or '')[:300]}"
+            for m in recent_msgs if m.get('content') and m.get('sender') != 'system'
         )
 
         user_prompt = (
             (f"Customer context:\n{contact_ctx}\n\n" if contact_ctx else "") +
-            (f"Recent conversation:\n{conv_lines}\n\n" if conv_lines else "") +
-            "Draft my reply to the latest customer message. Just the reply text."
+            (f"Recent conversation (oldest first):\n{conv_lines}\n\n" if conv_lines else "") +
+            "Draft my reply to the latest customer message. Answer what they actually said, use the specifics they gave (names, numbers, days, vehicles). Just the reply text."
         )
 
         emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
@@ -1941,7 +1941,7 @@ async def get_ai_suggestion_smart(conversation_id: str):
 
         response = await asyncio.wait_for(
             chat.send_message(UserMessage(text=user_prompt)),
-            timeout=10.0,
+            timeout=20.0,
         )
         suggestion = (response.strip() if isinstance(response, str)
                       else response.text.strip() if hasattr(response, "text")
@@ -1953,10 +1953,10 @@ async def get_ai_suggestion_smart(conversation_id: str):
             return {"suggestion": suggestion, "intent": "contextual"}
 
     except Exception as e:
-        logger.warning(f"[AISuggest] GPT fallback: {e}")
+        logger.warning(f"[AISuggest] draft failed for {conversation_id}: {e}")
 
-    # Fallback to generic if GPT fails
-    return {"suggestion": random.choice(AI_SUGGESTIONS), "intent": "general"}
+    # Never hand the rep a canned line that ignores the thread; the app says "try again" instead.
+    return {"suggestion": None, "intent": "unavailable"}
 
 
 @router.post("/send/{user_id}")
