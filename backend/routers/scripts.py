@@ -666,7 +666,9 @@ async def _host_after(s: dict, sid: str, request: Request) -> Response:
     form = await request.form()
     host = s.get("host") or {}
     decision, via = host.get("decision"), host.get("via")
-    logger.info(f"[MysteryShop] host-after {sid}: {decision} via {via} (StreamError={form.get('StreamError')!r})")
+    hits = (host.get("after_hits") or 0) + 1
+    await get_db().roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"host.after_hits": hits}})
+    logger.info(f"[MysteryShop] host-after {sid}: {decision} via {via} handoff={host.get('handoff')} hit={hits} (StreamError={form.get('StreamError')!r})")
     if decision in ("go", "later"):
         return await _gate_choice(s, sid, decision, f"host:{via}", hosted=True)
     if decision == "none" and via in ("silence", "timeout"):

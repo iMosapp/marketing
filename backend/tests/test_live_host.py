@@ -78,6 +78,19 @@ async def _rep():
     return u
 
 
+@pytest.fixture(autouse=True)
+def _no_twilio_rest(monkeypatch):
+    """Never touch Twilio's REST API from tests; the WebSocket-close handoff is the default path here."""
+    calls: list = []
+
+    async def fake_redirect(call_sid, url):
+        calls.append((call_sid, url))
+        return False
+    monkeypatch.setattr(lh, "redirect_call", fake_redirect)
+    lh._test_redirects = calls  # type: ignore[attr-defined]
+    yield calls
+
+
 async def _seed_customer(uid: str) -> dict:
     """Bud Ward: drives a Tahoe, texted yesterday, a voice memo two days ago, an overdue task, tagged hot + Harley riders."""
     db = get_db()
@@ -124,8 +137,12 @@ async def test_decide_twiml_and_fallback(monkeypatch):
     assert on is True
     xml = lh.shop_twiml(s)
     assert f'/api/scripts/roleplay/host/{s["_id"]}/{s["token"]}" />' in xml and f'/api/scripts/roleplay/host-after/{s["_id"]}?t={s["token"]}' in xml
+    assert xml.count(f'host-after/{s["_id"]}?t={s["token"]}') == 2 and "<Redirect method=\"POST\">" in xml, "action + Redirect fallback both point at host-after"
     xml = lh.call_twiml(pending)
     assert f'/api/webhooks/twilio/call-host/{pending["_id"]}/abc123" />' in xml and f'call-bridge-host-after?pid={pending["_id"]}&amp;t=abc123' in xml
+    assert xml.index("</Connect>") < xml.index("<Redirect")
+    assert lh.after_url("call", pending) == f'{lh.scr._app_url()}/api/webhooks/twilio/call-bridge-host-after?pid={pending["_id"]}&t=abc123'
+    assert lh.said_line("Alright. Connecting you now!", lh.CONNECT_LINE) and not lh.said_line("Ready to connect?", lh.CONNECT_LINE) and not lh.said_line("", "")
     monkeypatch.setenv("OPENAI_API_KEY", "")
     on, why = await lh.decide(db, "call", pending)
     assert on is False and why == ls.NO_KEY
@@ -195,6 +212,8 @@ async def test_click_to_call_host_connects(monkeypatch):
         row = await db.pending_calls.find_one({"_id": pending["_id"]})
         h = row["host"]
         assert h["decision"] == "go" and h["via"] == "speech" and h["end_reason"] == "go" and h["seconds"] == 23
+        assert h["handoff"] == "ws_close" and h["call_sid"] == "CA_qa_host_1"
+        assert lh._test_redirects == [("CA_qa_host_1", lh.after_url("call", pending))], "the REST redirect is always tried first"
         roles = [t["role"] for t in h["turns"]]
         assert roles == ["jessi", "rep", "jessi"], roles
         assert any("disconnecting" in str(e.get("content")) for e in up.sent if e.get("type") == "session.thinking.append")
@@ -203,12 +222,87 @@ async def test_click_to_call_host_connects(monkeypatch):
         async with httpx.AsyncClient(timeout=20) as c:
             r = await c.post(f"{BASE}/webhooks/twilio/call-bridge-host-after", params={"pid": str(pending["_id"]), "t": "hosttok1"}, data={"CallSid": "CA_qa_host_1"})
         assert r.status_code == 200 and "<Dial" in r.text and "<Number>+15005550077</Number>" in r.text and 'callerId="+15005550001"' in r.text and "<Say>" not in r.text, r.text
+        row = await db.pending_calls.find_one({"_id": pending["_id"]})
+        assert row["host"]["after_hits"] == 1
         # a wrong token never dials
         async with httpx.AsyncClient(timeout=20) as c:
             r = await c.post(f"{BASE}/webhooks/twilio/call-bridge-host-after", params={"pid": str(pending["_id"]), "t": "nope"}, data={})
         assert "<Dial" not in r.text and "<Hangup/>" in r.text
     finally:
         await _wipe_customer(seeded["cid"])
+
+
+async def test_click_to_call_rest_handoff_and_jessi_line(monkeypatch):
+    """Production path: the rep's transcript is late or garbled, but Jessi says 'Connecting you now' -> decision go from her own line;
+    the handoff goes through Twilio's REST redirect (no reliance on the WebSocket close), Twilio then stops the stream itself."""
+    db = get_db()
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-fake")
+    moved: list = []
+
+    async def fake_redirect(call_sid, url):
+        moved.append((call_sid, url))
+        return True
+    monkeypatch.setattr(lh, "redirect_call", fake_redirect)
+    monkeypatch.setattr(lh, "CLOSE_AFTER_REDIRECT_S", 2)
+    rep = await _rep()
+    pending = {"_id": ObjectId(), "token": "hosttok5", "rep_user_id": str(rep["_id"]), "contact_id": None, "customer_phone": "+15005550077", "rep_twilio_number": "+15005550001",
+               "rep_name": "Tester", "call_sid": "CA_qa_host_5", "created_at": datetime.now(timezone.utc), "qa_host": True}
+    await db.pending_calls.insert_one(pending)
+    up, closed = FakeUpstream(), {"v": False}
+
+    async def send(m):
+        pass
+
+    async def close():
+        closed["v"] = True
+    try:
+        bridge = lh.HostBridge(db, pending, "call", send, close, connect=lambda: _ret(up))
+        await bridge.on_twilio({"event": "start", "start": {"streamSid": "MZ5", "callSid": "CA_qa_host_5"}})
+        await up.q.put({"type": "session.started", "session": {"id": "sess_5"}})
+        assert await _wait(lambda: bridge.ready)
+        await up.q.put({"type": "session.output_transcript.delta", "delta": "Hey Tester, calling the number ending in 0077.", "start_ms": 0, "end_ms": 3000})
+        await up.q.put({"type": "session.input_transcript.delta", "delta": "[unintelligible]", "start_ms": 4000, "end_ms": 4400})
+        await up.q.put({"type": "session.output_audio.delta", "delta": "AAAA"})
+        await up.q.put({"type": "session.output_transcript.delta", "delta": "Got it. Connecting you now!", "start_ms": 5000, "end_ms": 6000})
+        # her line is only flushed when the next turn starts or on delegation; the model delegates right after speaking it
+        await up.q.put({"type": "session.delegation.created", "delegation": {"id": "d5", "target": "client"}})
+        assert await _wait(lambda: bridge.decision == "go"), "Jessi's own 'Connecting you now' decides go"
+        assert await _wait(lambda: bridge.handed_off, timeout=8)
+        assert moved == [("CA_qa_host_5", lh.after_url("call", pending))]
+
+        async def _row():
+            return await db.pending_calls.find_one({"_id": pending["_id"]})
+        for _ in range(40):
+            row = await _row()
+            if (row["host"] or {}).get("handoff"):
+                break
+            await asyncio.sleep(0.05)
+        assert row["host"]["decision"] == "go" and row["host"]["via"] == "jessi" and row["host"]["handoff"] == "rest"
+        assert not closed["v"] and not bridge.closed, "after a successful redirect we wait for Twilio to stop the stream"
+        # Twilio moved the call to host-after and tore the stream down
+        await bridge.on_twilio({"event": "stop"})
+        assert bridge.closed and bridge.reason == "twilio_stop" and closed["v"]
+        async with httpx.AsyncClient(timeout=20) as c:
+            r = await c.post(f"{BASE}/webhooks/twilio/call-bridge-host-after", params={"pid": str(pending["_id"]), "t": "hosttok5"}, data={"CallSid": "CA_qa_host_5"})
+        assert "<Dial" in r.text and "<Number>+15005550077</Number>" in r.text
+        # no delegation at all: the watchdog hands off DECIDED_CLOSE_S after the decision
+        monkeypatch.setattr(lh, "DECIDED_CLOSE_S", 0.6)
+        pending2 = {**pending, "_id": ObjectId(), "token": "hosttok6", "call_sid": "CA_qa_host_6"}
+        await db.pending_calls.insert_one(pending2)
+        up2, closed2 = FakeUpstream(), {"v": False}
+
+        async def close2():
+            closed2["v"] = True
+        b2 = lh.HostBridge(db, pending2, "call", send, close2, connect=lambda: _ret(up2))
+        await b2.on_twilio({"event": "start", "start": {"streamSid": "MZ6", "callSid": "CA_qa_host_6"}})
+        await up2.q.put({"type": "session.started", "session": {"id": "sess_6"}})
+        assert await _wait(lambda: b2.ready)
+        await b2.on_twilio({"event": "dtmf", "dtmf": {"digit": "1"}})
+        assert b2.decision == "go"
+        assert await _wait(lambda: b2.handed_off, timeout=5), "pressed 1, Jessi never delegated -> handoff anyway"
+        assert moved[-1][0] == "CA_qa_host_6"
+    finally:
+        await db.pending_calls.delete_many({"qa_host": True})
 
 
 async def test_click_to_call_question_then_silence(monkeypatch):

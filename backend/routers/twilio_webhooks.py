@@ -1985,7 +1985,9 @@ async def call_bridge_host_after(request: Request, pid: str, t: str, StreamError
         return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, something went wrong connecting your call. Please try again.</Say><Hangup/></Response>', media_type="application/xml")
     host = pending.get("host") or {}
     decision, via = host.get("decision"), host.get("via")
-    logger.info(f"[Voice] host-after {pid}: {decision} via {via} (StreamError={StreamError!r})")
+    hits = (host.get("after_hits") or 0) + 1
+    await db.pending_calls.update_one({"_id": pending["_id"]}, {"$set": {"host.after_hits": hits}})
+    logger.info(f"[Voice] host-after {pid}: {decision} via {via} handoff={host.get('handoff')} hit={hits} (StreamError={StreamError!r})")
     if decision == "go":
         logger.info(f"[Voice] Jessi confirmed — bridging {pending.get('rep_twilio_number')} → {pending.get('customer_phone')}")
         return Response(content=_dial_customer_twiml(pending, say=""), media_type="application/xml")

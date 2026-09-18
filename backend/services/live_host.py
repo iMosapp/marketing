@@ -28,17 +28,28 @@ LAB_OFF = "the Test Lab switch 'Jessi hosts your calls' is off"
 NUDGE_S = 18          # quiet after the brief -> one gentle nudge
 MAX_QUIET_S = 45      # still nothing -> treated like an unanswered call
 MAX_MIN = 3.0         # questions are fine, a briefing is not a meeting
-DECIDED_CLOSE_S = 8   # Jessi said the handoff line but never delegated -> close anyway
+DECIDED_CLOSE_S = 4   # Jessi said the handoff line but never delegated -> hand the call off anyway
 GO = re.compile(r"\b(connect|ready|yes|yeah|yep|yup|go ahead|let'?s go|dial|do it|put (him|her|them) through|bring it|hit me|call (him|her|them)|i'?m good|sure|go|connect (him|her|them|me)|send it)\b", re.I)
 LATER = re.compile(r"\b(not now|later|cancel|bad time|busy|hold off|never ?mind|skip( it)?|nope|no thanks|don'?t (call|connect|dial)|not (right )?now|stop)\b", re.I)
 QUESTION = re.compile(r"\?|^\s*(what|when|who|where|why|how|did|does|do|is|are|was|has|have|any|tell me|remind me|which|can you|could you|say (that )?again|repeat)\b", re.I)
 TAG_PRIORITY = ("hot", "vip", "sold", "referral", "repeat", "service")
 CONNECT_LINE = "Connecting you now."
 CANCEL_LINE = "No problem, I'll cancel it. Talk soon."
+CLOSE_AFTER_REDIRECT_S = 3
 
 
 def _now():
     return datetime.now(timezone.utc)
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"[^a-z0-9 ]+", "", str(text or "").lower()).strip()
+
+
+def said_line(text: str, line: str) -> bool:
+    """Did Jessi speak this handoff line (punctuation and case aside)?"""
+    key = _norm(line)
+    return bool(key) and key in _norm(text)
 
 
 async def decide(db, kind: str, doc: dict) -> tuple[bool, str]:
@@ -57,16 +68,43 @@ def _ws_base() -> str:
     return scr._app_url().replace("https://", "wss://").replace("http://", "ws://")
 
 
+def after_url(kind: str, doc: dict) -> str:
+    """Where the call goes once Jessi is done (plain URL, not XML-escaped)."""
+    if kind == "call":
+        return f"{scr._app_url()}/api/webhooks/twilio/call-bridge-host-after?pid={doc['_id']}&t={doc['token']}"
+    return f"{scr._app_url()}/api/scripts/roleplay/host-after/{doc['_id']}?t={doc['token']}"
+
+
+def _host_twiml(kind: str, doc: dict, ws_path: str) -> str:
+    """<Connect action=after> with a <Redirect> to the same URL behind it: whichever way Twilio leaves the stream, the call continues."""
+    after = scr._xml(after_url(kind, doc))
+    return (f'<?xml version="1.0" encoding="UTF-8"?><Response><Connect action="{after}"><Stream url="{scr._xml(_ws_base())}{ws_path}" /></Connect>'
+            f'<Redirect method="POST">{after}</Redirect></Response>')
+
+
 def shop_twiml(session: dict) -> str:
-    sid, token = str(session["_id"]), session["token"]
-    return (f'<?xml version="1.0" encoding="UTF-8"?><Response><Connect action="{scr._xml(scr._app_url())}/api/scripts/roleplay/host-after/{sid}?t={token}">'
-            f'<Stream url="{scr._xml(_ws_base())}/api/scripts/roleplay/host/{sid}/{token}" /></Connect></Response>')
+    return _host_twiml("shop", session, f"/api/scripts/roleplay/host/{session['_id']}/{session['token']}")
 
 
 def call_twiml(pending: dict) -> str:
-    pid, token = str(pending["_id"]), pending["token"]
-    return (f'<?xml version="1.0" encoding="UTF-8"?><Response><Connect action="{scr._xml(scr._app_url())}/api/webhooks/twilio/call-bridge-host-after?pid={pid}&amp;t={token}">'
-            f'<Stream url="{scr._xml(_ws_base())}/api/webhooks/twilio/call-host/{pid}/{token}" /></Connect></Response>')
+    return _host_twiml("call", pending, f"/api/webhooks/twilio/call-host/{pending['_id']}/{pending['token']}")
+
+
+async def redirect_call(call_sid: str, url: str) -> bool:
+    """Move the live call to `url` through Twilio's REST API: Twilio fetches the TwiML right away and tears the stream down itself,
+    so the handoff never depends on Twilio noticing our WebSocket close. False when there is no client or Twilio refuses."""
+    import os
+    sid, tok = os.environ.get("TWILIO_ACCOUNT_SID", ""), os.environ.get("TWILIO_AUTH_TOKEN", "")
+    if not (call_sid and sid and tok):
+        return False
+    try:
+        from twilio.rest import Client
+        client = Client(sid, tok)
+        await asyncio.to_thread(client.calls(call_sid).update, url=url, method="POST")
+        return True
+    except Exception as e:
+        logger.warning(f"[LiveHost] redirect of {call_sid} failed, closing the stream instead: {e}")
+        return False
 
 
 # ── what Jessi knows going in ─────────────────────────────────────────────────
@@ -259,6 +297,8 @@ class HostBridge(ls.Bridge):
         self.decided_at: Optional[float] = None
         self.nudged = False
         self.last_rep_at: Optional[float] = None
+        self.call_sid: Optional[str] = None
+        self.handed_off = False
 
     async def session_config(self) -> dict:
         cfg = await lv.get_config(self.db)
@@ -267,7 +307,8 @@ class HostBridge(ls.Bridge):
 
     async def _mark_live(self, call_sid: Optional[str]):
         self.started_at = _now()
-        await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"host.started_at": self.started_at, "host.voice": self.cfg.get("voice"), "host.transport": "gpt-live", "host.opener": self.brief.get("opener"), "updated_at": self.started_at}})
+        self.call_sid = call_sid or self.s.get("call_sid")
+        await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"host.started_at": self.started_at, "host.voice": self.cfg.get("voice"), "host.transport": "gpt-live", "host.opener": self.brief.get("opener"), "host.call_sid": self.call_sid, "updated_at": self.started_at}})
 
     async def on_started(self):
         line = self.brief.get("opener") or ""
@@ -277,12 +318,24 @@ class HostBridge(ls.Bridge):
     def decorate(self, turn: dict) -> dict:
         return turn
 
+    def _lines(self) -> tuple[str, str]:
+        if self.kind == "call":
+            return CONNECT_LINE, CANCEL_LINE
+        return self.brief.get("go_line") or "", self.brief.get("later_line") or ""
+
     async def after_flush(self, turn: dict):
         if turn["role"] == "rep":
             self.last_rep_at = asyncio.get_event_loop().time()
             what = intent(turn["text"])
             if what in ("go", "later") and not self.decision:
                 await self._decide(what, "speech")
+        elif not self.decision:
+            # Jessi only speaks the handoff lines when the rep asked for them: her own words are the surest signal
+            go_line, later_line = self._lines()
+            if said_line(turn["text"], go_line):
+                await self._decide("go", "jessi")
+            elif said_line(turn["text"], later_line):
+                await self._decide("later", "jessi")
 
     async def on_dtmf(self, digit: str):
         if digit == "1":
@@ -316,9 +369,39 @@ class HostBridge(ls.Bridge):
         elif what == "question" and self.kind == "call":
             answer = await answer_question(self.db, self.brief, last_rep)
             await self.up.send({"type": "session.thinking.append", "event_id": f"ans_{delegation_id}", "delegation_id": delegation_id, "content": f"Backend answer, say it in your own words then ask if they are ready to connect: {answer}"})
-        elif delegation_id:
+        else:
+            # always answer a delegation, or the model waits in silence
             await self.up.send({"type": "session.thinking.append", "event_id": f"stay_{delegation_id}", "delegation_id": delegation_id,
                                 "content": "Nothing to look up here. " + ("Ask the rep if they are ready to connect, or if they want to cancel." if self.kind == "call" else "Ask the rep if they are ready, or if now is a bad time.")})
+
+    async def _drain_then_hangup(self, reason: str):
+        """Let Jessi finish the line, then hand the call to its next TwiML (REST redirect first, WebSocket close as the fallback)."""
+        loop = asyncio.get_event_loop()
+        deadline = loop.time() + 6
+        while loop.time() < deadline and loop.time() - self.last_output_at < 1.6:
+            await asyncio.sleep(0.2)
+        await asyncio.sleep(0.8)
+        await self._handoff(reason)
+
+    async def _handoff(self, reason: str):
+        if self.handed_off or self.closed:
+            return
+        self.handed_off = True
+        moved = await redirect_call(self.call_sid or "", after_url(self.kind, self.s))
+        await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"host.handoff": "rest" if moved else "ws_close", "updated_at": _now()}})
+        logger.info(f"[LiveHost] {self.sid} {self.kind}: handoff via {'REST redirect' if moved else 'stream close'} ({reason})")
+        if moved:
+            # Twilio is already fetching the next TwiML and will stop the stream; close ourselves shortly in case it does not
+            self.tasks.append(asyncio.get_event_loop().create_task(self._close_later(reason)))
+        else:
+            await self.close(reason)
+
+    async def _close_later(self, reason: str):
+        try:
+            await asyncio.sleep(CLOSE_AFTER_REDIRECT_S)
+            await self.close(reason)
+        except asyncio.CancelledError:
+            pass
 
     async def _watchdog(self):
         loop = asyncio.get_event_loop()
@@ -329,7 +412,7 @@ class HostBridge(ls.Bridge):
                     continue
                 now = loop.time()
                 if self.decision and self.decided_at and now - self.decided_at >= DECIDED_CLOSE_S:
-                    await self.close(self.decision)
+                    await self._handoff(self.decision)
                     continue
                 quiet_since = max(self.last_rep_at or 0.0, self.last_output_at or 0.0)
                 if quiet_since and not self.decision and not self.nudged and now - quiet_since >= NUDGE_S:
@@ -338,10 +421,10 @@ class HostBridge(ls.Bridge):
                                         "content": "Ready when you are. Say connect, or not now." if self.kind == "call" else "Ready when you are. Say ready, or not now."})
                 if quiet_since and not self.decision and now - quiet_since >= MAX_QUIET_S:
                     await self._decide("none", "silence")
-                    await self.close("none")
+                    await self._handoff("none")
                 if not self.decision and self.minutes() >= MAX_MIN:
                     await self._decide("none", "timeout")
-                    await self.close("none")
+                    await self._handoff("none")
         except asyncio.CancelledError:
             pass
 
