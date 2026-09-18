@@ -2,7 +2,9 @@
 Twilio Webhooks Router - Handle incoming SMS/MMS messages
 """
 import asyncio
-from fastapi import APIRouter, Request, Form, HTTPException
+import json
+import secrets
+from fastapi import APIRouter, Request, Form, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime, timezone
@@ -1236,6 +1238,7 @@ async def place_click_to_call(rep_user_id: str, customer_phone: str, contact_id:
         "contact_id":        contact_id or None,
         "conversation_id":   conversation_id or None,
         "task_id":           task_id or None,
+        "token":             secrets.token_hex(12),
         "created_at":        datetime.utcnow(),
     }
 
@@ -1865,20 +1868,39 @@ async def call_bridge_twiml(
 
     # Press-1 gate: the customer is NOT dialed until the rep confirms.
     # Stops voicemail pickups and hang-ups from dialing the customer anyway.
-    from xml.sax.saxutils import escape as _xesc
-    say_name = "the customer"
+    # With a key + the Test Lab switch, Jessi hosts that gate live on GPT-Live (briefs the rep, waits for "connect"); see /call-host + /call-bridge-host-after.
+    from services import live_host
+    try:
+        use_host, why = await live_host.decide(db, "call", pending)
+    except Exception as e:
+        use_host, why = False, f"host check failed ({type(e).__name__})"
+    if use_host and pending.get("token"):
+        logger.info(f"[Voice] Jessi hosts the gate for {caller_number} → {customer_phone} ({why})")
+        return Response(content=live_host.call_twiml(pending), media_type="application/xml")
+    await db.pending_calls.update_one({"_id": pending["_id"]}, {"$set": {"host": {"transport": "say", "skip_reason": why if not use_host else "pending call without token"}}})
+    logger.info(f"[Voice] Press-1 gate for {caller_number} → {customer_phone} ({why})")
+    return Response(content=await _classic_gate_twiml(db, pending), media_type="application/xml")
+
+
+async def _say_name(db, pending: dict) -> str:
     try:
         cid = pending.get("contact_id")
         if cid:
             c = await db.contacts.find_one({"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1})
             if c:
-                say_name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or say_name
+                return f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or "the customer"
     except Exception:
         pass
+    return "the customer"
 
+
+async def _classic_gate_twiml(db, pending: dict) -> str:
+    """The spoken press-1 / say-yes gate on the rep's leg (Twilio <Say>)."""
+    from xml.sax.saxutils import escape as _xesc
+    say_name = await _say_name(db, pending)
     app_url = os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))
     _action = f"{app_url}/api/webhooks/twilio/call-bridge-connect"
-    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="dtmf speech" action="{_action}" method="POST" numDigits="1" timeout="15" speechTimeout="auto" hints="yes, one, connect">
     <Say>Calling {_xesc(say_name)}. Press 1 on your phone's keypad, or say yes, to connect.</Say>
@@ -1892,8 +1914,90 @@ async def call_bridge_twiml(
   <Hangup/>
 </Response>"""
 
-    logger.info(f"[Voice] Press-1 gate for {caller_number} → {customer_phone}")
-    return Response(content=twiml, media_type="application/xml")
+
+def _dial_customer_twiml(pending: dict, say: str = "Connecting your call now.") -> str:
+    """Bridge the rep's leg to the customer (recorded, outcome via /call-bridge-result)."""
+    customer_phone = pending.get("customer_phone", "")
+    caller_number  = pending.get("rep_twilio_number", "")
+    _app = os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))
+    say_xml = f"\n  <Say>{say}</Say>" if say else ""
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>{say_xml}
+  <Dial callerId="{caller_number}" timeout="30"
+        record="record-from-answer-dual"
+        action="{_app}/api/webhooks/twilio/call-bridge-result" method="POST"
+        recordingStatusCallback="{_app}/api/webhooks/twilio/recording-complete"
+        recordingStatusCallbackMethod="POST">
+    <Number>{customer_phone}</Number>
+  </Dial>
+</Response>"""
+
+
+@router.websocket("/call-host/{pid}/{token}")
+async def call_host_ws(ws: WebSocket, pid: str, token: str):
+    """Twilio Media Streams <-> GPT-Live on the rep's leg: Jessi briefs the rep on the customer, answers questions, waits for connect / not now."""
+    from services import live_host
+    db = get_db()
+    pending = await db.pending_calls.find_one({"_id": ObjectId(pid), "token": token}) if ObjectId.is_valid(pid) else None
+    if not pending:
+        await ws.close(code=1008)
+        return
+    await ws.accept()
+    closed = {"v": False}
+
+    async def send(msg: dict):
+        if not closed["v"]:
+            await ws.send_text(json.dumps(msg))
+
+    async def close_ws():
+        if not closed["v"]:
+            closed["v"] = True
+            try:
+                await ws.close()
+            except Exception:
+                pass
+
+    bridge = live_host.HostBridge(db, pending, "call", send, close_ws)
+    try:
+        while not bridge.closed:
+            raw = await ws.receive_text()
+            try:
+                msg = json.loads(raw)
+            except ValueError:
+                continue
+            await bridge.on_twilio(msg)
+    except WebSocketDisconnect:
+        closed["v"] = True
+    except Exception as e:
+        logger.warning(f"[LiveHost] call-host websocket ended for {pid}: {e}")
+    finally:
+        closed["v"] = True
+        await bridge.close("websocket_closed")
+
+
+@router.post("/call-bridge-host-after")
+async def call_bridge_host_after(request: Request, pid: str, t: str, StreamError: str = Form(default="")):
+    """Jessi's stream on the rep's leg ended: dial the customer (connect), hang up (not now / silence), or fall back to the spoken gate when she never got on."""
+    db = get_db()
+    pending = await db.pending_calls.find_one({"_id": ObjectId(pid), "token": t}) if ObjectId.is_valid(pid) else None
+    if not pending:
+        logger.error(f"[Voice] call-bridge-host-after: no pending_call {pid}")
+        return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, something went wrong connecting your call. Please try again.</Say><Hangup/></Response>', media_type="application/xml")
+    host = pending.get("host") or {}
+    decision, via = host.get("decision"), host.get("via")
+    logger.info(f"[Voice] host-after {pid}: {decision} via {via} (StreamError={StreamError!r})")
+    if decision == "go":
+        logger.info(f"[Voice] Jessi confirmed — bridging {pending.get('rep_twilio_number')} → {pending.get('customer_phone')}")
+        return Response(content=_dial_customer_twiml(pending, say=""), media_type="application/xml")
+    if decision == "later":
+        return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>', media_type="application/xml")
+    if decision == "none" and via in ("silence", "timeout"):
+        logger.info(f"[Voice] host gate: no answer from the rep ({via}) — customer NOT dialed")
+        return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response><Say>No input received. Call cancelled. Goodbye.</Say><Hangup/></Response>', media_type="application/xml")
+    why = f"Jessi never got on the line ({via or StreamError or 'stream ended'})"
+    logger.warning(f"[Voice] host-after {pid}: {why}, spoken gate instead")
+    await db.pending_calls.update_one({"_id": pending["_id"]}, {"$set": {"host.transport": "say", "host.skip_reason": why}})
+    return Response(content=await _classic_gate_twiml(db, pending), media_type="application/xml")
 
 
 @router.post("/call-bridge-connect")
@@ -1922,18 +2026,7 @@ async def call_bridge_connect(
 
     customer_phone = pending.get("customer_phone", "")
     caller_number  = pending.get("rep_twilio_number", "")
-    _app = os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))
-    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>Connecting your call now.</Say>
-  <Dial callerId="{caller_number}" timeout="30"
-        record="record-from-answer-dual"
-        action="{_app}/api/webhooks/twilio/call-bridge-result" method="POST"
-        recordingStatusCallback="{_app}/api/webhooks/twilio/recording-complete"
-        recordingStatusCallbackMethod="POST">
-    <Number>{customer_phone}</Number>
-  </Dial>
-</Response>"""
+    twiml = _dial_customer_twiml(pending)
 
     logger.info(f"[Voice] Press-1 confirmed — bridging {caller_number} → {customer_phone}")
     return Response(content=twiml, media_type="application/xml")

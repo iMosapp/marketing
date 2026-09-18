@@ -538,10 +538,20 @@ async def _line_problem(s: dict, where: str, e: Exception) -> Response:
 
 @relay_router.post("/twiml/{sid}")
 async def relay_twiml(sid: str, t: str, request: Request):
-    """Practice calls go straight to the AI customer. Shop calls open with Jessi's announcement and wait for press 1 / 'ready' (see /gate)."""
+    """Practice calls go straight to the AI customer. Shop calls open with Jessi's announcement and wait for press 1 / 'ready' (see /gate);
+    on English shops with a key that announcement is Jessi live on GPT-Live (see /host), otherwise the classic <Say>."""
     s = await _phone_session(sid, t)
     try:
         if s.get("kind") == "mystery_shop":
+            from services import live_host
+            try:
+                use_host, why = await live_host.decide(get_db(), "shop", s)
+            except Exception as e:
+                use_host, why = False, f"host check failed ({type(e).__name__})"
+            logger.info(f"[MysteryShop] announce {sid}: {'Jessi on GPT-Live' if use_host else 'classic Say'} ({why})")
+            if use_host:
+                return _twiml(live_host.shop_twiml(s))
+            await get_db().roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"host": {"transport": "say", "skip_reason": why}, "updated_at": datetime.now(timezone.utc)}})
             return _twiml(svc.shop_gate_twiml(s))
         return _twiml(svc.relay_twiml(s))
     except Exception as e:
@@ -561,18 +571,23 @@ async def relay_gate(sid: str, t: str, request: Request):
 async def _gate(s: dict, sid: str, request: Request) -> Response:
     form = await request.form()
     choice = svc.gate_choice(form.get("Digits") or "", form.get("SpeechResult") or "")
-    db = get_db()
     logger.info(f"[MysteryShop] gate {sid}: {choice} (digits={form.get('Digits')!r} speech={form.get('SpeechResult')!r})")
+    return await _gate_choice(s, sid, choice, "dtmf" if form.get("Digits") else "speech")
+
+
+async def _gate_choice(s: dict, sid: str, choice: str, via: str, hosted: bool = False) -> Response:
+    """hosted=True: Jessi the host already spoke the go / not-now line, so no <Say> heads-up and a bare hangup on 'later'."""
+    db = get_db()
     if s.get("status") not in ("dialing", "live"):
         return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
     if choice == "go":
-        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"gate_passed_at": datetime.now(timezone.utc), "gate_via": "dtmf" if form.get("Digits") else "speech", "updated_at": datetime.now(timezone.utc)}})
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"gate_passed_at": datetime.now(timezone.utc), "gate_via": via, "updated_at": datetime.now(timezone.utc)}})
         from services import live_shops
         try:
             use_live, why = await live_shops.decide(db, s)
             logger.info(f"[MysteryShop] gate {sid}: {'GPT-Live' if use_live else 'classic relay'} ({why})")
             if use_live:
-                return _twiml(live_shops.shop_go_twiml(s))
+                return _twiml(live_shops.shop_go_twiml(s, heads_up=not hosted))
         except Exception as e:  # the GPT-Live path is optional: any hiccup there falls back to the classic relay shopper
             logger.exception(f"[MysteryShop] live shop gate failed for {sid}, using the relay: {e}")
             why = f"GPT-Live setup failed ({type(e).__name__})"
@@ -580,10 +595,12 @@ async def _gate(s: dict, sid: str, request: Request) -> Response:
             await live_shops.mark_relay(db, s, why)
         except Exception as e:
             logger.warning(f"[MysteryShop] could not stamp the relay reason on {sid}: {e}")
-        return _twiml(svc.shop_go_twiml(s))
+        return _twiml(svc.shop_go_twiml(s, heads_up=not hosted))
     from services.mystery_shops import postpone_call, record_outcome
     if choice == "later":
         await postpone_call(db, s)
+        if hosted:
+            return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
         if svc.loc.language(s.get("locale")) == "nl":
             return _twiml(svc.say_hangup_twiml("Geen probleem, we proberen het een andere keer. Succes!" if s.get("demo") or s.get("manual") else "Geen probleem, we bellen over een paar uur terug. Succes!", s.get("locale")))
         return _twiml(svc.say_hangup_twiml("No problem, we'll try another time. Good luck out there." if s.get("demo") or s.get("manual") else "No problem, we'll call back in a couple of hours. Good luck out there."))
@@ -591,6 +608,73 @@ async def _gate(s: dict, sid: str, request: Request) -> Response:
     if svc.loc.language(s.get("locale")) == "nl":
         return _twiml(svc.say_hangup_twiml("Geen probleem, we proberen het een andere keer. Dit was je oefengesprek van I'm On Social.", s.get("locale")))
     return _twiml(svc.say_hangup_twiml("No problem, we'll try again another time. This was your practice call from I'm On Social."))
+
+
+@relay_router.websocket("/host/{sid}/{token}")
+async def host_ws(ws: WebSocket, sid: str, token: str):
+    """Twilio Media Streams <-> GPT-Live for Jessi's shop announcement: she tells the rep what is coming, waits for ready / not now, then the stream ends and /host-after continues."""
+    from services import live_host
+    db = get_db()
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid), "token": token, "mode": "phone", "kind": "mystery_shop"}) if ObjectId.is_valid(sid) else None
+    if not s:
+        await ws.close(code=1008)
+        return
+    await ws.accept()
+    closed = {"v": False}
+
+    async def send(msg: dict):
+        if not closed["v"]:
+            await ws.send_text(json.dumps(msg))
+
+    async def close_ws():
+        if not closed["v"]:
+            closed["v"] = True
+            try:
+                await ws.close()
+            except Exception:
+                pass
+
+    bridge = live_host.HostBridge(db, s, "shop", send, close_ws)
+    try:
+        while not bridge.closed:
+            raw = await ws.receive_text()
+            try:
+                msg = json.loads(raw)
+            except ValueError:
+                continue
+            await bridge.on_twilio(msg)
+    except WebSocketDisconnect:
+        closed["v"] = True
+    except Exception as e:
+        logger.warning(f"[LiveHost] host websocket ended for {sid}: {e}")
+    finally:
+        closed["v"] = True
+        await bridge.close("websocket_closed")
+
+
+@relay_router.post("/host-after/{sid}")
+async def relay_host_after(sid: str, t: str, request: Request):
+    """Jessi's announcement stream ended: act on what the rep told her (host.decision), or fall back to the classic announcement when she never got on the line."""
+    s = await _phone_session(sid, t)
+    try:
+        return await _host_after(s, sid, request)
+    except Exception as e:
+        return await _line_problem(s, "host-after", e)
+
+
+async def _host_after(s: dict, sid: str, request: Request) -> Response:
+    form = await request.form()
+    host = s.get("host") or {}
+    decision, via = host.get("decision"), host.get("via")
+    logger.info(f"[MysteryShop] host-after {sid}: {decision} via {via} (StreamError={form.get('StreamError')!r})")
+    if decision in ("go", "later"):
+        return await _gate_choice(s, sid, decision, f"host:{via}", hosted=True)
+    if decision == "none" and via in ("silence", "timeout"):
+        return await _gate_choice(s, sid, "none", f"host:{via}")
+    why = f"Jessi never got on the line ({via or form.get('StreamError') or 'stream ended'})"
+    logger.warning(f"[MysteryShop] host-after {sid}: {why}, classic announcement instead")
+    await get_db().roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"host.transport": "say", "host.skip_reason": why, "updated_at": datetime.now(timezone.utc)}})
+    return _twiml(svc.shop_gate_twiml(s))
 
 
 @relay_router.get("/audio/ring.wav")

@@ -128,6 +128,11 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }
                     <Ionicons name="swap-horizontal" size={12} color={colors.textSecondary} /><Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary }}>Classic relay</Text>
                   </View>
                 )}
+                {(d as any).host?.transport === 'gpt-live' && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: GOLD + '22' }} {...tid('shop-call-host-badge')}>
+                    <Ionicons name="headset" size={12} color={GOLD} /><Text style={{ fontSize: 11, fontWeight: '800', color: GOLD }}>Jessi hosted</Text>
+                  </View>
+                )}
               </View>
               {(d as any).live_transport === 'relay' && !!(d as any).live_skip_reason && <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('shop-call-relay-reason')}>Not on GPT-Live: {(d as any).live_skip_reason}</Text>}
               {!!d.script_title && <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }} {...tid('shop-call-script')}>{d.script_title}</Text>}

@@ -79,12 +79,15 @@ async def mark_relay(db, session: dict, why: str):
 
 
 def voice_for(session: dict) -> str:
+    """The shopper's voice from the persona's gender pool, deterministic per session, never the voice Jessi the host just used on the same call."""
     persona = session.get("persona") or {}
     kind = "male" if str(persona.get("voice") or "female").lower().startswith("m") else "female"
     if (session.get("locale") or "").startswith("en-") and session.get("locale") not in ("en-US",):
         pool = UK_VOICES[kind]
     else:
         pool = MASCULINE if kind == "male" else FEMININE
+    avoid = (session.get("host") or {}).get("voice")
+    pool = tuple(v for v in pool if v != avoid) or pool
     return pool[int(str(session.get("_id"))[-2:], 16) % len(pool)] if ObjectId.is_valid(str(session.get("_id"))) else pool[0]
 
 
@@ -96,12 +99,13 @@ def stream_twiml(session: dict, prelude: str = "") -> str:
             f'<Stream url="{scr._xml(ws)}" /></Connect></Response>')
 
 
-def shop_go_twiml(session: dict) -> str:
-    """Rep pressed 1: a heads-up, a ring, then the live shopper on GPT-Live."""
+def shop_go_twiml(session: dict, heads_up: bool = True) -> str:
+    """Rep pressed 1: a heads-up, a ring, then the live shopper on GPT-Live. heads_up=False when Jessi the host already said the line."""
     lines = scr.GO_LINES.get(loc.language(session.get("locale")), scr.GO_LINES["en"])
     line = lines[0] if session.get("direction") == "inbound" else lines[1]
     ring = f"{scr._xml(scr._app_url())}/api/scripts/roleplay/audio/ring.wav"
-    return stream_twiml(session, prelude=f'<Say voice="{loc.say_voice(session.get("locale"))}">{scr._xml(speakable(line, session.get("locale")))}</Say><Play>{ring}</Play>')
+    say = f'<Say voice="{loc.say_voice(session.get("locale"))}">{scr._xml(speakable(line, session.get("locale")))}</Say>' if heads_up else ""
+    return stream_twiml(session, prelude=f'{say}<Play>{ring}</Play>')
 
 
 def opening_line(session: dict) -> str:
@@ -234,6 +238,7 @@ class Bridge:
     Shop behaviour lives in the hook methods (session_config, on_started, delegation, watchdog); other call types subclass it."""
 
     COLL = "roleplay_sessions"
+    TURNS_FIELD = "turns"
     ASSISTANT_ROLE = "customer"
     TAG = "LiveShop"
 
@@ -350,8 +355,16 @@ class Bridge:
             payload = (msg.get("media") or {}).get("payload")
             if payload:
                 await self.up.send({"type": "session.input_audio.append", "audio": payload})
+        elif ev == "dtmf":
+            digit = str((msg.get("dtmf") or {}).get("digit") or "").strip()
+            if digit:
+                await self.on_dtmf(digit)
         elif ev == "stop":
             await self.close("twilio_stop")
+
+    async def on_dtmf(self, digit: str):
+        """A keypad press on the stream; shops ignore it, the host bridge treats 1 / 2 as ready / not now."""
+        pass
 
     async def _open_upstream(self):
         try:
@@ -425,7 +438,7 @@ class Bridge:
         turn = self.decorate({"role": self.cur["role"], "text": self.cur["text"].strip(), "at": _now()})
         self.cur = None
         self.turns += 1
-        await self.col.update_one({"_id": self.s["_id"]}, {"$push": {"turns": turn}, "$set": {"updated_at": _now()}})
+        await self.col.update_one({"_id": self.s["_id"]}, {"$push": {self.TURNS_FIELD: turn}, "$set": {"updated_at": _now()}})
         try:
             await self.after_flush(turn)
         except Exception as e:
@@ -466,15 +479,18 @@ class Bridge:
                 pass
         if self.up:
             await self.up.close()
-        await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"live_seconds": self.seconds, "live_cost_usd": round(self.seconds / 60 * lv.PRICE_PER_MIN, 4), "live_end_reason": reason, "updated_at": _now()}})
-        if reason in ("customer_ended", "out_of_time"):
-            await self.col.update_one({"_id": self.s["_id"], "status": "live"}, {"$set": {"status": "ending"}})
+        await self._record_close(reason)
         try:
             await self.twilio_close()
         except Exception:
             pass
         self.done.set()
         logger.info(f"[{self.TAG}] {self.sid} closed: {reason}, {self.seconds}s, {self.turns} turns")
+
+    async def _record_close(self, reason: str):
+        await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"live_seconds": self.seconds, "live_cost_usd": round(self.seconds / 60 * lv.PRICE_PER_MIN, 4), "live_end_reason": reason, "updated_at": _now()}})
+        if reason in ("customer_ended", "out_of_time"):
+            await self.col.update_one({"_id": self.s["_id"], "status": "live"}, {"$set": {"status": "ending"}})
 
 
 async def call_over(turns: list) -> bool:

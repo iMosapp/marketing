@@ -78,6 +78,17 @@ FEATURES = [
                      "Say 'I need to go'. She thanks you, says goodbye and the call ends on its own; the review screen shows the write-up within a minute.",
                      "Interview status in the app shows a GPT-Live badge; a call that fell back shows the reason."],
      "added": "2026-09-18", "default": "live", "needs": "Needs OPENAI_API_KEY in the backend environment. English stores only."},
+    {"key": "live_host", "name": "Jessi hosts your calls", "icon": "headset",
+     "tagline": "Before a click-to-call goes through, Jessi (your Voice Lab voice) briefs you on who you are calling; before a mystery shop she announces it. Live, not robotic TTS.",
+     "description": "Click-to-call: when you pick up, Jessi tells you who you are about to call, what they drive or want, the last thing they said or you noted, what you owe them and the tags "
+                    "that matter, then waits. Say connect / yes / press 1 and she dials them; say not now / press 2 to cancel; ask her anything about the customer first and she answers "
+                    "from the record. Mystery shops: the same Jessi announces the practice call and waits for ready / press 1; the shopper who then comes on is a different voice and stays a surprise. "
+                    "She only ever talks to the rep, never to the customer. Any hiccup (no key, GPT-Live unreachable) falls back to the classic spoken gate. English only; Dutch shops keep the classic announcement.",
+     "how_to_test": ["Open any contact and tap Call. Pick up: Jessi briefs you in a few seconds and stops. Ask 'what did he text last?' then say connect.",
+                     "Say 'not now' on a second try: she cancels and the customer is never dialed.",
+                     "Let your voicemail pick up once: nobody gets dialed; the call ends on its own.",
+                     "Quick shop yourself: Jessi announces the shop, say ready, the shopper rings in with a different voice. The call detail shows 'Jessi hosted'."],
+     "added": "2026-09-19", "default": "live", "needs": "Needs OPENAI_API_KEY in the backend environment."},
 ]
 STATUSES = ("lab", "live")
 SETTINGS_KEY = "lab_features"
@@ -116,7 +127,7 @@ async def list_features(db) -> list:
         if f["key"] == "voice_interview":
             reason = await asyncio.to_thread(voice_id.available)
             row["needs"] = f"Voice ID is not running on this server: {reason}" if reason else None
-        elif f["key"] in ("jessi_live_voice", "live_shop_calls"):
+        elif f["key"] in ("jessi_live_voice", "live_shop_calls", "live_host"):
             from services import live_voice
             row["needs"] = live_voice.configured()
         out.append(row)

@@ -495,12 +495,13 @@ def gate_choice(digits: str, speech: str) -> str:
     return "none"
 
 
-def shop_go_twiml(session: dict) -> str:
-    """Rep is ready: a heads-up, a ring, then the live customer."""
+def shop_go_twiml(session: dict, heads_up: bool = True) -> str:
+    """Rep is ready: a heads-up, a ring, then the live customer. heads_up=False when Jessi the host already said the line."""
     lines = GO_LINES.get(loc.language(session.get("locale")), GO_LINES["en"])
     line = lines[0] if session.get("direction") == "inbound" else lines[1]
     ring = f"{_xml(_app_url())}/api/scripts/roleplay/audio/ring.wav"
-    return relay_twiml(session, prelude=f'<Say voice="{loc.say_voice(session.get("locale"))}">{_xml(speakable(line, session.get("locale")))}</Say><Play>{ring}</Play>')
+    say = f'<Say voice="{loc.say_voice(session.get("locale"))}">{_xml(speakable(line, session.get("locale")))}</Say>' if heads_up else ""
+    return relay_twiml(session, prelude=f'{say}<Play>{ring}</Play>')
 
 
 def say_hangup_twiml(text: str, locale: Optional[str] = None) -> str:
