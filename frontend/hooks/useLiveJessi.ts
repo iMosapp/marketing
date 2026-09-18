@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+import * as Application from 'expo-application';
 import api from '../services/api';
-import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, nativeRtcMissing } from './liveRtc';
+import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, nativeRtcMissing, nativeRtcReason } from './liveRtc';
 
 export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
@@ -31,10 +32,12 @@ export const openLabel = (t: OpenTarget) => {
 // Web: any browser with WebRTC + a mic. Native: only binaries built with react-native-webrtc (older App Store builds get false).
 export const liveSupported = () => !!getRtc();
 export const liveNeedsAppUpdate = () => Platform.OS !== 'web' && nativeRtcMissing;
-export const LIVE_UNSUPPORTED_TITLE = Platform.OS === 'web' ? 'This browser cannot do live voice' : 'Update the app to talk to Jessi here';
+export const LIVE_UNSUPPORTED_TITLE = Platform.OS === 'web' ? 'This browser cannot do live voice' : 'This build cannot talk to Jessi yet';
+// Native: name the installed binary and the real reason, so "latest TestFlight" claims can be checked against the build number.
+export const INSTALLED_BUILD = Platform.OS === 'web' ? '' : `${Application.nativeApplicationVersion || '?'} (${Application.nativeBuildVersion || '?'})`;
 export const LIVE_UNSUPPORTED_BODY = Platform.OS === 'web'
   ? 'Live Jessi needs a browser with a microphone (Chrome, Safari or Edge).'
-  : 'This version of the app was built before live voice. Update I\'m On Social from the App Store, or open app.imonsocial.com in Safari to talk to her now.';
+  : `The app build installed on this phone, ${INSTALLED_BUILD}, was compiled without live voice${nativeRtcReason ? ` (${String(nativeRtcReason).replace(/\.$/, '')})` : ''}. An eas update cannot add it: it needs a new App Store or TestFlight build made from the current code. Install that build, or open app.imonsocial.com in Safari to talk to her now.`;
 
 // One live GPT-Live-1 conversation: WebRTC for audio (browser or react-native-webrtc), data channel for events, our backend for every fact.
 // `onOpen` fires when the backend wants something on the rep's screen (a contact, a thread, a task).

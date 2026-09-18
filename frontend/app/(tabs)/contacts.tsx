@@ -289,7 +289,7 @@ export default function ContactsScreen() {
   // ── Row actions ──
   const handleText = useCallback((item: any) => {
     router.push({
-      pathname: `/thread/${item._id}`,
+      pathname: `/thread/${item._id}` as any,
       params: {
         contact_name: `${item.first_name} ${item.last_name || ''}`.trim(),
         contact_phone: item.phone,
@@ -317,7 +317,7 @@ export default function ContactsScreen() {
   const handleEmail = useCallback((item: any) => {
     if (item.email) {
       router.push({
-        pathname: `/thread/${item._id}`,
+        pathname: `/thread/${item._id}` as any,
         params: {
           contact_name: `${item.first_name} ${item.last_name || ''}`.trim(),
           contact_phone: item.phone,
