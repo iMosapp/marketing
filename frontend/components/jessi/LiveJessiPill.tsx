@@ -31,7 +31,7 @@ export const LiveJessiPill = ({ live, target, who = 'Jessi', onExpand, onEnd }: 
     return () => loop.stop();
   }, [isLive, pulse]);
 
-  const where = target?.kind === 'contact' || target?.kind === 'thread' ? (target.first || target.name || '') : target?.kind === 'task' ? 'Reminder' : target?.kind === 'tasks' ? 'Tasks' : target?.kind === 'inbox' ? 'Inbox' : target?.kind === 'home' ? 'Home' : target?.kind === 'duplicates' ? 'Duplicates' : '';
+  const where = target?.kind === 'contact' || target?.kind === 'thread' ? (target.first || target.name || '') : target?.kind === 'task' ? 'Reminder' : target?.kind === 'tasks' ? 'Tasks' : target?.kind === 'inbox' ? 'Inbox' : target?.kind === 'home' ? 'Home' : target?.kind === 'duplicates' ? 'Duplicates' : target?.kind === 'mentions' ? 'Who mentioned' : '';
   const line = live.working || (last ? `${last.role === 'rep' ? 'You' : who}: ${last.text}` : statusText(live, who));
 
   return (

@@ -18,6 +18,7 @@ export const pathFor = (t: OpenTarget): string | null => {
   if (t.kind === 'home') return '/(tabs)/home';
   if (t.kind === 'inbox') return '/(tabs)/inbox';
   if (t.kind === 'duplicates') return '/contacts/duplicates';
+  if (t.kind === 'mentions') return `/memory-search?q=${encodeURIComponent(t.query || '')}`;
   return null;
 };
 

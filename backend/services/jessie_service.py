@@ -4,6 +4,7 @@ Fast, deeply knowledgeable support agent for I'm On Social.
 """
 import os
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 from bson import ObjectId
@@ -17,6 +18,8 @@ from emergentintegrations.llm.openai import OpenAITextToSpeech
 from routers.database import get_db
 from utils.text_sanitize import no_em_dash, clean_ai_text
 from services.llm_models import JESSI_CHAT_MODEL
+
+logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────
 # Deep knowledge base — covers every feature, screen, flow
@@ -554,6 +557,26 @@ async def _build_data_lookups(user_id: str, user_message: str, role: str = "user
                     sections.append(f"\n## DATA LOOKUP: No contacts found matching '{search_term}'")
             except Exception:
                 pass
+
+    # ── 1b. Who mentioned X: hunt through texts, call transcripts, voice memos and notes ──
+    mention_triggers = ["who mentioned", "who asked about", "who was asking about", "who was looking for", "who talked about", "who brought up", "who wanted",
+                        "anyone mention", "anybody mention", "anyone ask", "anybody ask", "anyone looking for", "anybody looking for", "anyone talk", "anyone who",
+                        "someone mentioned", "someone asked", "someone was looking", "somebody mentioned", "somebody asked", "who was it that", "can't remember who", "cant remember who",
+                        "which customer", "which contact", "find anyone", "find the customer who", "find the person who", "find whoever"]
+    if any(t in msg for t in mention_triggers):
+        try:
+            from services import memory_search as ms
+            user = await db.users.find_one({"_id": ObjectId(user_id)}) if ObjectId.is_valid(user_id) else None
+            if user:
+                res = await ms.search(db, user, user_message[:300])
+                rows = []
+                for r in (res.get("results") or [])[:6]:
+                    b = r["best"]
+                    rows.append(f"- {r['name']} ({r['phone'] or 'no phone'}) | {ms.SOURCES[b['source']]}, {b['when_label'] or 'undated'} | {b['why'] or b['quote']} | quote: \"{b['quote'][:200]}\" | open: /contact/{r['contact_id']}")
+                sections.append(f"\n### WHO MENTIONED \"{res.get('topic') or user_message}\" (searched texts, call transcripts, voice memos and notes; terms: {', '.join(res.get('terms') or [])})\n"
+                                + ("\n".join(rows) if rows else "Nobody on record. Say so plainly, and offer to widen the search (different words, longer time frame)."))
+        except Exception as e:
+            logger.warning(f"[Jessie] mentions search failed: {e}")
 
     # ── 2. Hot leads list ──
     if any(w in msg for w in ["hot lead", "hot leads", "active lead", "leads needing", "leads that need"]):

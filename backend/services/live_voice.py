@@ -56,7 +56,7 @@ ENERGY = {1: "calm and steady", 2: "relaxed and easy", 3: "warm and engaged", 4:
 PACING = {1: "slow and unhurried", 2: "measured", 3: "a natural pace", 4: "quick-moving, no dead air", 5: "fast and clipped"}
 PLAYFUL = {1: "all business", 2: "mostly serious", 3: "lightly playful when it fits", 4: "playful", 5: "very playful, quick with a one-liner"}
 BREVITY = {1: "take your time and explain fully", 2: "a few sentences", 3: "two or three short sentences", 4: "one or two short sentences, then let them talk", 5: "as few words as possible"}
-TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates", "next_stop")
+TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates", "next_stop", "find_mentions")
 SCREENS = {"contact": ("contact", "record", "profile", "person", "page", "card"), "thread": ("thread", "conversation", "texts", "messages", "text", "chat"),
            "tasks": ("tasks", "task", "reminders", "touchpoints", "to-dos", "todos"), "home": ("home", "today"), "inbox": ("inbox",)}
 
@@ -175,12 +175,14 @@ def assistant_instructions(cfg: dict, user: dict, language: str = "English", con
             "- Open on screen: pull up a person's record, their text thread, or the rep's tasks on the phone screen. "
             "The app also follows along on its own: when the backend looks someone up, drafts a text or sets a reminder, that person's record, thread or the task opens on the rep's screen. "
             "You may mention it in a few words (for example 'she is up on your screen'), never in detail.\n"
-            "- Duplicates: find double records in the rep's contacts (same person saved twice) and merge them. The backend reads back which records go together and merges only after the rep says yes.\n\n"
+            "- Duplicates: find double records in the rep's contacts (same person saved twice) and merge them. The backend reads back which records go together and merges only after the rep says yes.\n"
+            "- Who mentioned: find a customer by something that came up rather than by name ('who asked about a Tesla last month'). The backend searches every text, call transcript, voice memo and note and comes back with the person, the quote and when.\n\n"
             "Delegate to the backend when:\n"
             "- The rep names a person or asks who they should talk to or follow up with.\n"
             "- The rep asks to text, remind, draft, look something up, or asks about their numbers or how the app works.\n"
             "- The rep asks to open, pull up, show or go to something on the screen.\n"
             "- The rep asks about duplicates, double records, or says 'merge them' / 'combine them' / 'clean that up' after you mentioned two records for one name.\n"
+            "- The rep is trying to remember WHO said or asked about something ('someone wanted a 20k Model 3, who was that').\n"
             "- The rep confirms or cancels an action you read back (yes, send it / no, hold on).\n"
             "- A correction changes a task already requested.\n"
             "- The rep picks one of several people the backend listed, spells a name, or says the person you found is the wrong one. Delegate again right away; the backend matches names loosely (Tod and Todd, Berry and Barry), so a spelled name or a last name settles it.\n\n"
@@ -391,6 +393,7 @@ Tools:
 - find_duplicates: the rep asks whether they have duplicates / double records / the same person twice, or wants to clean up their contacts. args: {}
 - merge_duplicates: the rep wants two or more records of ONE person combined: "merge them", "combine those", "make Tod one record", "clean up Tod Berry", or "merge them" right after Jessi mentioned she found two records for a name. args: {"name": "<the person as spoken, empty when they mean the records Jessi just mentioned>"}
 - next_stop: ONLY during a DAY WALKTHROUGH (shown below). The rep moves the walkthrough along: "next" / "what's next" / "move on" / "go on" / "okay next one" -> {"action": "next"}; "skip" / "skip him" / "not today" / "pass" -> {"action": "skip"}; "done" / "did that" / "already texted him" / "handled" / "mark it done" / "I called her" -> {"action": "done"}. args: {"action": "next|skip|done"}
+- find_mentions: the rep is hunting for a person by something that came up, not by name: "who asked about a Tesla", "someone mentioned a 20k Model 3 last month, who was it", "find anyone looking for a truck", "who talked about a trade-in", "did anybody bring up financing". The backend searches every text, call transcript, voice memo and note. args: {"query": "<what they are looking for, as said, keep numbers and product names>", "days": <lookback in days if the rep said a time frame like last month = 45, this year = 365, else 0>}
 
 Every tool that takes a "name" also takes "hint": how the rep pointed at ONE of several records Jessi listed, verbatim and short: "the first one", "the second one", "the other one", "the one with the Tahoe", "ending in 0100", "the Berry one", "the newer one". Empty when the rep did not pick.
 
@@ -889,6 +892,23 @@ async def _advance(db, user: dict, live: dict, action: str, prefix: str = ""):
     return f"{prefix}{lead}Next up: {nxt['say']}", day_agenda.open_target(nxt)
 
 
+# ── who mentioned ─────────────────────────────────────────────────────────────
+async def _find_mentions(db, user: dict, args: dict, live: Optional[dict]):
+    from services import memory_search as ms
+    query = (args.get("query") or "").strip()
+    if not query:
+        return "What should I look for? Give me the thing they mentioned, like a Tesla Model 3 or a trade-in.", None
+    days = int(args.get("days") or 0) or None
+    res = await ms.search(db, user, query, days)
+    rs = res.get("results") or []
+    if live is not None and rs:
+        live["last_choices"] = [r["contact_id"] for r in rs[:5]]
+        await db[COLL].update_one({"_id": live["_id"]}, {"$set": {"last_choices": live["last_choices"], "contact_id": rs[0]["contact_id"], "contact_name": rs[0]["name"]}})
+        live["contact_id"], live["contact_name"] = rs[0]["contact_id"], rs[0]["name"]
+    opened = {"kind": "mentions", "query": query, "id": rs[0]["contact_id"] if rs else None, "name": rs[0]["name"] if rs else "", "first": rs[0]["first"] if rs else ""} if rs else None
+    return ms.spoken(res), opened
+
+
 async def _shopper_delegation(db, live: dict, transcript: list, delegation_id: Optional[str], t0: datetime) -> dict:
     """Audition of the mystery shopper: no tools. The one delegation means 'I said goodbye, hang up'; anything earlier is told to stay in character."""
     from services.live_shops import call_over
@@ -974,6 +994,8 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             result, opened = await _open_screen(db, user, args, focus, live)
         elif tool == "find_duplicates":
             result, opened = await _find_duplicates(db, user, live)
+        elif tool == "find_mentions":
+            result, opened = await _find_mentions(db, user, args, live)
         elif tool == "merge_duplicates":
             result, new_pending, opened = await _merge_duplicates(db, user, args, live)
             new_pending = new_pending or pending

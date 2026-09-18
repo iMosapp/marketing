@@ -6,13 +6,13 @@ import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, nativeR
 export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
 export type LiveOptions = { mode: 'assistant' | 'lab' | 'shopper'; overrides?: Record<string, any>; contactId?: string };
-export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates'; id?: string; name?: string; first?: string; contact_id?: string };
+export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions'; id?: string; name?: string; first?: string; contact_id?: string; query?: string };
 
 const TOOL_LABELS: Record<string, string> = {
   who_today: 'Pulled up your people for today', find_person: 'Looked them up', recall_person: 'Read their history', send_text: 'Text ready to send',
   draft_message: 'Draft ready', set_reminder: 'Reminder set', confirm: 'Done', cancel: 'Cancelled', answer: 'Answered', open_screen: 'Opened it',
   find_duplicates: 'Checked for duplicates', merge_duplicates: 'Merge ready, say yes', hang_up: 'The shopper hung up', stay_in_character: 'Staying in character',
-  next_stop: 'Next stop',
+  next_stop: 'Next stop', find_mentions: 'Searched your conversations',
 };
 const ROW_GAP_MS = 1500;
 
@@ -24,6 +24,7 @@ export const openLabel = (t: OpenTarget) => {
   if (t.kind === 'tasks') return 'Opened your tasks';
   if (t.kind === 'inbox') return 'Opened the inbox';
   if (t.kind === 'duplicates') return 'Opened your duplicates';
+  if (t.kind === 'mentions') return 'Opened who mentioned it';
   return 'Opened Home';
 };
 

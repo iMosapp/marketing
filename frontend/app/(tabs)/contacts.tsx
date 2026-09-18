@@ -470,6 +470,9 @@ export default function ContactsScreen() {
             <TouchableOpacity onPress={() => setSelectMode(true)} style={styles.headerButton} testID="select-mode-btn" dataSet={{ testid: "select-mode-btn" } as any}>
               <Ionicons name="checkbox-outline" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/memory-search' as any)} style={styles.headerButton} testID="mentions-search-btn" dataSet={{ testid: "mentions-search-btn" } as any}>
+              <Ionicons name="sparkles-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/contacts/duplicates')} style={styles.headerButton} testID="duplicates-btn" dataSet={{ testid: "duplicates-btn" } as any}>
               <Ionicons name="copy-outline" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
