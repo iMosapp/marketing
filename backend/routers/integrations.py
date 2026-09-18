@@ -612,7 +612,7 @@ async def get_api_overview():
         "base_url": "/api/v1",
         "authentication": {"type": "API Key", "header": "X-API-Key", "description": "Create keys in Tools -> Integrations -> API Keys. Sent once, stored hashed."},
         "rate_limits": {"requests_per_minute": 120},
-        "docs_url": "/imos/developers",
+        "docs_url": "https://www.imonsocial.com/developers",
         "openapi_url": "/api/public/openapi-v1.json",
         "try_it_url": "/api/public/reference",
         "webhooks": {"events": list(WEBHOOK_EVENTS.keys()), "signature_header": "X-IMOS-Signature", "signature_algorithm": "HMAC-SHA256 over the raw body, prefixed sha256="},

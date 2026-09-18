@@ -155,7 +155,7 @@ Gotchas: budget for both the fee and the calendar. Only pursue when we have seve
 
 ## Application blurb (copy and adapt)
 
-> I'm On Social is a relationship platform for dealership salespeople: personal texting from a dedicated number, call logging with AI summaries, voice notes, automated birthday, anniversary and sold follow-up campaigns, digital business cards with review collection, and an AI assistant. We integrate with the CRM so the customer record, assigned salesperson and deal status flow into I'm On Social, and every text, call, note, tag and sold record the salesperson creates flows back into the CRM. We already operate a documented public REST API with tenant-scoped API keys, signed webhooks and ADF/XML lead intake (https://app.imonsocial.com/imos/developers). We are requesting customer read/write, activity/note write and deal read for dealers who authorize us.
+> I'm On Social is a relationship platform for dealership salespeople: personal texting from a dedicated number, call logging with AI summaries, voice notes, automated birthday, anniversary and sold follow-up campaigns, digital business cards with review collection, and an AI assistant. We integrate with the CRM so the customer record, assigned salesperson and deal status flow into I'm On Social, and every text, call, note, tag and sold record the salesperson creates flows back into the CRM. We already operate a documented public REST API with tenant-scoped API keys, signed webhooks and ADF/XML lead intake (https://www.imonsocial.com/developers). We are requesting customer read/write, activity/note write and deal read for dealers who authorize us.
 
 ---
 

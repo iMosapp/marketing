@@ -43,7 +43,7 @@ curl https://app.imonsocial.com/api/v1/me \
   "stores_visible": 1,
   "users_visible": 14,
   "rate_limit_per_minute": 120,
-  "docs": "https://app.imonsocial.com/imos/developers"
+  "docs": "https://www.imonsocial.com/developers"
 }
 ```
 

@@ -1,6 +1,6 @@
 # CRM Integration Guide
 
-**Who this is for:** the programmer at a CRM vendor, a dealer group's IT team, or an automation consultant who has been asked "make I'm On Social and our CRM talk to each other." It explains the *how* in plain English and points at the exact endpoints. The full field-by-field reference is in the [API Reference](/imos/developers?doc=api-reference).
+**Who this is for:** the programmer at a CRM vendor, a dealer group's IT team, or an automation consultant who has been asked "make I'm On Social and our CRM talk to each other." It explains the *how* in plain English and points at the exact endpoints. The full field-by-field reference is in the [API Reference](https://www.imonsocial.com/developers?doc=api-reference).
 
 **Time to first sync:** about an afternoon for a one-way feed, two to three days for a solid two-way sync with a test store.
 
@@ -260,7 +260,7 @@ These CRMs do not offer public APIs; each has a partner program. What works **to
 - **Reports and exports:** CSV in both directions.
 - **Automation tools:** Zapier / Make connectors many dealers already run against their CRM, wired to our webhooks and API.
 
-The certification path per vendor, with costs and timelines, is in [Automotive CRM Programs](/imos/developers?doc=automotive-crm-programs).
+The certification path per vendor, with costs and timelines, is in [Automotive CRM Programs](https://www.imonsocial.com/developers?doc=automotive-crm-programs).
 
 ---
 

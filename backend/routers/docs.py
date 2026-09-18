@@ -86,7 +86,7 @@ REPO_DOC_SOURCES = [
     ("/app/docs/DEVELOPER_API.md", {
         "slug": "developer-api-reference",
         "title": "Developer API Reference (Public API v1 + Webhooks)",
-        "summary": "The same document published at /imos/developers: API keys, every /api/v1 endpoint, webhooks, lead intake (ADF/XML, JSON, email), Zapier/Make, testing.",
+        "summary": "The same document published at www.imonsocial.com/developers: API keys, every /api/v1 endpoint, webhooks, lead intake (ADF/XML, JSON, email), Zapier/Make, testing.",
         "category": "integrations", "icon": "code-slash", "sort_order": 0,
     }),
     ("/app/docs/CRM_INTEGRATION_GUIDE.md", {
@@ -103,7 +103,7 @@ REPO_DOC_SOURCES = [
     }),
 ]
 
-# Developer docs that are public (no login): served to the marketing site at /imos/developers and as raw markdown.
+# Developer docs that are public (no login): served to the marketing site (www.imonsocial.com/developers, built by marketing/build_developers.py) and the in-app /imos/developers page and as raw markdown.
 DEVELOPER_DOCS = [
     {"slug": "api-reference", "path": "/app/docs/DEVELOPER_API.md", "title": "API Reference", "subtitle": "Keys, endpoints, webhooks, lead intake, testing"},
     {"slug": "crm-integration-guide", "path": "/app/docs/CRM_INTEGRATION_GUIDE.md", "title": "CRM Integration Guide", "subtitle": "Two-way sync patterns and field maps"},
@@ -154,7 +154,7 @@ async def openapi_v1():
     sub = FastAPI()
     sub.include_router(v1_router, prefix="/api")
     full = get_openapi(title="I'm On Social Public API", version="v1", routes=sub.routes,
-                       description="API-key access to contacts, conversations, calls, sold records, tasks and webhooks. Docs: /imos/developers")
+                       description="API-key access to contacts, conversations, calls, sold records, tasks and webhooks. Docs: https://www.imonsocial.com/developers")
     paths = full.get("paths", {})
     for p in paths.values():
         for op in p.values():

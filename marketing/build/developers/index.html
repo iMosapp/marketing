@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Developers & API - I'm On Social</title>
+  <meta name="description" content="Open REST API and signed webhooks for every customer, text, call, note, task and sold record. CRM integration guide for HubSpot, Salesforce, Zoho, Pipedrive and the automotive CRM certification checklist."/>
+  <link rel="canonical" href="https://www.imonsocial.com/developers"/>
+  <meta property="og:title" content="Developers & API - I'm On Social"/>
+  <meta property="og:description" content="Connect your CRM, DMS or automation tool. API reference, webhooks, CRM integration guide, automotive CRM programs."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://www.imonsocial.com/developers"/>
+  <meta property="og:image" content="https://www.imonsocial.com/og-image.png"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:image:alt" content="i'M On Social - The Relationship OS for Sales Teams"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:image" content="https://www.imonsocial.com/og-image.png"/>
+  <link rel="icon" href="/favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#007AFF;--blue-dark:#0059CC;--gold:#C9A962;--purple:#5856D6;--green:#34C759;--text:#111;--text-2:#555;--text-3:#888;--bg:#FFF;--bg-2:#F8F9FB;--border:rgba(0,0,0,.06);--border-2:rgba(0,0,0,.1);--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
+html{scroll-behavior:smooth;scroll-padding-top:110px}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+nav.top{position:fixed;top:0;left:0;right:0;z-index:1000;transition:all .3s}
+nav.top.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 1px 0 var(--border-2)}
+.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
+.logo{display:flex;align-items:center;text-decoration:none}.logo img{height:72px;width:auto}
+.nav-cta{display:flex;align-items:center;gap:10px}
+.btn-sign{padding:10px 20px;border-radius:980px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;transition:background .2s}.btn-sign:hover{background:var(--bg-2)}
+.btn-demo{background:var(--blue);padding:10px 24px;border-radius:980px;font-size:14px;font-weight:600;color:#FFF;text-decoration:none;transition:all .25s;box-shadow:0 2px 12px rgba(0,122,255,.25)}.btn-demo:hover{background:var(--blue-dark);transform:translateY(-1px)}
+.hero{background:var(--bg-2);border-bottom:1px solid var(--border);padding:150px 24px 44px}
+.hero-in{max-width:1200px;margin:0 auto}
+.sec-tag{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.hero h1{font-size:46px;font-weight:900;line-height:1.08;letter-spacing:-.035em;margin-bottom:14px;max-width:820px}
+.hero p.lead{font-size:18px;color:var(--text-2);line-height:1.6;max-width:760px}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px}
+.qc{background:#FFF;border:1px solid var(--border-2);border-radius:18px;padding:22px;text-decoration:none;color:var(--text);display:block;transition:transform .2s,box-shadow .2s}
+.qc:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.06)}
+.qc .ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px;background:color-mix(in srgb,var(--c) 10%,#FFF);color:var(--c)}
+.qc h3{font-size:17px;font-weight:700;margin-bottom:6px}
+.qc p{font-size:14px;color:var(--text-2);line-height:1.5;margin-bottom:12px}
+.qc .cta{font-size:14px;font-weight:700;color:var(--c);display:inline-flex;align-items:center;gap:6px}
+.qc code{font-family:var(--mono);font-size:12.5px;background:var(--bg-2);padding:2px 6px;border-radius:6px}
+.wrap{max-width:1200px;margin:0 auto;padding:40px 24px 90px;display:grid;grid-template-columns:280px 1fr;gap:44px;align-items:start}
+.side{position:sticky;top:104px;display:flex;flex-direction:column;gap:6px}
+.side-t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);padding:0 12px 6px}
+.tab{display:flex;gap:12px;align-items:flex-start;text-decoration:none;color:var(--text-2);padding:12px;border-radius:14px;border:1px solid transparent;transition:background .2s}
+.tab i{width:20px;text-align:center;margin-top:3px;color:var(--text-3)}
+.tab strong{display:block;font-size:15px;font-weight:600;color:var(--text)}.tab em{font-style:normal;font-size:12.5px;color:var(--text-3);line-height:1.4}
+.tab:hover{background:var(--bg-2)}
+.tab.on{background:color-mix(in srgb,var(--c) 8%,#FFF);border-color:color-mix(in srgb,var(--c) 30%,#FFF)}.tab.on i{color:var(--c)}
+.side .help{margin-top:14px;padding:14px;border-radius:14px;background:rgba(201,169,98,.1);border:1px solid rgba(201,169,98,.35);font-size:13px;color:var(--text-2);line-height:1.5}
+.side .help a{color:#8a6d2b;font-weight:700;text-decoration:none}
+main{min-width:0}
+.doc-head{margin-bottom:18px}
+.doc-head h1{font-size:36px;font-weight:900;letter-spacing:-.03em;line-height:1.1;margin-bottom:10px}
+.doc-meta{display:flex;gap:16px;align-items:center;font-size:13px;color:var(--text-3)}
+.doc-meta a{color:var(--blue);text-decoration:none;font-weight:600}
+.on-page{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 26px;padding:14px;border:1px solid var(--border-2);border-radius:14px;background:#FFF}
+.on-page a{font-size:12.5px;font-weight:600;color:var(--text-2);text-decoration:none;background:var(--bg-2);border-radius:980px;padding:5px 11px}
+.on-page a:hover{color:var(--blue)}
+.md{font-size:15.5px;line-height:1.7;color:#222}
+.md h2{font-size:26px;font-weight:900;letter-spacing:-.025em;line-height:1.2;margin:44px 0 12px;padding-top:12px;border-top:1px solid var(--border)}
+.md h3{font-size:18px;font-weight:700;margin:28px 0 8px;color:var(--purple)}
+.md p{margin:0 0 12px}
+.md a{color:var(--blue);text-decoration:none;font-weight:600}.md a:hover{text-decoration:underline}
+.md ul,.md ol{margin:0 0 14px 22px}.md li{margin-bottom:5px}.md li>ul{margin-top:5px}
+.md li.todo{list-style:none;margin-left:-22px;display:flex;gap:10px;align-items:flex-start}
+.md .box{flex-shrink:0;width:16px;height:16px;border:1.5px solid var(--border-2);border-radius:4px;margin-top:5px;background:#FFF}
+.md code{font-family:var(--mono);font-size:13px;background:var(--bg-2);border:1px solid var(--border);padding:1px 6px;border-radius:6px;color:#7A4B00;word-break:break-word}
+.md pre{background:#0F1420;color:#E6EDF3;border-radius:14px;padding:18px 20px;overflow:auto;margin:12px 0 18px;font-size:13px;line-height:1.55;border:1px solid rgba(255,255,255,.06)}
+.md pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+.md table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--border-2);border-radius:14px;overflow:hidden;margin:12px 0 20px;font-size:14px;display:block;overflow-x:auto}
+.md thead th{background:var(--bg-2);text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--text-3);white-space:nowrap}
+.md td{padding:11px 14px;border-top:1px solid var(--border);vertical-align:top;line-height:1.5;color:var(--text-2);min-width:120px}
+.md td:first-child{color:var(--text);font-weight:600}
+.md tr:hover td{background:#FCFCFD}
+.md table.wide{font-size:13px}.md table.wide td{min-width:92px;padding:9px 10px}.md table.wide thead th{padding:8px 10px}
+.md blockquote{border-left:3px solid var(--gold);background:rgba(201,169,98,.1);padding:12px 16px;border-radius:10px;margin:12px 0 18px;color:#222}
+.md blockquote p:last-child{margin:0}
+.md hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+.md strong{font-weight:700;color:var(--text)}
+footer{border-top:1px solid var(--border);background:var(--bg-2)}
+.ft-inner{max-width:1200px;margin:0 auto;padding:40px 24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:center}
+.ft-copy{font-size:12px;color:var(--text-3)}
+.ft-links{display:flex;gap:18px;flex-wrap:wrap}.ft-links a{font-size:13px;color:var(--text-3);text-decoration:none}.ft-links a:hover{color:var(--blue)}
+@media(max-width:1000px){.wrap{grid-template-columns:1fr;gap:20px}.side{position:static;flex-direction:row;flex-wrap:wrap}.side-t,.side .help,.tab em{display:none}.tab{padding:9px 14px;border:1px solid var(--border-2);border-radius:980px;align-items:center}.tab i{margin:0}.quick{grid-template-columns:1fr}}
+@media(max-width:768px){.hero{padding:110px 18px 28px}.hero h1{font-size:30px}.hero p.lead{font-size:15.5px}.wrap{padding:0 14px 60px}.logo img{height:56px}.nav-cta .btn-sign{display:none}.doc-head h1{font-size:27px}.md h2{font-size:22px}.md pre{border-radius:10px;padding:14px}}
+</style>
+</head>
+<body>
+<nav class="top">
+  <div class="nav-inner">
+    <a href="/" class="logo"><img src="/logo.png" alt="I'm On Social"/></a>
+    <div class="nav-cta">
+      <a href="/help/" class="btn-sign">Help Center</a>
+      <a href="https://app.imonsocial.com" class="btn-sign">Sign In</a>
+      <a href="/demo" class="btn-demo">Book a Demo</a>
+    </div>
+  </div>
+</nav>
+<section class="hero">
+  <div class="hero-in">
+    <div class="sec-tag" style="color:var(--purple)"><i class="fa-solid fa-terminal"></i> Developers</div>
+    <h1>Build on I'm On Social.</h1>
+    <p class="lead">An open REST API and signed webhooks for every customer, text, call, note, task and sold record in a store. Connect your CRM, DMS, marketing stack or automation tool. No partnership paperwork: a dealership admin hands you a key and you are live.</p>
+    <div class="quick">
+      <a class="qc" style="--c:var(--green)" href="https://app.imonsocial.com/api/public/reference" target="_blank" rel="noopener" data-testid="dev-console-btn"><div class="ico"><i class="fa-solid fa-play"></i></div><h3>Try it live</h3><p>Interactive console. Paste your key under <strong>Authorize</strong> and run real calls against your store.</p><span class="cta">Open API console <i class="fa-solid fa-arrow-right"></i></span></a>
+      <a class="qc" style="--c:var(--blue)" href="https://app.imonsocial.com/api/public/openapi-v1.json" target="_blank" rel="noopener" data-testid="dev-openapi-btn"><div class="ico"><i class="fa-regular fa-file-code"></i></div><h3>OpenAPI 3 schema</h3><p>Import into Postman or Insomnia, or generate a client in any language.</p><span class="cta"><code>openapi-v1.json</code> <i class="fa-solid fa-arrow-right"></i></span></a>
+      <a class="qc" style="--c:var(--gold)" href="https://app.imonsocial.com" data-testid="dev-key-btn"><div class="ico"><i class="fa-solid fa-key"></i></div><h3>Get an API key</h3><p>A dealership admin creates one in the app: <strong>Tools, Integrations, API Keys</strong>. One key = one store; ask for an organization key for a group.</p><span class="cta">Sign in to the app <i class="fa-solid fa-arrow-right"></i></span></a>
+    </div>
+  </div>
+</section>
+<div class="wrap">
+  <aside class="side">
+    <div class="side-t">Documentation</div>
+    <a class="tab" href="?doc=api-reference" data-slug="api-reference" style="--c:#5856D6"><i class="fa-solid fa-code"></i><span><strong>API Reference</strong><em>Keys, endpoints, webhooks, lead intake, testing</em></span></a><a class="tab" href="?doc=crm-integration-guide" data-slug="crm-integration-guide" style="--c:#007AFF"><i class="fa-solid fa-diagram-project"></i><span><strong>CRM Integration Guide</strong><em>Two-way sync patterns and field maps</em></span></a><a class="tab" href="?doc=automotive-crm-programs" data-slug="automotive-crm-programs" style="--c:#34C759"><i class="fa-solid fa-car"></i><span><strong>Automotive CRM Programs</strong><em>Certification checklist per vendor</em></span></a>
+    <div class="help"><strong>Need a sandbox store, an organization key, or an engineer on a call?</strong><br>Email <a href="mailto:support@imonsocial.com">support@imonsocial.com</a> with your company, the system you are connecting and the dealership you are integrating for.</div>
+  </aside>
+  <main id="docs"><article class="doc" id="doc-api-reference" data-slug="api-reference" hidden>
+  <div class="doc-head">
+    <div class="sec-tag" style="color:#5856D6"><i class="fa-solid fa-code"></i> Keys, endpoints, webhooks, lead intake, testing</div>
+    <h1>API Reference</h1>
+    <div class="doc-meta"><span>Updated Sep 18, 2026</span><a href="https://app.imonsocial.com/api/public/developer-docs/api-reference.md" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> Markdown</a></div>
+  </div>
+  <nav class="on-page" aria-label="On this page"><a href="#api-reference--what-you-can-do">What you can do</a><a href="#api-reference--quick-start">Quick start</a><a href="#api-reference--authentication">Authentication</a><a href="#api-reference--rate-limits-errors-conventions">Rate limits, errors, conventions</a><a href="#api-reference--data-model">Data model</a><a href="#api-reference--endpoints">Endpoints</a><a href="#api-reference--webhooks-push-from-i-m-on-social-to-you">Webhooks (push from I&#x27;m On Social to you)</a><a href="#api-reference--lead-intake-adf-xml-json-email">Lead intake (ADF/XML, JSON, email)</a><a href="#api-reference--zapier-make-n8n">Zapier, Make, n8n</a><a href="#api-reference--sync-patterns">Sync patterns</a><a href="#api-reference--testing-checklist">Testing checklist</a><a href="#api-reference--changelog">Changelog</a></nav>
+  <div class="md"><p><strong>Version:</strong> v1 · <strong>Base URL:</strong> <code>https://app.imonsocial.com/api/v1</code> · <strong>Auth:</strong> <code>X-API-Key</code> header · <strong>Format:</strong> JSON</p>
+<p>This is the complete reference for connecting a CRM, DMS, marketing platform or automation tool to I'm On Social. Everything on this page is live and testable today. If you are a CRM vendor's engineer, start with the <a href="#quick-start">Quick start</a>, then read <a href="#webhooks-push-from-im-on-social-to-you">Webhooks</a> and <a href="#sync-patterns">Sync patterns</a>.</p>
+<blockquote>
+<p><strong>Try it in the browser:</strong> an interactive console with every endpoint is at <code>https://app.imonsocial.com/api/public/reference</code>. Paste your key under <strong>Authorize</strong> and run real calls. The machine-readable schema is at <code>/api/public/openapi-v1.json</code> (import it into Postman or Insomnia, or generate a client).</p>
+</blockquote>
+<hr>
+<h2 id="api-reference--what-you-can-do">What you can do</h2>
+<table>
+<thead>
+<tr>
+<th>Direction</th>
+<th>Capability</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pull</strong></td>
+<td>Contacts with tags, vehicle, notes, sold records, owner rep, your own CRM ids</td>
+<td><code>GET /api/v1/contacts</code>, <code>GET /api/v1/export/contacts</code></td>
+</tr>
+<tr>
+<td><strong>Pull</strong></td>
+<td>Full text/email thread per customer, call logs with transcripts and AI summaries</td>
+<td><code>GET /api/v1/contacts/{id}/messages</code>, <code>/calls</code></td>
+</tr>
+<tr>
+<td><strong>Pull</strong></td>
+<td>Activity timeline (cards, review requests, notes, sales, tasks)</td>
+<td><code>GET /api/v1/contacts/{id}/events</code></td>
+</tr>
+<tr>
+<td><strong>Push</strong></td>
+<td>Create or update customers without creating duplicates</td>
+<td><code>POST /api/v1/contacts</code> (upsert)</td>
+</tr>
+<tr>
+<td><strong>Push</strong></td>
+<td>Notes, tags, timeline events, sold records, follow-up tasks</td>
+<td><code>POST .../notes</code>, <code>/tags</code>, <code>/events</code>, <code>/purchases</code>, <code>POST /api/v1/tasks</code></td>
+</tr>
+<tr>
+<td><strong>Push</strong></td>
+<td>Send a real text from the rep's number</td>
+<td><code>POST /api/v1/contacts/{id}/messages</code></td>
+</tr>
+<tr>
+<td><strong>Real time</strong></td>
+<td>Be told within a minute when anything changes (new contact, text in/out, call, sale, note, task)</td>
+<td><a href="#webhooks-push-from-im-on-social-to-you">Webhooks</a></td>
+</tr>
+<tr>
+<td><strong>Leads</strong></td>
+<td>Deliver internet leads into a rep's inbox (ADF/XML, JSON, email)</td>
+<td><a href="#lead-intake-adfxml-json-email">Lead intake</a></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="api-reference--quick-start">Quick start</h2>
+<p><strong>1. Get a key.</strong> A dealership admin creates it in the app: <strong>Tools → Integrations → API Keys → New key</strong>. Pick a name (e.g. "HubSpot sync"), scopes (<code>read</code>, <code>write</code>), and an expiry. The key is shown once and stored hashed on our side. One key = one store. Ask for an <strong>organization</strong> key if you need every store in a dealer group.</p>
+<p><strong>2. Confirm it works.</strong></p>
+<pre><code class="language-bash">curl https://app.imonsocial.com/api/v1/me \
+  -H &quot;X-API-Key: imos_live_xxxxxxxxxxxxxxxxxxxx&quot;
+</code></pre>
+<pre><code class="language-json">{
+  &quot;key_name&quot;: &quot;HubSpot sync&quot;,
+  &quot;scopes&quot;: [&quot;read&quot;, &quot;write&quot;],
+  &quot;store&quot;: {&quot;id&quot;: &quot;69a0b7095fddcede09591668&quot;, &quot;name&quot;: &quot;Riverton Chevrolet&quot;},
+  &quot;organization&quot;: {&quot;id&quot;: &quot;org_001&quot;, &quot;name&quot;: &quot;Riverton Auto Group&quot;},
+  &quot;stores_visible&quot;: 1,
+  &quot;users_visible&quot;: 14,
+  &quot;rate_limit_per_minute&quot;: 120,
+  &quot;docs&quot;: &quot;https://www.imonsocial.com/developers&quot;
+}
+</code></pre>
+<p><strong>3. Pull contacts changed in the last day.</strong></p>
+<pre><code class="language-bash">curl &quot;https://app.imonsocial.com/api/v1/contacts?updated_since=2026-09-17T00:00:00Z&amp;limit=100&quot; \
+  -H &quot;X-API-Key: $KEY&quot;
+</code></pre>
+<p><strong>4. Push a customer from your CRM (idempotent).</strong></p>
+<pre><code class="language-bash">curl -X POST https://app.imonsocial.com/api/v1/contacts \
+  -H &quot;X-API-Key: $KEY&quot; -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;first_name&quot;: &quot;Jordan&quot;, &quot;last_name&quot;: &quot;Lee&quot;,
+    &quot;phone&quot;: &quot;(801) 555-0142&quot;, &quot;email&quot;: &quot;jordan@example.com&quot;,
+    &quot;source&quot;: &quot;hubspot&quot;, &quot;external_ids&quot;: {&quot;hubspot&quot;: &quot;1234567&quot;},
+    &quot;tags&quot;: [&quot;internet lead&quot;], &quot;vehicle_interest&quot;: &quot;2024 Silverado LT&quot;
+  }'
+</code></pre>
+<pre><code class="language-json">{&quot;id&quot;: &quot;6aad4836de3a277d2522915c&quot;, &quot;created&quot;: true, &quot;message&quot;: &quot;Contact created&quot;}
+</code></pre>
+<p>Send the same body again and you get <code>"created": false</code> with the same <code>id</code>: we matched it by <code>external_ids.hubspot</code>, then phone, then email. You can never create a duplicate through the API.</p>
+<p><strong>5. Subscribe to changes.</strong></p>
+<pre><code class="language-bash">curl -X POST https://app.imonsocial.com/api/v1/webhooks \
+  -H &quot;X-API-Key: $KEY&quot; -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;url&quot;: &quot;https://crm.example.com/imos-webhook&quot;, &quot;events&quot;: [&quot;*&quot;], &quot;secret&quot;: &quot;choose-a-long-random-string&quot;, &quot;description&quot;: &quot;CRM sync&quot;}'
+</code></pre>
+<p>Then <code>POST /api/v1/webhooks/{id}/test</code> sends a signed <code>ping</code> immediately so you can verify your endpoint end to end.</p>
+<hr>
+<h2 id="api-reference--authentication">Authentication</h2>
+<p>Every request carries the key in a header:</p>
+<pre><code>X-API-Key: imos_live_xxxxxxxxxxxxxxxxxxxx
+</code></pre>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Where keys come from</strong></td>
+<td>Created by a dealership admin in the app (Tools → Integrations → API Keys). We never email keys.</td>
+</tr>
+<tr>
+<td><strong>Scope of data</strong></td>
+<td>A key sees exactly one store's data (contacts owned by that store's reps, their conversations, calls, tasks). An organization key sees every store in the group. Nothing else is reachable, not even by id.</td>
+</tr>
+<tr>
+<td><strong>Permissions</strong></td>
+<td><code>read</code> (all GETs) and <code>write</code> (all POST/PUT/DELETE). A read-only key gets <code>403</code> on writes.</td>
+</tr>
+<tr>
+<td><strong>Expiry</strong></td>
+<td>Optional, set at creation (default 365 days). Expired → <code>401 API key expired</code>.</td>
+</tr>
+<tr>
+<td><strong>Revocation</strong></td>
+<td>Instant, from the same screen. Revoked → <code>401 API key revoked</code>.</td>
+</tr>
+<tr>
+<td><strong>Storage</strong></td>
+<td>Only a SHA-256 hash is stored. If a key is lost, revoke it and create a new one.</td>
+</tr>
+<tr>
+<td><strong>Transport</strong></td>
+<td>HTTPS only. Keys sent over plain HTTP are rejected by the edge.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="api-reference--rate-limits-errors-conventions">Rate limits, errors, conventions</h2>
+<ul>
+<li><strong>Rate limit:</strong> 120 requests per minute per key. Over the limit you get <code>429</code> with a <code>Retry-After: 60</code> header. Bulk pulls should use <code>limit=200</code> and <code>offset</code>, or <code>GET /export/contacts</code>.</li>
+<li><strong>Errors</strong> are JSON: <code>{"detail": "human readable reason"}</code> with the standard status: <code>400</code> bad input, <code>401</code> bad/missing key, <code>403</code> read-only key, <code>404</code> not found <em>or not in your store</em> (we do not reveal that a record exists elsewhere), <code>429</code> rate limited, <code>500</code> our fault (logged, contact support with the timestamp).</li>
+<li><strong>Pagination:</strong> <code>limit</code> (max 200; 500 on some sub-resources) and <code>offset</code>. Responses include <code>total</code>.</li>
+<li><strong>Timestamps:</strong> ISO-8601 in UTC, e.g. <code>2026-09-18T14:03:22.104000+00:00</code>. Send filters like <code>updated_since</code> in the same format (<code>Z</code> suffix accepted).</li>
+<li><strong>IDs:</strong> 24-character hex strings. Store them; they never change.</li>
+<li><strong>Phone numbers:</strong> accepted in any format, stored as E.164 (<code>+18015550142</code>). Matching ignores formatting.</li>
+<li><strong>Soft deletes:</strong> <code>DELETE</code> hides a contact from the rep and from lists; history is kept and the record can be restored by an admin.</li>
+</ul>
+<hr>
+<h2 id="api-reference--data-model">Data model</h2>
+<h3 id="api-reference--contact">Contact</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>string</td>
+<td>I'm On Social id</td>
+</tr>
+<tr>
+<td><code>first_name</code>, <code>last_name</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>phone</code></td>
+<td>string</td>
+<td>E.164. Primary mobile.</td>
+</tr>
+<tr>
+<td><code>phones</code></td>
+<td>array</td>
+<td>Extra numbers <code>[{"label": "work", "number": "+1..."}]</code></td>
+</tr>
+<tr>
+<td><code>email</code>, <code>email_work</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>emails</code></td>
+<td>array</td>
+<td>Extra addresses</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>array of strings</td>
+<td>Free-form. <code>sold</code> is special: it marks a customer as purchased and starts the sold follow-up cadence.</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>string</td>
+<td>Where the record came from: <code>manual</code>, <code>csv</code>, <code>phone_contacts</code>, <code>lead_form</code>, <code>referral</code>, <code>api</code>, or the name you send (e.g. <code>hubspot</code>).</td>
+</tr>
+<tr>
+<td><code>external_id</code></td>
+<td>string</td>
+<td>A single foreign id (legacy). Prefer <code>external_ids</code>.</td>
+</tr>
+<tr>
+<td><code>external_ids</code></td>
+<td>object</td>
+<td>Your ids keyed by system: <code>{"hubspot": "1234567", "vinsolutions": "88-1002"}</code>. Used for matching on upsert and returned on every read.</td>
+</tr>
+<tr>
+<td><code>vehicle</code></td>
+<td>string</td>
+<td>What they own / bought (derived from the newest purchase record)</td>
+</tr>
+<tr>
+<td><code>vehicle_interest</code></td>
+<td>string</td>
+<td>What they said they want</td>
+</tr>
+<tr>
+<td><code>notes</code></td>
+<td>string</td>
+<td>The rep's running notes. API notes are appended with a date and source prefix, never overwritten.</td>
+</tr>
+<tr>
+<td><code>purchase_history</code></td>
+<td>array</td>
+<td>Sold records <code>[{"id", "title", "category", "date": "YYYY-MM-DD", "notes"}]</code></td>
+</tr>
+<tr>
+<td><code>date_sold</code></td>
+<td>date</td>
+<td>Most recent sale</td>
+</tr>
+<tr>
+<td><code>sold_count</code></td>
+<td>number</td>
+<td></td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>string</td>
+<td>Owning rep (see Users)</td>
+</tr>
+<tr>
+<td><code>store_id</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>string</td>
+<td><code>active</code>, <code>hidden</code></td>
+</tr>
+<tr>
+<td><code>birthday</code>, <code>anniversary</code>, <code>custom_dates</code></td>
+<td></td>
+<td>Drive automated cards</td>
+</tr>
+<tr>
+<td><code>occupation</code>, <code>employer</code>, <code>organization_name</code>, <code>personal_details</code></td>
+<td></td>
+<td>Personal intelligence captured by the rep or Jessi</td>
+</tr>
+<tr>
+<td><code>address_street</code>, <code>address_city</code>, <code>address_state</code>, <code>address_zip</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>photo_url</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td>datetime</td>
+<td><code>updated_at</code> changes on any edit, tag, note or sale, so it is the field to poll</td>
+</tr>
+</tbody>
+</table>
+<p>Writable through the API: <code>first_name</code>, <code>last_name</code>, <code>phone</code>, <code>phones</code>, <code>email</code>, <code>email_work</code>, <code>emails</code>, <code>organization_name</code>, <code>occupation</code>, <code>employer</code>, <code>vehicle</code>, <code>vehicle_interest</code>, <code>notes</code>, <code>tags</code>, <code>source</code>, <code>external_id</code>, <code>external_ids</code>, <code>birthday</code>, <code>anniversary</code>, <code>address_*</code>, <code>personal_details</code>, <code>photo_url</code>, <code>customer_number</code>, plus <code>owner_user_id</code> / <code>owner_email</code> to assign the rep.</p>
+<h3 id="api-reference--message">Message</h3>
+<p><code>id</code>, <code>conversation_id</code>, <code>user_id</code> (rep), <code>direction</code> (<code>inbound</code> | <code>outbound</code>), <code>sender</code> (<code>user</code> | <code>contact</code> | <code>ai</code>), <code>channel</code> (<code>sms</code> | <code>email</code>), <code>content</code>, <code>media_url</code>, <code>ai_generated</code>, <code>status</code>, <code>timestamp</code>.</p>
+<h3 id="api-reference--conversation">Conversation</h3>
+<p><code>id</code>, <code>user_id</code>, <code>contact_id</code>, <code>contact_phone</code>, <code>contact_name</code>, <code>status</code>, <code>ai_enabled</code>, <code>last_message_at</code>. One conversation per rep-customer pair.</p>
+<h3 id="api-reference--call">Call</h3>
+<p><code>id</code>, <code>contact_id</code>, <code>user_id</code>, <code>direction</code>, <code>duration_s</code>, <code>outcome</code>, <code>connected</code>, <code>recording_url</code>, <code>transcript</code>, <code>ai_summary</code>, <code>created_at</code>.</p>
+<h3 id="api-reference--timeline-event">Timeline event</h3>
+<p><code>id</code>, <code>contact_id</code>, <code>user_id</code>, <code>event_type</code> (e.g. <code>personal_sms</code>, <code>email_sent</code>, <code>call_made</code>, <code>digital_card_sent</code>, <code>review_request_sent</code>, <code>note_added</code>, <code>purchase_added</code>, <code>task_completed</code>, or your own via the API), <code>title</code>, <code>description</code>, <code>metadata</code>, <code>source</code>, <code>timestamp</code>.</p>
+<h3 id="api-reference--task">Task</h3>
+<p><code>id</code>, <code>user_id</code>, <code>contact_id</code>, <code>type</code> (<code>follow_up</code>, <code>callback</code>, <code>appointment</code>, <code>manual</code>...), <code>title</code>, <code>description</code>, <code>due_date</code>, <code>priority</code>, <code>status</code> (<code>pending</code>, <code>completed</code>), <code>source</code>, <code>idempotency_key</code>, <code>created_at</code>, <code>completed_at</code>.</p>
+<h3 id="api-reference--user-rep">User (rep)</h3>
+<p><code>id</code>, <code>first_name</code>, <code>last_name</code>, <code>name</code>, <code>email</code>, <code>phone</code>, <code>role</code> (<code>user</code>, <code>store_manager</code>, <code>org_admin</code>), <code>title</code>, <code>status</code>, <code>store_id</code>, <code>organization_id</code>, <code>twilio_number</code> (the texting number customers see). Passwords and tokens are never returned.</p>
+<hr>
+<h2 id="api-reference--endpoints">Endpoints</h2>
+<p>All paths below are relative to <code>https://app.imonsocial.com</code>.</p>
+<h3 id="api-reference--identity">Identity</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/me</code></td>
+<td>Key name, scopes, the store/organization it can see, rate limit</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-reference--contacts">Contacts</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/contacts</code></td>
+<td>List / search. Query: <code>search</code>, <code>phone</code>, <code>email</code>, <code>external_id</code>, <code>tag</code>, <code>source</code>, <code>owner_user_id</code>, <code>updated_since</code>, <code>limit</code>, <code>offset</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/contacts/{contact_id}</code></td>
+<td>One contact with every field</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/contacts</code></td>
+<td><strong>Upsert.</strong> Body: any writable field. Requires <code>phone</code>, <code>email</code> or <code>external_id</code>. Returns <code>{id, created}</code></td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/v1/contacts/{contact_id}</code></td>
+<td>Update fields. <code>external_ids</code> are merged, not replaced</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/v1/contacts/{contact_id}</code></td>
+<td>Hide (soft delete)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/contacts/{contact_id}/tags</code></td>
+<td>Body <code>{"tag": "VIP"}</code> → returns the tag list</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/v1/contacts/{contact_id}/tags/{tag}</code></td>
+<td>Remove a tag</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/contacts/{contact_id}/notes</code></td>
+<td>The notes text</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/contacts/{contact_id}/notes</code></td>
+<td>Body <code>{"note": "...", "source": "HubSpot"}</code> → appends <code>[Sep 18, 2026 via HubSpot] ...</code> and logs a <code>note_added</code> event</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/contacts/{contact_id}/events</code></td>
+<td>Timeline, newest first</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/contacts/{contact_id}/events</code></td>
+<td>Body <code>{"event_type": "appraisal_completed", "title": "...", "description": "...", "metadata": {}}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/contacts/{contact_id}/messages</code></td>
+<td>Every text/email with this customer across the rep's conversations</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/contacts/{contact_id}/messages</code></td>
+<td>Body <code>{"content": "...", "user_id": "&lt;rep, optional&gt;", "channel": "sms"}</code> → sends for real from the rep's number</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/contacts/{contact_id}/calls</code></td>
+<td>Call logs with transcript + AI summary</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/contacts/{contact_id}/purchases</code></td>
+<td>Sold records</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/contacts/{contact_id}/purchases</code></td>
+<td>Body <code>{"title": "2024 Chevy Tahoe", "category": "vehicle", "date": "2026-09-01", "notes": "Traded a 2018 Silverado"}</code> → merges with a same-day record, tags <code>sold</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Upsert matching order</strong> (<code>POST /api/v1/contacts</code>): <code>external_id</code> / <code>crm_id</code> → any value in <code>external_ids</code> → phone (last 10 digits) → email → exact first+last name with no conflicting phone. On a match we <code>$set</code> the fields you sent, add (never remove) tags, merge <code>external_ids</code>, append <code>notes</code>, and return <code>created: false</code>.</p>
+<p><strong>Owner assignment:</strong> send <code>owner_user_id</code> (from <code>GET /api/v1/users</code>) or <code>owner_email</code>. If omitted, new contacts go to the key creator, else the store manager.</p>
+<h3 id="api-reference--tasks">Tasks</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/tasks</code></td>
+<td>Query: <code>status</code>, <code>user_id</code>, <code>contact_id</code>, <code>due_after</code>, <code>due_before</code>, <code>limit</code>, <code>offset</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/tasks</code></td>
+<td>Body <code>{"contact_id", "title", "due_date", "type": "follow_up", "priority": "medium", "user_id": "&lt;rep, optional&gt;", "idempotency_key": "&lt;your id&gt;"}</code></td>
+</tr>
+</tbody>
+</table>
+<p>Tasks show on the rep's <strong>Today</strong> list in the app. Send <code>idempotency_key</code> (your task id) so retries never double up.</p>
+<h3 id="api-reference--people-and-places">People and places</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/users</code></td>
+<td>Reps and managers in scope. Query: <code>role</code>, <code>status</code>, <code>limit</code>, <code>offset</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/users/{user_id}</code></td>
+<td>One user</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/stores</code></td>
+<td>Stores in scope</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/organizations</code></td>
+<td>The dealer group</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-reference--conversations">Conversations</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/conversations</code></td>
+<td>Query: <code>user_id</code>, <code>contact_id</code>, <code>updated_since</code>, <code>limit</code>, <code>offset</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/conversations/{conversation_id}/messages</code></td>
+<td>Messages oldest → newest</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-reference--export">Export</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/export/contacts</code></td>
+<td>Initial load. <code>format=json</code> (default) or <code>format=csv</code>, <code>limit</code> up to 20,000</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-reference--webhooks">Webhooks</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/webhooks/events</code></td>
+<td>Event catalog with descriptions (no key needed)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/webhooks</code></td>
+<td>Your subscriptions</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/webhooks</code></td>
+<td>Body <code>{"url": "https://...", "events": ["contact.created", "message.received"] or ["*"], "secret": "...", "description": "..."}</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/v1/webhooks/{webhook_id}</code></td>
+<td>Remove</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/webhooks/{webhook_id}/deliveries</code></td>
+<td>Last 200 delivery attempts with status codes and errors</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/webhooks/{webhook_id}/test</code></td>
+<td>Sends a signed <code>ping</code> now and returns your server's response</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="api-reference--webhooks-push-from-i-m-on-social-to-you">Webhooks (push from I'm On Social to you)</h2>
+<p>Register an HTTPS URL and we POST events to it. Events are produced by a change feed that runs <strong>every 60 seconds</strong> over everything that happened in the store, regardless of how it happened (rep typed it, CSV import, lead source, Twilio, Jessi, or your own API call). Expect delivery within about a minute of the change.</p>
+<h3 id="api-reference--event-catalog">Event catalog</h3>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Fires when</th>
+<th><code>data</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>contact.created</code></td>
+<td>A contact was added by any path</td>
+<td>Contact (see below)</td>
+</tr>
+<tr>
+<td><code>contact.updated</code></td>
+<td>Fields, tags, vehicle, notes, owner or sold data changed</td>
+<td>Contact</td>
+</tr>
+<tr>
+<td><code>contact.deleted</code></td>
+<td>Contact hidden/removed</td>
+<td>Contact</td>
+</tr>
+<tr>
+<td><code>message.sent</code></td>
+<td>A rep, campaign or Jessi sent a text/email</td>
+<td>Message + <code>contact_id</code></td>
+</tr>
+<tr>
+<td><code>message.received</code></td>
+<td>Customer replied</td>
+<td>Message + <code>contact_id</code></td>
+</tr>
+<tr>
+<td><code>call.logged</code></td>
+<td>A call ended (transcript/summary included when available)</td>
+<td>Call</td>
+</tr>
+<tr>
+<td><code>note.added</code></td>
+<td>A note was added</td>
+<td>Timeline event</td>
+</tr>
+<tr>
+<td><code>deal.closed</code></td>
+<td>A sale was recorded</td>
+<td>Timeline event (<code>event_type: purchase_added</code>)</td>
+</tr>
+<tr>
+<td><code>task.created</code> / <code>task.completed</code></td>
+<td>Follow-up created / done</td>
+<td>Task</td>
+</tr>
+<tr>
+<td><code>activity.logged</code></td>
+<td>Any other touchpoint: card sent, review request, congrats card, link click</td>
+<td>Timeline event</td>
+</tr>
+<tr>
+<td><code>appointment.created</code>, <code>review.submitted</code>, <code>campaign.enrolled</code>, <code>campaign.completed</code>, <code>user.created</code>, <code>user.deactivated</code></td>
+<td>As named</td>
+<td>Object</td>
+</tr>
+<tr>
+<td><code>ping</code></td>
+<td>You called <code>/test</code></td>
+<td><code>{"message": "Hello from I'm On Social"}</code></td>
+</tr>
+</tbody>
+</table>
+<p>Subscribe to <code>["*"]</code> for everything.</p>
+<h3 id="api-reference--envelope">Envelope</h3>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;evt_3f9c1a7e2b8d4c5e6f70&quot;,
+  &quot;event&quot;: &quot;message.received&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-18T14:03:22.104000+00:00&quot;,
+  &quot;store_id&quot;: &quot;69a0b7095fddcede09591668&quot;,
+  &quot;organization_id&quot;: &quot;org_001&quot;,
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;6aad4836de3a277d2522915c&quot;,
+    &quot;contact_id&quot;: &quot;69a496841603573df5a41723&quot;,
+    &quot;conversation_id&quot;: &quot;69a4a1c0e2f3...&quot;,
+    &quot;user_id&quot;: &quot;69a5303dbd4ef63b7ef776d4&quot;,
+    &quot;direction&quot;: &quot;inbound&quot;,
+    &quot;sender&quot;: &quot;contact&quot;,
+    &quot;channel&quot;: &quot;sms&quot;,
+    &quot;content&quot;: &quot;Yes, Saturday at 10 works&quot;,
+    &quot;media_url&quot;: null,
+    &quot;timestamp&quot;: &quot;2026-09-18T14:02:58+00:00&quot;
+  }
+}
+</code></pre>
+<p>Contact payloads carry: <code>id, first_name, last_name, phone, email, tags, source, external_id, external_ids, vehicle, vehicle_interest, notes, owner_user_id, store_id, status, date_sold, purchase_history, photo_url, created_at, updated_at</code>.</p>
+<h3 id="api-reference--headers-and-signature">Headers and signature</h3>
+<pre><code>Content-Type: application/json
+User-Agent: ImOnSocial-Webhooks/1.0
+X-IMOS-Event: message.received
+X-IMOS-Delivery: evt_3f9c1a7e2b8d4c5e6f70
+X-IMOS-Signature: sha256=&lt;hex HMAC-SHA256 of the raw request body using your secret&gt;
+</code></pre>
+<p>Verify before trusting the payload:</p>
+<pre><code class="language-python">import hmac, hashlib
+def verify(secret: str, raw_body: bytes, header: str) -&gt; bool:
+    expected = &quot;sha256=&quot; + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, header or &quot;&quot;)
+</code></pre>
+<pre><code class="language-javascript">const crypto = require(&quot;crypto&quot;);
+function verify(secret, rawBody, header) {
+  const expected = &quot;sha256=&quot; + crypto.createHmac(&quot;sha256&quot;, secret).update(rawBody).digest(&quot;hex&quot;);
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(header || &quot;&quot;));
+}
+</code></pre>
+<p>Compute the HMAC over the <strong>raw bytes</strong> you received (do not re-serialize the JSON).</p>
+<h3 id="api-reference--delivery-rules">Delivery rules</h3>
+<ul>
+<li>Respond with any <code>2xx</code> within 10 seconds. Do your processing after you respond.</li>
+<li>Each event is delivered <strong>once per subscription</strong>. A non-2xx or timeout is logged with the response (<code>GET /api/v1/webhooks/{id}/deliveries</code>) and increments <code>failure_count</code>; there is no automatic retry. Reconcile gaps with <code>GET /api/v1/contacts?updated_since=...</code>.</li>
+<li>Order is by change time within a batch but not guaranteed across batches. Use <code>data.updated_at</code> / <code>data.timestamp</code>.</li>
+<li><code>X-IMOS-Delivery</code> (= <code>id</code>) is unique per event: use it as an idempotency key.</li>
+<li><strong>Avoid loops:</strong> when you push a record through the API, the resulting <code>contact.created</code>/<code>contact.updated</code> event will come back to you a minute later. Ignore events whose <code>data.source</code> is your system name, or whose <code>data.external_ids</code> already contains your id with a matching <code>updated_at</code>.</li>
+</ul>
+<hr>
+<h2 id="api-reference--lead-intake-adf-xml-json-email">Lead intake (ADF/XML, JSON, email)</h2>
+<p>Internet leads enter through <strong>Lead Sources</strong>. A dealership admin creates one in <strong>Tools → Leads → Lead Source Config</strong> (or <strong>Connect Zapier / Make</strong>) and gets a <code>source_id</code> plus an optional per-source API key. Each source routes to the right store and rep, deduplicates against existing customers, and kicks off speed-to-lead.</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Endpoint</th>
+<th>Auth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ADF/XML</strong> (Cars.com, AutoTrader, OEM portals, most automotive providers)</td>
+<td><code>POST /api/leads/adf?source_id=&lt;source_id&gt;</code> — raw XML body or form field <code>XML=</code></td>
+<td>Optional <code>X-API-Key</code> header (the lead source's key)</td>
+</tr>
+<tr>
+<td><strong>JSON / form webhook</strong> (your CRM, website forms, Zapier, Make, n8n)</td>
+<td><code>POST /api/leads/webhook/&lt;source_id&gt;</code></td>
+<td><code>X-API-Key: &lt;source key&gt;</code> header or <code>?api_key=</code></td>
+</tr>
+<tr>
+<td><strong>Email</strong> (ADF delivered by email, the industry default)</td>
+<td><code>POST /api/leads/email-inbound?source_id=&lt;source_id&gt;</code> from any inbound-mail service (SendGrid Inbound Parse, Mailgun Routes, CloudMailin, Zapier Email Parser). Every text field and attachment is scanned for ADF</td>
+<td>Per source</td>
+</tr>
+</tbody>
+</table>
+<p>The JSON webhook accepts any field names; these aliases are mapped automatically:</p>
+<table>
+<thead>
+<tr>
+<th>Standard field</th>
+<th>Accepted aliases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>phone</code> (required)</td>
+<td><code>phone</code>, <code>phone_number</code>, <code>mobile</code>, <code>cell</code></td>
+</tr>
+<tr>
+<td><code>first_name</code> / <code>last_name</code></td>
+<td><code>firstname</code>, <code>fname</code> / <code>lastname</code>, <code>lname</code></td>
+</tr>
+<tr>
+<td><code>full_name</code></td>
+<td><code>name</code>, <code>full_name</code>, <code>customer_name</code> (split for you)</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td><code>email</code>, <code>email_address</code></td>
+</tr>
+<tr>
+<td><code>vehicle_year</code>, <code>vehicle_make</code>, <code>vehicle_model</code></td>
+<td><code>year</code>, <code>make</code>, <code>model</code></td>
+</tr>
+<tr>
+<td><code>vehicle_stock</code>, <code>vehicle_vin</code></td>
+<td><code>stock</code>, <code>stock_number</code>, <code>vin</code></td>
+</tr>
+<tr>
+<td><code>comments</code></td>
+<td><code>comments</code>, <code>message</code>, <code>notes</code>, <code>inquiry</code></td>
+</tr>
+<tr>
+<td><code>source_name</code></td>
+<td><code>source</code>, <code>lead_source</code>, <code>provider</code></td>
+</tr>
+<tr>
+<td><code>is_test</code></td>
+<td><code>is_test</code>, <code>test</code> (true keeps the lead out of reporting)</td>
+</tr>
+</tbody>
+</table>
+<p>Sample:</p>
+<pre><code class="language-bash">curl -X POST &quot;https://app.imonsocial.com/api/leads/webhook/&lt;source_id&gt;&quot; \
+  -H &quot;X-API-Key: &lt;source key&gt;&quot; -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;first_name&quot;:&quot;Jordan&quot;,&quot;last_name&quot;:&quot;Lee&quot;,&quot;phone&quot;:&quot;5551234567&quot;,&quot;email&quot;:&quot;jordan@example.com&quot;,&quot;year&quot;:&quot;2024&quot;,&quot;make&quot;:&quot;Ford&quot;,&quot;model&quot;:&quot;F-150&quot;,&quot;stock_number&quot;:&quot;F24-118&quot;,&quot;comments&quot;:&quot;Is this truck still available?&quot;,&quot;is_test&quot;:true}'
+</code></pre>
+<p>ADF returns a plain-text acknowledgement (per the ADF spec); JSON returns <code>{"lead_id", "contact_id", "status"}</code>.</p>
+<hr>
+<h2 id="api-reference--zapier-make-n8n">Zapier, Make, n8n</h2>
+<ul>
+<li><strong>Into I'm On Social:</strong> use the JSON webhook above as the action ("Webhooks by Zapier → POST"). The <strong>Connect Zapier / Make</strong> screen in the app shows the exact URL, key and a sample payload for each source, and has a "Send test lead" button.</li>
+<li><strong>Out of I'm On Social:</strong> create a "Catch Hook" trigger in Zapier (or a Webhook module in Make), then register that URL with <code>POST /api/v1/webhooks</code>, or from the app's <strong>Tools → Integrations → Webhooks</strong> tab. Use <code>/test</code> to fire a <code>ping</code> so the tool can learn the payload shape.</li>
+</ul>
+<hr>
+<h2 id="api-reference--sync-patterns">Sync patterns</h2>
+<p><strong>Initial load (CRM ← I'm On Social):</strong> <code>GET /api/v1/export/contacts?format=json</code> (or CSV) once, then store our <code>id</code> on your record. For threads and calls, iterate <code>GET /api/v1/contacts/{id}/messages</code> and <code>/calls</code> for the customers you care about.</p>
+<p><strong>Incremental pull:</strong> every N minutes call <code>GET /api/v1/contacts?updated_since=&lt;last run&gt;&amp;limit=200</code> and page with <code>offset</code>. <code>updated_at</code> moves on any edit, tag, note or sale.</p>
+<p><strong>Real-time (recommended):</strong> subscribe to webhooks for <code>["*"]</code> and treat the payload as the new truth for that record; fall back to the incremental pull nightly to reconcile.</p>
+<p><strong>Push (I'm On Social ← CRM):</strong> upsert with <code>external_ids</code> = your id and <code>source</code> = your system name. Send only the fields you own. Tags are additive; to remove one use <code>DELETE .../tags/{tag}</code>. For notes use <code>POST .../notes</code> (append) rather than writing the <code>notes</code> field.</p>
+<p><strong>Field ownership / conflicts:</strong> last write wins per field. Keep the CRM authoritative for identity and deal data, and I'm On Social authoritative for <code>tags</code>, <code>notes</code>, <code>vehicle_interest</code>, <code>personal_details</code> and the timeline (the rep is typing these on the lot).</p>
+<p><strong>Photos and files:</strong> <code>photo_url</code> is a public URL you can store or mirror. Message <code>media_url</code> values are public for the life of the message.</p>
+<hr>
+<h2 id="api-reference--testing-checklist">Testing checklist</h2>
+<ol>
+<li><code>GET /api/v1/me</code> returns your store. If <code>users_visible</code> is 0, the store has no reps yet: add one in the app.</li>
+<li>Create a contact with phone <code>+1 500 555 01xx</code> (Twilio test range, never a real person) and <code>"tags": ["api-test"]</code>, then delete it. Filter test data with <code>?tag=api-test</code>.</li>
+<li>Register a webhook to a request bin, call <code>/test</code>, confirm the signature verifies.</li>
+<li>Edit that contact in the app, wait a minute, confirm <code>contact.updated</code> arrives.</li>
+<li>Send a lead with <code>"is_test": true</code> to your source URL and watch it appear in the rep's inbox.</li>
+<li>Revoke the test key and confirm <code>401</code>.</li>
+</ol>
+<p>Need a sandbox store or an organization-level key? Email <strong>support@imonsocial.com</strong> with your company, use case and the dealership you are integrating for.</p>
+<hr>
+<h2 id="api-reference--changelog">Changelog</h2>
+<ul>
+<li><strong>2026-09 (v1):</strong> Tenant-scoped keys (store / organization), hashed key storage, <code>GET /me</code>, upsert with <code>external_ids</code>, notes append, purchases, tasks, contact messages/calls, webhook management via API, change-feed webhooks for every event, signed deliveries, OpenAPI + interactive console, CSV export.</li>
+</ul></div>
+</article><article class="doc" id="doc-crm-integration-guide" data-slug="crm-integration-guide" hidden>
+  <div class="doc-head">
+    <div class="sec-tag" style="color:#007AFF"><i class="fa-solid fa-diagram-project"></i> Two-way sync patterns and field maps</div>
+    <h1>CRM Integration Guide</h1>
+    <div class="doc-meta"><span>Updated Sep 18, 2026</span><a href="https://app.imonsocial.com/api/public/developer-docs/crm-integration-guide.md" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> Markdown</a></div>
+  </div>
+  <nav class="on-page" aria-label="On this page"><a href="#crm-integration-guide--the-one-paragraph-version">The one-paragraph version</a><a href="#crm-integration-guide--what-moves-and-which-way">What moves, and which way</a><a href="#crm-integration-guide--architecture-in-one-picture">Architecture in one picture</a><a href="#crm-integration-guide--step-by-step">Step by step</a><a href="#crm-integration-guide--matching-and-duplicates-read-this-twice">Matching and duplicates (read this twice)</a><a href="#crm-integration-guide--who-owns-which-field">Who owns which field</a><a href="#crm-integration-guide--avoiding-echo-loops">Avoiding echo loops</a><a href="#crm-integration-guide--field-maps-for-the-big-four">Field maps for the big four</a><a href="#crm-integration-guide--sending-texts-through-the-api-compliance">Sending texts through the API (compliance)</a><a href="#crm-integration-guide--rate-limits-retries-errors">Rate limits, retries, errors</a><a href="#crm-integration-guide--go-live-checklist">Go-live checklist</a><a href="#crm-integration-guide--automotive-crms-vinsolutions-elead-dealersocket-drivecentric-reynolds-tekion">Automotive CRMs (VinSolutions, Elead, DealerSocket, DriveCentric, Reynolds, Tekion)</a><a href="#crm-integration-guide--getting-help">Getting help</a></nav>
+  <div class="md"><p><strong>Who this is for:</strong> the programmer at a CRM vendor, a dealer group's IT team, or an automation consultant who has been asked "make I'm On Social and our CRM talk to each other." It explains the <em>how</em> in plain English and points at the exact endpoints. The full field-by-field reference is in the <a target="_blank" rel="noopener" href="https://www.imonsocial.com/developers?doc=api-reference">API Reference</a>.</p>
+<p><strong>Time to first sync:</strong> about an afternoon for a one-way feed, two to three days for a solid two-way sync with a test store.</p>
+<hr>
+<h2 id="crm-integration-guide--the-one-paragraph-version">The one-paragraph version</h2>
+<p>I'm On Social is where the salesperson lives all day: texting customers from their own number, logging calls, voice notes, sold records, follow-ups, birthday and anniversary cards, and their AI assistant Jessi. Your CRM is where the dealership lives: deals, desking, F&amp;I, inventory, reporting. A good integration lets each system keep doing what it is good at and copies the <em>relationship</em> data across so nobody types anything twice. Concretely: <strong>customers and deal status flow from the CRM into I'm On Social; texts, calls, notes, tags and sold records flow from I'm On Social back into the CRM.</strong></p>
+<hr>
+<h2 id="crm-integration-guide--what-moves-and-which-way">What moves, and which way</h2>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>CRM -&gt; I'm On Social</th>
+<th>I'm On Social -&gt; CRM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer record (name, phone, email, address)</td>
+<td><code>POST /api/v1/contacts</code> (upsert)</td>
+<td><code>contact.created</code> / <code>contact.updated</code> webhooks, <code>GET /api/v1/contacts?updated_since=</code></td>
+</tr>
+<tr>
+<td>Assigned salesperson</td>
+<td><code>owner_email</code> on the upsert</td>
+<td><code>owner_user_id</code> on every contact payload (map through <code>GET /api/v1/users</code>)</td>
+</tr>
+<tr>
+<td>Deal / sold</td>
+<td><code>POST /api/v1/contacts/{id}/purchases</code></td>
+<td><code>deal.closed</code> webhook</td>
+</tr>
+<tr>
+<td>Notes</td>
+<td><code>POST /api/v1/contacts/{id}/notes</code> (appends)</td>
+<td><code>note.added</code> webhook, or <code>GET .../notes</code></td>
+</tr>
+<tr>
+<td>Texts and emails with the customer</td>
+<td><code>POST /api/v1/contacts/{id}/messages</code> (sends for real, from the rep's number)</td>
+<td><code>message.sent</code> / <code>message.received</code> webhooks, <code>GET .../messages</code></td>
+</tr>
+<tr>
+<td>Calls</td>
+<td>not applicable</td>
+<td><code>call.logged</code> webhook (duration, outcome, transcript, AI summary)</td>
+</tr>
+<tr>
+<td>Follow-up tasks</td>
+<td><code>POST /api/v1/tasks</code> (shows on the rep's Today list)</td>
+<td><code>task.created</code> / <code>task.completed</code> webhooks</td>
+</tr>
+<tr>
+<td>Tags / segments</td>
+<td><code>tags</code> on upsert (additive), <code>POST .../tags</code></td>
+<td><code>contact.updated</code> carries the full tag list</td>
+</tr>
+<tr>
+<td>Internet leads</td>
+<td><code>POST /api/leads/adf</code> (ADF/XML) or <code>POST /api/leads/webhook/{source_id}</code> (JSON)</td>
+<td><code>contact.created</code> with <code>source</code> = the provider name</td>
+</tr>
+<tr>
+<td>Anything else that happened in your system</td>
+<td><code>POST /api/v1/contacts/{id}/events</code> (shows on the customer's timeline in the app)</td>
+<td><code>activity.logged</code> webhook</td>
+</tr>
+</tbody>
+</table>
+<p>Everything above is live today. Nothing in this guide requires a partnership agreement with us; a dealership admin creates an API key in the app and hands it to you.</p>
+<hr>
+<h2 id="crm-integration-guide--architecture-in-one-picture">Architecture in one picture</h2>
+<pre><code>   YOUR CRM                                  I'M ON SOCIAL
+ ┌───────────────┐   POST /api/v1/contacts    ┌────────────────────┐
+ │ Customer saved│ ─────────────────────────&gt; │ Contact (upsert,   │
+ │ Deal closed   │   POST .../purchases       │ no duplicates)     │
+ │ Task assigned │   POST /api/v1/tasks       │                    │
+ └───────────────┘                            │  Rep texts, calls, │
+                                              │  notes, tags, sells│
+ ┌───────────────┐   webhook POST (signed)    │                    │
+ │ Your endpoint │ &lt;───────────────────────── │  Change feed (60 s)│
+ │ /imos-webhook │   contact.updated,         └────────────────────┘
+ └───────────────┘   message.received, ...
+        │
+        └── nightly: GET /api/v1/contacts?updated_since=&lt;24h ago&gt;  (reconcile)
+</code></pre>
+<p>Three moving parts:</p>
+<ol>
+<li><strong>Push</strong> (CRM -&gt; us): call our REST API with an <code>X-API-Key</code> header whenever something changes on your side.</li>
+<li><strong>Webhooks</strong> (us -&gt; CRM): we POST every change in the store to your URL within about a minute, signed with a shared secret.</li>
+<li><strong>Reconcile</strong>: once a day, pull <code>updated_since</code> and fix anything a webhook missed.</li>
+</ol>
+<hr>
+<h2 id="crm-integration-guide--step-by-step">Step by step</h2>
+<h3 id="crm-integration-guide--1-get-a-key-from-the-dealership">1. Get a key from the dealership</h3>
+<p>The store's admin opens <strong>Tools -&gt; Integrations -&gt; API Keys -&gt; New key</strong>, names it after your product, gives it <code>read</code> + <code>write</code>, and sends you the key. It starts with <code>imos_live_</code>. One key sees one store. For a dealer group ask them (or us) for an <strong>organization</strong> key.</p>
+<p>Sanity check:</p>
+<pre><code class="language-bash">curl https://app.imonsocial.com/api/v1/me -H &quot;X-API-Key: $KEY&quot;
+</code></pre>
+<p>You should see the store name and <code>users_visible</code> &gt; 0.</p>
+<h3 id="crm-integration-guide--2-map-the-salespeople">2. Map the salespeople</h3>
+<p>Pull <code>GET /api/v1/users</code> once and store our <code>id</code> next to each rep in your system, matched by email. You will need it to assign ownership and to read <code>owner_user_id</code> on incoming payloads. New hires appear as <code>user.created</code> webhooks.</p>
+<h3 id="crm-integration-guide--3-initial-load">3. Initial load</h3>
+<ul>
+<li><strong>Us -&gt; you:</strong> <code>GET /api/v1/export/contacts?format=json</code> (up to 20,000 in one call). Save our <code>id</code> on your record.</li>
+<li><strong>You -&gt; us:</strong> loop over your customers and <code>POST /api/v1/contacts</code> with <code>external_ids: {"&lt;yoursystem&gt;": "&lt;your id&gt;"}</code> and <code>source: "&lt;yoursystem&gt;"</code>. Rate limit is 120 requests per minute per key, so 5,000 customers take about 45 minutes; run it in the background and respect <code>429</code> + <code>Retry-After</code>.</li>
+</ul>
+<p>Both directions are idempotent. Running the load twice changes nothing.</p>
+<h3 id="crm-integration-guide--4-turn-on-real-time">4. Turn on real time</h3>
+<pre><code class="language-bash">curl -X POST https://app.imonsocial.com/api/v1/webhooks -H &quot;X-API-Key: $KEY&quot; -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;url&quot;: &quot;https://yourcrm.com/imos-webhook&quot;, &quot;events&quot;: [&quot;*&quot;], &quot;secret&quot;: &quot;&lt;32+ random chars&gt;&quot;, &quot;description&quot;: &quot;&lt;Your product&gt; sync&quot;}'
+</code></pre>
+<p>Then <code>POST /api/v1/webhooks/{id}/test</code> and confirm your endpoint verifies the <code>X-IMOS-Signature</code> header (HMAC-SHA256 over the raw body, see the API Reference for copy-paste code in Python and Node).</p>
+<h3 id="crm-integration-guide--5-wire-your-side-s-events-to-our-api">5. Wire your side's events to our API</h3>
+<p>Whenever a customer, deal, note or task changes in your CRM, make the matching call from the table above. Include <code>external_ids</code> every time so matching is exact.</p>
+<h3 id="crm-integration-guide--6-reconcile-nightly">6. Reconcile nightly</h3>
+<p><code>GET /api/v1/contacts?updated_since=&lt;yesterday&gt;&amp;limit=200</code> and page with <code>offset</code>. Treat each row as truth for the fields we own (see ownership below).</p>
+<hr>
+<h2 id="crm-integration-guide--matching-and-duplicates-read-this-twice">Matching and duplicates (read this twice)</h2>
+<p>When you <code>POST /api/v1/contacts</code> we look for an existing customer in this order and update it instead of creating a new one:</p>
+<ol>
+<li><code>external_id</code> / any value in <code>external_ids</code> (your id, exact match)</li>
+<li>Phone number, last 10 digits (formatting ignored)</li>
+<li>Email, case-insensitive</li>
+<li>Exact first + last name, only if there is no conflicting phone on file</li>
+</ol>
+<p>The response tells you what happened: <code>{"id": "...", "created": true|false}</code>. Store the <code>id</code>.</p>
+<p>On a match we <strong>set</strong> the scalar fields you sent, <strong>add</strong> tags (never remove), <strong>merge</strong> <code>external_ids</code>, and <strong>append</strong> notes. We never blank a field because you left it out of the body. Send only what you own.</p>
+<p>Phone is the primary identity in this product (it is what the rep texts). If a customer has several numbers put the mobile in <code>phone</code> and the rest in <code>phones: [{"label": "work", "number": "..."}]</code>.</p>
+<hr>
+<h2 id="crm-integration-guide--who-owns-which-field">Who owns which field</h2>
+<p>Two systems writing the same field is where syncs go wrong. Our recommendation, which is how the app itself behaves:</p>
+<table>
+<thead>
+<tr>
+<th>Field group</th>
+<th>Owner</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Identity: name, phone, email, address</td>
+<td><strong>CRM</strong></td>
+<td>Desking and F&amp;I need the legal record</td>
+</tr>
+<tr>
+<td>Deal data: sold date, vehicle, price, stock #, VIN</td>
+<td><strong>CRM</strong> (push to us via <code>/purchases</code>)</td>
+<td>The deal is closed in the CRM</td>
+</tr>
+<tr>
+<td>Assigned rep</td>
+<td><strong>CRM</strong></td>
+<td>Managers reassign in the CRM</td>
+</tr>
+<tr>
+<td><code>tags</code>, <code>vehicle_interest</code>, <code>personal_details</code>, <code>notes</code></td>
+<td><strong>I'm On Social</strong></td>
+<td>The rep captures these on the lot and by voice</td>
+</tr>
+<tr>
+<td>Texts, calls, voice notes, timeline</td>
+<td><strong>I'm On Social</strong></td>
+<td>They happen here</td>
+</tr>
+<tr>
+<td>Follow-up tasks</td>
+<td>Either, with <code>idempotency_key</code></td>
+<td>Both sides create them</td>
+</tr>
+</tbody>
+</table>
+<p>Last write wins per field. If you must let both sides edit names or emails, compare <code>updated_at</code> on the webhook payload against your own timestamp and keep the newer one.</p>
+<hr>
+<h2 id="crm-integration-guide--avoiding-echo-loops">Avoiding echo loops</h2>
+<p>You push a customer -&gt; a minute later <code>contact.created</code> arrives at your webhook -&gt; naive code creates a duplicate on your side -&gt; which pushes again. Two rules stop it:</p>
+<ul>
+<li><strong>Ignore your own writes:</strong> every contact payload carries <code>source</code> and <code>external_ids</code>. If <code>data.external_ids["&lt;yoursystem&gt;"]</code> is set and <code>data.updated_at</code> is within a few seconds of your last push for that id, drop the event.</li>
+<li><strong>Idempotency:</strong> <code>X-IMOS-Delivery</code> is unique per event. Keep the last 24 hours of ids and skip repeats. For tasks always send <code>idempotency_key</code>.</li>
+</ul>
+<hr>
+<h2 id="crm-integration-guide--field-maps-for-the-big-four">Field maps for the big four</h2>
+<p>These are starting points; every CRM has custom fields, so expect to add rows.</p>
+<h3 id="crm-integration-guide--hubspot">HubSpot</h3>
+<table>
+<thead>
+<tr>
+<th>I'm On Social</th>
+<th>HubSpot object.property</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>first_name</code>, <code>last_name</code></td>
+<td>Contact <code>firstname</code>, <code>lastname</code></td>
+</tr>
+<tr>
+<td><code>phone</code></td>
+<td>Contact <code>mobilephone</code> (fallback <code>phone</code>)</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>Contact <code>email</code></td>
+</tr>
+<tr>
+<td><code>external_ids.hubspot</code></td>
+<td>Contact <code>hs_object_id</code></td>
+</tr>
+<tr>
+<td><code>owner_user_id</code></td>
+<td>Contact <code>hubspot_owner_id</code> (map by email through Owners API)</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>A multi-checkbox property <code>imos_tags</code>, or Lists</td>
+</tr>
+<tr>
+<td><code>vehicle_interest</code>, <code>vehicle</code></td>
+<td>Custom properties <code>vehicle_interest</code>, <code>vehicle_owned</code></td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td><code>hs_lead_status</code> / <code>hs_analytics_source</code> (read-only in HubSpot; store in a custom property)</td>
+</tr>
+<tr>
+<td><code>note.added</code> webhook</td>
+<td><code>POST /crm/v3/objects/notes</code> + association to the contact</td>
+</tr>
+<tr>
+<td><code>message.sent/received</code></td>
+<td>Notes with a <code>[SMS in/out]</code> prefix, or the Communications object (<code>crm/v3/objects/communications</code>, <code>hs_communication_channel_type = SMS</code>)</td>
+</tr>
+<tr>
+<td><code>call.logged</code></td>
+<td><code>POST /crm/v3/objects/calls</code> (<code>hs_call_body</code> = AI summary, <code>hs_call_duration</code> in ms, <code>hs_call_recording_url</code>)</td>
+</tr>
+<tr>
+<td><code>deal.closed</code></td>
+<td>Update the Deal to <code>closedwon</code>, or create one with <code>dealname</code> = the vehicle</td>
+</tr>
+<tr>
+<td><code>task.created</code></td>
+<td><code>POST /crm/v3/objects/tasks</code></td>
+</tr>
+</tbody>
+</table>
+<p>HubSpot -&gt; us: subscribe to <code>contact.creation</code> / <code>contact.propertyChange</code> in a HubSpot app, or use a Workflow "Send webhook" action to <code>POST /api/v1/contacts</code> with the fields above.</p>
+<h3 id="crm-integration-guide--salesforce">Salesforce</h3>
+<table>
+<thead>
+<tr>
+<th>I'm On Social</th>
+<th>Salesforce</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer</td>
+<td><code>Contact</code> (or <code>Lead</code> until converted; treat <code>Lead.ConvertedContactId</code> as the same person)</td>
+</tr>
+<tr>
+<td><code>first_name</code>, <code>last_name</code>, <code>email</code></td>
+<td><code>FirstName</code>, <code>LastName</code>, <code>Email</code></td>
+</tr>
+<tr>
+<td><code>phone</code></td>
+<td><code>MobilePhone</code> (fallback <code>Phone</code>)</td>
+</tr>
+<tr>
+<td><code>external_ids.salesforce</code></td>
+<td>18-character <code>Id</code>. Put our id in a custom External ID field <code>IMOS_Id__c</code> so you can upsert by it</td>
+</tr>
+<tr>
+<td><code>owner_user_id</code></td>
+<td><code>OwnerId</code> (map <code>User.Email</code>)</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>Multi-select picklist <code>IMOS_Tags__c</code> or Topics</td>
+</tr>
+<tr>
+<td><code>note.added</code>, messages, calls</td>
+<td><code>Task</code> records (<code>Subject</code> = "SMS in: ...", <code>TaskSubtype</code> = <code>Call</code>/<code>Email</code>, <code>CallDurationInSeconds</code>, <code>Description</code> = body or transcript)</td>
+</tr>
+<tr>
+<td><code>deal.closed</code></td>
+<td><code>Opportunity</code> <code>StageName = Closed Won</code>, <code>CloseDate</code> = sold date</td>
+</tr>
+<tr>
+<td><code>task.created</code></td>
+<td><code>Task</code> with <code>Status = Not Started</code>, <code>ActivityDate</code> = due date</td>
+</tr>
+</tbody>
+</table>
+<p>Salesforce -&gt; us: Platform Events or an Apex trigger on <code>Contact</code> calling a Named Credential that POSTs to <code>/api/v1/contacts</code>; or Flow's HTTP Callout action.</p>
+<h3 id="crm-integration-guide--zoho-crm">Zoho CRM</h3>
+<table>
+<thead>
+<tr>
+<th>I'm On Social</th>
+<th>Zoho</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer</td>
+<td><code>Contacts</code> module (or <code>Leads</code> before conversion)</td>
+</tr>
+<tr>
+<td><code>first_name</code>, <code>last_name</code>, <code>email</code></td>
+<td><code>First_Name</code>, <code>Last_Name</code>, <code>Email</code></td>
+</tr>
+<tr>
+<td><code>phone</code></td>
+<td><code>Mobile</code> (fallback <code>Phone</code>)</td>
+</tr>
+<tr>
+<td><code>external_ids.zoho</code></td>
+<td>record <code>id</code></td>
+</tr>
+<tr>
+<td><code>owner_user_id</code></td>
+<td><code>Owner.id</code> (map <code>Owner.email</code>)</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>Zoho Tags (<code>/Contacts/{id}/actions/add_tags</code>)</td>
+</tr>
+<tr>
+<td><code>note.added</code>, messages</td>
+<td><code>Notes</code> module attached to the contact (<code>Note_Title</code> = "SMS in", <code>Note_Content</code>)</td>
+</tr>
+<tr>
+<td><code>call.logged</code></td>
+<td><code>Calls</code> module (<code>Call_Duration</code>, <code>Description</code>)</td>
+</tr>
+<tr>
+<td><code>deal.closed</code></td>
+<td><code>Deals</code> with <code>Stage = Closed Won</code></td>
+</tr>
+<tr>
+<td><code>task.created</code></td>
+<td><code>Tasks</code> module</td>
+</tr>
+</tbody>
+</table>
+<p>Zoho -&gt; us: Notifications API (<code>/actions/watch</code> on <code>Contacts</code>) or a Workflow Rule webhook.</p>
+<h3 id="crm-integration-guide--pipedrive">Pipedrive</h3>
+<table>
+<thead>
+<tr>
+<th>I'm On Social</th>
+<th>Pipedrive</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer</td>
+<td><code>persons</code></td>
+</tr>
+<tr>
+<td><code>first_name</code> + <code>last_name</code></td>
+<td><code>name</code> (we split on the last space if you only have <code>name</code>)</td>
+</tr>
+<tr>
+<td><code>phone</code>, <code>email</code></td>
+<td><code>phone[]</code> (label <code>mobile</code>), <code>email[]</code></td>
+</tr>
+<tr>
+<td><code>external_ids.pipedrive</code></td>
+<td>person <code>id</code></td>
+</tr>
+<tr>
+<td><code>owner_user_id</code></td>
+<td><code>owner_id</code> (map <code>users.email</code>)</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>Custom field (multiple options) or Labels</td>
+</tr>
+<tr>
+<td><code>note.added</code>, messages</td>
+<td><code>notes</code> (<code>content</code>, <code>person_id</code>)</td>
+</tr>
+<tr>
+<td><code>call.logged</code></td>
+<td><code>activities</code> with <code>type = call</code>, <code>duration</code>, <code>done = 1</code>, <code>note</code> = summary</td>
+</tr>
+<tr>
+<td><code>deal.closed</code></td>
+<td><code>deals</code> <code>status = won</code>, <code>title</code> = vehicle</td>
+</tr>
+<tr>
+<td><code>task.created</code></td>
+<td><code>activities</code> with <code>type = task</code>, <code>due_date</code></td>
+</tr>
+</tbody>
+</table>
+<p>Pipedrive -&gt; us: Webhooks (<code>event_action = added|updated</code>, <code>event_object = person</code>) pointing at your middleware, which upserts to <code>/api/v1/contacts</code>.</p>
+<hr>
+<h2 id="crm-integration-guide--sending-texts-through-the-api-compliance">Sending texts through the API (compliance)</h2>
+<p><code>POST /api/v1/contacts/{id}/messages</code> sends a real SMS from the salesperson's number and it lands in their inbox thread like any other text. Rules that apply automatically: customers who texted STOP are skipped, quiet hours configured by the store are honored, and every message is logged on the timeline. Your responsibility: only send to customers who consented to texts from the dealership (TCPA / CTIA). Do not use the API for bulk marketing; that is what the app's campaign tools with opt-in tracking are for.</p>
+<hr>
+<h2 id="crm-integration-guide--rate-limits-retries-errors">Rate limits, retries, errors</h2>
+<ul>
+<li>120 requests per minute per key. Bulk loads: batch at 100 per minute and honor <code>Retry-After</code>.</li>
+<li>Webhooks are delivered once per event; a non-2xx from you is logged (<code>GET /api/v1/webhooks/{id}/deliveries</code>) and <strong>not retried</strong>. Your nightly <code>updated_since</code> pull is the safety net.</li>
+<li>Errors are JSON: <code>{"detail": "..."}</code>. <code>404</code> also means "exists but not in your store"; never treat it as "create it again".</li>
+</ul>
+<hr>
+<h2 id="crm-integration-guide--go-live-checklist">Go-live checklist</h2>
+<ol>
+<li><code>GET /api/v1/me</code> shows the right store and <code>users_visible</code> matches the roster.</li>
+<li>Reps mapped by email; unmatched reps listed for the store manager.</li>
+<li>Initial load both ways done; spot-check 10 customers in both UIs.</li>
+<li>Webhook registered, <code>/test</code> ping verified with the signature code (not just a 200).</li>
+<li>Edit a customer in the app -&gt; <code>contact.updated</code> arrives -&gt; your record changes, no duplicate created.</li>
+<li>Save a customer in your CRM -&gt; it appears in the app under the right rep, once.</li>
+<li>Mark a customer sold in the app -&gt; <code>deal.closed</code> -&gt; your deal/opportunity updates.</li>
+<li>Text from the app -&gt; <code>message.sent</code> logged on your side; reply from the customer -&gt; <code>message.received</code>.</li>
+<li>Echo test: push a record, wait 2 minutes, confirm your webhook handler ignored its own write.</li>
+<li>Nightly reconcile scheduled; alert if it changes more than 5% of records (usually a mapping bug).</li>
+<li>Test data cleaned up (<code>?tag=api-test</code>) and the test key revoked.</li>
+<li>Store manager has a one-page "what syncs where" sheet (copy the table at the top of this guide).</li>
+</ol>
+<hr>
+<h2 id="crm-integration-guide--automotive-crms-vinsolutions-elead-dealersocket-drivecentric-reynolds-tekion">Automotive CRMs (VinSolutions, Elead, DealerSocket, DriveCentric, Reynolds, Tekion)</h2>
+<p>These CRMs do not offer public APIs; each has a partner program. What works <strong>today</strong> without certification:</p>
+<ul>
+<li><strong>Leads into the CRM:</strong> the app can push any contact as a standards-compliant <strong>ADF/XML lead</strong> to the CRM's lead intake email address (contact page -&gt; "Push to CRM", or bulk from the Contacts tab). Every automotive CRM accepts ADF by email.</li>
+<li><strong>Leads into I'm On Social:</strong> point any lead provider or the CRM's lead forwarding at <code>POST /api/leads/adf?source_id=...</code> or the per-source intake email.</li>
+<li><strong>Reports and exports:</strong> CSV in both directions.</li>
+<li><strong>Automation tools:</strong> Zapier / Make connectors many dealers already run against their CRM, wired to our webhooks and API.</li>
+</ul>
+<p>The certification path per vendor, with costs and timelines, is in <a target="_blank" rel="noopener" href="https://www.imonsocial.com/developers?doc=automotive-crm-programs">Automotive CRM Programs</a>.</p>
+<hr>
+<h2 id="crm-integration-guide--getting-help">Getting help</h2>
+<ul>
+<li>Interactive console: <code>https://app.imonsocial.com/api/public/reference</code></li>
+<li>OpenAPI schema: <code>https://app.imonsocial.com/api/public/openapi-v1.json</code></li>
+<li>Sandbox store, organization keys, or a call with our engineers: <strong>support@imonsocial.com</strong> with your company, the CRM, and the dealership you are integrating for.</li>
+</ul></div>
+</article><article class="doc" id="doc-automotive-crm-programs" data-slug="automotive-crm-programs" hidden>
+  <div class="doc-head">
+    <div class="sec-tag" style="color:#34C759"><i class="fa-solid fa-car"></i> Certification checklist per vendor</div>
+    <h1>Automotive CRM Programs</h1>
+    <div class="doc-meta"><span>Updated Sep 18, 2026</span><a href="https://app.imonsocial.com/api/public/developer-docs/automotive-crm-programs.md" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> Markdown</a></div>
+  </div>
+  <nav class="on-page" aria-label="On this page"><a href="#automotive-crm-programs--at-a-glance">At a glance</a><a href="#automotive-crm-programs--what-we-already-have-use-this-in-every-application">What we already have (use this in every application)</a><a href="#automotive-crm-programs--universal-prep-checklist-do-once-reuse-for-every-vendor">Universal prep checklist (do once, reuse for every vendor)</a><a href="#automotive-crm-programs--vendor-by-vendor">Vendor by vendor</a><a href="#automotive-crm-programs--recommended-order-and-rough-calendar">Recommended order and rough calendar</a><a href="#automotive-crm-programs--application-blurb-copy-and-adapt">Application blurb (copy and adapt)</a><a href="#automotive-crm-programs--tracker">Tracker</a></nav>
+  <div class="md"><p><strong>Purpose:</strong> a working checklist for getting I'm On Social certified with the automotive CRM and DMS vendors our dealers use, so customer records, notes, texts and sold data can sync directly instead of through ADF email and CSV. Program details below were researched in September 2026 from vendor sites and agreements; fees and timelines change, so confirm each one on the first call.</p>
+<blockquote>
+<p><strong>Bottom line:</strong> none of the big automotive CRMs have a self-serve API. Every one is a gated partner program with an application, a contract (usually under NDA), a security review, a certification test and, for most, fees plus per-rooftop dealer authorization. Plan on 2 to 6 months per vendor. Start with the fastest ones (Tekion, Fortellis) while the slow ones (Cox, Reynolds) are in the queue.</p>
+</blockquote>
+<hr>
+<h2 id="automotive-crm-programs--at-a-glance">At a glance</h2>
+<table class="wide">
+<thead>
+<tr>
+<th>Vendor / CRM</th>
+<th>Program</th>
+<th>Access model</th>
+<th>Cost signal</th>
+<th>Realistic timeline</th>
+<th>Works today without certification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CDK Global</strong> (Elead CRM, CDK CRM/Drive DMS)</td>
+<td>Fortellis Automotive Commerce Exchange</td>
+<td>Self-register, then mandatory app certification per app</td>
+<td>Certification fee (quoted in welcome email); recert up to $2,500; $129/month per Marketplace listing; API usage per publisher plan</td>
+<td>6 to 12 weeks after the app is built</td>
+<td>ADF email into Elead; ADF/lead forwarding out of Elead</td>
+</tr>
+<tr>
+<td><strong>Cox Automotive</strong> (VinSolutions Connect CRM; also Dealer.com, vAuto, HomeNet, Xtime)</td>
+<td>Cox Automotive Partner Program / Developer Network</td>
+<td>Application, Participation Form, VinSolutions Integration Terms; per-rooftop dealer enablement</td>
+<td>Negotiated per vendor; pass-through to dealers capped at actual cost</td>
+<td>3 to 6 months</td>
+<td>ADF email into VinSolutions; lead forwarding out</td>
+</tr>
+<tr>
+<td><strong>Reynolds and Reynolds</strong> (FOCUS CRM, ERA-IGNITE / POWER DMS)</td>
+<td>Reynolds Certified Interface (RCI)</td>
+<td>Inquiry, technical + security review, contract under NDA; recertification every 2 years</td>
+<td>Not public. Historically the most expensive program (one-time participation + per-dealer fees)</td>
+<td>6+ months, enterprise-style engagement</td>
+<td>ADF email into FOCUS; CSV</td>
+</tr>
+<tr>
+<td><strong>DealerSocket</strong> (Solera)</td>
+<td>Certified Partners program</td>
+<td>Sales-gated contract; credentials issued per rooftop</td>
+<td>Not public</td>
+<td>3 to 6 months</td>
+<td>ADF/XML lead forwarding out; ADF email in; inbound activity sync only for partners</td>
+</tr>
+<tr>
+<td><strong>DriveCentric</strong></td>
+<td>Partner Program</td>
+<td>Inquiry form -&gt; overview call -&gt; data agreement -&gt; docs</td>
+<td>Not public</td>
+<td>2 to 4 months (they note high demand / slow replies)</td>
+<td>ADF email in</td>
+</tr>
+<tr>
+<td><strong>Tekion</strong> (Automotive Retail Cloud, CRM + DMS)</td>
+<td>Automotive Partner Cloud (APC) 2.0</td>
+<td>Automated onboarding: pick use case + APIs in the APC dashboard, review, then docs + test tools</td>
+<td>Tiered (Standard / Enterprise / Strategic) with different rate limits and support</td>
+<td>4 to 8 weeks</td>
+<td>ADF email in</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="automotive-crm-programs--what-we-already-have-use-this-in-every-application">What we already have (use this in every application)</h2>
+<p>Vendors ask the same questions. We can answer these today:</p>
+<ul>
+<li><strong>Public, documented REST API</strong> with API-key auth, tenant scoping, rate limiting, OpenAPI schema and an interactive console: <code>https://app.imonsocial.com/api/public/reference</code>.</li>
+<li><strong>Signed webhooks</strong> (HMAC-SHA256) for every data change, with a delivery log per subscription.</li>
+<li><strong>ADF/XML 1.0 lead intake</strong> (<code>POST /api/leads/adf</code>) and <strong>ADF lead push</strong> by email to any CRM intake address.</li>
+<li><strong>Full request logging</strong> on the API and webhook side (delivery logs kept; Fortellis requires 60 days of request/response logs for the certified app, so plan to extend retention to 60+ days for the Fortellis connector).</li>
+<li><strong>Data isolation per store and organization</strong>, hashed key storage, instant key revocation, HTTPS only.</li>
+<li><strong>Consent handling:</strong> STOP / opt-out honored automatically on every send path; SMS terms published at <code>/imos/sms-terms</code>.</li>
+<li><strong>Privacy Policy and Terms</strong> at <code>/imos/privacy</code> and <code>/imos/terms</code>.</li>
+<li><strong>Dealer authorization flow:</strong> the store's admin creates and revokes keys themselves, which maps cleanly onto the "dealer must enable the vendor per rooftop" model every program uses.</li>
+</ul>
+<hr>
+<h2 id="automotive-crm-programs--universal-prep-checklist-do-once-reuse-for-every-vendor">Universal prep checklist (do once, reuse for every vendor)</h2>
+<p>Company and legal
+- [ ] Legal entity details, EIN, D-U-N-S number, business address, officer to sign agreements
+- [ ] Certificate of insurance (general liability; several programs ask for cyber/E&amp;O, typically $1M+)
+- [ ] W-9 and ACH details (Fortellis bills through the platform)
+- [ ] NDA on file (Reynolds, DealerSocket and Cox will send theirs)</p>
+<p>Security and data handling
+- [ ] One-page data flow diagram: what we read, what we write, where it is stored (MongoDB, region), who can see it
+- [ ] Written Information Security Policy (access control, encryption in transit/at rest, key rotation, incident response, employee access)
+- [ ] Data retention and deletion policy, including "dealer leaves: what happens to their data"
+- [ ] Subprocessor list (Twilio, OpenAI, Resend, Stripe, hosting provider)
+- [ ] Security questionnaire answers ready (SIG Lite / CAIQ style). SOC 2 Type I is not mandatory for most CRM programs but shortens every review; start it if we plan to do Reynolds or Cox
+- [ ] Penetration test summary or vulnerability scan report from the last 12 months
+- [ ] Breach notification commitment (most agreements require notice within 24 to 72 hours)</p>
+<p>Product and technical
+- [ ] Integration Workflow document: every API call we make, why, how often, expected volume per rooftop per day (Fortellis requires this before certification starts)
+- [ ] 60-day request/response log retention for certified connectors
+- [ ] Sandbox / test store with fake customers (+1 500 555 01xx numbers) and a demo login for the vendor's reviewer
+- [ ] Field map for the vendor's objects (customer, deal, note, activity, user) to ours, including how we handle dealer-side merges and deletes
+- [ ] Loop prevention and dedupe description (see the CRM Integration Guide)
+- [ ] Marketplace listing kit: 100-word description, 3 to 5 screenshots, logo (SVG + PNG), pricing text, support contact, privacy URL
+- [ ] Support SLA statement (hours, response time, escalation email)</p>
+<p>Commercial
+- [ ] Decide pricing pass-through: Cox forbids marking up their integration fee to mutual dealers; Fortellis charges us per listing and per API plan. Set our per-rooftop integration price accordingly
+- [ ] Reference dealers willing to take a vendor call (most programs ask for at least one mutual client)</p>
+<hr>
+<h2 id="automotive-crm-programs--vendor-by-vendor">Vendor by vendor</h2>
+<h3 id="automotive-crm-programs--1-tekion-automotive-partner-cloud-2-0-start-here">1. Tekion (Automotive Partner Cloud 2.0)  - start here</h3>
+<p><strong>Why first:</strong> the only program with automated onboarding. Dealer count is growing fast and their dealers skew toward technology-forward stores.</p>
+<p>Steps
+1. Create an account at <code>apc.tekioncloud.com</code>, choose the use case (CRM customer + activity sync) and the specific APIs.
+2. Submit for review; on approval you get API docs, sandbox credentials and test tools inside APC.
+3. Build the connector against the sandbox; request the tier (Standard is enough to start; Enterprise raises rate limits).
+4. Dealer enablement is done by the dealer inside Tekion; document the steps for our store admins.</p>
+<p>Gotchas: tiers gate which APIs you can call; check that customer write, notes/activities and deal read are in the tier before building.</p>
+<h3 id="automotive-crm-programs--2-cdk-global-fortellis-elead-crm-cdk-drive">2. CDK Global / Fortellis (Elead CRM, CDK Drive)</h3>
+<p><strong>Why second:</strong> self-registration, public docs, clear (if not cheap) fee schedule, and Elead is one of the most installed CRMs.</p>
+<p>Steps
+1. Register a developer account on Fortellis, create the app, request the CRM APIs (customer, sales opportunity, activities, direct post).
+2. Get test-environment access and build against it.
+3. Submit the <strong>Integration Workflow</strong> document through the Developer Care Portal before certification; implement full request/response logging with 60-day retention.
+4. Pay the certification fee when the welcome email arrives (due about 31 days later; it auto-charges).
+5. Certification with a Fortellis Business Process Consultant: functional tests and possibly an end-to-end demo.
+6. Submit the Marketplace listing ($129/month per listing). Dealers subscribe to the app in the Marketplace, which is how per-rooftop authorization works.
+7. Any change to the app or the APIs it uses can trigger recertification (up to $2,500 USD).</p>
+<p>Gotchas: API usage may be billed per the API publisher's plan (transactional or subscription); read the plan on each API before designing polling frequency. Elead-specific CRM APIs are separate from CDK Drive DMS APIs; we want the CRM set.</p>
+<h3 id="automotive-crm-programs--3-cox-automotive-vinsolutions-connect-crm">3. Cox Automotive (VinSolutions Connect CRM)</h3>
+<p><strong>Why third:</strong> the largest CRM footprint, but a longer, negotiated process.</p>
+<p>Steps
+1. Apply through the Cox Automotive Developer Network / VinSolutions gateway registration.
+2. Sign the Participation Form and accept the VinSolutions Integration Terms (confidential specs; per-rooftop dealer authorization; no marking up their fee).
+3. Request the right plans: <strong>Contact Management</strong> (create/update contacts, consent), <strong>Lead Management</strong> (lead + vehicle sync), and <strong>Connect Eventing</strong> (near-real-time change notifications, which replaces polling).
+4. OAuth2 client-credentials + API key are issued after signature; build and test.
+5. Each dealer enables us in their VinSolutions settings; write the one-page dealer guide.</p>
+<p>Gotchas: fees are negotiated; expect a per-rooftop monthly amount. The Call Tracking plan is restricted to authorized call providers; we do not need it (our calls run on Twilio and are logged on our side). Consent fields matter: pass SMS consent status both ways.</p>
+<h3 id="automotive-crm-programs--4-dealersocket-solera">4. DealerSocket (Solera)</h3>
+<p>Steps
+1. Contact the DealerSocket partner team through sales; there is no developer portal.
+2. NDA + Certified Partner agreement.
+3. Integration options historically offered: outbound lead forwarding (XML/email), inbound activity sync (calls, appointments, notes), entity sync for website data. Ask for customer read/write plus activity write.
+4. Credentials are issued per rooftop after the dealer signs their authorization.</p>
+<p>Gotchas: expect long lead times and manual onboarding per dealer. Until certified, ADF email into DealerSocket and lead forwarding out of it are the reliable paths.</p>
+<h3 id="automotive-crm-programs--5-drivecentric">5. DriveCentric</h3>
+<p>Steps
+1. Fill in the partner inquiry form on <code>drivecentric.com/resources/partner-program</code>.
+2. Overview call, then sign their data agreement.
+3. API documentation is shared privately after signature. Their partner API is push-oriented (leads, consumer/household data, vehicle data); confirm whether outbound customer/activity events are available.</p>
+<p>Gotchas: they publicly note high partner demand and slower responses; apply early and follow up every two weeks.</p>
+<h3 id="automotive-crm-programs--6-reynolds-and-reynolds-rci-focus-crm-era-ignite-power">6. Reynolds and Reynolds (RCI; FOCUS CRM, ERA-IGNITE, POWER)</h3>
+<p><strong>Why last:</strong> the most closed program, historically the most expensive, biannual recertification, active audits.</p>
+<p>Steps
+1. Submit an inquiry through Reynolds Data Management.
+2. Technical and security review (this is where SOC 2 and the security policy pay off).
+3. Contract under NDA; one-time participation fee plus per-dealer interface fees.
+4. Certification, then recertification every 2 years or on significant releases.</p>
+<p>Gotchas: budget for both the fee and the calendar. Only pursue when we have several Reynolds dealers asking.</p>
+<hr>
+<h2 id="automotive-crm-programs--recommended-order-and-rough-calendar">Recommended order and rough calendar</h2>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Finish the universal prep checklist. Apply to Tekion APC and register on Fortellis. Send Cox and DriveCentric inquiries (they take longest to answer).</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Build the Tekion connector in their sandbox. Write the Fortellis Integration Workflow doc.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Tekion review and first mutual dealer. Fortellis test environment build.</td>
+</tr>
+<tr>
+<td>4 to 5</td>
+<td>Fortellis certification + Marketplace listing. Cox Participation Form and plans.</td>
+</tr>
+<tr>
+<td>6+</td>
+<td>VinSolutions build and first dealer enablement. DealerSocket and DriveCentric as agreements land. Reynolds only on dealer demand.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="automotive-crm-programs--application-blurb-copy-and-adapt">Application blurb (copy and adapt)</h2>
+<blockquote>
+<p>I'm On Social is a relationship platform for dealership salespeople: personal texting from a dedicated number, call logging with AI summaries, voice notes, automated birthday, anniversary and sold follow-up campaigns, digital business cards with review collection, and an AI assistant. We integrate with the CRM so the customer record, assigned salesperson and deal status flow into I'm On Social, and every text, call, note, tag and sold record the salesperson creates flows back into the CRM. We already operate a documented public REST API with tenant-scoped API keys, signed webhooks and ADF/XML lead intake (https://www.imonsocial.com/developers). We are requesting customer read/write, activity/note write and deal read for dealers who authorize us.</p>
+</blockquote>
+<hr>
+<h2 id="automotive-crm-programs--tracker">Tracker</h2>
+<table class="wide">
+<thead>
+<tr>
+<th>Vendor</th>
+<th>Status</th>
+<th>Contact</th>
+<th>Applied</th>
+<th>Agreement</th>
+<th>Sandbox</th>
+<th>Certified</th>
+<th>First dealer</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tekion APC</td>
+<td>Not started</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>CDK Fortellis (Elead)</td>
+<td>Not started</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Cox / VinSolutions</td>
+<td>Not started</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>DealerSocket</td>
+<td>Not started</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>DriveCentric</td>
+<td>Not started</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Reynolds RCI</td>
+<td>Not started</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Sources checked (Sep 2026): Fortellis App Launch Guide and API licensing terms (cdkglobal.com), Cox Automotive VinSolutions Integration Agreement (coxautoinc.com/terms), Reynolds Data Management and RCI pages (reyrey.com), DriveCentric Partner Program page, Tekion APC (apc.tekioncloud.com), public API report cards for DealerSocket/DriveCentric/VinSolutions.</p></div>
+</article></main>
+</div>
+<footer>
+  <div class="ft-inner">
+    <span class="ft-copy">&copy; 2026 I'm On Social. Powered by VI Ventures Group LLC.</span>
+    <div class="ft-links"><a href="/">Home</a><a href="/platform/">The Full Platform</a><a href="/help/">Help Center</a><a href="/pricing/">Pricing</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://app.imonsocial.com">Sign In</a></div>
+  </div>
+</footer>
+<script>
+(function(){
+  var sc=function(){document.querySelector('nav.top').classList.toggle('scrolled',scrollY>40)};addEventListener('scroll',sc);sc();
+  var tabs=[].slice.call(document.querySelectorAll('.tab')),docs=[].slice.call(document.querySelectorAll('.doc'));
+  function show(slug,push){
+    if(!docs.some(function(d){return d.dataset.slug===slug}))slug=docs[0].dataset.slug;
+    docs.forEach(function(d){d.hidden=d.dataset.slug!==slug});
+    tabs.forEach(function(t){t.classList.toggle('on',t.dataset.slug===slug)});
+    if(push){history.pushState(null,'','?doc='+slug+location.hash)}
+  }
+  function fromUrl(){
+    var q=new URLSearchParams(location.search).get('doc');
+    var h=location.hash.slice(1);
+    if(!q&&h&&h.indexOf('--')>0)q=h.split('--')[0];
+    show(q||docs[0].dataset.slug,false);
+    if(h){var el=document.getElementById(h);if(el)setTimeout(function(){el.scrollIntoView()},0)}
+  }
+  tabs.forEach(function(t){t.addEventListener('click',function(e){e.preventDefault();show(t.dataset.slug,true);document.getElementById('docs').scrollIntoView({behavior:'smooth'})})});
+  // links inside a doc that point at another doc (?doc=slug#anchor) switch without a reload
+  document.getElementById('docs').addEventListener('click',function(e){
+    var a=e.target.closest('a');if(!a)return;
+    var href=a.getAttribute('href')||'';
+    var m=href.match(/^(?:https?:\/\/(?:www\.)?imonsocial\.com)?\/developers\/?\?doc=([a-z0-9-]+)(#.*)?$/);
+    if(m){e.preventDefault();show(m[1],true);if(m[2]){location.hash=m[2]}else{document.getElementById('docs').scrollIntoView()}}
+  });
+  addEventListener('popstate',fromUrl);
+  fromUrl();
+})();
+</script>
+</body>
+</html>

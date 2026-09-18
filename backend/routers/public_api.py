@@ -1,7 +1,7 @@
 """Public API v1: API-key access for CRMs and automation tools.
 Every request is scoped to the store (or organization) that issued the key. Keys are created in-app
 (Tools -> Integrations -> API Keys) and stored hashed; the plaintext is shown once.
-Docs: /imos/developers  |  OpenAPI: GET /api/public/openapi-v1.json"""
+Docs: https://www.imonsocial.com/developers  |  OpenAPI: GET /api/public/openapi-v1.json"""
 import csv
 import hashlib
 import io
@@ -208,7 +208,7 @@ async def api_me(auth: dict = Depends(verify_api_key)):
         "store": {"id": t["store_ids"][0], "name": store.get("name") if store else None} if len(t["store_ids"]) == 1 else None,
         "organization": {"id": t["org_id"], "name": org.get("name") if org else None} if t.get("org_id") else None,
         "stores_visible": len(t["store_ids"]), "users_visible": len(t["user_ids"]),
-        "rate_limit_per_minute": RATE_LIMIT_PER_MINUTE, "docs": "https://app.imonsocial.com/imos/developers",
+        "rate_limit_per_minute": RATE_LIMIT_PER_MINUTE, "docs": "https://www.imonsocial.com/developers",
     }
 
 
