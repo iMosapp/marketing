@@ -3,22 +3,39 @@ Integrations router - API keys, webhooks, RMS/DMS connections
 Supports: Salesforce, HubSpot, DealerSocket, VinSolutions, Tekion, Pipedrive
 DMS: MyKarma, Xtime, CDK, Reynolds & Reynolds, Dealertrack
 """
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Request
 from bson import ObjectId
 from datetime import datetime, timedelta
 from typing import Optional, List
 import secrets
 import hashlib
-import hmac
-import json
 import logging
-import httpx
 from pydantic import BaseModel
 
 from routers.database import get_db
+from routers.webhook_subscriptions import EVENT_TYPES, build_event, deliver, delivery_logs, validate_events
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 logger = logging.getLogger(__name__)
+
+ADMIN_ROLES = ("super_admin", "org_admin", "store_manager", "white_label_partner")
+
+
+async def require_store_admin(request: Request, store_id: str) -> dict:
+    """API keys and webhooks hand out customer data: only a logged-in manager/admin of that store may manage them."""
+    from routers.admin_helpers import get_requesting_user
+    user = await get_requesting_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    role = user.get("role")
+    if role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Manager or admin role required")
+    if role == "super_admin" or user.get("store_id") == store_id:
+        return user
+    store = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"organization_id": 1}) if ObjectId.is_valid(store_id) else None
+    if store and user.get("organization_id") and store.get("organization_id") == user["organization_id"]:
+        return user
+    raise HTTPException(status_code=403, detail="You do not manage this store")
 
 
 # ============= MODELS =============
@@ -44,24 +61,7 @@ class IntegrationConfig(BaseModel):
 
 # ============= WEBHOOK EVENTS =============
 
-WEBHOOK_EVENTS = {
-    "contact.created": "Triggered when a new contact is added",
-    "contact.updated": "Triggered when a contact is updated",
-    "contact.deleted": "Triggered when a contact is deleted",
-    "message.received": "Triggered when an inbound message is received",
-    "message.sent": "Triggered when an outbound message is sent",
-    "call.completed": "Triggered when a call ends",
-    "campaign.enrolled": "Triggered when a contact is enrolled in a campaign",
-    "campaign.completed": "Triggered when a contact completes a campaign",
-    "deal.created": "Triggered when a deal/opportunity is created",
-    "deal.updated": "Triggered when a deal status changes",
-    "deal.closed": "Triggered when a deal is marked as closed/won",
-    "appointment.created": "Triggered when an appointment is scheduled",
-    "appointment.updated": "Triggered when an appointment is modified",
-    "review.received": "Triggered when a customer submits a review",
-    "task.created": "Triggered when a task is created",
-    "task.completed": "Triggered when a task is marked complete",
-}
+WEBHOOK_EVENTS = {k: v for k, v in EVENT_TYPES.items() if k != "ping"}
 
 
 # ============= CRM PROVIDERS =============
@@ -217,8 +217,9 @@ AUTOMATION_PROVIDERS = {
 # ============= API KEY MANAGEMENT =============
 
 @router.post("/api-keys")
-async def create_api_key(data: APIKeyCreate, store_id: str):
+async def create_api_key(request: Request, data: APIKeyCreate, store_id: str):
     """Generate a new API key for the store"""
+    await require_store_admin(request, store_id)
     db = get_db()
     
     # Generate secure key
@@ -253,8 +254,9 @@ async def create_api_key(data: APIKeyCreate, store_id: str):
 
 
 @router.get("/api-keys")
-async def list_api_keys(store_id: str):
+async def list_api_keys(request: Request, store_id: str):
     """List all API keys for a store"""
+    await require_store_admin(request, store_id)
     db = get_db()
     
     keys = await db.api_keys.find(
@@ -279,13 +281,17 @@ async def list_api_keys(store_id: str):
 
 
 @router.delete("/api-keys/{key_id}")
-async def revoke_api_key(key_id: str):
+async def revoke_api_key(request: Request, key_id: str):
     """Revoke an API key"""
     db = get_db()
+    key = await db.api_keys.find_one({"_id": ObjectId(key_id)}, {"store_id": 1}) if ObjectId.is_valid(key_id) else None
+    if not key:
+        raise HTTPException(status_code=404, detail="API key not found")
+    await require_store_admin(request, key.get("store_id") or "")
     
     result = await db.api_keys.update_one(
         {"_id": ObjectId(key_id)},
-        {"$set": {"active": False, "revoked_at": datetime.utcnow()}}
+        {"$set": {"active": False, "is_active": False, "revoked_at": datetime.utcnow()}}
     )
     
     if result.modified_count == 0:
@@ -297,28 +303,21 @@ async def revoke_api_key(key_id: str):
 # ============= WEBHOOKS =============
 
 @router.post("/webhooks")
-async def create_webhook(data: WebhookCreate, store_id: str):
-    """Create a new webhook endpoint"""
+async def create_webhook(request: Request, data: WebhookCreate, store_id: str):
+    """Register a webhook for the store. Lives in webhook_subscriptions, the one collection the outbox delivers to."""
+    user = await require_store_admin(request, store_id)
     db = get_db()
-    
-    # Generate signing secret if not provided
+    validate_events(data.events)
     secret = data.secret or secrets.token_urlsafe(32)
-    
+    now = datetime.utcnow()
+    store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"organization_id": 1}) if ObjectId.is_valid(store_id) else None
     webhook = {
-        "store_id": store_id,
-        "name": data.name,
-        "url": data.url,
-        "events": data.events,
-        "secret": secret,
-        "active": data.active,
-        "created_at": datetime.utcnow(),
-        "delivery_count": 0,
-        "failure_count": 0,
-        "last_triggered_at": None,
+        "store_id": store_id, "organization_id": (store or {}).get("organization_id") or user.get("organization_id"),
+        "description": data.name, "url": data.url, "events": data.events, "secret": secret, "is_active": data.active,
+        "created_by": str(user["_id"]), "created_at": now, "updated_at": now,
+        "delivery_count": 0, "failure_count": 0, "last_triggered": None, "last_status": None,
     }
-    
-    result = await db.webhooks.insert_one(webhook)
-    
+    result = await db.webhook_subscriptions.insert_one(webhook)
     return {
         "id": str(result.inserted_id),
         "name": data.name,
@@ -330,137 +329,91 @@ async def create_webhook(data: WebhookCreate, store_id: str):
     }
 
 
+def _ui_webhook(w: dict) -> dict:
+    return {
+        "id": str(w["_id"]),
+        "name": w.get("description") or w.get("name") or w.get("url"),
+        "url": w["url"],
+        "events": w.get("events") or [],
+        "active": w.get("is_active", w.get("active", True)),
+        "delivery_count": w.get("delivery_count", 0),
+        "failure_count": w.get("failure_count", 0),
+        "last_status": w.get("last_status"),
+        "last_triggered_at": w["last_triggered"].isoformat() if isinstance(w.get("last_triggered"), datetime) else None,
+    }
+
+
 @router.get("/webhooks")
-async def list_webhooks(store_id: str):
+async def list_webhooks(request: Request, store_id: str):
     """List all webhooks for a store"""
+    await require_store_admin(request, store_id)
     db = get_db()
-    
-    webhooks = await db.webhooks.find({"store_id": store_id}).to_list(100)
-    
-    return [
-        {
-            "id": str(w["_id"]),
-            "name": w["name"],
-            "url": w["url"],
-            "events": w["events"],
-            "active": w["active"],
-            "delivery_count": w.get("delivery_count", 0),
-            "failure_count": w.get("failure_count", 0),
-            "last_triggered_at": w["last_triggered_at"].isoformat() if w.get("last_triggered_at") else None,
-        }
-        for w in webhooks
-    ]
+    webhooks = await db.webhook_subscriptions.find({"store_id": store_id}).to_list(100)
+    return [_ui_webhook(w) for w in webhooks]
 
 
 @router.get("/webhooks/events")
 async def list_webhook_events():
-    """List all available webhook events"""
-    return WEBHOOK_EVENTS
+    return {k: v for k, v in EVENT_TYPES.items() if k != "ping"}
 
 
 @router.put("/webhooks/{webhook_id}")
-async def update_webhook(webhook_id: str, data: dict):
-    """Update a webhook"""
+async def update_webhook(request: Request, webhook_id: str, data: dict):
     db = get_db()
-    
-    allowed_fields = ["name", "url", "events", "active"]
-    update_dict = {k: v for k, v in data.items() if k in allowed_fields}
-    update_dict["updated_at"] = datetime.utcnow()
-    
-    result = await db.webhooks.update_one(
-        {"_id": ObjectId(webhook_id)},
-        {"$set": update_dict}
-    )
-    
-    if result.modified_count == 0:
+    w = await db.webhook_subscriptions.find_one({"_id": ObjectId(webhook_id)}, {"store_id": 1}) if ObjectId.is_valid(webhook_id) else None
+    if not w:
         raise HTTPException(status_code=404, detail="Webhook not found")
-    
+    await require_store_admin(request, w.get("store_id") or "")
+    update_dict = {}
+    if "name" in data:
+        update_dict["description"] = data["name"]
+    if "url" in data:
+        update_dict["url"] = data["url"]
+    if "events" in data:
+        validate_events(data["events"])
+        update_dict["events"] = data["events"]
+    if "active" in data:
+        update_dict["is_active"] = bool(data["active"])
+    update_dict["updated_at"] = datetime.utcnow()
+    await db.webhook_subscriptions.update_one({"_id": ObjectId(webhook_id)}, {"$set": update_dict})
     return {"success": True, "message": "Webhook updated"}
 
 
 @router.delete("/webhooks/{webhook_id}")
-async def delete_webhook(webhook_id: str):
-    """Delete a webhook"""
+async def delete_webhook(request: Request, webhook_id: str):
     db = get_db()
-    
-    result = await db.webhooks.delete_one({"_id": ObjectId(webhook_id)})
-    
-    if result.deleted_count == 0:
+    w = await db.webhook_subscriptions.find_one({"_id": ObjectId(webhook_id)}, {"store_id": 1}) if ObjectId.is_valid(webhook_id) else None
+    if not w:
         raise HTTPException(status_code=404, detail="Webhook not found")
-    
+    await require_store_admin(request, w.get("store_id") or "")
+    await db.webhook_subscriptions.delete_one({"_id": ObjectId(webhook_id)})
     return {"success": True, "message": "Webhook deleted"}
 
 
 @router.get("/webhooks/{webhook_id}/logs")
-async def get_webhook_logs(webhook_id: str, limit: int = 50):
-    """Get delivery logs for a webhook"""
+async def get_webhook_logs(request: Request, webhook_id: str, limit: int = 50):
     db = get_db()
-    
-    logs = await db.webhook_logs.find(
-        {"webhook_id": webhook_id}
-    ).sort("created_at", -1).limit(limit).to_list(limit)
-    
-    return [
-        {
-            "id": str(log["_id"]),
-            "event": log["event"],
-            "status_code": log.get("status_code"),
-            "success": log.get("success", False),
-            "response_time_ms": log.get("response_time_ms"),
-            "error": log.get("error"),
-            "created_at": log["created_at"].isoformat(),
-        }
-        for log in logs
-    ]
+    w = await db.webhook_subscriptions.find_one({"_id": ObjectId(webhook_id)}, {"store_id": 1}) if ObjectId.is_valid(webhook_id) else None
+    if not w:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    await require_store_admin(request, w.get("store_id") or "")
+    logs = await delivery_logs(webhook_id, limit)
+    for l in logs:
+        l["created_at"] = l.get("timestamp")
+    return logs
 
 
 @router.post("/webhooks/{webhook_id}/test")
-async def test_webhook(webhook_id: str):
-    """Send a test payload to the webhook"""
+async def test_webhook(request: Request, webhook_id: str):
+    """Send a signed ping to the URL right now."""
     db = get_db()
-    
-    webhook = await db.webhooks.find_one({"_id": ObjectId(webhook_id)})
+    webhook = await db.webhook_subscriptions.find_one({"_id": ObjectId(webhook_id)}) if ObjectId.is_valid(webhook_id) else None
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
-    
-    test_payload = {
-        "event": "test",
-        "timestamp": datetime.utcnow().isoformat(),
-        "data": {
-            "message": "This is a test webhook from I'm On Social",
-            "webhook_id": webhook_id,
-        }
-    }
-    
-    # Sign the payload
-    signature = hmac.new(
-        webhook["secret"].encode(),
-        json.dumps(test_payload).encode(),
-        hashlib.sha256
-    ).hexdigest()
-    
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(
-                webhook["url"],
-                json=test_payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "X-IMOS-Signature": signature,
-                    "X-I'm On Social-Event": "test",
-                }
-            )
-            
-            return {
-                "success": response.status_code < 400,
-                "status_code": response.status_code,
-                "response": response.text[:500] if response.text else None,
-            }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-        }
+    await require_store_admin(request, webhook.get("store_id") or "")
+    event = build_event("ping", {"message": "This is a test webhook from I'm On Social", "webhook_id": webhook_id},
+                        {"store_id": webhook.get("store_id"), "organization_id": webhook.get("organization_id")})
+    return await deliver(db, webhook, event)
 
 
 # ============= CRM/DMS INTEGRATIONS =============
@@ -652,223 +605,15 @@ async def get_sync_logs(connection_id: str, limit: int = 50):
 
 @router.get("/docs/overview")
 async def get_api_overview():
-    """Get API documentation overview"""
+    """Where the real developer documentation lives. The API-key API is /api/v1; the app's own /api/* routes are session-only."""
     return {
-        "name": "I'm On Social API",
-        "version": "2.0",
-        "base_url": "/api",
-        "authentication": {
-            "type": "API Key",
-            "header": "X-API-Key",
-            "description": "Include your API key in the X-API-Key header for all requests",
-        },
-        "rate_limits": {
-            "requests_per_minute": 60,
-            "requests_per_day": 10000,
-        },
-        "endpoints": {
-            "contacts": {
-                "base": "/api/contacts",
-                "methods": ["GET", "POST", "PUT", "DELETE"],
-                "description": "Manage contacts and customer data",
-            },
-            "messages": {
-                "base": "/api/messages",
-                "methods": ["GET", "POST"],
-                "description": "Send and receive messages",
-            },
-            "campaigns": {
-                "base": "/api/campaigns",
-                "methods": ["GET", "POST", "PUT", "DELETE"],
-                "description": "Manage nurture campaigns",
-            },
-            "appointments": {
-                "base": "/api/calendar/appointments",
-                "methods": ["GET", "POST", "PUT", "DELETE"],
-                "description": "Schedule and manage appointments",
-            },
-            "tasks": {
-                "base": "/api/tasks",
-                "methods": ["GET", "POST", "PUT", "DELETE"],
-                "description": "Create and manage tasks",
-            },
-        },
-        "webhooks": {
-            "description": "Receive real-time notifications for events",
-            "events": list(WEBHOOK_EVENTS.keys()),
-            "signature_header": "X-IMOS-Signature",
-            "signature_algorithm": "HMAC-SHA256",
-        },
-    }
-
-
-@router.get("/docs/contacts")
-async def get_contacts_docs():
-    """Get contacts API documentation"""
-    return {
-        "resource": "Contacts",
-        "base_path": "/api/contacts/{user_id}",
-        "endpoints": [
-            {
-                "method": "GET",
-                "path": "/api/contacts/{user_id}",
-                "description": "List all contacts for a user",
-                "query_params": [
-                    {"name": "search", "type": "string", "description": "Search by name or phone"},
-                    {"name": "tags", "type": "string", "description": "Filter by tags (comma-separated)"},
-                    {"name": "limit", "type": "integer", "description": "Max results (default 100)"},
-                    {"name": "offset", "type": "integer", "description": "Pagination offset"},
-                ],
-                "response": {
-                    "type": "array",
-                    "items": {
-                        "type": "Contact",
-                        "properties": {
-                            "_id": "string",
-                            "first_name": "string",
-                            "last_name": "string",
-                            "phone": "string",
-                            "email": "string",
-                            "tags": "array[string]",
-                            "custom_dates": "array[{label, date}]",
-                            "created_at": "datetime",
-                        }
-                    }
-                }
-            },
-            {
-                "method": "POST",
-                "path": "/api/contacts/{user_id}",
-                "description": "Create a new contact",
-                "body": {
-                    "first_name": {"type": "string", "required": True},
-                    "last_name": {"type": "string", "required": False},
-                    "phone": {"type": "string", "required": True},
-                    "email": {"type": "string", "required": False},
-                    "tags": {"type": "array[string]", "required": False},
-                    "notes": {"type": "string", "required": False},
-                },
-                "response": {"type": "Contact"}
-            },
-            {
-                "method": "PUT",
-                "path": "/api/contacts/{user_id}/{contact_id}",
-                "description": "Update a contact",
-                "body": "Partial Contact object",
-                "response": {"type": "Contact"}
-            },
-            {
-                "method": "DELETE",
-                "path": "/api/contacts/{user_id}/{contact_id}",
-                "description": "Delete a contact",
-                "response": {"success": True}
-            },
-        ]
-    }
-
-
-@router.get("/docs/messages")
-async def get_messages_docs():
-    """Get messages API documentation"""
-    return {
-        "resource": "Messages",
-        "base_path": "/api/messages",
-        "endpoints": [
-            {
-                "method": "GET",
-                "path": "/api/messages/conversations/{user_id}",
-                "description": "List all conversations for a user",
-                "response": {
-                    "type": "array",
-                    "items": {
-                        "type": "Conversation",
-                        "properties": {
-                            "contact_id": "string",
-                            "contact_name": "string",
-                            "contact_phone": "string",
-                            "last_message": "string",
-                            "last_message_at": "datetime",
-                            "unread_count": "integer",
-                            "ai_handled": "boolean",
-                        }
-                    }
-                }
-            },
-            {
-                "method": "GET",
-                "path": "/api/messages/thread/{contact_id}",
-                "description": "Get message thread with a contact",
-                "response": {
-                    "type": "array",
-                    "items": {
-                        "type": "Message",
-                        "properties": {
-                            "_id": "string",
-                            "direction": "inbound|outbound",
-                            "content": "string",
-                            "media_urls": "array[string]",
-                            "sent_at": "datetime",
-                            "delivered": "boolean",
-                            "read": "boolean",
-                        }
-                    }
-                }
-            },
-            {
-                "method": "POST",
-                "path": "/api/messages/send",
-                "description": "Send a message to a contact",
-                "body": {
-                    "user_id": {"type": "string", "required": True},
-                    "contact_id": {"type": "string", "required": True},
-                    "content": {"type": "string", "required": True},
-                    "media_urls": {"type": "array[string]", "required": False},
-                },
-                "response": {"type": "Message"}
-            },
-        ]
-    }
-
-
-@router.get("/docs/webhooks")
-async def get_webhooks_docs():
-    """Get webhooks documentation"""
-    return {
-        "overview": "Webhooks allow you to receive real-time HTTP notifications when events occur in I'm On Social.",
-        "setup": {
-            "steps": [
-                "1. Create a webhook endpoint in your application",
-                "2. Register the webhook URL in I'm On Social",
-                "3. Select which events to subscribe to",
-                "4. Store the signing secret securely",
-            ],
-        },
-        "payload_format": {
-            "event": "The event type (e.g., 'contact.created')",
-            "timestamp": "ISO 8601 timestamp",
-            "data": "Event-specific data object",
-            "webhook_id": "Your webhook ID",
-        },
-        "signature_verification": {
-            "header": "X-IMOS-Signature",
-            "algorithm": "HMAC-SHA256",
-            "example_python": """
-import hmac
-import hashlib
-
-def verify_signature(payload, signature, secret):
-    expected = hmac.new(
-        secret.encode(),
-        payload.encode(),
-        hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(expected, signature)
-""",
-        },
-        "events": WEBHOOK_EVENTS,
-        "retry_policy": {
-            "max_retries": 3,
-            "retry_delays": ["1 minute", "5 minutes", "30 minutes"],
-            "timeout": "10 seconds",
-        },
+        "name": "I'm On Social Public API",
+        "version": "v1",
+        "base_url": "/api/v1",
+        "authentication": {"type": "API Key", "header": "X-API-Key", "description": "Create keys in Tools -> Integrations -> API Keys. Sent once, stored hashed."},
+        "rate_limits": {"requests_per_minute": 120},
+        "docs_url": "/imos/developers",
+        "openapi_url": "/api/public/openapi-v1.json",
+        "try_it_url": "/api/public/reference",
+        "webhooks": {"events": list(WEBHOOK_EVENTS.keys()), "signature_header": "X-IMOS-Signature", "signature_algorithm": "HMAC-SHA256 over the raw body, prefixed sha256="},
     }

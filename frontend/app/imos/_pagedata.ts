@@ -663,8 +663,9 @@ export const PAGES: Record<string, PreviewConfig> = {
       'Twilio for SMS and calling',
       'Google Calendar sync',
       'Resend for email delivery',
-      'Webhook support for custom integrations',
-      'REST API for developer access',
+      'Signed webhooks for every customer, text, call, note and sold record',
+      'Open REST API v1 with API keys: docs at imonsocial.com/imos/developers',
+      'ADF/XML lead intake and push for automotive CRMs',
     ],
     mockup: {
       type: 'list',

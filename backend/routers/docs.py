@@ -3,7 +3,7 @@ Company Documents Router
 Admin-only document hub: Security Policy, Company Policy, ToS, Privacy, Training, Integrations
 """
 from fastapi import APIRouter, HTTPException, Header
-from fastapi.responses import Response
+from fastapi.responses import Response, PlainTextResponse
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
@@ -83,7 +83,100 @@ REPO_DOC_SOURCES = [
         "summary": "The complete chronological engineering log — every feature, fix, and decision since day one.",
         "category": "prd", "icon": "time", "sort_order": 2,
     }),
+    ("/app/docs/DEVELOPER_API.md", {
+        "slug": "developer-api-reference",
+        "title": "Developer API Reference (Public API v1 + Webhooks)",
+        "summary": "The same document published at /imos/developers: API keys, every /api/v1 endpoint, webhooks, lead intake (ADF/XML, JSON, email), Zapier/Make, testing.",
+        "category": "integrations", "icon": "code-slash", "sort_order": 0,
+    }),
+    ("/app/docs/CRM_INTEGRATION_GUIDE.md", {
+        "slug": "crm-integration-guide",
+        "title": "CRM Integration Guide (HubSpot, Salesforce, Zoho, Pipedrive, automotive)",
+        "summary": "How a CRM vendor's programmer wires two-way sync: patterns, field mapping, dedupe rules, loop prevention, go-live checklist.",
+        "category": "integrations", "icon": "git-network", "sort_order": 1,
+    }),
+    ("/app/docs/AUTOMOTIVE_CRM_CERTIFICATION.md", {
+        "slug": "automotive-crm-certification",
+        "title": "Automotive CRM & DMS Partner Programs (certification checklist)",
+        "summary": "What it takes to integrate with VinSolutions, DealerSocket, Elead/CDK Fortellis, Reynolds RCI, DriveCentric and Tekion, and what works today without certification.",
+        "category": "integrations", "icon": "car-sport", "sort_order": 2,
+    }),
 ]
+
+# Developer docs that are public (no login): served to the marketing site at /imos/developers and as raw markdown.
+DEVELOPER_DOCS = [
+    {"slug": "api-reference", "path": "/app/docs/DEVELOPER_API.md", "title": "API Reference", "subtitle": "Keys, endpoints, webhooks, lead intake, testing"},
+    {"slug": "crm-integration-guide", "path": "/app/docs/CRM_INTEGRATION_GUIDE.md", "title": "CRM Integration Guide", "subtitle": "Two-way sync patterns and field maps"},
+    {"slug": "automotive-crm-programs", "path": "/app/docs/AUTOMOTIVE_CRM_CERTIFICATION.md", "title": "Automotive CRM Programs", "subtitle": "Certification checklist per vendor"},
+]
+
+public_router = APIRouter(prefix="/public", tags=["Public Docs"])
+
+
+def _read_doc(meta: dict) -> dict:
+    try:
+        with open(meta["path"], "r") as f:
+            content = f.read()
+    except FileNotFoundError:
+        content = f"# {meta['title']}\n\nComing soon."
+    return {"slug": meta["slug"], "title": meta["title"], "subtitle": meta["subtitle"], "content": content,
+            "download_url": f"/api/public/developer-docs/{meta['slug']}.md", "updated_at": datetime.utcfromtimestamp(os.path.getmtime(meta["path"])).isoformat() if os.path.exists(meta["path"]) else None}
+
+
+@public_router.get("/developer-docs")
+async def list_developer_docs():
+    return {"docs": [_read_doc(m) for m in DEVELOPER_DOCS]}
+
+
+@public_router.get("/developer-docs/{slug}.md", response_class=PlainTextResponse)
+async def developer_doc_markdown(slug: str):
+    meta = next((m for m in DEVELOPER_DOCS if m["slug"] == slug), None)
+    if not meta:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return PlainTextResponse(_read_doc(meta)["content"], media_type="text/markdown; charset=utf-8",
+                             headers={"Content-Disposition": f'inline; filename="imonsocial-{slug}.md"'})
+
+
+@public_router.get("/developer-docs/{slug}")
+async def developer_doc(slug: str):
+    meta = next((m for m in DEVELOPER_DOCS if m["slug"] == slug), None)
+    if not meta:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return _read_doc(meta)
+
+
+@public_router.get("/openapi-v1.json")
+async def openapi_v1():
+    """OpenAPI 3 schema for the API-key API only (/api/v1/*). Import it into Postman/Insomnia or generate a client."""
+    from fastapi import FastAPI
+    from fastapi.openapi.utils import get_openapi
+    from routers.public_api import router as v1_router
+    sub = FastAPI()
+    sub.include_router(v1_router, prefix="/api")
+    full = get_openapi(title="I'm On Social Public API", version="v1", routes=sub.routes,
+                       description="API-key access to contacts, conversations, calls, sold records, tasks and webhooks. Docs: /imos/developers")
+    paths = full.get("paths", {})
+    for p in paths.values():
+        for op in p.values():
+            if isinstance(op, dict):
+                op["security"] = [{"ApiKeyAuth": []}]
+                op.pop("tags", None)
+                (op.get("parameters") or [])[:] = [prm for prm in (op.get("parameters") or []) if prm.get("name") != "x-api-key"]
+    return {
+        "openapi": full.get("openapi", "3.1.0"),
+        "info": full["info"],
+        "servers": [{"url": "https://app.imonsocial.com"}],
+        "paths": paths,
+        "components": {**full.get("components", {}), "securitySchemes": {"ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key"}}},
+        "security": [{"ApiKeyAuth": []}],
+    }
+
+
+@public_router.get("/reference", include_in_schema=False)
+async def api_reference_ui():
+    """Interactive console (Swagger UI) for the public API: paste your key under Authorize and try every call."""
+    from fastapi.openapi.docs import get_swagger_ui_html
+    return get_swagger_ui_html(openapi_url="/api/public/openapi-v1.json", title="I'm On Social Public API v1", swagger_favicon_url="https://app.imonsocial.com/favicon.ico")
 
 
 async def sync_repo_docs() -> dict:

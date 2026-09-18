@@ -39,6 +39,7 @@ const NAV_LINKS = [
       { label: 'Training Hub', path: '/imos/training', icon: 'school', color: '#007AFF', desc: 'Courses, videos & best practices' },
       { label: 'Help Center', path: '/imos/help', icon: 'help-circle', color: '#34C759', desc: 'Guides, FAQs & support' },
       { label: 'Sales Deck', path: '/imos/presentation', icon: 'easel', color: '#FF9500', desc: 'See what we can do for you' },
+      { label: 'Developers & API', path: '/imos/developers', icon: 'code-slash', color: '#5856D6', desc: 'REST API, webhooks, CRM integration guides' },
     ],
   },
   { label: 'Pricing', path: '/imos/pricing' },
@@ -218,6 +219,7 @@ export function ImosFooter() {
             <TouchableOpacity onPress={() => navigate('/imos/login')}><Text style={f.link}>Sign In</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => navigate('/imos/training')}><Text style={f.link}>Training</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => navigate('/imos/help')}><Text style={f.link}>Help Center</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/developers')} data-testid="footer-developers-link"><Text style={f.link}>Developers & API</Text></TouchableOpacity>
           </View>
         </View>
       </View>

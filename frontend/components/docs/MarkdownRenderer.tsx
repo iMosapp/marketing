@@ -1,12 +1,22 @@
 import React from 'react';
-import { View, Text, Platform } from 'react-native';
+import { View, Text, Platform, Linking } from 'react-native';
 
-// Lightweight markdown for the internal docs: headings, bullets, numbered lists, tables, code fences, bold + inline code.
+const openLink = (href: string) => {
+  if (href.startsWith('#')) return;
+  if (Platform.OS === 'web') window.open(href.startsWith('http') ? href : href, href.startsWith('http') ? '_blank' : '_self');
+  else Linking.openURL(href.startsWith('http') ? href : `https://app.imonsocial.com${href}`);
+};
+
+// Lightweight markdown for the internal docs: headings, bullets, numbered lists, tables, code fences, bold + inline code + links.
 export function renderInlineMarkdown(text: string, colors: any): React.ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g);
   return parts.map((part, idx) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <Text key={idx} style={{ fontWeight: '700', color: colors.text }}>{part.slice(2, -2)}</Text>;
+    }
+    const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (link) {
+      return <Text key={idx} style={{ color: '#007AFF', fontWeight: '600' }} onPress={() => openLink(link[2])}>{link[1]}</Text>;
     }
     if (part.startsWith('`') && part.endsWith('`')) {
       return (

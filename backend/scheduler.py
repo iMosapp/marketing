@@ -1903,11 +1903,26 @@ async def run_inventory_feeds():
     return await run_all_feeds(get_db())
 
 
+async def run_webhook_outbox_job():
+    """Every minute: deliver what changed to the stores' outgoing webhooks (CRM sync)."""
+    from services.webhook_outbox import run_webhook_outbox
+    return await run_webhook_outbox()
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
         logger.warning("[Scheduler] Already running, skipping start.")
         return
+
+    scheduler.add_job(
+        safe_job(run_webhook_outbox_job),
+        IntervalTrigger(minutes=1),
+        id="webhook_outbox",
+        replace_existing=True,
+        misfire_grace_time=120,
+        coalesce=True,
+    )
 
     # Daily at 8 AM UTC  - process date triggers (birthdays, anniversaries, holidays)
     scheduler.add_job(
