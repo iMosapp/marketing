@@ -102,7 +102,7 @@ export default function SalesListScreen() {
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text }}>{LABEL[type] || 'Sales'}</Text>
           <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-            {scope === 'team' ? 'Team' : 'My'} history · one row per unit · tap a unit to open that purchase
+            {scope === 'team' ? 'Team' : 'My'} history · one row per unit · tap a unit to open the customer
           </Text>
         </View>
         {isManager && (

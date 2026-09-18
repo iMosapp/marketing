@@ -37,7 +37,7 @@ interface Props {
   userId: string;
   colors: any;
   onChanged?: () => void;
-  focusPurchaseId?: string;   // deep link from Sold Units: highlight this record and open it
+  focusPurchaseId?: string;   // deep link from Sold Units: highlight this record (no auto-open)
 }
 
 // Purchase dates are calendar dates: build "YYYY-MM-DD" from the local parts (toISOString would roll past midnight in UTC)
@@ -73,7 +73,7 @@ export default function PurchaseHistorySection({ contactId, userId, colors, onCh
 
   useEffect(() => { load(); }, [load]);
 
-  // Sold Units -> "open that purchase": once the records are in, outline the one tapped and open its sheet (once)
+  // Sold Units -> outline the record that was tapped (once). Never auto-open the editor: the rep wants the contact, not a form.
   const [focused, setFocused] = useState<string | null>(null);
   const consumedFocus = React.useRef<string | null>(null);
   useEffect(() => {
@@ -82,7 +82,6 @@ export default function PurchaseHistorySection({ contactId, userId, colors, onCh
     if (!target) return;
     consumedFocus.current = focusPurchaseId;
     setFocused(target.id);
-    openEdit(target);
   }, [focusPurchaseId, loading, purchases]);
 
   function openAdd() {
