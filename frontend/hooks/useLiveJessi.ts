@@ -12,6 +12,7 @@ const TOOL_LABELS: Record<string, string> = {
   who_today: 'Pulled up your people for today', find_person: 'Looked them up', recall_person: 'Read their history', send_text: 'Text ready to send',
   draft_message: 'Draft ready', set_reminder: 'Reminder set', confirm: 'Done', cancel: 'Cancelled', answer: 'Answered', open_screen: 'Opened it',
   find_duplicates: 'Checked for duplicates', merge_duplicates: 'Merge ready, say yes', hang_up: 'The shopper hung up', stay_in_character: 'Staying in character',
+  next_stop: 'Next stop',
 };
 const ROW_GAP_MS = 1500;
 
@@ -62,6 +63,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   const finalized = useRef(false);
   const greeting = useRef('');
   const greetInstruction = useRef('');
+  const openAtStart = useRef<OpenTarget | null>(null);
   const modeRef = useRef<LiveOptions['mode']>('assistant');
   const startedAt = useRef(0);
   const tick = useRef<any>(null);
@@ -174,6 +176,10 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
         startedAt.current = Date.now();
         send({ type: 'session.instructions.append', event_id: 'greet_1', delegation_id: null,
           content: greetInstruction.current || `Greet the rep immediately in English without waiting for them to speak. Say, in your own words: "${greeting.current}". Then pause and listen.` });
+        if (openAtStart.current) {
+          const target = openAtStart.current; openAtStart.current = null;
+          setTimeout(() => { try { onOpenRef.current?.(target); } catch { /* best effort */ } }, 1500);
+        }
         tick.current = setInterval(() => { if (!secondsRef.current) setSeconds(Math.round((Date.now() - startedAt.current) / 1000)); }, 1000);
         flushTimer.current = setInterval(flush, 6000);
         resetIdle();
@@ -255,6 +261,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       liveId.current = r.data.live_id;
       greeting.current = r.data.greeting || 'Hey, it is Jessi.';
       greetInstruction.current = r.data.greet_instruction || '';
+      openAtStart.current = r.data.open?.kind ? (r.data.open as OpenTarget) : null;
       idleCloseS.current = Number(r.data.idle_close_s || 25);
       capRef.current = r.data.cap_left_s ?? null;
       setCapLeft(capRef.current);

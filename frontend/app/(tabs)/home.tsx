@@ -29,6 +29,7 @@ import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 import { LeadsWaitingStrip } from '../../components/home/LeadsWaitingStrip';
 import { ReplyHealthCard } from '../../components/home/ReplyHealthCard';
 import { TalkToJessiButton } from '../../components/jessi/TalkToJessiButton';
+import { WalkMyDayButton } from '../../components/jessi/WalkMyDayButton';
 import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
 import { HotVehiclesCard } from '../../components/home/HotVehiclesCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
@@ -987,6 +988,7 @@ function HomeScreen() {
               <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>{nextMove.btn}</Text>
             </View>
           </View>
+          <WalkMyDayButton color={nextMove.color} onDone={() => { loadHomeIntelligence(true); loadAllData(true); }} />
         </TouchableOpacity>
 
         {/* ── THIS MONTH — sold front and center, right under the action ── */}

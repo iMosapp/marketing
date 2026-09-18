@@ -29,6 +29,9 @@ COLL = "live_sessions"
 LAB_KEY = "jessi_live_voice"
 MODES = ("assistant", "lab", "shopper")
 SHOPPER_IDLE_S = 45
+WALKTHROUGH_RULES = ("\n\nThis session is a WALKTHROUGH OF THE REP'S DAY. The backend hands you each stop in order (a customer waiting on a reply, an overdue touchpoint, one of today's three, a hot opportunity); "
+                     "say it in your own words, keep every name and detail, then stop and wait. The rep moves it along with next, skip or done, and texting or finishing a stop through you moves it along too. "
+                     "Brisk and warm: this is a morning run-through, not a chat. When the backend says that's the day, wrap up in one line.")
 
 VOICES = [
     {"id": "gleam", "name": "Gleam", "accent": "North American", "tone": "feminine", "natural": True},
@@ -53,7 +56,7 @@ ENERGY = {1: "calm and steady", 2: "relaxed and easy", 3: "warm and engaged", 4:
 PACING = {1: "slow and unhurried", 2: "measured", 3: "a natural pace", 4: "quick-moving, no dead air", 5: "fast and clipped"}
 PLAYFUL = {1: "all business", 2: "mostly serious", 3: "lightly playful when it fits", 4: "playful", 5: "very playful, quick with a one-liner"}
 BREVITY = {1: "take your time and explain fully", 2: "a few sentences", 3: "two or three short sentences", 4: "one or two short sentences, then let them talk", 5: "as few words as possible"}
-TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates")
+TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates", "next_stop")
 SCREENS = {"contact": ("contact", "record", "profile", "person", "page", "card"), "thread": ("thread", "conversation", "texts", "messages", "text", "chat"),
            "tasks": ("tasks", "task", "reminders", "touchpoints", "to-dos", "todos"), "home": ("home", "today"), "inbox": ("inbox",)}
 
@@ -273,16 +276,26 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         raise LiveCapReached(f"You have used today's {cfg['daily_cap_min']} minutes of live Jessi. It resets at midnight.")
     contact = await focus_contact(db, user, contact_id)
     shop = None
+    agenda = None
+    if mode == "assistant" and (overrides or {}).get("walkthrough"):
+        from services import day_agenda
+        agenda = await day_agenda.build(db, uid)
+        if agenda and agenda[0].get("contact_id"):
+            contact = await focus_contact(db, user, agenda[0]["contact_id"]) or contact
     if mode == "shopper":
         from services import live_shops
         shop = await live_shops.audition(db, user, overrides or {})
         instructions, voice = shop["instructions"], shop["voice"]
     else:
         instructions, voice = (lab_instructions(cfg, user, contact) if mode == "lab" else assistant_instructions(cfg, user, contact=contact)), cfg["voice"]
+        if agenda is not None:
+            instructions += WALKTHROUGH_RULES
     tz = await _tz(user)
     now_local = _now().astimezone(tz).strftime("%A %B %d, %Y, %-I:%M %p")
     where = f"Their app is open on {_first_last(contact)}'s conversation. {await focus_brief(db, contact)}" if contact else "Their app is open on the Home screen."
     context = f"Right now it is {now_local}." if shop else f"Right now it is {now_local} for the rep. {where}"
+    if agenda is not None:
+        context += " DAY WALKTHROUGH, the stops in order: " + ("; ".join(f"{s['n']}. {s['name']} ({s['kind']}: {s['why']})" for s in agenda) if agenda else "none, the rep is caught up") + "."
     session = {"model": MODEL, "instructions": instructions, "audio": {"output": {"voice": voice}}, "delegation": {"type": "client"},
                "input": [{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": context}]}]}
     body = {"session": session, "transport": {"type": "webrtc", "sdp": sdp}}
@@ -303,13 +316,20 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
     live_id = uuid.uuid4().hex[:12]
     doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "mode": mode, "openai_session_id": (data.get("session") or {}).get("id"), "voice": voice,
            "contact_id": str(contact["_id"]) if contact else None, "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None,
+           "agenda": agenda, "agenda_pos": 0 if agenda is not None else None, "agenda_done": [], "agenda_skipped": [],
            "config": {k: cfg[k] for k in DEFAULTS}, "status": "open", "started_at": _now(), "ended_at": None, "seconds": 0, "cost_usd": 0.0, "close_reason": None,
            "transcript": [], "delegations": [], "pending": None, "created_at": _now(), "updated_at": _now()}
     await db[COLL].insert_one(doc)
-    logger.info(f"[Live] {mode} session {live_id} for {uid} voice={voice}")
+    logger.info(f"[Live] {mode} session {live_id} for {uid} voice={voice}" + (f" walkthrough={len(agenda)} stops" if agenda is not None else ""))
     greet = shop["greet_instruction"] if shop else None
+    opened = None
+    if agenda is not None:
+        from services import day_agenda
+        greet = f'Open with this, in your own words but keep every name and detail: "{day_agenda.intro(user, agenda)}" Then stop and wait for the rep.'
+        opened = day_agenda.open_target(agenda[0]) if agenda else None
     return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": (data.get("transport") or {}).get("sdp"), "greeting": greeting_text(cfg, user, contact), "greet_instruction": greet,
-            "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None,
+            "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None, "open": opened,
+            "agenda": [{k: s.get(k) for k in ("n", "kind", "name", "first", "why", "contact_id")} for s in agenda] if agenda is not None else None,
             "idle_close_s": SHOPPER_IDLE_S if shop else cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": voice}
 
 
@@ -342,7 +362,7 @@ async def record_events(db, live: dict, events: list) -> dict:
 
 def serialize(s: dict, full: bool = False) -> dict:
     out = {"live_id": s.get("live_id"), "user_id": s.get("user_id"), "user_name": s.get("user_name"), "mode": s.get("mode"), "voice": s.get("voice"), "status": s.get("status"), "contact_name": s.get("contact_name"),
-           "shopper": s.get("shopper"),
+           "shopper": s.get("shopper"), "walkthrough": {"stops": len(s["agenda"]), "done": len(s.get("agenda_done") or []), "skipped": len(s.get("agenda_skipped") or [])} if s.get("agenda") is not None else None,
            "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
            "seconds": int(s.get("seconds") or 0), "cost_usd": round(float(s.get("cost_usd") or 0), 4), "close_reason": s.get("close_reason"),
            "turns": len(s.get("transcript") or []), "delegations": len(s.get("delegations") or []), "tools": [d.get("tool") for d in (s.get("delegations") or [])]}
@@ -370,10 +390,11 @@ Tools:
 - open_screen: the rep wants something SHOWN on their phone screen: open / pull up / show / bring up / go to a person's record, a text thread, their tasks, home or the inbox. args: {"what": "contact|thread|tasks|home|inbox", "name": "<the person, empty for tasks/home/inbox>"}
 - find_duplicates: the rep asks whether they have duplicates / double records / the same person twice, or wants to clean up their contacts. args: {}
 - merge_duplicates: the rep wants two or more records of ONE person combined: "merge them", "combine those", "make Tod one record", "clean up Tod Berry", or "merge them" right after Jessi mentioned she found two records for a name. args: {"name": "<the person as spoken, empty when they mean the records Jessi just mentioned>"}
+- next_stop: ONLY during a DAY WALKTHROUGH (shown below). The rep moves the walkthrough along: "next" / "what's next" / "move on" / "go on" / "okay next one" -> {"action": "next"}; "skip" / "skip him" / "not today" / "pass" -> {"action": "skip"}; "done" / "did that" / "already texted him" / "handled" / "mark it done" / "I called her" -> {"action": "done"}. args: {"action": "next|skip|done"}
 
 Every tool that takes a "name" also takes "hint": how the rep pointed at ONE of several records Jessi listed, verbatim and short: "the first one", "the second one", "the other one", "the one with the Tahoe", "ending in 0100", "the Berry one", "the newer one". Empty when the rep did not pick.
 
-Rules: "pull up Mike" or "show me Sarah" means open_screen (they want to see it); "tell me about Mike" or "what did Sarah buy" means recall_person (they want to hear it). If a person's name is unclear, still pick the tool with your best reading of the name. Names: pass first AND last name whenever the rep said both. If the rep spells a name ("T-O-D", "J E S S I E", "B as in boy, E, R..."), args.name MUST use exactly those letters for that part (J E S S I E -> Jessie, never Jesse) plus the other name part (e.g. "Jessie Walters"). If Jessi just listed several people and the rep picks one ("the second one", "the one with the Tahoe", "Berry", "not Snow, the other Todd"), args.name is that person's full name exactly as listed AND args.hint is how they picked. If Jessi said she used one of several records and the rep says "the other one" / "no, the other Tod", keep the same tool and name and set hint to "the other one". If the rep says the last match was the wrong person, do not reuse it: use the corrected name they gave. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
+Rules: "pull up Mike" or "show me Sarah" means open_screen (they want to see it); "tell me about Mike" or "what did Sarah buy" means recall_person (they want to hear it). If a person's name is unclear, still pick the tool with your best reading of the name. Names: pass first AND last name whenever the rep said both. If the rep spells a name ("T-O-D", "J E S S I E", "B as in boy, E, R..."), args.name MUST use exactly those letters for that part (J E S S I E -> Jessie, never Jesse) plus the other name part (e.g. "Jessie Walters"). If Jessi just listed several people and the rep picks one ("the second one", "the one with the Tahoe", "Berry", "not Snow, the other Todd"), args.name is that person's full name exactly as listed AND args.hint is how they picked. If Jessi said she used one of several records and the rep says "the other one" / "no, the other Tod", keep the same tool and name and set hint to "the other one". If the rep says the last match was the wrong person, do not reuse it: use the corrected name they gave. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. During a DAY WALKTHROUGH the focus contact is the current stop, so "draft it", "text him", "pull her up", "what did he buy" all point at that person; a bare "yes" right after Jessi offered to draft or pull someone up means do that (send_text / draft_message / open_screen for the focus contact), not confirm, unless an action is PENDING. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
 
 
 def _first_last(c: dict) -> str:
@@ -822,6 +843,52 @@ async def _merge_now(db, user: dict, pending: dict):
     return (f"Done. {pending['name']} is one record now" + (f", {moved} text{'s' if moved != 1 else ''}, tasks and notes moved over." if moved else ".")), {"kind": "contact", "id": r["primary_id"], "name": pending["name"], "first": pending["name"].split(" ")[0]}
 
 
+# ── day walkthrough ───────────────────────────────────────────────────────────
+def _current_stop(live: dict) -> Optional[dict]:
+    agenda, pos = live.get("agenda"), live.get("agenda_pos")
+    if agenda is None or pos is None or pos >= len(agenda):
+        return None
+    return agenda[pos]
+
+
+def _walkthrough_line(live: dict) -> str:
+    if live.get("agenda") is None:
+        return "DAY WALKTHROUGH: none"
+    cur = _current_stop(live)
+    if not cur:
+        return "DAY WALKTHROUGH: finished, every stop was covered"
+    rest = ", ".join(s["name"] for s in live["agenda"][live["agenda_pos"] + 1:][:4])
+    return f"DAY WALKTHROUGH: stop {cur['n']} of {len(live['agenda'])} is {cur['name']} ({cur['kind']}: {cur['why']}). Coming up: {rest or 'nothing, this is the last one'}."
+
+
+async def _advance(db, user: dict, live: dict, action: str, prefix: str = ""):
+    """Settle the current stop (done / skip / next) and hand back the next one; updates the live doc so the next delegation continues from there."""
+    from services import day_agenda
+    cur = _current_stop(live)
+    if not cur:
+        return prefix + day_agenda.outro(len(live.get("agenda_done") or []), len(live.get("agenda_skipped") or []), len(live.get("agenda") or [])), {"kind": "home"}
+    sets = {"agenda_pos": live["agenda_pos"] + 1}
+    push = {}
+    if action in ("done", "skip"):
+        try:
+            await day_agenda.settle(db, str(user["_id"]), cur, action)
+        except Exception as e:
+            logger.warning(f"[Live] could not settle stop {cur.get('key')}: {e}")
+        push = {"agenda_done" if action == "done" else "agenda_skipped": cur["key"]}
+    nxt = live["agenda"][live["agenda_pos"] + 1] if live["agenda_pos"] + 1 < len(live["agenda"]) else None
+    if nxt and nxt.get("contact_id"):
+        sets.update(contact_id=nxt["contact_id"], contact_name=nxt["name"])
+    await db[COLL].update_one({"_id": live["_id"]}, {"$set": sets, **({"$push": push} if push else {})})
+    live.update(sets)
+    if push:
+        k = next(iter(push))
+        live[k] = (live.get(k) or []) + [cur["key"]]
+    if not nxt:
+        return prefix + day_agenda.outro(len(live.get("agenda_done") or []), len(live.get("agenda_skipped") or []), len(live["agenda"])), {"kind": "home"}
+    lead = {"done": "Done. ", "skip": "Skipped. ", "next": ""}[action]
+    return f"{prefix}{lead}Next up: {nxt['say']}", day_agenda.open_target(nxt)
+
+
 async def _shopper_delegation(db, live: dict, transcript: list, delegation_id: Optional[str], t0: datetime) -> dict:
     """Audition of the mystery shopper: no tools. The one delegation means 'I said goodbye, hang up'; anything earlier is told to stay in character."""
     from services.live_shops import call_over
@@ -848,10 +915,12 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
     tz_line = f"NOW (rep's local time, {getattr(tz, 'key', 'UTC')}): {_now().astimezone(tz).strftime('%A %Y-%m-%d %H:%M')}. Return when_iso in this local time without a Z suffix."
     plan = {}
     try:
-        plan = await _llm_json(BRAIN_SYSTEM, f"{tz_line}\n{focus_txt}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
+        plan = await _llm_json(BRAIN_SYSTEM, f"{tz_line}\n{focus_txt}\n{_walkthrough_line(live)}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
     except Exception as e:
         logger.warning(f"[Live] brain plan failed: {e}")
     tool = plan.get("tool") if plan.get("tool") in TOOLS else "answer"
+    if tool == "next_stop" and live.get("agenda") is None:
+        tool = "answer"
     args = plan.get("args") if isinstance(plan.get("args"), dict) else {}
     result, new_pending, kind, opened = "", pending, "commentary", None
     try:
@@ -886,11 +955,18 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
                 result = await _send_now(db, user, pending)
                 opened = {"kind": "thread", "id": pending["contact_id"], "name": pending.get("name") or "", "first": (pending.get("name") or "").split(" ")[0]}
                 new_pending = None
+                cur = _current_stop(live)
+                if cur and cur.get("contact_id") == pending["contact_id"] and result.startswith("Sent"):
+                    result, opened = await _advance(db, user, live, "done", prefix=result + " ")
             elif pending and pending.get("type") == "merge":
                 result, opened = await _merge_now(db, user, pending)
                 new_pending = None
             else:
                 result = "There is nothing waiting for a yes right now. What would you like me to do?"
+        elif tool == "next_stop":
+            action = args.get("action") if args.get("action") in ("next", "skip", "done") else "next"
+            result, opened = await _advance(db, user, live, action)
+            new_pending = None
         elif tool == "cancel":
             result = ("Okay, cancelled. Nothing was merged." if pending.get("type") == "merge" else "Okay, cancelled. Nothing was sent.") if pending else "Nothing to cancel."
             new_pending = None
