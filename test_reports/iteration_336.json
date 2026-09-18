@@ -1,0 +1,36 @@
+{
+  "summary": "Mystery shop overhaul (difficulty / direction_mix / retry / night_guard / per-person hours+timezone+quota / grading templates / demo & shop-now direction filters / Shops tab pills) tested end-to-end: 8/8 test_shop_scheduling unit tests pass; 12/12 regression tests (live_shops, shop_call_guards, text_shops -k 'not api') pass; 6/6 new API tests pass; all frontend testids present and interactive flows work.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "ClientSheet / mystery-shop modals", "issues": ["Non-blocking console warning: 'Unexpected text node: A text node cannot be a child of a <View>' when opening the client sheet — a stray whitespace/text node inside a <View> in one of the mystery-shop components. Cosmetic."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_shop_overhaul_api.py",
+    "/app/backend/tests/test_shop_scheduling.py",
+    "/app/backend/tests/test_live_shops.py",
+    "/app/backend/tests/test_shop_call_guards.py",
+    "/app/backend/tests/test_text_shops.py"
+  ],
+  "action_items": [
+    "(Optional) Track down the stray text/whitespace inside a <View> that produces the 'Unexpected text node' warning when the client sheet / mystery-shop modals mount."
+  ],
+  "critical_code_review_comments": [
+    "GET /api/shop-clients/{id} no longer 500s — people_month_stats present with quota / planned / completed / scheduled / unreachable / inbound / outbound / avg_score / next_at as required.",
+    "PUT /api/shop-clients/{id} correctly coerces invalid difficulty/direction_mix/retry values to medium / mixed / 5 rather than 500.",
+    "PUT /api/shop-clients/people/{id} validates timezone (400 on 'Mars/Olympus') and correctly clears hours/timezone/difficulty/monthly_quota when passed empty/negative.",
+    "Review request references POST /api/shop-clients/demo/challenges but backend implements it as GET — worth aligning the internal docs (functionality works correctly).",
+    "Built-in grading templates surface with the correct human-facing names: 'Sales Phone-Up' (inbound) and 'Internet Sales Call' (outbound)."
+  ],
+  "updated_files": ["/app/backend/tests/test_shop_overhaul_api.py (new)"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "forest@imosapp.com / Admin123! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created and DELETED one temp person (QA Sched Tester, phone 5005559301) during the people-prefs test. QA Jeep 979a client settings were mutated then restored to difficulty=medium, direction_mix=mixed, retry.tries=3, retry.spacing=next_day, retry.by_dept={}, reissue_unreachable=true.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 8 test_shop_scheduling tests + 12 regression tests + 6 new API tests pass. Frontend verified via data-testid: person-month-{id} shows '2 of 5 this month · 2 done · avg 81% · 2 in / 0 out'; person-sheet fields all present; person-prefs-{id} appears after Save ('Own hours 10:00 to 16:00 · Easy shopper') and disappears after revert; shop-now-sheet has direction/difficulty chips + call + close; client-sheet has night-guard, difficulty chips (easy/medium/hard/mixed), mix chips (mixed/inbound/outbound), tries 1-5, spacing (same_day/next_day/two_days), reissue-toggle, grading-sales with client-card-sales-inbound-builtin='Sales Phone-Up' and outbound-builtin='Internet Sales Call'; demo-sheet on /admin/mystery-shops opened via `shop-demo` button (direction & difficulty chips + hints; Outbound filters challenge chips; Text channel hides direction chips); Shops tab shows shop-call-kind-{id} lines 'Inbound · Medium · up to 3 tries' and opening a call shows shop-call-direction-inbound + shop-call-difficulty-medium pills in shop-call-detail. NO real Twilio calls placed.",
+  "rca of the issue": "N/A — no bugs found."
+}
