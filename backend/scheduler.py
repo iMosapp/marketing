@@ -950,6 +950,29 @@ async def send_weekly_keyword_digests():
         logger.error(f"[Scheduler] Weekly keyword digest error: {e}")
 
 
+async def _schedule_repeat_touch(db, send_doc: dict, campaign: dict, now_naive: datetime) -> dict | None:
+    """Evergreen plans (repeat_every_months): after the last touch goes out, queue the next one N months after this one was due.
+    Uses repeat_step when the plan has one, else the last touch. Stops on its own when the plan is switched off."""
+    if not campaign.get("active", True):
+        return None
+    months = int(campaign.get("repeat_every_months") or 0)
+    seqs = campaign.get("sequences") or []
+    step = dict(campaign.get("repeat_step") or (seqs[-1] if seqs else {}))
+    if months <= 0 or not step:
+        return None
+    due = send_doc.get("send_at") if isinstance(send_doc.get("send_at"), datetime) else now_naive
+    if due.tzinfo:
+        due = due.astimezone(timezone.utc).replace(tzinfo=None)
+    send_at = max(due + timedelta(days=30 * months), now_naive + timedelta(days=1))
+    doc = {k: send_doc.get(k) for k in ("user_id", "campaign_id", "campaign_name", "contact_id", "contact_name", "contact_phone", "enrollment_id", "delivery_mode", "ai_enabled")}
+    doc.update({"step": int(send_doc.get("step") or 0) + 1, "message_template": step.get("message_template") or step.get("message", ""), "step_context": step.get("step_context", ""),
+                "media_urls": step.get("media_urls", []), "channel": step.get("channel", "sms"), "media_type": step.get("media_type", ""),
+                "send_at": send_at, "status": "pending", "created_at": now_naive, "repeat": True})
+    await db.campaign_pending_sends.insert_one(doc)
+    logger.info(f"[Scheduler] Evergreen plan '{campaign.get('name')}': next touch for {doc.get('contact_name')} queued {send_at:%Y-%m-%d} (step {doc['step']})")
+    return doc
+
+
 async def process_pending_campaign_steps():
     """
     Reads from the pre-scheduled campaign_pending_sends queue — no enrollment scan.
@@ -1078,6 +1101,37 @@ async def process_pending_campaign_steps():
                     {"$set": {"status": "processing", "started_at": now_naive}}
                 )
 
+                # ── GUARDRAILS: never text someone who said STOP; never talk over a customer who is waiting on the rep ──
+                campaign_doc = {}
+                try:
+                    if send_doc.get("campaign_id") and ObjectId.is_valid(str(send_doc["campaign_id"])):
+                        campaign_doc = await db.campaigns.find_one({"_id": ObjectId(send_doc["campaign_id"])}, {"sequences": 1, "repeat_every_months": 1, "repeat_step": 1, "name": 1, "active": 1}) or {}
+                except Exception as ce:
+                    logger.debug(f"[Scheduler] campaign lookup failed: {ce}")
+                try:
+                    guard_contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"opted_out": 1, "sms_opt_out": 1, "status": 1}) if contact_id and ObjectId.is_valid(str(contact_id)) else None
+                    if guard_contact is None or guard_contact.get("status") in ("merged", "deleted") or guard_contact.get("opted_out") or guard_contact.get("sms_opt_out"):
+                        why = "contact_missing" if guard_contact is None else ("contact_" + str(guard_contact.get("status"))) if guard_contact.get("status") in ("merged", "deleted") else "opted_out"
+                        await db.campaign_pending_sends.update_one({"_id": send_id}, {"$set": {"status": "skipped", "skip_reason": why, "processed_at": now_naive}})
+                        logger.info(f"[Scheduler] Skipped send {send_id}: {why}")
+                        continue
+                    if channel == "sms":
+                        last_msg = await db.messages.find_one({"contact_id": contact_id, "sender": {"$in": ["user", "contact", "ai"]}, "content": {"$exists": True, "$ne": ""}}, {"sender": 1, "timestamp": 1}, sort=[("timestamp", -1)])
+                        lm_ts = (last_msg or {}).get("timestamp")
+                        if isinstance(lm_ts, datetime) and lm_ts.tzinfo:
+                            lm_ts = lm_ts.astimezone(timezone.utc).replace(tzinfo=None)
+                        holds = int(send_doc.get("held_count") or 0)
+                        if last_msg and last_msg.get("sender") == "contact" and isinstance(lm_ts, datetime) and lm_ts >= now_naive - timedelta(days=3) and holds < 3:
+                            await db.campaign_pending_sends.update_one({"_id": send_id}, {"$set": {"status": "pending", "send_at": now_naive + timedelta(days=2), "held_reason": "customer_waiting_on_reply"}, "$inc": {"held_count": 1}})
+                            logger.info(f"[Scheduler] Held send {send_id}: the customer texted {lm_ts} and is still waiting on a reply (hold {holds + 1}/3)")
+                            continue
+                except Exception as ge:
+                    logger.warning(f"[Scheduler] guardrail check failed (sending anyway): {ge}")
+
+                # The touch's goal for the writer: the send doc's own, else the campaign step's, else the repeat step's
+                seqs = campaign_doc.get("sequences") or []
+                step_goal = send_doc.get("step_context") or ((seqs[current_step - 1].get("step_context") if 0 < current_step <= len(seqs) else None) or (campaign_doc.get("repeat_step") or {}).get("step_context") or "")
+
                 # AI personalization
                 use_ai = campaign_ai_enabled
                 if use_ai:
@@ -1101,7 +1155,7 @@ async def process_pending_campaign_steps():
                     try:
                         from routers.ai_campaigns import generate_campaign_message
                         ai_result = await generate_campaign_message(user_id, contact_id, {
-                            "step_context": f"Step {current_step}",
+                            "step_context": step_goal or f"Step {current_step}",
                             "channel": channel,
                             "campaign_name": send_doc.get("campaign_name", ""),
                             "template_hint": message_content,
@@ -1411,6 +1465,8 @@ async def process_pending_campaign_steps():
                                 "enrollment_id": enrollment_id,
                                 "status": "pending",
                             })
+                            if not next_pending and (campaign_doc.get("repeat_every_months") or 0) > 0 and enr.get("status") == "active" and not send_doc.get("broadcast_id"):
+                                next_pending = await _schedule_repeat_touch(db, send_doc, campaign_doc, now_naive)
                             new_status = "active" if next_pending else "completed"
                             msg_record = {
                                 "step": current_step, "content": message_content[:100],
@@ -1421,7 +1477,7 @@ async def process_pending_campaign_steps():
                             await db.campaign_enrollments.update_one(
                                 {"_id": ObjectId(enrollment_id)},
                                 {"$set": {"current_step": current_step + 1, "status": new_status,
-                                          "next_send_at": None},
+                                          "next_send_at": (next_pending or {}).get("send_at")},
                                  "$push": {"messages_sent": msg_record}},
                             )
                     except Exception as ee:

@@ -94,7 +94,7 @@ function CampaignsScreen() {
                       <Ionicons name={t.icon || 'rocket-outline'} size={16} color={t.color || GOLD} />
                     </View>
                     <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }} numberOfLines={2}>{t.name}</Text>
-                    <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={2}>{t.step_count} touches · {t.total_duration}{t.ai_enabled ? ' · Jessi writes' : ''}</Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={2}>{t.step_count} touches · {t.total_duration}{t.repeat_every_months ? `, then every ${t.repeat_every_months} mo` : ''}{t.ai_enabled ? ' · Jessi writes' : ''}</Text>
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity onPress={() => router.push('/campaigns/new')} style={{ width: 120, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: GOLD + '66', padding: 12, gap: 6, justifyContent: 'center', alignItems: 'center' }} {...tid('template-blank')}>

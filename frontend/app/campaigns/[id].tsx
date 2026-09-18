@@ -51,6 +51,7 @@ export default function CampaignEditorScreen() {
   const [deliveryMode, setDeliveryMode] = useState('auto');
   const [inboundDefault, setInboundDefault] = useState(false);
   const [touches, setTouches] = useState<Touch[]>([]);
+  const [repeatMonths, setRepeatMonths] = useState(0);
   const [dirty, setDirty] = useState(false);
   const [preview, setPreview] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -86,6 +87,7 @@ export default function CampaignEditorScreen() {
       setDeliveryMode(isAutoDelivery(data.delivery_mode) ? 'auto' : 'manual');
       setInboundDefault(data.is_inbound_default === true);
       setTouches(normalizeTouches(data.sequences, data.message_template));
+      setRepeatMonths(Number(data.repeat_every_months) || 0);
       setDirty(false);
     } catch (e: any) {
       if (e?.response?.status === 404) setNotFound(true);
@@ -319,7 +321,15 @@ export default function CampaignEditorScreen() {
               {canEdit ? <GoldButton label="Add the first touch" icon="add" onPress={() => openTouch(newTouch(), 0, true)} testId="campaign-add-first-touch" /> : null}
             </View>
           ) : (
-            <TouchTimeline touches={touches} aiPersonalizes={aiEnabled} preview={preview} sample={sample} editable={canEdit} colors={colors} onEdit={openTouch} onAddAfter={addAfter} />
+            <>
+              <TouchTimeline touches={touches} aiPersonalizes={aiEnabled} preview={preview} sample={sample} editable={canEdit} colors={colors} onEdit={openTouch} onAddAfter={addAfter} />
+              {repeatMonths > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingHorizontal: 4 }} {...tid('campaign-repeat-note')}>
+                  <Ionicons name="repeat" size={15} color={GOLD} />
+                  <Text style={{ flex: 1, fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>Then a fresh touch every {repeatMonths} months, for as long as this plan is on. {aiEnabled ? 'Jessi writes each one from the sale, your texts and your voice memos, a new angle every time.' : 'Repeats the last touch.'}</Text>
+                </View>
+              )}
+            </>
           )}
         </View>
 

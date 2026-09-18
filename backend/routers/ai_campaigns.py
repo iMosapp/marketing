@@ -298,6 +298,51 @@ async def get_contact_context(user_id: str, contact_id: str, include_vehicle: bo
         return "\n".join(parts)
 
 
+async def campaign_history(user_id: str, contact_id: str) -> str:
+    """What a real rep would glance at before texting a customer they sold: the sale, the actual thread, and what we already sent."""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "purchase_history": 1, "vehicle": 1, "date_sold": 1, "sold_count": 1}) or {}
+    parts = [f"TODAY: {now.strftime('%A, %B %d, %Y')} ({_season(now)})."]
+    sales = sorted([e for e in (contact.get("purchase_history") or []) if e.get("date")], key=lambda e: e["date"], reverse=True)
+    if sales:
+        lines = []
+        for e in sales[:3]:
+            try:
+                d = datetime.fromisoformat(str(e["date"])[:10]).replace(tzinfo=timezone.utc)
+                months = max(0, (now.year - d.year) * 12 + now.month - d.month)
+                ago = f"{months} month{'s' if months != 1 else ''} ago" if months < 24 else f"{months // 12} years ago"
+                lines.append(f"  {e.get('title') or 'a vehicle'} on {d.strftime('%B %d, %Y')} ({ago}){': ' + e['notes'][:120] if e.get('notes') else ''}")
+            except ValueError:
+                lines.append(f"  {e.get('title') or 'a vehicle'} ({e.get('date')})")
+        parts.append("WHAT THEY BOUGHT FROM ME:\n" + "\n".join(lines) + (f"\n  Repeat buyer: {contact['sold_count']} purchases." if (contact.get("sold_count") or 0) > 1 else ""))
+    elif contact.get("vehicle"):
+        parts.append(f"THEIR VEHICLE: {contact['vehicle']}")
+    msgs = await db.messages.find({"contact_id": contact_id, "sender": {"$in": ["user", "contact", "ai"]}, "content": {"$exists": True, "$ne": ""}},
+                                  {"sender": 1, "content": 1, "timestamp": 1}).sort("timestamp", -1).limit(12).to_list(12)
+    if msgs:
+        msgs.reverse()
+        rows = []
+        for m in msgs:
+            ts = m.get("timestamp")
+            when = ts.strftime("%b %d") if isinstance(ts, datetime) else ""
+            rows.append(f"  [{when}] {'Me' if m.get('sender') in ('user', 'ai') else contact.get('first_name') or 'Them'}: {str(m.get('content'))[:300]}")
+        parts.append("OUR ACTUAL TEXTS (oldest first):\n" + "\n".join(rows))
+    sent = []
+    async for enr in db.campaign_enrollments.find({"contact_id": contact_id}, {"campaign_name": 1, "messages_sent": 1}).limit(10):
+        for ms in enr.get("messages_sent") or []:
+            if ms.get("content"):
+                sent.append((ms.get("sent_at") or datetime.min.replace(tzinfo=timezone.utc), ms["content"]))
+    if sent:
+        sent.sort(key=lambda x: (x[0].replace(tzinfo=timezone.utc) if isinstance(x[0], datetime) and x[0].tzinfo is None else x[0]), reverse=True)
+        parts.append("CHECK-INS I ALREADY SENT (never reuse these angles or phrasings):\n" + "\n".join(f"  {c[:160]}" for _, c in sent[:6]))
+    return "\n\n".join(parts)
+
+
+def _season(d: datetime) -> str:
+    return ("winter", "winter", "early spring", "spring", "late spring", "early summer", "summer", "late summer", "early fall", "fall", "late fall", "winter")[d.month - 1]
+
+
 @router.post("/generate-message/{user_id}/{contact_id}")
 async def generate_campaign_message(user_id: str, contact_id: str, data: dict):
     """
@@ -318,33 +363,40 @@ async def generate_campaign_message(user_id: str, contact_id: str, data: dict):
 
     # Build contact context
     contact_context = await get_contact_context(user_id, contact_id)
+    try:
+        history = await campaign_history(user_id, contact_id)
+    except Exception as e:
+        logger.warning(f"campaign_history failed for {contact_id}: {e}")
+        history = ""
 
     # Build the generation request
     if channel == "email":
         format_hint = "Write a short, professional email. Include a subject line on the first line prefixed with 'Subject: '."
     else:
-        format_hint = "Write a short SMS text message. Keep it under 160 characters if possible. Be conversational and personal."
+        format_hint = "Write a short SMS text message: one or two sentences, under 300 characters, one question at most. Conversational and personal, the way I text."
 
-    user_prompt = f"""Generate a {channel} message for this campaign step.
+    user_prompt = f"""Write the next {channel} touch to this customer for my campaign.
 
 Campaign: {campaign_name}
-Step context: {step_context}
-{f'Use this template as inspiration but make it PERSONAL using the relationship intel below: {template_hint}' if template_hint else 'Create a fresh, personalized message.'}
+What this touch is for: {step_context or 'a genuine check-in'}
+{f'Rough intent of the touch (do NOT copy its words, write your own from the history): {template_hint}' if template_hint else ''}
 
 {format_hint}
 
-CRITICAL RULES:
-- This message must feel like it was written by a real human who KNOWS this customer
-- Reference specific things from the relationship intelligence (engagement, milestones, previous conversations)
-- DO NOT repeat anything from previous campaign messages listed below
-- Build on the relationship narrative — this is the next chapter, not a standalone message
-- If the customer has been engaging (viewing cards, clicking links), subtly acknowledge their interest
-- If the relationship is cooling, be warmer and more personal to re-engage
-- Match the tone to the relationship health: strong = casual/friendly, cooling = warmer/more effort
+RULES:
+- Sound like me texting someone I actually sold to and remember. Never like a campaign.
+- Lead with ONE specific thing from the history below (something they said, their vehicle, the season, a milestone, a memo). Do not stack several.
+- If I have nothing specific on them, keep it short and human: no invented details, no fake memories.
+- Do not repeat or paraphrase a check-in I already sent; a new angle every time.
+- If they texted me recently and I answered, build on that thread; if they never reply, keep it low-pressure and easy to answer.
+- No 'just checking in', no 'hope this finds you well', no exclamation storms, no emojis unless the thread already uses them.
 
+{history}
+
+RELATIONSHIP INTEL:
 {contact_context}
 
-Write ONLY the message text. No quotes, no explanation. Make it sound like it's coming from me personally — someone who genuinely cares about this customer."""
+Write ONLY the message text. No quotes, no explanation."""
 
     emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
     if not emergent_key:

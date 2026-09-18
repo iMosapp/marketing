@@ -488,6 +488,8 @@ class Campaign(BaseModel):
     delivery_mode: str = "manual"  # "automated" (Twilio + AI replies) or "manual" (notify user to send)
     ai_enabled: bool = False  # Master toggle for AI features on this campaign
     ownership_level: str = "user"  # "user", "store", "org"  - who owns this campaign
+    repeat_every_months: int = 0
+    repeat_step: Dict[str, Any] = {}
 
     class Config:
         populate_by_name = True
@@ -514,6 +516,8 @@ class CampaignCreate(BaseModel):
     ownership_level: str = "user"
     scope: str = "personal"   # personal | account | org (role-enforced in create_campaign)
     description: str = ""
+    repeat_every_months: int = 0  # >0: after the last touch, keep touching every N months (same goal as the last touch / repeat_step)
+    repeat_step: Dict[str, Any] = {}
 
 # Campaign Enrollment - tracks contacts enrolled in campaigns
 class CampaignEnrollment(BaseModel):

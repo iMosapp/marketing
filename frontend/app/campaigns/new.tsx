@@ -66,6 +66,8 @@ export default function NewCampaignScreen() {
         delivery_mode: 'auto',
         ai_enabled: template ? !!template.ai_enabled : true,
         ai_assist_mode: 'auto_reply',
+        repeat_every_months: template?.repeat_every_months || 0,
+        repeat_step: template?.repeat_step || {},
         scope,
         ownership_level: scope === 'account' ? 'store' : 'user',
       });
@@ -118,6 +120,7 @@ export default function NewCampaignScreen() {
                 <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>{summarizeTouches(touches)} come pre-written</Text>
               </View>
               <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>{template.description}</Text>
+              {!!template.repeat_every_months && <Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }} {...tid('new-campaign-repeat')}>Then keeps going: a fresh touch every {template.repeat_every_months} months for as long as the plan is on.</Text>}
               <Text style={{ fontSize: 12, color: colors.textSecondary }}>You can edit every touch on the next screen before turning it on.</Text>
             </View>
           ) : (

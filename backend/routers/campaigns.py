@@ -84,6 +84,64 @@ PREBUILT_TEMPLATES = [
         ],
     },
     {
+        "id": "sold_quarterly",
+        "name": "Sold - Quarterly Check-In",
+        "description": "One personal check-in every quarter for as long as they own it. Jessi writes each one from what she knows: the sale, your texts, your voice memos. No template, no agenda.",
+        "type": "custom",
+        "trigger_tag": "sold",
+        "icon": "calendar",
+        "color": "#0A84FF",
+        "delivery_mode": "auto",
+        "ai_enabled": True,
+        "repeat_every_months": 3,
+        "repeat_step": {
+            "step_context": "Quarterly check-in, years into the relationship. Pick ONE personal angle from the history (the season, their vehicle, something they mentioned, a milestone, a memo) and ask one genuine question. No agenda, no offer, unless they raised something. Never reuse an angle from an earlier touch.",
+            "message_template": "Hey {first_name}, thought of you today. How's the {vehicle} treating you?",
+        },
+        "sequences": [
+            {
+                "step": 1,
+                "delay_days": 0,
+                "delay_months": 3,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "First quarter check-in. Ask how the vehicle is treating them and reference something specific from delivery day or their texts. Pure check-in, no agenda.",
+                "message_template": "Hey {first_name}, three months already. How's the {vehicle} treating you?",
+                "media_urls": [],
+            },
+            {
+                "step": 2,
+                "delay_days": 0,
+                "delay_months": 6,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Half-year check-in. Use a seasonal angle (weather, road trips, holidays) and, if service has not come up in the thread, offer to help with the first one. Helpful, not salesy.",
+                "message_template": "Hey {first_name}, half a year in. Anything I can help with on the {vehicle}?",
+                "media_urls": [],
+            },
+            {
+                "step": 3,
+                "delay_days": 0,
+                "delay_months": 9,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "Nine months in. Genuine check-in. Only if the relationship is warm (they reply, they engage), leave a light door open for referrals in one clause; otherwise skip it.",
+                "message_template": "Hey {first_name}, checking in. How's everything going with the {vehicle}?",
+                "media_urls": [],
+            },
+            {
+                "step": 4,
+                "delay_days": 0,
+                "delay_months": 12,
+                "channel": "sms",
+                "ai_generated": True,
+                "step_context": "One-year anniversary. Celebrate it, reference delivery day or the congrats photo if there is one, ask how the year went. Warm and personal.",
+                "message_template": "Hey {first_name}, one year with the {vehicle} today. How's it been?",
+                "media_urls": [],
+            },
+        ],
+    },
+    {
         "id": "be_back_nurture",
         "name": "Be-Back / Working Customer",
         "description": "Stay top of mind with customers who visited but haven't bought yet. Gentle, value-driven follow-ups that keep the door open without being pushy.",
@@ -413,6 +471,7 @@ async def get_prebuilt_templates():
             "color": t["color"],
             "delivery_mode": t["delivery_mode"],
             "ai_enabled": t["ai_enabled"],
+            "repeat_every_months": t.get("repeat_every_months", 0),
             "step_count": len(t["sequences"]),
             "total_duration": _calc_duration(t["sequences"]),
         })
@@ -429,12 +488,10 @@ async def get_prebuilt_template(template_id: str):
 
 
 def _calc_duration(sequences: list) -> str:
-    """Calculate total campaign duration as a readable string."""
-    total_days = 0
-    for s in sequences:
-        total_days += s.get("delay_days", 0) + s.get("delay_months", 0) * 30
-    if total_days >= 365:
-        return f"{total_days // 365} year{'s' if total_days >= 730 else ''}"
+    """Total campaign duration as a readable string. Delays are absolute from enrollment, so the last touch sets the length."""
+    total_days = max((s.get("delay_days", 0) + s.get("delay_months", 0) * 30 for s in sequences), default=0)
+    if total_days >= 360:
+        return f"{max(1, round(total_days / 365))} year{'s' if total_days >= 700 else ''}"
     if total_days >= 30:
         return f"{total_days // 30} month{'s' if total_days >= 60 else ''}"
     return f"{total_days} days"
@@ -858,7 +915,7 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
     
     base_filter = await get_data_filter(user_id)
     
-    allowed_fields = ['name', 'type', 'trigger_tag', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ai_assist_mode', 'escalation_threshold', 'escalation_timeout_minutes', 'escalation_manager_id', 'ownership_level', 'action_type', 'card_type', 'scope', 'store_id', 'org_id', 'description']
+    allowed_fields = ['name', 'type', 'trigger_tag', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ai_assist_mode', 'escalation_threshold', 'escalation_timeout_minutes', 'escalation_manager_id', 'ownership_level', 'action_type', 'card_type', 'scope', 'store_id', 'org_id', 'description', 'repeat_every_months', 'repeat_step']
     update_dict = {k: v for k, v in update_data.items() if k in allowed_fields}
 
     # Auto-wrap URLs in sequences when saving
