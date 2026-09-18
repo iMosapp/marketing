@@ -9,6 +9,8 @@ let reason = '';
 try { webrtc = require('react-native-webrtc'); } catch (e: any) { webrtc = null; reason = String(e?.message || e || 'require failed').split('\n')[0]; }
 try { incall = require('react-native-incall-manager').default; } catch { incall = null; }
 if (webrtc && !NativeModules.WebRTCModule) { webrtc = null; reason = 'WebRTC native module is not in this build'; }
+// InCallManager shipped in the same commit: "missing too" = binary predates both, "present" = only WebRTC failed to link.
+if (!webrtc) reason = `${reason.replace(/\.$/, '')}; InCallManager ${NativeModules.InCallManager ? 'present' : 'missing too'}`;
 
 export type { LiveRtc };
 
