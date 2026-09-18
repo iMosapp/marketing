@@ -1,4 +1,12 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import * as Application from 'expo-application';
+
+// The binary actually installed: "v1.0.2 (38)". Web falls back to the app.json version.
+export const installedVersion = (): string => {
+  if (Platform.OS === 'web') return `v${Constants.expoConfig?.version || '1.0.0'}`;
+  return `v${Application.nativeApplicationVersion || '?'} (build ${Application.nativeBuildVersion || '?'})`;
+};
 
 // Which bundle is this device actually running? Shown under the Tools footer so "I updated but see the old thing" is a 10-second check.
 export const buildStamp = (): string => {
