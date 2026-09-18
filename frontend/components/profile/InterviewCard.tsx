@@ -12,6 +12,7 @@ export type InterviewSession = {
   id: string; status: string; call_status?: string | null; fail_reason?: string | null; elapsed_s: number; rep_turns: number;
   covered: string[]; topics_total: number; highlights: string[]; applied_fields: string[]; extracted?: Record<string, any> | null;
   labels: Record<string, string>; ended_at?: string | null; voice?: any; turns?: { role: string; text: string; at?: string }[]; dry_run?: boolean; applied?: boolean;
+  live_transport?: 'gpt-live' | 'relay' | null; live_skip_reason?: string | null; live_voice?: string | null;
 };
 export type InterviewStatus = {
   session: InterviewSession | null; voice: { configured: boolean; status: string; enrolled: boolean; percent?: number | null; at?: string | null; error?: string | null };
@@ -133,6 +134,12 @@ export function InterviewCard({ compact, dryRun }: { compact?: boolean; dryRun?:
           <View style={{ flex: 1 }}>
             <Text style={st.status} {...tid('interview-status')}>{label}</Text>
             <Text style={st.meta}>{s.status === 'building' ? (dryRun ? 'About a minute. Jessi is writing up what she learned (not saved to your profile).' : 'About a minute. Your VA, bio and card are being written.') : s.status === 'live' ? `${s.covered.length} of ${s.topics_total} topics · pick up ${data.phone}` : `Calling ${data.phone}`}</Text>
+            {s.live_transport === 'gpt-live' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }} {...tid('interview-live-badge')}>
+                <Ionicons name="radio" size={11} color={GREEN} /><Text style={{ fontSize: 11, fontWeight: '800', color: GREEN }}>GPT-Live{s.live_voice ? ` · ${s.live_voice}` : ''}</Text>
+              </View>
+            )}
+            {s.live_transport === 'relay' && !!s.live_skip_reason && <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }} {...tid('interview-relay-reason')}>Classic line: {s.live_skip_reason}</Text>}
           </View>
         </View>
         {s.status !== 'building' && (

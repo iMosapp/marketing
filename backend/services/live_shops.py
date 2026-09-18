@@ -227,7 +227,12 @@ async def connect_openai() -> Upstream:
 
 
 class Bridge:
-    """One call: Twilio media stream <-> GPT-Live session. Feed Twilio messages through on_twilio(); it does the rest."""
+    """One call: Twilio media stream <-> GPT-Live session. Feed Twilio messages through on_twilio(); it does the rest.
+    Shop behaviour lives in the hook methods (session_config, on_started, delegation, watchdog); other call types subclass it."""
+
+    COLL = "roleplay_sessions"
+    ASSISTANT_ROLE = "customer"
+    TAG = "LiveShop"
 
     def __init__(self, db, session: dict, twilio_send: Callable[[dict], Awaitable[None]], twilio_close: Callable[[], Awaitable[None]], connect: Callable[[], Awaitable[Upstream]] = connect_openai):
         self.db, self.s = db, session
@@ -248,13 +253,94 @@ class Bridge:
         self.wrapping = False
         self.hangup_at: Optional[float] = None
         self.tasks: list = []
+        self.cfg: dict = {}
         self.done = asyncio.Event()
 
-    # ── Twilio side ───────────────────────────────────────────────────────────
+    @property
+    def col(self):
+        return self.db[self.COLL]
+
+    # ── hooks (shop defaults) ─────────────────────────────────────────────────
+    async def session_config(self) -> dict:
+        """{"instructions", "voice"} for session.start."""
+        script = await self.db.scripts.find_one({"_id": ObjectId(self.s["script_id"])}) if ObjectId.is_valid(str(self.s.get("script_id") or "")) else {}
+        return {"instructions": instructions(script or {}, self.s), "voice": voice_for(self.s)}
+
+    async def _mark_live(self, call_sid: Optional[str]):
+        self.started_at = _now()
+        sets = {"status": "live", "call_status": "in-progress", "started_at": self.started_at, "updated_at": self.started_at, "live_transport": "gpt-live", "live_voice": self.cfg.get("voice")}
+        if call_sid:
+            sets["call_sid"] = call_sid
+        await self.col.update_one({"_id": self.s["_id"], "status": {"$in": ["dialing", "live", "scheduled"]}}, {"$set": sets})
+
+    async def on_started(self):
+        """GPT-Live is listening: the shopper who was called back (or is a covert lead) speaks first."""
+        if self.s.get("direction") != "inbound" or self.s.get("lead_shop_id"):
+            line = opening_line(self.s)
+            await self.up.send({"type": "session.instructions.append", "event_id": "open_1", "delegation_id": None, "content": f'Your first spoken line on this call is, verbatim: "{line}". Then listen.'})
+            await self.up.send({"type": "session.commentary.append", "event_id": "open_2", "delegation_id": None, "content": line})
+
+    def decorate(self, turn: dict) -> dict:
+        if turn["role"] == self.ASSISTANT_ROLE:
+            turn.update(audio_url=None, mood="neutral")
+        return turn
+
+    async def after_flush(self, turn: dict):
+        pass
+
+    async def _delegation(self, delegation_id: Optional[str]):
+        """The shopper only delegates to hang up. Double-check the call is really over before pulling the plug."""
+        await self._flush()
+        s = await self.col.find_one({"_id": self.s["_id"]}, {"turns": 1})
+        turns = (s or {}).get("turns") or []
+        if await call_over(turns) or self.wrapping:
+            await self.hang_up(delegation_id, "customer_ended")
+        elif delegation_id:
+            await self.up.send({"type": "session.thinking.append", "event_id": f"stay_{delegation_id}", "delegation_id": delegation_id,
+                                "content": "There is no backend help on this call. Stay in character, answer from what you know as this customer, and keep the conversation going."})
+
+    async def _watchdog(self):
+        loop = asyncio.get_event_loop()
+        nudge_at = loop.time() + INBOUND_NUDGE_S if (self.s.get("direction") == "inbound" and not self.s.get("lead_shop_id")) else None
+        try:
+            while not self.closed:
+                await asyncio.sleep(1)
+                if not self.ready:
+                    continue
+                if nudge_at and not self.rep_spoke and loop.time() >= nudge_at:
+                    nudge_at = None
+                    await self.up.send({"type": "session.commentary.append", "event_id": "nudge_1", "delegation_id": None, "content": opening_line(self.s)})
+                if not self.wrapping and (self.minutes() >= scr.PHONE_MAX_MINUTES or self.turns >= scr.PHONE_MAX_TURNS):
+                    await self.wrap_up("You are out of time. Wrap up in one sentence, say goodbye now, then delegate to the backend.")
+                if self.hangup_at and loop.time() >= self.hangup_at:
+                    await self.close("out_of_time")
+        except asyncio.CancelledError:
+            pass
+
+    # ── shared machinery ──────────────────────────────────────────────────────
+    def minutes(self) -> float:
+        return (_now() - self.started_at).total_seconds() / 60 if self.started_at else 0.0
+
+    async def wrap_up(self, content: str):
+        self.wrapping = True
+        self.hangup_at = asyncio.get_event_loop().time() + WRAP_GRACE_S
+        await self.up.send({"type": "session.instructions.append", "event_id": "wrap_1", "delegation_id": None, "content": content})
+
+    async def hang_up(self, delegation_id: Optional[str], reason: str):
+        if delegation_id:
+            await self.up.send({"type": "session.thinking.append", "event_id": f"bye_{delegation_id}", "delegation_id": delegation_id, "content": "The line is disconnecting now. Say nothing more."})
+        await self._drain_then_hangup(reason)
+
     async def on_twilio(self, msg: dict):
         ev = msg.get("event")
         if ev == "start":
             self.stream_sid = (msg.get("start") or {}).get("streamSid") or msg.get("streamSid")
+            try:
+                self.cfg = await self.session_config()
+            except Exception as e:
+                logger.warning(f"[{self.TAG}] {self.sid} could not build the session: {e}")
+                await self.close("config_failed")
+                return
             await self._mark_live((msg.get("start") or {}).get("callSid"))
             await self._open_upstream()
         elif ev == "media" and self.ready and self.up:
@@ -264,25 +350,17 @@ class Bridge:
         elif ev == "stop":
             await self.close("twilio_stop")
 
-    async def _mark_live(self, call_sid: Optional[str]):
-        self.started_at = _now()
-        sets = {"status": "live", "call_status": "in-progress", "started_at": self.started_at, "updated_at": self.started_at, "live_transport": "gpt-live", "live_voice": voice_for(self.s)}
-        if call_sid:
-            sets["call_sid"] = call_sid
-        await self.db.roleplay_sessions.update_one({"_id": self.s["_id"], "status": {"$in": ["dialing", "live", "scheduled"]}}, {"$set": sets})
-
     async def _open_upstream(self):
-        script = await self.db.scripts.find_one({"_id": ObjectId(self.s["script_id"])}) if ObjectId.is_valid(str(self.s.get("script_id") or "")) else {}
         try:
             self.up = await self.connect()
         except Exception as e:
-            logger.warning(f"[LiveShop] {self.sid} could not reach GPT-Live: {e}")
-            await self.db.roleplay_sessions.update_one({"_id": self.s["_id"]}, {"$set": {"live_error": str(e)[:300], "updated_at": _now()}})
+            logger.warning(f"[{self.TAG}] {self.sid} could not reach GPT-Live: {e}")
+            await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"live_error": str(e)[:300], "updated_at": _now()}})
             await self.close("upstream_failed")
             return
         await self.up.send({"type": "session.start", "event_id": "start_1", "session": {
-            "model": lv.MODEL, "instructions": instructions(script or {}, self.s),
-            "audio": {"format": {"type": "audio/pcmu", "rate": 8000}, "output": {"voice": voice_for(self.s)}},
+            "model": lv.MODEL, "instructions": self.cfg["instructions"],
+            "audio": {"format": {"type": "audio/pcmu", "rate": 8000}, "output": {"voice": self.cfg["voice"]}},
             "delegation": {"type": "client"}}})
         self.tasks.append(asyncio.create_task(self._reader()))
         self.tasks.append(asyncio.create_task(self._watchdog()))
@@ -295,7 +373,7 @@ class Bridge:
                 if self.closed:
                     break
         except Exception as e:
-            logger.warning(f"[LiveShop] {self.sid} upstream reader ended: {e}")
+            logger.warning(f"[{self.TAG}] {self.sid} upstream reader ended: {e}")
         if not self.closed:
             await self.close("upstream_closed")
 
@@ -304,11 +382,8 @@ class Bridge:
         if t == "session.started":
             self.ready = True
             self.openai_session_id = (ev.get("session") or {}).get("id")
-            await self.db.roleplay_sessions.update_one({"_id": self.s["_id"]}, {"$set": {"openai_session_id": self.openai_session_id, "updated_at": _now()}})
-            if self.s.get("direction") != "inbound" or self.s.get("lead_shop_id"):
-                line = opening_line(self.s)
-                await self.up.send({"type": "session.instructions.append", "event_id": "open_1", "delegation_id": None, "content": f'Your first spoken line on this call is, verbatim: "{line}". Then listen.'})
-                await self.up.send({"type": "session.commentary.append", "event_id": "open_2", "delegation_id": None, "content": line})
+            await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"openai_session_id": self.openai_session_id, "updated_at": _now()}})
+            await self.on_started()
         elif t == "session.output_audio.delta":
             self.last_output_at = asyncio.get_event_loop().time()
             if self.stream_sid and ev.get("delta"):
@@ -317,7 +392,7 @@ class Bridge:
             self.rep_spoke = True
             await self._text("rep", ev.get("delta") or "", int(ev.get("start_ms") or 0), int(ev.get("end_ms") or 0))
         elif t == "session.output_transcript.delta":
-            await self._text("customer", ev.get("delta") or "", int(ev.get("start_ms") or 0), int(ev.get("end_ms") or 0))
+            await self._text(self.ASSISTANT_ROLE, ev.get("delta") or "", int(ev.get("start_ms") or 0), int(ev.get("end_ms") or 0))
         elif t == "session.delegation.created":
             asyncio.get_event_loop().create_task(self._delegation((ev.get("delegation") or {}).get("id")))
         elif t == "session.usage.updated":
@@ -327,8 +402,8 @@ class Bridge:
             await self.close(ev.get("reason") or "session_closed", upstream_done=True)
         elif t == "error":
             msg = (ev.get("error") or {}).get("message") or ""
-            logger.warning(f"[LiveShop] {self.sid} GPT-Live error: {msg}")
-            await self.db.roleplay_sessions.update_one({"_id": self.s["_id"]}, {"$set": {"live_error": msg[:300]}})
+            logger.warning(f"[{self.TAG}] {self.sid} GPT-Live error: {msg}")
+            await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"live_error": msg[:300]}})
 
     async def _text(self, role: str, delta: str, start_ms: int, end_ms: int):
         if not delta:
@@ -344,25 +419,14 @@ class Bridge:
         if not self.cur or not self.cur["text"].strip():
             self.cur = None
             return
-        turn = {"role": self.cur["role"], "text": self.cur["text"].strip(), "at": _now()}
-        if turn["role"] == "customer":
-            turn.update(audio_url=None, mood="neutral")
+        turn = self.decorate({"role": self.cur["role"], "text": self.cur["text"].strip(), "at": _now()})
         self.cur = None
         self.turns += 1
-        await self.db.roleplay_sessions.update_one({"_id": self.s["_id"]}, {"$push": {"turns": turn}, "$set": {"updated_at": _now()}})
-
-    async def _delegation(self, delegation_id: Optional[str]):
-        """The shopper only delegates to hang up. Double-check the call is really over before pulling the plug."""
-        await self._flush()
-        s = await self.db.roleplay_sessions.find_one({"_id": self.s["_id"]}, {"turns": 1})
-        turns = (s or {}).get("turns") or []
-        if await call_over(turns) or self.wrapping:
-            if delegation_id:
-                await self.up.send({"type": "session.thinking.append", "event_id": f"bye_{delegation_id}", "delegation_id": delegation_id, "content": "The line is disconnecting now. Say nothing more."})
-            await self._drain_then_hangup("customer_ended")
-        elif delegation_id:
-            await self.up.send({"type": "session.thinking.append", "event_id": f"stay_{delegation_id}", "delegation_id": delegation_id,
-                                "content": "There is no backend help on this call. Stay in character, answer from what you know as this customer, and keep the conversation going."})
+        await self.col.update_one({"_id": self.s["_id"]}, {"$push": {"turns": turn}, "$set": {"updated_at": _now()}})
+        try:
+            await self.after_flush(turn)
+        except Exception as e:
+            logger.debug(f"[{self.TAG}] {self.sid} after_flush failed: {e}")
 
     async def _drain_then_hangup(self, reason: str):
         loop = asyncio.get_event_loop()
@@ -371,28 +435,6 @@ class Bridge:
             await asyncio.sleep(0.2)
         await asyncio.sleep(0.8)
         await self.close(reason)
-
-    async def _watchdog(self):
-        loop = asyncio.get_event_loop()
-        nudge_at = loop.time() + INBOUND_NUDGE_S if (self.s.get("direction") == "inbound" and not self.s.get("lead_shop_id")) else None
-        try:
-            while not self.closed:
-                await asyncio.sleep(1)
-                if not self.ready:
-                    continue
-                if nudge_at and not self.rep_spoke and loop.time() >= nudge_at:
-                    nudge_at = None
-                    await self.up.send({"type": "session.commentary.append", "event_id": "nudge_1", "delegation_id": None, "content": opening_line(self.s)})
-                minutes = (_now() - self.started_at).total_seconds() / 60 if self.started_at else 0
-                if not self.wrapping and (minutes >= scr.PHONE_MAX_MINUTES or self.turns >= scr.PHONE_MAX_TURNS):
-                    self.wrapping = True
-                    self.hangup_at = loop.time() + WRAP_GRACE_S
-                    await self.up.send({"type": "session.instructions.append", "event_id": "wrap_1", "delegation_id": None,
-                                        "content": "You are out of time. Wrap up in one sentence, say goodbye now, then delegate to the backend."})
-                if self.hangup_at and loop.time() >= self.hangup_at:
-                    await self.close("out_of_time")
-        except asyncio.CancelledError:
-            pass
 
     # ── teardown ──────────────────────────────────────────────────────────────
     async def close(self, reason: str, upstream_done: bool = False):
@@ -421,15 +463,15 @@ class Bridge:
                 pass
         if self.up:
             await self.up.close()
-        await self.db.roleplay_sessions.update_one({"_id": self.s["_id"]}, {"$set": {"live_seconds": self.seconds, "live_cost_usd": round(self.seconds / 60 * lv.PRICE_PER_MIN, 4), "live_end_reason": reason, "updated_at": _now()}})
+        await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"live_seconds": self.seconds, "live_cost_usd": round(self.seconds / 60 * lv.PRICE_PER_MIN, 4), "live_end_reason": reason, "updated_at": _now()}})
         if reason in ("customer_ended", "out_of_time"):
-            await self.db.roleplay_sessions.update_one({"_id": self.s["_id"], "status": "live"}, {"$set": {"status": "ending"}})
+            await self.col.update_one({"_id": self.s["_id"], "status": "live"}, {"$set": {"status": "ending"}})
         try:
             await self.twilio_close()
         except Exception:
             pass
         self.done.set()
-        logger.info(f"[LiveShop] {self.sid} closed: {reason}, {self.seconds}s, {self.turns} turns")
+        logger.info(f"[{self.TAG}] {self.sid} closed: {reason}, {self.seconds}s, {self.turns} turns")
 
 
 async def call_over(turns: list) -> bool:

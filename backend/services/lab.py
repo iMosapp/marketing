@@ -67,6 +67,17 @@ FEATURES = [
                      "Say goodbye: the line should drop within a couple of seconds and the shop grades like before (Shops tab, scorecard text).",
                      "Check the client report: recording, transcript and score all present; the shop row shows GPT-Live."],
      "added": "2026-06-21", "default": "live", "needs": "Needs OPENAI_API_KEY in the backend environment. English clients only."},
+    {"key": "live_interview", "name": "Interview call on GPT-Live", "icon": "mic",
+     "tagline": "The onboarding interview call gets the full-duplex Jessi: she reacts as you talk, you can interrupt her, no robotic pauses.",
+     "description": "Same 'Call me now' flow: Twilio still rings the rep, the inbound-only recording still enrolls Voice ID, the write-up and the review screen are unchanged. "
+                    "The line itself is bridged to OpenAI GPT-Live-1 over Twilio Media Streams instead of ConversationRelay. The backend listens along, ticks off topics after every answer "
+                    "and whispers what is left; Jessi wraps up around five minutes and hangs up after her goodbye. English stores only; Dutch keeps the classic relay. "
+                    "ON by default as soon as the server has the key; flip to Lab to send interviews back to the relay.",
+     "how_to_test": ["Profile, Call me now. Pick up: Jessi speaks first and you can talk over her.",
+                     "Give one short answer, then a long rambling one. She should follow up once, then move on.",
+                     "Say 'I need to go'. She thanks you, says goodbye and the call ends on its own; the review screen shows the write-up within a minute.",
+                     "Interview status in the app shows a GPT-Live badge; a call that fell back shows the reason."],
+     "added": "2026-09-18", "default": "live", "needs": "Needs OPENAI_API_KEY in the backend environment. English stores only."},
 ]
 STATUSES = ("lab", "live")
 SETTINGS_KEY = "lab_features"

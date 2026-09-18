@@ -200,7 +200,8 @@ def _twiml(xml: str) -> Response:
 
 @public.post("/call/twiml/{sid}")
 async def call_twiml(sid: str, t: str):
-    return _twiml(svc.twiml(await _session(sid, t)))
+    from services import live_interview
+    return _twiml(await live_interview.twiml_for(get_db(), await _session(sid, t)))
 
 
 @public.post("/call/after/{sid}")
@@ -215,6 +216,8 @@ async def call_after(sid: str, t: str, request: Request):
                                           {"$set": {"status": "failed", "fail_reason": f"The line had a problem ({form.get('ErrorCode') or 'relay'}), tap Call me to try again", "updated_at": datetime.now(timezone.utc)}})
             return _twiml(svc.hangup_twiml("Sorry, the line had a problem. Tap Call me in the app and we'll try again."))
     asyncio.create_task(svc.finalize(db, sid, f"relay_{form.get('SessionStatus') or 'ended'}"))
+    if s.get("live_transport") == "gpt-live":  # Jessi already said goodbye on the live line
+        return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')
     return _twiml(svc.goodbye_twiml())
 
 
@@ -280,4 +283,47 @@ async def relay_ws(ws: WebSocket, sid: str, token: str):
     except Exception as e:
         logger.warning(f"[Interview] relay websocket ended for {sid}: {e}")
     finally:
+        asyncio.create_task(svc.finalize(db, sid, "websocket_closed"))
+
+
+@public.websocket("/stream/{sid}/{token}")
+async def stream_ws(ws: WebSocket, sid: str, token: str):
+    """Twilio Media Streams <-> GPT-Live: Jessi interviews in full duplex; audio is relayed, the transcript lands in the same `turns`."""
+    from services import live_interview
+    db = get_db()
+    s = await db[svc.COLL].find_one({"_id": ObjectId(sid), "token": token}) if ObjectId.is_valid(sid) else None
+    if not s:
+        await ws.close(code=1008)
+        return
+    await ws.accept()
+    closed = {"v": False}
+
+    async def send(msg: dict):
+        if not closed["v"]:
+            await ws.send_text(json.dumps(msg))
+
+    async def close_ws():
+        if not closed["v"]:
+            closed["v"] = True
+            try:
+                await ws.close()
+            except Exception:
+                pass
+
+    bridge = live_interview.InterviewBridge(db, s, send, close_ws)
+    try:
+        while not bridge.closed:
+            raw = await ws.receive_text()
+            try:
+                msg = json.loads(raw)
+            except ValueError:
+                continue
+            await bridge.on_twilio(msg)
+    except WebSocketDisconnect:
+        closed["v"] = True
+    except Exception as e:
+        logger.warning(f"[LiveInterview] stream websocket ended for {sid}: {e}")
+    finally:
+        closed["v"] = True
+        await bridge.close("websocket_closed")
         asyncio.create_task(svc.finalize(db, sid, "websocket_closed"))

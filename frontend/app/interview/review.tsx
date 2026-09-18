@@ -79,6 +79,12 @@ export default function InterviewReview() {
                 <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6, lineHeight: 17 }}>{preview
                   ? `${rows.length} details written from a ${Math.max(1, Math.round(s.elapsed_s / 60))} minute call. NOTHING has been saved to your profile. Read it over, then save it or run the interview again.`
                   : `${s.applied_fields.length} details saved from a ${Math.max(1, Math.round(s.elapsed_s / 60))} minute call. Anything off? Tap Edit and fix it in seconds.`}</Text>
+                {s.live_transport === 'gpt-live' && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }} {...tid('interview-review-live')}>
+                    <Ionicons name="radio" size={14} color={GREEN} />
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: GREEN }}>Interviewed on GPT-Live{s.live_voice ? ` · ${s.live_voice}` : ''}</Text>
+                  </View>
+                )}
                 {preview && (
                   <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: GOLD, borderRadius: 12, paddingVertical: 12, marginTop: 12 }} onPress={applyNow} disabled={applying} {...tid('interview-apply-btn')}>
                     {applying ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="save-outline" size={16} color="#000" /><Text style={{ fontSize: 14, fontWeight: '800', color: '#000' }}>Save this to my profile</Text></>}

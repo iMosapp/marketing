@@ -86,7 +86,8 @@ def serialize(s: Optional[dict]) -> Optional[dict]:
             "rep_turns": sum(1 for t in s.get("turns") or [] if t["role"] == "rep"),
             "covered": s.get("covered") or [], "topics_total": len(topics(s.get("industry"))), "extracted": s.get("extracted") or None, "highlights": s.get("highlights") or [],
             "applied_fields": s.get("applied_fields") or [], "applied": bool(s.get("applied")), "dry_run": bool(s.get("dry_run")), "labels": {**LABELS, slot_field: slot_label}, "recording_url": s.get("recording_url"), "recording_seconds": s.get("recording_seconds"),
-            "voice": s.get("voice"), "rep_phone": s.get("rep_phone"), "industry": s.get("industry")}
+            "voice": s.get("voice"), "rep_phone": s.get("rep_phone"), "industry": s.get("industry"),
+            "live_transport": s.get("live_transport"), "live_skip_reason": s.get("live_skip_reason"), "live_voice": s.get("live_voice")}
 
 
 # ---------------------------------------------------------------- placing the call
