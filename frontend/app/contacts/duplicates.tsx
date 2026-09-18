@@ -243,7 +243,7 @@ export default function DuplicatesScreen() {
                 `${dup.first_name} ${dup.last_name}`.trim(),
               )}
               disabled={merging === dup.id}
-              data-testid={`merge-btn-${dup.id}`}
+              testID={`merge-btn-${dup.id}`}
             >
               {merging === dup.id ? (
                 <ActivityIndicator size="small" color="#fff" />
