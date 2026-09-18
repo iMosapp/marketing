@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 MAX_HITS = 40
 PER_CONTACT = 3
 WINDOW = 140
-SOURCES = {"text": "text", "call": "call transcript", "memo": "voice memo", "note": "note", "sale": "sold record"}
+SOURCES = {"text": "text", "call": "call transcript", "memo": "voice memo", "note": "note", "sale": "sold record", "tag": "tag"}
 
 
 def _now():
@@ -64,8 +64,9 @@ async def terms_for(query: str) -> dict:
         return fallback
     try:
         data = await _llm_json(
-            "A car sales rep is trying to find a customer by something that came up in past texts, calls or voice memos, or by what that customer bought (sold records: 'who did I sell a Tahoe to'). "
-            "Turn the ask into keyword search variants that could literally appear in a transcript or a vehicle description: product names and their nicknames (Tesla Model 3 -> tesla, model 3; Chevy Tahoe -> tahoe), "
+            "A car sales rep is trying to find a customer by something that came up in past texts, calls or voice memos, by what that customer bought (sold records: 'who did I sell a Tahoe to'), "
+            "or by a tag the rep put on people ('who are my Harley riders', 'everyone tagged VIP', 'who do I have as first-time buyers'). "
+            "Turn the ask into keyword search variants that could literally appear in a transcript, a vehicle description or a tag name: product names and their nicknames (Tesla Model 3 -> tesla, model 3; Chevy Tahoe -> tahoe; Harley riders -> harley, harley-davidson, rider, motorcycle), "
             "numbers the way people say and type them (20k -> 20k, 20,000, twenty thousand, twenty grand, 20 grand), and the key nouns. 4 to 10 short lowercase terms, "
             "no stop words, no generic words like car, customer, looking, sold, bought, no trim levels or drivetrain codes (LS, LT, 4x4). Also restate the TOPIC as the thing itself in 2 to 5 words (e.g. 'a 20k Tesla Model 3'), no time words, no 'inquiry'. Return ONLY JSON: {\"topic\": \"...\", \"terms\": [\"...\"]}",
             q, timeout=12)
@@ -80,7 +81,8 @@ async def terms_for(query: str) -> dict:
 
 STOP = {"the", "and", "who", "was", "were", "for", "about", "anyone", "someone", "customer", "looking", "asked", "mentioned", "talked", "find", "that", "with", "had", "have",
         "month", "ago", "week", "last", "did", "said", "wants", "want", "wanted", "into", "any", "all", "our", "you", "get", "got", "car", "one", "some", "like",
-        "sold", "sell", "sale", "bought", "buy", "purchase", "purchased", "vehicle", "delivered", "year"}
+        "sold", "sell", "sale", "bought", "buy", "purchase", "purchased", "vehicle", "delivered", "year",
+        "tagged", "tag", "tags", "people", "everyone", "everybody", "anybody", "list", "show", "pull", "which", "customers", "contacts", "many"}
 
 
 def _regex(terms: list) -> re.Pattern:
@@ -147,9 +149,11 @@ async def scan(db, user: dict, terms: list, days: Optional[int] = None) -> list:
             hits.append({"source": "note", "contact_id": str(c["_id"]), "who": "note", "when": _when(c.get("updated_at")), "quote": snip, "ref": str(c["_id"])})
 
     hits.extend(await _sales(db, owners, rx, mongo_rx, since))
+    hits.extend(await _tags(db, owners, rx, mongo_rx))
 
     hits = [h for h in hits if h.get("contact_id")]
-    hits.sort(key=lambda h: h["when"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    # Tags first (a label the rep set on purpose never gets squeezed out by the hit cap), then newest first.
+    hits.sort(key=lambda h: (0 if h["source"] == "tag" else 1, -(h["when"] or datetime.min.replace(tzinfo=timezone.utc)).timestamp()))
     per, out = {}, []
     for h in hits:
         n = per.get(h["contact_id"], 0)
@@ -188,6 +192,17 @@ async def _sales(db, owners: list, rx: re.Pattern, mongo_rx: dict, since: Option
     return hits
 
 
+async def _tags(db, owners: list, rx: re.Pattern, mongo_rx: dict) -> list:
+    """People the rep tagged with something that fits the ask: 'who are my Harley riders'. Tags are the current label, so no lookback window."""
+    hits = []
+    q = {"user_id": {"$in": owners}, "status": {"$nin": ["merged", "deleted", "hidden"]}, "tags": mongo_rx}
+    async for c in db.contacts.find(q, {"tags": 1, "updated_at": 1}).limit(300):
+        matched = [t for t in (c.get("tags") or []) if isinstance(t, str) and rx.search(t)]
+        if matched:
+            hits.append({"source": "tag", "contact_id": str(c["_id"]), "who": "tag", "when": _when(c.get("updated_at")), "quote": "Tagged: " + ", ".join(matched), "ref": str(c["_id"]), "tags": matched})
+    return hits
+
+
 async def verify(topic: str, query: str, hits: list) -> dict:
     """One LLM read of the snippets: which ones show the person actually meant this (asked, wants, is shopping), and a one-line why."""
     if not hits:
@@ -200,6 +215,8 @@ async def verify(topic: str, query: str, hits: list) -> dict:
             "A passing mention (someone else's car, a joke, the rep pitching it unprompted with no interest back) is not a match. "
             "A 'Sold:' snippet is the rep's own sold record (that customer bought that item from the rep): it is a strong match whenever the item fits the ask, "
             "including 'who did I sell a Tahoe to', 'who bought a Silverado', 'who has a Tahoe', or a plain product search. "
+            "A 'Tagged:' snippet is a label the rep put on that customer on purpose: it is a strong match whenever the tag fits the ask "
+            "(tag 'Harley riders' fits 'who rides a Harley', 'my Harley people', 'anyone into motorcycles'; tag 'VIP' fits 'who are my VIPs'). A tag that only shares a word by coincidence is not a match. "
             "Return ONLY JSON: {\"matches\": [{\"i\": <index>, \"why\": \"<one short sentence quoting or paraphrasing what they said>\", \"strength\": \"strong|maybe\"}]}",
             f"LOOKING FOR: {query}\nTOPIC: {topic}\n\nSNIPPETS:\n{listing}", timeout=25)
         return {int(m["i"]): m for m in (data.get("matches") or []) if str(m.get("i", "")).isdigit() and int(m["i"]) < len(hits)}
@@ -232,7 +249,7 @@ async def search(db, user: dict, query: str, days: Optional[int] = None) -> dict
         if not c or c.get("status") in ("merged", "deleted"):
             continue
         # Lead with the hard fact: strong matches first, a sold record before a text about it, then newest.
-        row["hits"].sort(key=lambda h: (0 if h["strength"] == "strong" else 1, 0 if h["source"] == "sale" else 1, -(_when(h["when"]) or datetime.min.replace(tzinfo=timezone.utc)).timestamp()))
+        row["hits"].sort(key=lambda h: (0 if h["strength"] == "strong" else 1, 0 if h["source"] in ("sale", "tag") else 1, -(_when(h["when"]) or datetime.min.replace(tzinfo=timezone.utc)).timestamp()))
         best = row["hits"][0]
         results.append({**row, "when": row["when"].isoformat() if row["when"] else None, "when_label": _fmt(row["when"]), "when_spoken": _spoken_date(row["when"]),
                         "name": f"{c.get('first_name') or ''} {c.get('last_name') or ''}".strip(), "first": c.get("first_name") or "", "phone": c.get("phone") or "",
@@ -246,12 +263,16 @@ def spoken(res: dict) -> str:
     rs = res.get("results") or []
     topic = res.get("topic") or res.get("query")
     if not rs:
-        return f"Nobody on record mentioned {topic}. I checked your texts, call transcripts, voice memos, notes and sold records." + (" The closest keyword hits were not about that." if res.get("scanned") else "")
+        return f"Nobody on record mentioned {topic}. I checked your texts, call transcripts, voice memos, notes, tags and sold records." + (" The closest keyword hits were not about that." if res.get("scanned") else "")
     lines = []
     for r in rs[:3]:
         b = r["best"]
+        if b["source"] == "tag":
+            lines.append(f"{r['name']}, {b['quote'].replace('Tagged:', 'tagged', 1)}")
+            continue
         src = {"text": "texted", "call": "on a call", "memo": "in your voice memo", "note": "in your notes", "sale": "in your sold records"}[b["source"]]
         lines.append(f"{r['name']}, {src} {r['when_spoken']}: {b['why'] or b['quote']}")
     more = f" And {len(rs) - 3} more on the screen." if len(rs) > 3 else ""
-    head = f"{len(rs)} {'person' if len(rs) == 1 else 'people'} mentioned {topic}. " if len(rs) > 1 else ""
+    verb = "match" if any(r["best"]["source"] == "tag" for r in rs) else "mentioned"
+    head = f"{len(rs)} {'person' if len(rs) == 1 else 'people'} {verb} {topic}. " if len(rs) > 1 else ""
     return head + " ".join(lines) + more + f" Want me to pull up {rs[0]['first'] or 'the first one'} or text them?"

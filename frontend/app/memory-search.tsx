@@ -7,13 +7,13 @@ import api from '../services/api';
 import { useThemeStore } from '../store/themeStore';
 import { GOLD, tid } from '../components/scripts/shared';
 
-type Hit = { source: 'text' | 'call' | 'memo' | 'note' | 'sale'; who: string; when_label: string; quote: string; why: string; conversation_id?: string | null };
+type Hit = { source: 'text' | 'call' | 'memo' | 'note' | 'sale' | 'tag'; who: string; when_label: string; quote: string; why: string; conversation_id?: string | null };
 type Result = { contact_id: string; name: string; first: string; phone: string; vehicle: string; strength: 'strong' | 'maybe'; when_label: string; when_spoken: string; best: Hit; hits: Hit[] };
 type Res = { query: string; topic: string; terms: string[]; scanned: number; results: Result[] };
 
-const ICON: Record<Hit['source'], any> = { text: 'chatbubble-ellipses-outline', call: 'call-outline', memo: 'mic-outline', note: 'document-text-outline', sale: 'pricetag-outline' };
-const LABEL: Record<Hit['source'], string> = { text: 'Text', call: 'Call transcript', memo: 'Voice memo', note: 'Note', sale: 'Sold record' };
-const EXAMPLES = ['who asked about a Tesla Model 3 around 20k', 'who did I sell a Tahoe to', 'anyone looking for a truck to tow a camper', 'who mentioned a trade-in last month', 'who talked about financing with bad credit'];
+const ICON: Record<Hit['source'], any> = { text: 'chatbubble-ellipses-outline', call: 'call-outline', memo: 'mic-outline', note: 'document-text-outline', sale: 'pricetag-outline', tag: 'bookmark-outline' };
+const LABEL: Record<Hit['source'], string> = { text: 'Text', call: 'Call transcript', memo: 'Voice memo', note: 'Note', sale: 'Sold record', tag: 'Tag' };
+const EXAMPLES = ['who asked about a Tesla Model 3 around 20k', 'who did I sell a Tahoe to', 'who are my Harley riders', 'anyone looking for a truck to tow a camper', 'who mentioned a trade-in last month', 'who talked about financing with bad credit'];
 
 // "Who mentioned X": Jessi hunts through texts, call transcripts, voice memos, notes and sold records and comes back with the person, the quote and when.
 export default function MemorySearchScreen() {
@@ -46,7 +46,7 @@ export default function MemorySearchScreen() {
         <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/contacts' as any))} hitSlop={8} style={{ padding: 4 }} {...tid('memory-search-back')}><Ionicons name="chevron-back" size={26} color={colors.text} /></TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Who mentioned...</Text>
-          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Texts, calls, voice memos, notes and what they bought</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Texts, calls, voice memos, notes, tags and what they bought</Text>
         </View>
       </View>
       <View style={{ marginHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: Platform.OS === 'web' ? 8 : 4 }}>
@@ -89,7 +89,7 @@ export default function MemorySearchScreen() {
                 </TouchableOpacity>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Ionicons name={ICON[r.best.source]} size={14} color={colors.textSecondary} />
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>{LABEL[r.best.source]} · {r.best.when_label || 'undated'} · {r.when_spoken}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>{r.best.source === 'tag' ? 'Tagged by you' : `${LABEL[r.best.source]} · ${r.best.when_label || 'undated'} · ${r.when_spoken}`}</Text>
                 </View>
                 <Text style={{ fontSize: 13.5, color: colors.text, lineHeight: 19, fontStyle: 'italic' }} {...tid(`mention-quote-${r.contact_id}`)}>"{r.best.quote}"</Text>
                 {!!r.best.why && <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>{r.best.why}</Text>}
@@ -100,7 +100,7 @@ export default function MemorySearchScreen() {
                 )}
                 {open === r.contact_id && r.hits.slice(1).map((h, i) => (
                   <View key={i} style={{ borderLeftWidth: 2, borderLeftColor: colors.border, paddingLeft: 10, gap: 3 }}>
-                    <Text style={{ fontSize: 11.5, fontWeight: '700', color: colors.textSecondary }}>{LABEL[h.source]} · {h.when_label || 'undated'}</Text>
+                    <Text style={{ fontSize: 11.5, fontWeight: '700', color: colors.textSecondary }}>{h.source === 'tag' ? 'Tag' : `${LABEL[h.source]} · ${h.when_label || 'undated'}`}</Text>
                     <Text style={{ fontSize: 13, color: colors.text, fontStyle: 'italic', lineHeight: 18 }}>"{h.quote}"</Text>
                   </View>
                 ))}

@@ -563,7 +563,8 @@ async def _build_data_lookups(user_id: str, user_message: str, role: str = "user
                         "anyone mention", "anybody mention", "anyone ask", "anybody ask", "anyone looking for", "anybody looking for", "anyone talk", "anyone who",
                         "someone mentioned", "someone asked", "someone was looking", "somebody mentioned", "somebody asked", "who was it that", "can't remember who", "cant remember who",
                         "which customer", "which contact", "find anyone", "find the customer who", "find the person who", "find whoever",
-                        "who bought", "who did i sell", "who have i sold", "who purchased", "who owns a", "who has a", "who drives a", "anyone buy", "anybody buy", "which customers bought", "who took delivery"]
+                        "who bought", "who did i sell", "who have i sold", "who purchased", "who owns a", "who has a", "who drives a", "anyone buy", "anybody buy", "which customers bought", "who took delivery",
+                        "tagged", "the tag ", "with the tag", "who are my", "which of my", "everyone who", "anybody who", "customers who", "contacts who", "people who", "who rides", "who is into", "who's into", "who likes"]
     if any(t in msg for t in mention_triggers):
         try:
             from services import memory_search as ms
@@ -574,7 +575,7 @@ async def _build_data_lookups(user_id: str, user_message: str, role: str = "user
                 for r in (res.get("results") or [])[:6]:
                     b = r["best"]
                     rows.append(f"- {r['name']} ({r['phone'] or 'no phone'}) | {ms.SOURCES[b['source']]}, {b['when_label'] or 'undated'} | {b['why'] or b['quote']} | quote: \"{b['quote'][:200]}\" | open: /contact/{r['contact_id']}")
-                sections.append(f"\n### WHO MENTIONED \"{res.get('topic') or user_message}\" (searched texts, call transcripts, voice memos, notes and sold records; terms: {', '.join(res.get('terms') or [])})\n"
+                sections.append(f"\n### WHO MENTIONED \"{res.get('topic') or user_message}\" (searched texts, call transcripts, voice memos, notes, tags and sold records; terms: {', '.join(res.get('terms') or [])})\n"
                                 + ("\n".join(rows) if rows else "Nobody on record. Say so plainly, and offer to widen the search (different words, longer time frame)."))
         except Exception as e:
             logger.warning(f"[Jessie] mentions search failed: {e}")

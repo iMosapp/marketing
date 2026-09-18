@@ -143,6 +143,34 @@ async def test_sold_records():
         await _wipe(db, s)
 
 
+async def test_tags():
+    """'Who are my Harley riders?' surfaces everyone carrying that tag, even with no text, call or memo about it."""
+    db = get_db()
+    forest = await db.users.find_one({"email": "forest@imosapp.com"})
+    s = await _seed(db, str(forest["_id"]))
+    uid = str(forest["_id"])
+    riders = [_c(uid, "Hank", "QA-Rider", "+15005550706", tags=[TAG, "Harley riders"]), _c(uid, "Lou", "QA-Rider", "+15005550707", tags=[TAG, "Harley riders", "VIP"])]
+    await db.contacts.insert_many(riders)
+    s["contacts"] += riders
+    hank, lou = (str(c["_id"]) for c in riders)
+    try:
+        hits = await ms.scan(db, forest, ["harley"], days=30)
+        mine = {h["contact_id"]: h for h in hits if h["contact_id"] in (hank, lou)}
+        assert set(mine) == {hank, lou} and all(h["source"] == "tag" and h["quote"] == "Tagged: Harley riders" for h in mine.values()), mine
+        assert hits[0]["source"] == "tag", "tag hits lead so the cap never drops them"
+        res = await ms.search(db, forest, "who are my Harley riders?")
+        by = {r["contact_id"]: r for r in res["results"]}
+        print("\nTAG RESULTS:", [(r["name"], r["strength"], r["best"]["source"], r["best"]["why"]) for r in res["results"]])
+        assert hank in by and lou in by and by[hank]["strength"] == "strong" and by[hank]["best"]["source"] == "tag", by
+        said = ms.spoken(res)
+        assert "tagged Harley riders" in said and "2 people match" in said, said
+        from services.jessie_service import _build_data_lookups
+        block = await _build_data_lookups(uid, "Who are my Harley riders?")
+        assert "WHO MENTIONED" in block and "Hank QA-Rider" in block and "Lou QA-Rider" in block and "tags" in block, block
+    finally:
+        await _wipe(db, s)
+
+
 async def test_brain_and_api():
     db = get_db()
     forest = await db.users.find_one({"email": "forest@imosapp.com"})
