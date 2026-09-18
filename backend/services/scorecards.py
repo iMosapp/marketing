@@ -113,11 +113,69 @@ TEMPLATES = [
             {"text": "Got the customer's phone number and recapped", "hint": "Number for updates, then recap time, what to bring (claim number, insurance card).", "weight": 1, "critical": False},
         ],
     },
+    {
+        "key": "service_followup", "name": "Service Follow-Up Call", "department": "Service Advisor",
+        "description": "Outbound service calls (recall letter, declined repair, overdue maintenance): open with name and reason, tie it to their vehicle, book it.",
+        "criteria": [
+            {"text": "Opened with their name, the store and the reason for calling", "hint": "'Hi Angela, it's Sam at LHM Service, calling about the recall notice on your Grand Cherokee.' No mystery about who or why.", "weight": 1, "critical": False},
+            {"text": "Confirmed they had a minute to talk", "hint": "You called them. Ask, and offer a callback time if not.", "weight": 1, "critical": False},
+            {"text": "Referenced the specific vehicle and the specific item (recall, declined work, overdue service)", "hint": "Year, model, mileage or the repair line. Show you looked before you dialed.", "weight": 2, "critical": True},
+            {"text": "Explained what it is and why it matters in plain words", "hint": "Safety, cost of waiting, or that it is no charge. One or two sentences, no jargon.", "weight": 2, "critical": False},
+            {"text": "Answered their questions honestly (cost, time, warranty)", "hint": "A range and what changes it beats a dodge.", "weight": 1, "critical": False},
+            {"text": "Offered two specific appointment times", "hint": "'Thursday at 8 or Saturday at 10?'", "weight": 2, "critical": True},
+            {"text": "Mentioned transportation options (shuttle, loaner or waiting area)", "hint": "Remove the 'how do I get to work' objection before they raise it.", "weight": 1, "critical": False},
+            {"text": "Confirmed the best number or email for the reminder", "hint": "Repeat it back.", "weight": 1, "critical": False},
+            {"text": "Recapped day, time and what happens next, and thanked them", "hint": "Close with the plan and a genuine thank you for their time.", "weight": 1, "critical": False},
+        ],
+    },
+    {
+        "key": "parts_followup", "name": "Parts Follow-Up Call", "department": "Parts",
+        "description": "Outbound parts calls (part arrived, quote follow-up, backorder update): identify, reference the exact part, give clear status, close the pickup or install.",
+        "criteria": [
+            {"text": "Opened with their name, the parts department and the reason for calling", "hint": "'Hi Ray, it's Sam in Parts at LHM, your brake pads came in.'", "weight": 1, "critical": False},
+            {"text": "Referenced the exact part and vehicle", "hint": "Part name, the vehicle it fits, the order or quote they know about.", "weight": 2, "critical": True},
+            {"text": "Gave clear status (in stock now, arrives when, backorder and the real date)", "hint": "A date beats 'soon'. If it slipped, say so and why.", "weight": 2, "critical": True},
+            {"text": "Confirmed the price and what it includes (core, tax, install if quoted)", "hint": "One clear number so there is no surprise at the counter.", "weight": 1, "critical": False},
+            {"text": "Offered installation or a related item where it fits", "hint": "'Want service to put them on while you wait?' Once, not pushy.", "weight": 1, "critical": False},
+            {"text": "Asked for a pickup or install time and stated counter hours", "hint": "'We're open till 6; morning or afternoon work better?'", "weight": 2, "critical": False},
+            {"text": "Confirmed how long the part is held and the best number for updates", "hint": "Hold period and a callback number.", "weight": 1, "critical": False},
+            {"text": "Recapped part, price, timing and thanked them", "hint": "Repeat the plan and thank them for ordering with you.", "weight": 1, "critical": False},
+        ],
+    },
+    {
+        "key": "rental_followup", "name": "Rental Follow-Up Call", "department": "Rental",
+        "description": "Outbound rental calls (reservation confirmation, insurance rental setup, return reminder): confirm the details, remove surprises, lock the pickup.",
+        "criteria": [
+            {"text": "Opened with their name, the rental department and the reason for calling", "hint": "'Hi Monica, it's Sam at LHM Rental, confirming your car for tomorrow.'", "weight": 1, "critical": False},
+            {"text": "Confirmed the reservation details (vehicle or class, pickup date and time, return date)", "hint": "Read them back and fix anything that changed.", "weight": 2, "critical": True},
+            {"text": "Confirmed the billing arrangement (insurance direct bill and daily allowance, or the retail rate and what it includes)", "hint": "Who pays, how much per day, what happens above the allowance.", "weight": 2, "critical": True},
+            {"text": "Reminded them what to bring (license, credit card for the deposit, claim number)", "hint": "So nobody is turned away at the counter.", "weight": 1, "critical": False},
+            {"text": "Asked about needs that change the vehicle (seats, car seat, hitch, mileage)", "hint": "Catch it now, not at pickup.", "weight": 1, "critical": False},
+            {"text": "Offered a relevant option once (upgrade, second driver, insurance waiver) without pushing", "hint": "One offer, then move on.", "weight": 1, "critical": False},
+            {"text": "Confirmed the pickup time and the best number for a text when the car is ready", "hint": "Time plus number, repeated back.", "weight": 2, "critical": False},
+            {"text": "Recapped and thanked them", "hint": "Vehicle, time, what to bring, thank you.", "weight": 1, "critical": False},
+        ],
+    },
+    {
+        "key": "collision_followup", "name": "Body Shop Follow-Up Call", "department": "Body Shop",
+        "description": "Outbound collision calls (estimate follow-up, repair status update, supplement approval): identify, empathize, give a straight status and a date, coordinate insurance and rental, set the next step.",
+        "criteria": [
+            {"text": "Opened with their name, the body shop and the reason for calling", "hint": "'Hi Nicole, it's Sam at LHM Collision with an update on your Grand Cherokee.'", "weight": 1, "critical": False},
+            {"text": "Referenced their specific vehicle and repair (damage, claim, estimate they saw)", "hint": "Show you have the file open.", "weight": 2, "critical": True},
+            {"text": "Gave a clear, honest status and a realistic completion or next-step date", "hint": "A date and why. If it slipped, say what happened (parts, supplement, insurer).", "weight": 2, "critical": True},
+            {"text": "Explained the insurance side (supplement, approval, deductible) in plain words", "hint": "Who is waiting on whom and what the customer has to do, if anything.", "weight": 2, "critical": False},
+            {"text": "Addressed the rental or transportation situation", "hint": "Days left on the rental, extension handled, or a ride arranged.", "weight": 1, "critical": False},
+            {"text": "Answered their questions directly (parts used, warranty, cost) without guessing", "hint": "Straight answers; 'let me check and call you by 3' beats a guess.", "weight": 1, "critical": False},
+            {"text": "Set the next step with a specific time (drop-off, pickup, next update call)", "hint": "'I'll call you Thursday by noon' or 'pickup Friday after 2'.", "weight": 2, "critical": False},
+            {"text": "Confirmed the best number for updates and thanked them", "hint": "Number repeated back, thank you for their patience.", "weight": 1, "critical": False},
+        ],
+    },
 ]
 
 
 def _now():
     return datetime.now(timezone.utc)
+
 
 
 def _iso(v):
@@ -225,6 +283,43 @@ TEMPLATE_TRANSLATIONS = {
                                          ("Vroeg of er een schadeclaim loopt en bij welke verzekeraar", "Hun verzekeraar of die van de tegenpartij. Schadenummer als ze het hebben."), ("Legde de taxatieprocedure uit in plaats van blind een prijs te noemen", "Foto's zijn een begin, het echte bedrag komt na demontage. Zeg hoe lang de taxatie duurt."),
                                          ("Noemde vervangend vervoer of een leenauto", "Huurauto regelen, haal- en brengservice of een lift, voordat ze het vragen."), ("Bood een concrete taxatie- of inlevertijd aan met twee opties", "'Kun je morgen om tien uur langskomen, of vanmiddag om drie uur?'"),
                                          ("Vroeg het telefoonnummer van de klant en vatte samen", "Nummer voor updates, dan tijd herhalen en wat mee te nemen (schadenummer, verzekeringspas).")]},
+        "service_followup": {"name": "Werkplaats-nabelgesprek", "department": "Werkplaats", "description": "Uitgaande servicegesprekken (terugroepactie, afgewezen reparatie, achterstallig onderhoud): open met naam en reden, koppel het aan hun auto, plan het in.",
+                             "criteria": [("Opende met eigen naam, het bedrijf en de reden van het gesprek", "'Hoi Angela, met Sam van de werkplaats van LHM, ik bel over de terugroepactie op je Grand Cherokee.' Geen raadsel wie of waarom."),
+                                          ("Vroeg of het gelegen kwam", "Jij belt hen. Vraag het, en bied een terugbelmoment aan als het niet uitkomt."),
+                                          ("Verwees naar de specifieke auto en het specifieke punt (terugroepactie, afgewezen werk, achterstallig onderhoud)", "Bouwjaar, model, kilometerstand of de reparatieregel. Laat zien dat je gekeken hebt voordat je belde."),
+                                          ("Legde in gewone woorden uit wat het is en waarom het belangrijk is", "Veiligheid, kosten van wachten, of dat het kosteloos is. Een of twee zinnen, geen jargon."),
+                                          ("Beantwoordde vragen eerlijk (kosten, tijd, garantie)", "Een prijsindicatie en wat die verandert is beter dan ontwijken."),
+                                          ("Bood twee concrete afspraaktijden aan", "'Donderdag om acht uur of zaterdag om tien uur?'"),
+                                          ("Noemde vervoersopties (haal- en brengservice, leenauto of wachtruimte)", "Neem het 'hoe kom ik op mijn werk'-bezwaar weg voordat ze het noemen."),
+                                          ("Bevestigde het beste nummer of e-mailadres voor de herinnering", "Herhaal het."),
+                                          ("Vatte dag, tijd en vervolgstappen samen en bedankte de klant", "Sluit af met het plan en een oprecht dankjewel voor hun tijd.")]},
+        "parts_followup": {"name": "Onderdelen-nabelgesprek", "department": "Onderdelen", "description": "Uitgaande onderdelengesprekken (onderdeel binnen, offerte-opvolging, nalevering): identificeer, noem het exacte onderdeel, geef heldere status, sluit de afhaling of montage.",
+                           "criteria": [("Opende met eigen naam, de onderdelenafdeling en de reden van het gesprek", "'Hoi Ray, met Sam van Onderdelen bij LHM, je remblokken zijn binnen.'"),
+                                        ("Verwees naar het exacte onderdeel en de auto", "Onderdeelnaam, de auto waar het op past, de bestelling of offerte die ze kennen."),
+                                        ("Gaf heldere status (nu op voorraad, komt wanneer, nalevering met de echte datum)", "Een datum is beter dan 'binnenkort'. Als het uitloopt, zeg het en waarom."),
+                                        ("Bevestigde de prijs en wat erbij zit (statiegeld, btw, montage als die geoffreerd is)", "Een helder bedrag zodat er aan de balie geen verrassing is."),
+                                        ("Bood montage of een passend extra onderdeel aan waar het past", "'Zal de werkplaats ze meteen monteren terwijl je wacht?' Een keer, niet opdringerig."),
+                                        ("Vroeg om een afhaal- of montagetijd en noemde de openingstijden", "'We zijn open tot zes; komt de ochtend of de middag beter uit?'"),
+                                        ("Bevestigde hoe lang het onderdeel bewaard blijft en het beste nummer voor updates", "Bewaartermijn en een terugbelnummer."),
+                                        ("Vatte onderdeel, prijs en timing samen en bedankte de klant", "Herhaal het plan en bedank ze dat ze bij jullie bestellen.")]},
+        "rental_followup": {"name": "Verhuur-nabelgesprek", "department": "Verhuur", "description": "Uitgaande verhuurgesprekken (reserveringsbevestiging, verzekeringshuur regelen, herinnering inleveren): bevestig de details, voorkom verrassingen, leg het ophaalmoment vast.",
+                            "criteria": [("Opende met eigen naam, de verhuurafdeling en de reden van het gesprek", "'Hoi Monica, met Sam van LHM Verhuur, ik bevestig je auto voor morgen.'"),
+                                         ("Bevestigde de reserveringsgegevens (auto of klasse, ophaaldatum en -tijd, inleverdatum)", "Lees ze voor en corrigeer wat veranderd is."),
+                                         ("Bevestigde de betaalafspraak (rechtstreeks via de verzekeraar met daglimiet, of het tarief en wat erbij zit)", "Wie betaalt, hoeveel per dag, wat er gebeurt boven de limiet."),
+                                         ("Herinnerde aan wat mee te nemen (rijbewijs, creditcard voor de borg, schadenummer)", "Zodat niemand aan de balie wordt weggestuurd."),
+                                         ("Vroeg naar behoeften die de auto veranderen (zitplaatsen, kinderzitje, trekhaak, kilometers)", "Vang het nu op, niet bij het ophalen."),
+                                         ("Bood een keer een passende optie aan (upgrade, tweede bestuurder, afkoop eigen risico) zonder te pushen", "Een aanbod, dan verder."),
+                                         ("Bevestigde de ophaaltijd en het beste nummer voor een berichtje als de auto klaarstaat", "Tijd plus nummer, herhaald."),
+                                         ("Vatte samen en bedankte de klant", "Auto, tijd, wat mee te nemen, dankjewel.")]},
+        "collision_followup": {"name": "Schadeherstel-nabelgesprek", "department": "Schadeherstel", "description": "Uitgaande schadegesprekken (taxatie-opvolging, statusupdate, goedkeuring meerwerk): identificeer, toon begrip, geef eerlijke status en een datum, stem verzekering en huurauto af, leg de volgende stap vast.",
+                               "criteria": [("Opende met eigen naam, de schadeafdeling en de reden van het gesprek", "'Hoi Nicole, met Sam van LHM Schadeherstel, ik heb een update over je Grand Cherokee.'"),
+                                            ("Verwees naar hun specifieke auto en reparatie (schade, claim, taxatie die ze zagen)", "Laat merken dat je het dossier open hebt."),
+                                            ("Gaf een heldere, eerlijke status en een realistische datum voor oplevering of volgende stap", "Een datum en het waarom. Als het uitloopt, zeg wat er gebeurde (onderdelen, meerwerk, verzekeraar)."),
+                                            ("Legde de verzekeringskant (meerwerk, goedkeuring, eigen risico) in gewone woorden uit", "Wie wacht op wie en wat de klant zelf moet doen, als er iets is."),
+                                            ("Ging in op de huurauto of het vervoer", "Resterende huurdagen, verlenging geregeld, of een lift afgesproken."),
+                                            ("Beantwoordde vragen direct (gebruikte onderdelen, garantie, kosten) zonder te gokken", "Rechte antwoorden; 'ik check het en bel je voor drie uur' is beter dan gokken."),
+                                            ("Legde de volgende stap vast met een concreet moment (inleveren, ophalen, volgend belmoment)", "'Ik bel je donderdag voor twaalven' of 'ophalen vrijdag na twee uur'."),
+                                            ("Bevestigde het beste nummer voor updates en bedankte de klant", "Nummer herhaald, dank voor hun geduld.")]},
     },
 }
 
@@ -370,11 +465,16 @@ def _grader_prompt(card: dict, rep_name: str, contact_name: str, direction: str,
     medium = (f"a text message (SMS) conversation ({max(1, duration_s // 60)} min from first text to last)" if text
               else f"an email thread ({max(1, duration_s // 3600)} h from the first email to the last)" if email
               else f"a recorded {direction} phone call ({duration_s}s)")
+    who_called = ("" if text or email else
+                  ("- CALL TYPE: OUTBOUND. The rep placed this call to a customer who had left a lead or has an open item (recall, part, reservation, estimate). The customer answers with a plain hello and the rep must open with their name, the store and the reason for calling, then drive the conversation. "
+                   "Grade 'answered with their name and department' style criteria as 'opened with name, store and reason'.\n"
+                   if direction == "outbound" else
+                   "- CALL TYPE: INBOUND. The customer called the store; the rep answered. The rep is expected to answer with the store and their name, get the caller's name and number early, and steer toward a visit.\n"))
     return (
         f"You are a {coach} grading {medium} between the rep {rep_name} "
         f"and the customer {contact_name} using the '{card.get('name')}' scorecard ({card.get('department') or 'Sales'} department).\n\n"
         "CRITERIA to grade (each must appear in your results):\n" + crit_lines + "\n\n"
-        "RULES:\n"
+        "RULES:\n" + who_called +
         "- passed = true only when the transcript clearly shows the REP did it. Unclear or missing = false.\n"
         "- passed = null ONLY when the criterion genuinely did not apply on this call (e.g. 'offered alternatives if unavailable' when the unit was available).\n"
         "- evidence = a short verbatim quote (max 140 chars) from the transcript that proves your call, or \"\" when nothing supports it.\n"

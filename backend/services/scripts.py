@@ -719,8 +719,28 @@ async def save_recording(db, sid: str, recording_url: str, duration: Optional[st
     await db.call_evaluations.update_one({"roleplay_session_id": sid}, {"$set": {"recording_url": sets["recording_url"]}})
 
 
-def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None, locale: Optional[str] = None, channel: str = "call", covert: bool = False) -> str:
+
+DIFFICULTY_OBJECTIONS = {"easy": 1, "medium": 2, "hard": 3}
+DIFFICULTY_CURVEBALLS = {"easy": 0, "medium": 1, "hard": 2}
+
+
+def shopper_temper(difficulty: Optional[str], objections: list, spoken: bool = True) -> tuple:
+    """(temper text, ask-once rule, trimmed objections) for a shopper at easy / medium / hard. The level shapes the customer, never the scorecard."""
+    level = difficulty if difficulty in DIFFICULTY_OBJECTIONS else "medium"
+    objs = [str(o) for o in (objections or []) if str(o).strip()][: DIFFICULTY_OBJECTIONS[level]]
+    verb = "say" if spoken else "write"
+    temper = {
+        "easy": f"You are an easygoing, friendly customer. Raise at most the one concern below, gently, and accept a reasonable answer right away. Give your name and number when asked. {verb.capitalize()} yes to an appointment the first time the rep asks with a real time. ",
+        "medium": "You are a normal, reasonable customer. You need a real answer before you commit, but you are not difficult: one honest explanation settles a point. Agree to an appointment once the rep offers specific times and has answered your main question. ",
+        "hard": "You are a skeptical, busy customer who has been burned before. You need to be earned: a real answer to each concern, two specific times to choose from, and a reason the visit is worth your time. If the rep is vague or pushy, say so once and, if it continues, wrap up politely and end. ",
+    }[level]
+    once = ("ASK ONCE RULE: bring each concern or question up ONE time. The moment the rep gives any reasonable answer, that point is settled for good: do not repeat it, do not rephrase it, do not circle back to it later, and do not stack demands. "
+            "Ask one thing at a time. Only if the rep flatly ignores a question may you ask it a second time, once, then let it go. Each curveball comes up once and never again. ")
+    return temper, once, objs
+
+def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None, locale: Optional[str] = None, channel: str = "call", covert: bool = False, difficulty: Optional[str] = None) -> str:
     from services import industries as ind
+    temper, once, objections = shopper_temper(difficulty, persona.get("objections") or [], spoken=(channel == "call"))
     industry = industry or (ind.industry_of_dept(department) if department else ind.DEFAULT_INDUSTRY)
     pack = ind.get(industry)
     rep_role = ind.dept(department, industry)["rep"] if department else ("a salesperson" if industry == "automotive" else "an employee")
@@ -738,7 +758,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
                 "If a reply took the rep a long time (noted like [replied after 3 h 10 min]) you may mention it once, mildly, the way a real person would. "
                 + loc.language_rule(locale)
                 + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
-                f"OBJECTIONS YOU RAISE (one at a time, only when it fits): {'; '.join(persona.get('objections') or [])}. "
+                + (f"OBJECTIONS YOU MAY RAISE (each at most once, only when it fits): {'; '.join(objections)}. " if objections else "You have no particular objections; you just want your question answered and a clear next step. ") + temper + once
                 + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
                 + "RULES: Never narrate, never break character, never coach. Volunteer a little, not everything. If the rep earns it (clear answers, specific times), agree to come in and end warmly with a short final email. "
                   "If the rep is pushy, vague, sends a wall of boilerplate or throws out a blind number, push back; if they keep it up, lose interest and end politely. "
@@ -754,7 +774,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
                 "If a reply took the rep a long time (noted like [replied after 40 min]) you may mention it once, mildly, the way a real person would. "
                 + loc.language_rule(locale)
                 + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
-                f"OBJECTIONS YOU RAISE (one at a time, only when it fits): {'; '.join(persona.get('objections') or [])}. "
+                + (f"OBJECTIONS YOU MAY RAISE (each at most once, only when it fits): {'; '.join(objections)}. " if objections else "You have no particular objections; you just want your question answered and a clear next step. ") + temper + once
                 + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
                 + "RULES: Never narrate, never break character, never coach. Volunteer a little, not everything. If the rep earns it (clear answers, offers specific times), agree to come in and end warmly with a short final text. "
                   "If the rep is pushy, vague or throws out a blind number, push back; if they keep it up, lose interest and end politely. "
@@ -768,7 +788,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
                "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " + numbers_rule(locale) if live else "")
             + loc.language_rule(locale)
             + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
-            f"OBJECTIONS YOU RAISE (one at a time, only when it fits): {'; '.join(persona.get('objections') or [])}. "
+            + (f"OBJECTIONS YOU MAY RAISE (each at most once, only when it fits): {'; '.join(objections)}. " if objections else "You have no particular objections; you just want your question answered and a clear next step. ") + temper + once
             + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
             + "RULES: Speak like a real person on the phone: short, 1 to 3 sentences, contractions, occasional hesitation. Never narrate, never break character, never coach. "
               "Answer what the rep asks; volunteer a little, not everything. If the rep earns it (answers honestly, offers specific times), agree to an appointment and end warmly. "
@@ -825,7 +845,7 @@ async def customer_turn(db, session: dict, rep_text: str) -> dict:
     user = f"CALL SO FAR:\n{history}\nREP: {rep_text}\n\n(This is exchange {exchanges}. Reply as the customer." + (" You are out of time: wrap up in one sentence, say goodbye and set ended to true.)" if out_of_time else ")")
     try:
         data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the business", rep_first, session.get("curveballs") or [], live, session.get("direction") or "outbound", session.get("kind") == "mystery_shop",
-                                                session.get("industry"), session.get("department") if session.get("kind") == "mystery_shop" else None, session.get("locale"), covert=bool(session.get("lead_shop_id"))), user, timeout=45)
+                                                session.get("industry"), session.get("department") if session.get("kind") == "mystery_shop" else None, session.get("locale"), covert=bool(session.get("lead_shop_id")), difficulty=session.get("difficulty")), user, timeout=45)
     except Exception as e:
         logger.warning(f"[Roleplay] customer turn failed: {e}")
         data = {}

@@ -81,7 +81,7 @@ async def schedule_next_shop(db, enrollment: dict, course: dict, delay_minutes: 
     script = await db.scripts.find_one({"_id": ObjectId(nxt)})
     if not client or not target or not script:
         return None
-    when = _now() if immediate else ms.next_slot(client, _now() + timedelta(minutes=delay_minutes), min_gap_minutes=0)
+    when = _now() if immediate else ms.next_slot(client, _now() + timedelta(minutes=delay_minutes), min_gap_minutes=0, target=target)
     call = await ms.create_shop_call(db, client, target, when, created_by=enrollment.get("assigned_by"), manual=immediate, script=script)
     if call:
         await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"enrollment_id": str(enrollment["_id"]), "course_id": str(course["_id"]), "course_title": course.get("title")}})

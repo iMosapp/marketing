@@ -60,7 +60,7 @@ async def main():
 
     ch = requests.get(f"{API}/api/shop-clients/{cid}/challenges", headers=H, timeout=30).json()["challenges"]
     sales_pool = [x for x in ch if x["department"] == "sales"]
-    assert len(sales_pool) >= 5 and all(x["direction"] == "inbound" for x in ch), len(ch)
+    assert len(sales_pool) >= 5 and {x["direction"] for x in sales_pool} == {"inbound", "outbound"}, len(ch)
     custom = requests.post(f"{API}/api/shop-clients/{cid}/challenges", headers=H, json={"title": "Shopper: Wrangler lift kit question", "department": "sales", "body": "Answer the accessory question, then sell the visit.",
                                                                                      "success_points": ["Answers the accessory question", "Offers two times"], "persona": {"name": "Jo Rivera", "voice": "young", "summary": "Wants a lifted Wrangler", "opening_line": "Hey, do you guys do lift kits on the Wranglers you sell?"}}, timeout=30)
     assert custom.status_code == 200 and custom.json()["client_specific"], custom.text

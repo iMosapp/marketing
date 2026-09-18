@@ -3,14 +3,18 @@ import { View, Text, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useToast } from '../common/Toast';
-import { Sheet, Field, Label, Chip, GoldButton, DAYS, GOLD, AMBER, tid, industries, industryOf, deptsFor, loadIndustries, locales, localeOf, loadLocales, isTollFree, TOLL_FREE_WARNING, type Client } from './shared';
+import { Sheet, Field, Label, Chip, GoldButton, DAYS, GOLD, AMBER, tid, industries, industryOf, deptsFor, loadIndustries, locales, localeOf, loadLocales, isTollFree, TOLL_FREE_WARNING, DIFFICULTIES, type Client } from './shared';
 
-type Props = { visible: boolean; onClose: () => void; colors: any; client?: Client | null; onSaved: (c: Client) => void; defaultFrom?: string };
+type Grading = Record<string, Record<string, { name?: string | null; custom_id?: string | null; built_in?: string | null }>>;
+type Props = { visible: boolean; onClose: () => void; colors: any; client?: Client | null; onSaved: (c: Client) => void; defaultFrom?: string; grading?: Grading | null; scorecardOptions?: { id: string; name: string; department?: string }[] };
 
-const blank = { name: '', industry: 'automotive', locale: 'en-US', vat_id: '', brand: '', city: '', state: '', contact_name: '', contact_email: '', contact_phone: '', contact_title: '', per: { sales: '20', service: '20' } as Record<string, string>, textPer: {} as Record<string, string>, price: '400', start: '09:00', end: '18:00', days: [0, 1, 2, 3, 4, 5], vehicles: '', from_number: '', record: true, notes: '', timezone: 'America/Denver' };
+const blank = { name: '', industry: 'automotive', locale: 'en-US', vat_id: '', brand: '', city: '', state: '', contact_name: '', contact_email: '', contact_phone: '', contact_title: '', per: { sales: '20', service: '20' } as Record<string, string>, textPer: {} as Record<string, string>, price: '400', start: '09:00', end: '18:00', days: [0, 1, 2, 3, 4, 5], vehicles: '', from_number: '', record: true, notes: '', timezone: 'America/Denver',
+  difficulty: 'medium', direction_mix: 'mixed', tries: 3, spacing: 'next_day', reissue: true, scorecards: {} as Record<string, string | null> };
+const SPACING = [['same_day', 'Later the same day'], ['next_day', 'Next open day'], ['two_days', 'Two open days later']] as const;
+const MIX = [['mixed', 'Both, alternating', 'Each person gets inbound and outbound shops turn about'], ['inbound', 'Inbound only', 'The shopper always calls the store'], ['outbound', 'Outbound only', 'The shopper always leaves a lead and the rep calls back']] as const;
 
 // Create / edit a client account: industry, who they are, the plan they bought (shops per department), when we may call, what the caller can mention.
-export const ClientSheet = ({ visible, onClose, colors, client, onSaved, defaultFrom }: Props) => {
+export const ClientSheet = ({ visible, onClose, colors, client, onSaved, defaultFrom, grading, scorecardOptions }: Props) => {
   const { showToast } = useToast();
   const [f, setF] = useState<any>(blank);
   const [busy, setBusy] = useState(false);
@@ -25,12 +29,20 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
     Promise.all([loadIndustries(), loadLocales()]).then(() => setTick(t => t + 1));
     if (client) setF({ name: client.name, industry: client.industry || 'automotive', locale: client.locale || 'en-US', vat_id: client.vat_id || '', brand: client.brand, city: client.city, state: client.state, contact_name: client.contact_name, contact_email: client.contact_email, contact_phone: client.contact_phone, contact_title: client.contact_title,
       per: Object.fromEntries(Object.entries(client.plan.per_month || {}).map(([k, v]) => [k, String(v)])), textPer: Object.fromEntries(Object.entries(client.plan.text_per_month || {}).map(([k, v]) => [k, String(v)])), price: String(client.plan.price_monthly), start: client.hours.start, end: client.hours.end, days: client.hours.days, vehicles: (client.offerings || client.vehicles || []).join('\n'),
-      from_number: client.from_number || '', record: client.record_calls, notes: client.notes || '', timezone: client.timezone, text_scorecards: !!client.text_scorecards, live_calls: (client as any).live_calls ?? null });
+      from_number: client.from_number || '', record: client.record_calls, notes: client.notes || '', timezone: client.timezone, text_scorecards: !!client.text_scorecards, live_calls: (client as any).live_calls ?? null,
+      difficulty: client.difficulty || 'medium', direction_mix: client.direction_mix || 'mixed', tries: client.retry?.tries ?? 3, spacing: client.retry?.spacing || 'next_day', reissue: client.reissue_unreachable !== false, scorecards: { ...(client.scorecards || {}) } });
     else setF(blank);
   }, [visible, client?.id]);
   // switching country also moves the timezone to that country's default unless the admin typed their own
   const pickLocale = (code: string) => setF((x: any) => { const prev = localeOf(x.locale); const next = localeOf(code); return { ...x, locale: code, timezone: (!x.timezone || x.timezone === prev.timezone) ? next.timezone : x.timezone }; });
   const pickIndustry = (key: string) => setF((x: any) => ({ ...x, industry: key, per: Object.fromEntries(deptsFor(key).map(d => [d.key, x.per?.[d.key] ?? (deptsFor(key)[0].key === d.key ? '20' : '10')])) }));
+  // Built-in card for one direction; an older per-department pick (both directions) moves to the other direction so it is not lost.
+  const pickBuiltIn = (dept: string, dir: 'inbound' | 'outbound') => setF((x: any) => {
+    const sc = { ...(x.scorecards || {}), [`${dept}:${dir}`]: null };
+    const legacy = x.scorecards?.[dept];
+    if (legacy) { sc[dept] = null; const other = `${dept}:${dir === 'inbound' ? 'outbound' : 'inbound'}`; if (!sc[other]) sc[other] = legacy; }
+    return { ...x, scorecards: sc };
+  });
 
   const save = async () => {
     if (!f.name.trim()) { showToast('Give the client a name', 'error'); return; }
@@ -40,7 +52,8 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
       const text_per_month = Object.fromEntries(depts.map(d => [d.key, Number(f.textPer?.[d.key]) || 0]));
       const payload = { name: f.name, industry: f.industry, locale: f.locale, vat_id: f.vat_id || '', brand: f.brand, city: f.city, state: f.state, timezone: f.timezone, contact_name: f.contact_name, contact_email: f.contact_email.trim(), contact_phone: f.contact_phone, contact_title: f.contact_title,
         plan: { per_month, text_per_month, price_monthly: Number(f.price) || 0 }, hours: { start: f.start, end: f.end, days: f.days },
-        vehicles: f.vehicles.split('\n').map((v: string) => v.trim()).filter(Boolean), from_number: f.from_number || '', record_calls: f.record, notes: f.notes, text_scorecards: !!f.text_scorecards, live_calls: f.live_calls === undefined ? null : f.live_calls };
+        vehicles: f.vehicles.split('\n').map((v: string) => v.trim()).filter(Boolean), from_number: f.from_number || '', record_calls: f.record, notes: f.notes, text_scorecards: !!f.text_scorecards, live_calls: f.live_calls === undefined ? null : f.live_calls,
+        difficulty: f.difficulty, direction_mix: f.direction_mix, retry: { tries: f.tries, spacing: f.spacing }, reissue_unreachable: !!f.reissue, ...(grading ? { scorecards: f.scorecards } : {}) };
       const res = client ? await api.put(`/shop-clients/${client.id}`, payload) : await api.post('/shop-clients', payload);
       onSaved(res.data); onClose(); showToast(client ? 'Saved' : 'Client added', 'success');
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not save', 'error'); }
@@ -97,7 +110,59 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
           {DAYS.map((d, i) => <Chip key={d} label={d} small active={f.days.includes(i)} onPress={() => set('days', f.days.includes(i) ? f.days.filter((x: number) => x !== i) : [...f.days, i].sort())} colors={colors} testID={`client-day-${i}`} />)}
         </View>
         <Field value={f.timezone} onChange={(v: string) => set('timezone', v)} colors={colors} placeholder="America/Denver" autoCapitalize="none" testID="client-timezone" />
+        <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }} {...tid('client-night-guard')}>Never before 8 AM or after 8 PM in the person's own time, whatever is set here. Each person can have their own hours and timezone under People.</Text>
       </View>
+      <View style={{ gap: 8 }}>
+        <Label t="HOW TOUGH THE SHOPPER IS" colors={colors} />
+        <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+          {DIFFICULTIES.map(d => <Chip key={d.key} label={d.label} small active={f.difficulty === d.key} onPress={() => set('difficulty', d.key)} colors={colors} testID={`client-difficulty-${d.key}`} />)}
+          <Chip label="Mix it up" small active={f.difficulty === 'mixed'} onPress={() => set('difficulty', 'mixed')} colors={colors} testID="client-difficulty-mixed" />
+        </View>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }} {...tid('client-difficulty-hint')}>{f.difficulty === 'mixed' ? 'Mostly medium, some easy, a few hard, drawn at random per shop.' : DIFFICULTIES.find(d => d.key === f.difficulty)?.hint} Every concern comes up once; a reasonable answer settles it. The scorecard is the same at every level. Set per person under People.</Text>
+      </View>
+      <View style={{ gap: 8 }}>
+        <Label t="PHONE SHOPS: WHO CALLS WHOM" colors={colors} />
+        <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>{MIX.map(([k, label]) => <Chip key={k} label={label} small active={f.direction_mix === k} onPress={() => set('direction_mix', k)} colors={colors} testID={`client-mix-${k}`} />)}</View>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }} {...tid('client-mix-hint')}>{MIX.find(m => m[0] === f.direction_mix)?.[2]}. Outbound shops are graded with the department's follow-up card (open with name, store and reason).</Text>
+      </View>
+      <View style={{ gap: 8 }}>
+        <Label t="IF NOBODY PICKS UP" colors={colors} />
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Text style={{ fontSize: 13, color: colors.text }}>Try</Text>
+          {[1, 2, 3, 4, 5].map(n => <Chip key={n} label={String(n)} small active={f.tries === n} onPress={() => set('tries', n)} colors={colors} testID={`client-tries-${n}`} />)}
+          <Text style={{ fontSize: 13, color: colors.text }}>{f.tries === 1 ? 'time, then park it' : 'times, then park it'}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>{SPACING.map(([k, label]) => <Chip key={k} label={label} small active={f.spacing === k} onPress={() => set('spacing', k)} colors={colors} testID={`client-spacing-${k}`} />)}</View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+          <Ionicons name="refresh" size={18} color={GOLD} />
+          <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Re-issue unreachable shops</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>When a shop is parked after all tries, the planner books a fresh one on a new date (once per shop) so everyone still gets their monthly number.</Text></View>
+          <Switch value={!!f.reissue} onValueChange={(v) => set('reissue', v)} {...tid('client-reissue-toggle')} />
+        </View>
+      </View>
+      {!!client && !!grading && (
+        <View style={{ gap: 8 }} {...tid('client-grading')}>
+          <Label t="HOW EACH DEPARTMENT IS GRADED" colors={colors} />
+          {depts.map(d => (
+            <View key={d.key} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border, gap: 8 }} {...tid(`client-grading-${d.key}`)}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>{d.label}</Text>
+              {(['inbound', 'outbound'] as const).map(dir => {
+                const key = `${d.key}:${dir}`;
+                const picked = f.scorecards?.[key] ?? f.scorecards?.[d.key] ?? null;
+                const builtIn = grading[d.key]?.[dir]?.built_in || 'Built-in card';
+                return (
+                  <View key={dir} style={{ gap: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.5 }}>{dir === 'inbound' ? 'INBOUND (THEY CALL THE STORE)' : 'OUTBOUND (REP CALLS THEM BACK)'}</Text>
+                    <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                      <Chip label={builtIn} small active={!picked} onPress={() => pickBuiltIn(d.key, dir)} colors={colors} testID={`client-card-${d.key}-${dir}-builtin`} />
+                      {(scorecardOptions || []).map(o => <Chip key={o.id} label={o.name} small active={picked === o.id} onPress={() => set('scorecards', { ...f.scorecards, [key]: o.id })} colors={colors} testID={`client-card-${d.key}-${dir}-${o.id}`} />)}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      )}
       <Field label={`${ind.offering.field.toUpperCase()} (ONE PER LINE)`} value={f.vehicles} onChange={(v: string) => set('vehicles', v)} colors={colors} multiline placeholder={ind.offering.hint} testID="client-vehicles" />
       <Field label="CALL FROM NUMBER (OPTIONAL)" value={f.from_number} onChange={(v: string) => set('from_number', v)} colors={colors} placeholder={defaultFrom ? `Default ${defaultFrom}` : 'Twilio number the caller calls from'} keyboardType="phone-pad" testID="client-from-number" />
       {isTollFree(f.from_number) && <Text style={{ fontSize: 12, color: AMBER, lineHeight: 16, marginTop: -4 }} {...tid('client-from-number-tollfree')}>{TOLL_FREE_WARNING}</Text>}      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>

@@ -47,6 +47,12 @@ ALL_DEPARTMENTS = ind.all_dept_keys()
 CALL_STATUSES_OPEN = ["scheduled", "dialing", "live", "ending", "grading"]
 DEFAULT_HOURS = {"start": "09:00", "end": "18:00", "days": [0, 1, 2, 3, 4, 5]}
 ALWAYS_OPEN = {"start": "00:00", "end": "23:59", "days": [0, 1, 2, 3, 4, 5, 6]}
+NIGHT_GUARD = ("08:00", "20:00")  # hard floor in the person's local time: nothing automatic dials or texts outside it, whatever the client's hours say
+DIFFICULTIES = ("easy", "medium", "hard", "mixed")
+DIRECTIONS = ("inbound", "outbound")
+DIRECTION_MIX = ("inbound", "outbound", "mixed")
+RETRY_SPACING = ("same_day", "next_day", "two_days")
+DEFAULT_RETRY = {"tries": 3, "spacing": "next_day"}
 
 # Global challenge pool. Persona text uses {vehicle} and {store}; the client's brand fills them in at shop time.
 STARTER_CHALLENGES = [
@@ -197,6 +203,128 @@ STARTER_CHALLENGES = [
                  "goals": "Find out if she can use this shop without trouble from insurance. Will book if the estimator is confident and kind.",
                  "objections": ["The adjuster said I have to use one of their shops", "Will my insurance still pay if I come to you?", "How long is this going to take? Last time it was six weeks"],
                  "opening_line": "Hi, my insurance company gave me a list of shops for {vehicle} and you weren't on it, but I'd rather come to you. Is that even allowed?"}},
+    # ── Extra inbound variety (so a person with 5 shops a month never repeats) ──
+    {"slug": "shop_service_second_opinion", "department": "service", "category": "Service", "title": "Service caller: another shop says I need $1,800 of work", "runtime": "3 to 4 min",
+     "purpose": "A customer with a big estimate from an independent shop wants a second opinion. A great advisor stays neutral, asks what was found, and books an inspection without trashing the other shop.",
+     "body": "Thank them for calling. Ask what the other shop found and what the estimate listed.\n\nDo not knock the other shop. Explain how your inspection works and what it costs, and that you will show them the findings.\n\nOffer two times, mention transportation options, confirm the number and recap.",
+     "success_points": ["Asks what the other shop found", "Does not badmouth the other shop", "Explains the inspection and its cost", "Offers two appointment times", "Mentions transportation options", "Confirms the phone number"],
+     "persona": {"name": "Renee Castillo", "voice": "female", "summary": "49, office manager, an independent shop quoted 1,800 dollars of suspension and brake work on {vehicle}. Suspicious, wants a straight answer.",
+                 "goals": "Find out if the work is real and what it would cost here. Will book if the advisor is neutral and specific.",
+                 "objections": ["Are they ripping me off?", "Will you charge me just to look at it?", "Can you beat their price?"],
+                 "opening_line": "Hi, another shop just told me {vehicle} needs about eighteen hundred dollars of work and I'd like a second opinion. Do you do that?"}},
+    {"slug": "shop_parts_accessory", "department": "parts", "category": "Parts", "title": "Parts caller: roof rack and all-weather mats, installed?", "runtime": "2 to 3 min",
+     "purpose": "An accessory buyer. A great counterperson confirms the exact vehicle, quotes the parts and the install, and offers to book the install with service.",
+     "body": "Answer with the department and your name. Confirm year, model and trim.\n\nQuote each accessory and say whether install is included or separate, and how long install takes.\n\nOffer to order and book the install at the same time. Get the cell number and recap.",
+     "success_points": ["Confirms year, model and trim", "Quotes each accessory clearly", "Explains install cost and time", "Offers to order and book the install", "Gets the phone number and recaps"],
+     "persona": {"name": "Aaron Pike", "voice": "male", "summary": "36, new owner of {vehicle}, wants a factory roof rack and all-weather floor mats before a ski trip in two weeks. Upbeat, decisive.",
+                 "goals": "Know the total with install and get it done before the trip.",
+                 "objections": ["Amazon has racks for half that", "Can you install it the same day I pick it up?", "Is the factory one really worth it?"],
+                 "opening_line": "Hi, I just bought {vehicle} and I'd like a roof rack and all-weather mats. Can you tell me what that runs installed?"}},
+    {"slug": "shop_rental_one_way", "department": "rental", "category": "Rental", "title": "Rental caller: one-way to another city", "runtime": "2 to 3 min",
+     "purpose": "An unusual request. A great agent says plainly what is possible, offers the closest alternative, and still asks for the booking.",
+     "body": "Get the caller's name, dates and destination. Say plainly whether one-way is possible and what it costs, or offer the closest alternative (round trip, drop at a partner location).\n\nOffer a specific vehicle, state the rate and rules, ask to reserve it, get the cell number and recap.",
+     "success_points": ["Gets dates and destination", "Answers the one-way question plainly", "Offers an alternative if one-way is not possible", "States rate and rules", "Asks to reserve it and gets the phone number"],
+     "persona": {"name": "Sofia Marquez", "voice": "female", "summary": "31, moving to Boise next weekend, wants to rent {vehicle} or similar one-way and drop it there. Organized, on a budget.",
+                 "goals": "Find out if one-way works and what it costs; otherwise a workable plan B.",
+                 "objections": ["The big rental chains do one-way, why can't you?", "What if I bring it back the following weekend instead?", "Is there a drop fee?"],
+                 "opening_line": "Hi, I'm moving to Boise next weekend. Can I rent {vehicle} one-way and drop it off there?"}},
+    {"slug": "shop_collision_hail", "department": "collision", "category": "Body Shop", "title": "Collision caller: hail damage all over", "runtime": "2 to 4 min",
+     "purpose": "A hail claim. A great estimator explains paintless dent repair versus conventional, how the insurance inspection works, and books the estimate.",
+     "body": "Show empathy. Confirm the vehicle and how bad it is (dents on the hood, roof, trunk; any broken glass).\n\nExplain paintless dent repair versus conventional repair and that the insurer will inspect. Ask whether a claim is filed.\n\nOffer two estimate times, mention rental coordination, get the cell number and recap.",
+     "success_points": ["Shows empathy", "Confirms the vehicle and the extent of the damage", "Explains PDR versus conventional repair", "Asks whether a claim is filed", "Offers two estimate times", "Gets the phone number and recaps"],
+     "persona": {"name": "Walt Brennan", "voice": "older", "summary": "62, {vehicle} sat through last night's hail storm; dents on the hood, roof and trunk, no broken glass. Calm, wants to know the process.",
+                 "goals": "Understand how hail repair works and get an estimate this week.",
+                 "objections": ["Will they total it?", "Does paintless dent repair actually look right?", "How long will they keep it?"],
+                 "opening_line": "Morning. {vehicle} got hammered by hail last night, dents all over. What do I do here?"}},
+    # ── Outbound: the shopper left a lead or has an open item, the rep is calling them back ──
+    {"slug": "shop_sales_lead_callback", "department": "sales", "category": "Sales calls", "title": "Lead callback: I filled out the form last night", "direction": "outbound", "runtime": "3 to 5 min",
+     "purpose": "The everyday internet lead callback. A great rep opens with name, store and the exact unit, confirms it is available, asks about the trade, and sets a firm appointment.",
+     "body": "Open with your name, the store and why you are calling: the unit they asked about.\n\nConfirm it is still here (or offer two alternatives). Ask what drew them to it and their timeline.\n\nAsk about a trade. Offer two appointment times. Confirm the best number or email. Recap and thank them.",
+     "success_points": ["Opens with name, store and the vehicle they asked about", "Confirms availability", "Asks about timeline", "Asks about a trade-in", "Offers two appointment times", "Confirms contact info", "Recaps and thanks them"],
+     "persona": {"name": "Jordan Ellis", "voice": "male", "summary": "38, IT manager, submitted a form on {vehicle} on {store}'s website late last night asking if it is available. Busy at work, answers the phone half distracted.",
+                 "goals": "Confirm it is there and whether a visit is worth it. Will book if the rep is quick, specific and not pushy.",
+                 "objections": ["I'm at work, can you make this quick?", "Is the online price the real price?", "I'm looking at two others too"],
+                 "opening_line": "Hello?"}},
+    {"slug": "shop_sales_quote_followup", "department": "sales", "category": "Sales calls", "title": "Lead callback: you emailed me a price, I have questions", "direction": "outbound", "runtime": "3 to 5 min",
+     "purpose": "The rep is following up on a quote they sent. A great rep confirms they got it, answers the questions straight, and moves it to a visit instead of a phone negotiation.",
+     "body": "Open with your name, the store and the quote you sent. Ask if they had a chance to look at it and what questions came up.\n\nAnswer honestly what the number includes (fees, add-ons, trade). Do not renegotiate blind; sell the visit where you can show everything.\n\nOffer two times, confirm contact info, recap.",
+     "success_points": ["References the quote they sent", "Asks what questions came up", "Explains what the number includes", "Does not renegotiate blind over the phone", "Offers two appointment times", "Confirms contact info"],
+     "persona": {"name": "Melissa Grant", "voice": "female", "summary": "44, accountant, got an emailed quote on {vehicle} from {store} yesterday. Detail oriented, has the email open, wants the fees explained.",
+                 "goals": "Understand the out-the-door number and whether there is room. Will come in if the rep is transparent.",
+                 "objections": ["What's the doc fee for?", "Another store is 600 less on paper", "Can you just send me the best number by email?"],
+                 "opening_line": "Hi, this is Melissa."}},
+    {"slug": "shop_sales_no_show", "department": "sales", "category": "Sales calls", "title": "Lead callback: I missed my appointment", "direction": "outbound", "runtime": "2 to 4 min",
+     "purpose": "The customer missed yesterday's appointment. A great rep is gracious, finds out what happened, and rebooks with two times without guilt-tripping.",
+     "body": "Open warmly with your name and the store. Say you missed them yesterday and ask if everything is okay.\n\nNo guilt. Confirm the unit is still here and still a fit. Offer two new times, one of them soon.\n\nConfirm the number for a reminder text. Recap and thank them.",
+     "success_points": ["Opens warmly without guilt", "Asks what happened", "Confirms the vehicle is still available", "Offers two new times", "Confirms the number for a reminder", "Recaps and thanks them"],
+     "persona": {"name": "Chris Dawson", "voice": "male", "summary": "33, warehouse lead, had an appointment at {store} yesterday to see {vehicle} and work ran long. A little embarrassed, still interested.",
+                 "goals": "Rebook without feeling lectured. Will pick a time if the rep is easy about it.",
+                 "objections": ["Sorry, work went long", "Is it still even there?", "I might just wait a couple of weeks"],
+                 "opening_line": "Hey, this is Chris."}},
+    {"slug": "shop_service_recall_callback", "department": "service", "category": "Service", "title": "Service callback: open recall on your vehicle", "direction": "outbound", "runtime": "2 to 4 min",
+     "purpose": "The advisor is calling about an open recall. A great advisor opens with name and reason, explains it is no charge and why it matters, and books it while checking other needs.",
+     "body": "Open with your name, the store and the recall. Ask if they have a minute.\n\nExplain what the recall covers, that it is no charge, and roughly how long. Ask about anything else the vehicle needs.\n\nOffer two times, mention transportation, confirm the number and recap.",
+     "success_points": ["Opens with name, store and the reason", "Confirms it is no charge", "Explains what it covers and how long", "Asks about other needs", "Offers two times", "Mentions transportation", "Confirms the number and recaps"],
+     "persona": {"name": "Beth Nakamura", "voice": "female", "summary": "51, drives {vehicle}, vaguely remembers a recall letter she never acted on. Polite, mildly suspicious of a dealership calling her.",
+                 "goals": "Find out if it is really free and worth the trip. Will book if it is quick and the advisor is straight.",
+                 "objections": ["Is this a sales call?", "Is it really free?", "I can't be without the car all day"],
+                 "opening_line": "Hello?"}},
+    {"slug": "shop_service_declined_work", "department": "service", "category": "Service", "title": "Service callback: the brake work you passed on last visit", "direction": "outbound", "runtime": "3 to 4 min",
+     "purpose": "Following up on declined work. A great advisor references the exact recommendation, explains the safety and cost of waiting without scaring, answers the price question, and offers two times.",
+     "body": "Open with your name, the store and the reason: the brakes noted at the last visit. Ask if now is a good time.\n\nReference the finding (pad thickness, rotor condition). Explain plainly what waiting costs. Give the real price and what it includes.\n\nOffer two times, mention transportation, confirm the number and recap.",
+     "success_points": ["Opens with name, store and the reason", "References the exact finding", "Explains the cost of waiting without scaring", "Gives a clear price", "Offers two times", "Confirms the number and recaps"],
+     "persona": {"name": "Manny Ortega", "voice": "male", "summary": "46, contractor, declined rear brakes on {vehicle} at his last oil change because money was tight. Friendly but budget-driven.",
+                 "goals": "Know how urgent it really is and the exact price. Will book if the advisor is honest about timing.",
+                 "objections": ["Can it wait another couple of months?", "The shop by my house is cheaper", "Can you do just the pads?"],
+                 "opening_line": "Yeah, hello?"}},
+    {"slug": "shop_parts_arrived", "department": "parts", "category": "Parts", "title": "Parts callback: your part came in", "direction": "outbound", "runtime": "2 to 3 min",
+     "purpose": "The classic ready call. A great counterperson opens with name and the part, confirms price and hold time, offers install, and sets a pickup window.",
+     "body": "Open with your name, the parts department and the part that arrived.\n\nConfirm the price and what it includes. Say how long you hold it and your counter hours. Offer to have service install it.\n\nAsk when they will pick it up, confirm the number, recap.",
+     "success_points": ["Opens with name, department and the part", "Confirms the price", "States hold time and hours", "Offers installation", "Sets a pickup window", "Confirms the number and recaps"],
+     "persona": {"name": "Tina Oyelaran", "voice": "female", "summary": "40, ordered a replacement side mirror for {vehicle} last week and paid a deposit. Busy mom, wants a quick pickup.",
+                 "goals": "Know when she can grab it and whether someone can install it fast.",
+                 "objections": ["How long does install take, I have the kids with me", "Was the price the same as quoted?", "Are you open Saturday?"],
+                 "opening_line": "Hi, this is Tina."}},
+    {"slug": "shop_parts_backorder", "department": "parts", "category": "Parts", "title": "Parts callback: your part is on backorder", "direction": "outbound", "runtime": "2 to 4 min",
+     "purpose": "Bad news call. A great counterperson opens with the facts, gives a real date, offers options (another store, expedite, alternative part) and keeps the customer.",
+     "body": "Open with your name, the department and the part. Give the straight status and a real date.\n\nOffer options: check other stores, expedite, or a compatible alternative. Say what you will do next and when you will update them.\n\nConfirm the number, recap.",
+     "success_points": ["Opens with name, department and the part", "Gives the straight status and a real date", "Offers at least one option", "Says what happens next and when", "Confirms the number and recaps"],
+     "persona": {"name": "Greg Sandoval", "voice": "male", "summary": "55, ordered a control module for {vehicle} that the shop needs to finish the repair. Frustrated the car has been down a week.",
+                 "goals": "A real date or a workaround. Will stay patient if the counterperson owns it.",
+                 "objections": ["A week already and now backorder?", "Can you get it from another dealer?", "Should I just cancel and go aftermarket?"],
+                 "opening_line": "Greg here."}},
+    {"slug": "shop_rental_confirmation", "department": "rental", "category": "Rental", "title": "Rental callback: confirming tomorrow's reservation", "direction": "outbound", "runtime": "2 to 3 min",
+     "purpose": "The confirmation call. A great agent reads back the details, confirms who pays, reminds what to bring, catches changes, and locks the pickup time.",
+     "body": "Open with your name, the rental department and the reservation. Read back vehicle, pickup and return.\n\nConfirm billing (insurance direct bill and allowance, or rate). Remind them what to bring. Ask about seats, car seat, hitch.\n\nConfirm pickup time and the number for a ready text. Recap and thank them.",
+     "success_points": ["Opens with name, department and the reservation", "Reads back the details", "Confirms who pays and how much", "Reminds what to bring", "Asks about needs that change the vehicle", "Confirms the pickup time and number"],
+     "persona": {"name": "Laura Kimball", "voice": "female", "summary": "37, reserved {vehicle} or similar for tomorrow while her car is in the body shop, insurance paying up to a daily limit. Organized, a little anxious about the paperwork.",
+                 "goals": "Make sure tomorrow goes smoothly and she does not pay out of pocket.",
+                 "objections": ["What if the rate is above what insurance covers?", "Do I really need a credit card?", "Can I get something with more room?"],
+                 "opening_line": "Hi, this is Laura."}},
+    {"slug": "shop_rental_return_reminder", "department": "rental", "category": "Rental", "title": "Rental callback: your rental is due back tomorrow", "direction": "outbound", "runtime": "2 to 3 min",
+     "purpose": "A return reminder that often turns into an extension. A great agent opens with the facts, explains extension and insurance implications plainly, and confirms the plan.",
+     "body": "Open with your name, the department and the return date. Ask if their car is ready or they need more time.\n\nIf extending, explain how it works with insurance (or the rate). Confirm return time, fuel level and where to park.\n\nConfirm the number and recap.",
+     "success_points": ["Opens with name, department and the return date", "Asks whether they need an extension", "Explains extension and insurance plainly", "Confirms return details", "Confirms the number and recaps"],
+     "persona": {"name": "Omar Haddad", "voice": "male", "summary": "42, has {vehicle} on an insurance rental, body shop just said his car needs three more days. Relaxed, wants it handled.",
+                 "goals": "Extend without a hassle and know if it costs him anything.",
+                 "objections": ["The body shop says three more days, is that a problem?", "Will insurance cover the extra days?", "Do I need to come in to extend?"],
+                 "opening_line": "Hello, Omar speaking."}},
+    {"slug": "shop_collision_status_update", "department": "collision", "category": "Body Shop", "title": "Collision callback: update on your repair", "direction": "outbound", "runtime": "2 to 4 min",
+     "purpose": "The status call every customer wants. A great estimator gives a straight status and date, explains the insurance supplement, handles the rental days, and sets the next check-in.",
+     "body": "Open with your name, the body shop and the vehicle. Give the honest status and the completion date, and why if it moved.\n\nExplain the supplement or approval step and who is waiting on whom. Address rental days.\n\nSet the next update time and confirm the number.",
+     "success_points": ["Opens with name, shop and the vehicle", "Gives an honest status and a date", "Explains the insurance step plainly", "Addresses the rental", "Sets the next update time", "Confirms the number"],
+     "persona": {"name": "Denise Alvarez", "voice": "female", "summary": "48, {vehicle} has been in the shop nine days after a rear-end collision; the rental runs out in three. Tired of waiting, polite but firm.",
+                 "goals": "A real date and the rental handled.",
+                 "objections": ["You said a week", "My rental ends Thursday, then what?", "Why is the insurance company holding it up?"],
+                 "opening_line": "Hi, Denise."}},
+    {"slug": "shop_collision_estimate_followup", "department": "collision", "category": "Body Shop", "title": "Collision callback: following up on your estimate", "direction": "outbound", "runtime": "3 to 4 min",
+     "purpose": "The customer got an estimate three days ago and went quiet. A great estimator asks what is holding them up, explains the insurance and parts questions, and books the drop-off.",
+     "body": "Open with your name, the shop and the estimate. Ask what questions came up.\n\nExplain the claim process, deductible, parts and warranty plainly. Mention rental coordination.\n\nOffer two drop-off times, confirm the number, recap.",
+     "success_points": ["Opens with name, shop and the estimate", "Asks what is holding them up", "Explains deductible, parts and warranty", "Mentions rental coordination", "Offers two drop-off times", "Confirms the number and recaps"],
+     "persona": {"name": "Paul Whitaker", "voice": "older", "summary": "60, got an estimate for {vehicle} three days ago, is comparing it with another shop and wondering about his 1,000 dollar deductible. Thoughtful, slow to decide.",
+                 "goals": "Decide where to go and whether to claim at all. Will book if the estimator is patient and clear.",
+                 "objections": ["The other shop was a little cheaper", "Is it worth claiming with a thousand deductible?", "Do you use original parts?"],
+                 "opening_line": "Hello, this is Paul."}},
 ]
 
 
@@ -208,19 +336,57 @@ def _oid(v) -> ObjectId:
     return ObjectId(str(v))
 
 
-def _tz(client: dict) -> ZoneInfo:
-    try:
-        return ZoneInfo(client.get("timezone") or "America/Denver")
-    except Exception:
-        return ZoneInfo("America/Denver")
+def _tz(client: dict, target: Optional[dict] = None) -> ZoneInfo:
+    for name in ((target or {}).get("timezone"), (client or {}).get("timezone")):
+        if name:
+            try:
+                return ZoneInfo(name)
+            except Exception:
+                pass
+    return ZoneInfo("America/Denver")
 
 
-def _hours(client: dict) -> dict:
-    if client.get("demo"):
-        return dict(ALWAYS_OPEN)  # Quick shops have no business hours: they dial the moment they are placed, any time of day
-    h = {**DEFAULT_HOURS, **(client.get("hours") or {})}
+def _own_hours(target: Optional[dict]) -> Optional[dict]:
+    h = (target or {}).get("hours")
+    return h if isinstance(h, dict) and h.get("start") and h.get("end") else None
+
+
+def _hours(client: dict, target: Optional[dict] = None) -> dict:
+    """The window we may reach this person in: their own hours when set, else the client's. Quick shops have none (they dial the moment they are placed)."""
+    own = _own_hours(target)
+    if own:
+        h = {**DEFAULT_HOURS, **own}
+    elif client.get("demo"):
+        return dict(ALWAYS_OPEN)
+    else:
+        h = {**DEFAULT_HOURS, **(client.get("hours") or {})}
     h["days"] = [int(d) for d in (h.get("days") or DEFAULT_HOURS["days"])]
     return h
+
+
+def retry_policy(client: dict, department: Optional[str] = None) -> dict:
+    """How many tries a shop gets when nobody picks up, and how far apart: per client, with an optional per-department override."""
+    r = dict((client or {}).get("retry") or {})
+    r.update((r.get("by_dept") or {}).get(department or "") or {})
+    try:
+        tries = max(1, min(5, int(r.get("tries") or DEFAULT_RETRY["tries"])))
+    except (TypeError, ValueError):
+        tries = DEFAULT_RETRY["tries"]
+    spacing = r.get("spacing") if r.get("spacing") in RETRY_SPACING else DEFAULT_RETRY["spacing"]
+    return {"tries": tries, "spacing": spacing}
+
+
+def difficulty_for(client: dict, target: Optional[dict] = None) -> str:
+    """Easy / medium / hard for this shop: the person's own setting, else the client's default (medium). 'mixed' draws one at random, mostly medium."""
+    d = (target or {}).get("difficulty") or (client or {}).get("difficulty") or "medium"
+    if d not in DIFFICULTIES:
+        d = "medium"
+    return random.choices(["easy", "medium", "hard"], weights=[3, 5, 2])[0] if d == "mixed" else d
+
+
+def direction_mix(client: dict) -> str:
+    m = (client or {}).get("direction_mix")
+    return m if m in DIRECTION_MIX else "mixed"
 
 
 def _hm(v: str, fallback: str) -> tuple:
@@ -236,7 +402,7 @@ async def ensure_challenges(db) -> int:
     for tpl in STARTER_CHALLENGES:
         res = await db.scripts.update_one(
             {"slug": tpl["slug"], "pool": "mystery_shop", "shop_client_id": None},
-            {"$setOnInsert": {**tpl, "kind": "phone", "pool": "mystery_shop", "industry": "automotive", "store_id": None, "shop_client_id": None, "direction": "inbound", "active": True, "created_at": _now(), "updated_at": _now()}}, upsert=True)
+            {"$setOnInsert": {**tpl, "kind": "phone", "pool": "mystery_shop", "industry": "automotive", "store_id": None, "shop_client_id": None, "direction": tpl.get("direction") if tpl.get("direction") in DIRECTIONS else "inbound", "active": True, "created_at": _now(), "updated_at": _now()}}, upsert=True)
         n += 1 if res.upserted_id else 0
     await db.scripts.update_many({"pool": "mystery_shop", "industry": {"$exists": False}}, {"$set": {"industry": "automotive"}})
     return n
@@ -319,6 +485,8 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
            "hours": _hours(c), "vehicles": offerings_of(c), "offerings": offerings_of(c), "active": c.get("active", True), "record_calls": c.get("record_calls", True), "live_calls": c.get("live_calls"), "notes": c.get("notes", ""),
            "from_number": c.get("from_number") or "", "report_token": c.get("report_token"), "scorecards": c.get("scorecards") or {}, "billing": c.get("billing") or {},
            "demo": bool(c.get("demo")), "text_scorecards": bool(c.get("text_scorecards")),
+           "difficulty": c.get("difficulty") if c.get("difficulty") in DIFFICULTIES else "medium", "direction_mix": direction_mix(c), "retry": retry_policy(c), "retry_by_dept": ((c.get("retry") or {}).get("by_dept") or {}),
+           "reissue_unreachable": bool(c.get("reissue_unreachable", True)), "night_guard": {"start": NIGHT_GUARD[0], "end": NIGHT_GUARD[1]},
            "created_at": c.get("created_at").isoformat() if c.get("created_at") else None}
     if extra:
         out.update(extra)
@@ -329,6 +497,8 @@ def serialize_target(t: dict, extra: Optional[dict] = None) -> dict:
     cc = t.get("contact_card") or {}
     out = {"id": str(t["_id"]), "client_id": t.get("client_id"), "name": t.get("name", ""), "phone": t.get("phone", ""), "email": t.get("email", ""), "department": t.get("department", "sales"), "department_label": ind.dept_label(t.get("department")), "title": t.get("title", ""),
            "notes": t.get("notes", ""), "active": t.get("active", True), "challenge_history": t.get("challenge_history") or [], "created_at": t.get("created_at").isoformat() if t.get("created_at") else None,
+           "hours": _own_hours(t), "timezone": t.get("timezone") or None, "difficulty": t.get("difficulty") if t.get("difficulty") in DIFFICULTIES else None,
+           "monthly_quota": int(t["monthly_quota"]) if isinstance(t.get("monthly_quota"), (int, float)) else None,
            "contact_card_sent_at": cc["sent_at"].isoformat() if hasattr(cc.get("sent_at"), "isoformat") else None, "contact_card_ok": cc.get("ok"), "contact_card_error": cc.get("error")}
     if extra:
         out.update(extra)
@@ -340,6 +510,7 @@ def serialize_call(s: dict) -> dict:
             "industry": s.get("industry") or ind.industry_of_dept(s.get("department")), "customer_noun": ind.get(s.get("industry") or ind.industry_of_dept(s.get("department")))["customer"], "status": s.get("status"),
             "outcome": s.get("outcome"), "fail_reason": s.get("fail_reason"), "script_id": s.get("script_id"), "script_title": s.get("script_title"), "persona_name": (s.get("persona") or {}).get("name"),
             "curveballs": s.get("curveballs") or [], "scheduled_for": s["scheduled_for"].isoformat() if s.get("scheduled_for") else None, "attempts": s.get("attempts", 0),
+            "direction": s.get("direction") if s.get("direction") in DIRECTIONS else "inbound", "difficulty": s.get("difficulty") or "medium", "max_attempts": s.get("max_attempts"), "reissued_at": s["reissued_at"].isoformat() if s.get("reissued_at") else None,
             "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
             "score_pct": s.get("score_pct"), "adherence_pct": s.get("adherence_pct"), "evaluation_id": s.get("evaluation_id"), "recording_url": s.get("recording_url"),
             "recording_seconds": s.get("recording_seconds"), "turns": len(s.get("turns") or []), "manual": bool(s.get("manual")), "demo": bool(s.get("demo")),
@@ -377,9 +548,18 @@ def language_filter(language: Optional[str]) -> dict:
     return {"language": {"$in": [None, "en"]}} if (language or "en") == "en" else {"language": language}
 
 
-async def challenge_pool(db, client_id: Optional[str], department: Optional[str] = None, industry: Optional[str] = None, language: Optional[str] = "en", approved_only: bool = False) -> list:
+def direction_filter(direction: Optional[str]) -> dict:
+    """Challenges predate the direction field, so 'inbound' means missing-or-inbound."""
+    if direction == "outbound":
+        return {"direction": "outbound"}
+    if direction == "inbound":
+        return {"direction": {"$in": [None, "inbound"]}}
+    return {}
+
+
+async def challenge_pool(db, client_id: Optional[str], department: Optional[str] = None, industry: Optional[str] = None, language: Optional[str] = "en", approved_only: bool = False, direction: Optional[str] = None) -> list:
     await ensure_challenges(db)
-    q = {"kind": "phone", "pool": "mystery_shop", "active": {"$ne": False}, "$or": [{"shop_client_id": None}, {"shop_client_id": client_id}], **language_filter(language)}
+    q = {"kind": "phone", "pool": "mystery_shop", "active": {"$ne": False}, "$or": [{"shop_client_id": None}, {"shop_client_id": client_id}], **language_filter(language), **direction_filter(direction)}
     if department:
         q["department"] = department
     elif industry:
@@ -397,14 +577,18 @@ def challenge_language(client: dict) -> str:
     return CHALLENGE_LANGUAGE.get(d, d)
 
 
-async def pick_challenge(db, client: dict, target: dict) -> Optional[dict]:
-    """A challenge this person has not had; once they have had them all, the one they had longest ago.
+async def pick_challenge(db, client: dict, target: dict, direction: Optional[str] = None) -> Optional[dict]:
+    """A challenge this person has not had (of the asked call type when there are any); once they have had them all, the one they had longest ago.
     Non-English clients draw from reviewer-approved challenges in their language; until any exist, the English library is used (the caller still speaks the client's language)."""
     lang = challenge_language(client)
     dept = target.get("department") or "sales"
-    pool = await challenge_pool(db, str(client["_id"]), dept, language=lang, approved_only=(lang != "en"))
-    if not pool and lang != "en":
-        pool = await challenge_pool(db, str(client["_id"]), dept)
+    pool = []
+    for want_dir in ([direction, None] if direction else [None]):
+        pool = await challenge_pool(db, str(client["_id"]), dept, language=lang, approved_only=(lang != "en"), direction=want_dir)
+        if not pool and lang != "en":
+            pool = await challenge_pool(db, str(client["_id"]), dept, direction=want_dir)
+        if pool:
+            break
     if not pool:
         return None
     history = [str(x) for x in (target.get("challenge_history") or [])]
@@ -417,34 +601,37 @@ async def pick_challenge(db, client: dict, target: dict) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------- scheduling
-def _local_window(client: dict, day: datetime) -> Optional[tuple]:
-    h = _hours(client)
+def _local_window(client: dict, day: datetime, target: Optional[dict] = None) -> Optional[tuple]:
+    """The window on `day` (local) we may reach this person: their hours, cut down to the 8 AM to 8 PM night guard."""
+    h = _hours(client, target)
     if day.weekday() not in h["days"]:
         return None
     sh, sm = _hm(h.get("start"), "09:00")
     eh, em = _hm(h.get("end"), "18:00")
-    start = day.replace(hour=sh, minute=sm, second=0, microsecond=0)
-    end = day.replace(hour=eh, minute=em, second=0, microsecond=0)
+    gh, gm = _hm(NIGHT_GUARD[0], "08:00")
+    xh, xm = _hm(NIGHT_GUARD[1], "20:00")
+    start = max(day.replace(hour=sh, minute=sm, second=0, microsecond=0), day.replace(hour=gh, minute=gm, second=0, microsecond=0))
+    end = min(day.replace(hour=eh, minute=em, second=0, microsecond=0), day.replace(hour=xh, minute=xm, second=0, microsecond=0))
     return (start, end) if end > start else None
 
 
-def in_hours(client: dict, when: Optional[datetime] = None) -> bool:
+def in_hours(client: dict, when: Optional[datetime] = None, target: Optional[dict] = None) -> bool:
     if client.get("demo"):
-        return True
-    local = (when or _now()).astimezone(_tz(client))
-    win = _local_window(client, local)
+        return True  # Quick shops have no hours: they are always fired by hand, right now
+    local = (when or _now()).astimezone(_tz(client, target))
+    win = _local_window(client, local, target)
     return bool(win and win[0] <= local <= win[1])
 
 
-def next_slot(client: dict, after: datetime, min_gap_minutes: int = 90) -> datetime:
-    """A random moment inside business hours, at least min_gap after `after` (retries) and never in the last 20 minutes of the day."""
+def next_slot(client: dict, after: datetime, min_gap_minutes: int = 90, target: Optional[dict] = None) -> datetime:
+    """A random moment inside this person's hours (never outside the night guard), at least min_gap after `after`, and never in the last 20 minutes of the day."""
     if client.get("demo"):
         return (after + timedelta(minutes=min_gap_minutes)).astimezone(timezone.utc)  # no window, no random spread: exactly when asked
-    tz = _tz(client)
+    tz = _tz(client, target)
     local = after.astimezone(tz) + timedelta(minutes=min_gap_minutes)
     for i in range(14):
         day = (local + timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
-        win = _local_window(client, day)
+        win = _local_window(client, day, target)
         if not win:
             continue
         start = max(win[0], local) if i == 0 else win[0]
@@ -453,7 +640,27 @@ def next_slot(client: dict, after: datetime, min_gap_minutes: int = 90) -> datet
             continue
         secs = int((end - start).total_seconds())
         return (start + timedelta(seconds=random.randint(0, secs))).astimezone(timezone.utc)
-    return (after + timedelta(days=1)).astimezone(timezone.utc)
+    return (local + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+
+
+def retry_slot(client: dict, target: Optional[dict], now: datetime, spacing: str) -> datetime:
+    """When the next try goes out: later the same day (2 to 4 h, next open day if the day is over), the next open day, or the one after."""
+    if spacing == "same_day":
+        return next_slot(client, now, min_gap_minutes=random.randint(120, 240), target=target)
+    tz = _tz(client, target)
+    local = now.astimezone(tz)
+    skip = 1 if spacing == "next_day" else 2
+    seen = 0
+    for i in range(1, 21):
+        day = (local + timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        win = _local_window(client, day, target)
+        if not win:
+            continue
+        seen += 1
+        if seen == skip:
+            end = win[1] - timedelta(minutes=20)
+            return (win[0] + timedelta(seconds=random.randint(0, max(60, int((end - win[0]).total_seconds()))))).astimezone(timezone.utc)
+    return next_slot(client, now + timedelta(days=skip), 0, target)
 
 
 def month_bounds(month: Optional[str], tz: ZoneInfo) -> tuple:
@@ -468,70 +675,175 @@ def month_bounds(month: Optional[str], tz: ZoneInfo) -> tuple:
     return start.astimezone(timezone.utc), end.astimezone(timezone.utc)
 
 
-async def create_shop_call(db, client: dict, target: dict, when: datetime, created_by: Optional[str] = None, manual: bool = False, script: Optional[dict] = None, mode: str = "phone") -> Optional[dict]:
-    """mode 'phone' = the AI calls; 'text' = the AI texts like a lead; 'email' = the AI emails like an internet lead. Text and email threads are graded with reply speed by the clock, quality by AI."""
-    script = script or await pick_challenge(db, client, target)
+async def create_shop_call(db, client: dict, target: dict, when: datetime, created_by: Optional[str] = None, manual: bool = False, script: Optional[dict] = None, mode: str = "phone",
+                           direction: Optional[str] = None, difficulty: Optional[str] = None) -> Optional[dict]:
+    """mode 'phone' = the AI calls; 'text' = the AI texts like a lead; 'email' = the AI emails like an internet lead. Text and email threads are graded with reply speed by the clock, quality by AI.
+    direction 'inbound' = the shopper calls the store; 'outbound' = the shopper left a lead and the rep is calling them back. difficulty easy|medium|hard shapes the shopper, never the scorecard."""
+    direction = direction if direction in DIRECTIONS else None
+    script = script or await pick_challenge(db, client, target, direction)
     if not script:
         return None
     mode = mode_of(mode)
     dept = target.get("department") or "sales"
     persona = fill_persona(script.get("persona") or {}, client, dept)
     industry = ind.key_of(client)
+    difficulty = difficulty if difficulty in ("easy", "medium", "hard") else difficulty_for(client, target)
     pool_cb = [c for c in (script.get("curveballs") or []) if str(c).strip()] or ind.dept(dept, industry).get("curveballs", [])
-    curve = random.sample(pool_cb, k=min(len(pool_cb), random.choice([0, 1, 1, 2])))
+    n_cb = {"easy": 0, "medium": random.choice([0, 1, 1]), "hard": random.choice([1, 2])}[difficulty]
+    curve = random.sample(pool_cb, k=min(len(pool_cb), n_cb))
     now = _now()
-    direction = script.get("direction") if script.get("direction") in ("inbound", "outbound") else "inbound"
+    if not direction:
+        direction = script.get("direction") if script.get("direction") in DIRECTIONS else "inbound"
     doc = {"kind": "mystery_shop", "mode": mode, "status": "scheduled", "user_id": None, "client_id": str(client["_id"]), "target_id": str(target["_id"]),
            "rep_name": target.get("name") or "", "rep_phone": target.get("phone"), "rep_email": (target.get("email") or "").strip().lower() or None, "department": dept, "industry": industry, "store_id": None, "store_name": client.get("name") or f"the {ind.get(industry)['place']}", "locale": loc.key_of(client),
-           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": "inbound" if mode != "phone" else direction, "persona": persona, "curveballs": curve,
-           "assignment_id": None, "scheduled_for": when, "attempts": 0, "max_attempts": 3, "manual": manual, "token": uuid.uuid4().hex, "turns": [],
+           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": "inbound" if mode != "phone" else direction, "difficulty": difficulty, "persona": persona, "curveballs": curve,
+           "assignment_id": None, "scheduled_for": when, "attempts": 0, "max_attempts": retry_policy(client, dept)["tries"], "manual": manual, "token": uuid.uuid4().hex, "turns": [],
            "created_by": created_by, "created_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
     await db.shop_targets.update_one({"_id": target["_id"]}, {"$push": {"challenge_history": str(script["_id"])}})
+    target.setdefault("challenge_history", []).append(str(script["_id"]))  # the planner books several shops per person in one pass; keep its copy current
     doc["_id"] = res.inserted_id
     return doc
 
 
-async def plan_month(db, client: dict, month: Optional[str] = None, created_by: Optional[str] = None) -> dict:
-    """Top the month up to the plan quota per department, spread over the remaining business days, rotating people evenly."""
+EMPTY_MONTH = {"planned": 0, "completed": 0, "scheduled": 0, "unreachable": 0, "inbound": 0, "outbound": 0, "avg_score": None, "quota": 0, "next_at": None}
+
+
+async def people_month_stats(db, client: dict, month: Optional[str] = None) -> dict:
+    """Per person, this month: how many shops they have (planned = everything that counts), done, still to come, unreachable, inbound/outbound split, average score,
+    the monthly number they are owed (their own quota or an even share of the department's plan) and when the next one is due."""
     tz = _tz(client)
     start, end = month_bounds(month, tz)
+    cid = str(client["_id"])
+    targets = await db.shop_targets.find({"client_id": cid, "active": {"$ne": False}}, {"department": 1, "monthly_quota": 1}).to_list(500)
+    out = {str(t["_id"]): dict(EMPTY_MONTH) for t in targets}
+    per = plan_per_month(client)
+    for dept in {t.get("department") or "sales" for t in targets}:
+        group = [t for t in targets if (t.get("department") or "sales") == dept]
+        for tid, n in _person_quotas(int(per.get(dept) or 0), group, {}).items():
+            out[tid]["quota"] = n
+    scores: dict = {}
+    q = {"kind": "mystery_shop", "client_id": cid, "scheduled_for": {"$gte": start, "$lt": end}, "lead_shop_id": None, **_quota_filled(client)}
+    async for s in db.roleplay_sessions.find(q, {"target_id": 1, "status": 1, "direction": 1, "score_pct": 1, "scheduled_for": 1}):
+        row = out.setdefault(str(s.get("target_id")), dict(EMPTY_MONTH))
+        row["planned"] += 1
+        st = s.get("status")
+        if st == "completed":
+            row["completed"] += 1
+            if isinstance(s.get("score_pct"), (int, float)):
+                scores.setdefault(str(s.get("target_id")), []).append(s["score_pct"])
+        elif st in CALL_STATUSES_OPEN:
+            row["scheduled"] += 1
+            when = s.get("scheduled_for")
+            if st == "scheduled" and when and (row["next_at"] is None or when < row["next_at"]):
+                row["next_at"] = when
+        elif st == "unreachable":
+            row["unreachable"] += 1
+        row["outbound" if s.get("direction") == "outbound" else "inbound"] += 1
+    for tid, vals in scores.items():
+        out[tid]["avg_score"] = _pct(vals)
+    for row in out.values():
+        if row["next_at"] is not None:
+            row["next_at"] = row["next_at"].replace(tzinfo=timezone.utc).isoformat() if row["next_at"].tzinfo is None else row["next_at"].isoformat()
+    return out
+
+
+async def grading_summary(db, client: dict) -> dict:
+    """Which scorecard grades each department's inbound and outbound shops: the client's own card when picked, else the built-in one."""
+    out = {}
+    cards = client.get("scorecards") or {}
+    for dept in ind.dept_keys(ind.key_of(client)):
+        out[dept] = {}
+        for direction in DIRECTIONS:
+            custom = None
+            for cid in (cards.get(f"{dept}:{direction}"), cards.get(dept)):
+                if cid and ObjectId.is_valid(str(cid)):
+                    custom = await db.scorecards.find_one({"_id": ObjectId(str(cid)), "active": {"$ne": False}}, {"name": 1})
+                    if custom:
+                        break
+            built_in = template_card(dept, loc.key_of(client), direction)
+            out[dept][direction] = {"name": custom.get("name") if custom else (built_in or {}).get("name"), "custom_id": str(custom["_id"]) if custom else None, "built_in": (built_in or {}).get("name")}
+    return out
+
+
+def _person_quotas(quota: int, targets: list, counts: dict) -> dict:
+    """Split a department's monthly quota across its people: anyone with their own monthly number gets exactly that, the rest share what is left evenly (least-shopped first gets the extra)."""
+    fixed = {str(t["_id"]): max(0, int(t["monthly_quota"])) for t in targets if isinstance(t.get("monthly_quota"), (int, float))}
+    flex = [t for t in targets if str(t["_id"]) not in fixed]
+    left = max(0, quota - sum(fixed.values()))
+    out = dict(fixed)
+    if flex:
+        flex.sort(key=lambda t: counts.get(str(t["_id"]), 0))
+        base, extra = divmod(left, len(flex))
+        for i, t in enumerate(flex):
+            out[str(t["_id"])] = base + (1 if i < extra else 0)
+    return out
+
+
+def _quota_filled(client: dict) -> dict:
+    """Which shops count toward the month: everything not canceled, minus unreachable shops we are allowed to re-issue (each one at most once)."""
+    if client.get("reissue_unreachable", True):
+        return {"status": {"$ne": "canceled"}, "$or": [{"status": {"$ne": "unreachable"}}, {"reissued_at": {"$ne": None}}]}
+    return {"status": {"$ne": "canceled"}}
+
+
+async def plan_month(db, client: dict, month: Optional[str] = None, created_by: Optional[str] = None) -> dict:
+    """Top the month up to the plan quota per department, split per person (5 each when 20 sales shops meet 4 salespeople), spread over each person's own hours,
+    alternating inbound and outbound (unless the client picked one), never the same challenge twice for a person until they have had them all.
+    Unreachable shops are re-issued once on a new date while the month has room, so everyone still gets their number."""
     now = _now()
+    tz = _tz(client)
+    start, end = month_bounds(month, tz)
     per, text_per, email_per = plan_per_month(client), plan_text_per_month(client), plan_email_per_month(client)
     created = {k: 0 for k in ind.dept_keys(ind.key_of(client))}
     created_text = {k: 0 for k in ind.dept_keys(ind.key_of(client))}
     created_email = {k: 0 for k in ind.dept_keys(ind.key_of(client))}
     quotas = {"phone": per, "text": text_per, "email": email_per}
     made = {"phone": created, "text": created_text, "email": created_email}
+    mix = direction_mix(client)
     for dept, mode in [(d, m) for d in ind.dept_keys(ind.key_of(client)) for m in MODES]:
         quota = int(quotas[mode].get(dept) or 0)
         if quota <= 0:
             continue
-        q = {"kind": "mystery_shop", "client_id": str(client["_id"]), "department": dept, "scheduled_for": {"$gte": start, "$lt": end}, "status": {"$ne": "canceled"}, **mode_q(mode)}
-        existing = await db.roleplay_sessions.count_documents(q)
-        missing = quota - existing
+        q = {"kind": "mystery_shop", "client_id": str(client["_id"]), "department": dept, "scheduled_for": {"$gte": start, "$lt": end}, **_quota_filled(client), **mode_q(mode)}
         targets = await db.shop_targets.find({"client_id": str(client["_id"]), "department": dept, "active": {"$ne": False}, **({"email": {"$nin": [None, ""]}} if mode == "email" else {})}).to_list(200)
-        if missing <= 0 or not targets:
+        if not targets:
             continue
-        counts = {}
-        async for s in db.roleplay_sessions.find(q, {"target_id": 1}):
+        counts, dirs = {}, {}
+        async for s in db.roleplay_sessions.find(q, {"target_id": 1, "direction": 1}):
             counts[s.get("target_id")] = counts.get(s.get("target_id"), 0) + 1
-        targets.sort(key=lambda t: counts.get(str(t["_id"]), 0))
+            dirs.setdefault(s.get("target_id"), []).append(s.get("direction") or "inbound")
+        want = _person_quotas(quota, targets, counts)
         from_dt = max(now + timedelta(minutes=30), start)
         if from_dt >= end:
             continue
-        slots = []
-        for _ in range(missing * 3):
-            cand = next_slot(client, from_dt + timedelta(seconds=random.randint(0, max(60, int((end - from_dt).total_seconds())))), min_gap_minutes=0)
-            if from_dt <= cand < end:
-                slots.append(cand)
-        slots = sorted(slots)[:missing]
-        if len(slots) < missing:
-            slots += [next_slot(client, from_dt, min_gap_minutes=0) for _ in range(missing - len(slots))]
-        for i, when in enumerate(slots):
-            t = targets[i % len(targets)]
-            if await create_shop_call(db, client, t, when, created_by=created_by, mode=mode):
-                made[mode][dept] += 1
+        n_new = 0
+        for t in targets:
+            tid = str(t["_id"])
+            missing = want.get(tid, 0) - counts.get(tid, 0)
+            for i in range(max(0, missing)):
+                when = None
+                for _ in range(12):
+                    cand = next_slot(client, from_dt + timedelta(seconds=random.randint(0, max(60, int((end - from_dt).total_seconds())))), min_gap_minutes=0, target=t)
+                    if from_dt <= cand < end:
+                        when = cand
+                        break
+                when = when or next_slot(client, from_dt, min_gap_minutes=0, target=t)
+                if when >= end:
+                    break
+                had = dirs.get(tid, [])
+                direction = None
+                if mode == "phone" and mix != "inbound":
+                    direction = "outbound" if mix == "outbound" else ("outbound" if had.count("inbound") > had.count("outbound") else "inbound")
+                call = await create_shop_call(db, client, t, when, created_by=created_by, mode=mode, direction=direction)
+                if call:
+                    made[mode][dept] += 1
+                    n_new += 1
+                    dirs.setdefault(tid, []).append(call.get("direction") or "inbound")
+        if n_new and client.get("reissue_unreachable", True):
+            gone = await db.roleplay_sessions.find({"kind": "mystery_shop", "client_id": str(client["_id"]), "department": dept, "status": "unreachable", "reissued_at": None, "scheduled_for": {"$gte": start, "$lt": end}, **mode_q(mode)}, {"_id": 1}).sort("ended_at", 1).limit(n_new).to_list(n_new)
+            if gone:
+                await db.roleplay_sessions.update_many({"_id": {"$in": [g["_id"] for g in gone]}}, {"$set": {"reissued_at": now}})
     return {**created, **({"text": created_text} if any(created_text.values()) else {}), **({"email": created_email} if any(created_email.values()) else {})}
 
 
@@ -741,8 +1053,12 @@ OUTCOME_LABEL = {"voicemail": "Went to voicemail", "no-answer": "No answer", "bu
                  "no_reply": f"No reply to the text in {tx.REPLY_WINDOW_MIN // 60} hours"}
 
 
+async def _target_of(db, call: dict) -> Optional[dict]:
+    return await db.shop_targets.find_one({"_id": _oid(call["target_id"])}) if ObjectId.is_valid(str(call.get("target_id") or "")) else None
+
+
 async def postpone_call(db, call: dict, hours: int = 2):
-    """Rep pressed 2 (bad time): automatic shops come back in a couple of hours, inside store hours, and it does not count as a try.
+    """Rep pressed 2 (bad time): automatic shops come back in a couple of hours, inside the person's hours, and it does not count as a try.
     Human-fired shops (Quick shop, Shop now, Call now, Try again) are never rescheduled: the shop is parked as 'asked us to call back' and the admin taps Try again."""
     client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])}) or {}
     now = _now()
@@ -750,9 +1066,10 @@ async def postpone_call(db, call: dict, hours: int = 2):
     if client.get("demo") or call.get("demo") or call.get("manual"):
         await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "unreachable", "outcome": "postponed", "fail_reason": OUTCOME_LABEL["postponed"], "ended_at": now, "updated_at": now}, "$push": {"attempt_history": history}})
         return
+    target = await _target_of(db, call)
     when = now + timedelta(hours=hours)
-    if client and not in_hours(client, when):
-        when = next_slot(client, when, min_gap_minutes=0)
+    if client and not in_hours(client, when, target):
+        when = next_slot(client, when, min_gap_minutes=0, target=target)
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": when, "outcome": "postponed", "fail_reason": OUTCOME_LABEL["postponed"], "call_sid": None, "call_status": None, "turns": [], "updated_at": now},
                                                                "$inc": {"attempts": -1 if int(call.get("attempts") or 0) > 0 else 0},
                                                                "$push": {"attempt_history": history}})
@@ -769,9 +1086,11 @@ async def record_outcome(db, call: dict, outcome: str, reason: Optional[str] = N
     now = _now()
     history = {"at": now, "outcome": outcome, "call_sid": call.get("call_sid"), **({"sip_code": call["sip_code"]} if call.get("sip_code") else {})}
     hand_fired = bool(client.get("demo") or call.get("demo") or call.get("manual"))
-    if attempts < int(call.get("max_attempts") or 3) and client and not hand_fired:
-        when = next_slot(client, now, min_gap_minutes=random.randint(90, 240))
-        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": when, "outcome": outcome, "fail_reason": f"{label}, trying again", "call_sid": None, "call_status": None, "turns": [], "updated_at": now},
+    policy = retry_policy(client, call.get("department"))
+    if attempts < int(call.get("max_attempts") or policy["tries"]) and client and not hand_fired:
+        when = retry_slot(client, await _target_of(db, call), now, policy["spacing"])
+        gap = {"same_day": "later today", "next_day": "next open day", "two_days": "in two open days"}[policy["spacing"]]
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": when, "outcome": outcome, "fail_reason": f"{label}, trying again {gap}", "call_sid": None, "call_status": None, "turns": [], "updated_at": now},
                                                                    "$push": {"attempt_history": history}})
     else:
         tries = "" if hand_fired else f" ({attempts} {'try' if attempts == 1 else 'tries'})"
@@ -834,12 +1153,15 @@ async def run_due_calls(db, limit: int = 3) -> int:
         if not client or not client.get("active", True):
             await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "canceled", "fail_reason": "Client paused", "updated_at": now}})
             continue
-        if not call.get("manual") and not client.get("demo") and not in_hours(client, now):
-            await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"scheduled_for": next_slot(client, now, min_gap_minutes=0), "updated_at": now}})
-            continue
+        if not call.get("manual"):
+            target = await _target_of(db, call)
+            if not in_hours(client, now, target):
+                await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"scheduled_for": next_slot(client, now, min_gap_minutes=0, target=target), "updated_at": now}})
+                continue
         busy = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": call["target_id"], "status": {"$in": ["dialing", "live", "ending", "grading"]}, **mode_q(call.get("mode"))}, {"_id": 1})
         if busy:
-            await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"scheduled_for": now + timedelta(minutes=45), "updated_at": now}})
+            # never a flat +45 min: that walked shops past closing time and into the night
+            await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"scheduled_for": next_slot(client, now, min_gap_minutes=45, target=await _target_of(db, call)), "updated_at": now}})
             continue
         claimed = await db.roleplay_sessions.find_one_and_update({"_id": call["_id"], "status": "scheduled"}, {"$set": {"status": "dialing", "updated_at": now}})
         if claimed and await place_shop_call(db, claimed):
@@ -861,24 +1183,28 @@ async def plan_active_clients(db) -> int:
 
 # ---------------------------------------------------------------- grading hook (called from scripts.grade_session)
 async def scorecard_for(db, session: dict) -> Optional[dict]:
+    """The client's own card for this department and call type ('sales:outbound'), else for the department, else the built-in one for that call type."""
     client = await db.shop_clients.find_one({"_id": _oid(session["client_id"])}) or {}
     dept = session.get("department") or "sales"
-    cid = (client.get("scorecards") or {}).get(dept)
-    if cid and ObjectId.is_valid(str(cid)):
-        card = await db.scorecards.find_one({"_id": ObjectId(str(cid)), "active": {"$ne": False}})
-        if card:
-            return card
-    return template_card(dept, loc.key_of(client))
+    direction = session.get("direction") if session.get("direction") in DIRECTIONS else "inbound"
+    cards = client.get("scorecards") or {}
+    for cid in (cards.get(f"{dept}:{direction}"), cards.get(dept)):
+        if cid and ObjectId.is_valid(str(cid)):
+            card = await db.scorecards.find_one({"_id": ObjectId(str(cid)), "active": {"$ne": False}})
+            if card:
+                return card
+    return template_card(dept, loc.key_of(client), direction)
 
 
-def template_card(dept: str, locale: Optional[str] = None) -> Optional[dict]:
-    """The department's built-in scorecard (from its industry pack), in the client's language, so every course taker and every shop is graded the same way."""
+def template_card(dept: str, locale: Optional[str] = None, direction: str = "inbound") -> Optional[dict]:
+    """The department's built-in scorecard for this call type (inbound phone-up or outbound lead follow-up), in the client's language, so every course taker and every shop is graded the same way."""
     d = ind.dept(dept)
-    if d.get("template"):
-        body = sc.template_body(d["template"], loc.language(locale))
+    key = d.get("template_outbound") if direction == "outbound" and d.get("template_outbound") else d.get("template")
+    if key:
+        body = sc.template_body(key, loc.language(locale))
         if not body:
             return None
-        return {"_id": None, "name": body["name"], "department": body["department"], "criteria": sc.normalize_criteria(body["criteria"]), "alert_on_critical": False}
+        return {"_id": None, "name": body["name"], "department": body["department"], "criteria": sc.normalize_criteria(body["criteria"]), "alert_on_critical": False, "direction": direction}
     card = d.get("scorecard") or {}
     if not card.get("criteria"):
         return None
@@ -1545,7 +1871,8 @@ async def ensure_demo_client(db, me: dict) -> dict:
     return doc
 
 
-async def demo_shop(db, me: dict, name: str, phone: str, department: str, title: str, store_name: str, vehicle: str, script: Optional[dict], text_scorecard: bool, industry: Optional[str] = None, mode: str = "phone", email: str = "") -> dict:
+async def demo_shop(db, me: dict, name: str, phone: str, department: str, title: str, store_name: str, vehicle: str, script: Optional[dict], text_scorecard: bool, industry: Optional[str] = None, mode: str = "phone", email: str = "",
+                    direction: Optional[str] = None, difficulty: Optional[str] = None) -> dict:
     c = await ensure_demo_client(db, me)
     industry = industry if industry in ind.INDUSTRIES else ind.industry_of_dept(department)
     cid, now = str(c["_id"]), _now()
@@ -1559,7 +1886,7 @@ async def demo_shop(db, me: dict, name: str, phone: str, department: str, title:
         t = await db.shop_targets.find_one({"_id": res.inserted_id})
     place = f"your {ind.get(industry)['business']}"
     persona_client = {**c, "industry": industry, "name": store_name or place, "vehicles": [vehicle] if vehicle else []}
-    call = await create_shop_call(db, persona_client, t, now, created_by=str(me["_id"]), manual=True, script=script, mode=mode)
+    call = await create_shop_call(db, persona_client, t, now, created_by=str(me["_id"]), manual=True, script=script, mode=mode, direction=direction, difficulty=difficulty)
     if not call:
         return {"error": f"No {ind.dept_label(department)} challenges for {ind.get(industry)['label']} yet. Open the Challenge Library and let Jessi write the starters."}
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"demo": True, "notify_sms": bool(text_scorecard), "store_name": store_name or f"the {ind.get(industry)['business']}"}})

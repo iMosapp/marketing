@@ -6,31 +6,51 @@ import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
 import { openUrl } from './ReportView';
-import { Sheet, Field, Label, Chip, GoldButton, deptLabel, deptsOfClient, fmtPhone, fmtWhen, GOLD, GREEN, RED, tid, type Person, type Client } from './shared';
+import { Sheet, Field, Label, Chip, GoldButton, deptLabel, deptsOfClient, fmtPhone, fmtWhen, GOLD, GREEN, RED, tid, DAYS, DIFFICULTIES, difficultyLabel, type Person, type Client } from './shared';
 import { ClientNumberCard } from './ClientNumberCard';
 import { ContactCardPanel } from './ContactCardPanel';
+import { ShopNowSheet } from './ShopNowSheet';
 
 type Props = { client: Client; people: Person[]; colors: any; onChanged: () => void; onShopStarted: () => void; kickoffUrl?: string; kickoff?: { submitted_at?: string; submissions?: number } };
+type Form = { name: string; phone: string; email: string; department: string; title: string; notes: string; ownHours: boolean; start: string; end: string; days: number[]; timezone: string; difficulty: string; quota: string };
+const formOf = (p: Person | undefined, dept: string, client: Client): Form => ({
+  name: p?.name || '', phone: p?.phone || '', email: p?.email || '', department: p?.department || dept, title: p?.title || '', notes: p?.notes || '',
+  ownHours: !!p?.hours, start: p?.hours?.start || client.hours?.start || '09:00', end: p?.hours?.end || client.hours?.end || '18:00', days: p?.hours?.days || client.hours?.days || [0, 1, 2, 3, 4, 5],
+  timezone: p?.timezone || client.timezone || 'America/Denver', difficulty: p?.difficulty || '', quota: p?.monthly_quota != null ? String(p.monthly_quota) : '',
+});
+// "3 of 5 this month · 2 done · avg 82% · 1 in / 2 out · next Jun 12, 10:05 AM"
+export const monthLine = (p: Person) => {
+  const m = p.month;
+  if (!m || (!m.planned && !m.quota)) return '';
+  const parts = [`${m.planned} of ${m.quota || m.planned} this month`];
+  if (m.completed) parts.push(`${m.completed} done${m.avg_score != null ? ` · avg ${m.avg_score}%` : ''}`);
+  if (m.unreachable) parts.push(`${m.unreachable} unreachable`);
+  if (m.inbound || m.outbound) parts.push(`${m.inbound} in / ${m.outbound} out`);
+  if (m.next_at) parts.push(`next ${fmtWhen(m.next_at)}`);
+  return parts.join(' · ');
+};
 
 export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, kickoffUrl, kickoff }: Props) => {
   const { showToast } = useToast();
   const depts = deptsOfClient(client);
   const firstDept = depts[0]?.key || 'sales';
   const [sheet, setSheet] = useState<null | { person?: Person }>(null);
-  const [f, setF] = useState({ name: '', phone: '', email: '', department: firstDept, title: '', notes: '' });
+  const [f, setF] = useState<Form>(formOf(undefined, firstDept, client));
+  const [shopping, setShopping] = useState<Person | null>(null);
   const [emailing, setEmailing] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [calling, setCalling] = useState<string | null>(null);
   const [texting, setTexting] = useState<string | null>(null);
   const [sendingCard, setSendingCard] = useState<string | null>(null);
   const [cardKey, setCardKey] = useState(0);
   const copyKickoff = async () => { if (!kickoffUrl) return; await Clipboard.setStringAsync(kickoffUrl); showToast('Setup link copied', 'success'); };
 
-  const open = (person?: Person) => { setF(person ? { name: person.name, phone: person.phone, email: person.email || '', department: person.department, title: person.title, notes: person.notes } : { name: '', phone: '', email: '', department: firstDept, title: '', notes: '' }); setSheet({ person }); };
+  const open = (person?: Person) => { setF(formOf(person, firstDept, client)); setSheet({ person }); };
   const save = async () => {
     setBusy(true);
     try {
-      if (sheet?.person) await api.put(`/shop-clients/people/${sheet.person.id}`, f); else await api.post(`/shop-clients/${client.id}/people`, f);
+      const { ownHours, start, end, days, timezone, difficulty, quota, ...base } = f;
+      const body = { ...base, hours: ownHours ? { start, end, days } : {}, timezone: ownHours ? timezone : '', difficulty: difficulty || '', monthly_quota: quota.trim() === '' ? -1 : Number(quota) };
+      if (sheet?.person) await api.put(`/shop-clients/people/${sheet.person.id}`, body); else await api.post(`/shop-clients/${client.id}/people`, body);
       setSheet(null); onChanged(); showToast(sheet?.person ? 'Saved' : 'Added', 'success');
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not save', 'error'); }
     finally { setBusy(false); }
@@ -38,12 +58,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
   const remove = (p: Person) => showConfirm(`Remove ${p.name}?`, 'Scheduled shops for them are canceled. Completed shops stay on the report.', async () => {
     try { await api.delete(`/shop-clients/people/${p.id}`); onChanged(); } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not remove', 'error'); }
   }, undefined, 'Remove');
-  const shopNow = (p: Person) => showConfirm(`Shop ${p.name.split(' ')[0]} right now?`, `The AI ${client.customer_noun || 'shopper'} calls ${fmtPhone(p.phone)} in a few seconds with a ${deptLabel(p.department, depts).toLowerCase()} challenge they have not had yet. Business hours don't apply; if they don't pick up or press 2, the shop waits for you to tap Try again.`, async () => {
-    setCalling(p.id);
-    try { await api.post(`/shop-clients/${client.id}/calls/shop-now`, { target_id: p.id }); showToast(`Calling ${p.name.split(' ')[0]} now`, 'success'); onShopStarted(); }
-    catch (e: any) { showToast(e?.response?.data?.detail || 'Could not place the call', 'error'); }
-    finally { setCalling(null); }
-  }, undefined, 'Call now');
+  const shopNow = (p: Person) => setShopping(p);
   const textShop = (p: Person) => showConfirm(`Text shop ${p.name.split(' ')[0]} right now?`, `The AI ${client.customer_noun || 'shopper'} texts ${fmtPhone(p.phone)} from the shop number like a real lead and keeps the thread going as they reply. They have 4 hours to answer each text; the shop is graded on reply speed and quality when the shopper wraps up, or when you tap End & grade under Shops. No reply at all scores 0%.`, async () => {
     setTexting(p.id);
     try { await api.post(`/shop-clients/${client.id}/calls/shop-now`, { target_id: p.id, channel: 'text' }); showToast(`Texting ${p.name.split(' ')[0]} now`, 'success'); onShopStarted(); }
@@ -101,14 +116,16 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{p.name}</Text>
                   <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{[p.title, fmtPhone(p.phone), p.email].filter(Boolean).join(' · ')}{p.challenge_history?.length ? ` · ${p.challenge_history.length} challenge${p.challenge_history.length === 1 ? '' : 's'} used` : ''}</Text>
+                  {!client.demo && !!monthLine(p) && <Text style={{ fontSize: 12, color: GOLD, fontWeight: '700', marginTop: 2 }} {...tid(`person-month-${p.id}`)}>{monthLine(p)}</Text>}
+                  {(!!p.hours || !!p.difficulty) && <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }} {...tid(`person-prefs-${p.id}`)}>{[p.hours ? `Own hours ${p.hours.start} to ${p.hours.end}${p.timezone && p.timezone !== client.timezone ? ` ${p.timezone}` : ''}` : '', p.difficulty ? `${difficultyLabel(p.difficulty)} shopper` : ''].filter(Boolean).join(' · ')}</Text>}
                 </View>
                 <TouchableOpacity onPress={() => sendCard(p)} disabled={sendingCard === p.id} hitSlop={8} {...tid(`person-send-card-${p.id}`)}><Ionicons name={p.contact_card_ok ? 'person-circle' : 'person-circle-outline'} size={21} color={p.contact_card_ok ? GREEN : p.contact_card_error ? RED : colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => open(p)} hitSlop={8} {...tid(`person-edit-${p.id}`)}><Ionicons name="create-outline" size={20} color={colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => remove(p)} hitSlop={8} {...tid(`person-remove-${p.id}`)}><Ionicons name="trash-outline" size={19} color={RED} /></TouchableOpacity>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity onPress={() => shopNow(p)} disabled={calling === p.id} style={{ flex: 1.3, height: 38, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: calling === p.id ? 0.6 : 1 }} {...tid(`person-shop-now-${p.id}`)}>
-                  <Ionicons name="call" size={15} color="#111" /><Text style={{ fontSize: 13.5, fontWeight: '800', color: '#111' }}>{calling === p.id ? 'Placing the call…' : 'Shop now'}</Text>
+                <TouchableOpacity onPress={() => shopNow(p)} style={{ flex: 1.3, height: 38, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid(`person-shop-now-${p.id}`)}>
+                  <Ionicons name="call" size={15} color="#111" /><Text style={{ fontSize: 13.5, fontWeight: '800', color: '#111' }}>Shop now</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => textShop(p)} disabled={texting === p.id} style={{ flex: 1, height: 38, borderRadius: 12, borderWidth: 1, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: texting === p.id ? 0.6 : 1 }} {...tid(`person-text-shop-${p.id}`)}>
                   <Ionicons name="chatbubbles" size={15} color={GOLD} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: GOLD }}>{texting === p.id ? 'Sending…' : 'Text shop'}</Text>
@@ -132,7 +149,46 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
         </View>
         <Field label="TITLE (OPTIONAL)" value={f.title} onChange={(v: string) => setF({ ...f, title: v })} colors={colors} placeholder={(depts.find(d => d.key === f.department)?.rep || 'Sales consultant').replace(/^(a|an) /, '').replace(/^\w/, c => c.toUpperCase())} testID="person-title" />
         <Field label="NOTES" value={f.notes} onChange={(v: string) => setF({ ...f, notes: v })} colors={colors} multiline placeholder="New hire, started in May" testID="person-notes" />
+        {!client.demo && (
+          <>
+            <View style={{ gap: 8 }}>
+              <Label t="SHOPS PER MONTH" colors={colors} />
+              <Field value={f.quota} onChange={(v: string) => setF({ ...f, quota: v.replace(/\D/g, '').slice(0, 2) })} colors={colors} keyboardType="number-pad" placeholder="Even share of the department's plan" testID="person-quota" />
+              <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }}>Leave blank and the department's monthly plan is split evenly across its people (20 sales shops and 4 salespeople means 5 each). Type a number to give this person exactly that many; the rest share what is left.</Text>
+            </View>
+            <View style={{ gap: 8 }}>
+              <Label t="HOW TOUGH THE SHOPPER IS FOR THEM" colors={colors} />
+              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                <Chip label={`Client default (${client.difficulty === 'mixed' ? 'mixed' : difficultyLabel(client.difficulty)})`} small active={!f.difficulty} onPress={() => setF({ ...f, difficulty: '' })} colors={colors} testID="person-difficulty-default" />
+                {DIFFICULTIES.map(d => <Chip key={d.key} label={d.label} small active={f.difficulty === d.key} onPress={() => setF({ ...f, difficulty: d.key })} colors={colors} testID={`person-difficulty-${d.key}`} />)}
+              </View>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }}>{f.difficulty ? DIFFICULTIES.find(d => d.key === f.difficulty)?.hint : 'New hires do well on Easy for a month; veterans can take Hard.'}</Text>
+            </View>
+            <View style={{ gap: 8 }}>
+              <Label t="THEIR OWN HOURS" colors={colors} />
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <Chip label={`Client hours (${client.hours?.start} to ${client.hours?.end})`} small active={!f.ownHours} onPress={() => setF({ ...f, ownHours: false })} colors={colors} testID="person-hours-client" />
+                <Chip label="Own schedule" small active={f.ownHours} onPress={() => setF({ ...f, ownHours: true })} colors={colors} testID="person-hours-own" />
+              </View>
+              {f.ownHours && (
+                <>
+                  <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                    <View style={{ flex: 1 }}><Field value={f.start} onChange={(v: string) => setF({ ...f, start: v })} colors={colors} placeholder="09:00" testID="person-hours-start" /></View>
+                    <Text style={{ color: colors.textSecondary }}>to</Text>
+                    <View style={{ flex: 1 }}><Field value={f.end} onChange={(v: string) => setF({ ...f, end: v })} colors={colors} placeholder="18:00" testID="person-hours-end" /></View>
+                  </View>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {DAYS.map((d, i) => <Chip key={d} label={d} small active={f.days.includes(i)} onPress={() => setF({ ...f, days: f.days.includes(i) ? f.days.filter(x => x !== i) : [...f.days, i].sort() })} colors={colors} testID={`person-day-${i}`} />)}
+                  </View>
+                  <Field value={f.timezone} onChange={(v: string) => setF({ ...f, timezone: v })} colors={colors} placeholder="America/Denver" autoCapitalize="none" testID="person-timezone" />
+                </>
+              )}
+              <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }}>Shops for this person land inside these hours, in this timezone. Never before 8 AM or after 8 PM either way.</Text>
+            </View>
+          </>
+        )}
       </Sheet>
+      <ShopNowSheet person={shopping} client={client} colors={colors} onClose={() => setShopping(null)} onStarted={onShopStarted} />
     </View>
   );
 };

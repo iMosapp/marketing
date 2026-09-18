@@ -25,16 +25,23 @@ export type Client = {
   plan: Plan; hours: Hours; vehicles: string[]; active: boolean; record_calls: boolean; notes: string; from_number: string; report_token?: string; scorecards: Record<string, string | null>;
   billing?: { status?: string; last_invoice?: any }; progress?: Record<string, DeptStat>; avg_score?: number | null; completed?: number; planned?: number; needs_training?: number; people?: number;
   demo?: boolean; text_scorecards?: boolean;
+  difficulty?: Difficulty | 'mixed'; direction_mix?: 'inbound' | 'outbound' | 'mixed'; retry?: RetryPolicy; retry_by_dept?: Record<string, Partial<RetryPolicy>>; reissue_unreachable?: boolean; night_guard?: { start: string; end: string };
   locale?: string; language?: string; currency?: string; currency_symbol?: string; country?: string; locale_label?: string; vat_id?: string;
   number_state?: { own: boolean; needs_local_number: boolean; error?: string | null };
 };
 export type Locale = { code: string; label: string; language: string; language_label: string; country: string; currency: string; symbol: string; timezone: string; flag: string; relay_language: string; say_voice: string; voices: Record<string, string> };
-export type Person = { id: string; client_id: string; name: string; phone: string; email?: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[]; contact_card_sent_at?: string | null; contact_card_ok?: boolean | null; contact_card_error?: string | null };
+export type PersonMonth = { planned: number; completed: number; scheduled: number; unreachable: number; inbound: number; outbound: number; avg_score: number | null; quota: number; next_at: string | null };
+export type Person = { id: string; client_id: string; name: string; phone: string; email?: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[]; contact_card_sent_at?: string | null; contact_card_ok?: boolean | null; contact_card_error?: string | null;
+  hours?: Hours | null; timezone?: string | null; difficulty?: Difficulty | null; monthly_quota?: number | null; month?: PersonMonth };
+export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Direction = 'inbound' | 'outbound';
+export type RetryPolicy = { tries: number; spacing: 'same_day' | 'next_day' | 'two_days' };
 export type ShopCall = {
   id: string; target_id: string; target_name: string; department: string; department_label?: string; industry?: string; customer_noun?: string; status: string; outcome?: string | null; fail_reason?: string | null; script_id: string; script_title: string; persona_name?: string;
   curveballs: string[]; scheduled_for: string | null; attempts: number; started_at: string | null; ended_at: string | null; score_pct: number | null; adherence_pct: number | null; evaluation_id?: string | null;
   recording_url?: string | null; recording_seconds?: number | null; turns: number; manual: boolean; demo?: boolean; score_url?: string | null; score_sms_status?: string | null; score_views?: number;
   channel?: 'call' | 'text' | 'email'; text?: TextStats | null; subject?: string | null; rep_email?: string | null;
+  direction?: Direction; difficulty?: Difficulty; max_attempts?: number | null; reissued_at?: string | null;
 };
 export type ChallengeReview = { status: 'approved' | 'needs_review'; by_name?: string; at?: string | null };
 export type Challenge = { id: string; title: string; department: string; department_label?: string; industry?: string; direction?: 'inbound' | 'outbound'; category: string; purpose: string; body: string; success_points: string[]; persona: any; client_specific: boolean; shop_client_id?: string | null; runtime: string; curveballs?: string[]; generated?: boolean; language?: string; source_slug?: string | null; review?: ChallengeReview | null };
@@ -138,6 +145,29 @@ export const ChannelPill = ({ c, colors, lang = 'en', testID }: { c: { channel?:
   </View>
 );
 export const isTextLive = (c: { channel?: string; status: string }) => isThread(c) && (c.status === 'live' || c.status === 'ending');
+
+// Inbound = the shopper calls the store; outbound = the shopper left a lead and the rep calls them back. Difficulty shapes the shopper, never the scorecard.
+export const DIFFICULTIES: { key: Difficulty; label: string; hint: string }[] = [
+  { key: 'easy', label: 'Easy', hint: 'Friendly, one concern at most, says yes to the first real appointment time.' },
+  { key: 'medium', label: 'Medium', hint: 'A normal customer: needs one honest answer before committing, up to two concerns.' },
+  { key: 'hard', label: 'Hard', hint: 'Skeptical and busy: three concerns, wants two times and a reason to come in. Leaves if pushed.' },
+];
+export const difficultyLabel = (d?: string | null) => DIFFICULTIES.find(x => x.key === d)?.label || 'Medium';
+export const directionLabel = (d?: string | null) => (d === 'outbound' ? 'Outbound' : 'Inbound');
+export const directionHint = (d?: string | null) => (d === 'outbound' ? 'The shopper left a lead; the rep is calling them back' : 'The shopper calls the store');
+export const DirectionPill = ({ d, testID }: { d?: string | null; testID?: string }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: BLUE + '22' }} {...tid(testID || `direction-pill-${d === 'outbound' ? 'outbound' : 'inbound'}`)}>
+    <Ionicons name={d === 'outbound' ? 'arrow-redo' : 'arrow-undo'} size={12} color={BLUE} /><Text style={{ fontSize: 11, fontWeight: '800', color: BLUE }}>{directionLabel(d)}</Text>
+  </View>
+);
+export const DifficultyPill = ({ d, testID }: { d?: string | null; testID?: string }) => {
+  const color = d === 'hard' ? RED : d === 'easy' ? GREEN : AMBER;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: color + '22' }} {...tid(testID || `difficulty-pill-${d || 'medium'}`)}>
+      <Ionicons name="speedometer-outline" size={12} color={color} /><Text style={{ fontSize: 11, fontWeight: '800', color }}>{difficultyLabel(d)}</Text>
+    </View>
+  );
+};
 
 export const StatusChip = ({ status, colors, lang, channel }: { status: string; colors: any; lang?: string; channel?: string }) => {
   const base = STATUS[status] || { label: status, color: colors.textSecondary, icon: 'ellipse' };

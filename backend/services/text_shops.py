@@ -112,7 +112,7 @@ def transcript_turns(s: dict) -> list:
 def _system(script: dict, s: dict) -> str:
     rep_first = (s.get("rep_name") or "the salesperson").split(" ")[0]
     return scr._customer_system(script, s.get("persona") or {}, s.get("store_name") or "the business", rep_first, s.get("curveballs") or [], live=False, direction="inbound",
-                                mystery=True, industry=s.get("industry"), department=s.get("department"), locale=s.get("locale"), channel="text", covert=bool(s.get("lead_shop_id")))
+                                mystery=True, industry=s.get("industry"), department=s.get("department"), locale=s.get("locale"), channel="text", covert=bool(s.get("lead_shop_id")), difficulty=s.get("difficulty"))
 
 
 async def opening_text(db, s: dict, client: dict) -> str:
@@ -144,7 +144,9 @@ async def start_text_shop(db, call: dict) -> bool:
     # one live thread per phone pair: two shops texting the same person from the same number could not tell the replies apart
     other = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "mode": "text", "status": {"$in": ["live", "ending"]}, "from_number": frm, "rep_phone": call["rep_phone"], "_id": {"$ne": call["_id"]}}, {"_id": 1})
     if other:
-        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": now + timedelta(hours=3), "updated_at": now}})
+        from services import mystery_shops as ms
+        target = await db.shop_targets.find_one({"_id": ms._oid(call["target_id"])}) if ObjectId.is_valid(str(call.get("target_id") or "")) else None
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": ms.next_slot(client, now, min_gap_minutes=180, target=target), "updated_at": now}})
         return True
     text = await opening_text(db, call, client)
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "live", "started_at": now, "last_attempt_at": now, "from_number": frm, "expires_at": now + timedelta(hours=MAX_HOURS), "turns": [], "updated_at": now}, "$inc": {"attempts": 1}})

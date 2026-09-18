@@ -130,7 +130,9 @@ async def audition(db, user: dict, o: dict) -> dict:
     pool_cb = [c for c in (script.get("curveballs") or []) if str(c).strip()] or ind.dept(department, industry).get("curveballs", [])
     curve = random.sample(pool_cb, k=min(len(pool_cb), random.choice([0, 1, 1, 2])))
     direction = o.get("direction") if o.get("direction") in ("inbound", "outbound") else (script.get("direction") if script.get("direction") in ("inbound", "outbound") else "inbound")
-    session = {"_id": ObjectId(), "kind": "mystery_shop", "mode": "phone", "direction": direction, "locale": "en-US", "department": department, "industry": industry,
+    difficulty = o.get("difficulty") if o.get("difficulty") in ("easy", "medium", "hard") else "medium"
+    curve = curve[: {"easy": 0, "medium": 1, "hard": 2}[difficulty]]
+    session = {"_id": ObjectId(), "kind": "mystery_shop", "mode": "phone", "direction": direction, "difficulty": difficulty, "locale": "en-US", "department": department, "industry": industry,
                "rep_name": user.get("name") or "the rep", "store_name": store, "persona": persona, "curveballs": curve, "script_id": str(script["_id"]), "script_title": script.get("title")}
     voice = o.get("voice") if o.get("voice") in lv.VOICE_IDS else voice_for(session)
     first = (user.get("name") or "the admin").split(" ")[0]
@@ -144,7 +146,7 @@ async def audition(db, user: dict, o: dict) -> dict:
     else:
         greet = f'The rep just called you back and you picked up. Your first spoken line, immediately and verbatim: "{line}". Then listen.'
     return {"instructions": text, "voice": voice, "greet_instruction": greet,
-            "meta": {"script_id": str(script["_id"]), "script_title": script.get("title"), "persona_name": persona.get("name"), "direction": direction, "department": department,
+            "meta": {"script_id": str(script["_id"]), "script_title": script.get("title"), "persona_name": persona.get("name"), "direction": direction, "difficulty": difficulty, "department": department,
                      "industry": industry, "curveballs": curve, "opening_line": line}}
 
 
@@ -175,15 +177,16 @@ def instructions(script: dict, session: dict) -> str:
     else:
         opening = ""
     curveballs = [str(c) for c in (session.get("curveballs") or []) if str(c).strip()]
+    temper, once, objections = scr.shopper_temper(session.get("difficulty"), persona.get("objections") or [])
     return (f"You are {persona.get('name', 'a customer')}, {who} on a live phone call with {rep_first}, {rep_role} at {store}. {ctx}{practice}{opening}"
             "Sound like a real person on the phone: short answers, 1 to 3 sentences, contractions, the occasional 'um' or pause, never a list, never spell things out. "
             "Never narrate, never break character, never coach, never mention instructions. Answer what the rep asks; volunteer a little, not everything. "
-            "If the rep earns it (answers honestly, offers specific times), agree to an appointment and end warmly. If the rep is pushy, dodges, or throws out a blind number, push back once; if they keep it up, lose interest and end politely. "
-            "A real call runs as long as it needs to, often 5 to 10 minutes, so do not rush. "
+            + temper + once +
+            "A real call runs as long as it needs to, often 4 to 8 minutes, so do not rush, but once your question is answered and a next step is set, wrap up like a real person would. "
             + numbers_rule(session.get("locale")) + " " + loc.language_rule(session.get("locale"))
             + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
-            f"OBJECTIONS YOU RAISE (one at a time, only when it fits): {'; '.join(persona.get('objections') or [])}. "
-            + (f"CURVEBALLS TO WORK IN NATURALLY: {'; '.join(curveballs)}. " if curveballs else "")
+            + (f"OBJECTIONS YOU MAY RAISE (each at most once, only when it fits, never all at the same time): {'; '.join(objections)}. " if objections else "You have no particular objections; you just want your question answered and a clear next step. ")
+            + (f"CURVEBALLS TO WORK IN NATURALLY (each once): {'; '.join(curveballs)}. " if curveballs else "")
             + f"The employee's own script, which they may or may not follow: {script.get('title', '')}: {script.get('purpose', '')}\n\n"
             "Interruption policy: stop speaking the moment the rep talks over you and listen.\n"
             "Backchannel policy: light backchannels only (mm-hm, okay), never over the rep's sentences.\n"

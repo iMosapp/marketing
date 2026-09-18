@@ -3,10 +3,10 @@ import { View, Text, Switch, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useToast } from '../common/Toast';
-import { Sheet, Field, Label, Chip, GoldButton, GOLD, tid, industries, industryOf, deptsFor, loadIndustries, stripTitlePrefix, type Challenge } from './shared';
+import { Sheet, Field, Label, Chip, GoldButton, GOLD, tid, industries, industryOf, deptsFor, loadIndustries, stripTitlePrefix, directionHint, DIFFICULTIES, type Challenge, type Direction, type Difficulty } from './shared';
 
 type Props = { visible: boolean; onClose: () => void; colors: any; onStarted: (clientId: string, callId: string) => void };
-const blank = { name: '', phone: '', email: '', industry: 'automotive', department: 'sales', title: '', store_name: '', vehicle: '', script_id: null as string | null, text: true, channel: 'call' as 'call' | 'text' | 'email' };
+const blank = { name: '', phone: '', email: '', industry: 'automotive', department: 'sales', title: '', store_name: '', vehicle: '', script_id: null as string | null, text: true, channel: 'call' as 'call' | 'text' | 'email', direction: null as Direction | null, difficulty: 'medium' as Difficulty };
 
 // Shop anyone on the spot: no client, no proposal. Pick the industry, the department, and the call lands in the built-in "Quick shops" bucket.
 export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) => {
@@ -26,18 +26,21 @@ export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) =>
     setChallenges(null); set('script_id', null);
     api.get('/shop-clients/demo/challenges', { params: { industry: f.industry } }).then(r => setChallenges(r.data.challenges)).catch(() => setChallenges([]));
   }, [visible, f.industry]);
-  useEffect(() => { set('script_id', null); }, [f.department]);
+  useEffect(() => { set('script_id', null); }, [f.department, f.direction, f.channel]);
   const pickIndustry = (key: string) => setF(x => ({ ...x, industry: key, department: deptsFor(key)[0]?.key || x.department, script_id: null }));
 
   const digits = f.phone.replace(/\D/g, '');
   const ready = f.name.trim().length >= 2 && digits.length >= 10 && (f.channel !== 'email' || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim()));
-  const pool = (challenges || []).filter(c => c.department === f.department);
+  // text and email shops are always the shopper reaching out (inbound lead); phone shops can go either way
+  const wantDir: Direction | null = f.channel === 'call' ? f.direction : 'inbound';
+  const pool = (challenges || []).filter(c => c.department === f.department && (!wantDir || (c.direction || 'inbound') === wantDir));
   const rep = (depts.find(d => d.key === f.department)?.rep || 'a rep').replace(/^(a|an) /, '');
 
   const go = async () => {
     setBusy(true); setError('');
     try {
-      const r = await api.post('/shop-clients/demo', { name: f.name.trim(), phone: f.phone, email: f.email.trim(), industry: f.industry, department: f.department, title: f.title, store_name: f.store_name, vehicle: f.vehicle, script_id: f.script_id, text_scorecard: f.text, channel: f.channel });
+      const r = await api.post('/shop-clients/demo', { name: f.name.trim(), phone: f.phone, email: f.email.trim(), industry: f.industry, department: f.department, title: f.title, store_name: f.store_name, vehicle: f.vehicle, script_id: f.script_id, text_scorecard: f.text, channel: f.channel,
+        direction: f.channel === 'call' ? f.direction : null, difficulty: f.difficulty });
       showToast(`${f.channel === 'text' ? 'Texting' : f.channel === 'email' ? 'Emailing' : 'Calling'} ${f.name.trim().split(' ')[0]} now`, 'success'); onClose(); onStarted(r.data.client_id, r.data.call.id);
     } catch (e: any) {
       const msg = e?.response?.data?.detail || (!e?.response ? 'No connection to the server, try again in a moment' : f.channel === 'text' ? 'Could not send the text' : f.channel === 'email' ? 'Could not send the email' : 'Could not place the call');
@@ -79,6 +82,22 @@ export const DemoShopSheet = ({ visible, onClose, colors, onStarted }: Props) =>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <View style={{ flex: 1 }}><Field label={`THEIR ${ind.business.toUpperCase()} (OPTIONAL)`} value={f.store_name} onChange={(v: string) => set('store_name', v)} colors={colors} placeholder={f.industry === 'automotive' ? 'LHM Jeep' : `The ${ind.business} name`} testID="demo-store" /></View>
         <View style={{ flex: 1 }}><Field label="TITLE (OPTIONAL)" value={f.title} onChange={(v: string) => set('title', v)} colors={colors} placeholder={rep.replace(/^\w/, c => c.toUpperCase())} testID="demo-title" /></View>
+      </View>
+      {f.channel === 'call' && (
+        <View style={{ gap: 6 }}>
+          <Label t="WHO CALLS WHOM" colors={colors} />
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            <Chip label="Surprise me" active={!f.direction} onPress={() => set('direction', null)} colors={colors} testID="demo-direction-any" />
+            <Chip label="Inbound" active={f.direction === 'inbound'} onPress={() => set('direction', 'inbound')} colors={colors} testID="demo-direction-inbound" />
+            <Chip label="Outbound" active={f.direction === 'outbound'} onPress={() => set('direction', 'outbound')} colors={colors} testID="demo-direction-outbound" />
+          </View>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('demo-direction-hint')}>{f.direction ? directionHint(f.direction) : 'Whichever challenge comes up. Outbound: the shopper left a lead and the rep is calling them back.'}</Text>
+        </View>
+      )}
+      <View style={{ gap: 6 }}>
+        <Label t="HOW TOUGH" colors={colors} />
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>{DIFFICULTIES.map(d => <Chip key={d.key} label={d.label} active={f.difficulty === d.key} onPress={() => set('difficulty', d.key)} colors={colors} testID={`demo-difficulty-${d.key}`} />)}</View>
+        <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('demo-difficulty-hint')}>{DIFFICULTIES.find(d => d.key === f.difficulty)?.hint} Same scorecard at every level.</Text>
       </View>
       <Field label={`A ${ind.offering.label.toUpperCase()} THE ${ind.customer.toUpperCase()} CAN MENTION (OPTIONAL)`} value={f.vehicle} onChange={(v: string) => set('vehicle', v)} colors={colors} placeholder={ind.offering.hint} testID="demo-vehicle" />
       <View style={{ gap: 6 }}>

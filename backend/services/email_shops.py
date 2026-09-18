@@ -128,7 +128,7 @@ def grader_transcript(s: dict) -> str:
 def _system(script: dict, s: dict) -> str:
     rep_first = (s.get("rep_name") or "the salesperson").split(" ")[0]
     return scr._customer_system(script, s.get("persona") or {}, s.get("store_name") or "the business", rep_first, s.get("curveballs") or [], live=False, direction="inbound",
-                                mystery=True, industry=s.get("industry"), department=s.get("department"), locale=s.get("locale"), channel="email", covert=bool(s.get("lead_shop_id")))
+                                mystery=True, industry=s.get("industry"), department=s.get("department"), locale=s.get("locale"), channel="email", covert=bool(s.get("lead_shop_id")), difficulty=s.get("difficulty"))
 
 
 async def opening_email(db, s: dict, client: dict) -> dict:
@@ -178,7 +178,9 @@ async def start_email_shop(db, call: dict) -> bool:
         return False
     other = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "mode": "email", "status": {"$in": ["live", "ending"]}, "rep_email": call["rep_email"], "_id": {"$ne": call["_id"]}}, {"_id": 1})
     if other:
-        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": now + timedelta(hours=6), "updated_at": now}})
+        from services import mystery_shops as ms
+        target = await db.shop_targets.find_one({"_id": ms._oid(call["target_id"])}) if ObjectId.is_valid(str(call.get("target_id") or "")) else None
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": ms.next_slot(client, now, min_gap_minutes=360, target=target), "updated_at": now}})
         return True
     op = await opening_email(db, call, client)
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "live", "started_at": now, "last_attempt_at": now, "subject": op["subject"], "from_email": from_address(call),

@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from bson import ObjectId
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -108,6 +109,10 @@ class ClientBody(BaseModel):
     text_scorecards: Optional[bool] = None
     locale: Optional[str] = None
     vat_id: Optional[str] = None
+    difficulty: Optional[str] = None
+    direction_mix: Optional[str] = None
+    retry: Optional[dict] = None
+    reissue_unreachable: Optional[bool] = None
 
 
 class LocaleVoicesBody(BaseModel):
@@ -126,6 +131,8 @@ class DemoBody(BaseModel):
     script_id: Optional[str] = None
     text_scorecard: bool = True
     channel: Optional[str] = "call"
+    direction: Optional[str] = None
+    difficulty: Optional[str] = None
 
 
 class PersonBody(BaseModel):
@@ -136,12 +143,18 @@ class PersonBody(BaseModel):
     title: Optional[str] = None
     notes: Optional[str] = None
     active: Optional[bool] = None
+    hours: Optional[dict] = None
+    timezone: Optional[str] = None
+    difficulty: Optional[str] = None
+    monthly_quota: Optional[int] = None
 
 
 class ShopNowBody(BaseModel):
     target_id: str
     script_id: Optional[str] = None
     channel: Optional[str] = "call"
+    direction: Optional[str] = None
+    difficulty: Optional[str] = None
 
 
 class PlanBody(BaseModel):
@@ -252,8 +265,31 @@ def _client_fields(body: ClientBody) -> dict:
     if "contact_phone" in d and d["contact_phone"]:
         d["contact_phone"] = d["contact_phone"].strip()[:30]
     if "scorecards" in d:
-        d["scorecards"] = {k: (str(v) if v else None) for k, v in (d["scorecards"] or {}).items() if k in ind.all_dept_keys()}
+        d["scorecards"] = {k: (str(v) if v else None) for k, v in (d["scorecards"] or {}).items() if k.split(":")[0] in ind.all_dept_keys() and (":" not in k or k.split(":")[1] in ms.DIRECTIONS)}
+    if "difficulty" in d:
+        d["difficulty"] = d["difficulty"] if d["difficulty"] in ms.DIFFICULTIES else "medium"
+    if "direction_mix" in d:
+        d["direction_mix"] = d["direction_mix"] if d["direction_mix"] in ms.DIRECTION_MIX else "mixed"
+    if "retry" in d:
+        d["retry"] = _retry_fields(d["retry"] or {})
     return d
+
+
+def _retry_fields(r: dict) -> dict:
+    def one(x: dict) -> dict:
+        out = {}
+        if x.get("tries") is not None:
+            try:
+                out["tries"] = max(1, min(5, int(x["tries"])))
+            except (TypeError, ValueError):
+                pass
+        if x.get("spacing") in ms.RETRY_SPACING:
+            out["spacing"] = x["spacing"]
+        return out
+    out = one(r)
+    by = {k: one(v or {}) for k, v in (r.get("by_dept") or {}).items() if k in ind.all_dept_keys() and isinstance(v, dict)}
+    out["by_dept"] = {k: v for k, v in by.items() if v}
+    return out
 
 
 async def _progress(db, client: dict) -> dict:
@@ -550,7 +586,8 @@ async def demo_shop(body: DemoBody, request: Request):
         script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop", "active": {"$ne": False}})
         if not script:
             raise HTTPException(status_code=404, detail="That challenge is gone, pick another")
-    r = await ms.demo_shop(db, me, name, phone, dept, (body.title or "").strip()[:60], (body.store_name or "").strip()[:80], (body.vehicle or "").strip()[:80], script, body.text_scorecard, industry, mode, _email(body.email))
+    r = await ms.demo_shop(db, me, name, phone, dept, (body.title or "").strip()[:60], (body.store_name or "").strip()[:80], (body.vehicle or "").strip()[:80], script, body.text_scorecard, industry, mode, _email(body.email),
+                           direction=body.direction if body.direction in ms.DIRECTIONS else None, difficulty=body.difficulty if body.difficulty in ("easy", "medium", "hard") else None)
     if r.get("error"):
         raise HTTPException(status_code=400, detail=r["error"])
     if not r.get("ok"):
@@ -563,9 +600,9 @@ def _send_fail(mode: str) -> str:
 
 
 @router.get("/demo/challenges")
-async def demo_challenges(request: Request, department: Optional[str] = None, industry: Optional[str] = None):
+async def demo_challenges(request: Request, department: Optional[str] = None, industry: Optional[str] = None, direction: Optional[str] = None):
     await require_admin(request)
-    return {"challenges": [_challenge_out(s) for s in await ms.challenge_pool(get_db(), None, department, industry)]}
+    return {"challenges": [_challenge_out(s) for s in await ms.challenge_pool(get_db(), None, department, industry, direction=direction if direction in ms.DIRECTIONS else None)]}
 
 
 @router.get("/challenges")
@@ -849,8 +886,9 @@ async def get_client(cid: str, request: Request):
     c = await _client(db, cid)
     cards = await db.scorecards.find({"active": {"$ne": False}}, {"name": 1, "department": 1, "store_id": 1}).sort("name", 1).to_list(200)
     await ms.ensure_kickoff_token(db, c)
-    return {"client": ms.serialize_client(c, await _progress(db, c)), "people": [ms.serialize_target(t) for t in await db.shop_targets.find({"client_id": cid}).sort([("department", 1), ("name", 1)]).to_list(300)],
-            "scorecard_options": [{"id": str(x["_id"]), "name": x.get("name"), "department": x.get("department")} for x in cards],
+    stats = await ms.people_month_stats(db, c)
+    return {"client": ms.serialize_client(c, await _progress(db, c)), "people": [ms.serialize_target(t, {"month": stats.get(str(t["_id"]), ms.EMPTY_MONTH)}) for t in await db.shop_targets.find({"client_id": cid}).sort([("department", 1), ("name", 1)]).to_list(300)],
+            "scorecard_options": [{"id": str(x["_id"]), "name": x.get("name"), "department": x.get("department")} for x in cards], "grading": await ms.grading_summary(db, c),
             "report_url": f"{scr._app_url()}/shop-report/{c.get('report_token')}", "kickoff_url": ms.kickoff_url(c), "kickoff": c.get("kickoff") or {}, "departments": ind.dept_options(ind.key_of(c)),
             "auto_report": srm.serialize_auto_report(c), "weekly_digest": srm.serialize_weekly_digest(c)}
 
@@ -883,6 +921,33 @@ async def delete_client(cid: str, request: Request):
 
 
 # ---------------------------------------------------------------- people
+def _person_prefs(body: PersonBody) -> dict:
+    """Per-person overrides: hours + timezone (default: the client's), difficulty (default: the client's), monthly shop count (default: an even share).
+    Sending hours {} / difficulty "" / monthly_quota -1 / timezone "" clears the override (returned as None so the caller can $unset)."""
+    out = {}
+    if body.hours is not None:
+        h = body.hours or {}
+        if h.get("start") and h.get("end"):
+            out["hours"] = {"start": str(h["start"])[:5], "end": str(h["end"])[:5], "days": sorted({int(x) for x in (h.get("days") or ms.DEFAULT_HOURS["days"]) if 0 <= int(x) <= 6})}
+        else:
+            out["hours"] = None
+    if body.timezone is not None:
+        tz = (body.timezone or "").strip()
+        if tz:
+            try:
+                ZoneInfo(tz)
+                out["timezone"] = tz
+            except Exception:
+                raise HTTPException(status_code=400, detail="Unknown timezone. Use a name like America/Denver")
+        else:
+            out["timezone"] = None
+    if body.difficulty is not None:
+        out["difficulty"] = body.difficulty if body.difficulty in ms.DIFFICULTIES else None
+    if body.monthly_quota is not None:
+        out["monthly_quota"] = max(0, min(60, int(body.monthly_quota))) if int(body.monthly_quota) >= 0 else None
+    return out
+
+
 @router.post("/{cid}/people")
 async def add_person(cid: str, body: PersonBody, request: Request):
     await require_admin(request)
@@ -897,7 +962,7 @@ async def add_person(cid: str, body: PersonBody, request: Request):
     if await db.shop_targets.find_one({"client_id": cid, "phone": phone}):
         raise HTTPException(status_code=409, detail="Someone with that cell number is already on this client")
     now = datetime.now(timezone.utc)
-    doc = {"client_id": cid, "name": body.name.strip()[:80], "phone": phone, "email": _email(body.email), "department": dept, "title": (body.title or "").strip()[:60], "notes": (body.notes or "").strip()[:400], "active": True, "challenge_history": [], "created_at": now, "updated_at": now}
+    doc = {"client_id": cid, "name": body.name.strip()[:80], "phone": phone, "email": _email(body.email), "department": dept, "title": (body.title or "").strip()[:60], "notes": (body.notes or "").strip()[:400], "active": True, "challenge_history": [], "created_at": now, "updated_at": now, **_person_prefs(body)}
     res = await db.shop_targets.insert_one(doc)
     return ms.serialize_target(await db.shop_targets.find_one({"_id": res.inserted_id}))
 
@@ -920,7 +985,12 @@ async def update_person(tid: str, body: PersonBody, request: Request):
         d["name"] = d["name"].strip()[:80]
         if not d["name"]:
             raise HTTPException(status_code=400, detail="Name cannot be empty")
-    await db.shop_targets.update_one({"_id": t["_id"]}, {"$set": {**d, "updated_at": datetime.now(timezone.utc)}})
+    for k in ("hours", "timezone", "difficulty", "monthly_quota"):
+        d.pop(k, None)
+    prefs = _person_prefs(body)
+    unset = {k: "" for k, v in prefs.items() if v is None}
+    d.update({k: v for k, v in prefs.items() if v is not None})
+    await db.shop_targets.update_one({"_id": t["_id"]}, {"$set": {**d, "updated_at": datetime.now(timezone.utc)}, **({"$unset": unset} if unset else {})})
     sync = {k2: v2 for k2, v2 in (("rep_name", d.get("name")), ("rep_phone", d.get("phone")), ("department", d.get("department"))) if v2}
     if "email" in d:
         sync["rep_email"] = d["email"] or None
@@ -971,7 +1041,7 @@ async def shop_now(cid: str, body: ShopNowBody, request: Request):
     script = None
     if body.script_id:
         script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop"})
-    call = await ms.create_shop_call(db, c, t, datetime.now(timezone.utc), created_by=str(me["_id"]), manual=True, script=script, mode=mode)
+    call = await ms.create_shop_call(db, c, t, datetime.now(timezone.utc), created_by=str(me["_id"]), manual=True, script=script, mode=mode, direction=body.direction, difficulty=body.difficulty)
     if not call:
         raise HTTPException(status_code=400, detail=f"No {ind.dept_label(t.get('department'))} challenges in the pool yet. Open the Challenge Library and let Jessi write the starters.")
     ok = await ms.dial_now(db, call)
@@ -1049,7 +1119,7 @@ async def end_text_shop(sid: str, request: Request):
 # ---------------------------------------------------------------- challenges
 def _challenge_out(s: dict) -> dict:
     rv = s.get("review") or {}
-    return {**scr.serialize_script(s), "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "language": s.get("language") or "en", "source_slug": s.get("source_slug"),
+    return {**scr.serialize_script(s), "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "language": s.get("language") or "en", "source_slug": s.get("source_slug"), "direction": s.get("direction") if s.get("direction") in ms.DIRECTIONS else "inbound",
             "review": {"status": rv.get("status") or "approved", "by_name": rv.get("by_name") or "", "at": rv["at"].isoformat() if hasattr(rv.get("at"), "isoformat") else rv.get("at")} if rv else None, "industry": s.get("industry") or ind.industry_of_dept(s.get("department")), "client_specific": bool(s.get("shop_client_id")), "shop_client_id": s.get("shop_client_id"), "curveballs": s.get("curveballs") or [], "generated": bool(s.get("generated_from"))}
 
 

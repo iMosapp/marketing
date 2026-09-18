@@ -9,7 +9,7 @@ import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { CriteriaChecklist } from '../scorecards/CriteriaChecklist';
 import { ScoreRing } from '../scorecards/ScoreRing';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
-import { Sheet, Label, StatusChip, GoldButton, ChannelPill, deptLabel, deptsOfClient, perMonthText, fmtWhen, monthLabel, shiftMonth, scoreColor, replyDur, minutesSince, isTextLive, isThread, channelIcon, channelWord, channelLabel, GOLD, RED, GREEN, tid, type ShopCall, type Client } from './shared';
+import { Sheet, Label, StatusChip, GoldButton, ChannelPill, DirectionPill, DifficultyPill, directionLabel, difficultyLabel, deptLabel, deptsOfClient, perMonthText, fmtWhen, monthLabel, shiftMonth, scoreColor, replyDur, minutesSince, isTextLive, isThread, channelIcon, channelWord, channelLabel, GOLD, RED, GREEN, tid, type ShopCall, type Client } from './shared';
 import { makeT, fmtWhenL, type Lang } from './i18n';
 
 type Props = { client: Client; colors: any; month: string; onMonth: (m: string) => void; refreshKey: number; onChanged: () => void };
@@ -57,6 +57,7 @@ export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}><Ionicons name={channelIcon(c)} size={13} color={GOLD} {...tid(`shop-call-${channelWord(c)}-${c.id}`)} /> {c.target_name} <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· {channelLabel(c)} · {c.department_label || deptLabel(c.department, depts)}</Text></Text>
           <Text style={{ fontSize: 12.5, color: colors.textSecondary }} numberOfLines={1}>{c.script_title}{c.persona_name ? ` · ${c.customer_noun || client.customer_noun || 'shopper'} ${c.persona_name.split(' ')[0]}` : ''}</Text>
+          {!isThread(c) && <Text style={{ fontSize: 11.5, color: colors.textSecondary }} {...tid(`shop-call-kind-${c.id}`)}>{directionLabel(c.direction)} · {difficultyLabel(c.difficulty)}{c.max_attempts && c.status === 'scheduled' ? ` · up to ${c.max_attempts} ${c.max_attempts === 1 ? 'try' : 'tries'}` : ''}{c.reissued_at ? ' · re-issued' : ''}</Text>}
         </View>
         {c.status === 'completed' ? <Text style={{ fontSize: 20, fontWeight: '800', color: scoreColor(c.score_pct) }} {...tid(`shop-call-score-${c.id}`)}>{c.score_pct != null ? `${c.score_pct}%` : '–'}</Text> : <StatusChip status={c.status} colors={colors} channel={c.channel} />}
       </View>
@@ -115,6 +116,8 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <ChannelPill c={d} lang={lang} testID={isEmail ? 'shop-call-email-badge' : isText ? 'shop-call-text-badge' : 'shop-call-phone-badge'} />
                 <StatusChip status={d.status} colors={colors} lang={lang} channel={d.channel} />
+                {!isText && <DirectionPill d={d.direction} testID={`shop-call-direction-${d.direction === 'outbound' ? 'outbound' : 'inbound'}`} />}
+                {!!d.difficulty && <DifficultyPill d={d.difficulty} testID={`shop-call-difficulty-${d.difficulty}`} />}
                 {(d as any).live_transport === 'gpt-live' && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: GREEN + '22' }} {...tid('shop-call-live-badge')}>
                     <Ionicons name="radio" size={12} color={GREEN} /><Text style={{ fontSize: 11, fontWeight: '800', color: GREEN }}>GPT-Live{(d as any).live_voice ? ` · ${(d as any).live_voice}` : ''}</Text>

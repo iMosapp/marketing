@@ -34,6 +34,8 @@ export default function MysteryShopClient() {
   const [kickoff, setKickoff] = useState<any>({});
   const [autoReport, setAutoReport] = useState<AutoReport | null>(null);
   const [weeklyDigest, setWeeklyDigest] = useState<AutoReport | null>(null);
+  const [grading, setGrading] = useState<any>(null);
+  const [scorecardOptions, setScorecardOptions] = useState<{ id: string; name: string; department?: string }[]>([]);
   const [tab, setTab] = useState<Tab>((TABS.some(t => t[0] === tabParam) ? tabParam : 'people') as Tab);
   const [month, setMonth] = useState(monthKey());
   const [edit, setEdit] = useState(false);
@@ -43,7 +45,7 @@ export default function MysteryShopClient() {
 
   const load = useCallback(async () => {
     loadIndustries();
-    try { const r = await api.get(`/shop-clients/${id}`); setClient(r.data.client); setPeople(r.data.people); setReportUrl(r.data.report_url); setKickoffUrl(r.data.kickoff_url || ''); setKickoff(r.data.kickoff || {}); setAutoReport(r.data.auto_report || null); setWeeklyDigest(r.data.weekly_digest || null); }
+    try { const r = await api.get(`/shop-clients/${id}`); setClient(r.data.client); setPeople(r.data.people); setReportUrl(r.data.report_url); setKickoffUrl(r.data.kickoff_url || ''); setKickoff(r.data.kickoff || {}); setAutoReport(r.data.auto_report || null); setWeeklyDigest(r.data.weekly_digest || null); setGrading(r.data.grading || null); setScorecardOptions(r.data.scorecard_options || []); }
     catch (e: any) { showToast(e?.response?.data?.detail || 'Could not load', 'error'); router.back(); }
   }, [id]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -101,7 +103,7 @@ export default function MysteryShopClient() {
         {tab === 'billing' && <BillingTab client={client} colors={colors} onChanged={load} />}
         {tab === 'people' && <GoldButton label="Delete client" onPress={remove} testID="shop-client-delete" outline color={RED} icon="trash-outline" />}
       </ScrollView>
-      <ClientSheet visible={edit} onClose={() => setEdit(false)} colors={colors} client={client} onSaved={() => load()} />
+      <ClientSheet visible={edit} onClose={() => setEdit(false)} colors={colors} client={client} onSaved={() => load()} grading={grading} scorecardOptions={scorecardOptions} />
     </SafeAreaView>
   );
 }
