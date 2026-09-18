@@ -29,7 +29,9 @@ async def _seed(db, uid):
     mike = _c(uid, "Mike", "QA-Ross", "+15005550702")
     nb = _c(uid, "Neighbor", "QA-Guy", "+15005550703")
     note = _c(uid, "Priya", "QA-Note", "+15005550704", notes="Wants a used Model 3 under 20k, prefers white, no rush.")
-    await db.contacts.insert_many([dana, mike, nb, note])
+    bud = _c(uid, "Bud", "QA-Sold", "+15005550705", vehicle="2024 Chevy Tahoe", date_sold="2026-03-12", tags=[TAG, "sold"],
+             purchase_history=[{"id": "qa1", "title": "2024 Chevy Tahoe", "category": "vehicle", "date": "2026-03-12", "notes": "Traded a 2018 Silverado", "source": "qa"}])
+    await db.contacts.insert_many([dana, mike, nb, note, bud])
     memo = {"_id": ObjectId(), "user_id": uid, "contact_id": str(dana["_id"]), "kind": "memo", "title": "Dana call", "duration": 41,
             "transcript": "Met Dana at the service drive. She said she's looking for a Tesla Model 3, wants to stay around twenty grand, maybe twenty-two tops, and asked if we ever get them in.",
             "summary": "Dana is shopping for a Model 3 around 20k.", "created_at": now - timedelta(days=32)}
@@ -43,7 +45,7 @@ async def _seed(db, uid):
             "transcript": "Rep: Thanks for calling. Customer: Hey, my neighbor just bought a Tesla and won't shut up about it, ha. Anyway I'm calling about the Silverado you have listed, the red one.",
             "created_at": now - timedelta(days=10), "timestamp": now - timedelta(days=10)}
     await db.call_logs.insert_one(call)
-    return {"contacts": [dana, mike, nb, note], "memo": memo, "conv": conv, "msg": msg, "call": call}
+    return {"contacts": [dana, mike, nb, note, bud], "memo": memo, "conv": conv, "msg": msg, "call": call}
 
 
 async def _wipe(db, s):
@@ -64,8 +66,8 @@ async def test_terms_and_scan():
         assert "tesla" in low and ("model 3" in low or "model3" in low), t
         assert any(x in low for x in ("20k", "20,000", "twenty")), t
         hits = await ms.scan(db, forest, ["tesla", "model 3", "20k", "twenty grand", "twenty"])
-        mine = {h["contact_id"]: h for h in hits if h["contact_id"] in {str(c["_id"]) for c in s["contacts"]}}
-        assert {mine[str(c["_id"])]["source"] for c in s["contacts"]} == {"memo", "text", "call", "note"}, mine
+        mine = {h["contact_id"]: h for h in hits if h["contact_id"] in {str(c["_id"]) for c in s["contacts"][:4]}}
+        assert {mine[str(c["_id"])]["source"] for c in s["contacts"][:4]} == {"memo", "text", "call", "note"}, mine
         assert "Model 3" in mine[str(s["contacts"][0]["_id"])]["quote"] and mine[str(s["contacts"][1]["_id"])]["who"] == "them"
         recent = await ms.scan(db, forest, ["tesla"], days=20)
         assert str(s["contacts"][2]["_id"]) in {h["contact_id"] for h in recent} and str(s["contacts"][0]["_id"]) not in {h["contact_id"] for h in recent}, "lookback window"
@@ -77,7 +79,7 @@ async def test_search_verifies_and_speaks():
     db = get_db()
     forest = await db.users.find_one({"email": "forest@imosapp.com"})
     s = await _seed(db, str(forest["_id"]))
-    dana, mike, nb, note = (str(c["_id"]) for c in s["contacts"])
+    dana, mike, nb, note, bud = (str(c["_id"]) for c in s["contacts"])
     try:
         res = await ms.search(db, forest, "who asked about a 20k Tesla Model 3 last month?")
         by = {r["contact_id"]: r for r in res["results"]}
@@ -113,6 +115,30 @@ async def test_typed_jessi_lookup():
         block = await _build_data_lookups(str(forest["_id"]), "Who asked about a 20k Tesla Model 3 a month ago? I can't remember who it was")
         assert "WHO MENTIONED" in block and "Dana QA-Cole" in block and "voice memo" in block and f"/contact/{s['contacts'][0]['_id']}" in block, block
         assert "WHO MENTIONED" not in await _build_data_lookups(str(forest["_id"]), "how many texts did I send this week")
+    finally:
+        await _wipe(db, s)
+
+
+async def test_sold_records():
+    """'Who did I sell a Tahoe to?' finds the purchase record (title + date), not just texts and memos."""
+    db = get_db()
+    forest = await db.users.find_one({"email": "forest@imosapp.com"})
+    s = await _seed(db, str(forest["_id"]))
+    bud = str(s["contacts"][4]["_id"])
+    try:
+        hits = await ms.scan(db, forest, ["tahoe"])
+        mine = [h for h in hits if h["contact_id"] == bud]
+        assert mine and mine[0]["source"] == "sale" and "Sold: 2024 Chevy Tahoe on Mar 12, 2026" in mine[0]["quote"] and "Traded a 2018 Silverado" in mine[0]["quote"], mine
+        assert not [h for h in await ms.scan(db, forest, ["tahoe"], days=30) if h["contact_id"] == bud], "lookback window applies to sale dates"
+        assert "sold" in ms.STOP and "bought" in ms.STOP, "fallback terms must not match every 'Sold:' record"
+        res = await ms.search(db, forest, "who did I sell a Tahoe to?")
+        by = {r["contact_id"]: r for r in res["results"]}
+        print("\nSOLD RESULTS:", [(r["name"], r["strength"], r["best"]["source"], r["best"]["why"]) for r in res["results"]])
+        assert bud in by and by[bud]["strength"] == "strong" and by[bud]["best"]["source"] == "sale", by.get(bud)
+        assert "Bud QA-Sold" in ms.spoken(res) and "sold records" in ms.spoken(res)
+        from services.jessie_service import _build_data_lookups
+        block = await _build_data_lookups(str(forest["_id"]), "Who did I sell a Tahoe to earlier this year?")
+        assert "WHO MENTIONED" in block and "Bud QA-Sold" in block and "sold record" in block, block
     finally:
         await _wipe(db, s)
 

@@ -7,15 +7,15 @@ import api from '../services/api';
 import { useThemeStore } from '../store/themeStore';
 import { GOLD, tid } from '../components/scripts/shared';
 
-type Hit = { source: 'text' | 'call' | 'memo' | 'note'; who: string; when_label: string; quote: string; why: string; conversation_id?: string | null };
+type Hit = { source: 'text' | 'call' | 'memo' | 'note' | 'sale'; who: string; when_label: string; quote: string; why: string; conversation_id?: string | null };
 type Result = { contact_id: string; name: string; first: string; phone: string; vehicle: string; strength: 'strong' | 'maybe'; when_label: string; when_spoken: string; best: Hit; hits: Hit[] };
 type Res = { query: string; topic: string; terms: string[]; scanned: number; results: Result[] };
 
-const ICON: Record<Hit['source'], any> = { text: 'chatbubble-ellipses-outline', call: 'call-outline', memo: 'mic-outline', note: 'document-text-outline' };
-const LABEL: Record<Hit['source'], string> = { text: 'Text', call: 'Call transcript', memo: 'Voice memo', note: 'Note' };
-const EXAMPLES = ['who asked about a Tesla Model 3 around 20k', 'anyone looking for a truck to tow a camper', 'who mentioned a trade-in last month', 'who talked about financing with bad credit'];
+const ICON: Record<Hit['source'], any> = { text: 'chatbubble-ellipses-outline', call: 'call-outline', memo: 'mic-outline', note: 'document-text-outline', sale: 'pricetag-outline' };
+const LABEL: Record<Hit['source'], string> = { text: 'Text', call: 'Call transcript', memo: 'Voice memo', note: 'Note', sale: 'Sold record' };
+const EXAMPLES = ['who asked about a Tesla Model 3 around 20k', 'who did I sell a Tahoe to', 'anyone looking for a truck to tow a camper', 'who mentioned a trade-in last month', 'who talked about financing with bad credit'];
 
-// "Who mentioned X": Jessi hunts through texts, call transcripts, voice memos and notes and comes back with the person, the quote and when.
+// "Who mentioned X": Jessi hunts through texts, call transcripts, voice memos, notes and sold records and comes back with the person, the quote and when.
 export default function MemorySearchScreen() {
   const router = useRouter();
   const { q } = useLocalSearchParams<{ q?: string }>();
@@ -46,7 +46,7 @@ export default function MemorySearchScreen() {
         <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/contacts' as any))} hitSlop={8} style={{ padding: 4 }} {...tid('memory-search-back')}><Ionicons name="chevron-back" size={26} color={colors.text} /></TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Who mentioned...</Text>
-          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Texts, call transcripts, voice memos and notes</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Texts, calls, voice memos, notes and what they bought</Text>
         </View>
       </View>
       <View style={{ marginHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: Platform.OS === 'web' ? 8 : 4 }}>

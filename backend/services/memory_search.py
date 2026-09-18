@@ -1,4 +1,4 @@
-"""Who mentioned X? Cross-contact search over everything a rep has on record: texts, call transcripts, voice memos, notes.
+"""Who mentioned X? Cross-contact search over everything a rep has on record: texts, call transcripts, voice memos, notes, sold records.
 Two passes: a cheap keyword scan (query -> search variants -> regex over the rep's records) and one LLM read of the actual
 snippets that keeps only people who meant it ("I'm looking for a Model 3 around 20k"), not passing mentions ("my neighbor's Tesla")."""
 import logging
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 MAX_HITS = 40
 PER_CONTACT = 3
 WINDOW = 140
-SOURCES = {"text": "text", "call": "call transcript", "memo": "voice memo", "note": "note"}
+SOURCES = {"text": "text", "call": "call transcript", "memo": "voice memo", "note": "note", "sale": "sold record"}
 
 
 def _now():
@@ -27,9 +27,10 @@ def _when(v) -> Optional[datetime]:
         return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
     if isinstance(v, str):
         try:
-            return datetime.fromisoformat(v.replace("Z", "+00:00"))
+            d = datetime.fromisoformat(v.replace("Z", "+00:00"))
         except ValueError:
             return None
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
     return None
 
 
@@ -63,13 +64,13 @@ async def terms_for(query: str) -> dict:
         return fallback
     try:
         data = await _llm_json(
-            "A car sales rep is trying to find a customer by something that came up in past texts, calls or voice memos. "
-            "Turn the ask into keyword search variants that could literally appear in a transcript: product names and their nicknames (Tesla Model 3 -> tesla, model 3), "
+            "A car sales rep is trying to find a customer by something that came up in past texts, calls or voice memos, or by what that customer bought (sold records: 'who did I sell a Tahoe to'). "
+            "Turn the ask into keyword search variants that could literally appear in a transcript or a vehicle description: product names and their nicknames (Tesla Model 3 -> tesla, model 3; Chevy Tahoe -> tahoe), "
             "numbers the way people say and type them (20k -> 20k, 20,000, twenty thousand, twenty grand, 20 grand), and the key nouns. 4 to 10 short lowercase terms, "
-            "no stop words, no generic words like car, customer, looking. Also restate the TOPIC as the thing itself in 2 to 5 words (e.g. 'a 20k Tesla Model 3'), no time words, no 'inquiry'. Return ONLY JSON: {\"topic\": \"...\", \"terms\": [\"...\"]}",
+            "no stop words, no generic words like car, customer, looking, sold, bought, no trim levels or drivetrain codes (LS, LT, 4x4). Also restate the TOPIC as the thing itself in 2 to 5 words (e.g. 'a 20k Tesla Model 3'), no time words, no 'inquiry'. Return ONLY JSON: {\"topic\": \"...\", \"terms\": [\"...\"]}",
             q, timeout=12)
         terms = [str(t).strip().lower() for t in (data.get("terms") or []) if str(t).strip()]
-        terms = [t for t in dict.fromkeys(terms) if len(t) >= 2][:10]
+        terms = [t for t in dict.fromkeys(terms) if len(t) >= 3][:10]
         if terms:
             return {"topic": (data.get("topic") or q).strip(), "terms": terms}
     except Exception as e:
@@ -78,7 +79,8 @@ async def terms_for(query: str) -> dict:
 
 
 STOP = {"the", "and", "who", "was", "were", "for", "about", "anyone", "someone", "customer", "looking", "asked", "mentioned", "talked", "find", "that", "with", "had", "have",
-        "month", "ago", "week", "last", "did", "said", "wants", "want", "wanted", "into", "any", "all", "our", "you", "get", "got", "car", "one", "some", "like"}
+        "month", "ago", "week", "last", "did", "said", "wants", "want", "wanted", "into", "any", "all", "our", "you", "get", "got", "car", "one", "some", "like",
+        "sold", "sell", "sale", "bought", "buy", "purchase", "purchased", "vehicle", "delivered", "year"}
 
 
 def _regex(terms: list) -> re.Pattern:
@@ -144,6 +146,8 @@ async def scan(db, user: dict, terms: list, days: Optional[int] = None) -> list:
         if snip:
             hits.append({"source": "note", "contact_id": str(c["_id"]), "who": "note", "when": _when(c.get("updated_at")), "quote": snip, "ref": str(c["_id"])})
 
+    hits.extend(await _sales(db, owners, rx, mongo_rx, since))
+
     hits = [h for h in hits if h.get("contact_id")]
     hits.sort(key=lambda h: h["when"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     per, out = {}, []
@@ -157,6 +161,33 @@ async def scan(db, user: dict, terms: list, days: Optional[int] = None) -> list:
     return out
 
 
+async def _sales(db, owners: list, rx: re.Pattern, mongo_rx: dict, since: Optional[datetime]) -> list:
+    """What each customer bought (purchase_history, the derived vehicle field) and the vehicle they said they want. 'Who did I sell a Tahoe to?'"""
+    hits = []
+    q = {"user_id": {"$in": owners}, "status": {"$nin": ["merged", "deleted", "hidden"]},
+         "$or": [{"purchase_history": {"$elemMatch": {"$or": [{"title": mongo_rx}, {"notes": mongo_rx}, {"category": mongo_rx}]}}}, {"vehicle": mongo_rx}, {"vehicle_interest": mongo_rx}]}
+    async for c in db.contacts.find(q, {"purchase_history": 1, "vehicle": 1, "vehicle_interest": 1, "date_sold": 1, "updated_at": 1}).limit(200):
+        cid = str(c["_id"])
+        found = False
+        for e in c.get("purchase_history") or []:
+            if not rx.search(" ".join(str(x) for x in (e.get("title"), e.get("category"), e.get("notes")) if x)):
+                continue
+            when = _when(e.get("date"))
+            if since and when and when < since:
+                continue
+            quote = f"Sold: {e.get('title') or 'a purchase'}" + (f" on {_fmt(when)}" if when else "") + (f". {e['notes']}" if e.get("notes") else "")
+            hits.append({"source": "sale", "contact_id": cid, "who": "sale", "when": when, "quote": quote, "ref": cid})
+            found = True
+        if not found and rx.search(c.get("vehicle") or ""):
+            when = _when(c.get("date_sold")) or _when(c.get("updated_at"))
+            if not (since and when and when < since):
+                hits.append({"source": "sale", "contact_id": cid, "who": "sale", "when": when, "quote": f"Sold: {c['vehicle']}" + (f" on {_fmt(when)}" if c.get("date_sold") and when else ""), "ref": cid})
+                found = True
+        if not found and rx.search(c.get("vehicle_interest") or ""):
+            hits.append({"source": "note", "contact_id": cid, "who": "note", "when": _when(c.get("updated_at")), "quote": f"Vehicle interest on file: {c['vehicle_interest']}", "ref": cid})
+    return hits
+
+
 async def verify(topic: str, query: str, hits: list) -> dict:
     """One LLM read of the snippets: which ones show the person actually meant this (asked, wants, is shopping), and a one-line why."""
     if not hits:
@@ -167,6 +198,8 @@ async def verify(topic: str, query: str, hits: list) -> dict:
             "You help a car sales rep find the customer they are thinking of. Given what the rep is looking for and numbered snippets from past texts, calls and memos, "
             "decide for each snippet whether it is a REAL match: the customer (or the rep about that customer) actually raised, wanted, asked about or shopped for the thing. "
             "A passing mention (someone else's car, a joke, the rep pitching it unprompted with no interest back) is not a match. "
+            "A 'Sold:' snippet is the rep's own sold record (that customer bought that item from the rep): it is a strong match whenever the item fits the ask, "
+            "including 'who did I sell a Tahoe to', 'who bought a Silverado', 'who has a Tahoe', or a plain product search. "
             "Return ONLY JSON: {\"matches\": [{\"i\": <index>, \"why\": \"<one short sentence quoting or paraphrasing what they said>\", \"strength\": \"strong|maybe\"}]}",
             f"LOOKING FOR: {query}\nTOPIC: {topic}\n\nSNIPPETS:\n{listing}", timeout=25)
         return {int(m["i"]): m for m in (data.get("matches") or []) if str(m.get("i", "")).isdigit() and int(m["i"]) < len(hits)}
@@ -185,7 +218,8 @@ async def search(db, user: dict, query: str, days: Optional[int] = None) -> dict
         if not m:
             continue
         row = by_contact.setdefault(h["contact_id"], {"contact_id": h["contact_id"], "strength": "maybe", "hits": [], "when": None})
-        row["hits"].append({"source": h["source"], "who": h["who"], "when": h["when"].isoformat() if h["when"] else None, "when_label": _fmt(h["when"]), "quote": h["quote"], "why": m.get("why") or "", "ref": h["ref"], "conversation_id": h.get("conversation_id")})
+        row["hits"].append({"source": h["source"], "who": h["who"], "when": h["when"].isoformat() if h["when"] else None, "when_label": _fmt(h["when"]), "quote": h["quote"], "why": m.get("why") or "", "ref": h["ref"], "conversation_id": h.get("conversation_id"),
+                            "strength": "strong" if m.get("strength") == "strong" else "maybe"})
         if m.get("strength") == "strong":
             row["strength"] = "strong"
         if h["when"] and (row["when"] is None or h["when"] > row["when"]):
@@ -197,6 +231,8 @@ async def search(db, user: dict, query: str, days: Optional[int] = None) -> dict
         c = people.get(cid)
         if not c or c.get("status") in ("merged", "deleted"):
             continue
+        # Lead with the hard fact: strong matches first, a sold record before a text about it, then newest.
+        row["hits"].sort(key=lambda h: (0 if h["strength"] == "strong" else 1, 0 if h["source"] == "sale" else 1, -(_when(h["when"]) or datetime.min.replace(tzinfo=timezone.utc)).timestamp()))
         best = row["hits"][0]
         results.append({**row, "when": row["when"].isoformat() if row["when"] else None, "when_label": _fmt(row["when"]), "when_spoken": _spoken_date(row["when"]),
                         "name": f"{c.get('first_name') or ''} {c.get('last_name') or ''}".strip(), "first": c.get("first_name") or "", "phone": c.get("phone") or "",
@@ -210,11 +246,11 @@ def spoken(res: dict) -> str:
     rs = res.get("results") or []
     topic = res.get("topic") or res.get("query")
     if not rs:
-        return f"Nobody on record mentioned {topic}. I checked your texts, call transcripts, voice memos and notes." + (" The closest keyword hits were not about that." if res.get("scanned") else "")
+        return f"Nobody on record mentioned {topic}. I checked your texts, call transcripts, voice memos, notes and sold records." + (" The closest keyword hits were not about that." if res.get("scanned") else "")
     lines = []
     for r in rs[:3]:
         b = r["best"]
-        src = {"text": "texted", "call": "on a call", "memo": "in your voice memo", "note": "in your notes"}[b["source"]]
+        src = {"text": "texted", "call": "on a call", "memo": "in your voice memo", "note": "in your notes", "sale": "in your sold records"}[b["source"]]
         lines.append(f"{r['name']}, {src} {r['when_spoken']}: {b['why'] or b['quote']}")
     more = f" And {len(rs) - 3} more on the screen." if len(rs) > 3 else ""
     head = f"{len(rs)} {'person' if len(rs) == 1 else 'people'} mentioned {topic}. " if len(rs) > 1 else ""

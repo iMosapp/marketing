@@ -615,6 +615,9 @@ function ThreadScreen() {
       // id is likely a contact_id, not a conversation_id
       try {
         const contactResponse = await api.get(`/contacts/${user?._id}/${id}`);
+        // Jessi opens /thread/{contact_id} with no name param: take the name from the contact record so the header never says "Contact"
+        const loadedName = `${contactResponse.data?.first_name || ''} ${contactResponse.data?.last_name || ''}`.trim();
+        if (loadedName) setDisplayContactName(loadedName);
         if (contactResponse.data?.photo_thumbnail || contactResponse.data?.photo_url || contactResponse.data?.photo) {
           setContactPhoto(resolvePhotoUrl(contactResponse.data.photo_thumbnail || contactResponse.data.photo_url || contactResponse.data.photo));
         }
