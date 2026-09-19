@@ -1924,11 +1924,27 @@ async def run_compliance_poll_job():
     return n
 
 
+async def run_twilio_tenant_sync_job():
+    """Every 30 minutes: refresh each provisioned organization's Twilio record (subaccount status, compliance mirror, readiness)."""
+    from routers.database import get_db
+    from services.twilio_tenant import sync_all
+    return await sync_all(get_db())
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
         logger.warning("[Scheduler] Already running, skipping start.")
         return
+
+    scheduler.add_job(
+        safe_job(run_twilio_tenant_sync_job),
+        IntervalTrigger(minutes=30),
+        id="twilio_tenant_sync",
+        replace_existing=True,
+        misfire_grace_time=900,
+        coalesce=True,
+    )
 
     scheduler.add_job(
         safe_job(run_webhook_outbox_job),

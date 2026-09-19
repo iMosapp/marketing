@@ -140,7 +140,7 @@ export default function TwilioNumbersDashboard() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <ScreenHeader title="Phone Numbers" testID="phone-numbers-header" right={<HeaderTextButton label="Buy" onPress={() => { setShowPurchase(true); setAvailable([]); setBuyFor(null); loadUsers(); }} testID="phone-numbers-buy-btn" />} />
+      <ScreenHeader title="Phone Numbers" testID="phone-numbers-header" right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><HeaderTextButton label="Migration" onPress={() => router.push('/admin/twilio-migration' as any)} testID="phone-numbers-migration-btn" /><HeaderTextButton label="Buy" onPress={() => { setShowPurchase(true); setAvailable([]); setBuyFor(null); loadUsers(); }} testID="phone-numbers-buy-btn" /></View>} />
 
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor="#C9A962" />}

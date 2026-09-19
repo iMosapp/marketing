@@ -101,6 +101,24 @@ async def proxy_twilio_media(url: str):
         raise HTTPException(status_code=500, detail="Media proxy error")
 
 
+def _xml_escape(s: str) -> str:
+    return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+async def _help_reply(db, rep_user, registry) -> str:
+    """HELP / INFO keyword: the store's registered HELP message, else a compliant default naming the business."""
+    store = (registry or {}).get("store")
+    if not store and rep_user and rep_user.get("store_id") and ObjectId.is_valid(str(rep_user["store_id"])):
+        store = await db.stores.find_one({"_id": ObjectId(str(rep_user["store_id"]))}, {"name": 1, "phone": 1, "compliance.campaign.help_message": 1})
+    custom = (((store or {}).get("compliance") or {}).get("campaign") or {}).get("help_message") or ""
+    if custom.strip():
+        return custom.strip()[:320]
+    name = (store or {}).get("name") or (rep_user or {}).get("name") or "I'm On Social"
+    phone = (store or {}).get("phone") or ""
+    return f"{name}: texts from your rep. Reply STOP to unsubscribe. Msg & data rates may apply." + (f" Questions? Call {phone}." if phone else "")
+
+
+@router.post("/sms")
 @router.post("/incoming")
 async def incoming_message(
     request: Request,
@@ -117,7 +135,7 @@ async def incoming_message(
     MediaContentType2: Optional[str] = Form(default=None),
 ):
     """
-    Webhook endpoint for incoming SMS/MMS from Twilio.
+    Webhook endpoint for incoming SMS/MMS from Twilio (/incoming and its alias /sms).
     
     Twilio sends a POST request with form data including:
     - From: Sender's phone number
@@ -130,6 +148,13 @@ async def incoming_message(
     db = get_db()
     
     logger.info(f"Incoming message from {From} to {To}: {Body[:50]}...")
+
+    # ── Signature check (TWILIO_WEBHOOK_VALIDATION: off | log | enforce) ─────
+    raw_form = dict(await request.form())
+    from services.twilio_signature import guard as _sig_guard
+    _blocked = await _sig_guard(request, raw_form, db, "incoming")
+    if _blocked:
+        return _blocked
     
     # Normalize phone numbers
     from_phone = normalize_phone(From)
@@ -162,14 +187,15 @@ async def incoming_message(
                     media_type="application/xml"
                 )
     
-    # Collect media URLs
+    # Collect media URLs (Twilio can send up to 10 attachments: MediaUrl0..MediaUrl9)
     media_urls  = []
     media_types = []
     num_media = int(NumMedia) if NumMedia else 0
-    if num_media > 0:
-        if MediaUrl0: media_urls.append(MediaUrl0); media_types.append(MediaContentType0 or 'image/jpeg')
-        if MediaUrl1: media_urls.append(MediaUrl1); media_types.append(MediaContentType1 or 'image/jpeg')
-        if MediaUrl2: media_urls.append(MediaUrl2); media_types.append(MediaContentType2 or 'image/jpeg')
+    for i in range(min(num_media, 10)):
+        u = raw_form.get(f"MediaUrl{i}")
+        if u:
+            media_urls.append(str(u))
+            media_types.append(str(raw_form.get(f"MediaContentType{i}") or "image/jpeg"))
 
     # ── iMessage Tapback / Reaction Filter ──────────────────────────────────────
     # When an iPhone user "hearts", "likes", or reacts to a message, iOS sends a
@@ -234,13 +260,33 @@ async def incoming_message(
         except Exception as inbox_err:
             logger.error(f"[Webhook] Shared inbox routing failed, falling back to rep routing: {inbox_err}")
 
-        # ── Step 1: Route by To: number → find the rep who owns this number ──
+        # ── Step 1: Route by To: number → registry first (Twilio number → organization → location → user), then legacy fields ──
         # Important: do NOT filter by is_active here — a rep's dedicated number
         # should always route to them even if their account isn't fully active yet.
-        rep_user = inbox_rep_user or await db.users.find_one({
+        registry = None
+        if not inbox_rep_user:
+            try:
+                from services.phone_numbers import resolve_inbound as _resolve_inbound
+                registry = await _resolve_inbound(db, to_phone)
+            except Exception as reg_err:
+                logger.warning(f"[Webhook] registry lookup failed for {to_phone}: {reg_err}")
+        rep_user = inbox_rep_user or (registry or {}).get("user") or await db.users.find_one({
             "$or": [{"twilio_number": to_phone}, {"mvpline_number": to_phone}],
             "status": {"$ne": "deactivated"},  # only exclude hard-deactivated accounts
         })
+        if not rep_user and registry and (registry.get("store") or registry.get("org")):
+            # Store / shared / unassigned number in the registry: the location's manager, else the organization's admin
+            q_mgr: dict = {"role": {"$in": ["store_manager", "org_admin"]}, "status": {"$ne": "deactivated"}, "is_active": {"$ne": False}}
+            if registry.get("store"):
+                sid_ = str(registry["store"]["_id"])
+                q_mgr["$or"] = [{"store_id": sid_}, {"store_ids": sid_}]
+            else:
+                q_mgr["organization_id"] = str(registry["org"]["_id"])
+            rep_user = await db.users.find_one(q_mgr)
+            if not rep_user and registry.get("org"):
+                rep_user = await db.users.find_one({"organization_id": str(registry["org"]["_id"]), "role": "org_admin", "status": {"$ne": "deactivated"}})
+            if rep_user:
+                logger.info(f"[Webhook] Registry number {to_phone} ({(registry.get('number') or {}).get('number_type')}) routed to {rep_user.get('name')}")
         if rep_user:
             logger.info(f"[Webhook] Inbound {to_phone} → rep={rep_user.get('name')} ({rep_user.get('_id')})")
         else:
@@ -265,8 +311,14 @@ async def incoming_message(
                 else:
                     logger.info(f"[Webhook] Pooled number {to_phone} — no store manager found for store {store_id}, falling back to super_admin")
         if not rep_user:
-            # Fall back to first super_admin
-            rep_user = await db.users.find_one({"role": {"$in": ["super_admin", "org_admin"]}})
+            # Last resort: the platform's super admin (never another organization's admin — tenant isolation)
+            rep_user = await db.users.find_one({"role": "super_admin", "status": {"$ne": "deactivated"}}, sort=[("created_at", 1)])
+            logger.warning(f"[Webhook] Unrouted number {to_phone}: no owner in the registry, users, pool or inboxes; landed on super admin")
+            try:
+                from services.twilio_tenant import audit as _audit
+                await _audit(db, action="inbound_unrouted", actor="system", target={"to": to_phone, "from": from_phone[-4:]}, ok=False, error="No organization owns this number")
+            except Exception:
+                pass
         
         rep_user_id = str(rep_user["_id"]) if rep_user else None
         rep_name    = (rep_user.get("name") or "").split()[0] if rep_user else "your rep"
@@ -420,12 +472,17 @@ async def incoming_message(
             "conversation_id": conversation_id,
             "content": Body,
             "sender": "contact",
+            "direction": "inbound",
             "timestamp": datetime.utcnow(),
             "status": "received",
             "twilio_sid": MessageSid,
             "from_phone": from_phone,
             "to_phone": to_phone,
         }
+        if registry and registry.get("number"):
+            message["organization_id"] = registry["number"].get("organization_id")
+            message["location_id"] = registry["number"].get("location_id")
+            message["phone_number_id"] = str(registry["number"]["_id"])
         
         # Add media if present - download and store permanently
         if media_urls:
@@ -453,6 +510,12 @@ async def incoming_message(
         
         msg_insert = await db.messages.insert_one(message)
         logger.info(f"Saved incoming message to conversation {conversation_id}")
+        try:
+            from services.phone_numbers import record_usage as _record_usage
+            await _record_usage(db, direction="inbound", phone_number=to_phone, segments=int(raw_form.get("NumSegments") or 1), mms=bool(media_urls),
+                                org_id=(rep_user or {}).get("organization_id"), location_id=(rep_user or {}).get("store_id"), user_id=rep_user_id)
+        except Exception as usage_err:
+            logger.debug(f"[Usage] inbound skipped: {usage_err}")
 
         # ── Keyword auto-tagging (fire-and-forget) ──────────────────────────────
         try:
@@ -728,11 +791,12 @@ async def incoming_message(
         body_upper = Body.strip().upper()
         is_stop   = body_upper in ("STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT")
         is_unstop = body_upper in ("UNSTOP", "START", "SUBSCRIBE")
+        is_help   = body_upper in ("HELP", "INFO")
 
         if is_stop:
             await db.contacts.update_one(
                 {"_id": contact["_id"]},
-                {"$set": {"opted_out": True, "opted_out_at": datetime.utcnow(), "sms_consent_status": "opted_out"}}
+                {"$set": {"opted_out": True, "opted_out_at": datetime.utcnow(), "sms_consent_status": "opted_out", "sms_opt_out": True, "sms_opt_out_at": datetime.utcnow()}}
             )
             await db.campaign_enrollments.update_many(
                 {"contact_id": contact_id, "status": "active"},
@@ -756,7 +820,7 @@ async def incoming_message(
         if is_unstop:
             await db.contacts.update_one(
                 {"_id": contact["_id"]},
-                {"$set": {"opted_out": False, "opted_out_at": None, "sms_consent_status": "opted_in"}}
+                {"$set": {"opted_out": False, "opted_out_at": None, "sms_consent_status": "opted_in", "sms_opt_out": False}}
             )
             if user_id:
                 cname = contact.get("first_name") or "Customer"
@@ -767,6 +831,14 @@ async def incoming_message(
                 })
             return Response(
                 content='<?xml version="1.0" encoding="UTF-8"?><Response><Message>You are re-subscribed. Reply STOP to unsubscribe.</Message></Response>',
+                media_type="application/xml"
+            )
+
+        if is_help:
+            help_text = await _help_reply(db, rep_user, registry)
+            logger.info(f"[Webhook] {from_phone} asked for HELP")
+            return Response(
+                content=f'<?xml version="1.0" encoding="UTF-8"?><Response><Message>{_xml_escape(help_text)}</Message></Response>',
                 media_type="application/xml"
             )
 
@@ -1046,6 +1118,7 @@ async def incoming_message(
 
 @router.post("/status")
 async def message_status_callback(
+    request: Request,
     MessageSid: str = Form(...),
     MessageStatus: str = Form(...),
     To: str = Form(default=""),
@@ -1059,6 +1132,10 @@ async def message_status_callback(
     Status values: queued, sent, delivered, undelivered, failed
     """
     db = get_db()
+    from services.twilio_signature import guard as _sig_guard
+    _blocked = await _sig_guard(request, dict(await request.form()), db, "status")
+    if _blocked:
+        return _blocked
     
     logger.info(f"Status update for {MessageSid}: {MessageStatus}")
     

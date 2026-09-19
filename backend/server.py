@@ -639,6 +639,8 @@ from routers import compliance as compliance_router
 api_router.include_router(compliance_router.router)
 api_router.include_router(compliance_router.webhook_router)
 api_router.include_router(compliance_router.public_router)
+from routers import org_twilio as org_twilio_router
+api_router.include_router(org_twilio_router.router)
 api_router.include_router(twilio_admin.router)
 api_router.include_router(public_landing.router)
 from routers import public_pages

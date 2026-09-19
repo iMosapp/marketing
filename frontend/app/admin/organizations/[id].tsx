@@ -88,6 +88,8 @@ export default function OrganizationDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hierarchy, setHierarchy] = useState<HierarchyData | null>(null);
+  const [twilio, setTwilio] = useState<any>(null);
+  const loadTwilio = () => api.get(`/admin/organizations/${id}/twilio`).then(r => setTwilio(r.data)).catch(() => setTwilio(null));
   const [editMode, setEditMode] = useState(false);
   const [editedOrg, setEditedOrg] = useState<Partial<Organization>>({});
   const [expandedStores, setExpandedStores] = useState<Set<string>>(new Set());
@@ -113,6 +115,7 @@ export default function OrganizationDetailScreen() {
       const response = await api.get(`/admin/hierarchy/organization/${id}`);
       setHierarchy(response.data);
       setEditedOrg(response.data.organization);
+      loadTwilio();
     } catch (error) {
       console.error('Failed to load organization:', error);
       showSimpleAlert('Error', 'Failed to load organization details');
@@ -389,6 +392,24 @@ export default function OrganizationDetailScreen() {
             </View>
           </View>
           
+          {/* Communications (Twilio) */}
+          <TouchableOpacity style={styles.section} onPress={() => router.push(`/admin/org-twilio/${id}` as any)} testID="org-communications-tile" dataSet={{ testid: 'org-communications-tile' } as any}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="chatbubbles" size={20} color="#C9A962" />
+              <Text style={styles.sectionTitle}>Communications</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: twilio?.messaging_ready ? '#34C759' : twilio?.provisioning?.status === 'NOT_STARTED' || !twilio ? '#8E8E93' : twilio?.provisioning?.status === 'ERROR' ? '#FF3B30' : '#FF9500' }} />
+                <Text style={{ fontSize: 12.5, fontWeight: '700', color: colors.textSecondary }} testID="org-communications-status" dataSet={{ testid: 'org-communications-status' } as any}>
+                  {twilio?.messaging_ready ? 'Messaging ready' : twilio?.provisioning?.label || 'Twilio'}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+              </View>
+            </View>
+            <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>
+              Twilio subaccount, A2P compliance, Messaging Service, phone numbers and usage for this organization.{twilio ? ` ${twilio.numbers?.length || 0} number${(twilio.numbers?.length || 0) === 1 ? '' : 's'}.` : ''}
+            </Text>
+          </TouchableOpacity>
+
           {/* Stores Section - FIRST */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>

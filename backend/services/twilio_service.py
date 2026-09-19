@@ -86,6 +86,10 @@ async def send_sms(
     message: str,
     media_urls: Optional[List[str]] = None,
     from_phone: Optional[str] = None,  # Rep's dedicated number — overrides Messaging Service
+    *,
+    org_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    contact_id: Optional[str] = None,
 ) -> dict:
     """
     Send an SMS or MMS message via Twilio.
@@ -99,14 +103,28 @@ async def send_sms(
         message:    Text message body
         media_urls: Optional media URLs for MMS (images, PDFs)
         from_phone: Rep's dedicated Twilio number — ALWAYS pass this for rep-to-customer sends
+        org_id / user_id / contact_id: optional attribution for usage tracking (resolved from from_phone when omitted)
     """
     to_phone = normalize_phone(to_phone)
     media_urls = mms_safe_media(media_urls)
+
+    if from_phone:
+        try:
+            from routers.database import get_db
+            from services.twilio_tenant import send_block_reason
+            blocked = await send_block_reason(get_db(), normalize_phone(from_phone))
+        except Exception as e:
+            logger.debug(f"[SMS] readiness gate skipped: {e}")
+            blocked = ""
+        if blocked:
+            logger.warning(f"[SMS] blocked from {from_phone}: {blocked}")
+            return {"success": False, "error": blocked, "error_code": "not_ready", "mock": False}
 
     if not TWILIO_ENABLED or not twilio_client:
         logger.info(f"[MOCK SMS] To: {to_phone} | from: {from_phone or 'messaging_svc'} | {message[:60]}...")
         if media_urls:
             logger.info(f"[MOCK MMS] Media: {media_urls}")
+        await _record_usage(from_phone, media_urls, 1, org_id, user_id)
         return {
             "success": True,
             "message_sid": "MOCK_" + str(abs(hash(message + to_phone)))[:8],
@@ -133,8 +151,10 @@ async def send_sms(
         if cb:
             params["status_callback"] = cb  # delivery failures land in /api/webhooks/twilio/status
 
-        msg = twilio_client.messages.create(**params)
+        client = await _client_for_sender(params.get("from_")) or twilio_client
+        msg = client.messages.create(**params)
         logger.info(f"Twilio sent: {msg.sid} → {to_phone} from {params.get('from_', 'messaging_svc')} | status={msg.status}")
+        await _record_usage(params.get("from_") or TWILIO_PHONE_NUMBER, media_urls, msg.num_segments, org_id, user_id)
 
         return {
             "success":     True,
@@ -150,6 +170,35 @@ async def send_sms(
     except Exception as e:
         logger.error(f"SMS send error → {to_phone}: {e}")
         return {"success": False, "error": str(e), "mock": False}
+
+
+async def _client_for_sender(from_phone: Optional[str]):
+    """Numbers bought under an organization's subaccount must be sent with that subaccount's credentials."""
+    if not from_phone:
+        return None
+    try:
+        from routers.database import get_db
+        from services import phone_numbers as pn
+        from services import twilio_tenant as tenant
+        db = get_db()
+        num = await pn.by_phone(db, from_phone)
+        acct = (num or {}).get("twilio_account_sid") or ""
+        if not num or not acct or acct == tenant.parent_sid() or acct.startswith("ACdry"):
+            return None
+        org = await tenant.org_by_account_sid(db, acct)
+        return tenant.client_for_org(org) if org else None
+    except Exception as e:
+        logger.debug(f"[SMS] subaccount client lookup skipped: {e}")
+        return None
+
+
+async def _record_usage(from_phone, media_urls, segments, org_id, user_id):
+    try:
+        from routers.database import get_db
+        from services.phone_numbers import record_usage
+        await record_usage(get_db(), direction="outbound", phone_number=from_phone or "", segments=int(segments or 1), mms=bool(media_urls), org_id=org_id, user_id=user_id)
+    except Exception as e:
+        logger.debug(f"[SMS] usage skipped: {e}")
 
 
 async def get_twilio_status() -> dict:

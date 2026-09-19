@@ -196,9 +196,9 @@ class LiveTwilio:
     """The real thing (twilio SDK is sync: every call runs in a thread)."""
     name = "live"
 
-    def __init__(self):
+    def __init__(self, client=None):
         from twilio.rest import Client
-        self.c = Client(os.environ["TWILIO_ACCOUNT_SID"], os.environ["TWILIO_AUTH_TOKEN"])
+        self.c = client or Client(os.environ["TWILIO_ACCOUNT_SID"], os.environ["TWILIO_AUTH_TOKEN"])
 
     async def _t(self, fn, *a, **kw):
         return await asyncio.to_thread(fn, *a, **kw)
@@ -334,23 +334,46 @@ def use_adapter(adapter):
     _override = adapter
 
 
-def adapter_for(mode: str):
+def adapter_for(mode: str, client=None):
     if _override is not None:
         return _override
     if mode == "dry_run" or not (os.environ.get("TWILIO_ACCOUNT_SID") and os.environ.get("TWILIO_AUTH_TOKEN")):
         return DryRunTwilio()
-    return LiveTwilio()
+    return LiveTwilio(client)
+
+
+async def _client_for(db, store: dict, rec: dict):
+    """The Twilio account this store's registration lives in: the one stamped at submit (legacy = parent),
+    else the organization's subaccount (Twilio's ISV rule: profile, brand, campaign and Messaging Service in the customer's subaccount)."""
+    from services import twilio_tenant as tenant
+    acct = rec.get("account_sid") or ""
+    if acct and acct != tenant.parent_sid():
+        org = await tenant.org_by_account_sid(db, acct)
+        if org:
+            return tenant.client_for_org(org)
+    if acct or (rec.get("sids") or {}):
+        return None  # parent account (legacy in-flight registration)
+    return await tenant.client_for_store(db, store)
 
 
 # ── numbers ───────────────────────────────────────────────────────────────────
 async def store_numbers(db, store_id: str) -> list[dict]:
-    """Every Twilio number that texts on this store's behalf: the reps' numbers (users.twilio_number_sid)."""
+    """Every Twilio number that texts on this store's behalf: the reps' numbers (users.twilio_number_sid) plus registry numbers on the location."""
     out, seen = [], set()
     async for u in db.users.find({"store_id": store_id, "twilio_number_sid": {"$exists": True, "$nin": [None, ""]}}, {"twilio_number_sid": 1, "twilio_number": 1, "name": 1}):
         sid = u.get("twilio_number_sid")
         if sid and sid not in seen:
             seen.add(sid)
             out.append({"sid": sid, "number": u.get("twilio_number"), "owner": u.get("name")})
+    try:
+        from services import phone_numbers as pn
+        for n in await pn.for_store(db, store_id):
+            sid = n.get("twilio_phone_number_sid")
+            if sid and sid not in seen and n.get("status") != "SUSPENDED":
+                seen.add(sid)
+                out.append({"sid": sid, "number": n.get("phone_number"), "owner": n.get("friendly_name") or pn.TYPE_LABEL.get(n.get("number_type"), ""), "registry_id": str(n["_id"])})
+    except Exception as e:
+        logger.debug(f"[Compliance] registry numbers for {store_id}: {e}")
     return out
 
 
@@ -383,11 +406,14 @@ async def start(db, store: dict, me: dict) -> dict:
     if miss:
         raise ValueError("Missing: " + ", ".join(miss))
     settings = await get_settings(db)
-    rec.update({"mode": settings["mode"], "stage": "profile", "status": "submitting", "error": "", "submitted_by": str(me.get("_id")), "submitted_at": _now()})
+    from services import twilio_tenant as tenant
+    account_sid = tenant.creds_for_org(await tenant.org_for_store(db, store))[0]
+    rec.update({"mode": settings["mode"], "stage": "profile", "status": "submitting", "error": "", "submitted_by": str(me.get("_id")), "submitted_at": _now(), "account_sid": account_sid})
     rec.setdefault("sids", {})
     rec.setdefault("statuses", {})
     rec["history"] = _hist(rec, "profile", "submitting")
     await _save(db, str(store["_id"]), rec)
+    await tenant.audit(db, action="compliance_submitted", actor=me, org_id=store.get("organization_id"), target={"store_id": str(store["_id"]), "store_name": store.get("name"), "account_sid": account_sid}, details={"mode": settings["mode"]})
     return await advance(db, store_id=str(store["_id"]))
 
 
@@ -408,7 +434,7 @@ async def advance(db, store_id: str) -> dict:
     rec = (store or {}).get("compliance")
     if not store or not rec or rec.get("stage") in (None, "draft"):
         return rec or {}
-    tw = adapter_for(rec.get("mode") or "dry_run")
+    tw = adapter_for(rec.get("mode") or "dry_run", client=await _client_for(db, store, rec))
     before = (rec.get("stage"), rec.get("status"))
     sids, statuses = rec.setdefault("sids", {}), rec.setdefault("statuses", {})
     numbers = await store_numbers(db, store_id)
@@ -512,6 +538,12 @@ async def advance(db, store_id: str) -> dict:
             await on_twilio_change(db, store_id, before, after, rec)
         except Exception as e:
             logger.warning(f"[Compliance] status notify failed: {e}")
+    if store.get("organization_id"):
+        try:
+            from services import twilio_tenant as tenant
+            await tenant.mirror_compliance(db, store, rec)
+        except Exception as e:
+            logger.warning(f"[Compliance] org mirror failed: {e}")
     return rec
 
 

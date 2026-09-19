@@ -791,6 +791,11 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
             logger.info(f"[NumberPool] {twilio_number} released to pool from user {user_id} ({user_to_deactivate.get('name')})")
         except Exception as e:
             logger.warning(f"[NumberPool] Failed to release number {twilio_number}: {e}")
+    try:
+        from services.phone_numbers import unassign_user as _registry_unassign
+        await _registry_unassign(get_db(), user_id, actor=x_user_id or "system", reason="user deactivated")
+    except Exception as e:
+        logger.warning(f"[NumberRegistry] unassign on deactivate failed: {e}")
 
     # Fire lifecycle hooks
     try:

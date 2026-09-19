@@ -252,7 +252,8 @@ async def auto_invite(db, store_id: str, contact: dict):
         rec = ensure_tokens(store.get("compliance") or tc.defaults(store))
         rp = rec.setdefault("rep", {})
         parts = (contact.get("name") or "").strip().split(" ", 1)
-        rp.setdefault("first_name", parts[0] if parts else "")
+        if not rp.get("first_name") and parts:
+            rp["first_name"] = parts[0]
         if not rp.get("last_name") and len(parts) > 1:
             rp["last_name"] = parts[1]
         if not rp.get("email"):
@@ -513,10 +514,22 @@ async def release_number(db, store: dict, sid: str, me: dict) -> dict:
     if not n:
         raise ValueError("That number is not on this store any more")
     if os.environ.get("TWILIO_ACCOUNT_SID") and await _effective_mode(db, rec) != "dry_run":
-        from routers.twilio_admin import release_number as _release
-        await _release(sid)
+        from services import phone_numbers as pn
+        reg = await pn.by_sid(db, sid)
+        if reg:
+            await pn.release(db, reg, me, "released from the compliance numbers card")
+        else:
+            from routers.twilio_admin import _get_twilio_client, _twilio_call
+            client = _get_twilio_client()
+            await _twilio_call(client.incoming_phone_numbers(sid).delete)
+            await db.users.update_many({"twilio_number_sid": sid}, {"$unset": {"mvpline_number": "", "twilio_number": "", "twilio_number_sid": ""}})
+            await db.phone_number_pool.update_one({"twilio_sid": sid}, {"$set": {"status": "released", "released_at": _now()}}, upsert=True)
     else:
         await db.users.update_many({"twilio_number_sid": sid}, {"$unset": {"mvpline_number": "", "twilio_number": "", "twilio_number_sid": ""}})
+        from services import phone_numbers as pn
+        reg = await pn.by_sid(db, sid)
+        if reg:
+            await pn.release(db, reg, me, "released from the compliance numbers card (dry run)")
     rec.setdefault("numbers_plan", {})[sid] = {"status": "released", "at": _now(), "by": me.get("email"), "number": n.get("number"), "owner": n.get("owner")}
     rec["history"] = tc._hist(rec, rec.get("stage") or "draft", "number_released", f"{n.get('number')} ({n.get('owner') or 'pool'}) by {me.get('email')}")
     await tc._save(db, str(store["_id"]), rec)

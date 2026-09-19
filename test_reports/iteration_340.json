@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 340 review of the A2P 10DLC client onboarding add-on. Backend: wrote 29 new pytest cases (tests/test_compliance_iter340.py) covering settings surface, store record shape (form_url, portout_url, account_number 8-char, events, next_action, no token leakage), send-form + remind + notification creation, public form GET/PUT/submit + bad-token 404, pre-flight with fake vs. real (twilio.com) URLs, stale-preflight-blocks-submit, submit gate + review reviewed/reopen/invalid, full Twilio dry-run lifecycle + twilio_status events, numbers view + release/status 400s, portout send + public port-out packet (Twilio, Inc. + 6 steps + bad-token 404), auto-invite at signup with Mongo cleanup. Combined with 26 helper tests (test_compliance_onboarding, test_twilio_compliance, test_compliance_review_iter339) => 55/55 pass in 35s. Frontend: verified all requested testIDs render on /a2p-onboarding/{token}, /port-out/{token}, /admin/compliance and /admin/compliance/{QA} (login + localStorage token + history.pushState). Public form CNAM uppercases 'qa motors' -> 'QA MOTORS' automatically, Save shows 'Saved 3:12 PM' timestamp. Port-out page authorized_name reads 'Twilio, Inc.'; bad token shows portout-error. Admin overview has 5 stat cards, settings toggle with all inputs incl. compliance-auto-invite and compliance-digest, filter chips all|client|team|twilio|bad|done. Store page: onboarding-card + pill, send-form modal chips, preflight-card with score/verdict/counts and review buttons, numbers-exit-toggle opens portout-panel with prefilled last packet timestamp, compliance-submit-hint shows '3 blockers in pre-flight (super admin can force)'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "services/compliance_onboarding.auto_invite", "issue": "Original code used rp.setdefault('first_name', parts[0]) but tc.defaults() always seeds rep with first_name='' so setdefault never fires; the rep first_name/last_name stayed empty on new signups. Fixed in place with truthy guards (if not rp.get('first_name'): ...). Verified with new integration test test_signup_creates_store_and_invites."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_compliance_iter340.py",
+    "/app/backend/tests/test_compliance_review_iter339.py",
+    "/app/backend/tests/test_compliance_onboarding.py",
+    "/app/backend/tests/test_twilio_compliance.py",
+    "/app/test_reports/pytest/iter340.xml"
+  ],
+  "action_items": [
+    "Optional: Consider mapping the 'compliance' notification type in routers/notifications_center.py verb table so team notifications surface in the in-app feed UI (they exist in db.notifications but the notification-center response filters them out). Currently the store's Events tab + email cover the gap."
+  ],
+  "critical_code_review_comments": [
+    "compliance_onboarding.auto_invite (~L253): rp.setdefault on keys that tc.defaults() pre-seeds with '' never overwrites — fixed in this iteration for first_name / last_name using truthy guards to match the pattern already used for email/phone.",
+    "compliance.py POST /{storeId}/submit gate: pre-flight staleness message vs. blockers vs. review vs. force flow is clear; super_admin ?force=true correctly bypasses only the gate, downstream tc.start still 400s on missing required fields (verified).",
+    "compliance_onboarding.numbers_view: correctly hides the raw token from responses (only exposes portout_url) — good; store record GET also strips tokens from record.onboarding/portout (verified).",
+    "compliance_onboarding.run_reminders: cadence 2/5/9 -> flagged (stalled) verified by test_compliance_onboarding helper tests; the >=20h de-dup guard prevents double-firing when the scheduler ticks twice in one day.",
+    "compliance_preflight: fake domain (qamotors.example) correctly produces 3 blockers (website/privacy/terms); switching to twilio.com pages drops them off block. verdict/label/score fields all populated as documented."
+  ],
+  "updated_files": [
+    "/app/backend/services/compliance_onboarding.py (auto_invite rep first_name/last_name setdefault bug)",
+    "/app/backend/tests/test_compliance_iter340.py (new)"
+  ],
+  "success_rate": {"backend": "100% (55/55)", "frontend": "100% for tested flows"},
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin); activation-tester@invalid.imonsocial.test / NewPass123! (plain user, 403 checks); qa-manager@invalid.imonsocial.test / Manager123! (store_manager, optional)",
+  "seed_data_creation": "TestAutoInvite creates and then removes 'QA A2P Signup Motors' org/store/user/onboarding_clients directly via Mongo (motor). Also cleared a leaked copy from an earlier failing run before rerunning. Final restore: mode=dry_run, notify_email='', auto_invite=True, digest=True, digest_hour=8, reminder_days=[2,5,9], portout_pin='', portout_service_address='', QA store 69a0b7095fddcede09591668 stage=draft, campaign URLs reset to https://qamotors.example (verified via curl).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression: `cd /app/backend && set -a && . ./.env && set +a && python -m pytest tests/test_compliance_iter340.py tests/test_compliance_onboarding.py tests/test_twilio_compliance.py tests/test_compliance_review_iter339.py -q` (55 tests, ~35s). Uses REACT_APP_BACKEND_URL preview + Mongo (MONGO_URL/DB_NAME). form_url and portout_url embed app.imonsocial.com (PUBLIC_FACING_URL default) but tokens work on the preview host too (token-only lookup) — public /a2p-onboarding/{token} and /port-out/{token} were tested against the preview host. Admin routes tested via API login + localStorage token seeding + history.pushState + popstate; RN-web testID renders as data-testid.",
+  "rca of the issue": "auto_invite rep pre-fill: services/compliance_onboarding.auto_invite used dict.setdefault('first_name', parts[0]) but the record is initialized by services/twilio_compliance.defaults() with rep={'first_name': '', 'last_name': '', ...}. Because the key exists with an empty string, setdefault is a no-op and the signup contact name never propagates. Fix: guard with `if not rp.get('first_name'): rp['first_name'] = parts[0]` (matches the pattern already used a few lines below for rp.email/rp.phone). Test test_signup_creates_store_and_invites now asserts rep.first_name == 'Signup' after POST /api/setup-wizard/new-account."
+}

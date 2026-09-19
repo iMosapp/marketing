@@ -503,7 +503,7 @@ async def handle_inbound(db, inbox: dict, from_phone: str, body: str, media_urls
     if is_new and is_stop:
         from services.contact_match import phone_clause
         pc = phone_clause(from_phone) or {"phone": from_phone}
-        await db.contacts.update_many(pc, {"$set": {"sms_opt_out": True, "sms_opt_out_at": now}})
+        await db.contacts.update_many(pc, {"$set": {"sms_opt_out": True, "sms_opt_out_at": now, "opted_out": True, "opted_out_at": now, "sms_consent_status": "opted_out"}})
         return {"handled": True}
 
     if is_new:
@@ -539,7 +539,7 @@ async def handle_inbound(db, inbox: dict, from_phone: str, body: str, media_urls
     })
 
     if is_stop and contact_id and _oid(contact_id):
-        await db.contacts.update_one({"_id": _oid(contact_id)}, {"$set": {"sms_opt_out": True, "sms_opt_out_at": now}})
+        await db.contacts.update_one({"_id": _oid(contact_id)}, {"$set": {"sms_opt_out": True, "sms_opt_out_at": now, "opted_out": True, "opted_out_at": now, "sms_consent_status": "opted_out"}})
         await db.conversations.update_one({"_id": ObjectId(conv_id)}, {"$set": {"ai_mode": "off", "sms_opt_out": True}})
         await db.ai_reply_queue.update_many({"conversation_id": conv_id, "status": "pending"},
                                             {"$set": {"status": "cancelled", "cancel_reason": "contact_opted_out"}})

@@ -458,6 +458,16 @@ async def create_new_account(
     from services.compliance_onboarding import auto_invite
     await auto_invite(db, store_id, {"name": data.contact_name, "email": contact_email, "phone": contact_phone_e164 or data.contact_phone, "zip": data.zip})
 
+    # Twilio provisioning (subaccount + state machine) when the auto_provision flag is on; otherwise a super admin presses Provision Twilio
+    try:
+        from services import twilio_tenant as tenant
+        if (await tenant.flags(db))["auto_provision"]:
+            org_doc = await tenant.org_by_id(db, org_id)
+            if org_doc:
+                await tenant.provision(db, org_doc, "signup")
+    except Exception as e:
+        logger.warning(f"[Tenant] auto-provision at signup failed for org {org_id}: {e}")
+
     return {
         "success": True,
         "organization_id": org_id,

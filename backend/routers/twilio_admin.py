@@ -9,11 +9,13 @@ import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from routers.database import get_db
+from routers.rbac import require_role
 
-router = APIRouter(prefix="/admin/twilio", tags=["twilio-admin"])
+router = APIRouter(prefix="/admin/twilio", tags=["twilio-admin"],
+                   dependencies=[Depends(require_role("super_admin"))])
 logger = logging.getLogger(__name__)
 
 APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
@@ -39,6 +41,25 @@ async def _twilio_call(fn, *args, timeout: float = 15.0, **kwargs):
         )
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="Twilio API timed out — check your Account SID and Auth Token are correct.")
+
+
+async def _me(request: Request) -> dict:
+    from routers.scripts import _resolve
+    return await _resolve(request) or {}
+
+
+async def _registry_number(db, number_sid: str) -> dict:
+    """The registry row for a Twilio SID; legacy numbers bought before the registry existed are adopted on first touch."""
+    from services import phone_numbers as pn
+    num = await pn.by_sid(db, number_sid)
+    if num:
+        return num
+    client = _get_twilio_client()
+    tn = await _twilio_call(client.incoming_phone_numbers(number_sid).fetch)
+    holder = await db.users.find_one({"$or": [{"mvpline_number": tn.phone_number}, {"twilio_number": tn.phone_number}]}, {"organization_id": 1, "store_id": 1})
+    return await pn.adopt(db, phone_number=tn.phone_number, sid=tn.sid, account_sid=tn.account_sid, org_id=(holder or {}).get("organization_id"),
+                          location_id=(holder or {}).get("store_id"), assigned_user_id=str(holder["_id"]) if holder else None, number_type="USER" if holder else "STORE",
+                          friendly_name=tn.friendly_name or "", sms_url=tn.sms_url or "", voice_url=tn.voice_url or "", actor="system", note="adopted from legacy admin action")
 
 
 # ── Inventory ─────────────────────────────────────────────────────────────────
@@ -305,7 +326,8 @@ async def search_available_numbers(
 async def purchase_number(request: Request):
     """
     Purchase a number from Twilio, configure the inbound webhook,
-    add to Messaging Service, and optionally assign to a user.
+    add to the Messaging Service, register it and optionally assign it to a user.
+    (Legacy entry point: routes through services.phone_numbers so the registry stays the source of truth.)
     """
     db   = get_db()
     data = await request.json()
@@ -315,63 +337,24 @@ async def purchase_number(request: Request):
     if not phone_number:
         raise HTTPException(status_code=400, detail="phone_number required")
 
+    from services import phone_numbers as pn
+    from services import twilio_tenant as tenant
+    me = await _me(request)
+    org = None
+    if assign_user_id and ObjectId.is_valid(str(assign_user_id)):
+        u = await db.users.find_one({"_id": ObjectId(assign_user_id)}, {"organization_id": 1})
+        org = await tenant.org_by_id(db, (u or {}).get("organization_id"))
+    if not org and data.get("organization_id"):
+        org = await tenant.org_by_id(db, data["organization_id"])
     try:
-        client = _get_twilio_client()
-
-        # Purchase
-        purchased = await _twilio_call(client.incoming_phone_numbers.create,
-            phone_number=phone_number,
-            sms_url=WEBHOOK_URL,
-            sms_method="POST",
-            friendly_name=data.get("friendly_name", f"I'm On Social — {phone_number}"),
-        )
-        logger.info(f"[Twilio] Purchased {phone_number} — SID: {purchased.sid}")
-
-        # Add to Messaging Service if configured
-        ms_sid = os.environ.get("TWILIO_MESSAGING_SERVICE_SID")
-        if ms_sid:
-            try:
-                await _twilio_call(client.messaging.v1.services(ms_sid).phone_numbers.create,
-                    phone_number_sid=purchased.sid,
-                )
-                logger.info(f"[Twilio] Added {phone_number} to Messaging Service {ms_sid}")
-            except Exception as me:
-                logger.warning(f"[Twilio] Could not add to Messaging Service: {me}")
-
-        # Assign to user if provided
-        if assign_user_id:
-            await db.users.update_one(
-                {"_id": ObjectId(assign_user_id)},
-                {"$set": {
-                    "mvpline_number": phone_number,
-                    "twilio_number":  phone_number,
-                    "twilio_number_sid": purchased.sid,
-                    "updated_at": datetime.utcnow(),
-                }}
-            )
-            logger.info(f"[Twilio] Assigned {phone_number} to user {assign_user_id}")
-
-        # Record in phone pool collection
-        await db.phone_number_pool.insert_one({
-            "phone_number":    phone_number,
-            "twilio_sid":      purchased.sid,
-            "status":          "assigned" if assign_user_id else "pool",
-            "assigned_user_id": assign_user_id,
-            "webhook_url":     WEBHOOK_URL,
-            "purchased_at":    datetime.utcnow(),
-            "monthly_cost":    NUMBER_MONTHLY_COST,
-        })
-
-        return {
-            "success":      True,
-            "phone_number": phone_number,
-            "sid":          purchased.sid,
-            "assigned_to":  assign_user_id,
-            "webhook_set":  WEBHOOK_URL,
-        }
-
+        out = await pn.purchase(db, org=org, phone_number=phone_number, number_type=(data.get("number_type") or ("USER" if assign_user_id else "STORE")),
+                                location_id=data.get("location_id"), assigned_user_id=assign_user_id, actor=me, friendly_name=data.get("friendly_name") or "")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Purchase failed: {e}")
+    return {"success": True, "phone_number": out["phone_number"], "sid": out["twilio_phone_number_sid"], "assigned_to": assign_user_id,
+            "webhook_set": out["incoming_sms_webhook"], "number_id": out["id"], "dry_run": out.get("dry_run", False)}
 
 
 @router.get("/pool")
@@ -415,51 +398,23 @@ async def get_number_pool():
 
 @router.post("/numbers/{number_sid}/assign")
 async def assign_number(number_sid: str, request: Request):
-    """Assign a number to a user (or move to pool if no user_id given)."""
+    """Assign a number to a user (or move to pool if no user_id given). Legacy entry point, goes through the registry."""
     db   = get_db()
     data = await request.json()
     user_id = data.get("user_id")
-
-    # Get the number details from Twilio
+    from services import phone_numbers as pn
+    me = await _me(request)
     try:
-        client = _get_twilio_client()
-        number = await _twilio_call(client.incoming_phone_numbers(number_sid).fetch)
-        phone = number.phone_number
+        num = await _registry_number(db, number_sid)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Number not found: {e}")
-
-    # Clear previous assignment
-    await db.users.update_many(
-        {"$or": [{"mvpline_number": phone}, {"twilio_number": phone}]},
-        {"$unset": {"mvpline_number": "", "twilio_number": "", "twilio_number_sid": ""}}
-    )
-
-    if user_id:
-        await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": {
-                "mvpline_number": phone,
-                "twilio_number":  phone,
-                "twilio_number_sid": number_sid,
-                "updated_at": datetime.utcnow(),
-            }}
-        )
-        status = "assigned"
-    else:
-        status = "pool"
-
-    await db.phone_number_pool.update_one(
-        {"twilio_sid": number_sid},
-        {"$set": {
-            "status": status,
-            "assigned_user_id": user_id,
-            "assigned_at": datetime.utcnow() if user_id else None,
-            "updated_at": datetime.utcnow(),
-        }},
-        upsert=True,
-    )
-
-    return {"success": True, "phone_number": phone, "status": status, "assigned_to": user_id}
+    try:
+        out = await pn.assign(db, num, user_id, me) if user_id else await pn.unassign(db, num, me, "moved to pool")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"success": True, "phone_number": out["phone_number"], "status": "assigned" if user_id else "pool", "assigned_to": user_id, "number_id": str(out["_id"])}
 
 
 @router.post("/numbers/{number_sid}/fix-webhook")
@@ -477,28 +432,71 @@ async def fix_webhook(number_sid: str):
 
 
 @router.delete("/numbers/{number_sid}")
-async def release_number(number_sid: str):
-    """Release a number back to Twilio (permanent — stops billing)."""
+async def release_number(number_sid: str, request: Request):
+    """Release a number back to Twilio (permanent — stops billing). Legacy entry point, goes through the registry."""
     db = get_db()
+    from services import phone_numbers as pn
+    me = await _me(request)
     try:
-        client = _get_twilio_client()
-        number = await _twilio_call(client.incoming_phone_numbers(number_sid).fetch)
-        phone  = number.phone_number
-
-        # Clear user assignment
-        await db.users.update_many(
-            {"$or": [{"mvpline_number": phone}, {"twilio_number": phone}]},
-            {"$unset": {"mvpline_number": "", "twilio_number": "", "twilio_number_sid": ""}}
-        )
-        # Mark as released in pool
-        await db.phone_number_pool.update_one(
-            {"twilio_sid": number_sid},
-            {"$set": {"status": "released", "released_at": datetime.utcnow()}},
-            upsert=True,
-        )
-        # Delete from Twilio (stops billing)
-        await _twilio_call(client.incoming_phone_numbers(number_sid).delete)
-        logger.info(f"[Twilio] Released {phone}")
-        return {"success": True, "phone_number": phone, "message": "Number released and billing stopped."}
+        num = await _registry_number(db, number_sid)
+        out = await pn.release(db, num, me, "released from Phone Numbers screen")
+        logger.info(f"[Twilio] Released {out['phone_number']}")
+        return {"success": True, "phone_number": out["phone_number"], "message": "Number released and billing stopped."}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Multi-tenant: organizations overview, migration report, flags, audit ──────
+
+@router.get("/orgs")
+async def orgs_overview():
+    """Every organization with its Twilio readiness in one line (Admin -> Organizations badges)."""
+    from services import twilio_tenant as tenant
+    return {"organizations": await tenant.overview(get_db())}
+
+
+@router.get("/migration-report")
+async def migration_report():
+    """Read-only mapping of every number IMOS / Twilio knows about. Nothing is moved or released."""
+    from services import phone_numbers as pn
+    return await pn.migration_report(get_db())
+
+
+@router.post("/migration-report/import")
+async def migration_import(request: Request):
+    """Register the importable rows (or the given phone_numbers) in the phone_numbers registry. No Twilio writes."""
+    from services import phone_numbers as pn
+    data = await request.json() if (request.headers.get("content-type") or "").startswith("application/json") else {}
+    return await pn.import_report(get_db(), actor=await _me(request), phones=data.get("phone_numbers"))
+
+
+@router.get("/registry")
+async def registry(include_released: bool = False):
+    from services import phone_numbers as pn
+    return {"numbers": await pn.list_all(get_db(), include_released)}
+
+
+@router.get("/flags")
+async def get_flags():
+    from services import twilio_tenant as tenant
+    from services.twilio_signature import mode as sig_mode
+    return {**(await tenant.flags(get_db())), "webhook_validation": sig_mode()}
+
+
+@router.put("/flags")
+async def put_flags(request: Request):
+    from services import twilio_tenant as tenant
+    from services.twilio_signature import mode as sig_mode
+    data = await request.json()
+    me = await _me(request)
+    out = await tenant.set_flags(get_db(), data, me)
+    await tenant.audit(get_db(), action="flags_changed", actor=me, details={k: data[k] for k in ("enforce_ready", "auto_provision") if k in data})
+    return {**out, "webhook_validation": sig_mode()}
+
+
+@router.get("/audit")
+async def audit_all(limit: int = 200, organization_id: Optional[str] = None):
+    from services import twilio_tenant as tenant
+    return {"entries": await tenant.audit_list(get_db(), organization_id, limit=min(limit, 500), full=True)}
