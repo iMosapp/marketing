@@ -1,0 +1,50 @@
+{
+  "summary": "Iteration 341 — multi-tenant Twilio provisioning (org subaccount + phone_numbers registry + inbound resolver + migration + flags). Backend: wrote /app/backend/tests/test_twilio_tenant_iter341.py (16 HTTP API tests grouped by TestSecurity / TestOrgTwilioView / TestProvision / TestNumbers / TestInboundWebhook / TestMigrationAndAdmin / TestFlags). Full lifecycle exercised end-to-end against the preview backend in dry_run: super-admin gets full view (7-value status vocabulary, messaging_ready boolean, provisioning next_action mentions compliance form, webhooks object, no subaccount_auth_token_enc leak); org-admin (qa-orgadmin) gets full=false with no subaccount_sid/messaging_service_sid/provisioning history/webhooks; cross-org GET → 403; provision idempotent (same ACdry SID, exactly one subaccount_dry_run audit); suggest / search area 801 returns +1801555…; POST /numbers mirrors user.twilio_number, adds phone_number_pool row status=assigned, dry_run true, sms webhook ends with /api/webhooks/twilio/sms; duplicate purchase → 400 'already', cross-org assignment → 400; assign/reassign/unassign/suspend (super-only, org_admin 403)/reactivate; DELETE without confirm → 400; ?confirm=true → RELEASED and disappears from view; STORE-type number receives inbound sms via /api/webhooks/twilio/sms, creates conversation on store_manager/org_admin, message has org+location, usage.totals.sms_in ≥ 1, HELP returns <Message> with STOP, STOP sets contact.opted_out=true AND sms_opt_out=true, /api/webhooks/twilio/incoming alias works, log-mode accepts unsigned webhooks; migration-report has correct shape+summary, empty-selection import returns count 0, importable import is idempotent (registry count stays 1), registry lists rows, /orgs overview includes provisioning_status+messaging_ready+numbers; flags endpoint round-trips enforce_ready and reports webhook_validation='log'. Regression: 62/62 prior compliance+tenant tests still green. Cleanup runs after: any dry-run numbers created on ORG released; flags restored to enforce_ready=false, auto_provision=false. Frontend (web, forest): /admin/org-twilio/69a907033b77512d1d8d8a08 shows messaging-ready-banner + twilio-resource-subaccount…phone_numbers rows + provision-twilio-btn + sync-twilio-btn + add-number-btn + compliance-list-card + usage-card + audit-toggle + webhooks-card + numbers-table (all present). As qa-orgadmin the same URL loads WITHOUT provision-twilio-btn / subaccount-sid / number-suspend-btn / number-release-btn / webhooks-card but WITH messaging-ready-banner + add-number-btn (matches simplified spec). As qa-manager the screen renders org-twilio-error 'Admin of this organization only'. /admin/twilio-migration renders all mig-* stats (15/7/11/0/4/7), twilio-flags-card with flag-enforce-ready + flag-auto-provision switches + flag-webhook-validation='log', filter chips mig-filter-all|import|review|already-registered, and mig-row-* rows; mig-import-all-btn text 'Import 0 into registry' is disabled state when importable=0. /admin/twilio-numbers header has phone-numbers-migration-btn.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/admin/twilio/migration-report/import",
+        "issue": "Spec says an empty phone_numbers=[] selection should return count=0, but the current implementation (services/phone_numbers.import_report) treats phones=[] the same as phones=None → wanted set is empty → falls through to 'import every importable row'. The test currently passes only because a prior run already imported everything, so no importable rows remain. If any new importable rows appear later, POST with an empty list will import them. Suggest: `if phones is not None and not wanted: return {'imported': [], 'skipped': [], 'count': 0}` before the loop, and only fall back to 'all importable' when phones is None."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "web /admin/twilio-migration", "issues": ["React-Native-web console warnings: 'Unexpected text node: . A text node cannot be a child of a <View>' (4x). Not blocking but a stray string is being rendered as a child of a View somewhere in the migration/flags components; worth grepping the components/org-twilio/*.tsx and app/admin/twilio-migration.tsx for stray whitespace or {' '} between Text nodes."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_twilio_tenant_iter341.py",
+    "/app/backend/tests/test_twilio_tenant.py",
+    "/app/backend/tests/test_compliance_iter340.py",
+    "/app/backend/tests/test_compliance_onboarding.py",
+    "/app/backend/tests/test_twilio_compliance.py",
+    "/app/backend/tests/test_compliance_review_iter339.py"
+  ],
+  "action_items": [
+    "Guard phones=[] in services/phone_numbers.import_report so an explicit empty selection returns count 0 instead of importing every importable row.",
+    "Chase down the 'Unexpected text node' React warnings on /admin/twilio-migration (4 occurrences); low priority, likely a stray string child in a View."
+  ],
+  "critical_code_review_comments": [
+    "services/phone_numbers.import_report: `wanted = set(phones or [])` collapses 'no argument' and 'empty list' into the same behavior. That is a foot-gun for a UI where 'nothing checked' should be a no-op. See action item.",
+    "routers/org_twilio._ctx: role gate is tight (super_admin OR org_admin of that specific org). Good. `super_only` toggle correctly locks provision/suspend/reactivate/release to super_admin. Verified with 403 for org_admin on POST /provision + /numbers/{id}/suspend.",
+    "routers/org_twilio.get_view uses `_ctx` which does org lookup by id; on unknown org id returns 404 before role check — acceptable because super-only bailout still returns 403 for other roles hitting a real org.",
+    "services/twilio_tenant.provision: idempotency is enforced by only writing subaccount_dry_run audit + creating the ACdry SID on first call; second call observes existing record.subaccount_sid. Confirmed by audit count == 1 assertion.",
+    "services/twilio_tenant.view: correctly strips subaccount_auth_token_enc AND populates has_subaccount_token boolean; limited view (full=false) also strips subaccount_sid, messaging_service_sid, provisioning.history, and returns webhooks=None — matches org-admin spec.",
+    "routers/twilio_webhooks.incoming_message: STORE-type number with no assigned user routes the conversation to a store_manager/org_admin of the location (verified via DB assertion), and the messages row carries organization_id + location_id.",
+    "routers/twilio_webhooks: /sms alias works, and log-mode acceptance for missing X-Twilio-Signature confirmed against the real webhook path (200)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_twilio_tenant_iter341.py (new — 16 HTTP API tests)"
+  ],
+  "success_rate": {"backend": "100% pass (78 tests, 1 skipped; regression 62/62 + new 16/17 with 1 conditional skip)", "frontend": "100% for tested surfaces (super org-twilio, org-admin simplified view, qa-manager 403, migration screen, twilio-numbers header)"},
+  "test_credentials": "forest@imosapp.com/Admin123! (super_admin); qa-orgadmin@invalid.imonsocial.test/OrgAdmin123! (org_admin of 69a907033b77512d1d8d8a08 — seed via `cd /app/backend && python tests/seed_qa_org_admin.py`); qa-manager@invalid.imonsocial.test/Manager123! (store_manager, no org access — seed via `python tests/seed_qa_manager.py`).",
+  "seed_data_creation": "The iter341 test file re-uses the existing QA org 69a907033b77512d1d8d8a08 and its stores/users, so no permanent seeded rows. It creates and then releases dry-run numbers during tests; final autouse teardown releases any dry_run row still visible on the org and restores flags to {enforce_ready:false, auto_provision:false}. QA org still holds one non-dry legacy assigned number (+14352203414 → forest) that pre-existed. Final flag state verified: enforce_ready=false, auto_provision=false, webhook_validation=log.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression command: `cd /app/backend && set -a && . ./.env && set +a && python -m pytest tests/test_twilio_tenant.py tests/test_compliance_iter340.py tests/test_compliance_onboarding.py tests/test_twilio_compliance.py tests/test_compliance_review_iter339.py tests/test_twilio_tenant_iter341.py -q` → 78 passed, 1 skipped in ~90s. The iter341 module auto-cleans dry-run numbers on ORG 69a907033b77512d1d8d8a08 and restores /admin/twilio/flags to false/false, so re-running the suite is safe. If POST /migration-report/import with empty list is fixed, TestMigrationAndAdmin::test_import_empty_selection will keep passing even after a fresh migration report exposes new importable rows. Frontend testIDs verified: for org-admin screen `org-twilio-error` renders on 403 (needs ~3-5s after navigate).",
+  "rca of the issue": "services/phone_numbers.import_report(phones=[]) currently imports everything importable because `wanted = set(phones or [])` doesn't distinguish 'None' from '[]'. Repro: `curl -H 'Authorization: …' -X POST $BASE/api/admin/twilio/migration-report/import -H 'Content-Type: application/json' -d '{\"phone_numbers\": []}'` — when importable > 0, `count` returns the importable count, not 0. Mitigation: `if phones is not None and not phones: return {'imported': [], 'skipped': [], 'count': 0}` before computing `wanted`. Currently masked because the QA env has 0 importable rows (they were all imported by a prior run)."
+}

@@ -564,6 +564,8 @@ async def migration_report(db) -> dict:
 async def import_report(db, actor=None, phones: Optional[list] = None) -> dict:
     """Register the importable rows (or the given phones). Nothing is moved or released in Twilio."""
     rep = await migration_report(db)
+    if phones is not None and not phones:
+        return {"imported": [], "skipped": [], "count": 0}
     wanted = {normalize(p) for p in (phones or [])}
     done, skipped = [], []
     for r in rep["rows"]:
