@@ -1910,10 +1910,18 @@ async def run_webhook_outbox_job():
 
 
 async def run_compliance_poll_job():
-    """Every 10 minutes: advance each store's Trust Hub / A2P / CNAM registration and attach new rep numbers."""
+    """Every 10 minutes: advance each store's Trust Hub / A2P / CNAM registration, attach new rep numbers, send client reminders, daily team digest."""
     from routers.database import get_db
     from services.twilio_compliance import poll_all
-    return await poll_all(get_db())
+    from services.compliance_onboarding import run_reminders, run_digest
+    db = get_db()
+    n = await poll_all(db)
+    try:
+        await run_reminders(db)
+        await run_digest(db)
+    except Exception as e:
+        logger.warning(f"[Compliance] reminders/digest: {e}")
+    return n
 
 
 def start_scheduler():

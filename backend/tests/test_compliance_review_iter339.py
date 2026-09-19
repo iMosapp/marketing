@@ -171,8 +171,10 @@ def test_put_blank_ein_keeps_prior(admin):
 
 # ── lifecycle ──────────────────────────────────────────────────────────────
 def test_dry_run_lifecycle(admin):
-    # Submit
+    # Submit is gated on pre-flight + team review now; the super admin can force it
     r = requests.post(f"{BASE}/admin/compliance/{QA_STORE}/submit", headers=admin, timeout=30)
+    assert r.status_code == 400 and "pre-flight" in r.text.lower()
+    r = requests.post(f"{BASE}/admin/compliance/{QA_STORE}/submit?force=true", headers=admin, timeout=30)
     assert r.status_code == 200, r.text
     d = r.json()
     assert d["summary"]["stage"] == "profile"
@@ -216,7 +218,7 @@ def test_submit_missing_fields_on_draft(admin):
     # After reset, the store still has all fields filled by prior test.
     # Wipe a required field to force 400.
     requests.put(f"{BASE}/admin/compliance/{QA_STORE}", json={"business": {"legal_name": ""}}, headers=admin, timeout=20)
-    r = requests.post(f"{BASE}/admin/compliance/{QA_STORE}/submit", headers=admin, timeout=20)
+    r = requests.post(f"{BASE}/admin/compliance/{QA_STORE}/submit?force=true", headers=admin, timeout=20)
     assert r.status_code == 400
     assert "Missing" in r.json().get("detail", "")
     # Restore

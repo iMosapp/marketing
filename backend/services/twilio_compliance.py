@@ -409,6 +409,7 @@ async def advance(db, store_id: str) -> dict:
     if not store or not rec or rec.get("stage") in (None, "draft"):
         return rec or {}
     tw = adapter_for(rec.get("mode") or "dry_run")
+    before = (rec.get("stage"), rec.get("status"))
     sids, statuses = rec.setdefault("sids", {}), rec.setdefault("statuses", {})
     numbers = await store_numbers(db, store_id)
     pn_sids = [n["sid"] for n in numbers]
@@ -504,6 +505,13 @@ async def advance(db, store_id: str) -> dict:
         logger.warning(f"[Compliance] store {store_id} {rec.get('stage')}: {e}")
     rec["last_checked_at"] = _now()
     await _save(db, store_id, rec)
+    after = (rec.get("stage"), rec.get("status"))
+    if after != before and after[1] != "submitting":
+        try:
+            from services.compliance_onboarding import on_twilio_change
+            await on_twilio_change(db, store_id, before, after, rec)
+        except Exception as e:
+            logger.warning(f"[Compliance] status notify failed: {e}")
     return rec
 
 
@@ -551,15 +559,21 @@ async def on_status_callback(db, form: dict) -> Optional[str]:
 
 def summary(store: dict) -> dict:
     """Compact view for lists and the store page."""
+    from services.compliance_onboarding import onboarding_status, ONBOARDING_STATUS_LABEL, next_action
     c = store.get("compliance") or {}
     stage = c.get("stage") or "draft"
+    ob = onboarding_status(c)
+    pf = c.get("preflight") or {}
     return {"store_id": str(store["_id"]), "store_name": store.get("name"), "stage": stage, "stage_label": STAGE_LABEL.get(stage, stage), "status": c.get("status") or ("not_started" if stage == "draft" else "pending"),
             "error": c.get("error") or "", "mode": c.get("mode"), "cnam": (c.get("statuses") or {}).get("cnam"), "cnam_name": (c.get("cnam") or {}).get("display_name"),
-            "numbers": len(c.get("numbers") or []), "updated_at": c.get("updated_at"), "approved_at": c.get("approved_at"), "last_checked_at": c.get("last_checked_at")}
+            "numbers": len(c.get("numbers") or []), "updated_at": c.get("updated_at"), "approved_at": c.get("approved_at"), "last_checked_at": c.get("last_checked_at"),
+            "onboarding": ob, "onboarding_label": ONBOARDING_STATUS_LABEL[ob], "reminders_sent": (c.get("onboarding") or {}).get("reminders_sent", 0),
+            "missing": len(missing_fields(c)) if stage == "draft" else 0, "preflight": {"score": pf.get("score"), "verdict": pf.get("verdict"), "blockers": pf.get("blockers")} if pf.get("at") else None,
+            "review": (c.get("review") or {}).get("status"), "next_action": next_action(store)}
 
 
 def public(rec: dict) -> dict:
-    """The record as the admin sees it: the EIN never leaves the server, only its last four."""
+    """The record as the admin sees it: the EIN never leaves the server, only its last four; public-form tokens stay server-side."""
     out = dict(rec or {})
     b = dict(out.get("business") or {})
     ein = re.sub(r"\D", "", str(b.get("ein") or ""))
@@ -567,6 +581,9 @@ def public(rec: dict) -> dict:
     b["ein_masked"] = f"**-***{ein[-4:]}" if ein else ""
     b["has_ein"] = bool(ein)
     out["business"] = b
+    for k in ("onboarding", "portout"):
+        if isinstance(out.get(k), dict):
+            out[k] = {kk: vv for kk, vv in out[k].items() if kk != "token"}
     return out
 
 

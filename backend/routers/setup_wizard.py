@@ -454,6 +454,10 @@ async def create_new_account(
 
     logger.info(f"New account onboarded: org={org_id} store={store_id} user={user_id} ({data.business_name})")
 
+    # A2P 10DLC onboarding form to the new client (text + email), per compliance settings
+    from services.compliance_onboarding import auto_invite
+    await auto_invite(db, store_id, {"name": data.contact_name, "email": contact_email, "phone": contact_phone_e164 or data.contact_phone, "zip": data.zip})
+
     return {
         "success": True,
         "organization_id": org_id,

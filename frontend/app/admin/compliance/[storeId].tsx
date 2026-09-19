@@ -11,7 +11,10 @@ import { useThemeStore } from '../../../store/themeStore';
 import { useAuthStore } from '../../../store/authStore';
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
 import api from '../../../services/api';
-import { showSimpleAlert, showConfirm } from '../../../services/alert';
+import { showSimpleAlert, showAlert } from '../../../services/alert';
+import { OnboardingCard } from '../../../components/compliance/OnboardingCard';
+import { PreflightCard } from '../../../components/compliance/PreflightCard';
+import { NumbersCard } from '../../../components/compliance/NumbersCard';
 
 const GOLD = '#C9A962';
 const STEPS = [
@@ -83,25 +86,32 @@ export default function StoreCompliance() {
     setBusy('save');
     try {
       const r = await api.put(`/admin/compliance/${storeId}`, { business: rec.business, rep: rec.rep, campaign: rec.campaign, cnam: rec.cnam });
-      setRec((cur: any) => ({ ...cur, ...r.data.record, business: { ...r.data.record.business, ein: '' } }));
       setData((d: any) => ({ ...d, missing: r.data.missing }));
+      await load();
       return true;
     } catch (e: any) { showSimpleAlert('Error', e?.response?.data?.detail || 'Could not save.'); return false; }
     finally { setBusy(null); }
   };
 
+  const doAct = async (what: 'submit' | 'check' | 'reset', force = false) => {
+    setBusy(what);
+    try {
+      await api.post(`/admin/compliance/${storeId}/${what}${force ? '?force=true' : ''}`);
+      await load();
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || 'Something went wrong.';
+      if (what === 'submit' && isSuper && !force) {
+        showAlert('Not submitted', `${msg}\n\nAs super admin you can force the submit anyway.`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Force submit', style: 'destructive', onPress: () => doAct('submit', true) }]);
+      } else showSimpleAlert(what === 'submit' ? 'Not submitted' : 'Error', msg);
+    } finally { setBusy(null); }
+  };
   const act = async (what: 'submit' | 'check' | 'reset') => {
     if (what === 'submit' && !(await save())) return;
     if (what === 'reset') {
-      const ok = await showConfirm('Reset registration?', 'Back to draft. Form data is kept; Twilio resources are left untouched.');
-      if (!ok) return;
+      showAlert('Reset registration?', 'Back to draft. Form data is kept; Twilio resources are left untouched.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Reset', style: 'destructive', onPress: () => doAct('reset') }]);
+      return;
     }
-    setBusy(what);
-    try {
-      await api.post(`/admin/compliance/${storeId}/${what}`);
-      await load();
-    } catch (e: any) { showSimpleAlert(what === 'submit' ? 'Not submitted' : 'Error', e?.response?.data?.detail || 'Something went wrong.'); }
-    finally { setBusy(null); }
+    await doAct(what);
   };
 
   if (!data || !rec || !opts) {
@@ -121,14 +131,31 @@ export default function StoreCompliance() {
   const cnamStatus = rec.statuses?.cnam;
   const b = rec.business || {}, rp = rec.rep || {}, c = rec.campaign || {}, cn = rec.cnam || {};
   const modeLabel = (data.settings?.mode || 'dry_run').replace('_', ' ');
+  const pfl = rec.preflight || {};
+  const reviewed = rec.review?.status === 'reviewed';
+  const canSubmit = stage !== 'draft' ? !inReview && stage !== 'complete' : (!!pfl.at && !pfl.stale && !pfl.blockers && reviewed);
+  const submitHint = stage !== 'draft' ? '' : !pfl.at ? 'Run pre-flight first' : pfl.stale ? 'Form changed, run pre-flight again' : pfl.blockers ? `${pfl.blockers} blocker${pfl.blockers === 1 ? '' : 's'} in pre-flight` : !reviewed ? 'Mark reviewed first' : '';
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
       <ScreenHeader title={data.store?.name || 'Store'} subtitle={`Texting compliance · ${modeLabel}`} testID="store-compliance-header" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80 }} keyboardShouldPersistTaps="handled">
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12, backgroundColor: `${GOLD}18`, borderRadius: 12, padding: 12 }} testID="compliance-next-action">
+            <Ionicons name="flag" size={16} color={GOLD} />
+            <Text style={{ flex: 1, fontSize: 13.5, fontWeight: '700', color: colors.text, lineHeight: 19 }}>{summ.next_action}</Text>
+          </View>
+
+          {stage === 'draft' && (
+            <>
+              <OnboardingCard storeId={storeId!} onboarding={data.onboarding} formUrl={data.form_url} events={data.events} colors={colors} s={s} locked={false} onChanged={load} />
+              <PreflightCard storeId={storeId!} preflight={rec.preflight} review={rec.review} missing={missing} isSuper={isSuper} locked={false} colors={colors} s={s} onChanged={load} />
+            </>
+          )}
+
           {/* Timeline */}
           <View style={s.card} testID="compliance-timeline">
+            <Text style={[s.cardTitle, { marginBottom: 6 }]}>{stage === 'draft' ? '3 · Twilio registration' : 'Twilio registration'}</Text>
             {STEPS.map((step, i) => {
               const done = stage === 'complete' || i < stageIdx;
               const current = i === stageIdx && stage !== 'complete';
@@ -163,7 +190,7 @@ export default function StoreCompliance() {
               </Text>
             )}
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-              <TouchableOpacity onPress={() => act('submit')} disabled={!!busy || inReview || stage === 'complete'} style={[s.btn, { backgroundColor: GOLD, opacity: inReview || stage === 'complete' ? 0.4 : 1 }]} testID="compliance-submit-btn" dataSet={{ testid: 'compliance-submit-btn' } as any}>
+              <TouchableOpacity onPress={() => act('submit')} disabled={!!busy || (!canSubmit && !isSuper) || inReview || stage === 'complete'} style={[s.btn, { backgroundColor: GOLD, opacity: (!canSubmit && !isSuper) || inReview || stage === 'complete' ? 0.4 : 1 }]} testID="compliance-submit-btn" dataSet={{ testid: 'compliance-submit-btn' } as any}>
                 {busy === 'submit' ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>{['rejected', 'error'].includes(status) ? 'Fix & resubmit' : 'Submit to Twilio'}</Text>}
               </TouchableOpacity>
               {stage !== 'draft' && (
@@ -177,19 +204,15 @@ export default function StoreCompliance() {
                 </TouchableOpacity>
               )}
             </View>
+            {!!submitHint && !canSubmit && (
+              <Text style={{ marginTop: 8, fontSize: 12, color: '#FF9500' }} testID="compliance-submit-hint">{submitHint}{isSuper ? ' (super admin can force)' : ''}</Text>
+            )}
             {missing.length > 0 && stage === 'draft' && (
               <Text style={{ marginTop: 8, fontSize: 12, color: '#FF9500' }} testID="compliance-missing">Still needed: {missing.map(m => m.replace('.', ' → ').replace(/_/g, ' ')).join(', ')}</Text>
             )}
           </View>
 
-          {/* Numbers */}
-          <View style={s.card} testID="compliance-numbers">
-            <Text style={s.cardTitle}>Numbers covered ({(rec.numbers || []).length})</Text>
-            {(rec.numbers || []).length === 0 && <Text style={s.hint}>No rep on this store has a Twilio number yet. Numbers bought later are attached automatically.</Text>}
-            {(rec.numbers || []).map((n: any) => (
-              <Text key={n.sid} style={{ fontSize: 13, color: colors.text, paddingVertical: 3 }}>{n.number} <Text style={{ color: colors.textTertiary }}>· {n.owner || 'pool'}</Text></Text>
-            ))}
-          </View>
+          <NumbersCard storeId={storeId!} view={data.numbers_view} contact={data.onboarding?.contact} colors={colors} s={s} onChanged={load} />
 
           {/* Business */}
           <View style={s.card} testID="compliance-business">

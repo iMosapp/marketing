@@ -225,6 +225,10 @@ async def test_admin_api_roundtrip():
             r = await c.put(f"{BASE}/admin/compliance/settings", json={"mode": "bogus"})
             assert r.status_code == 400
             r = await c.post(f"{BASE}/admin/compliance/{sid}/submit")
+            assert r.status_code == 400 and "pre-flight" in r.text.lower()  # gate: pre-flight + review first
+            r = await c.post(f"{BASE}/admin/compliance/{sid}/preflight")
+            assert r.status_code == 200 and r.json()["preflight"]["blockers"] >= 1  # qacompliance.example does not resolve
+            r = await c.post(f"{BASE}/admin/compliance/{sid}/submit?force=true")  # super admin override
             assert r.status_code == 200, r.text
             assert r.json()["summary"]["stage"] == "profile" and r.json()["record"]["sids"]["customer_profile"].startswith("BU")
             for _ in range(7):
