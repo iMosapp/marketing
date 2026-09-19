@@ -42,6 +42,7 @@ import { useToast } from '../../components/common/Toast';
 import { SharedInboxPanel } from '../../components/inbox/SharedInboxPanel';
 import { InboxBadge, ClaimButton } from '../../components/inbox/InboxBadge';
 import { ownershipAPI, errText } from '../../components/inbox/ownership';
+import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -2352,6 +2353,7 @@ export default function InboxScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+      <GlobalQuickFab />
     </SafeAreaView>
   );
 }

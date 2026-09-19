@@ -32,6 +32,7 @@ import { buildStamp, installedVersion } from '../../utils/buildStamp';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { AppHome } from '../../components/hub/AppHome';
 import { slug as hubSlug, HubApp, HubFolderDef } from '../../components/hub/layout';
+import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -1220,6 +1221,7 @@ export default function MoreScreen() {
         </View>
       </ScrollView>
 
+      <GlobalQuickFab />
     </SafeAreaView>
 
     </>

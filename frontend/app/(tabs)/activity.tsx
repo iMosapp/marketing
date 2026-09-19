@@ -12,6 +12,7 @@ import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import { Avatar } from '../../components/Avatar';
 import { resolveContactPhotoUrl } from '../../utils/photoUrl';
+import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
 
 const formatFeedTime = (ts: string) => {
   if (!ts) return '';
@@ -397,6 +398,7 @@ export default function ActivityTab() {
           ) : null
         }
       />
+      <GlobalQuickFab />
     </View>
   );
 }

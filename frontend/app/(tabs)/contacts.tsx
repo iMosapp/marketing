@@ -26,6 +26,7 @@ import { SmartListBar } from '../../components/contacts/SmartListBar';
 import { ContactFilterSheet } from '../../components/contacts/ContactFilterSheet';
 import { ContactRow, daysUntilBirthday } from '../../components/contacts/ContactRow';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
+import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
 
 const GOLD = '#C9A962';
 
@@ -680,6 +681,7 @@ export default function ContactsScreen() {
         </TouchableOpacity>
       </Modal>
 
+      <GlobalQuickFab />
     </SafeAreaView>
   );
 }
