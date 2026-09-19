@@ -30,6 +30,46 @@ _CATCHUP_INTERVAL = timedelta(seconds=90)  # Run at most every 90 seconds per us
 _CATCHUP_MAX_ENTRIES = 500  # prevent unbounded memory growth
 
 
+AUTO_SEND_CLOSE = {"status": "completed", "completed": True}
+
+
+async def _close_tasks_for_auto_sends(db, user_id: str, now: datetime):
+    """Close 'Send SMS' tasks whose campaign send already went out automatically."""
+    tasks = await db.tasks.find(
+        {"user_id": user_id, "type": "campaign_send", "status": {"$in": ["pending", "snoozed"]},
+         "pending_send_id": {"$exists": True, "$ne": ""}},
+        {"pending_send_id": 1},
+    ).limit(200).to_list(200)
+    if not tasks:
+        return
+    ids = [ObjectId(t["pending_send_id"]) for t in tasks if ObjectId.is_valid(t.get("pending_send_id") or "")]
+    sends = await db.campaign_pending_sends.find(
+        {"_id": {"$in": ids}}, {"delivery_mode": 1, "status": 1, "message_sid": 1}
+    ).to_list(len(ids))
+    by_send = {str(s["_id"]): s for s in sends}
+    def _reason(s):
+        if s.get("delivery_mode") in ("automated", "auto") or s.get("status") == "sent" or s.get("message_sid"):
+            return "auto_sent"
+        if s.get("status") in ("cancelled", "done"):
+            return "send_cancelled"
+        return None
+    stale = {sid: _reason(s) for sid, s in by_send.items() if _reason(s)}
+    if not stale:
+        return
+    modified = 0
+    for reason in ("auto_sent", "send_cancelled"):
+        ids_for = [t["_id"] for t in tasks if stale.get(t.get("pending_send_id")) == reason]
+        if ids_for:
+            res = await db.tasks.update_many(
+                {"_id": {"$in": ids_for}},
+                {"$set": {**AUTO_SEND_CLOSE, "completed_via": reason, "completed_at": now}},
+            )
+            modified += res.modified_count
+    if modified:
+        logger.info(f"[Tasks] Closed {modified} tasks for already-sent or cancelled campaign texts (user {user_id})")
+        _summary_cache.pop(user_id, None)
+
+
 async def _catchup_overdue_campaign_tasks(user_id: str):
     """Create missing tasks for due campaign_pending_sends.
 
@@ -53,11 +93,14 @@ async def _catchup_overdue_campaign_tasks(user_id: str):
     db = get_db()
     created = 0
     try:
-        # Find all due pending sends — include "pending_user_action" in case
-        # the scheduler processed them but task creation was blocked by old idempotency keys
+        await _close_tasks_for_auto_sends(db, user_id, now)
+        # Only MANUAL sends become tasks; auto/automated sends go out via the scheduler.
+        # Include "pending_user_action" in case the scheduler processed them but task
+        # creation was blocked by old idempotency keys.
         due_sends = await db.campaign_pending_sends.find({
             "user_id": user_id,
             "status": {"$in": ["pending", "pending_user_action"]},
+            "delivery_mode": {"$nin": ["automated", "auto", None]},
             "send_at": {"$lte": now},
         }).limit(50).to_list(50)
 

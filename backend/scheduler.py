@@ -1443,7 +1443,8 @@ async def process_pending_campaign_steps():
 
                 # ── MARK SEND COMPLETE ──
                 is_broadcast_send = bool(send_doc.get("broadcast_id"))
-                final_status = "sent" if (delivery_mode == "automated" or is_broadcast_send) else "pending_user_action"
+                auto_sent = delivery_mode in ("automated", "auto")
+                final_status = "sent" if (auto_sent or is_broadcast_send) else "pending_user_action"
                 complete_set = {"status": final_status, "processed_at": now_naive}
                 if sms_sid:
                     complete_set["message_sid"] = sms_sid
@@ -1452,6 +1453,13 @@ async def process_pending_campaign_steps():
                     {"_id": send_id},
                     {"$set": complete_set}
                 )
+                if auto_sent:
+                    # A "Send SMS" task may have been created for this send before it went out; close it.
+                    await db.tasks.update_many(
+                        {"pending_send_id": str(send_id), "status": {"$in": ["pending", "snoozed"]}},
+                        {"$set": {"status": "completed", "completed": True, "completed_at": now,
+                                  "completed_via": "auto_sent"}},
+                    )
                 if is_broadcast_send:
                     await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=False)
 
@@ -1471,7 +1479,7 @@ async def process_pending_campaign_steps():
                             msg_record = {
                                 "step": current_step, "content": message_content[:100],
                                 "channel": channel, "delivery_mode": delivery_mode,
-                                "status": "sent" if delivery_mode == "automated" else "pending",
+                                "status": "sent" if auto_sent else "pending",
                                 "sent_at": now,
                             }
                             await db.campaign_enrollments.update_one(

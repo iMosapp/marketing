@@ -88,7 +88,7 @@ def _build_pkpass(user: dict) -> bytes:
         "serialNumber": str(user["_id"]),
         "teamIdentifier": os.environ["APPLE_TEAM_ID"],
         "organizationName": org,
-        "description": f"{name} — Digital Business Card",
+        "description": f"{name}, Digital Business Card",
         "logoText": org,
         "foregroundColor": "rgb(255,255,255)",
         "backgroundColor": "rgb(18,18,20)",
@@ -107,7 +107,8 @@ def _build_pkpass(user: dict) -> bytes:
     }
 
     files = {"pass.json": json.dumps(pass_json, separators=(",", ":")).encode()}
-    for fname, asset in (("icon.png", "wallet_icon.png"), ("icon@2x.png", "wallet_icon@2x.png")):
+    for fname, asset in (("icon.png", "wallet_icon.png"), ("icon@2x.png", "wallet_icon@2x.png"),
+                         ("icon@3x.png", "wallet_icon@3x.png")):
         path = os.path.join(ASSETS_DIR, asset)
         if os.path.exists(path):
             with open(path, "rb") as f:
