@@ -1623,41 +1623,24 @@ async def handle_recording_complete(
                 from utils.system_logger import syslog
                 await syslog.error("voice_transcription", "Whisper transcription failed", error=transcribe_err, call_sid=CallSid, contact=contact_name)
 
-        # Extract key info with GPT
-        if transcript:
+        dur = int(RecordingDuration or 0)
+
+        # Outcome first (voicemail / no answer / live person) so the summary knows what it is looking at
+        _outcome = None
+        if pending and direction == "outbound":
             try:
-                from emergentintegrations.llm.chat import LlmChat, UserMessage
-                import uuid as _uuid2
-                chat = LlmChat(
-                    api_key=_os.environ.get("EMERGENT_LLM_KEY", ""),
-                    session_id=f"call-ai-{_uuid2.uuid4().hex[:12]}",
-                    system_message=(
-                        "You are an expert sales CRM assistant. Analyze this sales call transcript and produce a structured summary.\n\n"
-                        "Format your response EXACTLY like this:\n\n"
-                        "**CALL SUMMARY**\n"
-                        "2-3 sentences capturing what the call was about and the overall outcome.\n\n"
-                        "**KEY DETAILS**\n"
-                        "• Vehicle/product interest: [what they want]\n"
-                        "• Budget: [if mentioned]\n"
-                        "• Timeline: [urgency or timeframe]\n"
-                        "• Objections: [concerns raised]\n"
-                        "• Personal notes: [anything personal — spouse, kids, job, etc.]\n\n"
-                        "**FOLLOW-UP ACTIONS**\n"
-                        "List 2-4 specific, actionable next steps the rep should take. Be concrete — not 'follow up' but 'Text John about the F-150 availability'.\n\n"
-                        "Skip any section where nothing was mentioned. Keep total response under 200 words."
-                    ),
-                ).with_model("openai", "gpt-5.2")
-                resp = await _aio.wait_for(
-                    chat.send_message(UserMessage(text=f"Transcript:\n{transcript}")),
-                    timeout=20.0
-                )
-                ai_summary = (resp.strip() if isinstance(resp, str)
-                              else resp.text.strip() if hasattr(resp, "text") else "").strip()
-            except Exception as gpt_err:
-                logger.warning(f"[Voice] GPT extraction failed: {gpt_err}")
+                from services.call_followup import detect_outcome, apply_call_outcome
+                _outcome = await detect_outcome(transcript, dur)
+                await apply_call_outcome(pending, _outcome, dur, source="transcript")
+            except Exception as _oe:
+                logger.warning(f"[Voice] call outcome handling failed: {_oe}")
+
+        # Clean plain-text summary (no markdown, no placeholders)
+        if transcript:
+            from services.call_summary import summarize as _summarize
+            ai_summary = await _summarize(transcript, dur, _outcome)
 
         # ── Save everything ────────────────────────────────────────────────────
-        dur = int(RecordingDuration or 0)
         from services import voice_id as _vid_badge
         vbadge = _vid_badge.badge(voice_check)
 
@@ -1676,25 +1659,14 @@ async def handle_recording_complete(
             "voice_id":         voice_check,
             **vbadge,
             "ai_summary":       ai_summary,
+            "outcome":          _outcome,
             "direction":        direction,
             "timestamp":        now,
             "created_at":       now,
         })
 
-        # Outbound click-to-call: voicemail / no answer -> retry task; live person -> complete the task you called from
-        if pending and direction == "outbound":
-            try:
-                from services.call_followup import detect_outcome, apply_call_outcome
-                _outcome = await detect_outcome(transcript, dur)
-                await db.call_logs.update_one({"call_sid": CallSid}, {"$set": {"outcome": _outcome}})
-                await apply_call_outcome(pending, _outcome, dur, source="transcript")
-                if _outcome != "connected":
-                    ai_summary = (f"[{'Voicemail' if _outcome == 'voicemail' else 'No answer'}] " + ai_summary).strip()
-            except Exception as _oe:
-                logger.warning(f"[Voice] call outcome handling failed: {_oe}")
-
         # Auto-extract scheduled appointments from the call ("I'll call you tomorrow at 2")
-        if transcript and user_id and not (pending and direction == "outbound" and ai_summary.startswith("[Voicemail]")):
+        if transcript and user_id and _outcome in (None, "connected"):
             try:
                 from routers.tasks import extract_appointment_from_call
                 asyncio.create_task(extract_appointment_from_call(
@@ -1705,11 +1677,11 @@ async def handle_recording_complete(
 
         if contact_id:
             # Note on contact record
-            note_body = f"{'📞' if direction == 'inbound' else '📱'} {'Inbound' if direction == 'inbound' else 'Outbound'} call — {dur}s"
+            note_body = f"{'📞' if direction == 'inbound' else '📱'} {'Inbound' if direction == 'inbound' else 'Outbound'} call, {dur}s"
             if transcript:
                 note_body += f"\n\nTranscript:\n{transcript[:600]}{'...' if len(transcript) > 600 else ''}"
             if ai_summary:
-                note_body += f"\n\nKey Info Extracted:\n{ai_summary}"
+                note_body += f"\n\n{ai_summary}"
 
             await db.notes.insert_one({
                 "user_id":       user_id,
@@ -1733,6 +1705,7 @@ async def handle_recording_complete(
                 {"$set": {
                     "has_recording": True,
                     "ai_summary":    ai_summary,
+                    "outcome":       _outcome,
                     "transcript":    transcript[:200] if transcript else "",
                     "duration_s":    dur,
                 }},
@@ -1743,7 +1716,7 @@ async def handle_recording_complete(
             conv_id_for_update = (_pc or {}).get("conversation_id")
             if conv_id_for_update:
                 duration_label = f"{dur // 60}m {dur % 60}s" if dur >= 60 else f"{dur}s"
-                call_content = f"📱 Outbound call — {duration_label}"
+                call_content = f"📱 Outbound call, {duration_label}"
                 if ai_summary:
                     call_content += f"\n\n{ai_summary}"
                 await db.messages.update_one(
@@ -1756,6 +1729,7 @@ async def handle_recording_complete(
                         "recording_url": RecordingUrl,
                         "transcript":    transcript,
                         "ai_summary":    ai_summary,
+                        "outcome":       _outcome,
                         **vbadge,
                     }},
                     upsert=False,

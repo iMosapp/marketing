@@ -7,11 +7,13 @@ import api from '../../services/api';
 import { ScorePill } from '../scorecards/ScoreRing';
 import { EvaluationSheet } from '../scorecards/EvaluationSheet';
 import { VoiceIdBadge } from '../calls/VoiceIdBadge';
+import { CallSummaryView } from '../calls/CallSummaryView';
 
 export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date }) => {
   const [showEval, setShowEval] = useState(false);
   const hasRecording = item.has_recording;
   const aiSummary    = item.ai_summary || '';
+  const outcome      = item.outcome || '';
   const dur          = item.duration_s || 0;
   const durLabel     = dur >= 60 ? `${Math.floor(dur / 60)}m ${dur % 60}s` : dur > 0 ? `${dur}s` : '';
   const isOutbound   = item.direction === 'outbound';
@@ -37,7 +39,7 @@ export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date })
               {isOutbound ? 'Outbound Call' : 'Inbound Call'}{durLabel ? ` · ${durLabel}` : ''}
             </Text>
             <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 1 }}>
-              {callStatus === 'placed' ? 'Call placed — waiting for recording...' : callStatus === 'completed' ? 'Call completed' : callStatus}
+              {callStatus === 'placed' ? 'Call placed, waiting for recording...' : callStatus === 'completed' ? (outcome === 'voicemail' ? 'Went to voicemail' : outcome === 'no_answer' ? 'No answer' : outcome === 'busy' ? 'Line was busy' : 'Call completed') : callStatus}
             </Text>
           </View>
           {hasRecording && (
@@ -52,9 +54,9 @@ export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date })
 
         {/* AI Summary */}
         {!!aiSummary && (
-          <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#E5E5EA' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#E5E5EA' }} testID="call-summary-card">
             <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E8E93', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Call Summary</Text>
-            <Text style={{ fontSize: 13, color: '#1C1C1E', lineHeight: 18 }}>{aiSummary}</Text>
+            <CallSummaryView text={aiSummary} textColor="#1C1C1E" mutedColor="#8E8E93" accentColor={callColor} testID="call-summary" />
           </View>
         )}
 

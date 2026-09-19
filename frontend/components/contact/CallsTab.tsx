@@ -10,6 +10,7 @@ import { ScorePill } from '../scorecards/ScoreRing';
 import { EvaluationSheet } from '../scorecards/EvaluationSheet';
 import { RecordedConversationCard } from './RecordedConversationCard';
 import { VoiceIdBadge } from '../calls/VoiceIdBadge';
+import { CallSummaryView } from '../calls/CallSummaryView';
 
 const when = (x: any) => { try { return new Date(x.timestamp || x.created_at || 0).getTime(); } catch { return 0; } };
 
@@ -83,9 +84,9 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh,
 
               {/* AI Summary */}
               {call.ai_summary ? (
-                <View style={{ backgroundColor: '#C9A96210', borderRadius: 10, padding: 10, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#C9A962' }}>
-                  <Text style={{ color: '#C9A962', fontSize: 12, fontWeight: '700', marginBottom: 5, letterSpacing: 0.8 }}>AI KEY INFO</Text>
-                  <Text style={{ color: colors.text, fontSize: 13, lineHeight: 19 }}>{call.ai_summary}</Text>
+                <View style={{ backgroundColor: '#C9A96210', borderRadius: 10, padding: 10, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#C9A962' }} testID={`call-summary-card-${call.call_sid || i}`}>
+                  <Text style={{ color: '#C9A962', fontSize: 12, fontWeight: '700', marginBottom: 5, letterSpacing: 0.8 }}>CALL SUMMARY</Text>
+                  <CallSummaryView text={call.ai_summary} textColor={colors.text} mutedColor={colors.textTertiary || colors.textSecondary} accentColor="#C9A962" />
                 </View>
               ) : !hasData && !isRecent ? (
                 <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 10, marginBottom: 8 }}>

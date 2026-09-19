@@ -264,11 +264,14 @@ async def get_contact_calls(user_id: str, contact_id: str):
         {"_id": 0}
     ).sort("timestamp", -1).limit(20).to_list(20)
 
-    # Serialize dates
+    # Serialize dates + clean legacy markdown out of stored summaries
+    from services.call_summary import clean as _clean_summary
     for item in call_logs + recorded + notes:
         for k in ["timestamp", "created_at"]:
             if isinstance(item.get(k), datetime):
                 item[k] = item[k].isoformat()
+        if item.get("ai_summary"):
+            item["ai_summary"] = _clean_summary(item["ai_summary"])
 
     # Scorecard evaluations for recorded calls
     sids = [r.get("call_sid") for r in recorded if r.get("call_sid")]
@@ -342,36 +345,9 @@ async def retry_transcription(call_sid: str, x_user_id: str = None):
         if not transcript:
             return {"status": "empty_transcript", "message": "Whisper returned empty — call may have been silent"}
         
-        # Generate GPT summary
-        ai_summary = ""
-        try:
-            from emergentintegrations.llm.chat import LlmChat, UserMessage
-            chat = LlmChat(
-                api_key=emergent_key,
-                session_id=f"retry-call-{_uuid.uuid4().hex[:12]}",
-                system_message=(
-                    "You are an expert sales CRM assistant. Analyze this sales call transcript and produce a structured summary.\n\n"
-                    "Format your response EXACTLY like this:\n\n"
-                    "**CALL SUMMARY**\n"
-                    "2-3 sentences capturing what the call was about and the overall outcome.\n\n"
-                    "**KEY DETAILS**\n"
-                    "• Vehicle/product interest: [what they want]\n"
-                    "• Budget: [if mentioned]\n"
-                    "• Timeline: [urgency or timeframe]\n"
-                    "• Objections: [concerns raised]\n"
-                    "• Personal notes: [anything personal — spouse, kids, job, etc.]\n\n"
-                    "**FOLLOW-UP ACTIONS**\n"
-                    "List 2-4 specific, actionable next steps the rep should take. Be concrete — not 'follow up' but 'Text John about the F-150 availability'.\n\n"
-                    "Skip any section where nothing was mentioned. Keep total response under 200 words."
-                ),
-            ).with_model("openai", "gpt-5.2")
-            resp2 = await asyncio.wait_for(
-                chat.send_message(UserMessage(text=f"Transcript:\n{transcript}")),
-                timeout=20.0
-            )
-            ai_summary = (resp2.strip() if isinstance(resp2, str) else resp2.text.strip() if hasattr(resp2, "text") else "").strip()
-        except Exception:
-            pass
+        # Clean plain-text summary (same writer as the live webhook)
+        from services.call_summary import summarize as _summarize
+        ai_summary = await _summarize(transcript, int(log.get("duration_s") or 0), log.get("outcome"))
         
         # Update call_log + contact_event
         await db.call_logs.update_one(
@@ -381,6 +357,10 @@ async def retry_transcription(call_sid: str, x_user_id: str = None):
         await db.contact_events.update_one(
             {"call_sid": call_sid},
             {"$set": {"has_recording": True, "ai_summary": ai_summary, "transcript": transcript[:200]}}
+        )
+        await db.messages.update_one(
+            {"call_sid": call_sid, "type": "call_log"},
+            {"$set": {"transcript": transcript, "ai_summary": ai_summary}}
         )
 
         # Auto-extract scheduled appointments from the recovered transcript

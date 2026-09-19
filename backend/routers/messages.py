@@ -19,6 +19,7 @@ from routers.database import get_db, get_data_filter, increment_user_stat
 from services.tag_workflows import initial_ai_state
 from services.llm_models import CUSTOMER_TEXT_MODEL
 from utils.text_sanitize import no_em_dash, clean_ai_text
+from services.call_summary import clean as _clean_summary
 from services.twilio_service import send_sms, get_twilio_status, normalize_phone, TWILIO_PHONE_NUMBER
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
@@ -1858,7 +1859,8 @@ async def get_thread_messages(conversation_id: str):
         "call_sid": m.get("call_sid"),
         "call_status": m.get("call_status"),
         "duration_s": m.get("duration_s", 0),
-        "ai_summary": m.get("ai_summary", ""),
+        "ai_summary": _clean_summary(m.get("ai_summary", "")),
+        "outcome": m.get("outcome"),
         "has_recording": m.get("has_recording", False),
         "recording_url": m.get("recording_url"),
         "voice_verified": m.get("voice_verified"),
