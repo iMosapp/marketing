@@ -3,7 +3,7 @@ Messages router - handles conversations and messages
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, Response
 from bson import ObjectId
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 import logging
 import random
@@ -1675,6 +1675,39 @@ async def schedule_delayed_message(request: Request):
         "send_at":         send_at.isoformat(),
         "pending_send_id": str(result.inserted_id),
     }
+
+
+@router.get("/scheduled/{user_id}/{contact_id}")
+async def list_scheduled_messages(user_id: str, contact_id: str, request: Request, hours: int = 48):
+    """Auto-texts queued for a contact (sold wizard, card link) with their live status."""
+    from routers.rbac import get_current_user
+    me = await get_current_user(request)
+    if str(me.get("_id")) != user_id and me.get("role") not in ("super_admin", "org_admin", "store_manager"):
+        raise HTTPException(status_code=403, detail="Not your contact")
+    db = get_db()
+    since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=max(1, min(hours, 24 * 14)))
+    rows = await db.campaign_pending_sends.find(
+        {"user_id": user_id, "contact_id": contact_id, "type": "direct_scheduled", "created_at": {"$gte": since}},
+        {"message_template": 1, "status": 1, "send_at": 1, "processed_at": 1, "event_type": 1,
+         "media_urls": 1, "error": 1, "created_at": 1},
+    ).sort("send_at", 1).to_list(20)
+
+    def _iso(v):
+        if isinstance(v, datetime):
+            return (v if v.tzinfo else v.replace(tzinfo=timezone.utc)).isoformat()
+        return v
+
+    return [{
+        "id": str(r["_id"]),
+        "body": r.get("message_template", ""),
+        "status": r.get("status", "pending"),
+        "send_at": _iso(r.get("send_at")),
+        "sent_at": _iso(r.get("processed_at")) if r.get("status") == "sent" else None,
+        "event_type": r.get("event_type", "sms_sent"),
+        "has_media": bool(r.get("media_urls")),
+        "error": r.get("error"),
+    } for r in rows]
+
 
 
 @router.get("/ai-suggest/{user_id}/{conversation_id}")

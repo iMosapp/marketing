@@ -1358,12 +1358,20 @@ async def process_pending_campaign_steps():
                         "twilio_sid": sms_sid, "status": "sent" if sms_sid else None,
                         "broadcast_id": send_doc.get("broadcast_id"),
                     })
-                    event_type = "email_sent" if channel == "email" else "sms_sent"
+                    preview = (message_content or "").strip().replace("\n", " ")
+                    preview = preview[:90] + ("..." if len(preview) > 90 else "")
+                    if send_doc.get("type") == "direct_scheduled":
+                        event_type = send_doc.get("event_type") or "sms_sent"
+                        description = f"Auto-text sent: {preview}"
+                    else:
+                        event_type = "email_sent" if channel == "email" else "sms_sent"
+                        description = f"Campaign '{send_doc.get('campaign_name', '')}' sent: {preview}"
                     await db.contact_events.insert_one({
                         "event_type": event_type, "user_id": user_id,
                         "contact_id": contact_id,
-                        "description": f"Campaign '{send_doc.get('campaign_name', '')}' step {current_step}",
+                        "description": description,
                         "timestamp": now, "auto_campaign": True,
+                        "campaign_step": current_step,
                     })
                     logger.info(f"[Scheduler] AUTO-SENT step {current_step} to {send_doc.get('contact_name', 'unknown')}")
 

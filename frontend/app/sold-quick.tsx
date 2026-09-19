@@ -14,6 +14,7 @@ import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 import { showSimpleAlert } from '../services/alert';
+import { ScheduledSendRow, useScheduledSends } from '../components/sold/ScheduledSendsList';
 
 const IS_WEB = Platform.OS === 'web';
 const ACCENT = '#C9A962';
@@ -34,6 +35,8 @@ export default function SoldQuickScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
+  const [soldContactId, setSoldContactId] = useState('');
+  const scheduledSends = useScheduledSends(user?._id, soldContactId, done);
   const [lookingUp, setLookingUp] = useState(false);
   const checkAnim = useRef(new Animated.Value(0)).current;
 
@@ -276,6 +279,7 @@ export default function SoldQuickScreen() {
       }
 
       // Success animation
+      setSoldContactId(contactId || '');
       setDone(true);
       Animated.spring(checkAnim, { toValue: 1, useNativeDriver: true, tension: 60, friction: 8 }).start();
     } catch (err: any) {
@@ -312,17 +316,28 @@ export default function SoldQuickScreen() {
 
           {/* Immediate sends — what actually fires in the next few minutes */}
           <View style={s.timeline}>
-            {immediateSteps.map((item, i) => (
-              <View key={i} style={s.timelineRow}>
-                <View style={[s.timelineIcon, { backgroundColor: item.color + '20' }]}>
-                  <Ionicons name={item.icon as any} size={16} color={item.color} />
-                </View>
-                <Text style={s.timelineLabel}>{item.label}</Text>
-                <Text style={[s.timelineTime, { color: item.done ? '#34C759' : item.color }]}>
-                  {item.time}
-                </Text>
+            <Text style={s.timelineHeader} data-testid="sold-handling-header">JESSI IS HANDLING THESE</Text>
+            <View style={s.timelineRow}>
+              <View style={[s.timelineIcon, { backgroundColor: '#007AFF20' }]}>
+                <Ionicons name="card-outline" size={16} color="#007AFF" />
               </View>
-            ))}
+              <Text style={s.timelineLabel}>Contact card (VCF)</Text>
+              <Text style={[s.timelineTime, { color: '#34C759' }]}>Sent ✓</Text>
+            </View>
+            {scheduledSends && scheduledSends.length > 0
+              ? scheduledSends.map(send => <ScheduledSendRow key={send.id} send={send} />)
+              : immediateSteps.slice(1).map((item, i) => (
+                <View key={i} style={s.timelineRow}>
+                  <View style={[s.timelineIcon, { backgroundColor: item.color + '20' }]}>
+                    <Ionicons name={item.icon as any} size={16} color={item.color} />
+                  </View>
+                  <Text style={s.timelineLabel}>{item.label}</Text>
+                  <Text style={[s.timelineTime, { color: item.color }]}>{item.time}</Text>
+                </View>
+              ))}
+            <Text style={s.timelineHint} data-testid="sold-handling-hint">
+              These go out on their own. You will not see them as tasks; they land in {customerName.split(' ')[0]}'s thread when sent.
+            </Text>
 
             {/* Divider */}
             <View style={{ height: 1, backgroundColor: '#ffffff15', marginVertical: 10 }} />
@@ -700,6 +715,8 @@ const styles = (colors: any) => StyleSheet.create({
   timelineIcon:    { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   timelineLabel:   { flex: 1, fontSize: 14, color: colors.text },
   timelineTime:    { fontSize: 12, fontWeight: '700' },
+  timelineHeader:  { fontSize: 11, fontWeight: '700', letterSpacing: 1.2, color: ACCENT, marginBottom: -4 },
+  timelineHint:    { fontSize: 12, color: colors.textSecondary, lineHeight: 17, marginTop: -4 },
   doneBtn:         { marginTop: 28, backgroundColor: ACCENT, borderRadius: 14, paddingVertical: 18, paddingHorizontal: 48 },
   doneBtnText:     { fontSize: 18, fontWeight: '700', color: '#000' },
 });
