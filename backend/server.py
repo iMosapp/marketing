@@ -67,7 +67,7 @@ async def sitemap():
     Google and AI crawlers use this to discover and index every user's presence pages."""
     from routers.database import get_db as _get_db
     db = _get_db()
-    base = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
+    base = (os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL") or "https://app.imonsocial.com").rstrip("/")
     urls = [
         f"{base}/",
         f"{base}/sitemap.xml",
@@ -101,7 +101,7 @@ async def sitemap():
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
     """robots.txt — let Google crawl all public pages, block private app routes."""
-    base = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
+    base = (os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL") or "https://app.imonsocial.com").rstrip("/")
     return PlainTextResponse(content=f"""User-agent: *
 Allow: /card/
 Allow: /p/

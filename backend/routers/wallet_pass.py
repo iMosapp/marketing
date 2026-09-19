@@ -24,7 +24,7 @@ from utils.text_sanitize import format_phone_display
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/wallet", tags=["Wallet Passes"])
 
-APP_URL = (os.environ.get("APP_URL") or "https://app.imonsocial.com").strip('"').rstrip("/")
+APP_URL = (os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL") or "https://app.imonsocial.com").strip('"').rstrip("/")
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
 FALLBACK_LOGO = os.path.join(ASSETS_DIR, "wallet_logo.png")
 
