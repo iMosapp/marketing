@@ -34,6 +34,7 @@ import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
 import { HotVehiclesCard } from '../../components/home/HotVehiclesCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 import { NeedsReplyCard } from '../../components/home/NeedsReplyCard';
+import { ComingUpStrip } from '../../components/home/ComingUpStrip';
 import { WelcomeTour, shouldShowWelcomeTour, markWelcomeTourSeen } from '../../components/home/WelcomeTour';
 import { WelcomeVideo, markWelcomeVideoSeen } from '../../components/home/WelcomeVideo';
 
@@ -1136,6 +1137,9 @@ function HomeScreen() {
         </View>
 
         {simpleHome && <NeedsReplyCard userId={user?._id || ''} />}
+
+        {/* ── COMING UP — next 7 days, tap into the customer record ── */}
+        <ComingUpStrip userId={user?._id || ''} />
 
         {/* ── RECENT WINS — the reward, right under the work ── */}
         {winsFeed.length > 0 && (

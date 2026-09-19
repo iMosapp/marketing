@@ -15,6 +15,8 @@ import { tasksAPI, contactsAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
+import { UpcomingView } from '../../components/upcoming/UpcomingView';
+import { tid } from '../../components/scripts/shared';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -89,7 +91,9 @@ function getDueLabel(task: any) {
 function TouchpointsScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
-  const { period: periodParam, highlight } = useLocalSearchParams<{ period?: string; highlight?: string }>();
+  const { period: periodParam, highlight, view: viewParam } = useLocalSearchParams<{ period?: string; highlight?: string; view?: string }>();
+  const [view, setView] = useState<'today' | 'upcoming'>(viewParam === 'upcoming' ? 'upcoming' : 'today');
+  useEffect(() => { if (viewParam === 'upcoming') setView('upcoming'); }, [viewParam]);
   const [pinned, setPinned] = useState<any | null>(null);
   const user = useAuthStore((s) => s.user);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -317,10 +321,23 @@ function TouchpointsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <ScreenHeader title="Today's Touchpoints" testID="touchpoints-header"
+      <ScreenHeader title={view === 'upcoming' ? 'Coming Up' : "Today's Touchpoints"} testID="touchpoints-header"
         right={<HeaderIconButton icon="add-circle" onPress={() => router.push('/touchpoints/add-task' as any)} testID="touchpoints-add-btn" />} />
 
-      {loading ? (
+      <View style={{ flexDirection: 'row', marginHorizontal: 16, marginTop: 10, marginBottom: 2, backgroundColor: colors.card, borderRadius: 12, padding: 3, borderWidth: 1, borderColor: colors.border }} {...tid('touchpoints-view-switch')}>
+        {(['today', 'upcoming'] as const).map(v => {
+          const active = view === v;
+          return (
+            <TouchableOpacity key={v} onPress={() => setView(v)} style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: active ? 'rgba(201,169,98,0.16)' : 'transparent' }} {...tid(`touchpoints-view-${v}`)}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: active ? colors.accent : colors.textSecondary }}>{v === 'today' ? 'Today' : 'Upcoming'}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {view === 'upcoming' ? (
+        <UpcomingView userId={user?._id || ''} />
+      ) : loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={colors.accent} />
         </View>
