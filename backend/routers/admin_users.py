@@ -1704,6 +1704,25 @@ async def merge_users(primary_id: str, secondary_id: str):
     }
 
 
+def _logo_ops(result, logo_url: str, thumb_url: str, avatar_url: str) -> dict:
+    """Keep the optimized *_path copies in step with a fresh upload so resolve_store_logo shows the new logo."""
+    ops = {"$set": {
+        "logo_url": logo_url,
+        "logo_thumbnail_url": thumb_url,
+        "logo_avatar_url": avatar_url,
+        "updated_at": datetime.utcnow(),
+    }}
+    if result:
+        ops["$set"].update({
+            "logo_path": result["original_path"],
+            "logo_thumb_path": result["thumbnail_path"],
+            "logo_avatar_path": result["avatar_path"],
+        })
+    else:
+        ops["$unset"] = {"logo_path": "", "logo_thumb_path": "", "logo_avatar_path": ""}
+    return ops
+
+
 @router.post("/stores/{store_id}/upload-logo")
 async def upload_store_logo(store_id: str, file: UploadFile = File(...)):
     """Upload a logo for a store/account. Stores original + generates thumbnail & avatar."""
@@ -1716,6 +1735,7 @@ async def upload_store_logo(store_id: str, file: UploadFile = File(...)):
     if len(contents) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image must be less than 10MB")
 
+    result = None
     try:
         from utils.image_storage import upload_image
         result = await upload_image(contents, prefix="logos/stores", entity_id=store_id)
@@ -1733,12 +1753,7 @@ async def upload_store_logo(store_id: str, file: UploadFile = File(...)):
 
     await db.stores.update_one(
         {"_id": ObjectId(store_id)},
-        {"$set": {
-            "logo_url": logo_url,
-            "logo_thumbnail_url": thumb_url,
-            "logo_avatar_url": avatar_url,
-            "updated_at": datetime.utcnow(),
-        }}
+        _logo_ops(result, logo_url, thumb_url, avatar_url)
     )
 
     return {"success": True, "logo_url": logo_url, "thumbnail_url": thumb_url, "avatar_url": avatar_url}
@@ -1756,6 +1771,7 @@ async def upload_org_logo(org_id: str, file: UploadFile = File(...)):
     if len(contents) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image must be less than 10MB")
 
+    result = None
     try:
         from utils.image_storage import upload_image
         result = await upload_image(contents, prefix="logos/orgs", entity_id=org_id)
@@ -1773,12 +1789,7 @@ async def upload_org_logo(org_id: str, file: UploadFile = File(...)):
 
     await db.organizations.update_one(
         {"_id": ObjectId(org_id)},
-        {"$set": {
-            "logo_url": logo_url,
-            "logo_thumbnail_url": thumb_url,
-            "logo_avatar_url": avatar_url,
-            "updated_at": datetime.utcnow(),
-        }}
+        _logo_ops(result, logo_url, thumb_url, avatar_url)
     )
 
     return {"success": True, "logo_url": logo_url, "thumbnail_url": thumb_url, "avatar_url": avatar_url}

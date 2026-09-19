@@ -259,10 +259,8 @@ async def get_user_showcase(user_id: str, cid: str = None):
     if user.get("store_id"):
         store = await db.stores.find_one({"_id": ObjectId(user["store_id"])})
         if store:
-            if store.get("logo_path"):
-                store_logo_url = f"/api/images/{store['logo_path']}"
-            elif store.get("logo_url") and not store["logo_url"].startswith("data:"):
-                store_logo_url = store["logo_url"]
+            from utils.image_urls import resolve_store_logo
+            store_logo_url = resolve_store_logo(store)
 
     entries = await _build_showcase_entries(
         db,
@@ -329,14 +327,10 @@ async def get_store_showcase(store_id: str):
     # Use optimized logo path if migrated
     store_logo_doc = await db.stores.find_one(
         {"_id": ObjectId(actual_store_id), "logo_url": {"$exists": True, "$nin": [None, ""]}},
-        {"logo_path": 1}
+        {"logo_path": 1, "logo_url": 1, "logo_avatar_path": 1}
     )
-    if store_logo_doc and store_logo_doc.get("logo_path"):
-        store_logo_url = f"/api/images/{store_logo_doc['logo_path']}"
-    elif store_logo_doc:
-        store_logo_url = f"/api/showcase/store-logo/{actual_store_id}"
-    else:
-        store_logo_url = None
+    from utils.image_urls import resolve_store_logo
+    store_logo_url = resolve_store_logo(store_logo_doc) if store_logo_doc else None
 
     # Get all users in this store
     users = await db.users.find({"store_id": actual_store_id}, {"password": 0, "photo_url": 0}).to_list(200)

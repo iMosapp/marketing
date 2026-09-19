@@ -33,20 +33,24 @@ def resolve_user_photo(user: dict) -> str | None:
 
 
 def resolve_store_logo(store: dict) -> str | None:
-    """Get the fastest URL for a store logo."""
+    """Get the fastest URL for a store logo.
+
+    A short, clean logo_url is always the most recent write (upload-logo / Store Profile),
+    so it wins over logo_path, which the lazy base64 migration may have left behind.
+    """
     if not store:
         return None
-    if store.get("logo_path"):
-        return f"/api/images/{store['logo_path']}"
-    if store.get("logo_avatar_path"):
-        return f"/api/images/{store['logo_avatar_path']}"
     url = store.get("logo_url", "")
-    if not url:
-        return None
     if url.startswith("/api/images/"):
         return url
     if url.startswith("http") and len(url) < 500:
         return url
+    if store.get("logo_path"):
+        return f"/api/images/{store['logo_path']}"
+    if store.get("logo_avatar_path"):
+        return f"/api/images/{store['logo_avatar_path']}"
+    if not url:
+        return None
     # Fallback: lazy-migrate endpoint
     sid = str(store.get("_id", ""))
     return f"/api/showcase/store-logo/{sid}" if sid else None

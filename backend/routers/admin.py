@@ -602,10 +602,14 @@ async def update_store(store_id: str, store_data: dict, request: Request):
         if (me or {}).get('role') != 'super_admin' and (update_dict['industry'] or '') != (current.get('industry') or ''):
             raise HTTPException(status_code=403, detail="Only a super admin can change an account's industry")
     update_dict['updated_at'] = datetime.utcnow()
+    ops: dict = {"$set": update_dict}
+    if 'logo_url' in update_dict:
+        # A hand-set logo_url must win over the older optimized copy
+        ops["$unset"] = {"logo_path": "", "logo_thumb_path": "", "logo_avatar_path": ""}
     
     result = await get_db().stores.update_one(
         {"_id": ObjectId(store_id)},
-        {"$set": update_dict}
+        ops
     )
     
     if result.matched_count == 0:
