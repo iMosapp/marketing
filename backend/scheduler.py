@@ -1909,6 +1909,13 @@ async def run_webhook_outbox_job():
     return await run_webhook_outbox()
 
 
+async def run_compliance_poll_job():
+    """Every 10 minutes: advance each store's Trust Hub / A2P / CNAM registration and attach new rep numbers."""
+    from routers.database import get_db
+    from services.twilio_compliance import poll_all
+    return await poll_all(get_db())
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -1921,6 +1928,16 @@ def start_scheduler():
         id="webhook_outbox",
         replace_existing=True,
         misfire_grace_time=120,
+        coalesce=True,
+    )
+
+    # Every 10 min - move per-store Twilio texting compliance (Trust Hub / A2P / CNAM) along and attach reps' new numbers
+    scheduler.add_job(
+        safe_job(run_compliance_poll_job),
+        IntervalTrigger(minutes=10),
+        id="twilio_compliance_poll",
+        replace_existing=True,
+        misfire_grace_time=600,
         coalesce=True,
     )
 

@@ -528,6 +528,9 @@ export default function MoreScreen() {
       { permKey: 'brand_kit', icon: 'chatbubbles', title: 'Messaging Channels', subtitle: 'SMS, WhatsApp, Messenger & more', onPress: () => router.push('/settings/messaging-channels'), color: '#25D366' },
       { icon: 'notifications', title: 'SMS Notifications', subtitle: 'Active conversations & You\'re Needed alerts', onPress: () => router.push('/settings/notifications'), color: '#FF9500' },
       { permKey: 'accounts', icon: 'call', title: 'Phone Numbers', subtitle: 'Twilio inventory & billing', onPress: () => router.push('/admin/twilio-numbers'), color: '#34C759' },
+      ...((!repPreview && user?.role === 'org_admin') ? [
+        { permKey: 'accounts', icon: 'shield-checkmark' as any, title: 'Texting Compliance', subtitle: 'Register each store for A2P 10DLC texting and Caller ID', onPress: () => router.push('/admin/compliance' as any), color: '#C9A962' },
+      ] : []),
       { permKey: 'users', icon: 'people', title: 'Team Members', subtitle: 'Manage users & permissions', onPress: () => router.push('/admin/users'), color: '#007AFF' },
       { permKey: 'invite_team', icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
       { permKey: 'integrations', icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
@@ -584,6 +587,7 @@ export default function MoreScreen() {
       { icon: 'flask', title: 'Test Lab', subtitle: 'Try new features on your account before reps see them', onPress: () => router.push('/admin/test-lab' as any), color: '#C9A962' },
       { icon: 'radio', title: 'Jessi Voice Lab', subtitle: 'Pick her live voice, energy and pacing, audition her', onPress: () => router.push('/admin/voice-lab' as any), color: '#C9A962' },
       // System
+      { icon: 'shield-checkmark', title: 'Texting Compliance', subtitle: 'A2P 10DLC brand + campaign and Caller ID per dealership', onPress: () => router.push('/admin/compliance' as any), color: '#C9A962' },
       { icon: 'mail', title: 'Shared Inboxes', subtitle: 'Department numbers, members, routing', onPress: () => router.push('/inboxes' as any), color: '#007AFF' },
       { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts between users', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },
       { icon: 'map-outline', title: 'App Directory', subtitle: 'Browse & share pages', onPress: () => router.push('/admin/app-directory'), color: '#5AC8FA' },

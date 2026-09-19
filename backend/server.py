@@ -635,6 +635,9 @@ from routers import inboxes as inboxes_router
 api_router.include_router(inboxes_router.router)
 api_router.include_router(voice.router)
 api_router.include_router(twilio_webhooks.router)
+from routers import compliance as compliance_router
+api_router.include_router(compliance_router.router)
+api_router.include_router(compliance_router.webhook_router)
 api_router.include_router(twilio_admin.router)
 api_router.include_router(public_landing.router)
 from routers import public_pages
