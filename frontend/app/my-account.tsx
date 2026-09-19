@@ -236,6 +236,7 @@ export default function MyAccountScreen() {
       const payload: any = {
         name: editName.trim(),
         phone: editPhone.trim(),
+        title: editTitle.trim(),
         persona: { ...(user as any)?.persona, title: editTitle.trim() },
       };
       if (editEmail.trim() && editEmail !== user?.email) {
@@ -247,6 +248,7 @@ export default function MyAccountScreen() {
         ...user,
         name: payload.name,
         phone: payload.phone,
+        title: payload.title,
         email: payload.email || user?.email,
         persona: payload.persona,
       };

@@ -87,7 +87,7 @@ def _card(user: dict) -> dict:
         digits = "1" + digits
     return {
         "name": user.get("name") or user.get("email") or "My Card",
-        "title": user.get("title") or (user.get("persona") or {}).get("title") or "",
+        "title": (user.get("persona") or {}).get("title") or user.get("title") or "",
         "org": store.get("name") or user.get("store_name") or user.get("company") or "i'M On Social",
         "card_url": f"{APP_URL}/card/{str(user['_id'])}",
         "phone_e164": f"+{digits}" if digits else "",
