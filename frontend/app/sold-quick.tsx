@@ -15,6 +15,7 @@ import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 import { showSimpleAlert } from '../services/alert';
 import { ScheduledSendRow, useScheduledSends } from '../components/sold/ScheduledSendsList';
+import { tid } from '../components/scripts/shared';
 
 const IS_WEB = Platform.OS === 'web';
 const ACCENT = '#C9A962';
@@ -316,7 +317,7 @@ export default function SoldQuickScreen() {
 
           {/* Immediate sends — what actually fires in the next few minutes */}
           <View style={s.timeline}>
-            <Text style={s.timelineHeader} data-testid="sold-handling-header">JESSI IS HANDLING THESE</Text>
+            <Text style={s.timelineHeader} {...tid("sold-handling-header")}>JESSI IS HANDLING THESE</Text>
             <View style={s.timelineRow}>
               <View style={[s.timelineIcon, { backgroundColor: '#007AFF20' }]}>
                 <Ionicons name="card-outline" size={16} color="#007AFF" />
@@ -335,7 +336,7 @@ export default function SoldQuickScreen() {
                   <Text style={[s.timelineTime, { color: item.color }]}>{item.time}</Text>
                 </View>
               ))}
-            <Text style={s.timelineHint} data-testid="sold-handling-hint">
+            <Text style={s.timelineHint} {...tid("sold-handling-hint")}>
               These go out on their own. You will not see them as tasks; they land in {customerName.split(' ')[0]}'s thread when sent.
             </Text>
 
@@ -355,7 +356,7 @@ export default function SoldQuickScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity style={s.doneBtn} onPress={() => router.back()} data-testid="sold-quick-done">
+          <TouchableOpacity style={s.doneBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home' as any))} {...tid("sold-quick-done")}>
             <Text style={s.doneBtnText}>Done</Text>
           </TouchableOpacity>
 
@@ -380,7 +381,7 @@ export default function SoldQuickScreen() {
         keyboardVerticalOffset={0}
       >
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="sold-quick-back">
+        <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home' as any))} {...tid("sold-quick-back")}>
           <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>New Sale</Text>
@@ -394,11 +395,11 @@ export default function SoldQuickScreen() {
           <View style={s.photoPreviewWrap}>
             <Image source={{ uri: photo.uri }} style={s.photoPreview} resizeMode="cover" />
             <View style={s.photoActions}>
-              <TouchableOpacity style={s.photoActionBtn} onPress={takePhoto} data-testid="sold-retake">
+              <TouchableOpacity style={s.photoActionBtn} onPress={takePhoto} {...tid("sold-retake")}>
                 <Ionicons name="camera" size={18} color="#FFF" />
                 <Text style={s.photoActionText}>Retake</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.photoActionBtn, { backgroundColor: 'rgba(0,0,0,0.5)' }]} onPress={pickFromLibrary} data-testid="sold-pick-library">
+              <TouchableOpacity style={[s.photoActionBtn, { backgroundColor: 'rgba(0,0,0,0.5)' }]} onPress={pickFromLibrary} {...tid("sold-pick-library")}>
                 <Ionicons name="images" size={18} color="#FFF" />
                 <Text style={s.photoActionText}>Library</Text>
               </TouchableOpacity>
@@ -406,12 +407,12 @@ export default function SoldQuickScreen() {
           </View>
         ) : (
           <View style={s.photoButtons}>
-            <TouchableOpacity style={s.photoBtnPrimary} onPress={takePhoto} data-testid="sold-camera">
+            <TouchableOpacity style={s.photoBtnPrimary} onPress={takePhoto} {...tid("sold-camera")}>
               <Ionicons name="camera" size={28} color="#000" />
               <Text style={s.photoBtnPrimaryText}>Take Photo</Text>
               <Text style={s.photoBtnSub}>Delivery shot</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={s.photoBtnSecondary} onPress={pickFromLibrary} data-testid="sold-library">
+            <TouchableOpacity style={s.photoBtnSecondary} onPress={pickFromLibrary} {...tid("sold-library")}>
               <Ionicons name="images-outline" size={26} color={ACCENT} />
               <Text style={[s.photoBtnPrimaryText, { color: ACCENT, fontSize: 16 }]}>Camera Roll</Text>
               <Text style={s.photoBtnSub}>Already taken</Text>
@@ -428,7 +429,7 @@ export default function SoldQuickScreen() {
           value={customerName}
           onChangeText={setCustomerName}
           autoCapitalize="words"
-          data-testid="sold-name"
+          {...tid("sold-name")}
         />
 
         {/* Phone */}
@@ -441,7 +442,7 @@ export default function SoldQuickScreen() {
             value={customerPhone}
             onChangeText={setCustomerPhone}
             keyboardType="phone-pad"
-            data-testid="sold-phone"
+            {...tid("sold-phone")}
           />
           {lookingUp && <ActivityIndicator size="small" color={colors.textSecondary} />}
         </View>
@@ -456,7 +457,7 @@ export default function SoldQuickScreen() {
           onChangeText={setVehiclePurchased}
           autoCapitalize="words"
           returnKeyType="next"
-          data-testid="sold-vehicle-input"
+          {...tid("sold-vehicle-input")}
         />
 
         {/* Sale date (backdate support) */}
@@ -472,14 +473,14 @@ export default function SoldQuickScreen() {
               backgroundColor: colors.card, color: colors.text, border: `1.5px solid ${colors.surface}`,
               fontSize: 16, boxSizing: 'border-box' as any,
             }}
-            data-testid="sold-date-input"
+            {...tid("sold-date-input")}
           />
         ) : (
           <>
             <TouchableOpacity
               style={[s.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
               onPress={() => { Keyboard.dismiss(); setShowDatePicker(v => !v); }}
-              data-testid="sold-date-btn"
+              {...tid("sold-date-btn")}
             >
               <Text style={{ fontSize: 16, color: colors.text }}>
                 {saleDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -520,7 +521,7 @@ export default function SoldQuickScreen() {
               value={referralSearch}
               onChangeText={setReferralSearch}
               onFocus={() => setShowReferralSearch(true)}
-              data-testid="referral-search"
+              {...tid("referral-search")}
             />
             {referralResults.length > 0 && (
               <View style={{ backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.surface, marginTop: 4, overflow: 'hidden' }}>
@@ -555,7 +556,7 @@ export default function SoldQuickScreen() {
             <TouchableOpacity
               style={[s.typeBtn, sendType === 'photo' && s.typeBtnActive]}
               onPress={() => setSendType('photo')}
-              data-testid="send-type-photo"
+              {...tid("send-type-photo")}
             >
               <Ionicons name="image-outline" size={22} color={sendType === 'photo' ? '#000' : ACCENT} />
               <Text style={[s.typeBtnLabel, sendType === 'photo' && { color: '#000' }]}>Delivery Photo</Text>
@@ -564,7 +565,7 @@ export default function SoldQuickScreen() {
             <TouchableOpacity
               style={[s.typeBtn, sendType === 'card' && s.typeBtnActive]}
               onPress={() => setSendType('card')}
-              data-testid="send-type-card"
+              {...tid("send-type-card")}
             >
               <Ionicons name="gift-outline" size={22} color={sendType === 'card' ? '#000' : ACCENT} />
               <Text style={[s.typeBtnLabel, sendType === 'card' && { color: '#000' }]}>Digital Card</Text>
@@ -584,7 +585,7 @@ export default function SoldQuickScreen() {
               placeholder={`Congratulations ${customerName.split(' ')[0] || 'there'}! It was a pleasure working with you today!`}
               placeholderTextColor={colors.textSecondary}
               multiline
-              data-testid="congrats-text-input"
+              {...tid("congrats-text-input")}
             />
           </View>
         )}
@@ -654,7 +655,7 @@ export default function SoldQuickScreen() {
           style={[s.sendBtn, sending && { opacity: 0.6 }]}
           onPress={handleSend}
           disabled={sending}
-          data-testid="sold-quick-send"
+          {...tid("sold-quick-send")}
         >
           {sending
             ? <ActivityIndicator size="small" color="#000" />

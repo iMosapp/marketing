@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="4" time="7.080" timestamp="2026-09-19T17:04:57.553225+00:00" hostname="agent-env-ed2e0bed-a367-4d5c-a080-e18e539ff770"><testcase classname="tests.test_touchpoints_ghost_iter342" name="test_automated_direct_send_no_ghost_task" time="3.816" /><testcase classname="tests.test_touchpoints_ghost_iter342" name="test_selfheal_ghost_tasks" time="1.672"><failure message="AssertionError: assert 'pending' == 'completed'&#10;  &#10;  - completed&#10;  + pending">backend/tests/test_touchpoints_ghost_iter342.py:184: in test_selfheal_ghost_tasks
+    assert ta.get("status") == "completed"
+E   AssertionError: assert 'pending' == 'completed'
+E     
+E     - completed
+E     + pending</failure></testcase><testcase classname="tests.test_touchpoints_ghost_iter342" name="test_scheduled_messages_endpoint" time="1.013" /><testcase classname="tests.test_touchpoints_ghost_iter342" name="test_wallet_guards" time="0.401" /></testsuite></testsuites>

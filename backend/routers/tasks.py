@@ -24,7 +24,7 @@ from services.appointment_changes import serialize_change, list_changes, approve
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
 
-# Throttle: only run catchup once per user per 5 minutes
+# Throttle: only run catchup once per user per _CATCHUP_INTERVAL
 _catchup_last_run: dict = {}
 _CATCHUP_INTERVAL = timedelta(seconds=90)  # Run at most every 90 seconds per user
 _CATCHUP_MAX_ENTRIES = 500  # prevent unbounded memory growth
@@ -77,7 +77,7 @@ async def _catchup_overdue_campaign_tasks(user_id: str):
     This runs when the user opens Today Touchpoints so they see actions
     immediately — without waiting up to 15 minutes for the scheduler.
 
-    Throttled to once per 2 minutes per user.
+    Throttled per user (_CATCHUP_INTERVAL).
     """
     now = datetime.now(timezone.utc)
     last = _catchup_last_run.get(user_id)

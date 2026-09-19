@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
+import { tid } from '../scripts/shared';
 
 export type ScheduledSend = {
   id: string;
@@ -71,14 +72,14 @@ export const ScheduledSendRow = ({ send }: { send: ScheduledSend }) => {
   const d = describeSend(send);
   const st = statusLine(send);
   return (
-    <View style={styles.row} data-testid={`scheduled-send-${send.id}`}>
+    <View style={styles.row} {...tid(`scheduled-send-${send.id}`)}>
       <View style={[styles.icon, { backgroundColor: d.color + '20' }]}>
         <Ionicons name={d.icon as any} size={16} color={d.color} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.label, { color: colors.text }]}>{d.label}</Text>
         {!!send.body && (
-          <Text style={[styles.body, { color: colors.textSecondary }]} numberOfLines={2} data-testid={`scheduled-send-body-${send.id}`}>{send.body}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary }]} numberOfLines={2} {...tid(`scheduled-send-body-${send.id}`)}>{send.body}</Text>
         )}
         {send.status === 'failed' && !!send.error && (
           <Text style={[styles.body, { color: '#FF3B30' }]} numberOfLines={2}>{send.error}</Text>
@@ -86,7 +87,7 @@ export const ScheduledSendRow = ({ send }: { send: ScheduledSend }) => {
       </View>
       <View style={styles.statusWrap}>
         {st.done && <Ionicons name="checkmark-circle" size={14} color={st.color} />}
-        <Text style={[styles.status, { color: st.color }]} data-testid={`scheduled-send-status-${send.id}`}>{st.text}</Text>
+        <Text style={[styles.status, { color: st.color }]} {...tid(`scheduled-send-status-${send.id}`)}>{st.text}</Text>
       </View>
     </View>
   );
