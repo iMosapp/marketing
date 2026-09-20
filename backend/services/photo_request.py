@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 COLL = "photo_requests"
 OPEN_HOURS = 48
-MAX_NUDGES = 2
+MAX_NUDGES = 1
 MAX_BYTES = 10 * 1024 * 1024
 STOP_WORDS = ("STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT", "UNSTOP", "START", "SUBSCRIBE")
 
@@ -23,7 +23,7 @@ TEXTS = {
     "en": {
         "ask": "Hey {first}, it's Jessi. Your assistant, bio and card are being built right now. One more thing: reply to this text with a photo of yourself (a clear head-and-shoulders shot works best) and I'll put it on your business card.",
         "ask_replace": "Hey {first}, it's Jessi. Your assistant, bio and card are being built right now. Want a fresh photo on your card? Reply to this text with one (a clear head-and-shoulders shot works best) and I'll swap it in.",
-        "nudge": "Just the photo is enough. Attach it to a reply and hit send, I'll do the rest.",
+        "nudge": "It's Jessi. After your interview I offered to put a fresh photo on your business card. Want it? Reply with a photo (jpg or png). Not now? Ignore this and I won't ask again.",
         "not_image": "That came through as a file, not a picture. Send a photo (jpg or png) and I'll put it on your card.",
         "retry": "That photo didn't come through. Try sending it again, or pick a different one.",
         "done": "Got it, {first}. That's on your card now: {link}",
@@ -32,7 +32,7 @@ TEXTS = {
     "nl": {
         "ask": "Hoi {first}, Jessi hier. Je assistent, bio en kaartje worden nu gebouwd. Nog een ding: stuur als antwoord op dit bericht een foto van jezelf (hoofd en schouders, scherp) en ik zet hem op je visitekaartje.",
         "ask_replace": "Hoi {first}, Jessi hier. Je assistent, bio en kaartje worden nu gebouwd. Wil je een nieuwe foto op je kaartje? Stuur er een als antwoord op dit bericht (hoofd en schouders, scherp) en ik wissel hem om.",
-        "nudge": "Alleen de foto is genoeg. Voeg hem toe aan je antwoord en verstuur, de rest doe ik.",
+        "nudge": "Jessi hier. Na je interview bood ik aan een nieuwe foto op je visitekaartje te zetten. Wil je dat? Stuur een foto (jpg of png). Nu niet? Negeer dit, dan vraag ik het niet meer.",
         "not_image": "Dat kwam binnen als bestand, niet als foto. Stuur een foto (jpg of png) en ik zet hem op je kaartje.",
         "retry": "Die foto kwam niet goed door. Probeer het nog eens, of kies een andere.",
         "done": "Gelukt, {first}. Hij staat nu op je kaartje: {link}",
@@ -53,7 +53,7 @@ async def ask(db, session: dict) -> Optional[dict]:
     """Interview just ended: open a 48 h photo request and send the text. Never raises."""
     from services.twilio_service import normalize_phone, send_sms
     user = await db.users.find_one({"_id": ObjectId(session["user_id"])}, {"name": 1, "phone": 1, "photo_url": 1, "photo_path": 1, "twilio_number": 1, "mvpline_number": 1})
-    if not user:
+    if not user or session.get("dry_run"):
         return None
     to = normalize_phone(user.get("phone") or session.get("rep_phone") or "")
     frm = session.get("from_number") or user.get("twilio_number") or user.get("mvpline_number") or os.environ.get("TWILIO_PHONE_NUMBER", "")
@@ -127,9 +127,12 @@ async def handle_inbound(db, to_phone: str, from_phone: str, body: str, media_ur
     images = [(u, t) for u, t in zip(media_urls or [], media_types or []) if u and (t or "").lower().startswith("image/")]
     if not images:
         n = int(req.get("nudges") or 0) + 1
+        if n > MAX_NUDGES:
+            # Second text without a photo: they are not doing this. Close quietly and let the text flow normally.
+            await db[COLL].update_one({"_id": req["_id"]}, {"$set": {"status": "declined", "last_reply": (body or "")[:200], "updated_at": _now()}})
+            return False
         await db[COLL].update_one({"_id": req["_id"]}, {"$set": {"nudges": n, "last_reply": (body or "")[:200], "updated_at": _now()}})
-        if n <= MAX_NUDGES:
-            await _reply(db, req, text(lang, "not_image" if media_urls else "nudge"))
+        await _reply(db, req, text(lang, "not_image" if media_urls else "nudge"))
         return True
     url, ctype = images[0]
     try:
