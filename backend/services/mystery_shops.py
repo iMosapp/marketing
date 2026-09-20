@@ -365,7 +365,10 @@ def _hours(client: dict, target: Optional[dict] = None) -> dict:
 
 
 def retry_policy(client: dict, department: Optional[str] = None) -> dict:
-    """How many tries a shop gets when nobody picks up, and how far apart: per client, with an optional per-department override."""
+    """How many tries a shop gets when nobody picks up, and how far apart: per client, with an optional per-department override.
+    Quick shops (the demo bucket) are one try and done."""
+    if (client or {}).get("demo"):
+        return {"tries": 1, "spacing": DEFAULT_RETRY["spacing"]}
     r = dict((client or {}).get("retry") or {})
     r.update((r.get("by_dept") or {}).get(department or "") or {})
     try:
@@ -1174,10 +1177,29 @@ async def run_due_calls(db, limit: int = 3) -> int:
     return placed
 
 
+async def unschedule_quick_shops(db) -> int:
+    """Quick shops are fired by hand, one at a time: strip any plan the demo bucket picked up and cancel planner-made future shops."""
+    await db.shop_clients.update_many(
+        {"demo": True, "$or": [{"plan.per_month": {"$nin": [{}, None]}}, {"plan.text_per_month": {"$nin": [{}, None]}}, {"plan.email_per_month": {"$nin": [{}, None]}}]},
+        {"$set": {"plan.per_month": {}, "plan.text_per_month": {}, "plan.email_per_month": {}}},
+    )
+    ids = [str(c["_id"]) async for c in db.shop_clients.find({"demo": True}, {"_id": 1})]
+    if not ids:
+        return 0
+    res = await db.roleplay_sessions.update_many(
+        {"kind": "mystery_shop", "client_id": {"$in": ids}, "status": "scheduled", "manual": {"$ne": True}},
+        {"$set": {"status": "canceled", "canceled_reason": "quick_shops_are_one_off", "updated_at": _now()}},
+    )
+    if res.modified_count:
+        logger.info(f"[MysteryShop] cancelled {res.modified_count} planner-made quick shops")
+    return res.modified_count
+
+
 async def plan_active_clients(db) -> int:
-    """Daily: make sure every active client's current month is fully scheduled."""
+    """Daily: make sure every active client's current month is fully scheduled. Quick shops are never planned."""
     n = 0
-    async for client in db.shop_clients.find({"active": {"$ne": False}}):
+    await unschedule_quick_shops(db)
+    async for client in db.shop_clients.find({"active": {"$ne": False}, "demo": {"$ne": True}}):
         try:
             made = await plan_month(db, client)
             n += sum(made.values())

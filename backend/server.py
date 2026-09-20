@@ -1810,6 +1810,17 @@ async def startup_event():
             logger.warning(f"[Startup] Sales units repair failed: {e}")
     _aio2.create_task(_sales_units_repair())
 
+    # Quick shops are one-off: drop any plan the demo bucket picked up and cancel planner-made future shops
+    async def _quick_shops_cleanup():
+        try:
+            from services.mystery_shops import unschedule_quick_shops
+            n = await unschedule_quick_shops(get_db())
+            logger.info(f"[Startup] Quick shops cleanup: {n} planner-made shops cancelled")
+        except Exception as e:
+            logger.warning(f"[Startup] Quick shops cleanup failed: {e}")
+    _aio2.create_task(_quick_shops_cleanup())
+
+
     # Sync internal docs (PRD / Ops Manual / App Scope) from repo files into Admin → Docs
     async def _doc_sync():
         try:

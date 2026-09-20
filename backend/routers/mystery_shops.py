@@ -1056,6 +1056,8 @@ async def plan_month(cid: str, body: PlanBody, request: Request):
     me = await require_admin(request)
     db = get_db()
     c = await _client(db, cid)
+    if c.get("demo"):
+        raise HTTPException(status_code=409, detail="Quick shops are one-off: shop someone from the People tab instead of planning a month")
     made = await ms.plan_month(db, c, body.month, created_by=str(me["_id"]))
     return {"created": made}
 
