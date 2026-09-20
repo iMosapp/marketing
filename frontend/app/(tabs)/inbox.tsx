@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { showAlert } from '../../services/alert';
 import {
   View,
@@ -161,7 +161,8 @@ export default function InboxScreen() {
   const { showToast } = useToast();
   
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'hot' | 'assigned' | 'waiting' | 'unread' | 'ai_active' | 'unassigned' | 'all' | 'closed'>('assigned');
+  const [activeTab, setActiveTab] = useState<'hot' | 'assigned' | 'waiting' | 'unread' | 'needs_you' | 'ai_active' | 'unassigned' | 'all' | 'closed'>('all');
+  const tabTouchedRef = useRef(false);
   const filter = activeTab; // alias for legacy references
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const toggleActionMenu = (convId: string) =>
@@ -173,7 +174,12 @@ export default function InboxScreen() {
   // Inbox view toggle (My Inbox vs Team Inbox)
   const [inboxView, setInboxView] = useState<'my' | 'leads' | 'team'>('my');
   const [leadsSummary, setLeadsSummary] = useState<{ visible: boolean; waiting: number; red?: number; mine_waiting?: number; heat?: string | null } | null>(null);
-  const { segment, t: segmentNonce } = useLocalSearchParams<{ segment?: string; t?: string }>();
+  const { segment, t: segmentNonce, tab: tabParam } = useLocalSearchParams<{ segment?: string; t?: string; tab?: string }>();
+  useEffect(() => {
+    if (!tabParam) return;
+    const map: Record<string, typeof activeTab> = { hot: 'hot', unread: 'needs_you', waiting: 'needs_you', needs_you: 'needs_you', all: 'all', ai: 'ai_active', ai_active: 'ai_active', closed: 'closed', unassigned: 'unassigned' };
+    if (map[tabParam]) { tabTouchedRef.current = true; setActiveTab(map[tabParam]); }
+  }, [tabParam]);
 
   const loadLeadsSummary = useCallback(async () => {
     if (!user?._id) return;
@@ -620,6 +626,7 @@ export default function InboxScreen() {
       if (activeTab === 'assigned')   return matchesSearch && conv.status === 'active' && !isWaiting && !isUnassigned && !isClosed;
       if (activeTab === 'waiting')    return matchesSearch && isWaiting;
       if (activeTab === 'unread')     return matchesSearch && !!conv.unread && !isClosed;
+      if (activeTab === 'needs_you')  return matchesSearch && (isWaiting || (!!conv.unread && !isClosed));
       if (activeTab === 'ai_active')  return matchesSearch && isAiActive && !isClosed;
       if (activeTab === 'unassigned') return matchesSearch && isUnassigned && !isClosed && conv.status !== 'archived';
       if (activeTab === 'closed')     return matchesSearch && isClosed;
@@ -877,8 +884,17 @@ export default function InboxScreen() {
 
   const handleFilterPress = (f: typeof activeTab) => {
     triggerHaptic('selection');
+    tabTouchedRef.current = true;
     setActiveTab(f);
   };
+
+  // First load lands on Needs You when something needs a human, otherwise All
+  useEffect(() => {
+    if (tabTouchedRef.current || loading || conversations.length === 0) return;
+    const needs = conversations.some(c => c.status !== 'closed' && (c.unread || c.needs_assistance || c.status === 'paused'));
+    tabTouchedRef.current = true;
+    setActiveTab(needs ? 'needs_you' : 'all');
+  }, [loading, conversations]);
 
   const handleAiModeToggle = async (conversationId: string, currentMode: string | undefined, e: any) => {
     e?.stopPropagation?.();
@@ -1803,16 +1819,16 @@ export default function InboxScreen() {
           closed:     all.filter(c => c.status === 'closed').length,
           hot:        all.filter(c => c.hot_opportunity === true && c.status !== 'closed').length,
           unassigned: all.filter(c => c.is_unassigned && c.status !== 'closed').length,
+          needs_you:  all.filter(c => c.status !== 'closed' && (c.unread || c.needs_assistance || c.status === 'paused')).length,
         };
+        // Hot and Up for grabs only appear when they have something; nothing shows a zero
         const tabs: { key: typeof activeTab; label: string; icon: string; activeColor: string }[] = [
-          { key: 'hot',       label: 'Hot',     icon: 'flame',                     activeColor: '#FF453A' },
-          ...((sharedInboxes.length > 0 || counts.unassigned > 0) ? [{ key: 'unassigned' as typeof activeTab, label: 'Up for grabs', icon: 'hand-right', activeColor: '#C9A962' }] : []),
-          { key: 'waiting',   label: 'Waiting', icon: 'time',                      activeColor: '#FF9500' },
-          { key: 'unread',    label: 'Unread',  icon: 'mail-unread',               activeColor: '#32ADE6' },
-          { key: 'all',       label: 'All',     icon: 'chatbubbles',               activeColor: '#C9A962' },
-          { key: 'ai_active', label: 'AI',      icon: 'sparkles',                  activeColor: '#34C759' },
-          { key: 'assigned',  label: 'Active',  icon: 'person-circle',             activeColor: '#AF52DE' },
-          { key: 'closed',    label: 'Closed',  icon: 'checkmark-circle',          activeColor: '#8E8E93' },
+          ...((counts.hot > 0 || activeTab === 'hot') ? [{ key: 'hot' as typeof activeTab, label: 'Hot', icon: 'flame', activeColor: '#FF453A' }] : []),
+          ...((counts.unassigned > 0 || activeTab === 'unassigned') ? [{ key: 'unassigned' as typeof activeTab, label: 'Up for grabs', icon: 'hand-right', activeColor: '#C9A962' }] : []),
+          { key: 'needs_you', label: 'Needs You', icon: 'hand-left',          activeColor: '#FF9500' },
+          { key: 'all',       label: 'All',       icon: 'chatbubbles',        activeColor: '#C9A962' },
+          { key: 'ai_active', label: 'Jessi',     icon: 'sparkles',           activeColor: '#34C759' },
+          { key: 'closed',    label: 'Closed',    icon: 'checkmark-circle',   activeColor: '#8E8E93' },
         ];
         return (
           <ScrollView
@@ -1850,11 +1866,13 @@ export default function InboxScreen() {
                   }}>
                     <Ionicons name={icon as any} size={13} color={activeColor} />
                   </View>
-                  <View>
-                    <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '800', lineHeight: 17, color: isActive ? activeColor : colors.textPrimary }}>
-                      {count > 99 ? '99+' : count}
-                    </Text>
-                    <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 11, fontWeight: '600', lineHeight: 13, color: colors.textSecondary }}>
+                  <View style={{ justifyContent: 'center', opacity: count === 0 && !isActive ? 0.6 : 1 }}>
+                    {count > 0 && (
+                      <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '800', lineHeight: 17, color: isActive ? activeColor : colors.textPrimary }} testID={`inbox-tab-count-${key}`} dataSet={{ testid: `inbox-tab-count-${key}` } as any}>
+                        {count > 99 ? '99+' : count}
+                      </Text>
+                    )}
+                    <Text maxFontSizeMultiplier={1.0} style={{ fontSize: count > 0 ? 11 : 13, fontWeight: count > 0 ? '600' : '700', lineHeight: count > 0 ? 13 : 16, color: count > 0 ? colors.textSecondary : (isActive ? activeColor : colors.textPrimary) }}>
                       {label}
                     </Text>
                   </View>
@@ -1926,8 +1944,12 @@ export default function InboxScreen() {
               <View style={styles.emptyIconContainer}>
                 <Ionicons name="chatbubbles" size={48} color={colors.accent} />
               </View>
-              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No conversations yet</Text>
-              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start connecting with your contacts</Text>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+                {conversations.length === 0 ? 'No conversations yet' : activeTab === 'needs_you' ? 'Nothing needs you right now' : activeTab === 'ai_active' ? 'Jessi has nothing running' : activeTab === 'closed' ? 'No closed conversations' : 'Nothing here'}
+              </Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+                {conversations.length === 0 ? 'Start connecting with your contacts' : activeTab === 'needs_you' ? 'Unread replies and hand-offs from Jessi land here' : 'Try another filter or start a new message'}
+              </Text>
               <TouchableOpacity style={styles.emptyButton} onPress={openNewMessage} activeOpacity={0.8}>
                 <Ionicons name="add" size={20} color={colors.text} />
                 <Text style={styles.emptyButtonText}>New Message</Text>
