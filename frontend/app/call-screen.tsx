@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Platform, Linking,
   ActivityIndicator, TextInput, Modal,
@@ -28,7 +28,9 @@ export default function CallScreen() {
   const hasTwilio       = !!repTwilioNumber;
 
   // ── Twilio Click-to-Call state ──────────────────────────────────────────────
-  const [callState,  setCallState]  = useState<'idle' | 'placing' | 'ringing' | 'done' | 'error'>('idle');
+  const [callState,  setCallState]  = useState<'idle' | 'placing' | 'ringing' | 'connected' | 'done' | 'error'>('idle');
+  const [endNote,    setEndNote]    = useState('');
+  const leaving = useRef(false);
   const [callSid,    setCallSid]    = useState('');
   const [statusMsg,  setStatusMsg]  = useState('');
 
@@ -71,8 +73,41 @@ export default function CallScreen() {
     if (callSid) {
       api.post('/webhooks/twilio/call-cancel', { call_sid: callSid }).catch(() => {});
     }
-    router.back();
+    leaveScreen();
   };
+
+  const leaveScreen = () => {
+    if (leaving.current) return;
+    leaving.current = true;
+    if (router.canGoBack()) router.back(); else router.replace('/(tabs)/home' as any);
+  };
+
+  // Follow the call on the server: ringing -> connected -> ended. When it ends, the screen just goes away.
+  useEffect(() => {
+    if (!callSid || (callState !== 'ringing' && callState !== 'connected')) return;
+    let stop = false;
+    const started = Date.now();
+    const tick = async () => {
+      if (stop) return;
+      try {
+        const r = await api.get(`/webhooks/twilio/call-progress/${callSid}`);
+        const status: string = r.data?.status || 'unknown';
+        const dial: string = r.data?.dial_status || '';
+        if (status === 'in-progress' && callState !== 'connected') setCallState('connected');
+        if (['completed', 'busy', 'no-answer', 'failed', 'canceled'].includes(status)) {
+          stop = true;
+          const missed = ['busy', 'no-answer', 'failed', 'canceled'].includes(dial) || status !== 'completed';
+          setEndNote(missed ? `No answer from ${contactName.split(' ')[0]}. Jessi set a reminder to try again.` : 'Call ended');
+          setCallState('done');
+          setTimeout(leaveScreen, missed ? 2200 : 900);
+          return;
+        }
+      } catch { /* keep polling */ }
+      if (!stop && Date.now() - started < 30 * 60 * 1000) timer = setTimeout(tick, 2000);
+    };
+    let timer: any = setTimeout(tick, 1500);
+    return () => { stop = true; clearTimeout(timer); };
+  }, [callSid, callState]);
 
   // ── Native dialer + log flow ────────────────────────────────────────────────
   const openNativeDialer = () => {
@@ -169,18 +204,29 @@ export default function CallScreen() {
               </>
             )}
 
-            {callState === 'ringing' && (
+            {(callState === 'ringing' || callState === 'connected') && (
               <>
                 <View style={st.ringingRing}>
                   <Ionicons name="call" size={36} color="#34C759" />
                 </View>
-                <Text style={[st.hint, { color: '#34C759' }]}>Your phone is ringing</Text>
-                <Text style={st.subhint}>{statusMsg}</Text>
-                <Text style={st.subhint}>The call is handled on your personal device — hang up normally when done.</Text>
+                <Text style={[st.hint, { color: '#34C759' }]} data-testid="call-state-title">{callState === 'connected' ? 'On the call' : 'Your phone is ringing'}</Text>
+                <Text style={st.subhint}>
+                  {callState === 'connected'
+                    ? `Press 1 when you pick up and you're through to ${contactName}.`
+                    : `Answer your phone (${(rep?.phone || '').slice(-4)}), press 1, and you're through to ${contactName}.`}
+                </Text>
+                <Text style={st.subhint}>Hang up on your phone when you're done; this screen closes on its own.</Text>
                 <TouchableOpacity style={[st.callBtn, { backgroundColor: '#FF3B30', marginTop: 28 }]} onPress={cancelTwilioCall} data-testid="cancel-call-btn">
                   <Ionicons name="call" size={28} color="#fff" style={{ transform: [{ rotate: '135deg' }] }} />
                 </TouchableOpacity>
-                <Text style={st.cancel}>Cancel Call</Text>
+                <Text style={st.cancel}>End Call</Text>
+              </>
+            )}
+
+            {callState === 'done' && (
+              <>
+                <Ionicons name="checkmark-circle" size={48} color="#34C759" />
+                <Text style={[st.hint, { marginTop: 12 }]} data-testid="call-ended-note">{endNote || 'Call ended'}</Text>
               </>
             )}
 

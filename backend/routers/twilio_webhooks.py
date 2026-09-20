@@ -2143,8 +2143,9 @@ async def cancel_click_to_call(request: Request):
 async def call_progress(call_sid: str):
     """Live status for the dialer in-call UI (fed by the status callback webhook)."""
     db = get_db()
-    doc = await db.pending_calls.find_one({"call_sid": call_sid}, {"status": 1})
-    return {"status": (doc or {}).get("status", "unknown")}
+    doc = await db.pending_calls.find_one({"call_sid": call_sid}, {"status": 1, "dial_status": 1, "dial_duration_s": 1})
+    doc = doc or {}
+    return {"status": doc.get("status", "unknown"), "dial_status": doc.get("dial_status"), "dial_duration_s": doc.get("dial_duration_s")}
 
 
 
