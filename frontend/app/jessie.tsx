@@ -21,6 +21,8 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
+import { AvatarButton } from '../components/account/AvatarButton';
+import { useSegments } from 'expo-router';
 import api from '../services/api';
 
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -40,6 +42,8 @@ export default function JessiScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
+  const segments = useSegments();
+  const inTabs = (segments as string[])[0] === '(tabs)';
   const user = useAuthStore((state) => state.user);
   const [textInput, setTextInput] = useState('');
   
@@ -566,10 +570,11 @@ export default function JessiScreen() {
       >
         {/* Header */}
         <ScreenHeader
-          title="Ask Jessi"
+          title={inTabs ? 'Jessi' : 'Ask Jessi'}
           testID="jessi-header"
           onBack={handleBack}
-          right={state === 'listening' ? <HeaderIconButton icon="close-circle" color="#FF3B30" onPress={cancelListening} testID="jessi-cancel-btn" /> : undefined}
+          left={inTabs ? <AvatarButton /> : undefined}
+          right={state === 'listening' ? <HeaderIconButton icon="close-circle" color="#FF3B30" onPress={cancelListening} testID="jessi-cancel-btn" /> : <HeaderIconButton icon="options-outline" onPress={() => router.push('/settings/virtual-assistant' as any)} testID="jessi-va-settings-btn" />}
         />
         
         {/* Main Content */}

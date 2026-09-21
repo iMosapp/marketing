@@ -6,6 +6,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
+import { SoldThisMonthCard } from '../../components/home/SoldThisMonthCard';
+import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
 import api, { tasksAPI } from '../../services/api';
 
 const PERIODS = [
@@ -134,6 +136,10 @@ export default function PerformanceScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* Sold this month + last week's recap (moved here from Home) */}
+        <SoldThisMonthCard userId={user?._id || ''} />
+        <WeeklyWinsCard userId={user?._id || ''} forceShow />
 
         {loading ? (
           <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />

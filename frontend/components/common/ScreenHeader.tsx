@@ -12,21 +12,26 @@ interface Props {
   subtitle?: string;
   onBack?: () => void;
   right?: React.ReactNode;
+  left?: React.ReactNode;
   testID?: string;
   noBorder?: boolean;
 }
 
 // One nav bar for every Tools screen: gold back chevron, centered 17/700 title, optional right action.
-export function ScreenHeader({ title, subtitle, onBack, right, testID = 'screen-header', noBorder }: Props) {
+export function ScreenHeader({ title, subtitle, onBack, right, left, testID = 'screen-header', noBorder }: Props) {
   const router = useRouter();
   const { colors } = useThemeStore();
-  // Deep links and refreshes have no history; fall back to the Tools tab instead of doing nothing.
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/more' as any));
+  // Deep links and refreshes have no history; fall back to Home instead of doing nothing.
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home' as any));
   return (
     <View style={[styles.wrap, !noBorder && { borderBottomWidth: 1, borderBottomColor: colors.border }]} {...tid(testID)}>
-      <TouchableOpacity onPress={onBack || goBack} style={styles.side} hitSlop={8} {...tid(`${testID}-back`)}>
-        <Ionicons name="chevron-back" size={26} color={colors.accent} />
-      </TouchableOpacity>
+      {left ? (
+        <View style={styles.side}>{left}</View>
+      ) : (
+        <TouchableOpacity onPress={onBack || goBack} style={styles.side} hitSlop={8} {...tid(`${testID}-back`)}>
+          <Ionicons name="chevron-back" size={26} color={colors.accent} />
+        </TouchableOpacity>
+      )}
       <View style={styles.center}>
         <Text style={[styles.title, { color: colors.text }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>{title}</Text>
         {subtitle ? <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>{subtitle}</Text> : null}

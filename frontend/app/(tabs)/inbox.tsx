@@ -43,6 +43,7 @@ import { SharedInboxPanel } from '../../components/inbox/SharedInboxPanel';
 import { InboxBadge, ClaimButton } from '../../components/inbox/InboxBadge';
 import { ownershipAPI, errText } from '../../components/inbox/ownership';
 import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
+import { AvatarButton } from '../../components/account/AvatarButton';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -1594,6 +1595,7 @@ export default function InboxScreen() {
     const headerContent = (
       <View style={styles.headerInner}>
         <View style={styles.headerLeft}>
+          <View style={{ marginRight: 10 }}><AvatarButton /></View>
           <Text style={[styles.title, { color: colors.textPrimary }]}>
             {messageMode === 'sms' ? 'Inbox' : 'Email'}
           </Text>

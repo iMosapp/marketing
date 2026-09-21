@@ -30,6 +30,8 @@ import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
 import { getS } from '../../components/contact/contactStyles';
+import { PrimaryButton } from '../../components/ui/PrimaryButton';
+import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint } from '../../components/ui/tokens';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -379,6 +381,7 @@ export default function NewContactScreen() {
   };
 
   // ── Inline card styles (shared across all ncs.* usage) ────────────────────
+  const canSave = !!contact.first_name && !!(contact.phone || contact.email) && !saving;
   const ncs = {
     card: { backgroundColor: colors.card, borderRadius: 12, marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' as const },
     cardInput: { fontSize: 18, color: colors.text, paddingVertical: 14, paddingHorizontal: 16 },
@@ -395,52 +398,13 @@ export default function NewContactScreen() {
         {/* Header */}
         <View style={[s.header, { borderBottomColor: colors.border }]} data-testid="new-contact-header">
           <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} data-testid="new-contact-cancel">
-            <Text style={{ fontSize: 18, color: '#007AFF' }}>Cancel</Text>
+            <Text style={{ fontSize: 18, color: colors.textSecondary }}>Cancel</Text>
           </TouchableOpacity>
           <Text style={[s.headerTitle, { color: colors.text }]}>New Contact</Text>
-          <TouchableOpacity
-            onPress={handleSave}
-            style={[s.headerBtn, { backgroundColor: (contact.first_name && (contact.phone || contact.email)) ? '#C9A962' : colors.card, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 }]}
-            disabled={saving || !contact.first_name}
-            data-testid="new-contact-done"
-          >
-            {saving
-              ? <ActivityIndicator size="small" color="#000" />
-              : <Text style={{ fontSize: 18, fontWeight: '700', color: (contact.first_name && (contact.phone || contact.email)) ? '#000' : colors.textTertiary }}>Done</Text>
-            }
-          </TouchableOpacity>
+          <PrimaryButton label="Save" size="sm" onPress={handleSave} loading={saving} disabled={!canSave} testID="new-contact-done" />
         </View>
 
-        <ScrollView ref={ncScrollRef} contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-          {/* Photo */}
-          <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 20 }}>
-            <TouchableOpacity onPress={pickImage} activeOpacity={0.7} data-testid="new-contact-photo">
-              {contact.photo ? (
-                <Image source={{ uri: contact.photo }} style={{ width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: '#C9A962' }} />
-              ) : (
-                <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="camera" size={32} color={colors.textTertiary} />
-                </View>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={pickImage} style={{ marginTop: 8 }}>
-              <Text style={{ fontSize: 15, color: '#007AFF', fontWeight: '600' }}>{contact.photo ? 'Change Photo' : 'Add Photo'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Import from Phone Contacts */}
-          {!IS_WEB && (
-            <TouchableOpacity
-              onPress={loadDeviceContacts}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, paddingVertical: 10, marginHorizontal: 16, borderRadius: 10, borderWidth: 1, borderColor: '#C9A962' }}
-              disabled={loadingDeviceContacts}
-              data-testid="import-phone-contact-btn"
-            >
-              {loadingDeviceContacts ? <ActivityIndicator size="small" color="#C9A962" /> : <Ionicons name="person-add-outline" size={18} color="#C9A962" />}
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#C9A962' }}>Import from Phone Contacts</Text>
-            </TouchableOpacity>
-          )}
+        <ScrollView ref={ncScrollRef} contentContainerStyle={{ paddingBottom: 80, paddingTop: SPACE.lg }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
           {/* Name */}
           <View style={ncs.card}>
@@ -453,22 +417,24 @@ export default function NewContactScreen() {
               returnKeyType="next" data-testid="input-last-name" />
           </View>
 
-          {/* Contact Info */}
+          {/* Mobile */}
           <View style={ncs.card}>
             <View style={ncs.cardRow}>
-              <Ionicons name="call-outline" size={20} color="#34C759" style={ncs.cardRowIcon} />
-              <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Phone" placeholderTextColor={colors.textTertiary}
+              <Ionicons name="call-outline" size={20} color={GREEN} style={ncs.cardRowIcon} />
+              <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Mobile" placeholderTextColor={colors.textTertiary}
                 value={contact.phone} onChangeText={t => onPhoneOrEmailChange('phone', t)}
-                keyboardType="phone-pad" returnKeyType="next" data-testid="input-phone" />
-            </View>
-            <View style={ncs.cardDivider} />
-            <View style={ncs.cardRow}>
-              <Ionicons name="mail-outline" size={20} color="#007AFF" style={ncs.cardRowIcon} />
-              <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Email" placeholderTextColor={colors.textTertiary}
-                value={contact.email} onChangeText={t => onPhoneOrEmailChange('email', t)}
-                keyboardType="email-address" autoCapitalize="none" returnKeyType="next" data-testid="input-email" />
+                keyboardType="phone-pad" returnKeyType="done" data-testid="input-phone" />
             </View>
           </View>
+
+          {!IS_WEB && (
+            <TouchableOpacity onPress={loadDeviceContacts} disabled={loadingDeviceContacts}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: SPACE.lg, marginTop: -4, marginBottom: SPACE.md, paddingVertical: 6 }}
+              data-testid="import-phone-contact-btn">
+              {loadingDeviceContacts ? <ActivityIndicator size="small" color={GOLD} /> : <Ionicons name="person-add-outline" size={15} color={GOLD} />}
+              <Text style={{ fontSize: TYPE.sub, fontWeight: '700', color: GOLD }}>Import from phone contacts</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Duplicate match banner */}
           {duplicateMatches.length > 0 && (
@@ -494,101 +460,131 @@ export default function NewContactScreen() {
             </View>
           )}
 
-          {/* Vehicle */}
-          <View style={ncs.card}>
-            <View style={ncs.cardRow}>
-              <Ionicons name="car-outline" size={20} color="#FF9500" style={ncs.cardRowIcon} />
-              <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Vehicle (e.g., 2023 Toyota RAV4)"
-                placeholderTextColor={colors.textTertiary} value={contact.vehicle}
-                onChangeText={t => setContact(p => ({ ...p, vehicle: t }))} data-testid="input-vehicle" />
-            </View>
-          </View>
-
-          {/* Referral */}
-          <View style={ncs.card}>
-            <TouchableOpacity style={ncs.cardRow} onPress={() => { loadAllContacts(); setShowReferralPicker(true); }} data-testid="new-contact-referral">
-              <Ionicons name="people-outline" size={20} color="#AF52DE" style={ncs.cardRowIcon} />
-              <View style={{ flex: 1 }}>
-                {contact.referred_by_name
-                  ? <Text style={{ fontSize: 18, color: colors.text }}>{contact.referred_by_name}</Text>
-                  : <Text style={{ fontSize: 18, color: colors.textTertiary }}>Referred by</Text>
-                }
+          {/* Voice note: the fastest way to capture who they are. Jessi fills in the rest. */}
+          <View style={{ marginHorizontal: SPACE.lg, marginBottom: SPACE.lg }}>
+            <PrimaryButton
+              label={ncVoiceTranscribing ? 'Transcribing...' : ncVoiceRecording ? 'Stop recording' : 'Record a voice note'}
+              icon={ncVoiceRecording ? 'stop-circle' : 'mic'}
+              color={ncVoiceRecording ? RED : GOLD}
+              size="lg" full
+              loading={ncVoiceTranscribing}
+              onPress={handleVoice}
+              testID="new-contact-voice-btn"
+            />
+            <Text style={{ fontSize: TYPE.sub, color: colors.textTertiary, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 }}>
+              {ncVoiceRecording ? 'Listening. Say who they are and what they are after.' : 'Say who they are and what they want. It is transcribed into their notes.'}
+            </Text>
+            {!!contact.notes && !showMoreDetails && (
+              <View style={{ marginTop: SPACE.md, backgroundColor: colors.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: tint(GREEN, 0.35), padding: SPACE.md }} data-testid="new-contact-transcript">
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <Ionicons name="checkmark-circle" size={14} color={GREEN} />
+                  <Text style={{ fontSize: TYPE.label, fontWeight: '800', color: GREEN, letterSpacing: 0.8 }}>SAVED TO NOTES</Text>
+                </View>
+                <Text style={{ fontSize: TYPE.sub, color: colors.text, lineHeight: 18 }} numberOfLines={3}>{contact.notes}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-            </TouchableOpacity>
+            )}
           </View>
 
-          {/* Notes */}
-          <View style={ncs.card}>
-            <View style={[ncs.cardRow, { alignItems: 'flex-start' }]}>
-              <Ionicons name="document-text-outline" size={20} color="#FF9F0A" style={[ncs.cardRowIcon, { marginTop: 2 }]} />
-              <TextInput style={[ncs.cardInput, { flex: 1, minHeight: 60, textAlignVertical: 'top' }]}
-                placeholder="Notes" placeholderTextColor={colors.textTertiary}
-                value={contact.notes} onChangeText={t => setContact(p => ({ ...p, notes: t }))}
-                multiline data-testid="input-notes" />
-            </View>
-          </View>
+          {/* More details: email, vehicle, referral, notes, tags, photo, address, dates */}
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: SPACE.md, marginHorizontal: SPACE.lg, marginBottom: SPACE.md }}
+            onPress={() => setShowMoreDetails(v => !v)} data-testid="new-contact-more-details"
+          >
+            <Ionicons name={showMoreDetails ? 'chevron-up-circle-outline' : 'add-circle-outline'} size={18} color={GOLD} />
+            <Text style={{ fontSize: 16, color: GOLD, fontWeight: '700' }}>{showMoreDetails ? 'Fewer details' : 'More details'}</Text>
+            {!showMoreDetails && <Text style={{ fontSize: TYPE.caption, color: colors.textTertiary }}>email, vehicle, tags, address, dates</Text>}
+          </TouchableOpacity>
 
-          {/* Voice note recorder */}
-          <View style={[ncs.card, { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 }]}>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 24, width: '100%',
-                backgroundColor: ncVoiceRecording ? '#FF3B3020' : ncVoiceTranscribing ? colors.card : '#34C75920',
-                borderWidth: 1, borderColor: ncVoiceRecording ? '#FF3B30' : ncVoiceTranscribing ? colors.border : '#34C759' }}
-              onPress={handleVoice} disabled={ncVoiceTranscribing} data-testid="new-contact-voice-btn"
-            >
-              {ncVoiceTranscribing ? (
-                <><ActivityIndicator size="small" color="#C9A962" style={{ marginRight: 8 }} /><Text style={{ fontSize: 17, fontWeight: '600', color: '#C9A962' }}>Transcribing...</Text></>
-              ) : ncVoiceRecording ? (
-                <><Ionicons name="stop-circle" size={22} color="#FF3B30" style={{ marginRight: 8 }} /><Text style={{ fontSize: 17, fontWeight: '600', color: '#FF3B30' }}>Stop Recording</Text></>
-              ) : (
-                <><Ionicons name="mic" size={22} color="#34C759" style={{ marginRight: 8 }} /><Text style={{ fontSize: 17, fontWeight: '600', color: '#34C759' }}>Record Voice Note</Text></>
-              )}
-            </TouchableOpacity>
-            <Text style={{ fontSize: 14, color: colors.textTertiary, marginTop: 6, textAlign: 'center' }}>Record a voice memo — transcribed and added to notes</Text>
-          </View>
-
-          {/* Tags */}
-          <View style={ncs.card}>
-            <View style={[ncs.cardRow, { flexWrap: 'wrap', gap: 6 }]}>
-              <Ionicons name="pricetag-outline" size={20} color="#5AC8FA" style={ncs.cardRowIcon} />
-              {contact.tags.map((tag, i) => {
-                const info = availableTags.find(t => t.name === tag);
-                return (
-                  <View key={i} style={[s.tagPill, info?.color && { borderColor: info.color }]}>
-                    {info?.icon && <Ionicons name={info.icon as any} size={13} color={info.color || colors.textSecondary} />}
-                    <Text style={[s.tagPillText, info?.color && { color: info.color }]}>{tag}</Text>
-                    <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="close-circle" size={15} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#007AFF15', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5 }}
-                onPress={() => { loadTags(); setShowTagPicker(true); }} data-testid="new-contact-add-tag"
-              >
-                <Ionicons name="add" size={16} color="#007AFF" />
-                <Text style={{ fontSize: 15, color: '#007AFF', fontWeight: '600', marginLeft: 2 }}>Tag</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* More Details */}
-          {!showMoreDetails ? (
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, marginHorizontal: 16, marginBottom: 16 }}
-              onPress={() => setShowMoreDetails(true)} data-testid="new-contact-more-details"
-            >
-              <Ionicons name="add-circle-outline" size={18} color="#007AFF" style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 17, color: '#007AFF', fontWeight: '500' }}>Add Address & Dates</Text>
-            </TouchableOpacity>
-          ) : (
+          {showMoreDetails && (
             <>
+              {/* Photo */}
+              <View style={{ alignItems: 'center', paddingBottom: SPACE.lg }}>
+                <TouchableOpacity onPress={pickImage} activeOpacity={0.7} data-testid="new-contact-photo">
+                  {contact.photo ? (
+                    <Image source={{ uri: contact.photo }} style={{ width: 88, height: 88, borderRadius: 44, borderWidth: 2, borderColor: GOLD }} />
+                  ) : (
+                    <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="camera" size={28} color={colors.textTertiary} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={pickImage} style={{ marginTop: 6 }}>
+                  <Text style={{ fontSize: TYPE.sub, color: GOLD, fontWeight: '700' }}>{contact.photo ? 'Change photo' : 'Add photo'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Email + Vehicle */}
+              <View style={ncs.card}>
+                <View style={ncs.cardRow}>
+                  <Ionicons name="mail-outline" size={20} color={colors.textSecondary} style={ncs.cardRowIcon} />
+                  <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Email" placeholderTextColor={colors.textTertiary}
+                    value={contact.email} onChangeText={t => onPhoneOrEmailChange('email', t)}
+                    keyboardType="email-address" autoCapitalize="none" returnKeyType="next" data-testid="input-email" />
+                </View>
+                <View style={ncs.cardDivider} />
+                <View style={ncs.cardRow}>
+                  <Ionicons name="car-outline" size={20} color={colors.textSecondary} style={ncs.cardRowIcon} />
+                  <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Vehicle (e.g., 2023 Toyota RAV4)"
+                    placeholderTextColor={colors.textTertiary} value={contact.vehicle}
+                    onChangeText={t => setContact(p => ({ ...p, vehicle: t }))} data-testid="input-vehicle" />
+                </View>
+              </View>
+
+              {/* Referral */}
+              <View style={ncs.card}>
+                <TouchableOpacity style={ncs.cardRow} onPress={() => { loadAllContacts(); setShowReferralPicker(true); }} data-testid="new-contact-referral">
+                  <Ionicons name="people-outline" size={20} color={colors.textSecondary} style={ncs.cardRowIcon} />
+                  <View style={{ flex: 1 }}>
+                    {contact.referred_by_name
+                      ? <Text style={{ fontSize: 18, color: colors.text }}>{contact.referred_by_name}</Text>
+                      : <Text style={{ fontSize: 18, color: colors.textTertiary }}>Referred by</Text>
+                    }
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Notes */}
+              <View style={ncs.card}>
+                <View style={[ncs.cardRow, { alignItems: 'flex-start' }]}>
+                  <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} style={[ncs.cardRowIcon, { marginTop: 2 }]} />
+                  <TextInput style={[ncs.cardInput, { flex: 1, minHeight: 60, textAlignVertical: 'top' }]}
+                    placeholder="Notes" placeholderTextColor={colors.textTertiary}
+                    value={contact.notes} onChangeText={t => setContact(p => ({ ...p, notes: t }))}
+                    multiline data-testid="input-notes" />
+                </View>
+              </View>
+
+              {/* Tags */}
+              <View style={ncs.card}>
+                <View style={[ncs.cardRow, { flexWrap: 'wrap', gap: 6 }]}>
+                  <Ionicons name="pricetag-outline" size={20} color={colors.textSecondary} style={ncs.cardRowIcon} />
+                  {contact.tags.map((tag, i) => {
+                    const info = availableTags.find(t => t.name === tag);
+                    return (
+                      <View key={i} style={[s.tagPill, info?.color && { borderColor: info.color }]}>
+                        {info?.icon && <Ionicons name={info.icon as any} size={13} color={info.color || colors.textSecondary} />}
+                        <Text style={[s.tagPillText, info?.color && { color: info.color }]}>{tag}</Text>
+                        <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <Ionicons name="close-circle" size={15} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                  <TouchableOpacity
+                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: tint(GOLD, 0.14), borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5 }}
+                    onPress={() => { loadTags(); setShowTagPicker(true); }} data-testid="new-contact-add-tag"
+                  >
+                    <Ionicons name="add" size={16} color={GOLD} />
+                    <Text style={{ fontSize: 15, color: GOLD, fontWeight: '600', marginLeft: 2 }}>Tag</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
               {/* Address */}
               <View style={ncs.card}>
                 <View style={ncs.cardRow}>
-                  <Ionicons name="location-outline" size={20} color="#FF3B30" style={ncs.cardRowIcon} />
+                  <Ionicons name="location-outline" size={20} color={colors.textSecondary} style={ncs.cardRowIcon} />
                   <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Street" placeholderTextColor={colors.textTertiary}
                     value={contact.address_street} onChangeText={t => setContact(p => ({ ...p, address_street: t }))} data-testid="input-address-street" />
                 </View>
@@ -606,15 +602,15 @@ export default function NewContactScreen() {
               {/* Dates */}
               <View style={ncs.card}>
                 {[
-                  { field: 'birthday', label: 'Birthday', icon: 'gift', color: '#FF9500' },
-                  { field: 'anniversary', label: 'Anniversary', icon: 'heart', color: '#FF2D55' },
-                  { field: 'date_sold', label: 'Date Sold', icon: 'car', color: '#34C759' },
+                  { field: 'birthday', label: 'Birthday', icon: 'gift' },
+                  { field: 'anniversary', label: 'Anniversary', icon: 'heart' },
+                  { field: 'date_sold', label: 'Date Sold', icon: 'car' },
                 ].map((d, idx) => (
                   <React.Fragment key={d.field}>
                     {idx > 0 && <View style={[ncs.cardDivider, { marginLeft: 40 }]} />}
-                    <TouchableOpacity style={ncs.cardRow} onPress={() => openDatePicker(d.field, (contact as any)[d.field], d.label)}>
-                      <View style={{ width: 28, height: 28, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginRight: 12, backgroundColor: `${d.color}20` }}>
-                        <Ionicons name={d.icon as any} size={16} color={d.color} />
+                    <TouchableOpacity style={ncs.cardRow} onPress={() => openDatePicker(d.field, (contact as any)[d.field], d.label)} data-testid={`new-contact-date-${d.field}`}>
+                      <View style={{ width: 28, height: 28, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginRight: 12, backgroundColor: tint(GOLD, 0.14) }}>
+                        <Ionicons name={d.icon as any} size={16} color={GOLD} />
                       </View>
                       <Text style={{ flex: 1, fontSize: 18, color: (contact as any)[d.field] ? colors.text : colors.textTertiary }}>
                         {(contact as any)[d.field] ? format(new Date((contact as any)[d.field]), 'MMM d, yyyy') : d.label}

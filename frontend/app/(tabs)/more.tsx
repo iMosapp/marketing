@@ -332,7 +332,6 @@ export default function MoreScreen() {
   // ============================================================
   {
     const brandItems = [
-      { icon: 'megaphone-outline', title: 'Broadcast', subtitle: 'Mass text from your tracking number', color: '#C9A962', publicUrl: null, editRoute: '/broadcast' },
       { icon: 'gift',             title: 'Create a Card to Share', subtitle: 'Pick a template, get a trackable link — no recipient needed', color: '#FF9500', publicUrl: null, editRoute: '/settings/create-card?generic=true' },
       { icon: 'id-card',        title: 'My Digital Card',  subtitle: 'How customers see you', color: '#C9A962', publicUrl: user?._id ? `${PROD_BASE}/card/${user._id}` : null,         editRoute: '/my-profile' },
       { icon: 'link',           title: 'My Link Page',     subtitle: 'All your links in one spot', color: '#007AFF', publicUrl: user?._id ? `${PROD_BASE}/l/${user._id}` : null,          editRoute: '/settings/link-page' },
@@ -349,6 +348,8 @@ export default function MoreScreen() {
       { icon: 'qr-code-outline', title: 'My Print QR', subtitle: 'Your QR for cards & flyers, see who scanned', onPress: () => router.push('/my-print-qr' as any), color: '#C9A962' },
     ];
     const filteredMenu = menuItems.filter(i => !i.permKey || perm('content', i.permKey));
+    if (perm('insights', 'my_performance')) filteredMenu.push({ icon: 'pulse', title: 'SEO Health', subtitle: 'Your online visibility score', onPress: () => router.push('/seo-health'), color: '#30D158' });
+    if (perm('insights', 'geo_health')) filteredMenu.push({ icon: 'brain', title: 'GEO Health', subtitle: 'Your AI citation score: ChatGPT, Gemini, Perplexity', onPress: () => router.push('/geo-health'), color: '#AF52DE' });
     sections.push({
       id: 'my_brand',
       title: 'My Brand',
@@ -397,19 +398,12 @@ export default function MoreScreen() {
   // ============================================================
   {
     const canManageCampaigns = !repPreview && (user?.role === 'super_admin' || user?.role === 'org_admin');
+    const isTeamLead = isAdmin || (!repPreview && ['manager', 'admin', 'store_manager', 'org_admin'].includes(user?.role || ''));
     const manageItems: (MenuItem & { permKey?: string })[] = [
       { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags: personal, account and org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
-      { icon: 'calendar',   title: 'Calendar', subtitle: 'Appointments, tasks, birthdays and sold dates', onPress: () => router.push('/dates-calendar' as any), color: '#AF52DE' },
       { icon: 'pricetags-outline', title: 'Keyword Auto-Tags', subtitle: 'Auto-tag calls and texts by keywords', onPress: () => router.push('/settings/keyword-rules' as any), color: '#5856D6' },
       { icon: 'search-circle', title: 'Keyword Search', subtitle: 'Find any word in texts and call transcripts', onPress: () => router.push('/keyword-search' as any), color: '#32ADE6' },
       { icon: 'car-sport',  title: 'Inventory',  subtitle: 'Vehicles Jessi can quote and check',   onPress: () => router.push('/inventory' as any),          color: '#32ADE6' },
-      ...(canManageCampaigns ? [{ icon: 'megaphone' as any,  title: 'Campaigns',  subtitle: 'Build and manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),
-      { icon: 'git-branch' as any, title: 'Workflows', subtitle: 'What happens when a contact is tagged Sold, Working, Met…', onPress: () => router.push('/workflows' as any), color: '#34C759' },
-      ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'chatbubbles' as any, title: 'Inboxes', subtitle: 'Shared department numbers: who works them, routing, Jessi', onPress: () => router.push('/inboxes' as any), color: '#C9A962' }] : []),
-      ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'clipboard' as any, title: 'Scorecards', subtitle: 'What every recorded call gets graded on, per department', onPress: () => router.push('/scorecards' as any), color: '#C9A962' }] : []),
-      ...(isAdmin || (!repPreview && ['manager', 'admin', 'store_manager', 'org_admin'].includes(user?.role || '')) ? [{ icon: 'ribbon' as any, title: 'Courses & Certification', subtitle: 'Enroll reps in a course of challenges; pass every one to get certified', onPress: () => router.push('/admin/courses' as any), color: '#34C759' }] : []),
-      ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'sparkles' as any, title: 'Ask Jessi About The Team', subtitle: 'Ask across every rep: who is waiting, trades, missed calls', onPress: () => router.push('/ask-team' as any), color: '#C9A962' }] : []),
-      ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'mic-circle' as any, title: 'Assign Practice Calls', subtitle: 'Mystery shop your team: pick a script, reps, curveballs', onPress: () => router.push('/scripts/assign' as any), color: '#C9A962' }] : []),
       { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish and track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
       { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',          onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
     ];
@@ -420,6 +414,24 @@ export default function MoreScreen() {
       );
     }
     sections.push({ id: 'manage', title: 'Manage', icon: 'settings-outline', color: '#8E8E93', items: manageItems });
+
+    // TEAM: everything about running people, in one folder (managers and up)
+    if (isTeamLead) {
+      const teamItems: MenuItem[] = [
+        ...(perm('admin', 'users') || isAdmin ? [{ icon: 'people' as any, title: 'Team Members', subtitle: 'Manage users & permissions', onPress: () => router.push('/admin/users'), color: '#007AFF' }] : []),
+        ...(perm('admin', 'invite_team') || isAdmin ? [{ icon: 'person-add' as any, title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' }] : []),
+        { icon: 'chatbubbles' as any, title: 'Inboxes', subtitle: 'Shared department numbers: who works them, routing, Jessi', onPress: () => router.push('/inboxes' as any), color: '#C9A962' },
+        { icon: 'clipboard' as any, title: 'Scorecards', subtitle: 'What every recorded call gets graded on, per department', onPress: () => router.push('/scorecards' as any), color: '#C9A962' },
+        { icon: 'podium-outline' as any, title: 'Team Call Scores', subtitle: 'Leaderboard, who misses what, critical-miss alerts', onPress: () => router.push('/scorecards/team' as any), color: '#FF9500' },
+        { icon: 'checkbox' as any, title: 'Team Tasks', subtitle: 'Every open customer task per rep, overdue first', onPress: () => router.push('/team-tasks' as any), color: '#FF453A' },
+        { icon: 'sparkles' as any, title: 'Ask Jessi About The Team', subtitle: 'Ask across every rep: who is waiting, trades, missed calls', onPress: () => router.push('/ask-team' as any), color: '#C9A962' },
+        { icon: 'mic-circle' as any, title: 'Assign Practice Calls', subtitle: 'Mystery shop your team: pick a script, reps, curveballs', onPress: () => router.push('/scripts/assign' as any), color: '#C9A962' },
+        { icon: 'ribbon' as any, title: 'Courses & Certification', subtitle: 'Enroll reps in a course of challenges; pass every one to get certified', onPress: () => router.push('/admin/courses' as any), color: '#34C759' },
+        { icon: 'chatbox-ellipses' as any, title: 'Team Chat', subtitle: 'Internal team messaging', onPress: () => router.push('/(tabs)/team' as any), color: '#5856D6' },
+      ];
+      sections.push({ id: 'team', title: 'Team', icon: 'people-circle', color: '#007AFF', items: teamItems });
+    }
+    void canManageCampaigns;
   }
 
 
@@ -429,24 +441,31 @@ export default function MoreScreen() {
   // ============================================================
   if (perm('my_tools')) {
     const items = filterItems('my_tools', [
-      { permKey: 'touchpoints', icon: 'checkbox-outline', title: "Today's Touchpoints", subtitle: 'Your daily action queue', onPress: () => router.push('/(tabs)/touchpoints' as any), color: '#C9A962' },
+      { permKey: 'touchpoints', icon: 'checkmark-done-circle-outline', title: 'Tasks', subtitle: 'Overdue, today and what is coming up', onPress: () => router.push('/(tabs)/touchpoints' as any), color: '#C9A962' },
+      { icon: 'calendar', title: 'Calendar', subtitle: 'Appointments, tasks, birthdays and sold dates', onPress: () => router.push('/dates-calendar' as any), color: '#AF52DE' },
       { permKey: 'ask_jessi', icon: 'sparkles', title: 'Ask Jessi', subtitle: 'Your AI assistant', onPress: () => router.push('/jessie'), color: '#C9A962' },
-      { permKey: 'ask_jessi', icon: 'person-circle', title: 'My VA', subtitle: 'Your AI clone — see how it sounds', onPress: () => router.push('/settings/virtual-assistant'), color: '#C9A962' },
+      { permKey: 'ask_jessi', icon: 'person-circle', title: 'My VA', subtitle: 'Your AI clone, see how it sounds', onPress: () => router.push('/settings/virtual-assistant'), color: '#C9A962' },
       { permKey: 'ask_jessi', icon: 'flash', title: 'AI Follow-ups', subtitle: 'Smart outreach suggestions', onPress: () => router.push('/(tabs)/ai-outreach' as any), color: '#AF52DE' },
       { permKey: 'team_chat', icon: 'chatbox-ellipses', title: 'Team Chat', subtitle: 'Internal team messaging', onPress: () => router.push('/(tabs)/team'), color: '#5856D6' },
     ]);
+    if (perm('insights', 'va_library')) items.push({ icon: 'people-circle-outline', title: 'VA Library', subtitle: 'Build and manage named Virtual Assistant personas', onPress: () => router.push('/admin/va-library'), color: '#C9A962' });
     if (items.length > 0) sections.push({ id: 'my_tools', title: 'My Tools', icon: 'apps', color: '#007AFF', items });
   }
 
   // ============================================================
   // SECTION 3: CAMPAIGNS  (now also in Manage — keep for quick access via Campaigns tab)
   // ============================================================
-  if (perm('campaigns')) {
-    const items = filterItems('campaigns', [
-      { permKey: 'campaign_dashboard', icon: 'speedometer', title: 'Campaign Dashboard', subtitle: 'Enrollments & performance', onPress: () => router.push('/campaigns/dashboard'), color: '#5AC8FA' },
-      { permKey: 'broadcast', icon: 'megaphone', title: 'Broadcast', subtitle: 'Send to many at once', onPress: () => router.push('/broadcast'), color: '#FF9500' },
-      { permKey: 'date_triggers', icon: 'calendar-outline', title: 'Date Triggers', subtitle: 'Birthdays & anniversaries', onPress: () => router.push('/settings/date-triggers'), color: '#FF9500' },
-    ]);
+  {
+    const canManageCampaigns = !repPreview && (user?.role === 'super_admin' || user?.role === 'org_admin');
+    const items: MenuItem[] = [
+      ...(canManageCampaigns ? [{ icon: 'megaphone' as any, title: 'Campaigns', subtitle: 'Build and manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),
+      ...(perm('campaigns') ? filterItems('campaigns', [
+        { permKey: 'campaign_dashboard', icon: 'speedometer', title: 'Campaign Dashboard', subtitle: 'Enrollments & performance', onPress: () => router.push('/campaigns/dashboard'), color: '#5AC8FA' },
+        { permKey: 'broadcast', icon: 'megaphone-outline', title: 'Broadcast', subtitle: 'Send to many at once', onPress: () => router.push('/broadcast'), color: '#FF9500' },
+        { permKey: 'date_triggers', icon: 'calendar-outline', title: 'Date Triggers', subtitle: 'Birthdays & anniversaries', onPress: () => router.push('/settings/date-triggers'), color: '#FF9500' },
+      ]) : []),
+      { icon: 'git-branch' as any, title: 'Workflows', subtitle: 'What happens when a contact is tagged Sold, Working, Met', onPress: () => router.push('/workflows' as any), color: '#34C759' },
+    ];
     if (items.length > 0) sections.push({ id: 'campaigns', title: 'Campaigns', icon: 'rocket', color: '#FF2D55', items });
   }
 
@@ -457,20 +476,18 @@ export default function MoreScreen() {
     const items = filterItems('insights', [
       { permKey: 'my_performance', icon: 'stats-chart', title: 'My Stats', subtitle: 'Day / week / month performance', onPress: () => router.push('/touchpoints/performance' as any), color: '#34C759' },
       { permKey: 'my_performance', icon: 'clipboard-outline', title: 'My Call Scores', subtitle: 'How your recorded calls grade out, with coaching', onPress: () => router.push('/scorecards/my' as any), color: '#C9A962' },
-      { permKey: 'my_performance', icon: 'school', title: 'Scripts & Practice', subtitle: 'Phone scripts to print, plus practice calls against Jessi', onPress: () => router.push('/scripts' as any), color: '#C9A962' },
-      ...((!repPreview && ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes(user?.role || '')) ? [
-        { permKey: 'my_performance', icon: 'sparkles', title: 'Ask Jessi About The Team', subtitle: 'Who is waiting, who mentioned a trade, what calls missed', onPress: () => router.push('/ask-team' as any), color: '#C9A962' },
-        { permKey: 'my_performance', icon: 'podium-outline', title: 'Team Call Scores', subtitle: 'Leaderboard, who misses what, critical-miss alerts', onPress: () => router.push('/scorecards/team' as any), color: '#FF9500' },
-      ] : []),
       { permKey: 'my_performance', icon: 'trophy', title: 'Team Sales', subtitle: 'Monthly sold, referrals & repeats by rep', onPress: () => router.push('/reports/team-performance' as any), color: '#C9A962' },
-      ...((!repPreview && ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes(user?.role || '')) ? [
-        { permKey: 'my_performance', icon: 'checkbox', title: 'Team Tasks', subtitle: 'Every open customer task per rep, overdue first', onPress: () => router.push('/team-tasks' as any), color: '#FF453A' },
-      ] : []),
       { permKey: 'my_performance', icon: 'people', title: 'Customer Engagement', subtitle: 'Ranked by engagement level', onPress: () => router.push('/touchpoints/customer-performance' as any), color: '#FF9500' },
       { permKey: 'leaderboard', icon: 'podium', title: 'Leaderboard', subtitle: 'Where I stand on the team', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
       { permKey: 'activity_reports', icon: 'bar-chart', title: 'Activity Reports', subtitle: 'Detailed activity analytics', onPress: () => router.push('/reports/activity'), color: '#007AFF' },
       { permKey: 'email_analytics', icon: 'trending-up', title: 'Email Analytics', subtitle: 'Opens, clicks & engagement', onPress: () => router.push('/settings/email-analytics'), color: '#FF2D55' },
-      { permKey: 'system_logs', icon: 'bug-outline', title: 'System Logs', subtitle: 'Errors, warnings and diagnostics', onPress: () => router.push('/admin/system-logs'), color: '#FF3B30' },
+    ]);
+    if (items.length > 0) sections.push({ id: 'performance', title: 'My Performance', icon: 'stats-chart', color: '#34C759', items });
+  }
+
+  // System repair tools: internal, shown in the Admin folder for super admins only
+  const systemToolItems: (MenuItem & { permKey?: string })[] = isSuperAdmin ? [
+      { icon: 'bug-outline', title: 'System Logs', subtitle: 'Errors, warnings and diagnostics', onPress: () => router.push('/admin/system-logs'), color: '#FF3B30' },
       { permKey: 'system_logs', icon: 'alert-circle-outline', title: 'Fix Duplicate Campaigns', subtitle: 'Remove duplicate sends — run if contacts got repeat messages', color: '#FF3B30',
         onPress: async () => {
           const { showAlert } = await import('../../services/alert');
@@ -511,12 +528,7 @@ export default function MoreScreen() {
           ]);
         }
       },
-      { permKey: 'my_performance', icon: 'pulse', title: 'SEO Health', subtitle: 'Your online visibility score', onPress: () => router.push('/seo-health'), color: '#30D158' },
-      { permKey: 'geo_health', icon: 'brain', title: 'GEO Health', subtitle: 'Your AI citation score — ChatGPT, Gemini, Perplexity', onPress: () => router.push('/geo-health'), color: '#AF52DE' },
-      { permKey: 'va_library', icon: 'person-circle', title: 'VA Library', subtitle: 'Build and manage named Virtual Assistant personas', onPress: () => router.push('/admin/va-library'), color: '#C9A962' },
-    ]);
-    if (items.length > 0) sections.push({ id: 'performance', title: 'My Performance', icon: 'stats-chart', color: '#34C759', items });
-  }
+  ] : [];
 
   // ============================================================
   // SECTION 5: SETUP (Admin/Manager tools for their accounts)
@@ -527,14 +539,11 @@ export default function MoreScreen() {
       { permKey: 'store_profile', icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address & store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
       { permKey: 'brand_kit', icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
       { permKey: 'brand_kit', icon: 'chatbubbles', title: 'Messaging Channels', subtitle: 'SMS, WhatsApp, Messenger & more', onPress: () => router.push('/settings/messaging-channels'), color: '#25D366' },
-      { icon: 'notifications', title: 'SMS Notifications', subtitle: 'Active conversations & You\'re Needed alerts', onPress: () => router.push('/settings/notifications'), color: '#FF9500' },
       { permKey: 'accounts', icon: 'call', title: 'Phone Numbers', subtitle: 'Twilio inventory & billing', onPress: () => router.push('/admin/twilio-numbers'), color: '#34C759' },
       ...((!repPreview && user?.role === 'org_admin') ? [
         { permKey: 'accounts', icon: 'chatbubbles' as any, title: 'Communications', subtitle: 'Your texting numbers, who holds them, compliance and messaging status', onPress: () => router.push(`/admin/org-twilio/${user?.organization_id}` as any), color: '#C9A962' },
         { permKey: 'accounts', icon: 'shield-checkmark' as any, title: 'Texting Compliance', subtitle: 'Register each store for A2P 10DLC texting and Caller ID', onPress: () => router.push('/admin/compliance' as any), color: '#C9A962' },
       ] : []),
-      { permKey: 'users', icon: 'people', title: 'Team Members', subtitle: 'Manage users & permissions', onPress: () => router.push('/admin/users'), color: '#007AFF' },
-      { permKey: 'invite_team', icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
       { permKey: 'integrations', icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
     ];
     const filtered = items.filter(i => !i.permKey || perm('admin', i.permKey));
@@ -600,6 +609,7 @@ export default function MoreScreen() {
       // Diagnostics
       { icon: 'bug', title: 'Error Reports', subtitle: 'App crashes & error logs', onPress: () => router.push('/admin/error-reports' as any), color: '#FF3B30' },
       { icon: 'chatbox-ellipses', title: 'Bug Reports', subtitle: 'User-submitted issues & feedback', onPress: () => router.push('/admin/bug-reports' as any), color: '#FF9500' },
+      ...systemToolItems,
     ];
     sections.push({ id: 'internal_ops', title: 'Internal Operations', icon: 'lock-closed', color: '#8E8E93', items });
   }
@@ -681,7 +691,6 @@ export default function MoreScreen() {
   ];
   // Big "What do you want to do?" task tiles
   const taskGrid = [
-    { icon: 'flame', label: 'Internet Leads', sub: 'Incoming lead queue', color: '#FF3B30', route: '/leads', badge: leadsWaiting },
     { icon: 'megaphone', label: 'Send a Blast', sub: 'Mass text', color: '#FF9500', route: '/broadcast/new' },
     { icon: 'id-card', label: 'Share My Card', sub: 'Text your card', color: '#C9A962', route: '/quick-send/digitalcard' },
     { icon: 'star', label: 'Get Reviews', sub: 'Send review link', color: '#FFD60A', route: '/quick-send/review' },
@@ -1050,8 +1059,11 @@ export default function MoreScreen() {
           );
         })()}
 
-        {/* ── Top: search first, bell beside it ── */}
+        {/* ── Top: back to the tabs, search, bell ── */}
         <View style={styles.hubTopRow}>
+          <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home' as any))} hitSlop={10} style={{ width: 36, height: 40, alignItems: 'center', justifyContent: 'center' }} {...({ testID: 'tools-back', dataSet: { testid: 'tools-back' } } as any)}>
+            <Ionicons name="chevron-back" size={26} color="#C9A962" />
+          </TouchableOpacity>
           <View style={[styles.hubSearchBar, { flex: 1, backgroundColor: colors.card, borderColor: hubQ ? '#C9A962' : colors.border }]}>
             <Ionicons name="search" size={17} color={hubQ ? '#C9A962' : colors.textSecondary} />
             <TextInput

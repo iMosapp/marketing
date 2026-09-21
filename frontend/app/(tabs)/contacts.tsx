@@ -27,6 +27,10 @@ import { ContactFilterSheet } from '../../components/contacts/ContactFilterSheet
 import { ContactRow, daysUntilBirthday } from '../../components/contacts/ContactRow';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
+import { AvatarButton } from '../../components/account/AvatarButton';
+import { EmptyState } from '../../components/ui/EmptyState';
+import ActivityTab from './activity';
+import { tid } from '../../components/scripts/shared';
 
 const GOLD = '#C9A962';
 
@@ -76,6 +80,7 @@ export default function ContactsScreen() {
 
   // Selection & Delete state
   const [selectMode, setSelectMode] = useState(false);
+  const [listTab, setListTab] = useState<'contacts' | 'recent'>('contacts');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
@@ -454,7 +459,8 @@ export default function ContactsScreen() {
         </View>
       ) : (
         <View style={[styles.header, { backgroundColor: colors.bg }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <AvatarButton />
             <Text maxFontSizeMultiplier={1.0} style={[styles.title, { color: colors.text }]}>Contacts</Text>
             {totalContacts > 0 && (
               <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 13, fontWeight: '600', color: colors.textTertiary }} testID="contacts-total-count" dataSet={{ testid: "contacts-total-count" } as any}>
@@ -492,6 +498,23 @@ export default function ContactsScreen() {
         </View>
       )}
 
+      {/* Contacts | Recent (personal activity feed lives here now) */}
+      {!selectMode && (
+        <View style={{ flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: colors.card, borderRadius: 12, padding: 3, borderWidth: 1, borderColor: colors.border }} {...tid('contacts-view-switch')}>
+          {(['contacts', 'recent'] as const).map(v => {
+            const active = listTab === v;
+            return (
+              <TouchableOpacity key={v} onPress={() => setListTab(v)} style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: active ? 'rgba(201,169,98,0.16)' : 'transparent' }} {...tid(`contacts-view-${v}`)}>
+                <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 14, fontWeight: '700', color: active ? GOLD : colors.textSecondary }}>{v === 'contacts' ? 'Contacts' : 'Recent'}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
+      {listTab === 'recent' && !selectMode ? (
+        <View style={{ flex: 1 }} {...tid('contacts-recent-feed')}><ActivityTab embedded /></View>
+      ) : (<>
       {/* Search + filter button */}
       <View style={[styles.searchContainer, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
         <Ionicons name="search" size={18} color={colors.textSecondary} />
@@ -600,22 +623,16 @@ export default function ContactsScreen() {
             </View>
           ) : null}
           ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={64} color={colors.surface} />
-              <Text maxFontSizeMultiplier={1.0} style={[styles.emptyText, { color: colors.text }]}>
-                {smartList ? 'Nothing here' : 'No contacts yet'}
-              </Text>
-              <Text maxFontSizeMultiplier={1.0} style={[styles.emptySubtext, { color: colors.textSecondary }]}>{emptyLabel}</Text>
-              {!smartList && (
-                <TouchableOpacity style={styles.importButton} onPress={() => router.push('/contacts/import')}>
-                  <Ionicons name="download-outline" size={20} color="#007AFF" />
-                  <Text maxFontSizeMultiplier={1.0} style={styles.importButtonText}>Import Contacts</Text>
-                </TouchableOpacity>
-              )}
+            <View style={{ marginHorizontal: 16, marginTop: 24 }}>
+              <EmptyState icon="people-outline" iconColor={colors.textTertiary}
+                title={smartList ? 'Nothing here' : 'No contacts yet'} subtitle={emptyLabel}
+                actionLabel={smartList ? undefined : 'Import contacts'} onAction={smartList ? undefined : () => router.push('/contacts/import')}
+                testID="contacts-empty" />
             </View>
           )}
         />
       )}
+      </>)}
 
       {/* Filter bottom sheet */}
       <ContactFilterSheet

@@ -17,24 +17,13 @@ import { showSimpleAlert } from '../../services/alert';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 import { UpcomingView } from '../../components/upcoming/UpcomingView';
 import { tid } from '../../components/scripts/shared';
+import { AvatarButton } from '../../components/account/AvatarButton';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint } from '../../components/ui/tokens';
 
 const IS_WEB = Platform.OS === 'web';
 
-const SCORE_ITEMS_ACTIONS = [
-  { key: 'calls', label: 'CALLS', color: '#007AFF' },
-  { key: 'texts', label: 'TEXTS', color: '#34C759' },
-  { key: 'emails', label: 'EMAILS', color: '#5AC8FA' },
-  { key: 'cards', label: 'CARDS', color: '#C9A962' },
-  { key: 'reviews', label: 'REVIEWS', color: '#FFD60A' },
-];
-const SCORE_ITEMS_ENGAGE = [
-  { key: 'clicks', label: 'CLICKS', color: '#FF375F' },
-  { key: 'opens', label: 'OPENS', color: '#AF52DE' },
-  { key: 'replies', label: 'REPLIES', color: '#FF9500' },
-  { key: 'new_leads', label: 'NEW LEADS', color: '#32ADE6' },
-];
-
-const FILTERS = ['All', 'Overdue', 'Campaigns', 'Birthdays', 'Follow-ups'];
+const FILTERS = ['All', 'Campaigns', 'Birthdays', 'Follow-ups'];
 
 function displayName(task: any) {
   const n = (task.contact_name || '').trim();
@@ -92,8 +81,10 @@ function TouchpointsScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
   const { period: periodParam, highlight, view: viewParam } = useLocalSearchParams<{ period?: string; highlight?: string; view?: string }>();
-  const [view, setView] = useState<'today' | 'upcoming'>(viewParam === 'upcoming' ? 'upcoming' : 'today');
-  useEffect(() => { if (viewParam === 'upcoming') setView('upcoming'); }, [viewParam]);
+  type ViewKey = 'today' | 'overdue' | 'upcoming';
+  const asView = (v?: string): ViewKey => (v === 'upcoming' || v === 'overdue' ? v : 'today');
+  const [view, setView] = useState<ViewKey>(asView(viewParam));
+  useEffect(() => { if (viewParam) setView(asView(viewParam)); }, [viewParam]);
   const [pinned, setPinned] = useState<any | null>(null);
   const user = useAuthStore((s) => s.user);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -292,7 +283,6 @@ function TouchpointsScreen() {
   // Filter tasks client-side
   const filtered = tasks.filter(t => {
     if (activeFilter === 'All') return true;
-    if (activeFilter === 'Overdue') return isOverdue(t);
     if (activeFilter === 'Campaigns') return t.source === 'campaign';
     if (activeFilter === 'Birthdays') return t.type === 'birthday';
     if (activeFilter === 'Follow-ups') return t.type === 'follow_up';
@@ -302,34 +292,52 @@ function TouchpointsScreen() {
   // Group into overdue and today (a highlighted task is pinned on top instead)
   const overdueTasks = filtered.filter(t => isOverdue(t) && t._id !== highlight);
   const todayTasks = filtered.filter(t => !isOverdue(t) && t._id !== highlight);
+  const overdueCount = tasks.filter(t => isOverdue(t)).length;
 
   // Filter counts
   const filterCounts: Record<string, number> = {
     All: tasks.length,
-    Overdue: tasks.filter(t => isOverdue(t)).length,
     Campaigns: tasks.filter(t => t.source === 'campaign').length,
     Birthdays: tasks.filter(t => t.type === 'birthday').length,
     'Follow-ups': tasks.filter(t => t.type === 'follow_up').length,
   };
+  const visibleFilters = FILTERS.filter(f => f === 'All' || filterCounts[f] > 0);
 
   const act = summary?.activity || {};
-  const scoreValues: Record<string, number> = {
-    calls: act.calls || 0, texts: act.texts || 0, emails: act.emails || 0,
-    cards: act.cards || 0, reviews: act.reviews || 0,
-    clicks: act.clicks || 0, opens: act.opens || 0, replies: act.replies || 0, new_leads: act.new_leads || 0,
-  };
+  const doneToday = summary?.completed_today || 0;
+  const totalToday = summary?.total_today || 0;
+  const activityBits = [
+    act.calls ? `${act.calls} call${act.calls === 1 ? '' : 's'}` : '',
+    act.texts ? `${act.texts} text${act.texts === 1 ? '' : 's'}` : '',
+    act.cards ? `${act.cards} card${act.cards === 1 ? '' : 's'}` : '',
+    act.reviews ? `${act.reviews} review${act.reviews === 1 ? '' : 's'}` : '',
+  ].filter(Boolean).slice(0, 3);
+  const summaryLine = [`${doneToday} of ${totalToday} done`, ...activityBits].join(' · ');
+
+  const SEGMENTS: { key: ViewKey; label: string; count?: number; urgent?: boolean }[] = [
+    { key: 'today', label: 'Today', count: tasks.length },
+    { key: 'overdue', label: 'Overdue', count: overdueCount, urgent: overdueCount > 0 },
+    { key: 'upcoming', label: 'Upcoming' },
+  ];
+  const cardProps = { colors, onComplete: completeTask, onSnooze: snoozeTask, onCall: handleCall, onText: handleText, onDraft: openDraft, onJustTried: handleJustTried };
+  const sectionLabel = (label: string, color: string, testID?: string) => (
+    <Text style={{ fontSize: TYPE.sub, fontWeight: '700', color, letterSpacing: 1.5, textTransform: 'uppercase', paddingHorizontal: SPACE.lg, paddingTop: SPACE.sm, paddingBottom: 6 }} {...(testID ? tid(testID) : {})}>{label}</Text>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <ScreenHeader title={view === 'upcoming' ? 'Coming Up' : "Today's Touchpoints"} testID="touchpoints-header"
+      <ScreenHeader title={view === 'upcoming' ? 'Coming Up' : view === 'overdue' ? 'Overdue' : 'Tasks'} testID="touchpoints-header"
+        left={<AvatarButton />}
         right={<HeaderIconButton icon="add-circle" onPress={() => router.push('/touchpoints/add-task' as any)} testID="touchpoints-add-btn" />} />
 
-      <View style={{ flexDirection: 'row', marginHorizontal: 16, marginTop: 10, marginBottom: 2, backgroundColor: colors.card, borderRadius: 12, padding: 3, borderWidth: 1, borderColor: colors.border }} {...tid('touchpoints-view-switch')}>
-        {(['today', 'upcoming'] as const).map(v => {
-          const active = view === v;
+      <View style={{ flexDirection: 'row', marginHorizontal: SPACE.lg, marginTop: 10, marginBottom: 2, backgroundColor: colors.card, borderRadius: RADIUS.sm + 2, padding: 3, borderWidth: 1, borderColor: colors.border }} {...tid('touchpoints-view-switch')}>
+        {SEGMENTS.map(seg => {
+          const active = view === seg.key;
+          const color = active ? (seg.urgent ? RED : GOLD) : seg.urgent ? RED : colors.textSecondary;
           return (
-            <TouchableOpacity key={v} onPress={() => setView(v)} style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: active ? 'rgba(201,169,98,0.16)' : 'transparent' }} {...tid(`touchpoints-view-${v}`)}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: active ? colors.accent : colors.textSecondary }}>{v === 'today' ? 'Today' : 'Upcoming'}</Text>
+            <TouchableOpacity key={seg.key} onPress={() => setView(seg.key)} style={{ flex: 1, paddingVertical: 8, borderRadius: RADIUS.sm, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5, backgroundColor: active ? tint(seg.urgent ? RED : GOLD, 0.14) : 'transparent' }} {...tid(`touchpoints-view-${seg.key}`)}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color }}>{seg.label}</Text>
+              {seg.count ? <Text style={{ fontSize: TYPE.caption, fontWeight: '800', color, opacity: active ? 1 : 0.8 }} {...tid(`touchpoints-count-${seg.key}`)}>{seg.count}</Text> : null}
             </TouchableOpacity>
           );
         })}
@@ -343,95 +351,53 @@ function TouchpointsScreen() {
         </View>
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 80 }} showsVerticalScrollIndicator={false}>
-          {/* Scoreboard */}
-          <View style={{ paddingTop: 16, paddingBottom: 12 }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}>
-              {SCORE_ITEMS_ACTIONS.map(s => (
-                <View key={s.key} style={{ minWidth: 72, backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
-                  <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }}>{scoreValues[s.key]}</Text>
-                  <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
-                </View>
-              ))}
-              <View style={{ width: 1, backgroundColor: colors.border, marginHorizontal: 4 }} />
-              {SCORE_ITEMS_ENGAGE.map(s => (
-                <View key={s.key} style={{ minWidth: 72, backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
-                  <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }}>{scoreValues[s.key]}</Text>
-                  <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
-                </View>
-              ))}
+          {/* One line for the day: progress + what you did. Tap for the full numbers. */}
+          {view === 'today' && (
+            <TouchableOpacity
+              onPress={() => router.push(`/touchpoints/performance${periodParam ? `?period=${periodParam}` : ''}` as any)}
+              activeOpacity={0.8}
+              style={{ marginHorizontal: SPACE.lg, marginTop: SPACE.md, marginBottom: SPACE.md, backgroundColor: colors.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md }}
+              {...tid('tasks-summary-line')}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+                <Ionicons name="stats-chart" size={15} color={GREEN} />
+                <Text style={{ flex: 1, fontSize: TYPE.sub, fontWeight: '600', color: colors.text }} numberOfLines={1} {...tid('tasks-summary-text')}>{summaryLine}</Text>
+                <Text style={{ fontSize: TYPE.caption, fontWeight: '700', color: GOLD }}>My Numbers</Text>
+                <Ionicons name="chevron-forward" size={14} color={GOLD} />
+              </View>
+              <View style={{ backgroundColor: colors.border, borderRadius: 2, height: 3, overflow: 'hidden', marginTop: SPACE.sm }}>
+                <View style={{ height: '100%', backgroundColor: GREEN, borderRadius: 2, width: `${Math.min(100, summary?.progress_pct || 0)}%` }} />
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Filters (only the ones with something in them) */}
+          {view === 'today' && visibleFilters.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: SPACE.lg, gap: SPACE.sm, paddingBottom: SPACE.md }}>
+              {visibleFilters.map(f => {
+                const isActive = f === activeFilter;
+                return (
+                  <TouchableOpacity
+                    key={f}
+                    onPress={() => setActiveFilter(f)}
+                    style={{
+                      paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1,
+                      backgroundColor: isActive ? tint(GOLD, 0.1) : colors.card,
+                      borderColor: isActive ? tint(GOLD, 0.4) : colors.border,
+                    }}
+                    {...tid(`filter-${f.toLowerCase()}`)}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: isActive ? GOLD : colors.textSecondary }}>
+                      {f} ({filterCounts[f] || 0})
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
-            <Text style={{ textAlign: 'center', fontSize: 12, color: '#3A3A3C', marginTop: 4 }}>swipe for engagement stats</Text>
-          </View>
-
-          {/* Progress */}
-          <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
-            <View style={{ backgroundColor: colors.border, borderRadius: 5, height: 8, overflow: 'hidden', marginBottom: 6 }}>
-              <View style={{ height: '100%', backgroundColor: colors.accent, borderRadius: 5, width: `${summary?.progress_pct || 0}%` }} />
-            </View>
-            <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
-              {summary?.completed_today || 0} of {summary?.total_today || 0} touchpoints completed
-            </Text>
-          </View>
-
-          {/* My Performance Card */}
-          <TouchableOpacity
-            onPress={() => router.push(`/touchpoints/performance${periodParam ? `?period=${periodParam}` : ''}` as any)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 16, marginBottom: 8, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border }}
-            activeOpacity={0.8}
-            data-testid="my-performance-link"
-          >
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(52,199,89,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="stats-chart" size={20} color="#34C759" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>My Performance</Text>
-              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Day / Week / Month stats + click-throughs</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#48484A" />
-          </TouchableOpacity>
-
-          {/* Customer Performance Card */}
-          <TouchableOpacity
-            onPress={() => router.push('/touchpoints/customer-performance' as any)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 16, marginBottom: 14, backgroundColor: colors.card, borderRadius: 14, padding: 14, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border }}
-            activeOpacity={0.8}
-            data-testid="customer-performance-link"
-          >
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,149,0,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="people" size={20} color="#FF9500" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Customer Performance</Text>
-              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Ranked engagement across your contacts</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#48484A" />
-          </TouchableOpacity>
-
-          {/* Filters */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 14 }}>
-            {FILTERS.map(f => {
-              const isActive = f === activeFilter;
-              return (
-                <TouchableOpacity
-                  key={f}
-                  onPress={() => setActiveFilter(f)}
-                  style={{
-                    paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1,
-                    backgroundColor: isActive ? 'rgba(201,169,98,0.1)' : colors.card,
-                    borderColor: isActive ? 'rgba(201,169,98,0.4)' : colors.border,
-                  }}
-                  data-testid={`filter-${f.toLowerCase()}`}
-                >
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: isActive ? colors.accent : colors.textSecondary }}>
-                    {f} ({filterCounts[f] || 0})
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          )}
 
           {/* Dormant System Task Cleanup Banner */}
-          {(() => {
+          {view === 'today' && (() => {
             const dormantCount = tasks.filter(t => t.source === 'system' && t.type === 'follow_up').length;
             if (dormantCount < 5) return null;
             return (
@@ -461,41 +427,44 @@ function TouchpointsScreen() {
           })()}
 
           {/* Swipe hint */}
-          {(overdueTasks.length > 0 || todayTasks.length > 0) && (
-            <Text style={{ textAlign: 'center', fontSize: 12, color: '#636366', paddingBottom: 6 }} data-testid="swipe-hint">
+          {(view === 'overdue' ? overdueTasks.length > 0 : overdueTasks.length + todayTasks.length > 0) && (
+            <Text style={{ textAlign: 'center', fontSize: TYPE.caption, color: colors.textTertiary, paddingTop: view === 'overdue' ? SPACE.md : 0, paddingBottom: 6 }} data-testid="swipe-hint">
               Swipe right = Done  ·  Swipe left = Snooze
             </Text>
           )}
 
           {/* Pinned (Jessi just opened this one) */}
-          {pinned && (
+          {pinned && view === 'today' && (
             <>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962', letterSpacing: 1.5, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }} data-testid="pinned-task-label">Jessi opened this</Text>
-              <TaskCard key={pinned._id} task={pinned} colors={colors} highlight onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} onJustTried={handleJustTried} />
+              {sectionLabel('Jessi opened this', GOLD, 'pinned-task-label')}
+              <TaskCard key={pinned._id} task={pinned} highlight {...cardProps} />
             </>
           )}
 
-          {/* Overdue Section */}
+          {/* Overdue (red) then Today; the Overdue segment shows only the red list */}
           {overdueTasks.length > 0 && (
             <>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>Overdue</Text>
-              {overdueTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} onJustTried={handleJustTried} />)}
+              {view === 'today' ? sectionLabel(`Overdue · ${overdueTasks.length}`, RED) : null}
+              {overdueTasks.map(task => <TaskCard key={task._id} task={task} {...cardProps} />)}
             </>
           )}
 
-          {/* Today Section */}
-          {todayTasks.length > 0 && (
+          {view === 'today' && todayTasks.length > 0 && (
             <>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>Today</Text>
-              {todayTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} onJustTried={handleJustTried} />)}
+              {sectionLabel('Today', colors.textTertiary)}
+              {todayTasks.map(task => <TaskCard key={task._id} task={task} {...cardProps} />)}
             </>
           )}
 
-          {filtered.length === 0 && !pinned && (
-            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-              <Ionicons name="checkmark-done-circle-outline" size={48} color={colors.textTertiary} />
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textSecondary, marginTop: 12 }}>All caught up!</Text>
-              <Text style={{ fontSize: 15, color: colors.textTertiary, marginTop: 4 }}>No touchpoints for today</Text>
+          {view === 'overdue' && overdueTasks.length === 0 && (
+            <View style={{ marginHorizontal: SPACE.lg, marginTop: SPACE.xl }}>
+              <EmptyState title="Nothing overdue" subtitle="Everything is on time. Keep it that way." testID="overdue-empty" />
+            </View>
+          )}
+
+          {view === 'today' && filtered.length === 0 && !pinned && (
+            <View style={{ marginHorizontal: SPACE.lg, marginTop: SPACE.sm }}>
+              <EmptyState icon="checkmark-done-circle" title="All caught up!" subtitle="No tasks for today. Add one or check what is coming up." actionLabel="See upcoming" onAction={() => setView('upcoming')} testID="tasks-empty" />
             </View>
           )}
         </ScrollView>

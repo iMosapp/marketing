@@ -66,7 +66,8 @@ function getPageLabel(pathname: string): string {
 // Public routes where the button should NOT appear
 export const JESSI_BAR_HEIGHT = 22;
 
-const HIDDEN_ROUTES: string[] = []; // Bar shows on every page for logged-in users
+// The five tabs have Jessi one tap away in the tab bar; the floating bar only rides along on inner screens (contact, thread, tools).
+const HIDDEN_ROUTES: string[] = ['/home', '/contacts', '/inbox', '/touchpoints', '/jessi', '/jessie', '/(tabs)'];
 
 type Message = { role: 'user' | 'assistant'; text: string };
 
@@ -106,7 +107,7 @@ export default function JessieFloatingChat() {
 
   // Don't render on public/auth pages or if not logged in
   if (!user?._id) return null;
-  if (HIDDEN_ROUTES.some((r) => pathname.startsWith(r))) return null;
+  if (pathname === '/' || HIDDEN_ROUTES.some((r) => pathname.startsWith(r))) return null;
 
   const pageLabel = getPageLabel(pathname);
 

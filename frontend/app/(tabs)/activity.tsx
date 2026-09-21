@@ -220,7 +220,7 @@ const GroupedContactCard = ({ group, colors, router }: any) => {
 };
 
 
-export default function ActivityTab() {
+export default function ActivityTab({ embedded = false }: { embedded?: boolean } = {}) {
   const { colors } = useThemeStore();
   const { user } = useAuthStore();
   const router = useRouter();
@@ -337,10 +337,12 @@ export default function ActivityTab() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.bg }]}>
-      <View style={[s.header, { paddingTop: Math.max(insets.top + 8, 48) }]}>
-        <Text style={[s.headerTitle, { color: colors.text }]} data-testid="activity-header">Activity</Text>
-        <Text style={[s.headerSub, { color: colors.textTertiary }]}>Your relationship feed</Text>
-      </View>
+      {!embedded && (
+        <View style={[s.header, { paddingTop: Math.max(insets.top + 8, 48) }]}>
+          <Text style={[s.headerTitle, { color: colors.text }]} data-testid="activity-header">Activity</Text>
+          <Text style={[s.headerSub, { color: colors.textTertiary }]}>Your relationship feed</Text>
+        </View>
+      )}
 
       <FlatList
         data={groupedData}

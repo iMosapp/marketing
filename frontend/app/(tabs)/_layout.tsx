@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import api from '../../services/api';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { AccountSheet } from '../../components/account/AccountSheet';
 
 export default function TabLayout() {
   const { colors } = useThemeStore();
@@ -24,6 +25,15 @@ export default function TabLayout() {
 
   const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
   const [inboxUnreadIds, setInboxUnreadIds] = useState<string[]>([]);
+  const [tasksDueCount, setTasksDueCount] = useState(0);
+
+  const fetchTasksDueCount = useCallback(async () => {
+    if (!user?._id) return;
+    try {
+      const r = await api.get(`/tasks/${user._id}/summary`);
+      setTasksDueCount(Math.max(0, r.data?.overdue || 0));
+    } catch { /* silent */ }
+  }, [user?._id]);
 
   const fetchInboxUnreadCount = useCallback(async () => {
     if (!user?._id) return;
@@ -41,12 +51,14 @@ export default function TabLayout() {
   useEffect(() => {
     if (mounted && user?._id) {
       fetchInboxUnreadCount();
+      fetchTasksDueCount();
       const interval = setInterval(() => {
         fetchInboxUnreadCount();
+        fetchTasksDueCount();
       }, 15000);
       return () => clearInterval(interval);
     }
-  }, [mounted, user?._id, fetchInboxUnreadCount]);
+  }, [mounted, user?._id, fetchInboxUnreadCount, fetchTasksDueCount]);
 
   // WebSocket real-time updates (only after delay to not crash on mount)
   useEffect(() => {
@@ -96,6 +108,7 @@ export default function TabLayout() {
   );
 
   return (
+    <>
     <Tabs
       initialRouteName="home"
       screenOptions={{
@@ -154,31 +167,35 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="activity"
+        name="touchpoints"
         options={{
-          title: 'Activity',
+          title: 'Tasks',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pulse" size={size} color={isPending ? '#3C3C3E' : color} />
+            <BadgeIcon name="checkmark-done-circle" color={color} size={size} count={tasksDueCount} />
           ),
         }}
         listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
       />
       <Tabs.Screen
-        name="more"
+        name="jessi"
         options={{
-          title: 'Tools',
+          title: 'Jessi',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid" size={size} color={color} />
+            <Ionicons name="sparkles" size={size} color={isPending ? '#3C3C3E' : color} />
           ),
         }}
+        listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
       />
-      {/* Hidden tabs - accessible via Menu but not shown in tab bar */}
+      {/* Hidden tabs: still routable (deep links, avatar sheet) but not in the bar */}
+      <Tabs.Screen name="activity" options={{ href: null }} />
+      <Tabs.Screen name="more" options={{ href: null }} />
       <Tabs.Screen name="dialer" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="team" options={{ href: null }} />
-      <Tabs.Screen name="touchpoints" options={{ href: null }} />
       <Tabs.Screen name="activity-feed" options={{ href: null }} />
       <Tabs.Screen name="ai-outreach" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
     </Tabs>
+    <AccountSheet />
+    </>
   );
 }
