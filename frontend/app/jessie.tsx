@@ -22,6 +22,7 @@ import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
 import { AvatarButton } from '../components/account/AvatarButton';
+import { TalkToJessiButton } from '../components/jessi/TalkToJessiButton';
 import { useSegments } from 'expo-router';
 import api from '../services/api';
 
@@ -579,6 +580,8 @@ export default function JessiScreen() {
         
         {/* Main Content */}
         <View style={styles.content}>
+          {/* Live voice entry lives here now (was a duplicate card on Home) */}
+          {inTabs && !response && state !== 'listening' ? <View style={{ marginTop: 12 }}><TalkToJessiButton /></View> : null}
           {/* Response Text - Scrollable */}
           {response ? (
             <ScrollView 

@@ -27,7 +27,6 @@ import { NotificationBell } from '../../components/notifications/NotificationBel
 import { UniversalShareModal } from '../../components/UniversalShareModal';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 import { NeedsYouStrip } from '../../components/home/NeedsYouStrip';
-import { TalkToJessiButton } from '../../components/jessi/TalkToJessiButton';
 import { WalkMyDayButton } from '../../components/jessi/WalkMyDayButton';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 import { ComingUpStrip } from '../../components/home/ComingUpStrip';
@@ -937,9 +936,6 @@ function HomeScreen() {
           </View>
         ) : (
         <>
-
-        {/* ── TALK TO JESSI — live voice (Test Lab gated) ── */}
-        <TalkToJessiButton />
 
         {/* ── NEEDS YOU — leads, replies, hot threads, failed AI sends, in one strip ── */}
         <NeedsYouStrip userId={user?._id || ''} hot={hotOpps.filter((c: any) => c.last_message?.sender === 'contact').length} />
