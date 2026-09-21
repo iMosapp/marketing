@@ -1,10 +1,11 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { resolveUserPhotoUrl } from '../../utils/photoUrl';
+import { showSimpleAlert } from '../../services/alert';
 import { tid } from '../scripts/shared';
 import { useAccountSheet } from './accountSheetStore';
 
@@ -89,10 +90,12 @@ export const buildAccountSections = (user: any): Section[] => {
 
 export const AccountSheet = () => {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, isImpersonating, stopImpersonation, originalUser } = useAuthStore();
   const { colors } = useThemeStore();
   const { visible, close } = useAccountSheet();
+  const [exiting, setExiting] = React.useState(false);
   if (!visible || !user) return null;
+  const impersonating = isImpersonating || (user as any)?.isImpersonating === true;
   const sections = buildAccountSections(user);
   const uri = resolveUserPhotoUrl(user as any);
   const go = (item: Item) => {
@@ -105,12 +108,40 @@ export const AccountSheet = () => {
     await logout();
     router.replace('/auth/login' as any);
   };
+  const exitImpersonation = async () => {
+    setExiting(true);
+    try {
+      await stopImpersonation();
+      close();
+      router.replace('/(tabs)/home' as any);
+    } catch {
+      showSimpleAlert('Error', 'Failed to exit impersonation');
+    } finally {
+      setExiting(false);
+    }
+  };
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={close}>
       <TouchableOpacity activeOpacity={1} onPress={close} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
         <TouchableOpacity activeOpacity={1} style={{ maxHeight: '88%', backgroundColor: colors.bg, borderTopLeftRadius: 22, borderTopRightRadius: 22, borderWidth: 1, borderColor: colors.border }} {...tid('account-sheet')}>
           <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, marginTop: 8 }} />
+          {impersonating && (
+            <TouchableOpacity onPress={exitImpersonation} disabled={exiting} activeOpacity={0.8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: 'rgba(255,59,48,0.12)', borderWidth: 1, borderColor: 'rgba(255,59,48,0.45)' }}
+              {...tid('account-exit-impersonation')}>
+              <Ionicons name="eye" size={20} color="#FF3B30" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#FF3B30' }}>Viewing as {user.name}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>Tap to go back to {originalUser?.name || 'your account'}</Text>
+              </View>
+              {exiting ? <ActivityIndicator size="small" color="#FF3B30" /> : (
+                <View style={{ backgroundColor: '#FF3B30', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 7 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>Exit</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={() => go({ key: 'profile', label: '', icon: '', route: '/my-profile' })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16 }} {...tid('account-sheet-profile')}>
             {uri ? <Image source={{ uri }} style={{ width: 48, height: 48, borderRadius: 24 }} /> : (
               <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(201,169,98,0.16)', alignItems: 'center', justifyContent: 'center' }}>

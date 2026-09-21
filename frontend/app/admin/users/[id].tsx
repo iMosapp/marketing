@@ -193,7 +193,7 @@ export default function UserDetailScreen() {
     
     showConfirm(
       'Impersonate User',
-      `You will be logged in as ${user.name}. You can edit their profile and settings. Tap "Exit Impersonation" in the More menu to return to your admin account.`,
+      `You will be logged in as ${user.name}. You can edit their profile and settings. Tap your avatar (top-left) and then "Exit" to return to your admin account.`,
       async () => {
         setImpersonating(true);
         try {
