@@ -440,7 +440,7 @@ async def get_task_summary(user_id: str):
 
     overdue = await db.tasks.count_documents({
         "user_id": user_id,
-        "status": {"$in": ["pending", None]},
+        "status": {"$in": ["pending", "snoozed", None]},
         "completed": {"$ne": True},
         "due_date": {"$lt": today_start},
     })
