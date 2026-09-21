@@ -89,7 +89,7 @@ export default function TabLayout() {
 
   const isPending = user?.status === 'pending';
 
-  const BadgeIcon = ({ name, color, size, count }: { name: string; color: string; size: number; count: number }) => (
+  const BadgeIcon = ({ name, color, size, count, badgeTestID }: { name: string; color: string; size: number; count: number; badgeTestID: string }) => (
     <View>
       <Ionicons name={name as any} size={size} color={isPending ? '#3C3C3E' : color} />
       {mounted && count > 0 && (
@@ -98,8 +98,8 @@ export default function TabLayout() {
           backgroundColor: '#FF3B30', borderRadius: 10,
           minWidth: 18, height: 18,
           justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4,
-        }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>
+        }} testID={badgeTestID} dataSet={{ testid: badgeTestID } as any}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>
             {count > 99 ? '99+' : count}
           </Text>
         </View>
@@ -152,7 +152,7 @@ export default function TabLayout() {
         options={{
           title: 'Inbox',
           tabBarIcon: ({ color, size }) => (
-            <BadgeIcon name="chatbubbles" color={color} size={size} count={inboxUnreadCount} />
+            <BadgeIcon name="chatbubbles" color={color} size={size} count={inboxUnreadCount} badgeTestID="tab-inbox-badge" />
           ),
         }}
         listeners={{
@@ -171,7 +171,7 @@ export default function TabLayout() {
         options={{
           title: 'Tasks',
           tabBarIcon: ({ color, size }) => (
-            <BadgeIcon name="checkmark-done-circle" color={color} size={size} count={tasksDueCount} />
+            <BadgeIcon name="checkmark-done-circle" color={color} size={size} count={tasksDueCount} badgeTestID="tab-tasks-badge" />
           ),
         }}
         listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}

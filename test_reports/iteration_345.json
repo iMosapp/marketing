@@ -1,0 +1,43 @@
+{
+  "summary": "Iter 345 retest of iter344 fixes. FIX 1 (Babel data-testid plugin): PASS — every requested testid on /contact/new (input-first-name, input-last-name, input-phone, new-contact-voice-btn, new-contact-more-details, new-contact-done, new-contact-cancel, new-contact-header) resolves via [data-testid=\"...\"]; after tapping More details all 13 expanded testids resolve (input-email, input-vehicle, new-contact-referral, input-notes, new-contact-add-tag, input-address-street/city/state/zip, new-contact-date-birthday/anniversary/date_sold, new-contact-photo). Filled QA/Retest/5005550198 via testid selectors, Save enabled (aria-disabled=null), Save landed on /contact/6ab09687ed0731c21647d1d1; typing existing 5005550198 on a fresh /contact/new triggered duplicate-match-banner. Contact deleted via DELETE /api/contacts/{uid}/{cid} with Bearer token (HTTP 200). FIX 2 (overdue parity): backend GET /api/tasks/69a0b7095fddcede09591667/summary now returns overdue=42 (was 38 in iter344). touchpoints-count-overdue reads '42', Tasks screen segment reads 'Overdue 42' and section content matches. Regression sweep as forest passed: /home has home-fab + avatar-button, /contacts has contacts-view-switch + avatar-button, tapping tab-inbox/tab-tasks/tab-jessi navigates without errors, all three touchpoints segments (today/overdue/upcoming) click through, avatar-button opens account-sheet, account-item-tools navigates to /more, tools-back present and returns, /touchpoints/performance renders sold-this-month-card, contact detail /contact/{id} renders. No pageerror, no dataSet/testID/'Invalid DOM property' console errors. Manager role login (qa-manager@invalid.imonsocial.test / Manager123!): MANAGE section fully renders with all 8 items (team/reports/campaigns/templates/inboxes/reviews/automations/store) plus account-item-tools whose label reads 'All tools' and opens /more with Team folder visible in the grid. INTERNAL items correctly absent (admin/orgs/pending/shops/testlab all null). HOWEVER — the base ACCOUNT items (My Profile & Card, My Numbers, My VA, Notifications, Settings) are ALL visible in the manager's account sheet (rects w=1238 h~50, above the MANAGE header). Spec explicitly requires 'NO ACCOUNT or INTERNAL section' for manager. Section HEADER text 'ACCOUNT' is not rendered (only 'MANAGE' shows), but the 5 items themselves are rendered and testids resolve, which violates the spec.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "components/account/AccountSheet.tsx buildAccountSections", "issue": "Manager role sees the ACCOUNT-section items (account-item-profile / -numbers / -va / -notifications / -settings) at the top of the account sheet, above MANAGE. Spec for manager says: 'shows the MANAGE section ... but NO ACCOUNT or INTERNAL section'. The 'ACCOUNT' text header is NOT rendered (only 'MANAGE' is), but the 5 items ARE rendered and visible (verified: getBoundingClientRect w=1238, h~50, display=flex). Either strip these items for role=manager or the spec needs to be reinterpreted as 'no ACCOUNT header'.", "selector": "[data-testid=\"account-item-profile\"] etc. in AccountSheet when role=manager", "priority": "MEDIUM"},
+      {"component": "app/(tabs)/_layout.tsx bottom-tab bar", "issue": "The five bottom tabs do not carry data-testid attributes on this build (DOM sweep returned zero testids matching /tab-/ and no tab-tasks-badge). Tab clicks by data-testid still work because tab-inbox/tab-tasks/tab-jessi do resolve individually (spot check passed), but there is NO tab-tasks-badge testid so the overdue count on the badge cannot be programmatically asserted from tests. Recommend adding data-testid=\"tab-tasks-badge\" to the red count node so the four-way parity claim can be verified.", "selector": "[data-testid=\"tab-tasks-badge\"] (missing)", "priority": "LOW"},
+      {"component": "app/(tabs)/home.tsx nextMove selector", "issue": "During this retest Home's next-move-label read 'Reply Now New' (not 'Clear 42 overdue tasks'), so the third parity data point requested by the spec (Home hero label = 42) could not be visually verified. This is the nextMove priority picking a reply action over the overdue-clear action — presumably by design — but it means the requested parity assertion 'Home Clear N overdue tasks == 42' is not observable until you skip past the reply prompt. Not a fix request, just a note that iter344 saw 'Clear 38 overdue tasks' because there were no unreplied messages at the time.", "selector": "[data-testid=\"next-move-label\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iter345_contact_new.png",
+    "/app/test_reports/iter345_tasks_overdue.png",
+    "/app/test_reports/iter345_manager_tools.png",
+    "/app/test_reports/iter345_mgr_sheet.png"
+  ],
+  "action_items": [
+    "Update AccountSheet.tsx buildAccountSections so role=='manager' omits the account-item-profile / -numbers / -va / -notifications / -settings items (or confirm spec meant only 'no ACCOUNT header'). Currently the 5 items still render above MANAGE for QA Manager.",
+    "Add data-testid=\"tab-tasks-badge\" to the red overdue count on the Tasks bottom-tab so the parity claim (badge==summary.overdue==42) is testable from Playwright."
+  ],
+  "critical_code_review_comments": [
+    "babel-plugin-testid.js is working — every RN-Web TextInput/TouchableOpacity in /contact/new now exposes data-testid on the host DOM node, confirmed by [data-testid=...] queries. The two-iteration recurring bug is closed.",
+    "Backend /api/tasks/{uid}/summary now counts snoozed as overdue (overdue=42 matches pending_today=42). Touchpoints segment count and section header both agree at 42.",
+    "AccountSheet role gating: manager path leaves the base rep items in place. Since super_admin also shows them, buildAccountSections likely appends role-specific items rather than replacing the base — for pure 'manager' role the base should be dropped per this spec.",
+    "Missing tab-tasks-badge testid means end-to-end parity between tab badge / summary.overdue / touchpoints-count-overdue / Home hero can only be checked 3 of 4 ways from tests."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (2/2 asserted): /api/auth/login and /api/tasks/{uid}/summary; DELETE /api/contacts/{uid}/{cid} = 200",
+    "frontend": "~95%: FIX 1 fully passes (21/21 testids); FIX 2 backend + Tasks screen parity confirmed; regression sweep clean (no red screen, no console errors); manager sheet has one spec deviation on ACCOUNT-item visibility"
+  },
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin, userId 69a0b7095fddcede09591667) — verified. qa-manager@invalid.imonsocial.test / Manager123! (manager) — verified.",
+  "seed_data_creation": "Created contact 'QA Retest' 5005550198 (id 6ab09687ed0731c21647d1d1) under forest, then DELETE /api/contacts/69a0b7095fddcede09591667/6ab09687ed0731c21647d1d1 returned HTTP 200 with body {\"message\":\"Contact deleted successfully\"}. No residual test data.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Babel testid plugin is now landed and working; [data-testid=...] is the preferred selector everywhere including RN-Web TextInput/TouchableOpacity on /contact/new. Overdue backend count includes snoozed tasks (=42 for forest). The Tasks bottom tab is missing a data-testid on its badge node; add one before asserting the fourth parity value. Manager role currently still shows the base account items (profile/numbers/va/notifications/settings) in the account sheet — spec deviation open. Use in-app history.pushState + PopStateEvent for /inbox and /contact/new; page.goto('/inbox') hits the marketing page. First bundle load after supervisor restart returns 502 for ~60s (Cloudflare) — wait until /auth/login returns 200 before starting tests.",
+  "rca of the issue": "AccountSheet.tsx likely composes sections as [account_base, ...roleSections]; for manager role it should slice off account_base or gate it behind a role check. Fix example: `if (role==='manager') return [manageSection, toolsSection, helpSection];` — currently the base is prepended for all authenticated users."
+}
