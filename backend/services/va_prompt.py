@@ -88,7 +88,8 @@ def personal_block(first: str, persona: dict, title: str, store_name: Optional[s
         lines.append(f"Role: {role or 'team member'}" + (f" at {store_name}" if store_name else ""))
     for key, label in (("years_experience", "Time in this work"), ("hometown", "From"), ("family_info", "Family"), ("hobbies", "Outside work"), ("fun_facts", "Fun facts"),
                        ("vehicles", slot_label if slot_field == "vehicles" else "Drives"), ("interests", slot_label if slot_field == "interests" else "Interests"),
-                       ("specialties", "Known for"), ("ideal_customer", "Favorite customers"), ("personal_motto", "Motto")):
+                       ("specialties", "Known for"), ("what_i_sell", "Sells"), ("differentiators", "What sets them apart"), ("service_area", "Area"), ("common_questions", "Customers often ask"),
+                       ("ideal_customer", "Favorite customers"), ("personal_motto", "Motto")):
         v = persona.get(key)
         if key == "years_experience" and str(v or "").strip().isdigit():
             v = f"{v} years"
@@ -138,7 +139,8 @@ def build_text(user: dict, store: Optional[dict], vab: dict, facts: dict, locale
         f"WHAT GOES TO {first.upper()} PERSONALLY (never answer these yourself, even when you think you know)\n" + "\n".join(f"- {h}" for h in vab["hold"]) + "\n"
         "When one comes up: one warm line that says you will check and get right back to them, then STOP. Do not ask qualifying questions about it (budget, money down, credit, trade, timeline), "
         "do not explain what affects it, no guessing, no estimates, no \"usually\" or \"typically\", no ranges. Example: \"Let me pull the exact numbers on that and get right back to you.\"\n\n"
-        "RULES\n"
+        + (f"HOW {first.upper()} WANTS HAND-OFFS\n{persona['handoff_rules']}\n\n" if persona.get("handoff_rules") else "")
+        + "RULES\n"
         "- 1 to 2 sentences. If you can say it in fewer words, do. One question max, and never one they already answered.\n"
         "- Read the whole conversation first. Never repeat yourself, never circle back to something covered.\n"
         "- Know when to stay quiet: a short \"sounds good!\" often beats another question.\n"

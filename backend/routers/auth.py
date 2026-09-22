@@ -1,11 +1,10 @@
 """
 Authentication router - handles login, signup, forgot password
 """
-from fastapi import APIRouter, HTTPException, Request, Response, Cookie
+from fastapi import APIRouter, HTTPException, Request
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-import random
 import secrets
 import logging
 import os
@@ -20,7 +19,7 @@ try:
 except ImportError:
     BCRYPT_AVAILABLE = False
 
-from models import User, UserCreate, UserPersona
+from models import UserCreate, UserPersona
 from routers.database import get_db
 
 
@@ -510,6 +509,12 @@ async def login(credentials: dict, request: Request = None):
     user['_id'] = str(user['_id'])
     # Remove password from response
     user.pop('password', None)
+    if user.get('jessi_onboarding'):
+        try:
+            from services import jessi_onboarding as _jo
+            asyncio.create_task(_jo.on_login(get_db(), user['_id']))
+        except Exception:
+            pass
     
     # Convert ObjectIds to strings and resolve org from both org_id and organization_id
     effective_org_id = user.get('organization_id') or user.get('org_id')
@@ -610,7 +615,6 @@ async def login(credentials: dict, request: Request = None):
     )
 
     # ── Fire-and-forget background tasks (don't block login response) ──
-    import asyncio
     async def _post_login_tasks(uid: str, tz: str | None):
         try:
             if tz:
@@ -1062,9 +1066,7 @@ async def complete_activation(data: dict):
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     user, _ = await _check_verification_code(_identifier_from(data), data.get('code') or '', "activate", consume=True)
     now = datetime.utcnow()
-    await get_db().users.update_one(
-        {"_id": user["_id"]},
-        {"$set": {
+    sets = {
             "password": hash_password(new_password),
             "needs_password_change": False,
             "activation_pending": False,
@@ -1075,10 +1077,49 @@ async def complete_activation(data: dict):
             "tos_accepted_at": now,
             "is_active": True,
             "updated_at": now,
-        }}
-    )
+    }
+    # Jessi-onboarded users may reach this without an email yet: it is their login, so take it here
+    email = (user.get("email") or "").strip().lower()
+    if not email:
+        email = (data.get("email") or "").strip().lower()
+        if not email or "@" not in email:
+            raise HTTPException(status_code=400, detail="Add the email you want to log in with")
+        if await get_db().users.find_one({"email": email, "_id": {"$ne": user["_id"]}}, {"_id": 1}):
+            raise HTTPException(status_code=409, detail="That email is already on another account")
+        sets["email"] = email
+    await get_db().users.update_one({"_id": user["_id"]}, {"$set": sets})
+    now_ts = now.timestamp()
+    await get_db().password_reset_tokens.update_many({"user_id": str(user["_id"]), "purpose": "activate_link", "used": False}, {"$set": {"used": True, "used_at": now_ts}})
+    try:
+        from services import jessi_onboarding as _jo
+        asyncio.create_task(_jo.on_activated(get_db(), str(user["_id"])))
+    except Exception as e:
+        logger.debug(f"[Activate] onboarding hook failed: {e}")
     logger.info(f"[Activate] Account activated via SMS code for user {user['_id']}")
-    return {"message": "Account activated", "email": user.get("email")}
+    return {"message": "Account activated", "email": email}
+
+
+@router.post("/activate/link")
+async def activate_by_link(data: dict):
+    """Jessi's single-use activation link: swap the link token for the phone + code the normal set-password step expects."""
+    token = (data.get("token") or "").strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="Missing link token")
+    db = get_db()
+    now_ts = datetime.utcnow().timestamp()
+    link = await db.password_reset_tokens.find_one({"purpose": "activate_link", "token": token})
+    if not link or link.get("used") or (link.get("expires_at") or 0) < now_ts:
+        raise HTTPException(status_code=400, detail="This link has expired. Text Jessi and she'll send you a fresh one.")
+    user = await db.users.find_one({"_id": ObjectId(link["user_id"])})
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if user.get("activation_pending") is False and not user.get("needs_password_change"):
+        return {"already_active": True, "email": user.get("email"), "first_name": user.get("first_name") or (user.get("name") or "").split(" ")[0]}
+    code = str(secrets.randbelow(900000) + 100000)
+    await db.password_reset_tokens.insert_one({"user_id": str(user["_id"]), "email": (user.get("email") or "").lower(), "purpose": "activate", "code": code,
+                                               "created_at": now_ts, "expires_at": now_ts + _CODE_TTL_SECONDS, "attempts": 0, "used": False, "request_ip": "link", "via_link": token})
+    return {"identifier": user.get("phone") or user.get("email"), "code": code, "email": user.get("email"), "needs_email": not (user.get("email") or "").strip(),
+            "first_name": user.get("first_name") or (user.get("name") or "").split(" ")[0]}
 
 @router.post("/change-password")
 async def change_password(data: dict):
@@ -1280,7 +1321,7 @@ def _build_ai_clone_prompt(name: str, first: str, persona: dict, user: dict) -> 
     if persona.get("key_links"):
         links.append(f"Other: {persona['key_links']}")
     if links:
-        sections.append(f"\n## Key Links (share when asked)\n" + "\n".join(links))
+        sections.append("\n## Key Links (share when asked)\n" + "\n".join(links))
 
     return "\n".join(sections)
 

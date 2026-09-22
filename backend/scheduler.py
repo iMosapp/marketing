@@ -6,7 +6,6 @@ import asyncio
 import gc
 import logging
 import os
-import random
 import re
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
@@ -34,7 +33,6 @@ async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign
     """
     from routers.short_urls import create_short_url
     from routers.database import get_db
-    import re as _re
 
     def _link_type(url):
         if "youtube.com" in url or "youtu.be" in url:
@@ -1925,6 +1923,16 @@ async def run_webhook_outbox_job():
     return await run_webhook_outbox()
 
 
+async def run_jessi_onboarding_job():
+    """Every 10 minutes: Jessi's new-user onboarding by text. Resumes intro sequences held for quiet hours, notices interview calls that failed, sends the configurable nudges."""
+    from routers.database import get_db
+    from services.jessi_onboarding import run_job
+    out = await run_job(get_db())
+    if any(out.values()):
+        logger.info(f"[JessiOnboarding] {out}")
+    return out
+
+
 async def run_compliance_poll_job():
     """Every 10 minutes: advance each store's Trust Hub / A2P / CNAM registration, attach new rep numbers, send client reminders, daily team digest."""
     from routers.database import get_db
@@ -1968,6 +1976,16 @@ def start_scheduler():
         id="webhook_outbox",
         replace_existing=True,
         misfire_grace_time=120,
+        coalesce=True,
+    )
+
+    # Every 10 min - Jessi new-user onboarding: resume intro sequences, catch failed calls, send configurable nudges
+    scheduler.add_job(
+        safe_job(run_jessi_onboarding_job),
+        IntervalTrigger(minutes=10),
+        id="jessi_onboarding",
+        replace_existing=True,
+        misfire_grace_time=600,
         coalesce=True,
     )
 

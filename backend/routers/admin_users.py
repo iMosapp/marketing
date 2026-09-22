@@ -3,29 +3,24 @@ admin_users.py — User management: CRUD, pending users, impersonation, permissi
 Extracted from admin.py for focused ownership of user logic.
 The single source of truth for how users are created, modified, and managed.
 """
-from fastapi import APIRouter, HTTPException, Header, Body, UploadFile, File, Request
+from fastapi import APIRouter, HTTPException, Header, UploadFile, File, Request
 from bson import ObjectId
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from typing import Optional
 import logging
 import secrets
 import os
 import base64
-import asyncio
 from pydantic import BaseModel
 
-from routers.database import get_db, get_user_by_id
+from routers.database import get_db
 from routers.admin_helpers import (
-    safe_objectid, get_requesting_user,
-    send_invite_email, APP_URL, SENDER_EMAIL
+    get_requesting_user,
+    send_invite_email, APP_URL
 )
 from routers.rbac import (
-    get_scoped_organization_ids,
     get_scoped_store_ids,
-    get_scoped_user_ids,
     verify_user_access,
-    has_permission,
-    ROLE_HIERARCHY,
 )
 from routers.auth import hash_password
 
@@ -164,8 +159,16 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     email = data.get('email', '').strip().lower()
     phone = data.get('phone', '').strip()
     user_role = data.get('role', 'user')
-    send_invite = data.get('send_invite', True)
-    send_sms = data.get('send_sms', True)
+    # Jessi onboarding: she texts, interviews and activates them herself, so no invite email / activation text from us
+    jessi_onboarding = bool(data.get('jessi_onboarding'))
+    if jessi_onboarding:
+        from services import jessi_onboarding as _jo
+        if not await _jo.available_for(get_db(), requesting_user):
+            raise HTTPException(status_code=403, detail="Jessi onboarding is not open for your account yet")
+        if not await _jo.sender(get_db()):
+            raise HTTPException(status_code=400, detail="Jessi has no number to text from yet. Set the onboarding sender first.")
+    send_invite = data.get('send_invite', True) and not jessi_onboarding
+    send_sms = data.get('send_sms', True) and not jessi_onboarding
 
     # Store phones in E.164 so activation / reset codes can be texted reliably
     from routers.auth import _to_e164
@@ -198,15 +201,23 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         raise HTTPException(status_code=400, detail="First name is required")
     if not last_name:
         raise HTTPException(status_code=400, detail="Last name is required")
-    if not email or '@' not in email:
+    if email and '@' not in email:
+        raise HTTPException(status_code=400, detail="That email does not look right")
+    if not email and not jessi_onboarding:
         raise HTTPException(status_code=400, detail="Valid email is required")
     if not phone:
         raise HTTPException(status_code=400, detail="Phone number is required")
+    if jessi_onboarding and len(''.join(c for c in phone if c.isdigit())) < 10:
+        raise HTTPException(status_code=400, detail="Jessi needs a real mobile number to text")
     
-    # Check if email exists
-    existing = await get_db().users.find_one({"email": email})
+    # Check if email / phone exists
+    existing = await get_db().users.find_one({"email": email}) if email else None
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
+    if jessi_onboarding:
+        digits = ''.join(c for c in phone if c.isdigit())[-10:]
+        if digits and await get_db().users.find_one({"phone": {"$regex": f"{digits}$"}, "is_active": {"$ne": False}}, {"_id": 1}):
+            raise HTTPException(status_code=400, detail="A user with this mobile number already exists")
     
     # Generate temporary password
     temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
@@ -251,6 +262,10 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         user_dict["website"] = website
     if social_links:
         user_dict["social_links"] = social_links
+    if not email:
+        user_dict.pop("email")  # the email index is unique+sparse: leave the field off until Jessi collects one
+    if jessi_onboarding:
+        user_dict["jessi_onboarding"] = True
     
     # Auto-inherit partner_id from the organization
     if organization_id:
@@ -280,6 +295,16 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         await seed_user_defaults(user_id)
     except Exception as e:
         logger.error(f"Failed to seed defaults for new user {user_id}: {e}")
+
+    # Jessi takes it from here: intro text, contact card, interview invite (state machine in services/jessi_onboarding.py)
+    jessi_started = False
+    if jessi_onboarding:
+        try:
+            from services import jessi_onboarding as _jo
+            await _jo.start(get_db(), user_id, x_user_id)
+            jessi_started = True
+        except Exception as e:
+            logger.error(f"[JessiOnboarding] could not start for {user_id}: {e}")
     
     # Send invite email if requested — activation instructions, no password in the email
     invite_sent = False
@@ -430,11 +455,13 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "store_id": store_id,
         "invite_sent": invite_sent,
         "sms_sent": sms_sent,
+        "jessi_onboarding": jessi_started,
         "contact_created": contact_created,
-        "temp_password": temp_password,
+        "temp_password": None if jessi_started else temp_password,
         "activation_flow": True,
         "activate_url": ACTIVATE_URL,
-        "message": f"User created. {'Invite email sent.' if invite_sent else ''} {'Activation text sent.' if sms_sent else ''} {'Added to your contacts.' if contact_created else ''}".strip()
+        "message": (f"User created. Jessi is texting {first_name} now." if jessi_started else
+                    f"User created. {'Invite email sent.' if invite_sent else ''} {'Activation text sent.' if sms_sent else ''} {'Added to your contacts.' if contact_created else ''}".strip())
     }
 @router.get("/users")
 async def list_users(

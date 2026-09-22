@@ -5,6 +5,19 @@ from datetime import datetime, timezone
 from typing import Optional
 
 FEATURES = [
+    {"key": "jessi_onboarding", "name": "Jessi onboards new users by text", "icon": "chatbubbles",
+     "tagline": "Add a user with just a name and mobile: Jessi texts them from the onboarding number, sends her contact card, runs the setup interview by phone, confirms what she learned, gets their photo and sends a one-tap activation link.",
+     "description": "Admin > Team > Add team member with 'Let Jessi onboard them by text' on. Jessi texts the intro and her contact card, explains the setup, and invites them to the interview (reply CALL or tap the link, she rings them). "
+                    "The call is the existing voice interview, now with what they sell, who buys, what sets them apart and how they want Jessi to hand off. After the call she texts a 3 to 4 sentence "
+                    "'here's what I learned', they reply YEP or correct it, then she asks for the profile photo by text, collects the login email if we have none, and sends a single-use activation link "
+                    "(72 h) that lands straight on set-password. Off-topic questions get answered, then she steers back to the open step. Nudges are configurable per step and stop the moment the step is done. "
+                    "Admin > Jessi Onboarding shows every user's stage, thread, transcript and write-up with Resend, Message, Call, Mark step, Pause and Reset.",
+     "how_to_test": ["Add yourself with a second cell number and the toggle on. You should get the intro, then Jessi's card, then the explanation and invite within about a minute.",
+                     "Reply CALL (or tap the link). Jessi rings the cell within seconds; finish the interview (or hang up early: she texts that you got cut off and offers to call again).",
+                     "Check the 'here's what I learned' text. Reply with a correction, then YEP.",
+                     "Text a photo. Then tap the activation link: it should open set-password without asking for a code.",
+                     "Admin > Jessi Onboarding: the row should show every stamp; try Resend, a custom message and Reset."],
+     "added": "2026-09-21", "needs": "The sender account (Forest by default, changeable in Admin > Jessi Onboarding > settings) needs a Twilio work number."},
     {"key": "voice_interview", "name": "Jessi Voice Interview", "icon": "mic",
      "tagline": "Jessi calls a rep, interviews them for about five minutes and writes their VA, bio and card from the call.",
      "description": "The rep taps Call me in My Profile (or My VA). Jessi rings their cell and asks about 10 things (what customers call them and their role, years and how they got in, "

@@ -232,6 +232,15 @@ async def incoming_message(
     except Exception as shop_err:
         logger.error(f"[Webhook] Text shop routing failed, falling back: {shop_err}")
 
+    # ── A brand-new user texting Jessi on the onboarding number (intro, CALL, write-up confirmation, photo, email) ──
+    try:
+        from services.jessi_onboarding import handle_inbound as _jessi_onboarding
+        if await _jessi_onboarding(db, to_phone, from_phone, Body or "", media_urls, media_types, MessageSid):
+            logger.info(f"[Webhook] Inbound {to_phone} <- {from_phone} handled by Jessi onboarding")
+            return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>', media_type="application/xml")
+    except Exception as jo_err:
+        logger.error(f"[Webhook] Jessi onboarding routing failed, falling back: {jo_err}")
+
     # ── The rep answering Jessi's "reply with a photo for your card" text on their own work number ──
     try:
         from services.photo_request import handle_inbound as _photo_reply

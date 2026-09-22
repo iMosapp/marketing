@@ -5,7 +5,7 @@ import asyncio
 import logging
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import Optional
 
 from bson import ObjectId
@@ -20,21 +20,25 @@ from utils.text_sanitize import no_em_dash
 logger = logging.getLogger(__name__)
 
 COLL = "interview_sessions"
-MAX_MINUTES = 6
-WRAP_AFTER_MINUTES = 4
-MAX_REP_TURNS = 24
+MAX_MINUTES = 10
+WRAP_AFTER_MINUTES = 7
+MAX_REP_TURNS = 36
 CALL_TIME_LIMIT_S = (MAX_MINUTES + 3) * 60
 MIN_REP_TURNS = 3  # fewer than this and there is nothing worth building from
 
-# Nine neutral topics that fit any industry, plus ONE industry slot (industries.VA[...]["slot"]: what they drive for a dealership, their neighborhood for real estate...)
+# Neutral topics that fit any industry, plus ONE industry slot (industries.VA[...]["slot"]: what they drive for a dealership, their neighborhood for real estate...)
 BASE_TOPICS = [
     ("nickname", "What customers call them and their role"),
     ("years", "How long they have done this work and how they got into it"),
     ("hometown", "Where they grew up and where they live now"),
     ("family", "Family: partner, kids, pets"),
     ("hobbies", "What they do outside work, weekends, hobbies"),
+    ("sell", "What they sell or do, and who their typical customers are"),
+    ("different", "What makes them or their company different, and the area they serve"),
+    ("questions", "The questions customers ask them most, and how they like to answer"),
     ("why", "Why they do this work and why customers pick them over anyone else"),
     ("texting", "How they text customers: casual or buttoned-up, emojis or none, short or detailed, how much humor"),
+    ("handoff", "What Jessi may handle on her own with customers, when she should check with them first, and when to hand the conversation back"),
     ("never_say", "Words or things they never say to a customer"),
     ("fun_fact", "A fun fact people are surprised to learn about them"),
 ]
@@ -49,18 +53,19 @@ def topics(industry_key: Optional[str]) -> list:
     return BASE_TOPICS[:5] + [(field, question)] + BASE_TOPICS[5:]
 
 
-PERSONA_STR = ["bio", "professional_identity", "hometown", "family_info", "vehicles", "years_experience", "personal_motto", "ideal_customer", "never_say"]
-PERSONA_LIST = ["hobbies", "fun_facts", "specialties", "interests"]
+PERSONA_STR = ["bio", "professional_identity", "hometown", "family_info", "vehicles", "years_experience", "personal_motto", "ideal_customer", "never_say", "what_i_sell", "differentiators", "service_area", "handoff_rules"]
+PERSONA_LIST = ["hobbies", "fun_facts", "specialties", "interests", "common_questions"]
 PERSONA_ENUM = {"tone": ("casual", "friendly", "professional", "formal"), "humor_level": ("none", "light", "some", "lots"),
                 "response_length": ("brief", "balanced", "detailed"), "emoji_usage": ("never", "minimal", "moderate", "frequent")}
 LABELS = {"bio": "Your story", "professional_identity": "Title", "hometown": "Hometown", "family_info": "Family", "vehicles": "What you drive", "years_experience": "Years in the business",
-          "personal_motto": "Motto", "ideal_customer": "Ideal customer", "never_say": "Never says",
+          "personal_motto": "Motto", "ideal_customer": "Ideal customer", "never_say": "Never says", "what_i_sell": "What you sell", "differentiators": "What sets you apart", "service_area": "Area you serve",
+          "handoff_rules": "When Jessi hands off to you", "common_questions": "Customers often ask",
           "hobbies": "Hobbies", "fun_facts": "Fun facts", "specialties": "Specialties", "interests": "Interests", "tone": "Tone", "humor_level": "Humor", "response_length": "Message length", "emoji_usage": "Emojis"}
 
 
 def greeting(first: str) -> str:
     hi = f"Hey {first}, " if first else "Hey, "
-    return (f"{hi}it's Jessi from I'm On Social. This is your interview call, about five minutes, easy questions, nothing graded. "
+    return (f"{hi}it's Jessi from I'm On Social. This is your setup interview, five to ten minutes, easy questions, nothing graded. "
             "Everything you tell me builds your assistant, your bio and your business card so they sound like you. "
             "Let's start simple: what do your customers usually call you, and what's your role?")
 
@@ -221,7 +226,7 @@ def _system(s: dict, minutes: float, rep_turns: int) -> str:
     elif minutes >= WRAP_AFTER_MINUTES:
         pace = f"You are {minutes:.0f} minutes in: ask at most one or two more of the most valuable topics left, then wrap up warmly and set ended to true."
     else:
-        pace = f"You are {minutes:.0f} minutes in. Keep a relaxed pace, one question at a time, about five minutes total."
+        pace = f"You are {minutes:.0f} minutes in. Keep a relaxed pace, one question at a time, about eight minutes total."
     business = ind.va(s.get("industry"))["business"]
     return (f"You are Jessi, the friendly onboarding host at I'm On Social, on a LIVE phone call interviewing {first}"
             f"{', ' + s['role_title'] if s.get('role_title') else ''} at {s.get('store_name') or 'their ' + business}. "
@@ -343,15 +348,29 @@ async def finalize(db, sid: str, reason: str) -> Optional[dict]:
     if not claimed:
         return None
     s = await db[COLL].find_one({"_id": ObjectId(sid)})
+    from services import jessi_onboarding as jo
+    onboarding = await jo.active_for(db, s["user_id"]) if not s.get("dry_run") else None
     if sum(1 for t in s.get("turns", []) if t.get("role") == "rep") < MIN_REP_TURNS:
         await db[COLL].update_one({"_id": s["_id"]}, {"$set": {"status": "abandoned", "fail_reason": "The call ended before we got going. Tap Call me to try again", "updated_at": _now()}})
+        if onboarding:
+            await jo.on_interview_failed(db, onboarding, reason)
         return None
-    try:
-        from services import photo_request
-        await photo_request.ask(db, s)
-    except Exception as e:
-        logger.warning(f"[Interview] photo request text failed: {e}")
-    return await build(db, s)
+    if not onboarding:  # Jessi-onboarded users get the photo ask after they confirm the write-up instead
+        try:
+            from services import photo_request
+            await photo_request.ask(db, s)
+        except Exception as e:
+            logger.warning(f"[Interview] photo request text failed: {e}")
+    out = await build(db, s)
+    if onboarding:
+        try:
+            if out and out.get("status") == "completed":
+                await jo.on_interview_built(db, onboarding, out)
+            else:
+                await jo.on_interview_failed(db, onboarding, "build_failed")
+        except Exception as e:
+            logger.warning(f"[Interview] onboarding hook failed: {e}")
+    return out
 
 
 async def build(db, s: dict) -> Optional[dict]:
@@ -394,7 +413,9 @@ async def extract(s: dict) -> dict:
               "bio (3 to 5 sentences, FIRST PERSON, warm and specific, for their public business card and landing page: who they are, how long, what they are known for, one personal touch such as family, hobby or hometown, and why customers pick them), "
               f"professional_identity (job title as it would read on a card, e.g. Sales Consultant), hometown, family_info, {slot_desc}years_experience (e.g. 12 years), personal_motto (only if they said one), ideal_customer (only if it came up), "
               "never_say (words or topics they avoid with customers), "
-              f"hobbies (list of short strings), fun_facts (list), specialties (list, what they are known for, only if it came up), {interests_desc}, "
+              "what_i_sell (one sentence: what they sell or do and for whom), differentiators (one or two sentences: what makes them or their company different), service_area (the area they serve, only if it came up), "
+              "handoff_rules (one to three plain sentences on what their assistant may handle alone, when to check with them first and when to hand the conversation back, only if it came up), "
+              f"hobbies (list of short strings), fun_facts (list), specialties (list, what they are known for, only if it came up), common_questions (list of the questions customers ask them most, only if it came up), {interests_desc}, "
               "tone (one of casual, friendly, professional, formal), humor_level (one of none, light, some, lots), response_length (one of brief, balanced, detailed), emoji_usage (one of never, minimal, moderate, frequent), "
               "highlights (5 to 8 short plain sentences of what Jessi learned, written to the rep as 'you', e.g. You have sold trucks in Ogden for 12 years).")
     data = await _llm_json(system, f"INTERVIEW TRANSCRIPT:\n{transcript[:14000]}", timeout=90)

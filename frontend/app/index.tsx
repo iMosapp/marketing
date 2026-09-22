@@ -59,6 +59,9 @@ export default function Index() {
       } else {
         setRedirectPath('/auth/login');
       }
+    } else if (!isImpersonating && (user as any)?.jessi_welcome_pending) {
+      // Jessi already built their profile by text: her welcome screen replaces the product tour
+      setRedirectPath('/welcome-jessi');
     } else if (!isImpersonating && (user?.needs_onboarding || user?.status === 'pending' || !user?.onboarding_complete)) {
       // Check local backup flag before showing onboarding again
       if (user?._id) {

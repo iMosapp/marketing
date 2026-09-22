@@ -749,6 +749,10 @@ api_router.include_router(scripts_router.relay_router)
 from routers import interview as interview_router
 api_router.include_router(interview_router.router)
 api_router.include_router(interview_router.public)
+from routers import jessi_onboarding as jessi_onboarding_router
+api_router.include_router(jessi_onboarding_router.router)
+api_router.include_router(jessi_onboarding_router.me_router)
+api_router.include_router(jessi_onboarding_router.public)
 from routers import lab as lab_router
 api_router.include_router(lab_router.router)
 from routers import live_voice as live_voice_router

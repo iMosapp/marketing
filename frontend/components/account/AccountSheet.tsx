@@ -39,6 +39,7 @@ export const buildAccountSections = (user: any): Section[] => {
       title: 'MANAGE',
       items: [
         { key: 'team', label: 'Team', icon: 'people-outline', route: '/admin/users' },
+        { key: 'jessi-onboarding', label: 'Jessi Onboarding', icon: 'chatbubbles-outline', route: '/admin/onboarding-jessi' },
         { key: 'reports', label: 'Reports & Performance', icon: 'stats-chart-outline', route: '/reports/team-performance' },
         { key: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline', route: '/campaigns' },
         { key: 'templates', label: 'Templates', icon: 'document-text-outline', route: '/settings/templates' },

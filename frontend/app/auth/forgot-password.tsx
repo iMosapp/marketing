@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { authAPI } from '../../services/api';
@@ -63,6 +63,7 @@ export default function ForgotPasswordScreen({ mode = 'reset' }: { mode?: CodeFl
   };
   const styles = getStyles(colors);
   const router = useRouter();
+  const { token: linkToken } = useLocalSearchParams<{ token?: string }>();
   const login = useAuthStore((s) => s.login);
   const copy = COPY[mode];
   const isActivate = mode === 'activate';
@@ -75,6 +76,27 @@ export default function ForgotPasswordScreen({ mode = 'reset' }: { mode?: CodeFl
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+  // Jessi's activation link: the link itself proves it is them, so no code step; we may still need their login email
+  const [viaLink, setViaLink] = useState<{ first_name?: string; needs_email: boolean } | null>(null);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [linkLoading, setLinkLoading] = useState(!!(isActivate && linkToken));
+
+  useEffect(() => {
+    if (!isActivate || !linkToken) return;
+    authAPI.activateLink(String(linkToken)).then((res) => {
+      if (res.already_active) {
+        showAlert('Already activated', `You're all set${res.first_name ? `, ${res.first_name}` : ''}. Log in with your email and password.`, [{ text: 'Log In', onPress: () => router.replace('/auth/login') }]);
+        return;
+      }
+      setEmail(res.identifier || '');
+      setCode(res.code || '');
+      setVerifiedEmail(res.email || null);
+      setViaLink({ first_name: res.first_name, needs_email: !!res.needs_email });
+      setStep('password');
+    }).catch((error: any) => {
+      showAlert('Link expired', error?.response?.data?.detail || 'This link has expired. Text Jessi and she will send a fresh one.', [{ text: 'OK' }]);
+    }).finally(() => setLinkLoading(false));
+  }, [isActivate, linkToken]);
   
   const handleRequestCode = async () => {
     if (!email.trim()) {
@@ -129,12 +151,17 @@ export default function ForgotPasswordScreen({ mode = 'reset' }: { mode?: CodeFl
       showSimpleAlert('Error', 'Passwords do not match');
       return;
     }
+    const typedEmail = loginEmail.trim().toLowerCase();
+    if (viaLink?.needs_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(typedEmail)) {
+      showSimpleAlert('Error', 'Add the email you want to log in with');
+      return;
+    }
 
     setLoading(true);
     try {
       if (isActivate) {
-        const res = await authAPI.activateComplete(email.trim(), code, newPassword);
-        const loginEmail = res?.email || verifiedEmail;
+        const res = await authAPI.activateComplete(email.trim(), code, newPassword, viaLink?.needs_email ? typedEmail : undefined);
+        const loginEmail = res?.email || verifiedEmail || typedEmail;
         if (loginEmail) {
           try {
             await login(loginEmail, newPassword);
@@ -244,8 +271,26 @@ export default function ForgotPasswordScreen({ mode = 'reset' }: { mode?: CodeFl
   
   const renderPasswordStep = () => (
     <>
-      <Text style={styles.stepTitle}>{copy.passwordTitle}</Text>
-      <Text style={styles.stepDescription}>{copy.passwordDescription}</Text>
+      <Text style={styles.stepTitle}>{viaLink ? `Welcome, ${viaLink.first_name || 'there'}` : copy.passwordTitle}</Text>
+      <Text style={styles.stepDescription}>{viaLink ? "Jessi already built your profile. Choose the password you'll log in with and you're in." : copy.passwordDescription}</Text>
+
+      {viaLink?.needs_email && (
+        <TextInput
+          style={styles.input}
+          placeholder="Email you'll log in with"
+          placeholderTextColor={colors.textSecondary}
+          value={loginEmail}
+          onChangeText={setLoginEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          testID="code-flow-login-email"
+          dataSet={{ testid: 'code-flow-login-email' }}
+        />
+      )}
+      {!!viaLink && !viaLink.needs_email && !!verifiedEmail && (
+        <Text style={[styles.stepDescription, { marginTop: -8 }]} testID="code-flow-login-email-fixed" dataSet={{ testid: 'code-flow-login-email-fixed' }}>Login email: {verifiedEmail}</Text>
+      )}
       
       <View style={styles.passwordContainer}>
         <TextInput
@@ -256,7 +301,7 @@ export default function ForgotPasswordScreen({ mode = 'reset' }: { mode?: CodeFl
           onChangeText={setNewPassword}
           secureTextEntry={!showPassword}
           autoCapitalize="none"
-          autoFocus
+          autoFocus={!viaLink?.needs_email}
           testID="code-flow-password"
           dataSet={{ testid: 'code-flow-password' }}
         />
@@ -320,7 +365,7 @@ export default function ForgotPasswordScreen({ mode = 'reset' }: { mode?: CodeFl
           <View style={styles.header}>
             <TouchableOpacity
               onPress={() => {
-                if (step === 'email') {
+                if (step === 'email' || viaLink) {
                   if (router.canGoBack()) router.back(); else router.replace('/auth/login');
                 } else if (step === 'code') {
                   setStep('email');
@@ -337,7 +382,7 @@ export default function ForgotPasswordScreen({ mode = 'reset' }: { mode?: CodeFl
             
             {/* Progress indicator */}
             <View style={styles.progressContainer}>
-              {(['email', 'code', 'password'] as Step[]).map((s, index) => (
+              {!viaLink && (['email', 'code', 'password'] as Step[]).map((s, index) => (
                 <View
                   key={s}
                   style={[
@@ -353,9 +398,13 @@ export default function ForgotPasswordScreen({ mode = 'reset' }: { mode?: CodeFl
           </View>
           
           <View style={styles.form}>
-            {step === 'email' && renderEmailStep()}
-            {step === 'code' && renderCodeStep()}
-            {step === 'password' && renderPasswordStep()}
+            {linkLoading ? <ActivityIndicator color="#C9A962" style={{ marginTop: 40 }} testID="code-flow-link-loading" dataSet={{ testid: 'code-flow-link-loading' }} /> : (
+              <>
+                {step === 'email' && renderEmailStep()}
+                {step === 'code' && renderCodeStep()}
+                {step === 'password' && renderPasswordStep()}
+              </>
+            )}
           </View>
           
           <TouchableOpacity

@@ -291,9 +291,15 @@ export const authAPI = {
     return response.data as { verified: boolean; email: string; first_name?: string };
   },
 
-  activateComplete: async (identifier: string, code: string, newPassword: string) => {
-    const response = await api.post('/auth/activate/complete', { phone: identifier, code, new_password: newPassword });
+  activateComplete: async (identifier: string, code: string, newPassword: string, email?: string) => {
+    const response = await api.post('/auth/activate/complete', { phone: identifier, code, new_password: newPassword, ...(email ? { email } : {}) });
     return response.data as { message: string; email: string };
+  },
+
+  // Jessi's single-use activation link: swaps the link token for the phone + code the set-password step needs
+  activateLink: async (token: string) => {
+    const response = await api.post('/auth/activate/link', { token });
+    return response.data as { already_active?: boolean; identifier?: string; code?: string; email?: string | null; needs_email?: boolean; first_name?: string };
   },
 
   changePassword: async (userId: string, currentPassword: string, newPassword: string) => {

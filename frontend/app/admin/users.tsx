@@ -79,6 +79,9 @@ export default function UsersScreen() {
   const [newUserOrgId, setNewUserOrgId] = useState<string | null>(null);
   const [newUserStoreId, setNewUserStoreId] = useState<string | null>(null);
   const [sendInvite, setSendInvite] = useState(false); // Default to showing password
+  const [jessiAvailable, setJessiAvailable] = useState(false);
+  const [jessiOnboard, setJessiOnboard] = useState(false);
+  const [jessiSender, setJessiSender] = useState<{ name?: string; number?: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [createdUser, setCreatedUser] = useState<any>(null);
   const [organizations, setOrganizations] = useState<any[]>([]);
@@ -92,6 +95,11 @@ export default function UsersScreen() {
       loadUsers();
       loadOrganizations();
       loadStores();
+      api.get('/admin/onboarding-jessi/config').then(r => {
+        setJessiAvailable(!!r.data?.available && !!r.data?.sender);
+        setJessiOnboard(!!r.data?.available && !!r.data?.sender && !!r.data?.default_on);
+        setJessiSender(r.data?.sender || null);
+      }).catch(() => {});
       // Auto-open modal if coming from contact "Convert to User"
       if (params.importName) {
         setNewUserName(params.importName || '');
@@ -194,7 +202,16 @@ export default function UsersScreen() {
       showAlert('Error', 'Please enter a name');
       return;
     }
-    if (!newUserEmail.trim() || !newUserEmail.includes('@')) {
+    if (jessiOnboard) {
+      if (newUserPhone.replace(/\D/g, '').length < 10) {
+        showAlert('Error', 'Jessi needs a mobile number to text');
+        return;
+      }
+      if (newUserEmail.trim() && !newUserEmail.includes('@')) {
+        showAlert('Error', 'That email does not look right');
+        return;
+      }
+    } else if (!newUserEmail.trim() || !newUserEmail.includes('@')) {
       showAlert('Error', 'Please enter a valid email');
       return;
     }
@@ -209,12 +226,13 @@ export default function UsersScreen() {
         first_name,
         last_name,
         name: newUserName.trim(),
-        email: newUserEmail.trim().toLowerCase(),
+        email: newUserEmail.trim().toLowerCase() || undefined,
         phone: newUserPhone.trim() || undefined,
         role: newUserRole,
         organization_id: newUserOrgId || undefined,
         store_id: newUserStoreId || undefined,
-        send_invite: sendInvite,
+        send_invite: sendInvite && !jessiOnboard,
+        jessi_onboarding: jessiOnboard,
         source_contact_id: selectedContactId || undefined,
       });
 
@@ -222,8 +240,11 @@ export default function UsersScreen() {
         setCreatedUser({
           name: newUserName.trim(),
           email: newUserEmail.trim().toLowerCase(),
+          phone: newUserPhone.trim(),
           temp_password: response.data.temp_password,
           invite_sent: response.data.invite_sent,
+          jessi: !!response.data.jessi_onboarding,
+          user_id: response.data.user_id,
         });
         loadUsers();
       }
@@ -527,7 +548,7 @@ export default function UsersScreen() {
               {...tid('new-user-name')}
             />
 
-            <Text style={styles.inputLabel}>Email *</Text>
+            <Text style={styles.inputLabel}>{jessiOnboard ? 'Email (optional, Jessi will ask for it)' : 'Email *'}</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="email@example.com"
@@ -539,7 +560,7 @@ export default function UsersScreen() {
               {...tid('new-user-email')}
             />
 
-            <Text style={styles.inputLabel}>Phone (optional)</Text>
+            <Text style={styles.inputLabel}>{jessiOnboard ? 'Mobile *' : 'Phone (optional)'}</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="+1 555 123 4567"
@@ -630,6 +651,25 @@ export default function UsersScreen() {
               ))}
             </View>
 
+            {jessiAvailable && (
+              <TouchableOpacity
+                style={[styles.inviteToggle, jessiOnboard && { borderColor: '#C9A962', backgroundColor: 'rgba(201,169,98,0.08)' }]}
+                onPress={() => setJessiOnboard(!jessiOnboard)}
+                {...tid('new-user-jessi-onboard')}
+              >
+                <View style={[styles.checkbox, jessiOnboard && styles.checkboxChecked]}>
+                  {jessiOnboard && <Ionicons name="checkmark" size={16} color="#000" />}
+                </View>
+                <View style={styles.inviteToggleText}>
+                  <Text style={styles.inviteToggleTitle}>Let Jessi onboard them by text</Text>
+                  <Text style={styles.inviteToggleSubtitle}>
+                    Jessi texts from {jessiSender?.number || 'the onboarding number'}: intro, her contact card, the setup call, photo, then the activation link. No email or password needed up front.
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {!jessiOnboard && (
             <TouchableOpacity 
               style={styles.inviteToggle}
               onPress={() => setSendInvite(!sendInvite)}
@@ -645,8 +685,9 @@ export default function UsersScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
+            )}
 
-            {!sendInvite && (
+            {!sendInvite && !jessiOnboard && (
               <View style={styles.warningBox}>
                 <Ionicons name="warning" size={20} color="#FF9500" />
                 <Text style={styles.warningText}>
@@ -736,7 +777,7 @@ export default function UsersScreen() {
               {...tid('new-user-name')}
             />
 
-            <Text style={styles.inputLabel}>Email *</Text>
+            <Text style={styles.inputLabel}>{jessiOnboard ? 'Email (optional, Jessi will ask for it)' : 'Email *'}</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="email@example.com"
@@ -748,7 +789,7 @@ export default function UsersScreen() {
               {...tid('new-user-email')}
             />
 
-            <Text style={styles.inputLabel}>Phone (optional)</Text>
+            <Text style={styles.inputLabel}>{jessiOnboard ? 'Mobile *' : 'Phone (optional)'}</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="+1 555 123 4567"
@@ -839,6 +880,25 @@ export default function UsersScreen() {
               ))}
             </View>
 
+            {jessiAvailable && (
+              <TouchableOpacity
+                style={[styles.inviteToggle, jessiOnboard && { borderColor: '#C9A962', backgroundColor: 'rgba(201,169,98,0.08)' }]}
+                onPress={() => setJessiOnboard(!jessiOnboard)}
+                {...tid('new-user-jessi-onboard')}
+              >
+                <View style={[styles.checkbox, jessiOnboard && styles.checkboxChecked]}>
+                  {jessiOnboard && <Ionicons name="checkmark" size={16} color="#000" />}
+                </View>
+                <View style={styles.inviteToggleText}>
+                  <Text style={styles.inviteToggleTitle}>Let Jessi onboard them by text</Text>
+                  <Text style={styles.inviteToggleSubtitle}>
+                    Jessi texts from {jessiSender?.number || 'the onboarding number'}: intro, her contact card, the setup call, photo, then the activation link. No email or password needed up front.
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {!jessiOnboard && (
             <TouchableOpacity 
               style={styles.inviteToggle}
               onPress={() => setSendInvite(!sendInvite)}
@@ -854,8 +914,9 @@ export default function UsersScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
+            )}
 
-            {!sendInvite && (
+            {!sendInvite && !jessiOnboard && (
               <View style={styles.warningBox}>
                 <Ionicons name="warning" size={20} color="#FF9500" />
                 <Text style={styles.warningText}>
@@ -877,15 +938,25 @@ export default function UsersScreen() {
             </View>
             
             <Text style={styles.successTitle}>Team member created</Text>
-            <Text style={styles.successSubtitle}>
-              {createdUser?.name} will get a text and email with activation steps: open the app, tap "Activate my account", verify with a 6-digit code, then choose a password.
+            <Text style={styles.successSubtitle} {...tid('created-user-subtitle')}>
+              {createdUser?.jessi
+                ? `Jessi is texting ${createdUser?.name} at ${createdUser?.phone || 'their mobile'} right now: intro, her contact card, then the setup call. You can follow along under Admin > Jessi Onboarding.`
+                : `${createdUser?.name} will get a text and email with activation steps: open the app, tap "Activate my account", verify with a 6-digit code, then choose a password.`}
             </Text>
             
             <View style={styles.credentialsBox}>
-              <View style={styles.credentialRow}>
-                <Text style={styles.credentialLabel}>Email:</Text>
-                <Text style={styles.credentialValue}>{createdUser?.email}</Text>
-              </View>
+              {!!createdUser?.email && (
+                <View style={styles.credentialRow}>
+                  <Text style={styles.credentialLabel}>Email:</Text>
+                  <Text style={styles.credentialValue}>{createdUser?.email}</Text>
+                </View>
+              )}
+              {createdUser?.jessi && (
+                <TouchableOpacity style={styles.credentialRow} onPress={() => { handleCloseSuccessModal(); router.push(`/admin/onboarding-jessi/${createdUser?.user_id}` as any); }} {...tid('created-user-open-onboarding')}>
+                  <Text style={styles.credentialLabel}>Onboarding:</Text>
+                  <Text style={[styles.credentialValue, { color: '#C9A962' }]}>Follow Jessi's progress →</Text>
+                </TouchableOpacity>
+              )}
               {createdUser?.temp_password && (
                 <View style={styles.credentialRow}>
                   <Text style={styles.credentialLabel}>Backup password:</Text>
@@ -941,15 +1012,25 @@ export default function UsersScreen() {
             </View>
             
             <Text style={styles.successTitle}>Team member created</Text>
-            <Text style={styles.successSubtitle}>
-              {createdUser?.name} will get a text and email with activation steps: open the app, tap "Activate my account", verify with a 6-digit code, then choose a password.
+            <Text style={styles.successSubtitle} {...tid('created-user-subtitle')}>
+              {createdUser?.jessi
+                ? `Jessi is texting ${createdUser?.name} at ${createdUser?.phone || 'their mobile'} right now: intro, her contact card, then the setup call. You can follow along under Admin > Jessi Onboarding.`
+                : `${createdUser?.name} will get a text and email with activation steps: open the app, tap "Activate my account", verify with a 6-digit code, then choose a password.`}
             </Text>
             
             <View style={styles.credentialsBox}>
-              <View style={styles.credentialRow}>
-                <Text style={styles.credentialLabel}>Email:</Text>
-                <Text style={styles.credentialValue}>{createdUser?.email}</Text>
-              </View>
+              {!!createdUser?.email && (
+                <View style={styles.credentialRow}>
+                  <Text style={styles.credentialLabel}>Email:</Text>
+                  <Text style={styles.credentialValue}>{createdUser?.email}</Text>
+                </View>
+              )}
+              {createdUser?.jessi && (
+                <TouchableOpacity style={styles.credentialRow} onPress={() => { handleCloseSuccessModal(); router.push(`/admin/onboarding-jessi/${createdUser?.user_id}` as any); }} {...tid('created-user-open-onboarding')}>
+                  <Text style={styles.credentialLabel}>Onboarding:</Text>
+                  <Text style={[styles.credentialValue, { color: '#C9A962' }]}>Follow Jessi's progress →</Text>
+                </TouchableOpacity>
+              )}
               {createdUser?.temp_password && (
                 <View style={styles.credentialRow}>
                   <Text style={styles.credentialLabel}>Backup password:</Text>

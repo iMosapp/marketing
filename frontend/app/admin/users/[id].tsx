@@ -21,6 +21,7 @@ import { useToast } from '../../../components/common/Toast';
 import { useAuthStore } from '../../../store/authStore';
 import { useThemeStore } from '../../../store/themeStore';
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
+import { UserJessiRow } from '../../../components/onboarding-jessi/UserJessiRow';
 import { FS } from '../../../constants/typography';
 
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -692,6 +693,8 @@ export default function UserDetailScreen() {
             <Ionicons name="key-outline" size={20} color="#FF3B30" />
             <Text style={[styles.impersonateButtonText, { color: '#FF3B30' }]}>Reset Password</Text>
           </TouchableOpacity>
+
+          <UserJessiRow userId={String(id)} userName={user.name} phone={user.phone} />
         </View>
         
         {/* Profile Completeness */}
