@@ -2240,6 +2240,8 @@ async def send_message_simple(user_id: str, message_data: dict):
                 "content_preview": content[:100],
                 "timestamp": datetime.now(timezone.utc),
             })
+            from services.jessi_onboarding import maybe_first_win
+            maybe_first_win(db, user_id, event_type)
     
     else:
         # SMS via Twilio — use rep's dedicated number
@@ -2294,6 +2296,8 @@ async def send_message_simple(user_id: str, message_data: dict):
                     "status": message['status'],
                     "timestamp": datetime.now(timezone.utc),
                 })
+                from services.jessi_onboarding import maybe_first_win
+                maybe_first_win(db, user_id, sms_event_type)
         else:
             message['status'] = 'failed'
             message['error'] = 'No phone number for contact'

@@ -1,6 +1,6 @@
 """Preview demo data for the Jessi Onboarding dashboard (no texts go out). Idempotent; `--wipe` removes.
-Creates two Jessi-onboarded users under Forest: Quinn QA-Onboard (+15005550077, waiting on them at INTERVIEW_INVITED with a
-thread) and Riley QA-Onboard (+15005550078, ACTIVATION_SENT, write-up confirmed, photo in).
+Creates two Jessi-onboarded users under Forest: Quinn QA-Onboard (+15005550077, waiting on them at INTERVIEW_INVITED for ~30 h,
+so the morning digest lists them) and Riley QA-Onboard (+15005550078, ACTIVATION_SENT, write-up confirmed, photo in).
 Run: cd /app/backend && set -a && . ./.env && set +a && python tests/seed_jessi_onboarding_demo.py [--wipe]"""
 import asyncio
 import os
@@ -14,7 +14,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from services import jessi_onboarding as jo
 
 PEOPLE = [
-    {"first": "Quinn", "phone": "+15005550077", "state": "INTERVIEW_INVITED", "email": ""},
+    {"first": "Quinn", "phone": "+15005550077", "state": "INTERVIEW_INVITED", "email": "", "age_h": 36},
     {"first": "Riley", "phone": "+15005550078", "state": "ACTIVATION_SENT", "email": "riley.qa@invalid.imonsocial.test"},
 ]
 
@@ -24,6 +24,8 @@ async def wipe(db):
         async for u in db.users.find({"phone": p["phone"]}, {"_id": 1}):
             await db.user_onboarding.delete_many({"user_id": str(u["_id"])})
             await db.password_reset_tokens.delete_many({"user_id": str(u["_id"])})
+            await db.contacts.delete_many({"user_id": str(u["_id"])})
+            await db.contact_events.delete_many({"user_id": str(u["_id"])})
             await db.users.delete_one({"_id": u["_id"]})
         await db.user_onboarding.delete_many({"phone": p["phone"]})
 
@@ -41,7 +43,8 @@ async def seed(db):
                                          "persona": {"bio": "I've sold trucks in southern Utah for twelve years and I keep it plain and friendly.", "hometown": "Cedar City", "tone": "friendly", "specialties": ["Trucks", "First-time buyers"]} if p["state"] != "INTERVIEW_INVITED" else {}})
         uid = str(res.inserted_id)
         idx = jo.ORDER[p["state"]]
-        steps = {s: now - timedelta(hours=(idx - i) * 3 + 1) for i, s in enumerate(jo.STATES[: idx + 1])}
+        base_h = p.get("age_h", 1)
+        steps = {s: now - timedelta(hours=(idx - i) * 3 + base_h) for i, s in enumerate(jo.STATES[: idx + 1])}
         first = p["first"]
         thread = [
             {"role": "jessi", "text": jo.text("intro", first=first), "at": steps["JESSI_INTRODUCED"], "ok": True, "kind": "intro"},
@@ -54,9 +57,10 @@ async def seed(db):
                "created_at": steps["NOT_STARTED"], "updated_at": now, "qa_seed": True}
         thread.append({"role": "jessi", "text": jo.text("invite", phone=jo._mask(p["phone"]), link=jo.call_link(doc)), "at": steps["INTERVIEW_INVITED"], "ok": True, "kind": "invite"})
         if p["state"] == "INTERVIEW_INVITED":
-            thread.append({"role": "user", "text": "what does this app even do?", "at": now - timedelta(minutes=40), "sid": "SMseed1"})
-            thread.append({"role": "jessi", "text": "It keeps up with your customers by text for you: reminders, your digital card, review asks. Ready for the setup call? Reply CALL.", "at": now - timedelta(minutes=39), "ok": True, "kind": "chat"})
-            doc["last_inbound_at"] = now - timedelta(minutes=40)
+            asked = now - timedelta(hours=base_h - 6) if base_h > 6 else now - timedelta(minutes=40)
+            thread.append({"role": "user", "text": "what does this app even do?", "at": asked, "sid": "SMseed1"})
+            thread.append({"role": "jessi", "text": "It keeps up with your customers by text for you: reminders, your digital card, review asks. Ready for the setup call? Reply CALL.", "at": asked + timedelta(minutes=1), "ok": True, "kind": "chat"})
+            doc["last_inbound_at"] = asked
         else:
             thread += [
                 {"role": "user", "text": "CALL", "at": steps["INTERVIEW_STARTED"], "sid": "SMseed2"},

@@ -124,11 +124,12 @@ def test_inbound_webhook_idempotent(admin_headers, rows):
     before = requests.get(f"{BASE}/api/admin/onboarding-jessi/{uid}", headers=admin_headers, timeout=30).json()
     before_count = len(before["thread"])
 
+    sid = f"SMqa_review_346_{int(time.time())}"
     form = {
         "From": QUINN_PHONE,
         "To": "+14352203414",
         "Body": "tell me about the app",
-        "MessageSid": "SMqa_review_346",
+        "MessageSid": sid,
         "NumMedia": "0",
     }
     r1 = requests.post(f"{BASE}/api/webhooks/twilio/incoming", data=form, timeout=30)
@@ -147,15 +148,15 @@ def test_inbound_webhook_idempotent(admin_headers, rows):
     # inbound user + jessi reply expected; but not double-user
     user_bubbles = [b for b in after["thread"] if b.get("direction") == "in"]
     sids = [b.get("sid") or b.get("message_sid") for b in user_bubbles]
-    assert sids.count("SMqa_review_346") <= 1, f"duplicate inbound stored: {sids}"
+    assert sids.count(sid) <= 1, f"duplicate inbound stored: {sids}"
     assert added >= 1
 
 
-def test_yep_at_invited_means_call_me(admin_headers, rows):
+def test_yep_at_invited_asks_before_calling(admin_headers, rows):
     quinn = next(r for r in rows["rows"] if r.get("phone") == QUINN_PHONE)
     uid = quinn["user_id"]
     before = requests.get(f"{BASE}/api/admin/onboarding-jessi/{uid}", headers=admin_headers, timeout=30).json()
-    prev_state = before["state"]
+    assert before["state"] == "INTERVIEW_INVITED", "re-run tests/seed_jessi_onboarding_demo.py first"
 
     form = {
         "From": QUINN_PHONE,
@@ -168,8 +169,10 @@ def test_yep_at_invited_means_call_me(admin_headers, rows):
     assert r.status_code == 200
     time.sleep(2)
     after = requests.get(f"{BASE}/api/admin/onboarding-jessi/{uid}", headers=admin_headers, timeout=30).json()
-    # "Ready to build your profile? Reply CALL" -> a bare YEP means "yes, ring me": it is a call trigger at the invite
-    # (the write-up confirmation only applies at INTERVIEW_COMPLETE). The call attempt to a 500 number fails, so the
-    # state is INTERVIEW_STARTED (call placed) or still INTERVIEW_INVITED (Twilio refused); never anything later.
-    assert after["state"] in (prev_state, "INTERVIEW_STARTED"), f"unexpected state {after['state']} on YEP at INVITED"
+    # "Ready to build your profile? Reply CALL" -> a bare YEP is ambiguous, so Jessi asks once ("Want me to ring you
+    # right now? Reply CALL") instead of placing a call; the state does not move. A second yes (or CALL) rings them.
+    assert after["state"] == "INTERVIEW_INVITED", f"unexpected state {after['state']} on YEP at INVITED"
     assert any(t.get("text") == "YEP" for t in after["thread"])
+    jessi_lines = [t for t in after["thread"] if t.get("role") == "jessi"]
+    assert jessi_lines and jessi_lines[-1].get("kind") == "call_confirm", jessi_lines[-1]
+    assert "Reply CALL" in jessi_lines[-1]["text"]

@@ -38,6 +38,16 @@ async def my_first_success(request: Request, body: Optional[FirstWinBody] = None
     return {"ok": True, "state": (doc or {}).get("state")}
 
 
+@me_router.post("/win")
+async def my_first_win(request: Request, body: Optional[FirstWinBody] = None):
+    """The app just saw this user do their first real thing (a card sent): celebrate once if Jessi onboarded them."""
+    me = await _resolve(request)
+    kind = (body.which if body else "") or "card"
+    out = await jo.claim_celebration(get_db(), str(me["_id"]), kind)
+    doc = await jo.get(get_db(), str(me["_id"]))
+    return {**out, "state": (doc or {}).get("state")}
+
+
 async def _admin(request: Request) -> dict:
     me = await _resolve(request)
     if not me or me.get("role") not in MANAGER_ROLES:
@@ -46,16 +56,56 @@ async def _admin(request: Request) -> dict:
 
 
 def _scope(me: dict) -> dict:
-    if me.get("role") == "super_admin":
-        return {}
-    if me.get("role") == "org_admin" and me.get("organization_id"):
-        return {"organization_id": me["organization_id"]}
-    from services.lead_flows import user_store_id
-    sid = user_store_id(me)
-    return {"store_id": sid} if sid else {"created_by": str(me["_id"])}
+    return jo.scope_query(me)
 
 
 # ---------------------------------------------------------------- admin
+@router.get("/senders")
+async def list_senders(request: Request):
+    """Accounts Jessi could text from: managers and admins with a work number."""
+    me = await _resolve(request)
+    if me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admins only")
+    db = get_db()
+    cur = db.users.find({"role": {"$in": list(MANAGER_ROLES)}, "is_active": {"$ne": False}, "$or": [{"twilio_number": {"$nin": [None, ""]}}, {"mvpline_number": {"$nin": [None, ""]}}]},
+                        {"name": 1, "role": 1, "twilio_number": 1, "mvpline_number": 1, "photo_url": 1}).sort("created_at", 1).limit(60)
+    cfg = await jo.config(db)
+    current = await jo.sender(db, cfg)
+    return {"current_id": str(current["_id"]) if current else None,
+            "senders": [{"id": str(u["_id"]), "name": u.get("name"), "role": u.get("role"), "number": jo.sender_number(u)} async for u in cur]}
+
+
+@router.get("/digest/preview")
+async def digest_preview(request: Request):
+    me = await _admin(request)
+    db = get_db()
+    cfg = await jo.config(db)
+    rows = await jo.stuck_rows(db, me, cfg)
+    return {"count": len(rows), "rows": rows, "text": jo.digest_text(me.get("first_name") or jo._first(me.get("name")), rows),
+            "opt_in": not me.get("jessi_digest_opt_out"), "last": me.get("jessi_digest_last"), "hour": cfg.get("digest_hour"), "stuck_hours": cfg.get("digest_stuck_hours"), "enabled": bool(cfg.get("digest_enabled", True))}
+
+
+@router.post("/digest/send")
+async def digest_send_now(request: Request):
+    """Text me today's digest right now (even when nothing is stuck, so the manager sees what it looks like)."""
+    me = await _admin(request)
+    r = await jo.send_digest(get_db(), me, force=True)
+    if not r.get("sent"):
+        raise HTTPException(status_code=400, detail=r.get("error") or r.get("reason") or "Could not send")
+    return r
+
+
+class DigestMeBody(BaseModel):
+    opt_in: bool
+
+
+@router.put("/digest/me")
+async def digest_me(body: DigestMeBody, request: Request):
+    me = await _admin(request)
+    await get_db().users.update_one({"_id": jo._oid(me["_id"])}, {"$set": {"jessi_digest_opt_out": not body.opt_in}})
+    return {"opt_in": body.opt_in}
+
+
 @router.get("")
 async def list_onboarding(request: Request, state: Optional[str] = None, open_only: bool = False):
     me = await _admin(request)
@@ -92,8 +142,9 @@ async def get_config(request: Request):
     db = get_db()
     cfg = await jo.config(db)
     snd = await jo.sender(db, cfg)
-    return {"config": cfg if me.get("role") == "super_admin" else {k: cfg[k] for k in ("default_on_roles",)},
-            "available": await jo.available_for(db, me), "default_on": await jo.default_on_for(db, me),
+    return {"config": cfg if me.get("role") == "super_admin" else {k: cfg[k] for k in ("default_on_roles", "digest_hour", "digest_stuck_hours", "digest_enabled")},
+            "available": await jo.available_for(db, me), "default_on": await jo.default_on_for(db, me), "is_super_admin": me.get("role") == "super_admin",
+            "digest_opt_in": not me.get("jessi_digest_opt_out"),
             "sender": {"id": str(snd["_id"]), "name": snd.get("name"), "number": jo.sender_number(snd)} if snd else None}
 
 
@@ -105,6 +156,9 @@ class ConfigBody(BaseModel):
     timezone: Optional[str] = None
     default_on_roles: Optional[list] = None
     activation_ttl_hours: Optional[int] = None
+    digest_enabled: Optional[bool] = None
+    digest_hour: Optional[int] = None
+    digest_stuck_hours: Optional[int] = None
 
 
 @router.put("/config")
@@ -112,7 +166,23 @@ async def put_config(body: ConfigBody, request: Request):
     me = await _resolve(request)
     if me.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Super admins only")
-    cfg = await jo.save_config(get_db(), {k: v for k, v in body.dict().items() if v is not None}, str(me["_id"]))
+    patch = {k: v for k, v in body.dict().items() if v is not None}
+    if "reminders_hours" in patch:
+        clean = {}
+        for k, v in (patch["reminders_hours"] or {}).items():
+            if k in jo.DEFAULT_CFG["reminders_hours"]:
+                clean[k] = sorted({int(h) for h in (v or []) if 1 <= int(h) <= 24 * 30})
+        patch["reminders_hours"] = clean
+    for k, lo, hi in (("quiet_start", 0, 24), ("quiet_end", 0, 24), ("digest_hour", 0, 23), ("digest_stuck_hours", 1, 24 * 14), ("activation_ttl_hours", 1, 24 * 30)):
+        if k in patch and not (lo <= int(patch[k]) <= hi):
+            raise HTTPException(status_code=400, detail=f"{k} out of range")
+    if "timezone" in patch:
+        from zoneinfo import ZoneInfo
+        try:
+            ZoneInfo(patch["timezone"])
+        except Exception:
+            raise HTTPException(status_code=400, detail="Unknown timezone")
+    cfg = await jo.save_config(get_db(), patch, str(me["_id"]))
     snd = await jo.sender(get_db(), cfg)
     if not snd:
         raise HTTPException(status_code=400, detail="That sender has no work number assigned")

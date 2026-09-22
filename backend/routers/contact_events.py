@@ -626,6 +626,7 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
     if auto:
         auto.pop("_id", None)
         auto["timestamp"] = _ts_iso(auto["timestamp"])
+        _first_win_hook(db, user_id, event["event_type"])
         return auto
 
     await db.contact_events.insert_one(event)
@@ -636,8 +637,18 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
     # Fire-and-forget milestone check for push notifications
     import asyncio as _aio
     _aio.create_task(_quick_milestone_check(user_id))
+    _first_win_hook(db, user_id, event["event_type"])
 
     return event
+
+
+def _first_win_hook(db, user_id: str, event_type: str):
+    """A Jessi-onboarded rep's first digital card out the door closes their onboarding (no-op for everyone else)."""
+    try:
+        from services.jessi_onboarding import maybe_first_win
+        maybe_first_win(db, user_id, event_type)
+    except Exception:
+        pass
 
 
 

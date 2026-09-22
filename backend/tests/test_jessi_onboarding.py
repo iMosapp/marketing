@@ -8,6 +8,7 @@ import asyncio
 import io
 import os
 import time
+from datetime import timedelta
 
 import pytest
 import requests
@@ -131,6 +132,12 @@ def test_state_machine_end_to_end(monkeypatch):
         # a stranger's text on the same number is not ours
         assert await jo.handle_inbound(db, "+14352203414", "+15005550099", "hi", [], [], "SM2") is False
 
+        # a bare "yep" to the invite does NOT ring them: Jessi asks once, then any yes means call me
+        assert await jo.handle_inbound(db, "+14352203414", PHONE, "Yep!", [], [], "SM2b") is True
+        d = await jo.get(db, uid)
+        assert d["state"] == "INTERVIEW_INVITED" and sent.kinds()[-1] == "call_confirm" and "(500) 555-0077" in sent.lines[-1]["body"]
+        assert jo._classify("yes", d) == "call"
+
         # CALL -> the interview engine rings them from the onboarding number
         assert await jo.handle_inbound(db, "+14352203414", PHONE, "CALL", [], [], "SM3") is True
         d = await jo.get(db, uid)
@@ -207,11 +214,21 @@ def test_state_machine_end_to_end(monkeypatch):
         me = r.json()
         assert me["onboarded_by_jessi"] and me["welcome_pending"] and me["first_name"] == "Quinn" and me["photo_url"] and me["first_win"]["route"] == "/quick-send/digitalcard"
         r = requests.post(f"{API}/onboarding-jessi/me/first-success", json={"which": "card"}, headers={"Authorization": f"Bearer {token}"}, timeout=30)
-        assert r.status_code == 200 and r.json()["state"] == "ONBOARDING_COMPLETE", r.text
+        assert r.status_code == 200 and r.json()["state"] == "FIRST_LOGIN", r.text
+        u = await db.users.find_one({"_id": ObjectId(uid)})
+        assert u["jessi_welcome_pending"] is False and u["first_win_pending"] == "card"
+        d = await jo.get(db, uid)
+        assert jo.waiting_on(d) == "them" and not d["steps"].get("FIRST_SUCCESS")
+        # the first digital card out the door = the first win: celebrate once, Jessi texts, onboarding closes
+        r = requests.post(f"{API}/onboarding-jessi/me/win", json={"which": "card"}, headers={"Authorization": f"Bearer {token}"}, timeout=30)
+        assert r.status_code == 200 and r.json()["celebrate"] is True and r.json()["state"] == "ONBOARDING_COMPLETE" and "first card" in r.json()["message"], r.text
+        r = requests.post(f"{API}/onboarding-jessi/me/win", json={"which": "card"}, headers={"Authorization": f"Bearer {token}"}, timeout=30)
+        assert r.json()["celebrate"] is False
         d = await jo.get(db, uid)
         assert d["steps"].get("FIRST_SUCCESS") and d["completed_at"] and jo.waiting_on(d) == "done"
+        assert [t for t in d["thread"] if t.get("kind") == "first_win"], "no celebration text"
         u = await db.users.find_one({"_id": ObjectId(uid)})
-        assert u["jessi_welcome_pending"] is False
+        assert u["jessi_first_win"]["kind"] == "card"
         # the scheduler leaves a finished user alone
         out = await jo.run_job(db)
         assert isinstance(out, dict)
@@ -224,12 +241,104 @@ async def _fast_config(db):
     return {**jo.DEFAULT_CFG, "kickoff_gaps_s": [0, 0, 0], "quiet_start": 24, "quiet_end": 0}
 
 
+def test_digest_and_first_win_hook(monkeypatch):
+    """Morning digest: who is stuck, phrased per step, once a day per manager; card event on the send path closes onboarding."""
+    db = _db()
+    texts = []
+
+    async def fake_send_sms(to, body, media_urls=None, from_phone=None, user_id=None, **kw):
+        texts.append({"to": to, "body": body, "from": from_phone})
+        return {"success": True, "message_sid": f"SMd{len(texts)}"}
+    from services import twilio_service
+    monkeypatch.setattr(twilio_service, "send_sms", fake_send_sms)
+
+    async def flow():
+        await _wipe(db, PHONE)
+        admin = await db.users.find_one({"email": ADMIN[0]})
+        res = await db.users.insert_one({"first_name": "Quinn", "last_name": "QA-Digest", "name": "Quinn QA-Digest", "phone": PHONE, "email": "", "role": "user", "is_active": True,
+                                         "activation_pending": True, "jessi_onboarding": True, "password": "x", "created_at": jo._now()})
+        uid = str(res.inserted_id)
+        old = jo._now() - timedelta(hours=50)
+        await db.user_onboarding.insert_one({"user_id": uid, "first_name": "Quinn", "name": "Quinn QA-Digest", "phone": PHONE, "sender_user_id": str(admin["_id"]), "from_number": "+14352203414",
+                                             "role": "user", "created_by": str(admin["_id"]), "state": "INTERVIEW_INVITED", "steps": {"INTERVIEW_INVITED": old}, "events": [], "thread": [], "facts": {},
+                                             "seen_sids": [], "reminders": {"count": 2, "last_at": None}, "paused": False, "call_token": "qa", "created_at": old, "updated_at": old})
+        cfg = await jo.config(db)
+        rows = await jo.stuck_rows(db, admin, cfg)
+        mine = [r for r in rows if r["user_id"] == uid]
+        assert mine and mine[0]["waiting_for"] == "the setup call" and mine[0]["hours"] >= 49 and mine[0]["nudges"] == 2
+        txt = jo.digest_text("Forest", mine)
+        assert txt.startswith("Morning Forest, Jessi here. 1 of your new people is stuck") and "Quinn (2d): the setup call" in txt and "\u2014" not in txt
+        assert "Nobody is stuck" in jo.digest_text("Forest", [])
+        # a store manager with no store and no created users sees nothing
+        mgr = await db.users.find_one({"email": "qa-manager@invalid.imonsocial.test"})
+        assert all(r["user_id"] != uid for r in await jo.stuck_rows(db, mgr, cfg))
+        # send to the admin (Forest's phone is real, so fake_send_sms is the only reason this is safe)
+        r = await jo.send_digest(db, admin, cfg)
+        assert r["sent"] and r["count"] >= 1 and texts[-1]["from"] == "+14352203414" and "Quinn" in texts[-1]["body"]
+        stamped = await db.users.find_one({"_id": admin["_id"]}, {"jessi_digest_last_on": 1, "jessi_digest_last": 1})
+        assert stamped["jessi_digest_last_on"] == jo._local_now(cfg).strftime("%Y-%m-%d") and stamped["jessi_digest_last"]["ok"] is True
+        # run_digests: outside the digest hour nothing goes out; inside it, only managers not yet stamped today
+        n_before = len(texts)
+        assert await jo.run_digests(db, {**cfg, "digest_hour": (jo._local_now(cfg).hour + 3) % 24}) == 0
+        await db.users.update_one({"_id": admin["_id"]}, {"$unset": {"jessi_digest_last_on": ""}})
+        sent = await jo.run_digests(db, {**cfg, "digest_hour": jo._local_now(cfg).hour})
+        assert sent >= 1 and len(texts) > n_before
+        assert await jo.run_digests(db, {**cfg, "digest_hour": jo._local_now(cfg).hour}) == 0  # stamped now
+        assert await jo.run_digests(db, {**cfg, "digest_enabled": False}) == 0
+        # opted-out manager is skipped
+        await db.users.update_one({"_id": admin["_id"]}, {"$unset": {"jessi_digest_last_on": ""}, "$set": {"jessi_digest_opt_out": True}})
+        n = len(texts)
+        await jo.run_digests(db, {**cfg, "digest_hour": jo._local_now(cfg).hour})
+        assert all(t["to"] != twilio_service.normalize_phone(admin.get("phone") or "") for t in texts[n:])
+        await db.users.update_one({"_id": admin["_id"]}, {"$unset": {"jessi_digest_opt_out": "", "jessi_digest_last_on": "", "jessi_digest_last": ""}})
+
+        # first-win hook: a card event on the contact-events endpoint closes the onboarding (in-process, fake texts)
+        await db.user_onboarding.update_one({"user_id": uid}, {"$set": {"state": "FIRST_LOGIN"}})
+        monkeypatch.setattr(jo, "_say", lambda db_, doc, body, media=None, kind="jessi": _record(texts, body, kind))
+        jo.maybe_first_win(db, uid, "email_sent")
+        await asyncio.sleep(0.2)
+        assert (await jo.get(db, uid))["state"] == "FIRST_LOGIN"
+        jo.maybe_first_win(db, uid, "digital_card_shared")
+        await asyncio.sleep(0.5)
+        d = await jo.get(db, uid)
+        assert d["state"] == "ONBOARDING_COMPLETE" and texts[-1]["kind"] == "first_win"
+        # the send path's hook closed it first; the app still gets its confetti exactly once
+        c = await jo.claim_celebration(db, uid, "card")
+        assert c["celebrate"] is True and c["first_name"] == "Quinn" and "first card" in c["message"]
+        assert (await jo.claim_celebration(db, uid, "card"))["celebrate"] is False
+        await _wipe(db, PHONE)
+
+    _run(flow())
+
+
+async def _record(texts, body, kind):
+    texts.append({"body": body, "kind": kind, "to": "", "from": ""})
+    return {"success": True}
+
+
 def test_admin_api_and_public_pages():
     _run(_wipe(_db(), PHONE_API))
     token, admin = _login(*ADMIN)
     H = {"Authorization": f"Bearer {token}", "X-User-Id": admin["_id"]}
     cfg = requests.get(f"{API}/admin/onboarding-jessi/config", headers=H, timeout=30).json()
-    assert cfg["available"] is True and cfg["sender"]["number"] == "+14352203414"
+    assert cfg["available"] is True and cfg["sender"]["number"] == "+14352203414" and cfg["is_super_admin"] is True and "digest_opt_in" in cfg
+    assert cfg["config"]["digest_hour"] == 8 and cfg["config"]["digest_enabled"] is True
+    snd = requests.get(f"{API}/admin/onboarding-jessi/senders", headers=H, timeout=30).json()
+    assert snd["current_id"] == admin["_id"] and any(s["id"] == admin["_id"] and s["number"] == "+14352203414" for s in snd["senders"])
+    # settings round trip (and back), validation
+    orig = cfg["config"]
+    r = requests.put(f"{API}/admin/onboarding-jessi/config", json={"quiet_start": 22, "digest_hour": 9, "digest_stuck_hours": 48, "reminders_hours": {"photo": [12, 36], "bogus": [1]}}, headers=H, timeout=30)
+    assert r.status_code == 200 and r.json()["config"]["quiet_start"] == 22 and r.json()["config"]["digest_hour"] == 9 and r.json()["config"]["reminders_hours"]["photo"] == [12, 36] and r.json()["config"]["reminders_hours"]["interview"] == [24, 72, 168], r.text
+    assert requests.put(f"{API}/admin/onboarding-jessi/config", json={"digest_hour": 30}, headers=H, timeout=30).status_code == 400
+    assert requests.put(f"{API}/admin/onboarding-jessi/config", json={"timezone": "Mars/Olympus"}, headers=H, timeout=30).status_code == 400
+    requests.put(f"{API}/admin/onboarding-jessi/config", json={"quiet_start": orig["quiet_start"], "digest_hour": orig["digest_hour"], "digest_stuck_hours": orig["digest_stuck_hours"], "reminders_hours": orig["reminders_hours"]}, headers=H, timeout=30)
+    assert requests.get(f"{API}/admin/onboarding-jessi/config", headers=H, timeout=30).json()["config"]["reminders_hours"]["photo"] == [24, 72]
+    # digest preview + per-manager opt-in
+    pv = requests.get(f"{API}/admin/onboarding-jessi/digest/preview", headers=H, timeout=30).json()
+    assert pv["text"].startswith("Morning Forest, Jessi here.") and isinstance(pv["rows"], list) and pv["opt_in"] is True
+    assert requests.put(f"{API}/admin/onboarding-jessi/digest/me", json={"opt_in": False}, headers=H, timeout=30).json()["opt_in"] is False
+    assert requests.get(f"{API}/admin/onboarding-jessi/config", headers=H, timeout=30).json()["digest_opt_in"] is False
+    requests.put(f"{API}/admin/onboarding-jessi/digest/me", json={"opt_in": True}, headers=H, timeout=30)
 
     r = requests.post(f"{API}/admin/users/create", json={"first_name": "Riley", "last_name": "QA-Api", "phone": PHONE_API, "role": "user", "jessi_onboarding": True}, headers=H, timeout=60)
     assert r.status_code == 200, r.text

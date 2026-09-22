@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api, { smartSendSMS } from '../../services/api';
+import { FirstWinCelebration } from '../../components/onboarding-jessi/FirstWinCelebration';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -127,6 +128,8 @@ export default function QuickSendPage() {
   const [sendMethod, setSendMethod] = useState<'sms' | 'email' | 'copy'>('sms');
 
   const [sending, setSending] = useState(false);
+  const [celebration, setCelebration] = useState<{ first_name?: string; message?: string } | null>(null);
+  const afterNavRef = useRef<() => void>(() => {});
   const [newContactId, setNewContactId] = useState('');
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [selectedTag, setSelectedTag] = useState('');      // single tag name
@@ -241,6 +244,18 @@ export default function QuickSendPage() {
     }
   };
 
+  // Where to go once the send is done; a Jessi-onboarded rep's FIRST digital card gets confetti first (backend decides, once)
+  const finishSend = async (contactId: string, delayMs: number) => {
+    const go = () => { if (contactId) router.replace(`/contact/${contactId}` as any); else router.back(); };
+    if (config.eventType === 'digital_card_shared' && (user as any)?.jessi_onboarding) {
+      try {
+        const r = await api.post('/onboarding-jessi/me/win', { which: 'card' });
+        if (r.data?.celebrate) { afterNavRef.current = go; setCelebration({ first_name: r.data.first_name, message: r.data.message }); return; }
+      } catch {}
+    }
+    setTimeout(go, delayMs);
+  };
+
   // Send the message — corrected flow
   const handleSend = async () => {
     if (!firstName.trim()) return;
@@ -327,10 +342,7 @@ export default function QuickSendPage() {
         }
 
         setStep('done');
-        setTimeout(() => {
-          if (contactId) router.replace(`/contact/${contactId}` as any);
-          else router.back();
-        }, 2000);
+        finishSend(contactId, 2000);
 
       } else if (sendMethod === 'sms') {
         // Log the event server-side first
@@ -371,10 +383,7 @@ export default function QuickSendPage() {
 
         setTimeout(() => {
           setStep('done');
-          setTimeout(() => {
-            if (contactId) router.replace(`/contact/${contactId}` as any);
-            else router.back();
-          }, 2000);
+          finishSend(contactId, 2000);
         }, sentViaTwilio ? 100 : 500);
 
       } else if (sendMethod === 'email') {
@@ -410,10 +419,7 @@ export default function QuickSendPage() {
           } catch {}
         }
         setStep('done');
-        setTimeout(() => {
-          if (contactId) router.replace(`/contact/${contactId}` as any);
-          else router.back();
-        }, 2000);
+        finishSend(contactId, 2000);
       }
 
     } catch (err) {
@@ -781,6 +787,7 @@ export default function QuickSendPage() {
       {step === 'preview' && renderPreview()}
       {step === 'sending' && renderSending()}
       {step === 'done' && renderDone()}
+      <FirstWinCelebration visible={!!celebration} firstName={celebration?.first_name} message={celebration?.message} onClose={() => { setCelebration(null); afterNavRef.current(); }} />
     </SafeAreaView>
   );
 }

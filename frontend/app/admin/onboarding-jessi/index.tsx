@@ -16,6 +16,7 @@ import { EmptyState } from '../../../components/ui/EmptyState';
 import { GOLD, SPACE, TYPE, tid, tint } from '../../../components/ui/tokens';
 import { FUNNEL, OnbRow, WAITING, prettyPhone } from '../../../components/onboarding-jessi/shared';
 import { FunnelStrip, OnboardingRow } from '../../../components/onboarding-jessi/OnboardingRow';
+import { SettingsSheet } from '../../../components/onboarding-jessi/SettingsSheet';
 
 const FILTERS: { key: string; label: string }[] = [{ key: 'all', label: 'All' }, { key: 'them', label: 'Waiting on them' }, { key: 'jessi', label: "Jessi's move" }, { key: 'paused', label: 'Paused' }, { key: 'done', label: 'Done' }];
 
@@ -29,6 +30,8 @@ export default function JessiOnboardingList() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
   const [bucket, setBucket] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const isSuper = user?.role === 'super_admin';
 
   const load = useCallback(async () => {
     try {
@@ -51,7 +54,8 @@ export default function JessiOnboardingList() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} {...tid('jessi-onb-page')}>
       <ScreenHeader title="Jessi Onboarding" subtitle={data ? `${openCount} in progress` : undefined}
-        right={<HeaderIconButton icon="person-add-outline" onPress={() => router.push('/admin/users' as any)} testID="jessi-onb-add" />} />
+        right={<View style={{ flexDirection: 'row' }}><HeaderIconButton icon="settings-outline" onPress={() => setSettingsOpen(true)} testID="jessi-onb-settings" /><HeaderIconButton icon="person-add-outline" onPress={() => router.push('/admin/users' as any)} testID="jessi-onb-add" /></View>} />
+      <SettingsSheet visible={settingsOpen} onClose={() => setSettingsOpen(false)} isSuper={!!isSuper} onSaved={load} />
       {!data && !error ? <ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /> : error ? (
         <Text style={{ color: colors.textSecondary, padding: SPACE.xl, textAlign: 'center' }} {...tid('jessi-onb-error')}>{error}</Text>
       ) : (
@@ -91,9 +95,9 @@ export default function JessiOnboardingList() {
               </Card>
             )}
           </View>
-          {user?.role === 'super_admin' && (
+          {isSuper && (
             <Text style={{ fontSize: TYPE.caption, color: colors.textTertiary, textAlign: 'center', marginTop: SPACE.xl, paddingHorizontal: SPACE.xl }}>
-              Nudges go out 24 h, 72 h and 7 days after a step stalls, never between 9 PM and 8 AM Mountain. Refreshes every 20 s.
+              Nudge timing, quiet hours, the sender number and the morning digest live under the gear. Refreshes every 20 s.
             </Text>
           )}
         </ScrollView>

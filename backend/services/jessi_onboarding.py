@@ -36,9 +36,14 @@ DEFAULT_CFG = {
     "default_on_roles": ["super_admin"],
     "activation_ttl_hours": 72,
     "kickoff_gaps_s": [25, 40, 30],
+    "digest_enabled": True, "digest_hour": 8, "digest_stuck_hours": 24,
 }
 
-CALL_WORDS = {"call", "call me", "ready", "yes", "yep", "yeah", "sure", "ok", "okay", "now", "lets go", "let's go", "call now", "ring me"}
+MANAGER_ROLES = ("super_admin", "org_admin", "store_manager")
+CARD_EVENTS = ("digital_card_shared", "digital_card_sent", "card_shared", "vcard_sent")
+
+CALL_WORDS = {"call", "call me", "ready", "now", "lets go", "let's go", "call now", "call me now", "ring me", "ring me now", "im ready", "i'm ready"}
+SOFT_YES = {"yes", "yep", "yeah", "yup", "sure", "ok", "okay", "k", "y", "yea", "ya", "sounds good", "please"}
 YES_WORDS = {"yep", "yes", "yup", "yeah", "correct", "right", "looks good", "looks right", "perfect", "sounds right", "that's right", "thats right", "all good", "good", "accurate", "love it"}
 STOP_WORDS = {"STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"}
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
@@ -48,6 +53,7 @@ TEXTS = {
     "vcf": "Here's my card. Save me!",
     "explain": "Here's how this works, it only takes a few minutes. I'll ask you about who you are, what you sell, how you talk with your customers and how you want me to talk on your behalf. That's what I use to build your profile and personalize your assistant.\n\nWhen we're done I'll grab your photo and send you the app.",
     "invite": "Ready to build your profile? This is your setup interview: your background, your business, your customers, your style and how you want me to represent you. About 5 to 10 minutes.\n\nReply CALL and I'll ring you at {phone} right now, or tap: {link}",
+    "call_confirm": "Great! Want me to ring you at {phone} right now? Reply CALL and I'll dial, or tap the link when it's a better time.",
     "calling": "Calling you now, {first}. Pick up and I'll walk you through it.",
     "calling_failed": "I couldn't place the call just now. Give me a minute and reply CALL again.",
     "cut_off": "Looks like we got cut off, {first}. Reply CALL whenever you have a few minutes and I'll ring you again.",
@@ -68,7 +74,12 @@ TEXTS = {
     "nudge_email": "Still need an email for your login, {first}. Just text it to me and I'll send your activation link.",
     "nudge_activation": "Your account is sitting here ready for you, {first}. Tap the link and I'll get you the rest of the way in.\n\n{link}",
     "paused": "No problem, I'll stop here. Text me any time and we'll pick up where we left off.",
+    "first_win_card": "That's your first card out the door, {first}! Every time someone opens it they can text or call you in one tap, and I'll let you know when they do. That's how this whole app works: quick wins like that one. I'm right here whenever you need me.",
+    "first_win": "First win in the books, {first}! Keep going, I'm right here whenever you need me.",
 }
+
+STUCK_ON = {"INTERVIEW_INVITED": "the setup call", "INTERVIEW_COMPLETE": "confirming the write-up", "PHOTO_REQUESTED": "a profile photo", "PROFILE_COMPLETE": "a login email",
+            "ACTIVATION_SENT": "tapping the activation link", "ACCOUNT_ACTIVATED": "logging in for the first time", "FIRST_LOGIN": "their first win in the app"}
 
 NUDGE_KEY = {"INTERVIEW_INVITED": "interview", "INTERVIEW_COMPLETE": "summary", "PHOTO_REQUESTED": "photo", "PROFILE_COMPLETE": "email", "ACTIVATION_SENT": "activation"}
 
@@ -482,25 +493,160 @@ async def me_summary(db, user: dict) -> dict:
 
 
 async def first_success(db, user_id: str, which: str = "") -> Optional[dict]:
-    """They took the first action from the welcome screen: onboarding is done, the welcome screen never shows again."""
-    await db.users.update_one({"_id": _oid(user_id)}, {"$set": {"jessi_welcome_pending": False, "onboarding_complete": True, "updated_at": datetime.utcnow()}})
+    """They left the welcome screen: it never shows again. The onboarding itself closes on the first real win (see on_first_win)."""
+    await db.users.update_one({"_id": _oid(user_id)}, {"$set": {"jessi_welcome_pending": False, "onboarding_complete": True, "first_win_pending": which or "card", "updated_at": datetime.utcnow()}})
     doc = await get(db, user_id)
     if not doc:
         return None
     if ORDER.get(doc.get("state"), 0) < ORDER["FIRST_LOGIN"]:
-        doc = await advance(db, doc, "FIRST_LOGIN")
-    doc = await advance(db, doc, "FIRST_SUCCESS", which or "welcome")
-    return await advance(db, doc, "ONBOARDING_COMPLETE")
+        doc = await advance(db, doc, "FIRST_LOGIN", f"welcome screen: {which or 'card'}")
+    return doc
+
+
+async def on_first_win(db, user_id: str, kind: str = "card") -> dict:
+    """Their first real action in the app (a digital card out the door): close the onboarding, Jessi cheers once. Idempotent."""
+    doc = await get(db, user_id)
+    if not doc or ORDER.get(doc.get("state"), 0) >= ORDER["FIRST_SUCCESS"] or doc.get("paused"):
+        return {"celebrate": False}
+    first = doc.get("first_name") or "there"
+    doc = await advance(db, doc, "FIRST_SUCCESS", kind)
+    doc = await advance(db, doc, "ONBOARDING_COMPLETE")
+    msg = text("first_win_card" if kind == "card" else "first_win", first=first)
+    await db.users.update_one({"_id": _oid(user_id)}, {"$set": {"jessi_first_win": {"kind": kind, "at": _now(), "message": msg, "celebrated": False}, "first_win_pending": None, "updated_at": datetime.utcnow()}})
+    await _say(db, doc, msg, kind="first_win")
+    return {"celebrate": True, "kind": kind, "first_name": first, "message": msg}
+
+
+async def claim_celebration(db, user_id: str, kind: str = "card") -> dict:
+    """The app asks after a send: show the confetti exactly once, no matter whether the send path's hook or this call closed the onboarding."""
+    await on_first_win(db, user_id, kind)
+    u = await db.users.find_one({"_id": _oid(user_id)}, {"jessi_first_win": 1, "first_name": 1, "name": 1})
+    fw = (u or {}).get("jessi_first_win") or {}
+    if not fw or fw.get("celebrated"):
+        return {"celebrate": False}
+    await db.users.update_one({"_id": _oid(user_id)}, {"$set": {"jessi_first_win.celebrated": True, "jessi_first_win.celebrated_at": _now()}})
+    return {"celebrate": True, "kind": fw.get("kind"), "first_name": u.get("first_name") or _first(u.get("name")), "message": fw.get("message") or text("first_win", first=u.get("first_name") or "there")}
+
+
+def maybe_first_win(db, user_id: str, event_type: Optional[str]):
+    """Cheap hook for the send paths: only card events, only ever does work for a Jessi-onboarded user."""
+    if event_type in CARD_EVENTS and user_id:
+        asyncio.create_task(on_first_win(db, str(user_id), "card"))
+
+
+# ---------------------------------------------------------------- morning digest for managers
+def scope_query(me: dict) -> dict:
+    """Which onboardings a manager sees: super admins all, org admins their org, store managers their store (else what they created)."""
+    if me.get("role") == "super_admin":
+        return {}
+    if me.get("role") == "org_admin" and me.get("organization_id"):
+        return {"organization_id": str(me["organization_id"])}
+    from services.lead_flows import user_store_id
+    sid = user_store_id(me)
+    return {"$or": [{"store_id": sid}, {"created_by": str(me["_id"])}]} if sid else {"created_by": str(me["_id"])}
+
+
+def _stuck_since(doc: dict) -> Optional[datetime]:
+    v = doc.get("last_inbound_at") or (doc.get("steps") or {}).get(doc.get("state")) or doc.get("updated_at")
+    return (v if v.tzinfo else v.replace(tzinfo=timezone.utc)) if v else None
+
+
+async def stuck_rows(db, me: dict, cfg: dict) -> list:
+    """Open onboardings in this manager's scope where the ball has been in the new user's court for longer than digest_stuck_hours."""
+    hours = int(cfg.get("digest_stuck_hours") or 24)
+    now = _now()
+    out = []
+    async for d in db[COLL].find({**scope_query(me), "state": {"$in": OPEN_STATES + ["FIRST_LOGIN"]}, "paused": {"$ne": True}}):
+        if waiting_on(d) != "them":
+            continue
+        since = _stuck_since(d)
+        if not since:
+            continue
+        h = (now - since).total_seconds() / 3600
+        if h >= hours:
+            out.append({"user_id": d["user_id"], "name": d.get("name") or d.get("first_name"), "first_name": d.get("first_name"), "state": d.get("state"), "hours": int(h),
+                        "waiting_for": STUCK_ON.get(d.get("state"), "the next step"), "nudges": int((d.get("reminders") or {}).get("count") or 0)})
+    out.sort(key=lambda r: -r["hours"])
+    return out
+
+
+def _age(h: int) -> str:
+    return f"{h // 24}d" if h >= 48 else f"{h}h"
+
+
+def digest_text(first: str, rows: list) -> str:
+    n = len(rows)
+    if not n:
+        return no_em_dash(f"Morning {first}, Jessi here. Nobody is stuck in onboarding today. Nice.")
+    lines = [f"{r['first_name'] or r['name']} ({_age(r['hours'])}): {r['waiting_for']}" for r in rows[:5]]
+    more = f"\n...and {n - 5} more" if n > 5 else ""
+    who = "1 of your new people is" if n == 1 else f"{n} of your new people are"
+    return no_em_dash(f"Morning {first}, Jessi here. {who} stuck in onboarding:\n" + "\n".join(lines) + more + "\n\nI keep nudging them. The details are under Jessi Onboarding in the app.")
+
+
+async def send_digest(db, me: dict, cfg: Optional[dict] = None, force: bool = False) -> dict:
+    """Text one manager their digest from the onboarding number. Once per local day unless forced; nothing when nothing is stuck."""
+    from services.twilio_service import normalize_phone, send_sms
+    cfg = cfg or await config(db)
+    snd = await sender(db, cfg)
+    phone = normalize_phone(me.get("phone") or "")
+    if not snd or len(phone) < 11:
+        return {"sent": False, "reason": "no sender number" if not snd else "manager has no mobile"}
+    rows = await stuck_rows(db, me, cfg)
+    if not rows and not force:
+        return {"sent": False, "reason": "nothing stuck", "count": 0}
+    body = digest_text(_first(me.get("name")) if not me.get("first_name") else me["first_name"], rows)
+    try:
+        r = await send_sms(phone, body, from_phone=sender_number(snd), user_id=str(snd["_id"]))
+    except Exception as e:
+        r = {"success": False, "error": str(e)[:200]}
+    today = _local_now(cfg).strftime("%Y-%m-%d")
+    await db.users.update_one({"_id": _oid(me["_id"])}, {"$set": {"jessi_digest_last_on": today, "jessi_digest_last": {"at": _now(), "count": len(rows), "ok": bool(r.get("success")), "error": r.get("error")}}})
+    return {"sent": bool(r.get("success")), "count": len(rows), "text": body, "error": r.get("error")}
+
+
+async def run_digests(db, cfg: dict) -> int:
+    """Called from the scheduler: inside the digest hour, every manager who has not had today's digest yet gets one (if anything is stuck)."""
+    if not cfg.get("digest_enabled", True):
+        return 0
+    local = _local_now(cfg)
+    if local.hour != int(cfg.get("digest_hour") or 8):
+        return 0
+    today = local.strftime("%Y-%m-%d")
+    sent = 0
+    async for me in db.users.find({"role": {"$in": list(MANAGER_ROLES)}, "is_active": {"$ne": False}, "phone": {"$nin": [None, ""]}, "jessi_digest_opt_out": {"$ne": True}, "jessi_digest_last_on": {"$ne": today}}):
+        try:
+            r = await send_digest(db, me, cfg)
+            if r.get("sent"):
+                sent += 1
+            elif r.get("reason") == "nothing stuck":
+                await db.users.update_one({"_id": _oid(me["_id"])}, {"$set": {"jessi_digest_last_on": today}})
+        except Exception as e:
+            logger.warning(f"[JessiOnboarding] digest for {me.get('_id')} failed: {e}")
+    return sent
 
 
 # ---------------------------------------------------------------- inbound texts
+INVITE_STATES = ("INTERVIEW_INVITED", "JESSI_INTRODUCED", "CONTACT_CARD_SENT", "NOT_STARTED")
+
+
+def _last_jessi_kind(doc: dict) -> str:
+    for t in reversed(doc.get("thread") or []):
+        if t.get("role") == "jessi":
+            return t.get("kind") or ""
+    return ""
+
+
 def _classify(body: str, doc: dict) -> str:
     b = (body or "").strip().lower().rstrip("!.")
     state = doc.get("state")
-    if b in CALL_WORDS and state in ("INTERVIEW_INVITED", "JESSI_INTRODUCED", "CONTACT_CARD_SENT", "NOT_STARTED"):
+    if b in CALL_WORDS and state in INVITE_STATES:
         return "call"
     if "call" in b.split() and len(b) <= 40 and ORDER.get(state, 0) <= ORDER["INTERVIEW_STARTED"]:
         return "call"
+    if b in SOFT_YES and state in INVITE_STATES:
+        # a bare "yes" to the invite is ambiguous: ask once, then any yes means ring me
+        return "call" if _last_jessi_kind(doc) == "call_confirm" else "call_confirm"
     if state == "INTERVIEW_COMPLETE" and not doc.get("summary_confirmed") and (b in YES_WORDS or b.startswith(("yep", "yes", "yup", "looks good", "that's right", "sounds right", "correct"))):
         return "confirm"
     if doc.get("pending_photos") and b in ("1", "2", "3"):
@@ -593,6 +739,10 @@ async def handle_inbound(db, to_phone: str, from_phone: str, body: str, media_ur
             await start_call(db, doc, "reply")
         except Exception:
             pass
+        return True
+    if kind == "call_confirm":
+        await _event(db, doc["_id"], "CALL_CONFIRM_ASKED", body, message_sid)
+        await _say(db, doc, text("call_confirm", phone=_mask(doc["phone"])), kind="call_confirm")
         return True
     if kind == "confirm":
         await db[COLL].update_one({"_id": doc["_id"]}, {"$set": {"summary_confirmed": True, "summary_confirmed_at": _now(), "updated_at": _now()}})
@@ -694,6 +844,10 @@ async def run_job(db) -> dict:
             out["nudges"] += 1
         except Exception as e:
             logger.warning(f"[JessiOnboarding] job failed for {doc.get('user_id')}: {e}")
+    try:
+        out["digests"] = await run_digests(db, cfg)
+    except Exception as e:
+        logger.warning(f"[JessiOnboarding] digests failed: {e}")
     return out
 
 
