@@ -7,11 +7,13 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { tid } from '../scripts/shared';
 import { formatEventTime } from '../../utils/contactHelpers';
+import { capturePrompts } from './CaptureStorySheet';
 
 export default function MemosSection(props: any) {
   const {
     s, colors, voiceNotes = [], voiceNotesLoading, isRecording, recordingTime, uploadingVoiceNote,
     playingNoteId, startRecording, stopRecording, playVoiceNote, deleteVoiceNote, formatRecordingTime, maxRecordingSeconds,
+    promptsMode, contactFirst,
   } = props;
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const memos = voiceNotes.filter((n: any) => n.kind !== 'conversation');
@@ -19,6 +21,7 @@ export default function MemosSection(props: any) {
   return (
     <View style={[s.section, { paddingTop: 4 }]} {...tid('voice-notes-section')}>
       {isRecording ? (
+        <>
         <View style={s.vnRecording} {...tid('voice-recording-indicator')}>
           <View style={s.vnRecordingDot} />
           <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
@@ -28,6 +31,19 @@ export default function MemosSection(props: any) {
             <Text style={s.vnStopText}>Stop</Text>
           </TouchableOpacity>
         </View>
+        {promptsMode ? (
+          <View style={{ marginTop: 10, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: '#C9A96259', padding: 12, gap: 6 }} {...tid('voice-recording-prompts')}>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: '#C9A962', letterSpacing: 1 }}>TELL ME ABOUT {(contactFirst || 'THEM').toUpperCase()}</Text>
+            {capturePrompts(promptsMode).map((p: any) => (
+              <View key={p.text} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Ionicons name={p.icon} size={15} color="#C9A962" />
+                <Text style={{ fontSize: 14, color: colors.text }}>{p.text}</Text>
+              </View>
+            ))}
+            <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 2 }}>Tap Stop when you're done. I'll transcribe it and update the profile.</Text>
+          </View>
+        ) : null}
+        </>
       ) : uploadingVoiceNote ? (
         <View style={s.vnRecording}>
           <ActivityIndicator size="small" color="#34C759" />

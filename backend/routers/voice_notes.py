@@ -460,10 +460,10 @@ async def schedule_capture_reminder(user_id: str, contact_id: str, data: dict = 
             from routers.push_notifications import send_push_native
             await send_push_native(
                 user_id=user_id,
-                title=f"Capture {first_name}'s story while it's fresh",
-                body=f"Spouse, kids, pets, hobbies — 60 seconds now saves the relationship forever.",
+                title=f"Tell me about {first_name} while it's fresh",
+                body=f"Tap, hit Start recording, and talk for a minute: spouse, kids, pets, work, hobbies, why they bought. I'll save it to {first_name}'s profile.",
                 data={
-                    "url": f"/contact/{contact_id}?capture=true",
+                    "url": f"/contact/{contact_id}?capture=sold",
                     "contact_id": contact_id,
                     "action": "voice_capture",
                 }

@@ -51,6 +51,7 @@ import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker'
 import { ContactProvider } from '../../components/contact/ContactContext';
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import HeroSection from '../../components/contact/HeroSection';
+import { CaptureStorySheet } from '../../components/contact/CaptureStorySheet';
 import EditFormTop from '../../components/contact/EditFormTop';
 import EditFormBottom from '../../components/contact/EditFormBottom';
 import DetailsTab from '../../components/contact/DetailsTab';
@@ -542,16 +543,17 @@ function ContactDetailScreen() {
   // Deep link from Sold Units (?purchase=<record id>): always land on Profile, where Purchase History lives
   useEffect(() => { if (urlPurchase && !isNewContact) setContactTab('profile'); }, [urlPurchase]);
 
-  // Auto-open voice recorder when deep-linked with ?capture=true (from post-sale notification)
+  // Deep link ?capture=sold|true (post-sale push, Home "Voice memo"): land on History › Memos and explain the memo before recording
+  const [captureSheet, setCaptureSheet] = useState<null | 'sold' | 'memo'>(null);
+  const tabBarY = useRef(0);
+  const [capturePromptsOn, setCapturePromptsOn] = useState<null | 'sold' | 'memo'>(null);
   useEffect(() => {
-    if (capture === 'true' && !isNewContact) {
+    if ((capture === 'true' || capture === 'sold') && !isNewContact) {
       setContactTab('history'); setHistoryFilter('memos');
-      // Small delay so the tab renders before we start recording
-      setTimeout(() => {
-        startRecording();
-      }, 800);
+      setTimeout(() => setCaptureSheet(capture === 'sold' ? 'sold' : 'memo'), 400);
     }
   }, [capture, isNewContact]);
+  useEffect(() => { if (!isRecording) setCapturePromptsOn(null); }, [isRecording]);
 
   // Periodic polling DISABLED — causes scroll jumps. Events refresh on focus and after user actions.
   // useEffect(() => {
@@ -2702,7 +2704,7 @@ function ContactDetailScreen() {
 
           {/* ===== PROFILE / HISTORY TAB BAR ===== */}
           {!isNewContact && !isEditing && (
-            <View style={s.tabBar} {...tid('contact-tab-bar')}>
+            <View style={s.tabBar} onLayout={e => { tabBarY.current = e.nativeEvent.layout.y; }} {...tid('contact-tab-bar')}>
               <TouchableOpacity
                 style={[s.tabBtn, contactTab === 'profile' && s.tabBtnActive]}
                 onPress={() => setContactTab('profile')}
@@ -2768,9 +2770,18 @@ function ContactDetailScreen() {
               memosProps={{
                 s, colors, voiceNotes, voiceNotesLoading, isRecording, recordingTime, uploadingVoiceNote, playingNoteId,
                 startRecording, stopRecording, playVoiceNote, deleteVoiceNote, formatRecordingTime, maxRecordingSeconds: MAX_RECORDING_SECONDS,
+                promptsMode: capturePromptsOn, contactFirst: (contact.first_name || fullName || 'them').split(' ')[0],
               }}
             />
           )}
+          <CaptureStorySheet
+            visible={!!captureSheet}
+            mode={captureSheet || 'memo'}
+            firstName={(contact.first_name || fullName || '').split(' ')[0]}
+            vehicle={contact.vehicle || undefined}
+            onStart={() => { const m = captureSheet || 'memo'; setCaptureSheet(null); setCapturePromptsOn(m); setTimeout(() => { startRecording(); scrollRef.current?.scrollTo({ y: Math.max(0, tabBarY.current - 8), animated: true }); }, 250); }}
+            onClose={() => setCaptureSheet(null)}
+          />
 
           {/* ===== PROFILE TAB ===== */}
           {!isNewContact && !isEditing && contactTab === 'profile' && (

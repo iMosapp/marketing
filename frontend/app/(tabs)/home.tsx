@@ -645,7 +645,7 @@ function HomeScreen() {
     setShowActionPicker(false);
     const contactId = contact._id || contact.id;
     if (pendingAction === 'voice') {
-      // capture=true auto-starts the voice recorder on the contact page
+      // capture=true opens the contact on History › Memos with the "Tell me about them" sheet
       router.push(`/contact/${contactId}?capture=true` as any);
       return;
     }

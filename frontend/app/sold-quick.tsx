@@ -362,10 +362,15 @@ export default function SoldQuickScreen() {
 
           {/* Capture reminder hint */}
           <View style={{ marginTop: 10, paddingHorizontal: 8, alignItems: 'center' }}>
-            <Ionicons name="notifications-outline" size={14} color="#ffffff60" />
-            <Text style={{ fontSize: 12, color: '#ffffff50', marginTop: 4, textAlign: 'center', lineHeight: 17 }}>
-              In 5 min you'll get a reminder to capture{'\n'}what you know about {customerName.split(' ')[0]}
+            <Ionicons name="mic-outline" size={14} color="#ffffff60" />
+            <Text style={{ fontSize: 12, color: '#ffffff50', marginTop: 4, textAlign: 'center', lineHeight: 17 }} {...tid("sold-capture-hint")}>
+              In 5 min Jessi will ping you to tell her about {customerName.split(' ')[0]}{'\n'}(a one-minute voice memo: family, hobbies, why they bought)
             </Text>
+            {soldContactId ? (
+              <TouchableOpacity onPress={() => router.replace({ pathname: `/contact/${soldContactId}`, params: { capture: 'sold' } } as any)} style={{ marginTop: 8, paddingVertical: 6, paddingHorizontal: 14 }} {...tid("sold-capture-now")}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: ACCENT }}>Tell her now</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
       </SafeAreaView>
