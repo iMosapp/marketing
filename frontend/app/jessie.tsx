@@ -22,7 +22,9 @@ import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
 import { AvatarButton } from '../components/account/AvatarButton';
-import { TalkToJessiButton } from '../components/jessi/TalkToJessiButton';
+import { useLiveJessiLauncher } from '../components/jessi/LiveJessiProvider';
+import { useLiveConfig } from '../components/jessi/useLiveConfig';
+import { liveSupported } from '../hooks/useLiveJessi';
 import { useSegments } from 'expo-router';
 import api from '../services/api';
 
@@ -46,6 +48,10 @@ export default function JessiScreen() {
   const segments = useSegments();
   const inTabs = (segments as string[])[0] === '(tabs)';
   const user = useAuthStore((state) => state.user);
+  const { config: liveConfig, reload: reloadLive } = useLiveConfig();
+  const live = useLiveJessiLauncher();
+  // On the Jessi tab the big mic launches Live Jessi whenever she is on for this rep and the build supports it
+  const liveReady = inTabs && !!liveConfig?.available && !!liveConfig.configured && liveConfig.usage.left_s > 0 && liveSupported();
   const [textInput, setTextInput] = useState('');
   
   const [state, setState] = useState<ConversationState>('idle');
@@ -486,6 +492,10 @@ export default function JessiScreen() {
   
   const handleButtonPress = () => {
     if (state === 'idle') {
+      if (liveReady) {
+        live.open({ options: { mode: 'assistant' }, onClose: reloadLive });
+        return;
+      }
       startListening();
     } else if (state === 'listening') {
       // Manual stop - process immediately
@@ -580,8 +590,6 @@ export default function JessiScreen() {
         
         {/* Main Content */}
         <View style={styles.content}>
-          {/* Live voice entry lives here now (was a duplicate card on Home) */}
-          {inTabs && !response && state !== 'listening' ? <View style={{ marginTop: 12 }}><TalkToJessiButton /></View> : null}
           {/* Response Text - Scrollable */}
           {response ? (
             <ScrollView 
@@ -592,14 +600,14 @@ export default function JessiScreen() {
               {transcript ? (
                 <Text style={styles.transcriptText}>"{transcript}"</Text>
               ) : null}
-              <Text style={[styles.responseText, { color: colors.text }]}>{response}</Text>
+              <Text style={[styles.responseText, { color: colors.text }]}>{response.replace(/\*\*/g, '')}</Text>
             </ScrollView>
           ) : (
             <View style={styles.introContainer}>
               <Text style={[styles.introTitle, { color: colors.text }]}>Hi, I'm Jessi!</Text>
               <Text style={[styles.introText, { color: colors.textSecondary }]}>
-                Your voice assistant for I'm On Social.{'\n'}
-                Tap to talk or type below.
+                {liveReady ? 'Who to call today, text someone, pull up a contact.' : "Your voice assistant for I'm On Social."}{'\n'}
+                {liveReady ? 'Tap the mic and just talk, or type below.' : 'Tap to talk or type below.'}
               </Text>
             </View>
           )}
