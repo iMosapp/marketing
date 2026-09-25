@@ -926,7 +926,7 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
             # Wrap media_urls
             new_media = []
             for url in step.get("media_urls", []):
-                if url and "/api/s/" not in url:
+                if url and not _is_already_tracked(url):
                     try:
                         lt = "training_video" if ("youtube.com" in url or "youtu.be" in url) else "campaign_link"
                         r = await _create_short_url(
@@ -943,7 +943,7 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
             # Wrap URLs in message_template
             msg = step.get("message_template", "") or ""
             for url in URL_PATTERN.findall(msg):
-                if "/api/s/" not in url:
+                if not _is_already_tracked(url):
                     try:
                         lt = "training_video" if ("youtube.com" in url or "youtu.be" in url) else "campaign_link"
                         r = await _create_short_url(
@@ -1529,8 +1529,9 @@ URL_PATTERN = re.compile(r'https?://[^\s<>"\')\]]+')
 
 
 def _is_already_tracked(url: str) -> bool:
-    """Check if a URL is already a tracked short URL."""
-    return "/api/s/" in url
+    """Check if a URL is already a tracked short URL (app /api/s/ form or the branded short domain)."""
+    from routers.short_urls import is_short_url
+    return is_short_url(url)
 
 
 def _detect_link_type(url: str) -> str:

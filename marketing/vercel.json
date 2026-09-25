@@ -5,6 +5,11 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/s/:code",
+      "destination": "https://app.imonsocial.com/api/s/:code",
+      "permanent": false
+    },
+    {
       "source": "/go/:slug",
       "destination": "https://app.imonsocial.com/api/go/:slug",
       "permanent": false

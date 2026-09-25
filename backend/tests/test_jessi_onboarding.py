@@ -50,6 +50,7 @@ async def _wipe(db, phone):
         uid = str(u["_id"])
         await db.user_onboarding.delete_many({"user_id": uid})
         await db.password_reset_tokens.delete_many({"user_id": uid})
+        await db.short_urls.delete_many({"user_id": uid, "link_type": {"$in": ["jessi_call", "activation"]}})
         await db.contacts.delete_many({"phone": phone})
         await db.users.delete_one({"_id": u["_id"]})
     await db.user_onboarding.delete_many({"phone": phone})
@@ -119,7 +120,14 @@ def test_state_machine_end_to_end(monkeypatch):
         assert d["state"] == "INTERVIEW_INVITED", d["state"]
         assert sent.kinds() == ["intro", "vcf", "explain", "invite"], sent.kinds()
         assert sent.lines[1]["media"] == [jo.vcf_url()]
-        assert jo.call_link(d) in sent.lines[3]["body"] and "(500) 555-0077" in sent.lines[3]["body"]
+        # the invite carries a SHORT link (never the raw token) that resolves to the call page
+        invite_body = sent.lines[3]["body"]
+        assert jo.call_link(d) not in invite_body and "(500) 555-0077" in invite_body
+        from routers.short_urls import find_short_codes
+        codes = find_short_codes(invite_body)
+        assert len(codes) == 1, invite_body
+        short_doc = await db.short_urls.find_one({"short_code": codes[0]})
+        assert short_doc and short_doc["original_url"] == jo.call_link(d) and short_doc["link_type"] == "jessi_call"
         assert jo.waiting_on(d) == "them"
 
         # an off-topic question gets an answer and no state change

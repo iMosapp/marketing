@@ -235,7 +235,7 @@ async def resend(user_id: str, request: Request):
     target = {"NOT_STARTED": "JESSI_INTRODUCED", "JESSI_INTRODUCED": "CONTACT_CARD_SENT", "CONTACT_CARD_SENT": "INTERVIEW_INVITED", "INTERVIEW_STARTED": "INTERVIEW_INVITED",
               "PHOTO_RECEIVED": "PROFILE_COMPLETE"}.get(state, state)
     if target == "INTERVIEW_INVITED" and state in ("INTERVIEW_INVITED", "INTERVIEW_STARTED"):
-        await jo._say(db, doc, jo.text("invite", phone=jo._mask(doc["phone"]), link=jo.call_link(doc)), kind="invite_resend")
+        await jo._say(db, doc, jo.text("invite", phone=jo._mask(doc["phone"]), link=await jo.invite_link(doc)), kind="invite_resend")
         await jo._event(db, doc["_id"], "RESENT", "invite")
         return jo.serialize(await jo.get(db, user_id))
     await jo.send_step(db, {**doc, "resend": True}, target)

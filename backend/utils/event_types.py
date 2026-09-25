@@ -154,8 +154,6 @@ CARD_TYPE_VIEWED_INFO = {
     "welcome":      {"event_type": "welcome_card_viewed",     "label": "Viewed Welcome Card",     "icon": "eye", "color": "#007AFF"},
 }
 
-# Regex to extract short code from /api/s/{code}
-_SHORT_CODE_RE = re.compile(r'/api/s/([A-Za-z0-9]+)')
 
 
 _CARD_DISPLAY = {
@@ -236,9 +234,9 @@ async def resolve_event_type(content: str, db, explicit_event_type: str = None) 
     content_lower = content.lower()
 
     # 2. DB lookup for short URLs
-    match = _SHORT_CODE_RE.search(content)
-    if match:
-        short_code = match.group(1)
+    from routers.short_urls import short_code_from
+    short_code = short_code_from(content)
+    if short_code:
         try:
             doc = await db.short_urls.find_one({"short_code": short_code}, {"link_type": 1})
             if doc and doc.get("link_type"):

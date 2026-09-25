@@ -20,10 +20,10 @@ ANY_URL_RE = re.compile(r'https?://[^\s<>"\')\]]+')
 
 async def _auto_wrap_content_urls(content: str, user_id: str, context: str = "template") -> str:
     """Wrap ALL raw URLs in template content with tracked short URLs."""
-    from routers.short_urls import create_short_url
+    from routers.short_urls import create_short_url, is_short_url
     urls = ANY_URL_RE.findall(content)
     for url in urls:
-        if "/api/s/" in url:
+        if is_short_url(url):
             continue  # already tracked
         try:
             link_type = "training_video" if ("youtube.com" in url or "youtu.be" in url) else context

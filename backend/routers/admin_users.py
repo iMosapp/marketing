@@ -1481,7 +1481,8 @@ async def add_team_member(data: AddTeamMemberRequest):
         settings = await db.onboarding_settings.find_one({"is_global": True})
     
     # Generate training link
-    base_url = os.environ.get("SHORT_URL_DOMAIN", "https://app.imonsocial.com")
+    from routers.short_urls import get_short_url_base
+    base_url = get_short_url_base()
     training_token = secrets.token_urlsafe(16)
     training_link = f"{base_url}/onboarding?token={training_token}"
     

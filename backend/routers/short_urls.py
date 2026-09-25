@@ -8,6 +8,7 @@ from bson import ObjectId
 from datetime import datetime
 from typing import Optional
 import os
+import re
 import random
 import secrets
 import logging
@@ -28,16 +29,48 @@ def generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
     """Generate a cryptographically secure random short code."""
     return ''.join(secrets.choice(SHORT_CODE_CHARS) for _ in range(length))
 
+def _short_domain() -> str:
+    """Branded short domain (env SHORT_URL_DOMAIN, e.g. https://imonsocial.com); '' when links stay on the app host."""
+    d = (os.environ.get('SHORT_URL_DOMAIN') or '').strip().rstrip('/')
+    if d and not d.startswith('http'):
+        d = 'https://' + d
+    return d
+
 def get_short_url_base() -> str:
-    """Get the base URL for short links. Prioritizes PUBLIC_FACING_URL to avoid
-    deployment platforms overriding APP_URL with the staging/deploy domain."""
-    short_domain = os.environ.get('SHORT_URL_DOMAIN')
-    if short_domain:
-        return short_domain.rstrip('/')
+    """Public base of the APP (destination pages, /api/s/ fallback). Prioritizes PUBLIC_FACING_URL to avoid
+    deployment platforms overriding APP_URL with the staging/deploy domain. Never the branded short domain."""
     public_url = os.environ.get("PUBLIC_FACING_URL")
     if public_url:
         return public_url.rstrip('/')
     return os.environ.get("APP_URL", "https://app.imonsocial.com")
+
+def short_link(code: str) -> str:
+    """The link we hand out: imonsocial.com/s/CODE when SHORT_URL_DOMAIN is set (Vercel redirects /s/* to /api/s/*), else app/api/s/CODE."""
+    d = _short_domain()
+    return f"{d}/s/{code}" if d else f"{get_short_url_base()}/api/s/{code}"
+
+_CODE_RE = None
+
+def _code_re():
+    global _CODE_RE
+    if _CODE_RE is None:
+        pats = [r'/api/s/([A-Za-z0-9]+)']
+        d = _short_domain()
+        if d:
+            pats.append(re.escape(d.split('://', 1)[-1]) + r'/s/([A-Za-z0-9]+)')
+        _CODE_RE = re.compile('|'.join(pats))
+    return _CODE_RE
+
+def find_short_codes(text: str) -> list:
+    """Every short code in a message body, whichever form the link took."""
+    return [g for m in _code_re().finditer(text or '') for g in m.groups() if g]
+
+def short_code_from(url: str) -> Optional[str]:
+    codes = find_short_codes(url or '')
+    return codes[0] if codes else None
+
+def is_short_url(url: str) -> bool:
+    return short_code_from(url) is not None
 
 async def create_short_url(
     original_url: str,
@@ -71,7 +104,7 @@ async def create_short_url(
     if existing:
         return {
             "short_code": existing["short_code"],
-            "short_url": f"{get_short_url_base()}/api/s/{existing['short_code']}",
+            "short_url": short_link(existing["short_code"]),
             "original_url": original_url
         }
     
@@ -106,7 +139,7 @@ async def create_short_url(
     
     return {
         "short_code": short_code,
-        "short_url": f"{get_short_url_base()}/api/s/{short_code}",
+        "short_url": short_link(short_code),
         "original_url": original_url
     }
 
@@ -950,6 +983,13 @@ async def redirect_short_url(short_code: str, request: Request):
         og_title = f"Your appointment with {inv_first}"
         og_description = "Tap to add it to your calendar"
         og_image = f"{base_url}/api/s/og-image/{user_id}?v=2"
+
+    elif link_type in ("jessi_call", "activation"):
+        # Jessi's onboarding texts: the preview is about them, not a store
+        first = ((doc.get("metadata") or {}).get("user_name") or "").split()[0] if (doc.get("metadata") or {}).get("user_name") else ""
+        og_title = f"Jessi is ready for your setup call{', ' + first if first else ''}" if link_type == "jessi_call" else f"Your I'm On Social account is ready{', ' + first if first else ''}"
+        og_description = "Tap and I'll ring you right now" if link_type == "jessi_call" else "Tap to activate and log in"
+        og_image = f"{base_url}/og-image.png"
 
     elif user_id:
         # === NON-CARD LINK: Use store branding ===

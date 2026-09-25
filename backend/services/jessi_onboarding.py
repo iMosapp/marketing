@@ -262,6 +262,18 @@ def call_link(doc: dict) -> str:
     return f"{_app_url()}/jessi-call/{doc.get('call_token')}"
 
 
+async def invite_link(doc: dict) -> str:
+    """The call-page link as it goes in a text: short (imonsocial.com/s/CODE or app/api/s/CODE), never the raw token."""
+    full = call_link(doc)
+    try:
+        from routers.short_urls import create_short_url
+        r = await create_short_url(original_url=full, link_type="jessi_call", reference_id=doc["user_id"], user_id=doc["user_id"], metadata={"user_name": doc.get("name", "")})
+        return r.get("short_url") or full
+    except Exception as e:
+        logger.debug(f"[JessiOnboarding] short invite link failed: {e}")
+        return full
+
+
 def vcf_url() -> str:
     return f"{_app_url()}/api/onboarding-jessi/jessi.vcf"
 
@@ -292,7 +304,7 @@ async def send_step(db, doc: dict, step: str) -> dict:
         await _say(db, doc, text("explain"), kind="explain")
         if not doc.get("resend"):
             await asyncio.sleep(doc.get("invite_gap_s", 20))
-        await _say(db, doc, text("invite", phone=_mask(doc["phone"]), link=call_link(doc)), kind="invite")
+        await _say(db, doc, text("invite", phone=_mask(doc["phone"]), link=await invite_link(doc)), kind="invite")
         return await advance(db, doc, "INTERVIEW_INVITED")
     if step == "INTERVIEW_COMPLETE":
         await _say(db, doc, text("summary", summary=doc.get("summary_text") or "You told me about yourself and how you like to work with customers."), kind="summary")

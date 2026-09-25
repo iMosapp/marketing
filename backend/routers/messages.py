@@ -624,12 +624,11 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
 
             # Create per-contact short URLs for any tracked links in this message
             # This ensures click attribution works per-recipient, not just the first sender
-            import re as _re_msgs
-            short_codes = _re_msgs.findall(r'/api/s/([A-Za-z0-9]+)', message_data.content or '')
+            from routers.short_urls import find_short_codes
+            short_codes = find_short_codes(message_data.content)
             if short_codes and contact_id:
                 try:
-                    from routers.short_urls import create_short_url, get_short_url_base
-                    base = get_short_url_base()
+                    from routers.short_urls import create_short_url
                     for code in short_codes:
                         existing_doc = await get_db().short_urls.find_one({"short_code": code})
                         if existing_doc and not existing_doc.get("metadata", {}).get("contact_id"):
@@ -696,8 +695,8 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 "timestamp": datetime.now(timezone.utc),
             })
             # Tag short URLs with contact_id for click attribution
-            import re as _re
-            short_codes = _re.findall(r'/api/s/([A-Za-z0-9]+)', message_data.content or '')
+            from routers.short_urls import find_short_codes
+            short_codes = find_short_codes(message_data.content)
             if short_codes:
                 await get_db().short_urls.update_many(
                     {"short_code": {"$in": short_codes}, "metadata.contact_id": {"$exists": False}},

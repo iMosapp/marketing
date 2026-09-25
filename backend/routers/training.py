@@ -619,7 +619,8 @@ async def update_lesson(lesson_id: str, request: Request):
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
     # Auto-wrap video_url with tracking if changed
-    if "video_url" in update and update["video_url"] and "/api/s/" not in update["video_url"]:
+    from routers.short_urls import is_short_url
+    if "video_url" in update and update["video_url"] and not is_short_url(update["video_url"]):
         try:
             from routers.short_urls import create_short_url
             lesson = await db.training_lessons.find_one({"_id": ObjectId(lesson_id)}, {"track_id": 1})
@@ -740,7 +741,8 @@ async def admin_create_lesson(track_id: str, request: Request):
     # Auto-wrap video_url with tracking
     video_url = data.get("video_url", "")
     tracked_video_url = video_url
-    if video_url and "/api/s/" not in video_url:
+    from routers.short_urls import is_short_url
+    if video_url and not is_short_url(video_url):
         try:
             from routers.short_urls import create_short_url
             result = await create_short_url(

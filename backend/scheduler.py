@@ -31,7 +31,7 @@ async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign
 
     Returns (wrapped_media_urls, wrapped_message)
     """
-    from routers.short_urls import create_short_url
+    from routers.short_urls import create_short_url, is_short_url, short_code_from, short_link
     from routers.database import get_db
 
     def _link_type(url):
@@ -60,9 +60,9 @@ async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign
         if contact_id:
             metadata["contact_id"] = contact_id
 
-        if "/api/s/" in url:
+        if is_short_url(url):
             # Already a short URL — look up the original and create a per-contact clone
-            existing_code = url.split("/api/s/")[-1].strip("/").split("?")[0]
+            existing_code = short_code_from(url)
             try:
                 existing_doc = await db.short_urls.find_one({"short_code": existing_code})
                 if existing_doc:
@@ -74,10 +74,7 @@ async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign
                             "metadata.contact_id": contact_id,
                         })
                         if existing_personal:
-                            result_url = f"/api/s/{existing_personal['short_code']}"
-                            if not result_url.startswith("http"):
-                                from routers.short_urls import get_short_url_base
-                                result_url = f"{get_short_url_base()}{result_url}"
+                            result_url = short_link(existing_personal['short_code'])
                             url_map[url] = result_url
                             return result_url
 
