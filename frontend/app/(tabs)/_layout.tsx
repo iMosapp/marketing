@@ -177,19 +177,20 @@ export default function TabLayout() {
         listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
       />
       <Tabs.Screen
-        name="jessi"
+        name="dialer"
         options={{
-          title: 'Jessi',
+          title: 'Call',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="sparkles" size={size} color={isPending ? '#3C3C3E' : color} />
+            <Ionicons name="call" size={size} color={isPending ? '#3C3C3E' : color} />
           ),
         }}
         listeners={{ tabPress: (e) => { if (isPending) e.preventDefault(); } }}
       />
-      {/* Hidden tabs: still routable (deep links, avatar sheet) but not in the bar */}
+      {/* Hidden tabs: still routable (deep links, avatar sheet, Home banner) but not in the bar */}
+      <Tabs.Screen name="jessi" options={{ href: null }} />
       <Tabs.Screen name="activity" options={{ href: null }} />
       <Tabs.Screen name="more" options={{ href: null }} />
-      <Tabs.Screen name="dialer" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="team" options={{ href: null }} />
       <Tabs.Screen name="activity-feed" options={{ href: null }} />
       <Tabs.Screen name="ai-outreach" options={{ href: null }} />

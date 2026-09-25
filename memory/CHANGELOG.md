@@ -1,5 +1,10 @@
 # CHANGELOG — iMOs App
 
+## Sep 25 2026 — Home: Jessi banner back on top, Sold card back at the bottom, Call tab replaces Jessi tab (COMPLETED, web-verified)
+- `app/(tabs)/_layout.tsx`: `dialer` is now the 5th visible tab (title "Call", icon `call`, in-app keypad `app/(tabs)/dialer.tsx`); `jessi` moved to the hidden tabs (still routable at `/(tabs)/jessi`). Bar = Home | Contacts | Inbox | Tasks | Call.
+- `app/(tabs)/home.tsx`: `<TalkToJessiButton />` first in the scroll (above Needs You); `<SoldThisMonthCard />` last (below Recent Wins).
+- `components/jessi/TalkToJessiButton.tsx` rewritten to ALWAYS render: live ready -> "Talk to Jessi" + LIVE pill -> `live.open(assistant)`; super admin without key -> Voice Lab; everyone else -> "Ask Jessi" + chevron -> `/(tabs)/jessi` (classic screen). Ship: eas update only.
+
 ## Sep 25 2026 — Jessi tab: one mic, launches Live Jessi (COMPLETED, web-verified with a mocked live config)
 - User: "The Jessi button on the bottom doesn't launch the right Jessi, the top bar works properly and we don't need both." `app/jessie.tsx` (rendered by `app/(tabs)/jessi.tsx`): the duplicate `TalkToJessiButton` card is removed from the tab; `liveReady = inTabs && config.available && config.configured && usage.left_s > 0 && liveSupported()` (via `useLiveConfig` + `useLiveJessiLauncher`); when true `handleButtonPress` opens `live.open({ options: { mode: 'assistant' }, onClose: reloadLive })` instead of the classic Whisper push-to-talk, intro copy becomes "Who to call today, text someone, pull up a contact. Tap the mic and just talk, or type below." Falls back to the classic recorder when live is off / unconfigured / unsupported. Typed answers render with `**` stripped. `components/jessi/TalkToJessiButton.tsx` is now unused (kept). Ship: eas update only.
 

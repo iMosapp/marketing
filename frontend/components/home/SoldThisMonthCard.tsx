@@ -6,7 +6,7 @@ import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tid, tint } from '../ui/tokens';
 
-/** This month's Sold / Referrals / Repeats with month-over-month change. Lives on My Numbers (moved off Home). */
+/** This month's Sold / Referrals / Repeats with month-over-month change. On Home (bottom) and My Numbers. */
 export function SoldThisMonthCard({ userId }: { userId: string }) {
   const router = useRouter();
   const { colors } = useThemeStore();
