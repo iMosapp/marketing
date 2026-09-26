@@ -443,8 +443,18 @@ class TestWidgetJs:
         r = requests.get(f"{BASE}/api/w/{key}.js", timeout=30)
         assert r.status_code == 200
         body = r.text
-        for token in ["imosw-book", "imosw-chip", "/slots", "/book", "stopPoll", "'rep'", "'system'"]:
+        for token in ["imosw-book", "imosw-chip", "/slots", "/book", "stopPoll", "'rep'", "'system'", "imosw-tuck", "imosw-tab", "imos_tuck_", "setTuck(false); open();"]:
             assert token in body, f"missing token in widget.js: {token}"
+        assert '"tuck_on":true' in body
+
+    def test_tuck_off_normalizes_and_drops_the_handle(self, key):
+        import base64, json
+        c = base64.urlsafe_b64encode(json.dumps({"appearance": {"tuck_on": False}}).encode()).decode().rstrip("=")
+        body = requests.get(f"{BASE}/api/w/{key}.js", params={"c": c}, timeout=30).text
+        assert '"tuck_on":false' in body
+        from services.widgets import normalize_config
+        assert normalize_config({"appearance": {"tuck_on": False}})["appearance"]["tuck_on"] is False
+        assert normalize_config({"appearance": {}})["appearance"]["tuck_on"] is True
 
     def test_demo_renders(self, key):
         r = requests.get(f"{BASE}/api/w/{key}/demo?door=chat", timeout=30)

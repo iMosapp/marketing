@@ -49,7 +49,7 @@ DEFAULTS = {
         "icon": "text", "icon_url": "", "label_on": True, "label": "Text Us", "position": "right", "offset_x": 20, "offset_y": 20,
         "bubble_color": "#2196F3", "text_color": "#FFFFFF", "panel_color": "#FFFFFF", "panel_text": "#111111", "radius": 20,
         "greeting_on": False, "greeting": "Hi there! Have a question? Text us and a real person replies in minutes.", "greeting_delay_s": 4,
-        "avatar_url": "", "font": "inherit", "hide_mobile": False, "page_rules": [],
+        "avatar_url": "", "font": "inherit", "hide_mobile": False, "tuck_on": True, "page_rules": [],
     },
     "doors": {
         "text": {"on": True, "label": "Text us", "intro": "Text with a real person. We usually reply within a few minutes.", "button": "Send text",
@@ -93,6 +93,7 @@ def normalize_config(cfg: dict) -> dict:
     a = c["appearance"]
     a["icon"] = a["icon"] if a["icon"] in ICON_CHOICES else "text"
     a["position"] = "left" if a["position"] == "left" else "right"
+    a["tuck_on"] = a.get("tuck_on") is not False
     a["bubble_color"] = hex_or(a["bubble_color"], "#2196F3")
     a["text_color"] = hex_or(a["text_color"], contrast_text(a["bubble_color"]))
     a["panel_color"] = hex_or(a["panel_color"], "#FFFFFF")

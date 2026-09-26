@@ -8,6 +8,7 @@ ICONS = {
     "menu": '<path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
     "sparkles": '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" fill="currentColor"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z" fill="currentColor"/>',
     "send": '<path d="M3 11.5 21 3l-8.5 18-2.5-7.5L3 11.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    "chev": '<path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
 }
 
 
@@ -90,6 +91,16 @@ var css = '\
 .imosw-launch:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.26)}\
 .imosw-launch svg{display:block}\
 .imosw-launch img{width:28px;height:28px;border-radius:50%;object-fit:cover;display:block}\
+.imosw-tuck{position:absolute;top:-6px;' + side + ':-6px;width:22px;height:22px;border-radius:50%;background:#fff;color:#555;border:1px solid #ddd;box-shadow:0 2px 6px rgba(0,0,0,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.8);transition:opacity .15s ease,transform .15s ease;padding:0}\
+.imosw-tuck svg{width:14px;height:14px;display:block;transform:' + (side === 'right' ? 'scaleX(-1)' : 'none') + '}\
+.imosw-root:hover .imosw-tuck,.imosw-tuck:focus-visible{opacity:1;transform:none}\
+@media (hover:none){.imosw-tuck{opacity:1;transform:none}}\
+.imosw-tab{display:none;position:fixed;bottom:' + (A.offset_y || 20) + 'px;' + side + ':0;width:30px;height:56px;border:0;padding:0;background:' + bubble + ';color:' + fg + ';cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.22);border-radius:' + (side === 'right' ? '999px 0 0 999px' : '0 999px 999px 0') + ';align-items:center;justify-content:center;transition:width .15s ease;animation:imosw-tab-in .25s ease}\
+.imosw-tab:hover{width:40px}\
+.imosw-tab svg{width:18px;height:18px;display:block;transform:' + (side === 'right' ? 'none' : 'scaleX(-1)') + '}\
+.imosw-root.tucked .imosw-launch,.imosw-root.tucked .imosw-greet,.imosw-root.tucked .imosw-tuck{display:none}\
+.imosw-root.tucked .imosw-tab{display:flex}\
+@keyframes imosw-tab-in{from{transform:translateX(' + (side === 'right' ? '' : '-') + '100%)}to{transform:none}}\
 .imosw-greet{position:absolute;bottom:68px;' + side + ':0;width:max-content;max-width:min(300px,calc(100vw - 40px));background:' + panelBg + ';color:' + panelFg + ';border-radius:16px;padding:12px 14px 12px 12px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;gap:10px;align-items:flex-start;cursor:pointer;animation:imosw-in .25s ease}\
 .imosw-greet:after{content:"";position:absolute;bottom:-7px;' + side + ':22px;border:7px solid transparent;border-top-color:' + panelBg + ';border-bottom:0}\
 .imosw-greet .x{position:absolute;top:-8px;' + (side === 'right' ? 'left' : 'right') + ':-8px;width:22px;height:22px;border-radius:50%;background:#fff;color:#555;border:1px solid #ddd;font-size:13px;line-height:20px;text-align:center;cursor:pointer}\
@@ -158,6 +169,14 @@ var root = h('div', { 'class': 'imosw-root', 'data-imos-widget': C.key });
 var launchInner = A.icon === 'image' && A.icon_url ? '<img src="' + esc(A.icon_url) + '" alt="">' : svg(A.icon || 'chat');
 var launch = h('button', { 'class': 'imosw-launch', type: 'button', 'aria-label': A.label || 'Chat with us', html: launchInner + (A.label_on && A.label ? '<span>' + esc(A.label) + '</span>' : ''), onclick: function(){ open(); } });
 root.appendChild(launch);
+var TUCK_KEY = 'imos_tuck_' + C.key, tucked = false;
+if (A.tuck_on !== false) {
+  try { tucked = !PREVIEW && localStorage.getItem(TUCK_KEY) === '1'; } catch (e) {}
+  root.appendChild(h('button', { 'class': 'imosw-tuck', type: 'button', 'aria-label': 'Hide the chat button', title: 'Hide', html: svg('chev'), onclick: function(e){ e.stopPropagation(); setTuck(true); } }));
+  root.appendChild(h('button', { 'class': 'imosw-tab', type: 'button', 'aria-label': A.label || 'Chat with us', title: A.label || 'Chat with us', html: svg('chev'), onclick: function(){ setTuck(false); open(); } }));
+  if (tucked) root.className = 'imosw-root tucked';
+}
+function setTuck(on){ tucked = on; root.className = 'imosw-root' + (on ? ' tucked' : ''); if (on && greet) { root.removeChild(greet); greet = null; } if (!PREVIEW) { try { on ? localStorage.setItem(TUCK_KEY, '1') : localStorage.removeItem(TUCK_KEY); } catch (e) {} } }
 document.body.appendChild(root);
 track('load');
 
@@ -168,7 +187,7 @@ var greetingText = rule ? rule.greeting : (A.greeting_on ? A.greeting : '');
 var avatarHtml = A.avatar_url ? '<img src="' + esc(A.avatar_url) + '" alt="">' : esc((C.store_name || 'Us').charAt(0).toUpperCase());
 
 if (greetingText && doors.length && !saved.greet_dismissed) {
-  setTimeout(function(){ if (opened) return;
+  setTimeout(function(){ if (opened || tucked) return;
     greet = h('div', { 'class': 'imosw-greet', onclick: function(e){ if (e.target.className === 'x') return; open(ruleDoor); } }, [
       h('div', { 'class': 'imosw-av', html: avatarHtml }),
       h('div', { style: 'font-size:14px' }, [fill(greetingText, { store: C.store_name })]),
