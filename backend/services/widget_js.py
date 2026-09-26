@@ -130,6 +130,15 @@ textarea.imosw-in{height:74px;padding:10px 12px;resize:none}\
 .imosw-m{max-width:84%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word}\
 .imosw-m.j{align-self:flex-start;background:rgba(0,0,0,.06);border-bottom-left-radius:4px}\
 .imosw-m.v{align-self:flex-end;background:' + bubble + ';color:' + fg + ';border-bottom-right-radius:4px}\
+.imosw-m.r{align-self:flex-start;background:rgba(0,0,0,.06);border-bottom-left-radius:4px;border-left:3px solid ' + bubble + '}\
+.imosw-m .who{font-size:11px;font-weight:800;opacity:.7;margin-bottom:2px}\
+.imosw-sys{align-self:center;font-size:12px;opacity:.6;text-align:center;padding:2px 10px}\
+.imosw-booked{align-self:center;font-size:12.5px;font-weight:700;color:#1E8E3E;background:rgba(30,142,62,.1);border-radius:999px;padding:5px 12px}\
+.imosw-chips{display:flex;flex-wrap:wrap;gap:6px}\
+.imosw-chips.scroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}\
+.imosw-chip{flex:none;height:32px;padding:0 12px;border-radius:16px;border:1.5px solid rgba(0,0,0,.12);background:transparent;color:inherit;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}\
+.imosw-chip.on{background:' + bubble + ';color:' + fg + ';border-color:' + bubble + '}\
+.imosw-human .sep{opacity:.5;font-size:12.5px}\
 .imosw-typing{align-self:flex-start;opacity:.6;font-size:13px;padding:2px 12px}\
 .imosw-compose{display:flex;gap:8px;padding:10px 12px 6px;border-top:1px solid rgba(0,0,0,.08)}\
 .imosw-compose .imosw-in{height:42px}\
@@ -177,7 +186,7 @@ function open(door){ if (opened) return; opened = true; if (greet) { root.remove
   var d = door && doors.indexOf(door) >= 0 ? door : (ruleDoor || (chat.sid && doors.indexOf('chat') >= 0 && chat.status !== 'closed' ? 'chat' : null));
   if (d) showDoor(d); else if (doors.length === 1) showDoor(doors[0]); else showDoors();
 }
-function close(){ if (!panel) return; root.removeChild(panel); panel = null; opened = false; launch.style.display = ''; }
+function close(){ if (!panel) return; stopPoll(); root.removeChild(panel); panel = null; opened = false; launch.style.display = ''; }
 function header(title, sub){ return h('div', { 'class': 'imosw-head' }, [ h('div', { 'class': 'imosw-av', html: avatarHtml }), h('div', {}, [ h('h3', {}, [title]), sub ? h('p', {}, [sub]) : null ]), h('button', { 'class': 'imosw-close', type: 'button', 'aria-label': 'Close', html: '&times;', onclick: close }) ]); }
 function foot(){ return h('div', { 'class': 'imosw-foot', html: 'Powered by <a href="https://www.imonsocial.com" target="_blank" rel="noopener">i\'M On Social</a>' }); }
 function render(children){ panel.innerHTML = ''; children.forEach(function(c){ if (c) panel.appendChild(c); }); }
@@ -240,17 +249,27 @@ function showCallStatus(r, n){
   } else if (st === 'ringing' && r.request_id === 'preview') { pollTimer = setTimeout(function(){ if (panel) showCallStatus({ status: 'connecting', rep_first: 'Chuck', from_display: '(555) 010-2030', request_id: 'preview' }, n); }, 2500); }
 }
 
-var chat = { sid: saved.chat_sid || null, msgs: [], busy: false, need: false, status: 'open', started: false };
-function previewReply(t){ if (/price|cost|payment|much|trade|finance|person|human/i.test(t)) { chat.need = true; return 'That one is a team member\'s call, and they\'re quick. What\'s your first name and mobile number? They\'ll text you right away.'; }
+var chat = { sid: saved.chat_sid || null, msgs: [], busy: false, need: false, status: 'open', mode: 'jessi', agent: '', offer: false, booking: null, slots: null, showBook: false };
+var pollTimerChat = null; function stopPoll(){ if (pollTimerChat) { clearInterval(pollTimerChat); pollTimerChat = null; } }
+function previewReply(t){ if (/test.?drive|appointment|schedule|book|come in|stop by|visit|oil change/i.test(t)) { chat.offer = true; return 'I can set that up right here. Pick a day and time below and I\'ll get you booked.'; }
+  if (/price|cost|payment|much|trade|finance|person|human/i.test(t)) { chat.need = true; return 'That one is a team member\'s call, and they\'re quick. What\'s your first name and mobile number? They\'ll text you right away.'; }
   return 'This is the preview, so I\'m not looking anything up. On your live site I answer from your hours, store facts, specials and live inventory, and I hand pricing to your team.'; }
+function previewSlots(){ var d = new Date(), out = []; for (var i = 0; i < 4; i++) { var day = new Date(d.getTime() + i * 86400000); var iso = day.toISOString().slice(0, 10);
+    out.push({ date: iso, label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : day.toDateString().slice(0, 10), slots: ['09:00', '10:30', '13:00', '15:30', '17:00'].map(function(v){ var hh = +v.slice(0, 2); return { v: v, l: ((hh % 12) || 12) + (v.slice(3) === '00' ? '' : ':' + v.slice(3)) + (hh < 12 ? ' AM' : ' PM') }; }) }); }
+  return { days: out, kinds: [{ v: 'test_drive', l: 'Test drive' }, { v: 'service', l: 'Service visit' }, { v: 'visit', l: 'Store visit' }] }; }
 function showChat(){
   var cfg = D.chat; var ctx = { store: C.store_name };
   var wrap = h('div', { 'class': 'imosw-chat' });
   var list = h('div', { 'class': 'imosw-msgs' });
   var input = h('input', { 'class': 'imosw-in', type: 'text', placeholder: cfg.placeholder || 'Type your question', autocomplete: 'off', 'aria-label': 'Your message' });
   var send = h('button', { 'class': 'imosw-send', type: 'button', 'aria-label': 'Send', html: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' + ICONS.send + '</svg>' });
-  var human = h('div', { 'class': 'imosw-human' }, [ h('button', { type: 'button', onclick: function(){ askHuman(); } }, [cfg.human || 'Talk to a person']) ]);
-  function apply(r){ if (r.messages) chat.msgs = r.messages; chat.need = !!r.need_contact; chat.status = r.status || chat.status; }
+  var humanBtn = h('button', { type: 'button', onclick: function(){ askHuman(); } }, [cfg.human || 'Talk to a person']);
+  var bookBtn = h('button', { type: 'button', onclick: function(){ chat.showBook = !chat.showBook; draw(); } }, [cfg.booking_label || 'Book a visit']);
+  var sep = h('span', { 'class': 'sep' }, [' \u00b7 ']);
+  var human = h('div', { 'class': 'imosw-human' }, [humanBtn, cfg.booking_on !== false ? sep : null, cfg.booking_on !== false ? bookBtn : null]);
+  var head = header(cfg.label || 'Chat now', 'Jessi \u00b7 ' + (C.store_name || ''));
+  function sub(){ var p = head.querySelector('p'); if (p) p.textContent = (chat.mode === 'human' && chat.agent ? chat.agent : 'Jessi') + ' \u00b7 ' + (C.store_name || ''); }
+  function apply(r){ if (r.messages) chat.msgs = r.messages; chat.need = !!r.need_contact; chat.status = r.status || chat.status; chat.mode = r.mode || 'jessi'; chat.agent = r.agent || ''; chat.offer = !!r.offer_booking; chat.booking = r.booking || null; if (chat.booking) chat.showBook = false; sub(); }
   function contactForm(){
     var nm = h('input', { 'class': 'imosw-in', type: 'text', autocomplete: 'name', placeholder: T.name_label || 'First name', value: saved.name || '' });
     var ph = h('input', { 'class': 'imosw-in', type: 'tel', autocomplete: 'tel', inputmode: 'tel', placeholder: T.phone_label || 'Mobile number', value: saved.phone || '' });
@@ -267,26 +286,75 @@ function showChat(){
     });
     return h('div', { 'class': 'imosw-cform' }, [nm, ph, hp, btn, err, h('div', { 'class': 'imosw-fine', style: 'margin-top:4px' }, [fill(T.optin, ctx)])]);
   }
+  var bk = { kind: 'test_drive', date: '', time: '' };
+  function bookForm(){
+    var box = h('div', { 'class': 'imosw-cform imosw-book' });
+    if (!chat.slots) { box.appendChild(h('div', { 'class': 'imosw-typing', style: 'align-self:center' }, ['Checking open times\u2026']));
+      var got = function(s){ chat.slots = s; if (!bk.date && s.days[0]) bk.date = s.days[0].date; draw(); };
+      if (PREVIEW) setTimeout(function(){ got(previewSlots()); }, 400); else fetch(API + '/chat/' + chat.sid + '/slots').then(function(x){ return x.json(); }).then(got).catch(function(){ chat.slots = { days: [], kinds: [] }; draw(); });
+      return box; }
+    var s = chat.slots;
+    function chips(items, val, set, cls){ var row = h('div', { 'class': 'imosw-chips' + (cls ? ' ' + cls : '') }); items.forEach(function(it){ row.appendChild(h('button', { type: 'button', 'class': 'imosw-chip' + (it.v === val ? ' on' : ''), onclick: function(){ set(it.v); draw(); } }, [it.l])); }); return row; }
+    box.appendChild(h('div', { 'class': 'imosw-lbl', style: 'margin-top:0' }, ['What for?']));
+    box.appendChild(chips(s.kinds, bk.kind, function(v){ bk.kind = v; }));
+    if (!s.days.length) { box.appendChild(h('div', { 'class': 'imosw-err' }, ['No open times in the next few days. Tap ' + (cfg.human || 'Talk to a person') + ' and the team will find one.'])); return box; }
+    box.appendChild(h('div', { 'class': 'imosw-lbl' }, ['Which day?']));
+    box.appendChild(chips(s.days.map(function(d){ return { v: d.date, l: d.label }; }), bk.date, function(v){ bk.date = v; bk.time = ''; }, 'scroll'));
+    var day = s.days.filter(function(d){ return d.date === bk.date; })[0] || s.days[0];
+    box.appendChild(h('div', { 'class': 'imosw-lbl' }, ['What time?']));
+    box.appendChild(chips(day.slots, bk.time, function(v){ bk.time = v; }, 'scroll'));
+    var veh = bk.kind === 'test_drive' ? h('input', { 'class': 'imosw-in', type: 'text', placeholder: 'Which vehicle? (optional)', value: bk.vehicle || '', oninput: function(e){ bk.vehicle = e.target.value; } }) : null;
+    var nm = h('input', { 'class': 'imosw-in', type: 'text', autocomplete: 'name', placeholder: T.name_label || 'First name', value: bk.name || saved.name || '', oninput: function(e){ bk.name = e.target.value; } });
+    var ph = h('input', { 'class': 'imosw-in', type: 'tel', autocomplete: 'tel', inputmode: 'tel', placeholder: T.phone_label || 'Mobile number', value: bk.phone || saved.phone || '', oninput: function(e){ bk.phone = e.target.value; } });
+    var hp = h('input', { 'class': 'imosw-hp', type: 'text', name: 'website', tabindex: '-1', autocomplete: 'off' });
+    var err = h('div', { 'class': 'imosw-err' });
+    var btn = h('button', { 'class': 'imosw-btn', type: 'button', disabled: !bk.time ? 'disabled' : null }, ['Book it']);
+    if (!bk.time) btn.setAttribute('disabled', 'disabled'); else btn.removeAttribute('disabled');
+    btn.addEventListener('click', function(){
+      var n = nm.value.trim(), p = ph.value.replace(/\D/g, '');
+      if (!bk.time) { err.textContent = 'Pick a time first.'; return; } if (!n) { err.textContent = 'Please add your name.'; return; } if (p.length < 10) { err.textContent = 'Please enter a 10 digit mobile number.'; return; }
+      remember('name', n); remember('phone', ph.value); btn.disabled = true; btn.textContent = 'Booking\u2026';
+      var lab = (day.label + ' at ' + (day.slots.filter(function(x){ return x.v === bk.time; })[0] || {}).l);
+      if (PREVIEW) { setTimeout(function(){ chat.booking = { kind: (s.kinds.filter(function(k){ return k.v === bk.kind; })[0] || {}).l, when: lab }; chat.showBook = false; chat.offer = false; chat.status = 'handed_off'; chat.msgs.push({ role: 'jessi', text: 'You\'re all set, ' + n.split(' ')[0] + '. ' + chat.booking.kind + ' on ' + lab + '. ' + (C.store_name || 'The store') + ' just texted you a confirmation.' }); draw(); }, 600); return; }
+      post('/chat/' + chat.sid + '/book', { kind: bk.kind, date: bk.date, time: bk.time, vehicle: veh ? veh.value.trim() : '', name: n, phone: ph.value, website: hp.value })
+        .then(function(r){ apply(r); chat.showBook = false; draw(); track('lead', { door: 'chat', booked: 1 }); })
+        .catch(function(e){ btn.disabled = false; btn.textContent = 'Book it'; err.textContent = typeof e === 'string' ? e : 'Something went wrong. Please try again.'; if (/not open/i.test(String(e))) { chat.slots = null; bk.time = ''; draw(); } });
+    });
+    if (veh) box.appendChild(veh); box.appendChild(nm); box.appendChild(ph); box.appendChild(hp); box.appendChild(btn); box.appendChild(err);
+    box.appendChild(h('div', { 'class': 'imosw-fine', style: 'margin-top:4px' }, [fill(T.optin, ctx)]));
+    return box;
+  }
   function draw(){ list.innerHTML = '';
-    chat.msgs.forEach(function(m){ list.appendChild(h('div', { 'class': 'imosw-m ' + (m.role === 'visitor' ? 'v' : 'j') }, [m.text])); });
-    if (chat.need) list.appendChild(contactForm());
-    if (chat.busy) list.appendChild(h('div', { 'class': 'imosw-typing' }, ['Jessi is typing\u2026']));
-    send.disabled = chat.busy; list.scrollTop = list.scrollHeight; }
+    chat.msgs.forEach(function(m){
+      if (m.role === 'system') { list.appendChild(h('div', { 'class': 'imosw-sys' }, [m.text])); return; }
+      var el = h('div', { 'class': 'imosw-m ' + (m.role === 'visitor' ? 'v' : m.role === 'rep' ? 'r' : 'j') });
+      if (m.role === 'rep' && m.who) el.appendChild(h('div', { 'class': 'who' }, [m.who]));
+      el.appendChild(document.createTextNode(m.text)); list.appendChild(el); });
+    if (chat.booking) list.appendChild(h('div', { 'class': 'imosw-booked' }, ['\u2713 ' + chat.booking.kind + ' \u00b7 ' + chat.booking.when]));
+    if (chat.need && chat.status !== 'closed') list.appendChild(contactForm());
+    if ((chat.offer || chat.showBook) && !chat.booking && chat.status !== 'closed' && chat.mode !== 'human') list.appendChild(bookForm());
+    if (chat.busy && chat.mode !== 'human') list.appendChild(h('div', { 'class': 'imosw-typing' }, ['Jessi is typing\u2026']));
+    if (chat.status === 'closed') list.appendChild(h('div', { style: 'text-align:center;padding:6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', onclick: function(){ chat.sid = null; remember('chat_sid', null); chat.msgs = []; chat.status = 'open'; chat.mode = 'jessi'; chat.agent = ''; chat.booking = null; chat.offer = false; sub(); begin(); } }, ['Start a new chat']) ]));
+    send.disabled = chat.busy || chat.status === 'closed'; input.disabled = chat.status === 'closed'; humanBtn.style.display = chat.status === 'closed' ? 'none' : ''; sep.style.display = bookBtn.style.display = (chat.status === 'closed' || chat.booking || chat.mode === 'human') ? 'none' : '';
+    list.scrollTop = list.scrollHeight; }
   function fail(e){ chat.busy = false; chat.msgs.push({ role: 'jessi', text: typeof e === 'string' ? e : 'Hmm, something hiccuped on my end. Try that once more.' }); draw(); }
-  function submit(){ var t = input.value.trim(); if (!t || chat.busy) return; input.value = ''; chat.msgs.push({ role: 'visitor', text: t }); chat.busy = true; draw();
+  function submit(){ var t = input.value.trim(); if (!t || chat.busy || chat.status === 'closed') return; input.value = ''; chat.msgs.push({ role: 'visitor', text: t }); chat.busy = true; draw();
     if (PREVIEW) { setTimeout(function(){ chat.busy = false; chat.msgs.push({ role: 'jessi', text: previewReply(t) }); draw(); }, 700); return; }
     post('/chat/' + chat.sid + '/message', { text: t }).then(function(r){ chat.busy = false; apply(r); draw(); }).catch(fail); }
   function askHuman(){ if (chat.busy) return; chat.busy = true; draw();
     if (PREVIEW) { setTimeout(function(){ chat.busy = false; chat.need = chat.status !== 'handed_off'; chat.msgs.push({ role: 'jessi', text: chat.status === 'handed_off' ? 'A team member already has your number and is texting you now.' : 'Happy to. What\'s your first name and mobile number? A team member will text you in a minute.' }); draw(); }, 500); return; }
     post('/chat/' + chat.sid + '/human', {}).then(function(r){ chat.busy = false; apply(r); draw(); }).catch(fail); }
   function begin(){ chat.busy = true; draw();
-    post('/chat/start', { page: location.href, title: document.title, visitor: visitor }).then(function(r){ chat.busy = false; chat.sid = r.sid; chat.status = 'open'; remember('chat_sid', r.sid); chat.msgs = [{ role: 'jessi', text: r.greeting }]; draw(); }).catch(fail); }
+    post('/chat/start', { page: location.href, title: document.title, visitor: visitor }).then(function(r){ chat.busy = false; chat.sid = r.sid; chat.status = 'open'; remember('chat_sid', r.sid); chat.msgs = [{ role: 'jessi', text: r.greeting }]; draw(); poll(); }).catch(fail); }
+  function poll(){ stopPoll(); if (PREVIEW) return;
+    pollTimerChat = setInterval(function(){ if (!panel || !chat.sid || chat.busy || chat.status === 'closed') { if (!panel) stopPoll(); return; }
+      fetch(API + '/chat/' + chat.sid).then(function(x){ if (!x.ok) throw 0; return x.json(); }).then(function(r){ var before = chat.msgs.length + '|' + chat.mode + '|' + chat.status + '|' + chat.offer + '|' + !!chat.booking; apply(r); var after = chat.msgs.length + '|' + chat.mode + '|' + chat.status + '|' + chat.offer + '|' + !!chat.booking; if (before !== after) draw(); }).catch(function(){}); }, 3000); }
   send.addEventListener('click', submit); input.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); submit(); } });
   wrap.appendChild(list); wrap.appendChild(h('div', { 'class': 'imosw-compose' }, [input, send])); wrap.appendChild(human);
-  if (doors.length > 1) wrap.appendChild(h('div', { style: 'text-align:center;padding:0 0 6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', style: 'margin-top:0', onclick: showDoors }, ['\u2190 Other options']) ]));
-  render([header(cfg.label || 'Chat now', 'Jessi \u00b7 ' + (C.store_name || '')), wrap, foot()]);
+  if (doors.length > 1) wrap.appendChild(h('div', { style: 'text-align:center;padding:0 0 6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', style: 'margin-top:0', onclick: function(){ stopPoll(); showDoors(); } }, ['\u2190 Other options']) ]));
+  render([head, wrap, foot()]);
   if (PREVIEW) { if (!chat.msgs.length) chat.msgs = [{ role: 'jessi', text: C.chat_welcome || ('Hi! I\'m Jessi, ' + (C.store_name || 'the store') + '\'s assistant. Ask me about hours, what\'s in stock or anything about the store. Want a person? Just say so.') }]; draw(); }
-  else if (chat.sid) { fetch(API + '/chat/' + chat.sid).then(function(x){ if (!x.ok) throw 0; return x.json(); }).then(function(r){ apply(r); draw(); }).catch(function(){ chat.sid = null; remember('chat_sid', null); begin(); }); }
+  else if (chat.sid) { fetch(API + '/chat/' + chat.sid).then(function(x){ if (!x.ok) throw 0; return x.json(); }).then(function(r){ apply(r); draw(); poll(); }).catch(function(){ chat.sid = null; remember('chat_sid', null); begin(); }); }
   else begin();
   setTimeout(function(){ input.focus(); }, 80);
 }

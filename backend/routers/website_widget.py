@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -13,6 +13,7 @@ from routers.database import get_db
 from routers.lead_sources import require_manager, require_user
 from services import widget_calls as WC
 from services import widget_chat as WCH
+from services import widget_crawl as WCR
 from services import widget_js
 from services import widgets as W
 
@@ -85,9 +86,10 @@ async def _detail(db, w: dict, me: dict) -> dict:
         "demo_url": f"{W.app_url()}/api/w/{w['key']}/demo", "can_manage": W.can_manage(me),
         "facts": [{"id": f.get("id"), "text": f.get("text"), "added_by_name": f.get("added_by_name")} for f in store.get("va_facts") or [] if f.get("text")],
         "recent_chats": [{"id": c["sid"], "status": c.get("status"), "name": c.get("name") or "Visitor", "turns": c.get("turns", 0), "reason": c.get("handoff_reason") or "",
-                          "host": c.get("host") or "", "at": c["created_at"].isoformat() if c.get("created_at") else None,
+                          "host": c.get("host") or "", "at": c["created_at"].isoformat() if c.get("created_at") else None, "mode": c.get("mode") or "jessi", "agent": c.get("rep_first") or "",
+                          "booked": bool(c.get("booking")), "live": bool(c.get("visitor_seen_at")) and (_now() - c["visitor_seen_at"].replace(tzinfo=timezone.utc)).total_seconds() < 120 and c.get("status") != "closed",
                           "last": next((m["text"] for m in reversed(c.get("messages") or []) if m.get("role") == "visitor"), "")[:120]}
-                         for c in await db[WCH.COLL].find({"widget_id": str(w["_id"])}, {"messages": {"$slice": -6}, "sid": 1, "status": 1, "name": 1, "turns": 1, "handoff_reason": 1, "host": 1, "created_at": 1}).sort("created_at", -1).limit(20).to_list(20)],
+                         for c in await db[WCH.COLL].find({"widget_id": str(w["_id"])}, {"messages": {"$slice": -6}, "sid": 1, "status": 1, "name": 1, "turns": 1, "handoff_reason": 1, "host": 1, "created_at": 1, "mode": 1, "rep_first": 1, "booking": 1, "visitor_seen_at": 1}).sort("created_at", -1).limit(20).to_list(20)],
     }
 
 
@@ -107,6 +109,110 @@ class AskBody(BaseModel):
 
 class FactBody(BaseModel):
     text: str
+
+
+class CrawlBody(BaseModel):
+    url: str
+
+
+class RepText(BaseModel):
+    text: str
+
+
+class LeadBody(BaseModel):
+    name: Optional[str] = ""
+    phone: Optional[str] = ""
+
+
+# ---------------------------------------------------------------- live chats (reps jump in) — declared before /{wid} so "chats" never reads as a widget id
+async def _chat_scoped(db, me: dict, sid: str):
+    s = await db[WCH.COLL].find_one({"sid": sid})
+    if not s:
+        raise HTTPException(status_code=404, detail="That chat is gone")
+    w = await db[W.COLL].find_one({"_id": ObjectId(s["widget_id"])}) if ObjectId.is_valid(str(s.get("widget_id"))) else None
+    if not w:
+        raise HTTPException(status_code=404, detail="Widget not found")
+    if me.get("role") != "super_admin" and not await db[W.COLL].count_documents({"_id": w["_id"], **W.scope_query(me)}):
+        raise HTTPException(status_code=403, detail="That chat is outside your scope")
+    return w, s
+
+
+@admin.get("/chats/live")
+async def live_chats(request: Request):
+    """Web chats happening right now on the stores I can see, newest first."""
+    db = get_db()
+    me = request.state.user
+    widgets = await db[W.COLL].find({**W.scope_query(me), "is_active": {"$ne": False}}, {"store_name": 1}).to_list(200)
+    names = {str(w["_id"]): w.get("store_name") or "" for w in widgets}
+    rows = await WCH.live_list(db, list(names))
+    return {"chats": [WCH.summary(s, names.get(str(s.get("widget_id")), "")) for s in rows], "me": str(me["_id"])}
+
+
+@admin.get("/chats/by-conversation/{conversation_id}")
+async def chat_for_conversation(conversation_id: str, request: Request):
+    db = get_db()
+    s = await WCH.for_conversation(db, conversation_id)
+    if not s:
+        return {"chat": None}
+    try:
+        w, s = await _chat_scoped(db, request.state.user, s["sid"])
+    except HTTPException:
+        return {"chat": None}
+    return {"chat": WCH.summary(s, w.get("store_name") or "")}
+
+
+@admin.get("/chats/{sid}")
+async def chat_detail(sid: str, request: Request):
+    db = get_db()
+    w, s = await _chat_scoped(db, request.state.user, sid)
+    if s.get("mode") == "human" and str(s.get("rep_user_id")) == str(request.state.user["_id"]):
+        await WCH.mark_read(db, s)
+        s["rep_unread"] = 0
+    return {**WCH.rep_view(s), "store_name": w.get("store_name") or "", "widget_id": str(w["_id"])}
+
+
+@admin.post("/chats/{sid}/join")
+async def chat_join(sid: str, request: Request):
+    db = get_db()
+    w, s = await _chat_scoped(db, request.state.user, sid)
+    try:
+        return await WCH.join(db, w, s, request.state.user)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
+@admin.post("/chats/{sid}/message")
+async def chat_rep_message(sid: str, body: RepText, request: Request):
+    db = get_db()
+    w, s = await _chat_scoped(db, request.state.user, sid)
+    try:
+        return await WCH.rep_message(db, w, s, request.state.user, body.text)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@admin.post("/chats/{sid}/leave")
+async def chat_leave(sid: str, request: Request):
+    db = get_db()
+    w, s = await _chat_scoped(db, request.state.user, sid)
+    return await WCH.leave(db, w, s, request.state.user)
+
+
+@admin.post("/chats/{sid}/end")
+async def chat_end(sid: str, request: Request):
+    db = get_db()
+    w, s = await _chat_scoped(db, request.state.user, sid)
+    return await WCH.end(db, w, s, request.state.user)
+
+
+@admin.post("/chats/{sid}/lead")
+async def chat_save_lead(sid: str, body: LeadBody, request: Request):
+    db = get_db()
+    w, s = await _chat_scoped(db, request.state.user, sid)
+    try:
+        return await WCH.save_lead(db, w, s, request.state.user, body.name or "", body.phone or "")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @admin.get("")
@@ -258,6 +364,60 @@ async def remove_fact(wid: str, fact_id: str, request: Request, _m: dict = Depen
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- manager: Jessi reads the website -> draft KB
+@admin.post("/{wid}/crawl")
+async def crawl_start(wid: str, body: CrawlBody, request: Request, bg: BackgroundTasks, _m: dict = Depends(require_manager)):
+    db = get_db()
+    w = await _load_scoped(db, request.state.user, wid)
+    try:
+        job = await WCR.start(db, w, body.url, request.state.user)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if job["status"] == "running" and not job.get("pages"):
+        bg.add_task(WCR.run, job["id"])
+    return job
+
+
+@admin.get("/{wid}/crawl")
+async def crawl_status(wid: str, request: Request):
+    db = get_db()
+    w = await _load_scoped(db, request.state.user, wid)
+    return {"job": await WCR.latest(db, w)}
+
+
+@admin.post("/{wid}/crawl/apply")
+async def crawl_apply(wid: str, request: Request, _m: dict = Depends(require_manager)):
+    db = get_db()
+    w = await _load_scoped(db, request.state.user, wid)
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Bad payload")
+    return await WCR.apply(db, w, body, request.state.user)
+
+
+# ---------------------------------------------------------------- manager: upload the header photo / bubble icon
+@admin.post("/{wid}/upload")
+async def widget_upload(wid: str, request: Request, file: UploadFile = File(...), target: str = Form("avatar"), _m: dict = Depends(require_manager)):
+    """Returns app-relative /api/images/... URLs; the app makes them absolute for the dealer's site."""
+    db = get_db()
+    w = await _load_scoped(db, request.state.user, wid)
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(status_code=400, detail="That file is not an image")
+    data = await file.read()
+    if len(data) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Keep it under 8 MB")
+    from utils.image_storage import upload_image
+    try:
+        res = await upload_image(data, prefix="widgets", entity_id=str(w["_id"]))
+    except Exception as e:
+        logger.warning(f"[Widget] upload failed: {e}")
+        res = None
+    if not res:
+        raise HTTPException(status_code=502, detail="Could not store that image, try again")
+    urls = {k: f"/api/images/{res[p]}" for k, p in (("original_url", "original_path"), ("thumbnail_url", "thumbnail_path"), ("avatar_url", "avatar_path")) if res.get(p)}
+    return {"target": target if target in ("avatar", "icon") else "avatar", **urls, "url": urls.get("avatar_url" if target == "icon" else "thumbnail_url") or urls.get("original_url")}
+
+
 # ---------------------------------------------------------------- public: the embed + visitor handlers
 async def _widget_or_404(db, key: str) -> dict:
     w = await W.load(db, key)
@@ -387,8 +547,30 @@ async def chat_start(key: str, request: Request):
 
 @public.get("/{key}/chat/{sid}")
 async def chat_state(key: str, sid: str):
-    _, s = await _chat_session(get_db(), key, sid)
+    db = get_db()
+    _, s = await _chat_session(db, key, sid)
+    await WCH.touch_visitor(db, s)
     return WCH.public_state(s)
+
+
+@public.get("/{key}/chat/{sid}/slots")
+async def chat_slots(key: str, sid: str):
+    db = get_db()
+    w, _ = await _chat_session(db, key, sid)
+    return WCH.slots(await W.store_of(db, w))
+
+
+@public.post("/{key}/chat/{sid}/book")
+async def chat_book(key: str, sid: str, request: Request):
+    db = get_db()
+    w, s = await _chat_session(db, key, sid)
+    body = await request.json()
+    if body.get("website"):
+        return {**WCH.public_state(s), "reply": "Thanks!", "booked": True}
+    try:
+        return await WCH.book(db, w, s, body, _ip(request))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @public.post("/{key}/chat/{sid}/message")

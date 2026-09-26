@@ -1,13 +1,16 @@
 """Chat now: Jessi on the dealership's website. Answers hours / store facts / specials / live inventory; anything about price,
 payments, trade value or "talk to a person" is handed to the team: she collects name + mobile and the visitor becomes a lead
-through the same intake pipeline as Text us (store-line text, rep ping, transcript in the thread)."""
+through the same intake pipeline as Text us (store-line text, rep ping, transcript in the thread).
+A rep can also jump into a live chat from the app (mode "human"): Jessi goes quiet, the rep types, the visitor sees it live.
+Visitors can book a test drive / service visit inside the chat; that creates the lead, an appointment and a task for the rep."""
 import asyncio
 import logging
 import os
 import re
 import secrets
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, time as dtime, timedelta
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from bson import ObjectId
 
@@ -18,15 +21,21 @@ from utils.text_sanitize import no_em_dash
 logger = logging.getLogger(__name__)
 
 COLL = "widget_chats"
-MAX_TURNS = 40
+MAX_TURNS = 60
 HISTORY = 14
 LLM_TIMEOUT_S = 25
+LIVE_WINDOW_MIN = 20     # a chat is "live" while something happened in the last 20 minutes
+HERE_S = 25              # the visitor still has the window open if it polled in the last 25 s
+PUBLIC_ROLES = ("visitor", "jessi", "rep", "system")   # "note" is rep-only
+BOOK_KINDS = {"test_drive": "Test drive", "service": "Service visit", "visit": "Store visit"}
 
 HANDOFF = re.compile(r"\b(price|prices|pricing|cost|costs|how much|payment|payments|monthly|per month|a month|lease|leasing|financ\w*|apr|interest rate|"
                      r"trade[- ]?in|trade value|my trade|discount|discounts|deal|deals|negotiat\w*|best price|out the door|otd|msrp|down payment|"
                      r"rebate|rebates|incentive|incentives|cheaper|lowest|haggle|make an offer|what would you take|bottom line|money down)\b", re.I)
 HUMAN = re.compile(r"\b((talk|speak|chat)\s+(to|with)\s+(a\s+|an\s+)?(someone|somebody|real|human|person|sales|rep|manager|agent|live))|"
                    r"(real person|a human|salesperson|sales rep|representative|call me|someone call|have someone|actual person)\b", re.I)
+BOOK = re.compile(r"\b(test[- ]?drive|appointment|appt|schedule|book(ing)?|come (in|by|down)|stop by|swing by|drop (it|my car|the car) off|bring (it|my car) in|"
+                  r"come (see|look at|check out)|see it in person|set up a time|what time (can|could) i|oil change|service visit|reserve)\b", re.I)
 PHONE = re.compile(r"(?:\+?1[\s.-]?)?\(?(\d{3})\)?[\s.-]?(\d{3})[\s.-]?(\d{4})\b")
 NAME = re.compile(r"\b(?:i am|i'm|im|my name is|this is|it's|its|name's)\s+([A-Z][a-zA-Z'-]{1,20})(?:\s+([A-Z][a-zA-Z'-]{1,25}))?", re.I)
 DAYS = [("monday", "Mon"), ("tuesday", "Tue"), ("wednesday", "Wed"), ("thursday", "Thu"), ("friday", "Fri"), ("saturday", "Sat"), ("sunday", "Sun")]
@@ -38,6 +47,14 @@ ASK_CONTACT = "That one is a team member's call, not mine, and they're quick. Wh
 
 def _now():
     return datetime.now(timezone.utc)
+
+
+def _msg(role: str, text: str, **extra) -> dict:
+    return {"role": role, "text": text, "at": _now(), **extra}
+
+
+def _iso(v) -> Optional[str]:
+    return v.isoformat() if isinstance(v, datetime) else None
 
 
 def _t12(hhmm: str) -> str:
@@ -126,7 +143,7 @@ def knowledge_text(store: dict, kb: dict, facts: list, inv_lines: list, inv_tota
     return "\n\n".join(parts)
 
 
-def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool) -> str:
+def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False) -> str:
     name = store.get("name") or "the store"
     never = "; ".join(kb.get("never") or []) or "none listed"
     price_rule = ("You may state a vehicle's listed price only when it appears in the inventory lines. " if kb.get("share_listed_prices")
@@ -146,6 +163,9 @@ def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact
                     if have_contact else "Ask for their first name and mobile number so the team can text them right away. Do not answer the priced question itself."))
     elif mode == "handed_off":
         base += "\nMODE: A team member already has this visitor's number and is texting them. Keep helping with simple questions; if they ask a priced question again, remind them the team member has it over text."
+    if booking:
+        base += ("\nBOOKING: The visitor wants to come in (test drive, service or a visit). In one or two sentences say you can set that up right here and point them to the "
+                 "booking form that just appeared below (pick a day and time). Do not ask them to call and do not ask for their number in the text; the form collects it.")
     return base
 
 
@@ -165,12 +185,25 @@ async def _llm(system: str, transcript: str) -> Optional[str]:
 
 
 def _transcript(session: dict, limit: int = HISTORY) -> str:
-    rows = [m for m in session.get("messages") or [] if m.get("role") in ("visitor", "jessi")][-limit:]
-    return "\n".join(f"{'Visitor' if m['role'] == 'visitor' else 'Jessi'}: {m['text']}" for m in rows)
+    rows = [m for m in session.get("messages") or [] if m.get("role") in ("visitor", "jessi", "rep")][-limit:]
+    return "\n".join(f"{'Visitor' if m['role'] == 'visitor' else 'Jessi' if m['role'] == 'jessi' else 'Team member ' + (m.get('who') or '')}: {m['text']}" for m in rows)
 
 
 async def store_facts(db, store: dict) -> list:
     return [f.get("text") for f in (store or {}).get("va_facts") or [] if f.get("text")]
+
+
+def _first(user: dict) -> str:
+    return ((user or {}).get("first_name") or ((user or {}).get("name") or "").split(" ")[0] or "A team member").strip()
+
+
+def _aware(v) -> Optional[datetime]:
+    return v.replace(tzinfo=timezone.utc) if isinstance(v, datetime) and v.tzinfo is None else (v if isinstance(v, datetime) else None)
+
+
+def _here(session: dict) -> bool:
+    seen = _aware(session.get("visitor_seen_at"))
+    return bool(seen and (_now() - seen).total_seconds() < HERE_S)
 
 
 # ---------------------------------------------------------------- sessions
@@ -183,22 +216,32 @@ async def start(db, w: dict, body: dict, ip: str) -> dict:
     greeting = greeting.replace("{store}", store.get("name") or "").replace("{{store_name}}", store.get("name") or "")
     doc = {"sid": secrets.token_urlsafe(18), "widget_id": str(w["_id"]), "key": w["key"], "store_id": w.get("store_id"),
            "visitor": (body.get("visitor") or "")[:64], "page": (body.get("page") or "")[:500], "title": (body.get("title") or "")[:200], "host": W.host_of(body.get("page") or ""),
-           "name": "", "phone": "", "status": "open", "awaiting_contact": False, "handoff_reason": "", "turns": 0,
-           "messages": [{"role": "jessi", "text": greeting, "at": _now()}], "created_at": _now(), "updated_at": _now(), "ip": ip}
+           "name": "", "phone": "", "status": "open", "mode": "jessi", "rep_user_id": None, "rep_first": "", "rep_unread": 0,
+           "awaiting_contact": False, "handoff_reason": "", "offer_booking": False, "booking": None, "turns": 0,
+           "messages": [_msg("jessi", greeting)], "visitor_seen_at": _now(), "created_at": _now(), "updated_at": _now(), "ip": ip}
     await db[COLL].insert_one(doc)
     await W.log_event(db, w, "chat", {**body, "door": "chat"})
     await db[W.COLL].update_one({"_id": w["_id"]}, {"$inc": {"stats.chats": 1}})
-    return {"sid": doc["sid"], "greeting": greeting, "status": "open"}
+    return {"sid": doc["sid"], "greeting": greeting, "status": "open", "mode": "jessi"}
 
 
 async def load(db, key: str, sid: str) -> Optional[dict]:
     return await db[COLL].find_one({"key": key, "sid": sid}) if sid else None
 
 
+async def touch_visitor(db, session: dict):
+    await db[COLL].update_one({"_id": session["_id"]}, {"$set": {"visitor_seen_at": _now()}})
+
+
 def public_state(session: dict) -> dict:
-    return {"sid": session["sid"], "status": session.get("status"), "need_contact": bool(session.get("awaiting_contact")) and not session.get("phone"),
+    b = session.get("booking") or None
+    mode = session.get("mode") or "jessi"
+    return {"sid": session["sid"], "status": session.get("status"), "mode": mode, "agent": session.get("rep_first") or "",
+            "need_contact": bool(session.get("awaiting_contact")) and not session.get("phone") and mode != "human",
             "name": session.get("name") or "", "has_phone": bool(session.get("phone")),
-            "messages": [{"role": m["role"], "text": m["text"]} for m in (session.get("messages") or []) if m.get("role") in ("visitor", "jessi")][-60:]}
+            "offer_booking": bool(session.get("offer_booking")) and not b and mode != "human" and session.get("status") != "closed",
+            "booking": {"kind": b["kind_label"], "when": b["when_label"]} if b else None,
+            "messages": [{"role": m["role"], "text": m["text"], **({"who": m["who"]} if m.get("who") else {})} for m in (session.get("messages") or []) if m.get("role") in PUBLIC_ROLES][-80:]}
 
 
 def _detect(kb: dict, text: str) -> str:
@@ -210,20 +253,37 @@ def _detect(kb: dict, text: str) -> str:
     return f"topic the store keeps for the team ({hit})" if hit else ""
 
 
+async def _notify_live(db, w: dict, cfg: dict, session: dict, text: str):
+    """First visitor line: ping the ring group so someone can jump in while the visitor is still on the page."""
+    reps = cfg["routing"].get("call_user_ids") or []
+    if not reps or not cfg["doors"]["chat"].get("notify_reps", True):
+        return
+    try:
+        from routers.push_notifications import send_push_to_users
+        host = session.get("host") or "your website"
+        await send_push_to_users(reps, "Live web chat", f"Visitor on {host}: \"{text[:70]}\" Jessi is answering. Tap to jump in.", f"/webchat/{session['sid']}", "chatbubbles")
+        await db[COLL].update_one({"_id": session["_id"]}, {"$set": {"notified_at": _now()}})
+    except Exception as e:
+        logger.warning(f"[WidgetChat] live notify failed: {e}")
+
+
 async def reply(db, w: dict, session: dict, text: str, ip: str) -> dict:
     text = " ".join((text or "").split())[:1000]
     if not text:
         raise ValueError("Say something first.")
     if not W.allow(ip, "chat_msg", 20):
         raise ValueError("Slow down a little, one message at a time.")
+    if session.get("status") == "closed":
+        raise ValueError("That chat has ended. Start a new one.")
     if session.get("turns", 0) >= MAX_TURNS:
-        return {**public_state(session), "reply": "We've covered a lot. A team member can pick this up by text, tap Talk to a person and they'll reach out."}
+        return {**public_state(session), "reply": "We've covered a lot. A team member can pick this up by text, tap Talk to a person and they'll reach out.", "handoff": False}
     cfg = W.normalize_config(w)
     kb = cfg["kb"]
     store = await W.store_of(db, w)
-    msgs = list(session.get("messages") or []) + [{"role": "visitor", "text": text, "at": _now()}]
+    first_turn = session.get("turns", 0) == 0
+    msgs = list(session.get("messages") or []) + [_msg("visitor", text)]
     session["messages"] = msgs
-    updates: dict = {"turns": session.get("turns", 0) + 1, "updated_at": _now()}
+    updates: dict = {"turns": session.get("turns", 0) + 1, "updated_at": _now(), "last_visitor_at": _now(), "visitor_seen_at": _now()}
 
     # names / phones the visitor types in passing
     nm = NAME.search(text)
@@ -232,9 +292,20 @@ async def reply(db, w: dict, session: dict, text: str, ip: str) -> dict:
     ph = PHONE.search(text)
     phone = W.clean_phone("".join(ph.groups())) if ph else ""
 
+    if session.get("mode") == "human":
+        # a rep is in the chat: no Jessi, just store the line for the rep's screen
+        updates["rep_unread"] = int(session.get("rep_unread") or 0) + 1
+        updates["messages"] = msgs
+        if phone and not session.get("phone"):
+            updates["phone"] = session["phone"] = phone
+        await db[COLL].update_one({"_id": session["_id"]}, {"$set": updates})
+        session.update(updates)
+        return {**public_state(session), "reply": None, "handoff": False}
+
     reason = _detect(kb, text) if session.get("status") != "handed_off" else ""
     mode = "normal"
     answer = None
+    booking = False
     if session.get("status") == "handed_off":
         mode = "handed_off"
     elif session.get("awaiting_contact") and phone:
@@ -247,30 +318,43 @@ async def reply(db, w: dict, session: dict, text: str, ip: str) -> dict:
             answer = await _handoff(db, w, session, session["phone"], session.get("name") or "", cfg, store)
         else:
             updates["awaiting_contact"] = session["awaiting_contact"] = True
+    if answer is None and mode in ("normal", "handed_off") and cfg["doors"]["chat"].get("booking_on", True) and not session.get("booking") and BOOK.search(text):
+        booking = True
+        updates["offer_booking"] = session["offer_booking"] = True
     if answer is None:
         inv_lines, inv_total = await inventory_lines(db, w.get("store_id"), text, bool(kb.get("share_listed_prices")))
         knowledge = knowledge_text(store, kb, await store_facts(db, store), inv_lines, inv_total)
-        system = system_prompt(store, kb, knowledge, mode, bool(session.get("phone")))
+        system = system_prompt(store, kb, knowledge, mode, bool(session.get("phone")), booking=booking)
         answer = await _llm(system, _transcript(session) + "\n\nReply to the visitor's last line as Jessi.")
         if not answer:
-            answer = ASK_CONTACT if mode == "handoff" else FALLBACK
-            if mode != "handoff" and not session.get("phone"):
+            answer = ("Happy to set that up. Pick a day and time below and I'll get you booked." if booking else ASK_CONTACT if mode == "handoff" else FALLBACK)
+            if mode != "handoff" and not booking and not session.get("phone"):
                 updates["awaiting_contact"] = session["awaiting_contact"] = True
-    msgs.append({"role": "jessi", "text": answer, "at": _now()})
+    msgs.append(_msg("jessi", answer))
     updates["messages"] = msgs
     for k in ("status", "phone", "name", "lead_id", "contact_id", "conversation_id", "awaiting_contact", "handed_off_at"):
         if k in session and k not in updates:
             updates[k] = session[k]
     await db[COLL].update_one({"_id": session["_id"]}, {"$set": updates})
     session.update(updates)
+    if first_turn:
+        asyncio.create_task(_notify_live(db, w, cfg, session, text))
     return {**public_state(session), "reply": answer, "handoff": mode == "handoff" or session.get("status") == "handed_off"}
+
+
+async def _save(db, session: dict, extra: Optional[dict] = None):
+    keys = ("messages", "awaiting_contact", "handoff_reason", "status", "phone", "name", "lead_id", "contact_id", "conversation_id", "offer_booking", "booking", "mode", "rep_user_id", "rep_first", "rep_unread")
+    sets = {k: session.get(k) for k in keys} | {"updated_at": _now()} | (extra or {})
+    await db[COLL].update_one({"_id": session["_id"]}, {"$set": sets})
 
 
 async def request_human(db, w: dict, session: dict) -> dict:
     """The visitor tapped 'Talk to a person'."""
     cfg = W.normalize_config(w)
     store = await W.store_of(db, w)
-    if session.get("status") == "handed_off":
+    if session.get("mode") == "human":
+        text = f"{session.get('rep_first') or 'A team member'} is right here with you. Go ahead."
+    elif session.get("status") == "handed_off":
         text = "A team member already has your number and is texting you now. Keep an eye on your phone."
     elif session.get("phone"):
         text = await _handoff(db, w, session, session["phone"], session.get("name") or "", cfg, store, reason="asked for a person")
@@ -278,9 +362,8 @@ async def request_human(db, w: dict, session: dict) -> dict:
         session["awaiting_contact"] = True
         session["handoff_reason"] = "asked for a person"
         text = "Happy to. What's your first name and mobile number? A team member will text you in a minute."
-    msgs = list(session.get("messages") or []) + [{"role": "jessi", "text": text, "at": _now()}]
-    session["messages"] = msgs
-    await db[COLL].update_one({"_id": session["_id"]}, {"$set": {k: session.get(k) for k in ("messages", "awaiting_contact", "handoff_reason", "status", "phone", "name", "lead_id", "contact_id", "conversation_id")} | {"updated_at": _now()}})
+    session["messages"] = list(session.get("messages") or []) + [_msg("jessi", text)]
+    await _save(db, session)
     return {**public_state(session), "reply": text, "handoff": True}
 
 
@@ -297,14 +380,14 @@ async def give_contact(db, w: dict, session: dict, body: dict, ip: str) -> dict:
         text = "You're already in, a team member is texting you now."
     else:
         text = await _handoff(db, w, session, phone, name, cfg, store)
-    msgs = list(session.get("messages") or []) + [{"role": "jessi", "text": text, "at": _now()}]
-    session["messages"] = msgs
-    await db[COLL].update_one({"_id": session["_id"]}, {"$set": {k: session.get(k) for k in ("messages", "awaiting_contact", "handoff_reason", "status", "phone", "name", "lead_id", "contact_id", "conversation_id")} | {"updated_at": _now()}})
+    session["messages"] = list(session.get("messages") or []) + [_msg("jessi", text)]
+    await _save(db, session)
     return {**public_state(session), "reply": text, "handoff": True}
 
 
-async def _handoff(db, w: dict, session: dict, phone: str, name: str, cfg: dict, store: dict, reason: str = "") -> str:
-    """Create the lead through the intake pipeline; the transcript lands in the thread; the visitor gets the store-line text."""
+async def _handoff(db, w: dict, session: dict, phone: str, name: str, cfg: dict, store: dict, reason: str = "", quiet: bool = False, intake_text: Optional[str] = None) -> str:
+    """Create the lead through the intake pipeline; the transcript lands in the thread; the visitor gets the store-line text
+    (none when quiet, the booking confirmation when intake_text is given)."""
     first, last = W.split_name(name or "Website Visitor")
     reason = reason or session.get("handoff_reason") or "asked for a person"
     source = await db.lead_sources.find_one({"_id": ObjectId(w["lead_source_id"])}) if w.get("lead_source_id") else None
@@ -322,25 +405,248 @@ async def _handoff(db, w: dict, session: dict, phone: str, name: str, cfg: dict,
     }
     src = dict(source)
     store_name = store.get("name") or "our team"
-    src["intake_text"] = (cfg["routing"].get("chat_intake_text") or "").replace("{{first_name}}", first).replace("{first_name}", first).replace("{{store_name}}", store_name).replace("{store_name}", store_name)
+    if quiet:
+        src["intake_text"] = src["after_hours_text"] = ""
+    elif intake_text:
+        src["intake_text"] = src["after_hours_text"] = intake_text
+    else:
+        src["intake_text"] = (cfg["routing"].get("chat_intake_text") or "").replace("{{first_name}}", first).replace("{first_name}", first).replace("{{store_name}}", store_name).replace("{store_name}", store_name)
     from routers.lead_intake import process_inbound_lead
     res = await process_inbound_lead(normalized, src, db, raw_body="")
     if res.get("conversation_id"):
         await db.messages.insert_one({"conversation_id": res["conversation_id"], "contact_id": res.get("contact_id"), "sender": "contact", "direction": "inbound", "channel": "webchat",
-                                      "type": "webchat_transcript", "content": f"Web chat on {W.host_of(page) or 'the website'} (Jessi handed off: {reason}):\n\n{transcript}"[:3000],
-                                      "read": False, "timestamp": _now(), "created_at": _now()})
-        await db.conversations.update_one({"_id": ObjectId(res["conversation_id"])}, {"$set": {"last_message_at": _now(), "status": "active"}})
+                                      "type": "webchat_transcript", "content": f"Web chat on {W.host_of(page) or 'the website'} ({reason}):\n\n{transcript}"[:3000],
+                                      "read": False, "timestamp": _now(), "created_at": _now(), "webchat_sid": session["sid"]})
+        await db.conversations.update_one({"_id": ObjectId(res["conversation_id"])}, {"$set": {"last_message_at": _now(), "status": "active", "webchat_sid": session["sid"]}})
     session.update({"status": "handed_off", "awaiting_contact": False, "phone": phone, "name": name or session.get("name") or "", "lead_id": res.get("lead_id"),
-                    "contact_id": res.get("contact_id"), "conversation_id": res.get("conversation_id"), "handed_off_at": _now(), "handoff_reason": reason})
+                    "contact_id": res.get("contact_id"), "conversation_id": res.get("conversation_id"), "handed_off_at": _now(), "handoff_reason": reason, "assigned_to": res.get("assigned_to")})
     await W.log_event(db, w, "lead", {"page": page, "door": "chat", "visitor": session.get("visitor")})
     await db[W.COLL].update_one({"_id": w["_id"]}, {"$inc": {"stats.chat_handoffs": 1}})
     logger.info(f"[WidgetChat] {session['sid']} handed off ({reason}) -> lead {res.get('lead_id')}")
-    return CONFIRM.format(first=first, store=store_name, phone=_fmt(phone))
+    return "" if quiet else CONFIRM.format(first=first, store=store_name, phone=_fmt(phone))
 
 
 def _fmt(p: str) -> str:
     d = re.sub(r"\D", "", p or "")[-10:]
     return f"({d[:3]}) {d[3:6]}-{d[6:]}" if len(d) == 10 else p
+
+
+# ---------------------------------------------------------------- booking inside the chat
+def _tz(store: dict) -> ZoneInfo:
+    from services.lead_timing import store_timezone
+    try:
+        return ZoneInfo(store_timezone(store))
+    except Exception:
+        return ZoneInfo("America/Denver")
+
+
+def _hm(hhmm: str, default: str) -> dtime:
+    try:
+        h, m = (int(x) for x in (hhmm or default).split(":")[:2])
+        return dtime(h, m)
+    except Exception:
+        h, m = (int(x) for x in default.split(":"))
+        return dtime(h, m)
+
+
+def slots(store: dict, days: int = 10) -> dict:
+    """Open half-hour slots for the next `days` days, in the store's time zone, inside its hours (9 to 6 when none are on file)."""
+    tz = _tz(store)
+    now = datetime.now(tz)
+    hours = (store or {}).get("business_hours") or {}
+    out = []
+    for i in range(days):
+        day = (now + timedelta(days=i)).date()
+        h = hours.get(day.strftime("%A").lower()) if hours else None
+        if hours and (not h or h.get("closed") or not (h.get("open") and h.get("close"))):
+            continue
+        start = datetime.combine(day, _hm((h or {}).get("open"), "09:00"), tz)
+        end = datetime.combine(day, _hm((h or {}).get("close"), "18:00"), tz) - timedelta(minutes=30)
+        earliest = now + timedelta(minutes=45)
+        cur, ss = start, []
+        while cur <= end:
+            if cur >= earliest:
+                ss.append({"v": cur.strftime("%H:%M"), "l": _t12(cur.strftime("%H:%M"))})
+            cur += timedelta(minutes=30)
+        if ss:
+            out.append({"date": day.isoformat(), "label": "Today" if i == 0 else "Tomorrow" if i == 1 else day.strftime("%a %b ") + str(day.day), "slots": ss})
+    return {"tz": tz.key, "days": out, "kinds": [{"v": k, "l": l} for k, l in BOOK_KINDS.items()]}
+
+
+async def _booking_rep(db, session: dict, cfg: dict) -> Optional[str]:
+    if session.get("conversation_id") and ObjectId.is_valid(str(session["conversation_id"])):
+        conv = await db.conversations.find_one({"_id": ObjectId(session["conversation_id"])}, {"assigned_to": 1, "user_id": 1})
+        if conv and (conv.get("assigned_to") or conv.get("user_id")):
+            return str(conv.get("assigned_to") or conv.get("user_id"))
+    if session.get("assigned_to"):
+        return str(session["assigned_to"])
+    reps = cfg["routing"].get("call_user_ids") or []
+    return str(reps[0]) if reps else None
+
+
+async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
+    if not W.allow(ip, "lead", 5):
+        raise ValueError("Please wait a minute before sending again.")
+    if session.get("status") == "closed":
+        raise ValueError("That chat has ended. Start a new one.")
+    if session.get("booking"):
+        raise ValueError("You already have a visit booked. Ask a team member if you need to move it.")
+    cfg = W.normalize_config(w)
+    if not cfg["doors"]["chat"].get("booking_on", True):
+        raise ValueError("Booking is turned off for this site.")
+    store = await W.store_of(db, w)
+    kind = body.get("kind") if body.get("kind") in BOOK_KINDS else "visit"
+    d, t = str(body.get("date") or "")[:10], str(body.get("time") or "")[:5]
+    day = next((x for x in slots(store)["days"] if x["date"] == d), None)
+    if not day or t not in [s["v"] for s in day["slots"]]:
+        raise ValueError("That time is not open anymore. Pick another one.")
+    name = " ".join((body.get("name") or "").split())[:80] or session.get("name") or ""
+    phone = W.clean_phone(body.get("phone") or "") or session.get("phone") or ""
+    if not name or not phone:
+        raise ValueError("Please add your first name and a 10 digit mobile number.")
+    vehicle = " ".join((body.get("vehicle") or "").split())[:80]
+    start = datetime.combine(date.fromisoformat(d), _hm(t, "09:00"), _tz(store))
+    when = f"{start.strftime('%A %b ')}{start.day} at {_t12(t)}"
+    kind_label = BOOK_KINDS[kind]
+    first = W.split_name(name)[0]
+    store_name = store.get("name") or "the store"
+    what = kind_label + (f" ({vehicle})" if vehicle else "")
+    confirm = f"Hi {first}, {store_name} here. You're booked: {what} on {when}. Reply here if anything changes. See you then!"
+    if not session.get("contact_id"):
+        await _handoff(db, w, session, phone, name, cfg, store, reason=f"booked a {kind_label.lower()}", intake_text=confirm)
+    uid = await _booking_rep(db, session, cfg)
+    booking = {"kind": kind, "kind_label": kind_label, "date": d, "time": t, "when_label": when, "vehicle": vehicle, "start": start.isoformat(),
+               "user_id": uid, "appointment_id": None, "task_id": None, "created_at": _now()}
+    if uid:
+        try:
+            from routers.calendar import create_appointment_from_ai
+            from routers.tasks import create_task
+            title = f"{kind_label}: {name}" + (f" · {vehicle}" if vehicle else "")
+            a = await create_appointment_from_ai(uid, {"contact_id": session.get("contact_id"), "conversation_id": session.get("conversation_id"), "contact_name": name, "contact_phone": phone,
+                                                      "title": title, "start_time": start.isoformat(), "end_time": (start + timedelta(minutes=30)).isoformat(), "location": store_name,
+                                                      "notes": f"Booked in the website chat ({session.get('host') or 'website'})."})
+            tk = await create_task(uid, {"title": title, "description": f"Booked in the website chat, {when}.", "contact_id": session.get("contact_id") or "", "type": "appointment",
+                                         "appointment_type": kind, "action_type": "manual", "due_date": start.astimezone(timezone.utc).isoformat(), "has_time": True, "priority": "high"})
+            booking["appointment_id"] = (a or {}).get("appointment_id")
+            booking["task_id"] = (tk or {}).get("_id") or (tk or {}).get("id")
+        except Exception as e:
+            logger.warning(f"[WidgetChat] booking calendar/task failed: {e}")
+    if session.get("conversation_id") and ObjectId.is_valid(str(session["conversation_id"])):
+        await db.messages.insert_one({"conversation_id": session["conversation_id"], "contact_id": session.get("contact_id"), "sender": "contact", "direction": "inbound", "channel": "webchat",
+                                      "type": "webchat_booking", "content": f"Booked in the web chat: {what} on {when}.", "read": False, "timestamp": _now(), "created_at": _now(), "webchat_sid": session["sid"]})
+        await db.conversations.update_one({"_id": ObjectId(session["conversation_id"])}, {"$set": {"last_message_at": _now()}})
+    text = f"You're all set, {first}. {what} on {when}. {store_name} just texted you a confirmation and a team member will be ready for you. Anything else I can help with?"
+    session["messages"] = list(session.get("messages") or []) + [_msg("jessi", text)]
+    session.update({"booking": booking, "offer_booking": False})
+    await _save(db, session)
+    await db[W.COLL].update_one({"_id": w["_id"]}, {"$inc": {"stats.chat_bookings": 1}})
+    logger.info(f"[WidgetChat] {session['sid']} booked {kind} {d} {t} for rep {uid}")
+    return {**public_state(session), "reply": text, "booked": True}
+
+
+# ---------------------------------------------------------------- reps: jump into a live chat
+def rep_view(session: dict) -> dict:
+    b = session.get("booking") or None
+    return {"sid": session["sid"], "status": session.get("status"), "mode": session.get("mode") or "jessi", "agent": session.get("rep_first") or "", "rep_user_id": session.get("rep_user_id"),
+            "name": session.get("name") or "", "phone": _fmt(session["phone"]) if session.get("phone") else "", "page": session.get("page") or "", "title": session.get("title") or "",
+            "host": session.get("host") or "", "turns": session.get("turns", 0), "visitor_here": _here(session), "rep_unread": int(session.get("rep_unread") or 0),
+            "contact_id": session.get("contact_id"), "conversation_id": session.get("conversation_id"), "lead_id": session.get("lead_id"), "handoff_reason": session.get("handoff_reason") or "",
+            "booking": {"kind": b["kind_label"], "when": b["when_label"], "vehicle": b.get("vehicle") or "", "task_id": b.get("task_id")} if b else None,
+            "created_at": _iso(session.get("created_at")), "updated_at": _iso(session.get("updated_at")), "last_visitor_at": _iso(session.get("last_visitor_at")),
+            "messages": [{"role": m["role"], "text": m["text"], "who": m.get("who") or "", "uid": m.get("uid") or "", "at": _iso(m.get("at"))} for m in (session.get("messages") or [])][-200:]}
+
+
+def summary(session: dict, store_name: str = "") -> dict:
+    last = next((m["text"] for m in reversed(session.get("messages") or []) if m.get("role") == "visitor"), "")
+    return {"sid": session["sid"], "name": session.get("name") or "Website visitor", "store_name": store_name, "host": session.get("host") or "", "page": session.get("page") or "",
+            "mode": session.get("mode") or "jessi", "agent": session.get("rep_first") or "", "rep_user_id": session.get("rep_user_id"), "status": session.get("status"),
+            "turns": session.get("turns", 0), "rep_unread": int(session.get("rep_unread") or 0), "visitor_here": _here(session), "last": last[:120],
+            "has_lead": bool(session.get("contact_id")), "conversation_id": session.get("conversation_id"), "booked": bool(session.get("booking")),
+            "at": _iso(session.get("last_visitor_at") or session.get("updated_at"))}
+
+
+async def live_list(db, widget_ids: list, limit: int = 30) -> list:
+    since = _now() - timedelta(minutes=LIVE_WINDOW_MIN)
+    q = {"widget_id": {"$in": [str(x) for x in widget_ids]}, "status": {"$ne": "closed"}, "turns": {"$gte": 1},
+         "$or": [{"updated_at": {"$gte": since}}, {"visitor_seen_at": {"$gte": since}}]}
+    return await db[COLL].find(q).sort("updated_at", -1).limit(limit).to_list(limit)
+
+
+async def for_conversation(db, conversation_id: str) -> Optional[dict]:
+    """The live chat behind an Inbox thread, if the visitor is still around."""
+    s = await db[COLL].find_one({"conversation_id": str(conversation_id), "status": {"$ne": "closed"}}, sort=[("updated_at", -1)])
+    if not s:
+        return None
+    recent = _now() - timedelta(minutes=10)
+    seen, upd = _aware(s.get("visitor_seen_at")), _aware(s.get("updated_at"))
+    return s if (seen and seen >= recent) or (upd and upd >= recent) else None
+
+
+async def join(db, w: dict, session: dict, user: dict) -> dict:
+    if session.get("status") == "closed":
+        raise ValueError("That chat has ended.")
+    first = _first(user)
+    store = await W.store_of(db, w)
+    already = session.get("mode") == "human" and str(session.get("rep_user_id")) == str(user["_id"])
+    if not already:
+        text = f"{first} took over the chat." if session.get("mode") == "human" else f"{first} from {store.get('name') or 'the store'} joined the chat."
+        session["messages"] = list(session.get("messages") or []) + [_msg("system", text)]
+    session.update({"mode": "human", "rep_user_id": str(user["_id"]), "rep_first": first, "offer_booking": False, "awaiting_contact": False, "rep_unread": 0})
+    await _save(db, session, {"joined_at": _now()})
+    logger.info(f"[WidgetChat] {session['sid']} rep {user.get('email')} joined")
+    return rep_view(session)
+
+
+async def rep_message(db, w: dict, session: dict, user: dict, text: str) -> dict:
+    text = " ".join((text or "").split())[:1000]
+    if not text:
+        raise ValueError("Type something first.")
+    if session.get("status") == "closed":
+        raise ValueError("That chat has ended.")
+    if session.get("mode") != "human" or str(session.get("rep_user_id")) != str(user["_id"]):
+        await join(db, w, session, user)
+    session["messages"] = list(session.get("messages") or []) + [_msg("rep", text, who=session.get("rep_first") or _first(user), uid=str(user["_id"]))]
+    session["rep_unread"] = 0
+    await _save(db, session)
+    return rep_view(session)
+
+
+async def leave(db, w: dict, session: dict, user: dict) -> dict:
+    first = session.get("rep_first") or _first(user)
+    if session.get("mode") == "human":
+        session["messages"] = list(session.get("messages") or []) + [_msg("system", f"{first} stepped away. Jessi is back to help.")]
+    session.update({"mode": "jessi", "rep_user_id": None, "rep_first": "", "rep_unread": 0})
+    await _save(db, session)
+    return rep_view(session)
+
+
+async def end(db, w: dict, session: dict, user: dict) -> dict:
+    if session.get("status") != "closed":
+        session["messages"] = list(session.get("messages") or []) + [_msg("system", "Chat ended by the team. Thanks for stopping by!")]
+    session.update({"status": "closed", "mode": "jessi", "rep_unread": 0})
+    await _save(db, session, {"ended_at": _now(), "ended_by": str(user["_id"])})
+    return rep_view(session)
+
+
+async def mark_read(db, session: dict):
+    if session.get("rep_unread"):
+        await db[COLL].update_one({"_id": session["_id"]}, {"$set": {"rep_unread": 0}})
+
+
+async def save_lead(db, w: dict, session: dict, user: dict, name: str, phone: str) -> dict:
+    """Rep saves the visitor as a lead from the live chat (no text goes out, the rep is already talking to them)."""
+    name = " ".join((name or "").split())[:80] or session.get("name") or "Website Visitor"
+    phone = W.clean_phone(phone or "") or session.get("phone") or ""
+    if not phone:
+        raise ValueError("Add a 10 digit mobile number first.")
+    if session.get("contact_id"):
+        return rep_view(session)
+    cfg = W.normalize_config(w)
+    store = await W.store_of(db, w)
+    await _handoff(db, w, session, phone, name, cfg, store, reason=f"{session.get('rep_first') or _first(user)} saved them from the live chat", quiet=True)
+    session["messages"] = list(session.get("messages") or []) + [_msg("note", f"Saved as a lead: {name}, {_fmt(phone)}.")]
+    await _save(db, session)
+    return rep_view(session)
 
 
 # ---------------------------------------------------------------- manager: "Test Jessi"

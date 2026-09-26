@@ -28,6 +28,7 @@ export const StatsCard = ({ stats, recent, colors }: { stats: any; recent: any[]
         <Tile n={stats.text_leads || 0} label="Texts" colors={colors} />
         <Tile n={stats.call_requests || 0} label="Call requests" colors={colors} />
         <Tile n={stats.chats || 0} label={`Jessi chats${stats.chat_handoffs ? ` · ${stats.chat_handoffs} handed off` : ''}`} colors={colors} />
+        <Tile n={stats.chat_bookings || 0} label="Booked in chat" colors={colors} hot />
         <Tile n={stats.avg_seconds_to_connect != null ? `${stats.avg_seconds_to_connect}s` : '–'} label="Avg. to connect" colors={colors} hot />
       </View>
     </Section>

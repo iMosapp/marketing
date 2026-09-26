@@ -39,6 +39,7 @@ import { ThreadSearchBar } from '../../components/thread/ThreadSearchBar';
 import { LeadWaitBanner } from '../../components/LeadWaitTimer';
 import { LeadCallTimeline } from '../../components/LeadCallTimeline';
 import { InboxThreadBanner } from '../../components/inbox/InboxThreadBanner';
+import { WebChatBanner } from '../../components/thread/WebChatBanner';
 import { OwnershipSheet } from '../../components/inbox/OwnershipSheet';
 import { ownershipAPI, errText as ownershipErr } from '../../components/inbox/ownership';
 import { useAuthStore } from '../../store/authStore';
@@ -2323,6 +2324,11 @@ function ThreadScreen() {
       {conversationStatus !== 'closed' && !kbOpen && (
         <InboxThreadBanner info={inboxInfo} meId={user?._id} colors={colors} onOpen={() => setShowOwnership(true)} onClaim={claimThread} claiming={claimingThread} />
       )}
+
+      {/* Web-chat lead whose visitor is still on the website: jump into the live chat */}
+      {conversationStatus !== 'closed' && !kbOpen && actualConversationId ? (
+        <WebChatBanner conversationId={actualConversationId} colors={colors} />
+      ) : null}
 
       {/* Speed-to-lead: unanswered internet lead banner */}
       {leadWait && conversationStatus !== 'closed' && (

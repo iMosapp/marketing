@@ -5,15 +5,17 @@ import { GOLD, tid } from '../inbox/ownership';
 import { Section, Label, Hint, inputStyle } from '../inbox/InboxEditorParts';
 import { ColorField, Chips, Field, ToggleRow, Stepper, Swatch, contrastText } from './parts';
 import { PageRulesSection } from './PageRulesSection';
+import { ImageField } from './ImageField';
 
 const ICONS = [
   { value: 'text', label: 'Text', icon: 'phone-portrait-outline' }, { value: 'chat', label: 'Chat', icon: 'chatbubble-outline' }, { value: 'phone', label: 'Phone', icon: 'call-outline' },
   { value: 'sparkles', label: 'Sparkle', icon: 'sparkles-outline' }, { value: 'menu', label: 'Menu', icon: 'menu-outline' }, { value: 'image', label: 'My own', icon: 'image-outline' },
 ];
 
-type Props = { form: any; set: (section: string, patch: any) => void; colors: any; swatches: Swatch[]; siteUrl: string; setSiteUrl: (v: string) => void; onMatchSite: () => void; matching: boolean; previewPath: string; setPreviewPath: (p: string) => void };
+type Props = { form: any; set: (section: string, patch: any) => void; colors: any; swatches: Swatch[]; siteUrl: string; setSiteUrl: (v: string) => void; onMatchSite: () => void; matching: boolean; previewPath: string; setPreviewPath: (p: string) => void;
+  widgetId: string; showToast: (m: string, t?: any, d?: number) => void; canManage: boolean };
 
-export const LookTab = ({ form, set, colors, swatches, siteUrl, setSiteUrl, onMatchSite, matching, previewPath, setPreviewPath }: Props) => {
+export const LookTab = ({ form, set, colors, swatches, siteUrl, setSiteUrl, onMatchSite, matching, previewPath, setPreviewPath, widgetId, showToast, canManage }: Props) => {
   const a = form.appearance;
   const [showCustom, setShowCustom] = useState(false);
   return (
@@ -36,7 +38,7 @@ export const LookTab = ({ form, set, colors, swatches, siteUrl, setSiteUrl, onMa
         <Label colors={colors} top>Icon</Label>
         <Chips options={ICONS} value={a.icon} onChange={v => { set('appearance', { icon: v }); if (v === 'image') setShowCustom(true); }} colors={colors} testId="widget-icon" />
         {(a.icon === 'image' || showCustom) && (
-          <Field label="Image address (PNG or SVG, square works best)" value={a.icon_url} onChange={v => set('appearance', { icon_url: v.trim() })} placeholder="https://yoursite.com/logo-mark.png" colors={colors} testId="widget-icon-url" />
+          <ImageField label="Your own icon" hint="Your logo mark works best: square, PNG or SVG, on a transparent or matching background." value={a.icon_url} onChange={v => set('appearance', { icon_url: v })} widgetId={widgetId} target="icon" colors={colors} testId="widget-icon-image" showToast={showToast} canManage={canManage} />
         )}
         <ToggleRow label="Show a label next to the icon" value={!!a.label_on} onChange={v => set('appearance', { label_on: v })} colors={colors} testId="widget-label-on" />
         {a.label_on ? <Field label="Label" value={a.label} onChange={v => set('appearance', { label: v })} placeholder="Text Us" colors={colors} testId="widget-label" maxLength={30} top={false} /> : null}
@@ -62,7 +64,7 @@ export const LookTab = ({ form, set, colors, swatches, siteUrl, setSiteUrl, onMa
         <Label colors={colors}>The window</Label>
         <ColorField label="Window background" value={a.panel_color} onChange={hex => set('appearance', { panel_color: hex, panel_text: contrastText(hex) })} colors={colors} testId="widget-panel-color" />
         <Stepper label="Rounded corners" value={Number(a.radius)} onChange={v => set('appearance', { radius: v })} min={0} max={32} step={4} unit="px" colors={colors} testId="widget-radius" />
-        <Field label="Avatar shown in the header (optional)" hint="A photo of your store or the team. Leave blank for the store initial." value={a.avatar_url} onChange={v => set('appearance', { avatar_url: v.trim() })} placeholder="https://…" colors={colors} testId="widget-avatar-url" />
+        <ImageField label="Photo or logo in the window header" hint="Your store logo or a photo of the team. Leave empty for the store initial." value={a.avatar_url} onChange={v => set('appearance', { avatar_url: v })} widgetId={widgetId} target="avatar" colors={colors} testId="widget-avatar-image" round showToast={showToast} canManage={canManage} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
           <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
           <Text style={{ flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 16 }}>Fonts follow your website automatically so the widget looks native.</Text>

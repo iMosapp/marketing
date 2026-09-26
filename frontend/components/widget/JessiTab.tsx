@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { GOLD, tid, errText, timeAgo } from '../inbox/ownership';
 import { Section, Label, Hint, inputStyle } from '../inbox/InboxEditorParts';
 import { Field, ToggleRow } from './parts';
+import { SiteCrawlCard } from './SiteCrawlCard';
 
 type Fact = { id: string; text: string; added_by_name?: string };
-type Chat = { id: string; status: string; name: string; turns: number; reason: string; host: string; at: string | null; last: string };
-type Props = { widgetId: string; form: any; set: (section: string, patch: any) => void; colors: any; facts: Fact[]; setFacts: (f: Fact[]) => void; storeName: string | null; showToast: (m: string, t?: any, d?: number) => void; canManage: boolean; recentChats: Chat[]; chatOn: boolean; onTurnOnChat: () => void };
+type Chat = { id: string; status: string; name: string; turns: number; reason: string; host: string; at: string | null; last: string; mode?: string; agent?: string; booked?: boolean; live?: boolean };
+type Props = { widgetId: string; form: any; set: (section: string, patch: any) => void; colors: any; facts: Fact[]; setFacts: (f: Fact[]) => void; storeName: string | null; showToast: (m: string, t?: any, d?: number) => void; canManage: boolean; recentChats: Chat[]; chatOn: boolean; onTurnOnChat: () => void; siteUrl: string; onKbSaved: (kb: any) => void };
 
 const CHAT_STATUS: Record<string, { label: string; color: string }> = { open: { label: 'Chatting', color: GOLD }, handed_off: { label: 'Handed to the team', color: '#34C759' }, closed: { label: 'Ended', color: '#8E8E93' } };
 
@@ -32,7 +34,8 @@ const AddRow = ({ placeholder, onAdd, colors, testId, busy }: { placeholder: str
   );
 };
 
-export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeName, showToast, canManage, recentChats, chatOn, onTurnOnChat }: Props) => {
+export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeName, showToast, canManage, recentChats, chatOn, onTurnOnChat, siteUrl, onKbSaved }: Props) => {
+  const router = useRouter();
   const kb = form.kb || {};
   const setKb = (p: any) => set('kb', p);
   const [factBusy, setFactBusy] = useState(false);
@@ -103,6 +106,8 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
         {canManage ? <AddRow placeholder="Add a fact Jessi can use" onAdd={addFact} colors={colors} testId="widget-fact" busy={factBusy} /> : null}
       </Section>
 
+      <SiteCrawlCard widgetId={widgetId} siteUrl={siteUrl} colors={colors} canManage={canManage} showToast={showToast} onApplied={r => { setFacts(r.facts); onKbSaved(r.kb); }} />
+
       <Section colors={colors} testId="widget-section-specials">
         <Label colors={colors}>Specials</Label>
         <Hint colors={colors}>Jessi repeats these word for word and never adds numbers of her own. Expired ones stop being used on their own.</Hint>
@@ -141,16 +146,17 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
         <Hint colors={colors}>What visitors asked Jessi on your site. Handed-off chats land in the Inbox as leads.</Hint>
         {recentChats.length === 0 ? <Text style={{ fontSize: 13, color: colors.textSecondary }} {...tid('widget-recent-chats-empty')}>No chats yet. Once the code is on your site, every conversation shows up here.</Text> : null}
         {recentChats.map(c => {
-          const s = CHAT_STATUS[c.status] || { label: c.status, color: colors.textSecondary };
+          const s = c.live ? { label: c.mode === 'human' ? `${c.agent || 'A rep'} is chatting` : 'Live now · Jessi answering', color: '#34C759' } : CHAT_STATUS[c.status] || { label: c.status, color: colors.textSecondary };
           return (
-            <View key={c.id} style={{ paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: colors.border, gap: 2 }} {...tid(`widget-recent-chat-${c.id}`)}>
+            <TouchableOpacity key={c.id} onPress={() => router.push(`/webchat/${c.id}` as any)} style={{ paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: colors.border, gap: 2 }} {...tid(`widget-recent-chat-${c.id}`)}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: colors.text }}>{c.name} <Text style={{ fontWeight: '400', color: colors.textSecondary }}>· {c.turns} {c.turns === 1 ? 'question' : 'questions'}{c.host ? ` · ${c.host}` : ''}</Text></Text>
+                <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: colors.text }}>{c.name}{c.booked ? ' · booked' : ''} <Text style={{ fontWeight: '400', color: colors.textSecondary }}>· {c.turns} {c.turns === 1 ? 'question' : 'questions'}{c.host ? ` · ${c.host}` : ''}</Text></Text>
                 <Text style={{ fontSize: 11, color: colors.textSecondary }}>{timeAgo(c.at)}</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
               </View>
               {c.last ? <Text style={{ fontSize: 13, color: colors.textSecondary }} numberOfLines={2}>"{c.last}"</Text> : null}
-              <Text style={{ fontSize: 12, fontWeight: '700', color: s.color }}>{s.label}{c.reason ? ` · ${c.reason}` : ''}</Text>
-            </View>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: s.color }}>{s.label}{c.reason && !c.live ? ` · ${c.reason}` : ''}</Text>
+            </TouchableOpacity>
           );
         })}
       </Section>

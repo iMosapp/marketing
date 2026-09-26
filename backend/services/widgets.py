@@ -57,7 +57,7 @@ DEFAULTS = {
                  "success_ringing": "Ringing the team…", "success_connected": "Connecting you to {rep}…",
                  "missed": "Everyone is tied up this second. We just texted you instead.", "after_hours": "We're closed right now. We just texted you and we'll call when we open."},
         "chat": {"on": True, "label": "Chat now", "intro": "Ask Jessi about hours, what's in stock or the store. A real person is one tap away.", "button": "Start chat",
-                 "placeholder": "Type your question", "human": "Talk to a person"},
+                 "placeholder": "Type your question", "human": "Talk to a person", "booking_on": True, "booking_label": "Book a visit", "notify_reps": True},
     },
     "kb": {"welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False},
     "copy": {
@@ -131,6 +131,8 @@ def normalize_config(cfg: dict) -> dict:
         for k, v in list(c["doors"][d].items()):
             if isinstance(v, str):
                 c["doors"][d][k] = v[:240]
+    c["doors"]["chat"]["booking_on"] = bool(c["doors"]["chat"].get("booking_on", True))
+    c["doors"]["chat"]["notify_reps"] = bool(c["doors"]["chat"].get("notify_reps", True))
     for k, v in list(c["copy"].items()):
         if isinstance(v, str):
             c["copy"][k] = v[:400]
@@ -327,7 +329,7 @@ async def stats(db, w: dict) -> dict:
             by_day[d][e["kind"] + "s"] += 1
     s = w.get("stats") or {}
     return {"loads": s.get("loads", 0), "opens": s.get("opens", 0), "text_leads": s.get("text_leads", 0), "call_requests": len(calls) if len(calls) < 200 else s.get("call_requests", len(calls)),
-            "chats": s.get("chats", 0), "chat_handoffs": s.get("chat_handoffs", 0),
+            "chats": s.get("chats", 0), "chat_handoffs": s.get("chat_handoffs", 0), "chat_bookings": s.get("chat_bookings", 0),
             "calls_connected": len(connected), "calls_missed": len([c for c in calls if c.get("status") in ("missed", "missed_customer")]),
             "calls_after_hours": len([c for c in calls if c.get("status") == "after_hours"]), "avg_seconds_to_connect": avg,
             "leads_7d": leads_week, "by_day": by_day, "open_rate": round(100 * s.get("opens", 0) / s["loads"]) if s.get("loads") else None}

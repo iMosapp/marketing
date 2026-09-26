@@ -113,9 +113,10 @@ export default function WidgetEditor() {
                 {showPreview ? preview : null}
               </View>
             ) : null}
-            {tab === 'look' && <LookTab form={form} set={set} colors={colors} swatches={swatches} siteUrl={siteUrl} setSiteUrl={setSiteUrl} onMatchSite={matchSite} matching={matching} previewPath={previewPath} setPreviewPath={setPreviewPath} />}
+            {tab === 'look' && <LookTab form={form} set={set} colors={colors} swatches={swatches} siteUrl={siteUrl} setSiteUrl={setSiteUrl} onMatchSite={matchSite} matching={matching} previewPath={previewPath} setPreviewPath={setPreviewPath} widgetId={String(id)} showToast={showToast} canManage={canManage} />}
             {tab === 'doors' && <DoorsTab form={form} set={set} colors={colors} />}
-            {tab === 'jessi' && <JessiTab widgetId={String(id)} form={form} set={set} colors={colors} facts={facts} setFacts={setFacts} storeName={detail.store_name} showToast={showToast} canManage={canManage} recentChats={detail.recent_chats || []} chatOn={!!form.doors?.chat?.on} onTurnOnChat={() => set('doors', { chat: { ...(form.doors?.chat || {}), on: true } })} />}
+            {tab === 'jessi' && <JessiTab widgetId={String(id)} form={form} set={set} colors={colors} facts={facts} setFacts={setFacts} storeName={detail.store_name} showToast={showToast} canManage={canManage} recentChats={detail.recent_chats || []} chatOn={!!form.doors?.chat?.on} onTurnOnChat={() => set('doors', { chat: { ...(form.doors?.chat || {}), on: true } })} siteUrl={siteUrl}
+              onKbSaved={kb => { setForm((f: any) => ({ ...f, kb })); setDetail((d: any) => ({ ...d, widget: { ...d.widget, kb } })); }} />}
             {tab === 'routing' && <RoutingTab form={form} set={set} colors={colors} reps={detail.reps || []} inboxes={detail.inboxes || []} storeName={detail.store_name} storeHours={detail.store_hours} />}
             {tab === 'install' && (
               <>

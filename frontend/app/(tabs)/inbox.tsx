@@ -43,6 +43,7 @@ import { SharedInboxPanel } from '../../components/inbox/SharedInboxPanel';
 import { InboxBadge, ClaimButton } from '../../components/inbox/InboxBadge';
 import { ownershipAPI, errText } from '../../components/inbox/ownership';
 import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
+import { LiveChatsStrip } from '../../components/inbox/LiveChatsStrip';
 import { AvatarButton } from '../../components/account/AvatarButton';
 
 const IS_WEB = Platform.OS === 'web';
@@ -1687,6 +1688,7 @@ export default function InboxScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {renderHeader()}
+      <LiveChatsStrip colors={{ ...colors, text: colors.textPrimary }} />
       
       {/* Mode Indicator Banner */}
       {messageMode === 'email' && (
