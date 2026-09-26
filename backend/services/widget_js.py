@@ -283,7 +283,7 @@ function previewReply(t){ if (/test.?drive|appointment|schedule|book|come in|sto
   return 'This is the preview, so I\'m not looking anything up. On your live site I answer from your hours, store facts, specials and live inventory, and I hand pricing to your team.'; }
 function previewSlots(){ var d = new Date(), out = []; for (var i = 0; i < 4; i++) { var day = new Date(d.getTime() + i * 86400000); var iso = day.toISOString().slice(0, 10);
     out.push({ date: iso, label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : day.toDateString().slice(0, 10), slots: ['09:00', '10:30', '13:00', '15:30', '17:00'].map(function(v){ var hh = +v.slice(0, 2); return { v: v, l: ((hh % 12) || 12) + (v.slice(3) === '00' ? '' : ':' + v.slice(3)) + (hh < 12 ? ' AM' : ' PM') }; }) }); }
-  return { days: out, kinds: [{ v: 'test_drive', l: 'Test drive' }, { v: 'service', l: 'Service visit' }, { v: 'visit', l: 'Store visit' }] }; }
+  return { days: out, kinds: C.chat_mode === 'business' ? [{ v: 'demo', l: 'Demo' }, { v: 'meeting', l: 'Call with the team' }] : [{ v: 'test_drive', l: 'Test drive' }, { v: 'service', l: 'Service visit' }, { v: 'visit', l: 'Store visit' }] }; }
 function showChat(){
   var cfg = D.chat; var ctx = { store: C.store_name };
   var wrap = h('div', { 'class': 'imosw-chat' });
@@ -317,7 +317,7 @@ function showChat(){
   function bookForm(){
     var box = h('div', { 'class': 'imosw-cform imosw-book' });
     if (!chat.slots) { box.appendChild(h('div', { 'class': 'imosw-typing txt', style: 'align-self:center' }, ['Checking open times\u2026']));
-      var got = function(s){ chat.slots = s; if (!bk.date && s.days[0]) bk.date = s.days[0].date; draw(); };
+      var got = function(s){ chat.slots = s; if (!bk.date && s.days[0]) bk.date = s.days[0].date; if (s.kinds && s.kinds.length && !s.kinds.some(function(k){ return k.v === bk.kind; })) bk.kind = s.kinds[0].v; draw(); };
       if (PREVIEW) setTimeout(function(){ got(previewSlots()); }, 400); else fetch(API + '/chat/' + chat.sid + '/slots').then(function(x){ return x.json(); }).then(got).catch(function(){ chat.slots = { days: [], kinds: [] }; draw(); });
       return box; }
     var s = chat.slots;

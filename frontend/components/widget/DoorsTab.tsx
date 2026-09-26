@@ -8,6 +8,7 @@ import { DoorStatsCard } from './DoorStatsCard';
 type Props = { form: any; set: (section: string, patch: any) => void; colors: any; widgetId: string; doorStats: any };
 
 export const DoorsTab = ({ form, set, colors, widgetId, doorStats }: Props) => {
+  const biz = form.kb?.mode === 'business';
   const t = form.doors.text, c = form.doors.call, ch = form.doors.chat || {}, cp = form.copy;
   const setT = (p: any) => set('doors', { text: { ...t, ...p } });
   const setC = (p: any) => set('doors', { call: { ...c, ...p } });
@@ -23,8 +24,8 @@ export const DoorsTab = ({ form, set, colors, widgetId, doorStats }: Props) => {
             <Field label="One-liner under it" value={ch.intro || ''} onChange={v => setCh({ intro: v })} multiline colors={colors} testId="widget-chat-intro" />
             <Field label="Typing box placeholder" value={ch.placeholder || ''} onChange={v => setCh({ placeholder: v })} colors={colors} testId="widget-chat-placeholder" maxLength={60} />
             <Field label="'Talk to a person' link" hint="Always shown under the chat so nobody feels stuck with a bot." value={ch.human || ''} onChange={v => setCh({ human: v })} colors={colors} testId="widget-chat-human" maxLength={40} />
-            <ToggleRow label="Book a visit inside the chat" hint="Visitors pick a day and time inside your store hours for a test drive, service or a visit. Jessi creates the lead, texts the confirmation and puts the appointment on the rep's calendar and tasks." value={ch.booking_on !== false} onChange={v => setCh({ booking_on: v })} colors={colors} testId="widget-chat-booking-on" />
-            {ch.booking_on !== false ? <Field label="Booking link text" value={ch.booking_label || ''} onChange={v => setCh({ booking_label: v })} colors={colors} testId="widget-chat-booking-label" maxLength={30} top={false} /> : null}
+            <ToggleRow label={biz ? 'Book a demo inside the chat' : 'Book a visit inside the chat'} hint={biz ? "Visitors pick a day and time inside your hours for a demo or a call with the team. Jessi creates the lead, texts the confirmation and puts it on the rep's calendar and tasks." : "Visitors pick a day and time inside your store hours for a test drive, service or a visit. Jessi creates the lead, texts the confirmation and puts the appointment on the rep's calendar and tasks."} value={ch.booking_on !== false} onChange={v => setCh({ booking_on: v })} colors={colors} testId="widget-chat-booking-on" />
+            {ch.booking_on !== false ? <Field label="Booking link text" value={ch.booking_label || ''} onChange={v => setCh({ booking_label: v })} colors={colors} testId="widget-chat-booking-label" maxLength={30} top={false} placeholder={biz ? 'Book a demo' : 'Book a visit'} hint={biz && (ch.booking_label || '') === 'Book a visit' ? 'Business mode shows "Book a demo" on your site until you type your own.' : undefined} /> : null}
             <ToggleRow label="Ping the ring group when a chat starts" hint="Reps in the Call me now ring group get a push on the visitor's first line so someone can jump in while they are still on the page." value={ch.notify_reps !== false} onChange={v => setCh({ notify_reps: v })} colors={colors} testId="widget-chat-notify-reps" />
             <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8, lineHeight: 16 }}>What Jessi knows and says lives on the Jessi tab.</Text>
           </>

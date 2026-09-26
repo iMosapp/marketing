@@ -182,9 +182,11 @@ def public_config(w: dict, store: Optional[dict], preview: bool = False) -> dict
     cfg = normalize_config(w)
     out = {"key": w["key"], "api": f"{app_url()}/api/w/{w['key']}", "store_name": (store or {}).get("name") or w.get("store_name") or "",
            "appearance": cfg["appearance"], "doors": {d: {k: v for k, v in cfg["doors"][d].items()} for d in cfg["doors"]}, "copy": cfg["copy"], "preview": preview}
+    out["chat_mode"] = cfg["kb"]["mode"]
+    if cfg["kb"]["mode"] == "business" and out["doors"]["chat"].get("booking_label") in ("", None, DEFAULTS["doors"]["chat"]["booking_label"]):
+        out["doors"]["chat"]["booking_label"] = "Book a demo"
     if preview:
         out["chat_welcome"] = cfg["kb"]["welcome"]
-        out["chat_mode"] = cfg["kb"]["mode"]
     return out
 
 
