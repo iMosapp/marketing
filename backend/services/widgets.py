@@ -17,6 +17,7 @@ COLL = "widgets"
 EVENTS = "widget_events"
 MANAGER_ROLES = {"super_admin", "admin", "org_admin", "store_manager", "manager"}
 ICON_CHOICES = ("chat", "text", "phone", "menu", "sparkles", "image")
+DOORS = ("text", "call", "chat")
 HEX = re.compile(r"^#?([0-9a-fA-F]{6})$")
 
 
@@ -276,8 +277,8 @@ async def touch(db, w: dict, page: str, kind: str):
 
 async def log_event(db, w: dict, kind: str, body: dict):
     await touch(db, w, body.get("page") or "", kind)
-    await db[EVENTS].insert_one({"widget_id": str(w["_id"]), "key": w["key"], "kind": kind, "door": body.get("door"), "page": (body.get("page") or "")[:500],
-                                 "title": (body.get("title") or "")[:200], "visitor": (body.get("visitor") or "")[:64], "at": _now()})
+    await db[EVENTS].insert_one({"widget_id": str(w["_id"]), "key": w["key"], "kind": kind, "door": body.get("door") if body.get("door") in DOORS else None,
+                                 "page": (body.get("page") or "")[:500], "title": (body.get("title") or "")[:200], "visitor": (body.get("visitor") or "")[:64], "at": _now()})
 
 
 # ---------------------------------------------------------------- Text us
@@ -333,6 +334,45 @@ async def stats(db, w: dict) -> dict:
             "calls_connected": len(connected), "calls_missed": len([c for c in calls if c.get("status") in ("missed", "missed_customer")]),
             "calls_after_hours": len([c for c in calls if c.get("status") == "after_hours"]), "avg_seconds_to_connect": avg,
             "leads_7d": leads_week, "by_day": by_day, "open_rate": round(100 * s.get("opens", 0) / s["loads"]) if s.get("loads") else None}
+
+
+def page_path(url: str) -> str:
+    m = re.match(r"https?://[^/?#]+(/[^?#]*)?", url or "")
+    return (m.group(1) or "/")[:80] if m else ((url or "").split("?")[0][:80] or "/")
+
+
+async def door_stats(db, w: dict, days: int = 7) -> dict:
+    """Per door, for the window: how often it was opened, what came out of it, and which pages sent people through it."""
+    from datetime import timedelta
+    wid = str(w["_id"])
+    since = _now() - timedelta(days=days) if days > 0 else None
+    doors = {d: {"views": 0, "leads": 0, "pages": {}} for d in DOORS}
+    async for e in db[EVENTS].find({"widget_id": wid, "kind": {"$in": ["door", "lead"]}, **({"at": {"$gte": since}} if since else {})}, {"kind": 1, "door": 1, "page": 1}):
+        d = e.get("door")
+        if d not in doors:
+            continue
+        if e["kind"] == "door":
+            doors[d]["views"] += 1
+        else:
+            doors[d]["leads"] += 1
+            p = page_path(e.get("page"))
+            doors[d]["pages"][p] = doors[d]["pages"].get(p, 0) + 1
+    win = {"widget_id": wid, **({"created_at": {"$gte": since}} if since else {})}
+    calls = await db.widget_call_requests.find(win, {"status": 1, "seconds_to_connect": 1}).to_list(5000)
+    connected = [c for c in calls if c.get("status") == "connected"]
+    doors["call"].update({"requests": len(calls), "connected": len(connected), "missed": len([c for c in calls if c.get("status") in ("missed", "missed_customer")]),
+                          "after_hours": len([c for c in calls if c.get("status") == "after_hours"]),
+                          "avg_seconds": round(sum(c.get("seconds_to_connect") or 0 for c in connected) / len(connected), 1) if connected else None})
+    chats = await db.widget_chats.find(win, {"status": 1, "booking": 1, "rep_user_id": 1, "contact_id": 1}).to_list(5000)
+    doors["chat"].update({"chats": len(chats), "handed_off": len([c for c in chats if c.get("status") == "handed_off" or c.get("contact_id")]),
+                          "bookings": len([c for c in chats if c.get("booking")]), "taken_over": len([c for c in chats if c.get("rep_user_id")])})
+    doors["call"]["leads"], doors["chat"]["leads"] = doors["call"]["requests"], doors["chat"]["handed_off"]
+    for d in DOORS:
+        top = sorted(doors[d]["pages"].items(), key=lambda kv: (-kv[1], kv[0]))[:3]
+        doors[d]["pages"] = [{"path": p, "n": n} for p, n in top]
+        doors[d]["rate"] = round(100 * doors[d]["leads"] / doors[d]["views"]) if doors[d]["views"] else None
+    total = sum(doors[d]["leads"] for d in DOORS)
+    return {"days": days, "total_leads": total, "busiest": max(DOORS, key=lambda d: (doors[d]["leads"], doors[d]["views"])) if total or any(doors[d]["views"] for d in DOORS) else None, "doors": doors}
 
 
 # ---------------------------------------------------------------- "Match my website": pull the site's palette

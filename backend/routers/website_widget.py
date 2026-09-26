@@ -75,7 +75,7 @@ async def _detail(db, w: dict, me: dict) -> dict:
     inboxes = await db.shared_inboxes.find({"store_id": {"$in": sid_vals}, "is_active": {"$ne": False}}, {"name": 1, "phone_number": 1}).to_list(50) if w.get("store_id") else []
     calls = await db[WC.COLL].find({"widget_id": str(w["_id"])}, {"name": 1, "phone": 1, "status": 1, "winner_first": 1, "seconds_to_connect": 1, "created_at": 1, "page": 1, "missed_reason": 1}).sort("created_at", -1).limit(25).to_list(25)
     return {
-        "widget": W.serialize(w, store), "stats": await W.stats(db, w),
+        "widget": W.serialize(w, store), "stats": await W.stats(db, w), "door_stats": await W.door_stats(db, w, 7),
         "reps": scope["people"], "store_name": scope["store_name"],
         "inboxes": [{"id": str(i["_id"]), "name": i.get("name"), "phone_number": i.get("phone_number")} for i in inboxes],
         "store_hours": {"configured": st["configured"], "open_now": st["open"], "timezone": st["tz"], "opens_at": st["opens_at"].isoformat() if st.get("opens_at") else None},
@@ -330,6 +330,12 @@ async def widget_stats(wid: str, request: Request):
     return await W.stats(db, await _load_scoped(db, request.state.user, wid))
 
 
+@admin.get("/{wid}/door-stats")
+async def widget_door_stats(wid: str, request: Request, days: int = 7):
+    db = get_db()
+    return await W.door_stats(db, await _load_scoped(db, request.state.user, wid), days if days in (0, 7, 30) else 7)
+
+
 @admin.post("/{wid}/ask")
 async def ask_jessi(wid: str, body: AskBody, request: Request):
     """'Test Jessi' in the editor: what she would say to a visitor, with what she used."""
@@ -480,7 +486,9 @@ async def widget_event(key: str, request: Request):
     db = get_db()
     w = await W.load(db, key)
     body = await request.json()
-    if not w or not isinstance(body, dict) or body.get("kind") not in ("load", "open", "greeting") or not W.allow(_ip(request), "event", 120):
+    if not w or not isinstance(body, dict) or body.get("kind") not in ("load", "open", "greeting", "door") or not W.allow(_ip(request), "event", 120):
+        return {"ok": False}
+    if body["kind"] == "door" and body.get("door") not in W.DOORS:
         return {"ok": False}
     if not W.domain_ok(w, body.get("page") or ""):
         return {"ok": False, "reason": "domain"}

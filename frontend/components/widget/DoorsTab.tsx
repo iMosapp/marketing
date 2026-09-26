@@ -3,16 +3,18 @@ import { Text } from 'react-native';
 import { tid } from '../inbox/ownership';
 import { Section, Label, Hint } from '../inbox/InboxEditorParts';
 import { Field, ToggleRow } from './parts';
+import { DoorStatsCard } from './DoorStatsCard';
 
-type Props = { form: any; set: (section: string, patch: any) => void; colors: any };
+type Props = { form: any; set: (section: string, patch: any) => void; colors: any; widgetId: string; doorStats: any };
 
-export const DoorsTab = ({ form, set, colors }: Props) => {
+export const DoorsTab = ({ form, set, colors, widgetId, doorStats }: Props) => {
   const t = form.doors.text, c = form.doors.call, ch = form.doors.chat || {}, cp = form.copy;
   const setT = (p: any) => set('doors', { text: { ...t, ...p } });
   const setC = (p: any) => set('doors', { call: { ...c, ...p } });
   const setCh = (p: any) => set('doors', { chat: { ...ch, ...p } });
   return (
     <>
+      <DoorStatsCard widgetId={widgetId} initial={doorStats} form={form} colors={colors} />
       <Section colors={colors} testId="widget-section-chat-door">
         <ToggleRow label="Chat now (Jessi)" hint="Jessi answers hours, inventory and store questions from the Jessi tab. Prices, payments and anything on her never-answer list go to a real person by text." value={!!ch.on} onChange={v => setCh({ on: v })} colors={colors} testId="widget-door-chat-on" />
         {ch.on ? (

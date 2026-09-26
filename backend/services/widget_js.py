@@ -178,7 +178,7 @@ if (greetingText && doors.length && !saved.greet_dismissed) {
   }, Math.max(0, (rule ? Math.min(A.greeting_delay_s == null ? 4 : A.greeting_delay_s, 3) : (A.greeting_delay_s == null ? 4 : A.greeting_delay_s)) * 1000));
 }
 
-function showDoor(d){ if (d === 'chat') showChat(); else showForm(d); }
+function showDoor(d){ track('door', { door: d }); if (d === 'chat') showChat(); else showForm(d); }
 function open(door){ if (opened) return; opened = true; if (greet) { root.removeChild(greet); greet = null; }
   panel = h('div', { 'class': 'imosw-panel', role: 'dialog' });
   root.appendChild(panel); launch.style.display = 'none'; track('open');
