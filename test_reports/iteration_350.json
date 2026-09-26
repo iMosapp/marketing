@@ -1,0 +1,30 @@
+{
+  "summary": "Verified new global 'Find anything' search: backend GET /api/admin/search (9 pytest cases, all green) and web UI for shared ListSearch across admin list screens. Backend correctly scopes by role, enforces 401/403, respects 2-char minimum, phone-digit matching, and 8-row/group limit. Frontend: /admin/search works (input, hint, groups, row navigation, empty state, ?q= prefill); Organizations/Accounts/Users list screens have always-visible ListSearch with count + 'Search everywhere' link; header only shows add button (legacy search-btn removed); Widgets search shows for forest, hidden for qa-manager; Lead Sources search visible for qa-manager (>3 sources) filters correctly; Pending Users has <=3 items so no search box (expected). Hub 'Find Anything' item appears inside the Admin (Account Management) tile of the More tab and navigates to /admin/search.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/test_admin_search.py", "/app/test_reports/pytest/admin_search.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "admin_search relies solely on X-User-ID header; SPA already sends Authorization Bearer JWT - consider honoring JWT too so the endpoint isn't preview-only convention dependent.",
+    "In routers/admin.py widgets query builds store filter twice (via matched_store_ids inside $or and wq['store_id']) - redundant but not incorrect.",
+    "ListSearch 'Search everywhere' link + counts (e.g. '28 of 34 matches', '2 of 175 matches', '4 of 16 matches') working as intended."
+  ],
+  "updated_files": ["/app/backend/tests/test_admin_search.py"],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "100% of tested flows"},
+  "test_credentials": "forest@imosapp.com/Admin123!, qa-manager@invalid.imonsocial.test/Manager123!, activation-tester@invalid.imonsocial.test/NewPass123!",
+  "seed_data_creation": "None - only typed in search boxes.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend uses X-User-ID header (not JWT) for /api/admin/search. Ids: forest=69a0b7095fddcede09591667, qa-manager=6a9b2b82cc6e7504dafc33f2. Activation-tester login returns user._id, no 'id' key. On the More tab (/(tabs)/more), the Account Management section is inside the 'Admin' tile - tap 'Admin' first for 'Find Anything' to render. Regressions verified: Organizations/Accounts detail navigation and add buttons unchanged; only benign Expo/Reanimated deprecation warnings.",
+  "verified_flows": [
+    "Backend 401 no X-User-ID; 403 plain user; forest q=emerald returns orgs+stores; q=9122 returns Forest user via phone digits; q=social returns stores/users/widgets/lead_sources; q<2 chars returns all-empty groups with 200; group cap <=8; qa-manager q=qa scoped to store (organizations always []); qa-manager q=emerald fully empty (no leaks).",
+    "/admin/search: input+hint+'Find anything' header; 'emerald' shows orgs+stores + 3 store rows; tap store -> /admin/stores/<id>; 'zzzzqqq' -> admin-search-empty; ?q=forest prefills and users group renders.",
+    "/admin/organizations: search always visible, no legacy magnifier, header only organizations-add-btn; 'test' -> '28 of 34 matches' + everywhere link -> /admin/search?q=test; clear present.",
+    "/admin/stores: accounts-search-input + accounts-add-btn + count element.",
+    "/admin/users: '9122' filter -> '2 of 175 matches', Forest visible.",
+    "/admin/website-widget forest: widgets-search-input visible, 'emerald' filters, 'zzzz' -> widgets-search-empty. qa-manager: input not shown (correct).",
+    "/admin/pending-users: input not rendered (<=3 pending, expected).",
+    "/admin/lead-sources qa-manager: input visible; 'parts' -> '4 of 16 matches'.",
+    "Hub More tab: tapping 'Admin' tile reveals 'Find Anything' -> opens /admin/search."
+  ]
+}
