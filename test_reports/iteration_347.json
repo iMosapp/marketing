@@ -1,0 +1,37 @@
+{
+  "summary": "Frontend E2E testing of the Website Widget feature (list, editor Look/Doors/Routing/Install tabs, live preview iframe, public /api/w/<key>/demo embed, and Tools>Leads regression tile). All core flows work end-to-end. Manager qa-manager@invalid.imonsocial.test authenticated OK, editor loads for widget 6ab72996c248f5420bf0a14a (key cTxlgGYS). Save persists across a navigate-away/back reload. Public demo bubble renders, Text-us form submission shows 'Check your phone' success state with zero network POST (preview mode). No blocking bugs found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_flows": [
+    "Login as manager -> /home -> in-app pushState to /admin/website-widget loads (data-testid=widgets-header) with 1 card widget-card-6ab72996c248f5420bf0a14a showing 'Text us' + 'Call me now' door indicators.",
+    "Tap card -> editor URL /admin/website-widget/<id>; widget-editor-header + tabs widget-tab-look/doors/routing/install all present; widget-preview + widget-preview-frame iframe render; iframe src = /api/w/cTxlgGYS/demo?v=0&c=<base64> and inside the frame the bubble panel is auto-open showing 'How can we help?' with both doors.",
+    "Look tab: typing #DC2626 into widget-bubble-color-hex + tapping widget-position-left + widget-icon-phone + editing widget-label to 'Chat with us' + tapping Save shows toast; iframe reloads and the .imosw-head background computes to rgb(220,38,38). Quick swatch widget-bubble-color-quick-DC2626 and widget-label-on toggle present.",
+    "Persistence: after pushState away and back, widget-bubble-color-hex=#DC2626 and widget-label='Chat with us' (GET /api/widgets/<id> confirms appearance.bubble_color=#DC2626, label='Chat with us', position=left, icon=phone).",
+    "Match my website: widget-site-url + widget-match-site-btn -> widget-bubble-color-site-swatches renders and bubble color updates (no crash).",
+    "Doors tab: widget-door-text-on / widget-door-call-on toggles present; editing widget-call-label to 'Ring me now' + widget-copy-title 'How can we help you today?' -> Save; preview head text updates to the new title within ~1s.",
+    "Routing tab: 9 ring-group members (inbox-member-*) with toggles; widget-ring-seconds-plus / -minus clamp to 15..90 (verified by 30x minus -> 15s and 40x plus -> 90s); widget-hours-store/-always chips, widget-send-from-store_line/-rep_line chips, widget-inbox-* rows (2 inboxes shown for store_line), widget-method-round_robin/jump_ball/weighted_round_robin chips, widget-intake-text field all render and Save persists (verified via GET /api/widgets/<id>).",
+    "Install tab: widget-install-status text visible ('Not seen on a website yet'); widget-snippet contains <script src=\"https://app.imonsocial.com/api/w/cTxlgGYS.js\" async></script>; widget-copy-snippet click -> 'Install code copied' toast with clipboard permission granted; widget-domains input, widget-section-stats tiles (Page loads / Opened / Leads / Texts / Call requests / Avg. to connect) and widget-section-recent list all render.",
+    "Public embed /api/w/cTxlgGYS/demo: bubble/panel render bottom-left (matches saved position=left, computed left:20px), auto-opens in preview mode, tapping 'Text us' shows Name/Mobile number/Message form; filling 5005550123 and clicking 'Send text' transitions to 'Check your phone, we just texted you.' success screen with zero POST requests fired (verified via page.on('request')).",
+    "Regression: /more tab (Tools) -> tap 'Leads' folder -> 'Website Widget' tile visible for manager; tapping routes to /admin/website-widget (widgets-header renders).",
+    "Regression: /inboxes screen still renders (no error nodes)."
+  ],
+  "test_report_links": ["/app/backend/tests/test_website_widget.py"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Editor screen [id].tsx is likely large; consider verifying it stays under 700 lines as sub-tab components have been extracted (LookTab/DoorsTab/RoutingTab/InstallCard).",
+    "Preview iframe src uses base64url overrides via ?c= — good for instant preview without saving. Confirmed reload within ~1s of edit.",
+    "Public demo submit correctly short-circuits POST in preview mode. Ensure the same page served in production (non-preview) does fire POST /api/w/<key>/text — outside FE test scope."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped by request; 7/7 preexisting)", "frontend": "100%"},
+  "test_credentials": "qa-manager@invalid.imonsocial.test / Manager123! (store i'M On social, widget id 6ab72996c248f5420bf0a14a, key cTxlgGYS)",
+  "seed_data_creation": "None; existing widget mutated (color -> #DC2626 then site palette overrode to gold; label 'Chat with us'; position=left; icon=phone; call door label 'Ring me now'; copy_title 'How can we help you today?'; routing method jump_ball; send_from store_line). Note: settings were left in the mutated state after test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Widget key cTxlgGYS is stable; direct URL loads of /admin/website-widget work AFTER login (no need for pushState on this route). Public demo URL: https://user-routing-issue.preview.emergentagent.com/api/w/cTxlgGYS/demo. To reach Tools>Leads>Website Widget tile, log in and navigate to /more (not /(tabs)/more) then tap 'Leads' folder. Bottom nav on both desktop 1920 and mobile 390 shows Home/Contacts/Inbox/Tasks/Call — no visible 'More' tab; /more is reachable only by URL push. Backend already verified in /app/backend/tests/test_website_widget.py.",
+  "rca of the issue": "No bugs found."
+}
