@@ -36,10 +36,8 @@ import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker'
 import { CallLogCard } from '../../components/thread/CallLogCard';
 import { MessageBubble } from '../../components/thread/MessageBubble';
 import { ThreadSearchBar } from '../../components/thread/ThreadSearchBar';
-import { LeadWaitBanner } from '../../components/LeadWaitTimer';
-import { LeadCallTimeline } from '../../components/LeadCallTimeline';
 import { InboxThreadBanner } from '../../components/inbox/InboxThreadBanner';
-import { WebChatBanner } from '../../components/thread/WebChatBanner';
+import { ThreadStatusStrip } from '../../components/thread/ThreadStatusStrip';
 import { OwnershipSheet } from '../../components/inbox/OwnershipSheet';
 import { ownershipAPI, errText as ownershipErr } from '../../components/inbox/ownership';
 import { useAuthStore } from '../../store/authStore';
@@ -360,6 +358,7 @@ function ThreadScreen() {
   const [customCardTemplates, setCustomCardTemplates] = useState<any[]>([]);
 
   const [showAsk, setShowAsk] = useState(false);
+  const composerRef = useRef<TextInput>(null);
 
   // Focus mode: while the keyboard is up, fold the header pills / intel / banners so the conversation stays visible
   const [kbOpen, setKbOpen] = useState(false);
@@ -2244,67 +2243,60 @@ function ThreadScreen() {
           ) : null}
         </View>
 
-        <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.settingsButton} data-testid="thread-more-btn">
-          <Ionicons name="ellipsis-horizontal" size={24} color={colors.accent} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Quick actions live under the name so the header never crowds it out (folded away while typing) */}
-      {(!kbOpen || threadSearchOpen) && (
-      <View style={styles.headerActions} data-testid="thread-header-actions">
-        <TouchableOpacity
-          onPress={() => {
-            if (threadSearchOpen) { setThreadSearchOpen(false); setThreadSearchQuery(''); }
-            else setThreadSearchOpen(true);
-          }}
-          style={[styles.headerActionPill, { backgroundColor: threadSearchOpen ? '#FFD60A' : colors.surface }]}
-          testID="thread-search-btn" dataSet={{ testid: 'thread-search-btn' } as any}
-        >
-          <Ionicons name="search" size={15} color={threadSearchOpen ? '#000' : '#C9A962'} />
-          <Text style={[styles.headerActionLabel, { color: threadSearchOpen ? '#000' : colors.textPrimary }]} numberOfLines={1}>Search</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => {
-            const phone = contactPhone || '';
-            const cid   = contactIdForNav || (id as string) || '';
-            if (phone) {
-              router.push({ pathname: '/call-screen', params: { phone, contact_name: contactName, contact_id: cid, conversation_id: id as string } } as any);
-            } else {
-              showSimpleAlert('No Phone', 'No phone number for this contact.');
-            }
-          }}
-          style={[styles.headerActionPill, { backgroundColor: colors.surface }]}
-          testID="thread-call-btn" dataSet={{ testid: 'thread-call-btn' } as any}
-        >
-          <Ionicons name="call" size={15} color="#C9A962" />
-          <Text style={[styles.headerActionLabel, { color: colors.textPrimary }]} numberOfLines={1}>Call</Text>
-        </TouchableOpacity>
-        {!!contactIdForNav && !!user?._id ? (
-          <ConversationRecorder userId={user._id} contactId={String(contactIdForNav)} contactFirst={(contactName || 'the customer').split(' ')[0]} colors={colors}
-            memoRecording={isThreadRecording} onStartMemo={startThreadVoiceNote} onStopMemo={stopThreadVoiceNote}
-            pillStyle={styles.headerActionPill} labelStyle={styles.headerActionLabel} />
-        ) : (
+        {/* Quick actions sit in the header as icons: Call, Record, Ask. Search lives under the ... menu. */}
+        <View style={styles.headerActions} data-testid="thread-header-actions">
           <TouchableOpacity
-            onPress={isThreadRecording ? stopThreadVoiceNote : startThreadVoiceNote}
-            style={[styles.headerActionPill, { backgroundColor: isThreadRecording ? '#FF3B30' : colors.surface }]}
-            testID="thread-mic-btn" dataSet={{ testid: 'thread-mic-btn' } as any}
+            onPress={() => {
+              const phone = contactPhone || '';
+              const cid   = contactIdForNav || (id as string) || '';
+              if (phone) {
+                router.push({ pathname: '/call-screen', params: { phone, contact_name: contactName, contact_id: cid, conversation_id: id as string } } as any);
+              } else {
+                showSimpleAlert('No Phone', 'No phone number for this contact.');
+              }
+            }}
+            style={[styles.headerIconBtn, { backgroundColor: colors.surface }]}
+            accessibilityLabel="Call"
+            testID="thread-call-btn" dataSet={{ testid: 'thread-call-btn' } as any}
           >
-            <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={15} color={isThreadRecording ? '#fff' : '#C9A962'} />
-            <Text style={[styles.headerActionLabel, { color: isThreadRecording ? '#fff' : colors.textPrimary }]} numberOfLines={1}>{isThreadRecording ? 'Stop' : 'Record'}</Text>
+            <Ionicons name="call" size={17} color="#C9A962" />
           </TouchableOpacity>
-        )}
-        {!!contactIdForNav && (
-          <TouchableOpacity
-            onPress={() => setShowAsk(true)}
-            style={[styles.headerActionPill, { backgroundColor: '#C9A96222', borderWidth: 1, borderColor: '#C9A96266' }]}
-            testID="thread-ask-jessi-btn" dataSet={{ testid: 'thread-ask-jessi-btn' } as any}
-          >
-            <Ionicons name="sparkles" size={15} color="#C9A962" />
-            <Text style={[styles.headerActionLabel, { color: '#C9A962' }]} numberOfLines={1}>Ask</Text>
+          {!!contactIdForNav && !!user?._id ? (
+            <ConversationRecorder userId={user._id} contactId={String(contactIdForNav)} contactFirst={(contactName || 'the customer').split(' ')[0]} colors={colors}
+              memoRecording={isThreadRecording} onStartMemo={startThreadVoiceNote} onStopMemo={stopThreadVoiceNote}
+              renderTrigger={(r) => (
+                <TouchableOpacity onPress={r.onPress} disabled={r.busy} activeOpacity={0.8} accessibilityLabel={r.live ? 'Stop recording' : 'Record'}
+                  style={[styles.headerIconBtn, r.live && { width: undefined, paddingHorizontal: 10, flexDirection: 'row', gap: 5 }, { backgroundColor: r.live ? '#FF3B30' : r.busy ? '#C9A96222' : colors.surface }]}
+                  testID="record-conversation-btn" dataSet={{ testid: 'record-conversation-btn' } as any}>
+                  {r.busy ? <ActivityIndicator size="small" color="#C9A962" /> : <Ionicons name={r.live ? 'stop' : 'mic'} size={17} color={r.live ? '#fff' : '#C9A962'} />}
+                  {r.live ? <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>{r.label}</Text> : null}
+                </TouchableOpacity>
+              )} />
+          ) : (
+            <TouchableOpacity
+              onPress={isThreadRecording ? stopThreadVoiceNote : startThreadVoiceNote}
+              style={[styles.headerIconBtn, { backgroundColor: isThreadRecording ? '#FF3B30' : colors.surface }]}
+              accessibilityLabel={isThreadRecording ? 'Stop recording' : 'Record'}
+              testID="thread-mic-btn" dataSet={{ testid: 'thread-mic-btn' } as any}
+            >
+              <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={17} color={isThreadRecording ? '#fff' : '#C9A962'} />
+            </TouchableOpacity>
+          )}
+          {!!contactIdForNav && (
+            <TouchableOpacity
+              onPress={() => setShowAsk(true)}
+              style={[styles.headerIconBtn, { backgroundColor: '#C9A96222', borderWidth: 1, borderColor: '#C9A96266' }]}
+              accessibilityLabel="Ask Jessi"
+              testID="thread-ask-jessi-btn" dataSet={{ testid: 'thread-ask-jessi-btn' } as any}
+            >
+              <Ionicons name="sparkles" size={17} color="#C9A962" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.settingsButton} data-testid="thread-more-btn">
+            <Ionicons name="ellipsis-horizontal" size={24} color={colors.accent} />
           </TouchableOpacity>
-        )}
+        </View>
       </View>
-      )}
 
       {/* In-thread keyword search bar */}
       {threadSearchOpen && (
@@ -2325,20 +2317,9 @@ function ThreadScreen() {
         <InboxThreadBanner info={inboxInfo} meId={user?._id} colors={colors} onOpen={() => setShowOwnership(true)} onClaim={claimThread} claiming={claimingThread} />
       )}
 
-      {/* Web-chat lead whose visitor is still on the website: jump into the live chat */}
-      {conversationStatus !== 'closed' && !kbOpen && actualConversationId ? (
-        <WebChatBanner conversationId={actualConversationId} colors={colors} />
-      ) : null}
-
-      {/* Speed-to-lead: unanswered internet lead banner */}
-      {leadWait && conversationStatus !== 'closed' && (
-        <LeadWaitBanner receivedAt={leadWait.receivedAt} sourceName={leadWait.sourceName} />
-      )}
-
-      {/* Internet lead: how it was routed + every ring / pass / claim on the call ladder */}
-      {isInternetLead && actualConversationId && !kbOpen ? (
-        <LeadCallTimeline conversationId={actualConversationId} colors={colors} />
-      ) : null}
+      {/* One live-status strip: visitor on the website, lead waiting, ring ladder. Most urgent first, chevron for the rest. */}
+      <ThreadStatusStrip conversationId={actualConversationId || null} isInternetLead={!!isInternetLead} closed={conversationStatus === 'closed'} kbOpen={kbOpen} colors={colors}
+        leadWait={leadWait} onReply={() => composerRef.current?.focus()} />
       
       {/* Inline Email Prompt */}
       {showEmailPrompt && (
@@ -2391,62 +2372,6 @@ function ThreadScreen() {
             <Text style={{ color: '#34C759', fontSize: 15, fontWeight: '600' }}>SMS</Text>
           </TouchableOpacity>
         </View>
-      )}
-
-      {/* Relationship Intel Bar (folded away while typing) */}
-      {!kbOpen && (
-      <Pressable
-        style={({ pressed }) => [styles.intelBar, showIntel && styles.intelBarExpanded, pressed && { opacity: 0.7 }, { cursor: 'pointer' } as any]}
-        onPress={() => {
-          if (!intelData && !intelGenerating) {
-            generateIntel();
-          } else {
-            setShowIntel(!showIntel);
-          }
-        }}
-        role="button"
-        data-testid="thread-intel-bar"
-      >
-        <View style={styles.intelBarLeft}>
-          <Ionicons name="sparkles" size={16} color="#C9A962" />
-          <Text style={styles.intelBarTitle}>Relationship Intel</Text>
-          {intelData?.generated_at && !showIntel && (
-            <Text style={styles.intelBarMeta}> · Updated {new Date(intelData.generated_at).toLocaleDateString()}</Text>
-          )}
-        </View>
-        <Ionicons name={showIntel ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textTertiary} />
-      </Pressable>
-      )}
-
-      {showIntel && !kbOpen && (
-        <ScrollView style={[styles.intelContent, { flex: 1 }]} nestedScrollEnabled data-testid="thread-intel-content">
-          {intelGenerating ? (
-            <View style={styles.intelLoadingRow}>
-              <ActivityIndicator size="small" color="#C9A962" />
-              <Text style={styles.intelLoadingText}>Analyzing relationship...</Text>
-            </View>
-          ) : intelData?.summary ? (
-            <>
-              <Text style={styles.intelSummaryText}>{intelData.summary}</Text>
-              <View style={styles.intelMetaRow}>
-                <Text style={styles.intelMetaText}>
-                  {intelData.data_points?.messages || 0} messages · {intelData.data_points?.events || 0} events
-                </Text>
-                <Pressable
-                  style={[styles.intelRefreshBtn, { cursor: 'pointer' } as any]}
-                  onPress={generateIntel}
-                  role="button"
-                  data-testid="thread-intel-refresh"
-                >
-                  <Ionicons name="refresh" size={14} color="#C9A962" />
-                  <Text style={styles.intelRefreshText}>Refresh</Text>
-                </Pressable>
-              </View>
-            </>
-          ) : (
-            <Text style={styles.intelEmptyText}>Tap to generate an AI briefing about this contact</Text>
-          )}
-        </ScrollView>
       )}
 
       {/* Messages + Composer */}
@@ -2686,15 +2611,15 @@ function ThreadScreen() {
               useAuthStore.getState().updateUser({ ai_master_paused: false } as any);
             } catch {}
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FF950014', borderTopWidth: 1, borderTopColor: '#FF950035', paddingHorizontal: 16, paddingVertical: 10 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FF950014', borderTopWidth: 1, borderTopColor: '#FF950035', paddingHorizontal: 16, paddingVertical: kbOpen ? 4 : 6 }}
           activeOpacity={0.75}
           data-testid="master-paused-thread-banner"
         >
-          <Ionicons name="pause-circle" size={15} color="#FF9500" />
-          <Text style={{ fontSize: 13, color: '#FF9500', fontWeight: '600', flex: 1 }}>
+          <Ionicons name="pause-circle" size={14} color="#FF9500" />
+          <Text style={{ fontSize: 12.5, color: '#FF9500', fontWeight: '600', flex: 1 }}>
             All AI is paused (Home switch) - Jessi won't reply
           </Text>
-          <View style={{ backgroundColor: '#FF9500', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
+          <View style={{ backgroundColor: '#FF9500', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
             <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>Resume AI</Text>
           </View>
         </TouchableOpacity>
@@ -2707,16 +2632,16 @@ function ThreadScreen() {
               try { await messagesAPI.updateConversation(user._id, convId, { ai_mode: 'auto_reply', ai_enabled: true }); } catch {}
             }
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#34C75912', borderTopWidth: 1, borderTopColor: '#34C75930', paddingHorizontal: 16, paddingVertical: kbOpen ? 4 : 10 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#34C75912', borderTopWidth: 1, borderTopColor: '#34C75930', paddingHorizontal: 16, paddingVertical: kbOpen ? 4 : 6 }}
           activeOpacity={0.75}
           data-testid="reenable-jessi-thread-btn"
         >
-          <Ionicons name="sparkles" size={kbOpen ? 13 : 15} color="#34C759" />
-          <Text style={{ fontSize: kbOpen ? 12 : 13, color: '#34C759', fontWeight: '600', flex: 1 }}>
-            Jessi is off — re-enable AI
+          <Ionicons name="sparkles" size={kbOpen ? 13 : 14} color="#34C759" />
+          <Text style={{ fontSize: kbOpen ? 12 : 12.5, color: '#34C759', fontWeight: '600', flex: 1 }}>
+            Jessi is off, texts wait for you
           </Text>
-          <View style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: kbOpen ? 9 : 12, paddingVertical: kbOpen ? 3 : 5 }}>
-            <Text style={{ fontSize: kbOpen ? 11 : 12, fontWeight: '800', color: '#000' }}>Turn On</Text>
+          <View style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: kbOpen ? 9 : 10, paddingVertical: kbOpen ? 3 : 4 }}>
+            <Text style={{ fontSize: kbOpen ? 11 : 12, fontWeight: '800', color: '#000' }}>Turn Jessi On</Text>
           </View>
         </TouchableOpacity>
       ) : (
@@ -2733,12 +2658,12 @@ function ThreadScreen() {
               }
             }
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#C9A96212', borderTopWidth: 1, borderTopColor: '#C9A96230', paddingHorizontal: 16, paddingVertical: kbOpen ? 4 : 10 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#C9A96212', borderTopWidth: 1, borderTopColor: '#C9A96230', paddingHorizontal: 16, paddingVertical: kbOpen ? 4 : 6 }}
           activeOpacity={0.75}
           data-testid="takeover-jessi-thread-btn"
         >
-          <Ionicons name="sparkles" size={kbOpen ? 13 : 15} color="#C9A962" />
-          <Text style={{ fontSize: kbOpen ? 12 : 13, color: '#C9A962', fontWeight: '600', flex: 1 }}>
+          <Ionicons name="sparkles" size={kbOpen ? 13 : 14} color="#C9A962" />
+          <Text style={{ fontSize: kbOpen ? 12 : 12.5, color: '#C9A962', fontWeight: '600', flex: 1 }}>
             {aiMode === 'auto_reply' ? 'Jessi is handling this' : 'AI in assist mode'}
           </Text>
           {needsAssistance && (
@@ -2751,7 +2676,7 @@ function ThreadScreen() {
                   try { await messagesAPI.updateConversation(user._id, convId, { needs_assistance: false }); } catch { setNeedsAssistance(true); }
                 }
               }}
-              style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}
               activeOpacity={0.75}
               testID="clear-waiting-thread-btn"
               dataSet={{ testid: 'clear-waiting-thread-btn' } as any}
@@ -2760,7 +2685,7 @@ function ThreadScreen() {
               <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>All Good</Text>
             </TouchableOpacity>
           )}
-          <View style={{ backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: kbOpen ? 9 : 12, paddingVertical: kbOpen ? 3 : 5 }}>
+          <View style={{ backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: kbOpen ? 9 : 10, paddingVertical: kbOpen ? 3 : 4 }}>
             <Text style={{ fontSize: kbOpen ? 11 : 12, fontWeight: '800', color: '#000' }}>Take Over</Text>
           </View>
         </TouchableOpacity>
@@ -2826,6 +2751,7 @@ function ThreadScreen() {
                 </TouchableOpacity>
               )}
               <TextInput
+                ref={composerRef}
                 style={[styles.composerInput, {
                   color: colors.textPrimary,
                   minHeight: 44,
@@ -3055,7 +2981,7 @@ function ThreadScreen() {
 
       </KeyboardAvoidingView>
 
-      {!!contactIdForNav && <AskJessiSheet visible={showAsk} onClose={() => setShowAsk(false)} contactId={String(contactIdForNav)} />}
+      {!!contactIdForNav && <AskJessiSheet visible={showAsk} onClose={() => setShowAsk(false)} contactId={String(contactIdForNav)} intel={{ data: intelData, generating: intelGenerating, onGenerate: generateIntel }} />}
 
       {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>
@@ -3690,7 +3616,22 @@ function ThreadScreen() {
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} bounces={true} keyboardShouldPersistTaps="handled">
-            
+
+            <TouchableOpacity
+              style={styles.modeOption}
+              onPress={() => { setShowSettings(false); setThreadSearchOpen(true); }}
+              testID="thread-search-btn" dataSet={{ testid: 'thread-search-btn' } as any}
+            >
+              <View style={[styles.modeIcon, { backgroundColor: '#C9A96220' }]}>
+                <Ionicons name="search" size={20} color="#C9A962" />
+              </View>
+              <View style={styles.modeInfo}>
+                <Text style={styles.modeName}>Search this conversation</Text>
+                <Text style={styles.modeDesc}>Find a word or phrase in the messages</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+
             {/* AI Mode Selection */}
             <Text style={styles.modalSectionTitle}>AI Assistant Mode</Text>
             
@@ -3980,10 +3921,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    backgroundColor: colors.background,
+    gap: 6,
+    marginLeft: 6,
+  },
+  headerIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerActionPill: {
     flex: 1,
@@ -4001,7 +3947,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '700',
   },
   settingsButton: {
-    padding: 8,
+    padding: 4,
+    marginLeft: 2,
   },
   modeBanner: {
     flexDirection: 'row',

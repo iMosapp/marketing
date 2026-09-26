@@ -28,7 +28,58 @@ const fmtClock = (s?: number | null) => {
 };
 const reasons = (r: string[] = []) => r.map(x => x === 'store_closed' ? 'store closed' : 'texting window').join(' + ');
 
-export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: string; colors: any }) => {
+export type LeadSummary = { title: string; sub: string; tone: string; urgent: boolean; receivedAt: string | null; hasJob: boolean };
+
+// One line about where this lead stands (drives the thread status strip and this card's header).
+export function summarizeLead(data: any, minsLeft: number | null, showKeep: boolean): LeadSummary {
+  const job = data.job;
+  const plan = data.plan || {};
+  const ret = data.returning || {};
+  const routing = data.routing || {};
+  let title = 'Lead routing';
+  let sub = '';
+  let tone = GOLD;
+  let urgent = false;
+  if (!job && ret.is_returning) {
+    const who = routing.owner_name ? `${routing.owner_name.split(' ')[0]}'s customer` : 'Returning customer';
+    title = ret.released_at && !data.claimed_by ? `${who} · back in the shared queue` : ret.resolved ? `${who} · theirs to work` : minsLeft != null ? `${who} · releases to the queue in ${minsLeft} min` : who;
+    sub = ret.merged_thread ? `Lead #${ret.lead_count} landed in this thread${data.intake?.sent_at ? ` · intake text sent ${whenLabel(data.intake.sent_at)}` : ''} · phones did not ring` : (ret.release_reason ? `Released: ${ret.release_reason}` : `Sent straight to ${routing.owner_name ? routing.owner_name.split(' ')[0] : 'their rep'}: text only, phones did not ring`);
+    tone = ret.released_at && !data.claimed_by ? '#FF3B30' : ret.resolved ? '#34C759' : minsLeft != null && minsLeft <= 5 ? '#FF3B30' : '#FF9500';
+    urgent = (!!ret.released_at && !data.claimed_by) || (!ret.resolved && !ret.released_at && minsLeft != null);
+  } else if (!job) {
+    title = plan.jessi_on ? 'Text only · Jessi answering replies' : 'Text only · reps answer replies';
+    sub = data.intake?.sent_at ? `Intake text sent ${whenLabel(data.intake.sent_at)}` : data.intake?.scheduled_for ? `Intake text goes out ${whenLabel(data.intake.scheduled_for)}` : 'No intake text';
+  } else if (job.status === 'claimed') {
+    const n = (job.attempts || []).length;
+    const at = job.calls.filter((c: any) => c.outcome === 'claimed')[0]?.attempt || job.attempt_index || 1;
+    title = `Claimed by ${job.claimed_by_name || 'a rep'} in ${fmtClock(job.time_to_claim_seconds)}`;
+    sub = `${job.claimed_via === 'phone' ? 'Pressed 1 on the call' : 'Claimed in the app'}${n ? ` · attempt ${at} of ${n}` : ''}`;
+    tone = '#34C759';
+  } else if (job.status === 'handled') {
+    title = 'Call ladder skipped';
+    sub = 'A rep already texted this lead before the morning ring';
+    tone = '#8E8E93';
+  } else if (job.status === 'exhausted') {
+    title = `Nobody claimed after ${job.attempts.length} attempt${job.attempts.length === 1 ? '' : 's'}`;
+    sub = 'Everyone on the ladder got an Unclaimed lead push';
+    tone = '#FF3B30';
+    urgent = true;
+  } else if (job.deferred && job.attempt_index === 0) {
+    title = `Call ladder rings ${whenLabel(job.next_attempt_at || job.deferred_until)}`;
+    sub = `Held: ${reasons(job.deferred_reasons)}${plan.jessi_on ? ' · Jessi answering until then' : ''}`;
+    tone = '#FF9500';
+  } else {
+    title = `Ringing attempt ${Math.min(job.attempt_index, job.attempts.length)} of ${job.attempts.length}`;
+    sub = job.next_attempt_at && job.attempt_index < job.attempts.length ? `Next attempt ${whenLabel(job.next_attempt_at)}` : 'Waiting for a rep to press 1';
+    urgent = true;
+  }
+  if (showKeep) urgent = true;
+  return { title, sub, tone, urgent, receivedAt: data.received_at || null, hasJob: !!job };
+}
+
+type Props = { conversationId: string; colors: any; headless?: boolean; forceOpen?: boolean; onToggle?: () => void; onSummary?: (s: LeadSummary | null) => void };
+
+export const LeadCallTimeline = ({ conversationId, colors, headless, forceOpen, onToggle, onSummary }: Props) => {
   const { user } = useAuthStore();
   const [data, setData] = useState<any>(null);
   const [open, setOpen] = useState(false);
@@ -88,46 +139,19 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
     return () => clearInterval(t);
   }, [releaseAt]);
 
-  if (hidden || !data || (!data.job && !data.plan)) return null;
-  const job = data.job;
-  const plan = data.plan || {};
-  const ret = data.returning || {};
+  const ready = !hidden && !!data && !!(data.job || data.plan);
   const minsLeft = releaseAt ? Math.max(0, Math.ceil((releaseAt - tick) / 60000)) : null;
-  const isOwner = !!data.claimed_by && data.claimed_by === user?._id;
+  const ret = data?.returning || {};
+  const isOwner = !!data?.claimed_by && data.claimed_by === user?._id;
   const showKeep = !!releaseAt && !ret.resolved && !ret.released_at && (isOwner || ['super_admin', 'org_admin', 'store_manager', 'manager', 'admin'].includes(user?.role || ''));
+  const summary = ready ? summarizeLead(data, minsLeft, showKeep) : null;
+  useEffect(() => { onSummary?.(summary); }, [summary?.title, summary?.sub, summary?.tone, summary?.urgent, summary?.receivedAt, ready]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  let title = 'Lead routing';
-  let sub = '';
-  let tone = GOLD;
+  if (!ready || headless) return null;
+  const job = data.job;
   const routing = data.routing || {};
-  if (!job && ret.is_returning) {
-    const who = routing.owner_name ? `${routing.owner_name.split(' ')[0]}'s customer` : 'Returning customer';
-    title = ret.released_at && !data.claimed_by ? `${who} · back in the shared queue` : ret.resolved ? `${who} · theirs to work` : minsLeft != null ? `${who} · releases to the queue in ${minsLeft} min` : who;
-    sub = ret.merged_thread ? `Lead #${ret.lead_count} landed in this thread${data.intake?.sent_at ? ` · intake text sent ${whenLabel(data.intake.sent_at)}` : ''} · phones did not ring` : (ret.release_reason ? `Released: ${ret.release_reason}` : `Sent straight to ${routing.owner_name ? routing.owner_name.split(' ')[0] : 'their rep'}: text only, phones did not ring`);
-    tone = ret.released_at && !data.claimed_by ? '#FF3B30' : ret.resolved ? '#34C759' : minsLeft != null && minsLeft <= 5 ? '#FF3B30' : '#FF9500';
-  } else if (!job) {
-    title = plan.jessi_on ? 'Text only · Jessi answering replies' : 'Text only · reps answer replies';
-    sub = data.intake?.sent_at ? `Intake text sent ${whenLabel(data.intake.sent_at)}` : data.intake?.scheduled_for ? `Intake text goes out ${whenLabel(data.intake.scheduled_for)}` : 'No intake text';
-  } else if (job.status === 'claimed') {
-    title = `Claimed by ${job.claimed_by_name || 'a rep'} in ${fmtClock(job.time_to_claim_seconds)}`;
-    sub = `${job.claimed_via === 'phone' ? 'Pressed 1 on the call' : 'Claimed in the app'} · attempt ${job.calls.filter((c: any) => c.outcome === 'claimed')[0]?.attempt || job.attempt_index || 1} of ${job.attempts.length}`;
-    tone = '#34C759';
-  } else if (job.status === 'handled') {
-    title = 'Call ladder skipped';
-    sub = 'A rep already texted this lead before the morning ring';
-    tone = '#8E8E93';
-  } else if (job.status === 'exhausted') {
-    title = `Nobody claimed after ${job.attempts.length} attempt${job.attempts.length === 1 ? '' : 's'}`;
-    sub = 'Everyone on the ladder got an Unclaimed lead push';
-    tone = '#FF3B30';
-  } else if (job.deferred && job.attempt_index === 0) {
-    title = `Call ladder rings ${whenLabel(job.next_attempt_at || job.deferred_until)}`;
-    sub = `Held: ${reasons(job.deferred_reasons)}${plan.jessi_on ? ' · Jessi answering until then' : ''}`;
-    tone = '#FF9500';
-  } else {
-    title = `Ringing attempt ${Math.min(job.attempt_index, job.attempts.length)} of ${job.attempts.length}`;
-    sub = job.next_attempt_at && job.attempt_index < job.attempts.length ? `Next attempt ${whenLabel(job.next_attempt_at)}` : 'Waiting for a rep to press 1';
-  }
+  const { title, sub, tone } = summary!;
+  const isOpen = open || !!forceOpen;
 
   const rows: { at: string | null; icon: string; color: string; text: string }[] = [];
   if (routing.reopened) {
@@ -153,7 +177,7 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
 
   return (
     <View style={{ marginHorizontal: 12, marginTop: 6, marginBottom: 4, borderRadius: 14, borderWidth: 1, borderColor: tone + '55', backgroundColor: colors.card || colors.surface, overflow: 'hidden' }} testID="lead-call-timeline" dataSet={{ testid: 'lead-call-timeline' } as any}>
-      <TouchableOpacity onPress={() => setOpen(o => !o)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12 }} testID="lead-call-timeline-toggle" dataSet={{ testid: 'lead-call-timeline-toggle' } as any}>
+      <TouchableOpacity onPress={() => (onToggle ? onToggle() : setOpen(o => !o))} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12 }} testID="lead-call-timeline-toggle" dataSet={{ testid: 'lead-call-timeline-toggle' } as any}>
         <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: tone + '22', alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name={job ? 'call' : 'chatbubbles-outline'} size={16} color={tone} />
         </View>
@@ -161,7 +185,7 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
           <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }} numberOfLines={1}>{title}</Text>
           {sub ? <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }} numberOfLines={2}>{sub}</Text> : null}
         </View>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
+        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
       </TouchableOpacity>
       {showKeep && (
         <View style={{ marginHorizontal: 12, marginBottom: 12, padding: 10, borderRadius: 10, backgroundColor: tone + '1A', borderWidth: 1, borderColor: tone + '66', gap: 8 }} testID="lead-release-warning" dataSet={{ testid: 'lead-release-warning' } as any}>
@@ -180,7 +204,7 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
       {ret.kept_at && ret.resolved && !job ? (
         <Text style={{ marginHorizontal: 12, marginBottom: 10, fontSize: 11, color: '#34C759' }} testID="lead-kept-note" dataSet={{ testid: 'lead-kept-note' } as any}>Kept {whenLabel(ret.kept_at)} · no auto-release</Text>
       ) : null}
-      {open && (
+      {isOpen && (
         <View style={{ paddingHorizontal: 12, paddingBottom: 12, gap: 8 }} testID="lead-call-timeline-rows" dataSet={{ testid: 'lead-call-timeline-rows' } as any}>
           {data.clocks && (
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 2 }} testID="lead-clocks" dataSet={{ testid: 'lead-clocks' } as any}>

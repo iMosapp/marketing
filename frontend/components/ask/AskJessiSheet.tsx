@@ -19,7 +19,41 @@ type Msg = { id: string; role: 'user' | 'assistant'; content: string; citations?
 type Overview = { contact: { id: string; name: string; first_name: string; photo?: string | null }; stats: any; starters: string[]; sessions: { id: string; title: string; updated_at: string; message_count: number }[] };
 
 // "Ask Jessi about this customer": grounded chat over every text, call, voice note, event and task for one contact.
-export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolean; onClose: () => void; contactId: string }) => {
+export type IntelProps = { data: any | null; generating: boolean; onGenerate: () => void };
+
+// Relationship Intel brief, folded into the Ask sheet so the thread does not need its own bar for it.
+const IntelCard = ({ intel, first, colors }: { intel: IntelProps; first: string; colors: any }) => {
+  const [full, setFull] = useState(false);
+  const d = intel.data;
+  return (
+    <View style={{ backgroundColor: GOLD + '10', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: GOLD + '55', gap: 6 }} {...tid('ask-intel-card')}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Ionicons name="sparkles" size={13} color={GOLD} />
+        <Text style={{ flex: 1, fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 0.5 }}>RELATIONSHIP INTEL{d?.generated_at ? ` · ${new Date(d.generated_at).toLocaleDateString()}` : ''}</Text>
+        {d?.summary && !intel.generating ? (
+          <TouchableOpacity onPress={intel.onGenerate} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} {...tid('ask-intel-refresh')}>
+            <Ionicons name="refresh" size={13} color={GOLD} /><Text style={{ fontSize: 11.5, fontWeight: '700', color: GOLD }}>Refresh</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+      {intel.generating ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><ActivityIndicator size="small" color={GOLD} /><Text style={{ fontSize: 13, color: colors.textSecondary }}>Analyzing the relationship…</Text></View>
+      ) : d?.summary ? (
+        <TouchableOpacity onPress={() => setFull(f => !f)} activeOpacity={0.8} {...tid('ask-intel-toggle')}>
+          <Text style={{ fontSize: 14, color: colors.text, lineHeight: 20 }} numberOfLines={full ? undefined : 4}>{d.summary}</Text>
+          <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 4 }}>{d.data_points?.messages || 0} messages · {d.data_points?.events || 0} events · {full ? 'Show less' : 'Show all'}</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity onPress={intel.onGenerate} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} {...tid('ask-intel-generate')}>
+          <Text style={{ flex: 1, fontSize: 13.5, color: colors.text }}>No briefing yet. Have Jessi write one about {first}.</Text>
+          <View style={{ backgroundColor: GOLD, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#111' }}>Write it</Text></View>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
+export const AskJessiSheet = ({ visible, onClose, contactId, intel }: { visible: boolean; onClose: () => void; contactId: string; intel?: IntelProps }) => {
   const { colors } = useThemeStore();
   const { showToast } = useToast();
   const router = useRouter();
@@ -159,6 +193,7 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
 
             <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 24 }} keyboardShouldPersistTaps="handled" {...tid('ask-messages')}>
               {loading && <ActivityIndicator color={GOLD} style={{ marginTop: 20 }} />}
+              {!loading && intel ? <IntelCard intel={intel} first={first} colors={colors} /> : null}
               {!loading && msgs.length === 0 && ov && (
                 <View style={{ gap: 10 }} {...tid('ask-starters')}>
                   <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>
