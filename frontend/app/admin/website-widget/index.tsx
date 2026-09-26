@@ -82,9 +82,9 @@ export default function WebsiteWidgets() {
             <View style={{ gap: 8 }} {...tid('widgets-create-list')}>
               {widgets.length > 0 ? <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1, marginTop: 6 }}>STORES WITHOUT A WIDGET</Text> : null}
               {free.map((s: any) => (
-                <TouchableOpacity key={s.id} onPress={() => create(s.id)} disabled={!!creating} style={{ height: 52, paddingHorizontal: 18, borderRadius: 14, backgroundColor: widgets.length === 0 && free.length === 1 ? GOLD : colors.card, borderWidth: 1, borderColor: widgets.length === 0 && free.length === 1 ? GOLD : colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid(`widget-create-${s.id}`)}>
+                <TouchableOpacity key={s.id} onPress={() => create(s.id)} disabled={!!creating} style={{ minHeight: 52, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 14, backgroundColor: widgets.length === 0 && free.length === 1 ? GOLD : colors.card, borderWidth: 1, borderColor: widgets.length === 0 && free.length === 1 ? GOLD : colors.border, alignItems: 'center', flexDirection: 'row', gap: 10 }} {...tid(`widget-create-${s.id}`)}>
                   {creating === s.id ? <ActivityIndicator color={widgets.length === 0 && free.length === 1 ? '#111' : GOLD} /> : <Ionicons name="add" size={20} color={widgets.length === 0 && free.length === 1 ? '#111' : GOLD} />}
-                  <Text style={{ fontSize: 15, fontWeight: '800', color: widgets.length === 0 && free.length === 1 ? '#111' : colors.text }}>Create the widget for {s.name}</Text>
+                  <Text style={{ flex: 1, fontSize: 15, fontWeight: '800', color: widgets.length === 0 && free.length === 1 ? '#111' : colors.text }} numberOfLines={2}>Create the widget for {s.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
