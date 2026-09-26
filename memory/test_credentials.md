@@ -165,3 +165,9 @@
   `POST /api/webhooks/twilio/voicemail-transcription` form `TranscriptionText=...&TranscriptionStatus=completed&CallSid=CAx&From=...&To=...` fills the transcript.
 - `GET /api/voicemails` (Bearer), `POST /api/voicemails/{id}/heard`, `DELETE /api/voicemails/{id}`; greeting `GET/POST(file)/DELETE /api/voicemails/greeting`, public mp3 `GET /api/webhooks/twilio/greeting/{user_id}.mp3`.
 - Tests: `set -a && . ../frontend/.env && set +a && python -m pytest tests/test_voicemail_inbox.py -q` (9; needs imageio-ffmpeg for the greeting test). Rep account `activation-tester@invalid.imonsocial.test / NewPass123!` sees only its own line.
+
+## Website Widget (Tools -> Leads -> Website Widget), Sep 26 2026
+- Screens: `/admin/website-widget` (list + create per store) and `/admin/website-widget/{id}` (tabs Look | Doors | Routing | Install, live iframe/WebView preview of `/api/w/{key}/demo?c=<base64url json>`). Manager = qa-manager (store 69a0b7095fddcede09591668 already has widget id 6ab72996c248f5420bf0a14a; the key rotates when tests run, read it from `GET /api/widgets`). Reps (activation-tester) can view, PUT/POST -> 403.
+- `WIDGET_RING_DRY_RUN=true` is set in preview backend/.env: "Call me now" never rings a real phone (legs get `CAdry...` SIDs and time out into the missed path). NEVER unset it in preview: the QA store's ring group defaults to real team members (incl. Forest's real cell).
+- Public: `GET /api/w/{key}.js`, `/api/w/{key}/demo`, `POST /api/w/{key}/text|call|event`, `GET /api/w/{key}/call/{req_id}`; Twilio: `POST /api/w/ring/{req}/{token}`, `/ring-answer` (Digits), `/ring-status` (CallStatus), `/ring-customer/{req}` (CallStatus, CallDuration). Only 500-555 visitor numbers; the intake text to them fails harmlessly.
+- Tests: `cd /app/backend && set -a && . ./.env && . ../frontend/.env && set +a && python -m pytest tests/test_website_widget.py -q` (7; resets the widget's look afterwards and deletes the 500-555 contacts it created).

@@ -377,6 +377,7 @@ export default function MoreScreen() {
     if (isAdmin && perm('admin')) {
       if (perm('admin', 'contact_tags')) {
         leadItems.push(
+          { icon: 'chatbubble-ellipses', title: 'Website Widget', subtitle: 'Text Us and Call Me Now bubble for your site, one line to install', onPress: () => router.push('/admin/website-widget' as any), color: '#2196F3' },
           { icon: 'flash', title: 'Lead Source Queue', subtitle: 'Inbound lead log and queued auto-text status', onPress: () => router.push('/admin/internet-leads'), color: '#C9A962' },
           { icon: 'megaphone', title: 'Lead Source Config', subtitle: 'ADF webhooks, texting windows and call ladder', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
           { icon: 'git-network', title: 'Lead Flows', subtitle: 'Reusable playbooks: who rings, in what order, what Jessi does', onPress: () => router.push('/lead-flows' as any), color: '#C9A962' },
