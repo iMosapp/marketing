@@ -2223,10 +2223,18 @@ async def handle_inbound_voice(
     from services.mystery_shops import is_shop_number
     if await is_shop_number(db, to_phone):
         app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+        try:
+            from services import voicemails as _vm
+            await _vm.open_missed(db, CallSid, from_phone, to_phone)
+        except Exception as _vm_err:
+            logger.warning(f"[Voice] voicemail inbox open failed: {_vm_err}")
+        import urllib.parse as _up
+        qs = _up.urlencode({"from": from_phone, "to": to_phone})
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna-Neural">Thanks for calling. Nobody can take your call right now. Please leave a message after the tone.</Say>
-  <Record maxLength="120" transcribe="true" transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription" />
+  <Record maxLength="120" transcribe="true" transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription"
+          recordingStatusCallback="{app_url}/api/webhooks/twilio/voicemail-recording?{qs}" recordingStatusCallbackMethod="POST" />
   <Say voice="Polly.Joanna-Neural">Thank you. Goodbye.</Say>
 </Response>"""
         return Response(content=twiml, media_type="application/xml")
@@ -2317,12 +2325,21 @@ async def handle_inbound_voice(
   </Dial>
 </Response>"""
     else:
+        try:
+            from services import voicemails as _vm
+            await _vm.open_missed(db, CallSid, from_phone, to_phone)
+        except Exception as _vm_err:
+            logger.warning(f"[Voice] voicemail inbox open failed: {_vm_err}")
+        import urllib.parse as _up
+        qs = _up.urlencode({"from": from_phone, "to": to_phone})
+        from services import voicemails as _vm2
+        greeting = await _vm2.greeting_twiml(db, rep_user) if rep_user else f"<Say>Hi, you've reached {rep_name}. Please leave a message after the tone.</Say>"
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>Hi, you've reached {rep_name}. Please leave a message after the tone.</Say>
+  {greeting}
   <Record maxLength="120" transcribe="true"
-          transcribeCallback="{app_url}/api/webhooks/twilio/recording-complete"
-          recordingStatusCallback="{app_url}/api/webhooks/twilio/recording-complete"
+          transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription"
+          recordingStatusCallback="{app_url}/api/webhooks/twilio/voicemail-recording?{qs}"
           recordingStatusCallbackMethod="POST" />
   <Say>Thank you. Goodbye!</Say>
 </Response>"""
@@ -2354,10 +2371,21 @@ async def handle_voice_fallback(
     logger.info(f"[Voice] Dial status={DialCallStatus} from {from_phone}")
 
     if DialCallStatus in ("no-answer", "busy", "failed", "canceled"):
+        # The call is in the Voicemail inbox from this moment (missed); a recording upgrades it to a voicemail
+        try:
+            from services import voicemails as _vm
+            await _vm.open_missed(db, CallSid, from_phone, normalize_phone(To))
+        except Exception as _vm_err:
+            logger.warning(f"[Voice] voicemail inbox open failed: {_vm_err}")
+        import urllib.parse as _up
+        qs = _up.urlencode({"from": from_phone, "to": normalize_phone(To)})
+        from services import voicemails as _vm2
+        greeting = await _vm2.greeting_twiml(db, rep_user)
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>Sorry, {rep_name} is unavailable right now. Leave a message after the tone and we'll get back to you quickly.</Say>
-  <Record maxLength="120" transcribe="true" transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription" />
+  {greeting}
+  <Record maxLength="120" transcribe="true" transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription"
+          recordingStatusCallback="{app_url}/api/webhooks/twilio/voicemail-recording?{qs}" recordingStatusCallbackMethod="POST" />
   <Say>Thank you, talk soon!</Say>
 </Response>"""
     else:
@@ -2366,61 +2394,58 @@ async def handle_voice_fallback(
     return Response(content=twiml, media_type="application/xml")
 
 
+@router.get("/greeting/{user_id}.mp3")
+async def voicemail_greeting_audio(user_id: str):
+    """Public mp3 of a rep's voicemail greeting: Twilio <Play>s it, the app previews it."""
+    from services import voicemails as _vm
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=404, detail="Not found")
+    data = await _vm.greeting_mp3(get_db(), user_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="No greeting")
+    from fastapi.responses import Response as _R
+    return _R(content=data, media_type="audio/mpeg", headers={"Cache-Control": "public, max-age=300", "Content-Length": str(len(data))})
+
+
+@router.post("/voicemail-recording")
+async def handle_voicemail_recording(
+    request: Request,
+    RecordingUrl:      str = Form(default=""),
+    RecordingSid:      str = Form(default=""),
+    RecordingDuration: str = Form(default="0"),
+    RecordingStatus:   str = Form(default="completed"),
+    CallSid:           str = Form(default=""),
+):
+    """recordingStatusCallback for voicemail <Record>: the message is in the inbox the moment the caller hangs up."""
+    if RecordingStatus and RecordingStatus != "completed":
+        return Response(content="OK", media_type="text/plain")
+    from_phone = normalize_phone(request.query_params.get("from") or "")
+    to_phone   = normalize_phone(request.query_params.get("to") or "")
+    from services import voicemails as _vm
+    await _vm.attach_recording(get_db(), CallSid, from_phone, to_phone, RecordingUrl, RecordingSid, RecordingDuration)
+    logger.info(f"[Voice] Voicemail recording saved {CallSid} ({RecordingDuration}s) from {from_phone} on {to_phone}")
+    return Response(content="OK", media_type="text/plain")
+
+
 @router.post("/voicemail-transcription")
 async def handle_voicemail_transcription(
     request: Request,
     TranscriptionText: str = Form(default=""),
+    TranscriptionStatus: str = Form(default=""),
     RecordingUrl:      str = Form(default=""),
+    RecordingDuration: str = Form(default="0"),
     CallSid:           str = Form(default=""),
     From:              str = Form(default=""),
     To:                str = Form(default=""),
 ):
-    """Stores voicemail transcription and notifies the rep."""
-    db         = get_db()
-    from_phone = normalize_phone(From)
-    to_phone   = normalize_phone(To)
-
-    rep_user = await db.users.find_one({
-        "$or": [{"twilio_number": to_phone}, {"mvpline_number": to_phone}],
-    })
-    if not rep_user:
-        rep_user = await db.users.find_one({"role": "super_admin"})
-
-    from services.contact_match import phone_clause as _pcl, NOT_MERGED as _nm
-    contact = await db.contacts.find_one({**(_pcl(from_phone) or {"phone": from_phone}), "status": _nm},
-                                         sort=[("photo_url", -1), ("created_at", 1)])
-    contact_name = (contact or {}).get("name") or f"Unknown ({from_phone[-4:]})"
-    user_id      = str(rep_user["_id"]) if rep_user else None
-
-    # Save voicemail as a message
-    await db.messages.insert_one({
-        "user_id":       user_id,
-        "contact_id":    str(contact["_id"]) if contact else None,
-        "contact_phone": from_phone,
-        "content":       TranscriptionText or "(Voicemail — no transcription)",
-        "recording_url": RecordingUrl,
-        "sender":        "contact",
-        "direction":     "inbound",
-        "channel":       "voicemail",
-        "call_sid":      CallSid,
-        "timestamp":     datetime.utcnow(),
-    })
-
-    # Notify rep
-    if user_id:
-        await db.notifications.insert_one({
-            "user_id":     user_id,
-            "type":        "voicemail",
-            "title":       f"Voicemail from {contact_name}",
-            "message":     TranscriptionText[:200] if TranscriptionText else "New voicemail",
-            "contact_id":  str(contact["_id"]) if contact else None,
-            "recording_url": RecordingUrl,
-            "read":        False,
-            "dismissed":   False,
-            "created_at":  datetime.utcnow(),
-        })
-        logger.info(f"[Voice] Voicemail saved from {from_phone} | transcription: {TranscriptionText[:50]}")
-
+    """Twilio's own transcription: fills the transcript when Whisper has not (and still creates the row for legacy TwiML)."""
+    db = get_db()
+    from services import voicemails as _vm
+    if not await db[_vm.COLL].find_one({"call_sid": CallSid}, {"_id": 1}):
+        await _vm.attach_recording(db, CallSid, normalize_phone(From), normalize_phone(To), RecordingUrl, "", RecordingDuration)
+    if TranscriptionStatus in ("", "completed") and TranscriptionText:
+        await _vm.set_transcript(db, CallSid, TranscriptionText, source="twilio")
+    logger.info(f"[Voice] Voicemail transcription {CallSid} status={TranscriptionStatus or 'completed'} | {TranscriptionText[:50]}")
     return Response(content="OK", media_type="text/plain")
 
 

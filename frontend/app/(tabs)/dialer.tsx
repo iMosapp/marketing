@@ -1,16 +1,17 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, Platform, Linking, Dimensions, TextInput, ScrollView, Keyboard, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI } from '../../services/api';
 import api from '../../services/api';
+import { VoicemailInbox } from '../../components/dialer/VoicemailInbox';
 
 const IS_WEB = Platform.OS === 'web';
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -64,7 +65,14 @@ export default function DialerScreen() {
   const [serverResults, setServerResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [dialMatches, setDialMatches] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<'keypad' | 'recents'>('keypad');
+  const [viewMode, setViewMode] = useState<'keypad' | 'recents' | 'voicemail'>('keypad');
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const [vmUnheard, setVmUnheard] = useState(0);
+  useEffect(() => { if (tab === 'voicemail') setViewMode('voicemail'); }, [tab]);
+  useFocusEffect(useCallback(() => {
+    if (!user?._id) return;
+    api.get('/voicemails/unheard-count').then(r => setVmUnheard(r.data?.unheard ?? 0)).catch(() => {});
+  }, [user?._id]));
   const [recentCalls, setRecentCalls] = useState<any[]>([]);
   const [recentsLoading, setRecentsLoading] = useState(false);
   const [activeCall, setActiveCall] = useState<{ sid: string; name: string; number: string; status: string } | null>(null);
@@ -355,21 +363,26 @@ export default function DialerScreen() {
         )}
       </View>
 
-      {/* ─── Keypad / Recents Toggle ─── */}
+      {/* ─── Keypad / Recents / Voicemail Toggle ─── */}
       <View style={{ flexDirection: 'row', alignSelf: 'center', marginTop: 10, backgroundColor: colors.card, borderRadius: 10, padding: 3 }}>
-        {([['keypad', 'Keypad', 'keypad-outline'], ['recents', 'Recents', 'time-outline']] as const).map(([m, label, icon]) => (
+        {([['keypad', 'Keypad', 'keypad-outline'], ['recents', 'Recents', 'time-outline'], ['voicemail', 'Voicemail', 'recording-outline']] as const).map(([m, label, icon]) => (
           <TouchableOpacity
             key={m}
             onPress={() => setViewMode(m)}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingVertical: 7, paddingHorizontal: 26, borderRadius: 8,
+              paddingVertical: 7, paddingHorizontal: 16, borderRadius: 8,
               backgroundColor: viewMode === m ? colors.bg : 'transparent',
             }}
             data-testid={`dialer-tab-${m}`}
           >
             <Ionicons name={icon as any} size={15} color={viewMode === m ? colors.text : colors.textSecondary} />
             <Text style={{ fontSize: 14, fontWeight: '600', color: viewMode === m ? colors.text : colors.textSecondary }} numberOfLines={1}>{label}</Text>
+            {m === 'voicemail' && vmUnheard > 0 ? (
+              <View style={{ minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center' }} data-testid="dialer-voicemail-badge">
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#0B0B0D' }}>{vmUnheard > 99 ? '99+' : vmUnheard}</Text>
+              </View>
+            ) : null}
           </TouchableOpacity>
         ))}
       </View>
@@ -422,6 +435,8 @@ export default function DialerScreen() {
             ))
           )}
         </ScrollView>
+      ) : viewMode === 'voicemail' ? (
+        <VoicemailInbox user={user} colors={colors} active={viewMode === 'voicemail'} onCall={(p) => handleCall(p)} onUnheard={setVmUnheard} />
       ) : viewMode === 'recents' ? (
         /* ─── Recent Calls ─── */
         <ScrollView

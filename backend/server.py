@@ -612,6 +612,8 @@ api_router.include_router(image_router.router)
 api_router.include_router(tasks.router)
 api_router.include_router(messages.router)
 api_router.include_router(calls.router)
+from routers import voicemails as voicemails_router
+api_router.include_router(voicemails_router.router)
 api_router.include_router(campaigns.router)
 api_router.include_router(admin.router)
 api_router.include_router(admin_hierarchy.router)
