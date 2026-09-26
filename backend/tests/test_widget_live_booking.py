@@ -3,17 +3,25 @@
 Run: cd /app/backend && set -a && . ./.env && . ../frontend/.env && set +a && \
      python -m pytest tests/test_widget_live_booking.py -v --tb=short
 """
+import asyncio
 import io
 import os
+import sys
 import time
 import uuid
 
 import pytest
 import requests
 
+sys.path.insert(0, "/app/backend")
 BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 WID = "6ab72996c248f5420bf0a14a"
 RUN = str(int(time.time()))[-6:]
+LOOP = asyncio.new_event_loop()
+
+
+def run(coro):
+    return LOOP.run_until_complete(coro)
 
 
 def _tok(email, pw):
@@ -76,6 +84,8 @@ class TestBooking:
                 assert ":" in s["v"] and s["l"]
 
         day = sl["days"][0]
+        from datetime import datetime, timedelta
+        t0 = datetime.utcnow() - timedelta(seconds=5)
         b = requests.post(f"{BASE}/api/w/{key}/chat/{sid}/book",
                           json={"kind": "test_drive", "date": day["date"], "time": day["slots"][0]["v"],
                                 "vehicle": "Red Bronco", "name": "QA Booker", "phone": "5005550041"}, timeout=45)
@@ -97,6 +107,86 @@ class TestBooking:
         det = requests.get(f"{BASE}/api/widgets/chats/{sid}", headers=mgr, timeout=30).json()
         assert det.get("contact_id") and det.get("conversation_id")
         assert det.get("booking", {}).get("task_id")
+
+        # the visitor's confirmation text carries the Add-to-Calendar link; the task is marked invited (no second text).
+        # Preview's QA store line is a fake 500-555 number, so when Twilio refuses the send the rep-number auto-invite stays scheduled.
+        from bson import ObjectId
+
+        async def check():
+            from routers.database import get_db
+            from services.calendar_invite import invite_link, mark_invite_sent
+            db = get_db()
+            task = await db.tasks.find_one({"_id": ObjectId(det["booking"]["task_id"])})
+            msgs = await db.messages.find({"conversation_id": det["conversation_id"], "is_intake_text": True, "timestamp": {"$gte": t0}}).to_list(10)
+            deferred = await db.lead_deferred_actions.count_documents({"conversation_id": det["conversation_id"], "kind": "intake_text", "created_at": {"$gte": t0}})
+            link = await invite_link(db, dict(task))
+            if not msgs:
+                await mark_invite_sent(db, str(task["_id"]), link)
+                task = await db.tasks.find_one({"_id": task["_id"]})
+            return task, msgs, deferred, link
+        task, msgs, deferred, link = run(check())
+        assert task["appointment_type"] == "test_drive" and task["has_time"] and task.get("invite_token")
+        assert deferred == 0, "quiet hand-off must not queue the inbox first reply"
+        assert link.startswith("http") and task["invite_short_url"] == link and task.get("invite_sent_at") and "invite_dirty_at" not in task
+        if msgs:
+            assert "Tap to add it to your calendar: " + link in msgs[-1]["content"] and "You're booked: Test drive (Red Bronco)" in msgs[-1]["content"]
+            assert "calendar" in (bj.get("reply") or "").lower()
+        else:
+            assert "team member will be ready" in (bj.get("reply") or "")
+        code = link.rstrip("/").split("/")[-1]
+        page = requests.get(f"{BASE}/api/public/appt/{task['invite_token']}", timeout=30)
+        assert page.status_code == 200 and "You're all set" in page.text and "Add to Apple Calendar" in page.text
+        ics = requests.get(f"{BASE}/api/public/appt/{task['invite_token']}.ics", timeout=30)
+        assert ics.status_code == 200 and "BEGIN:VEVENT" in ics.text
+        s = requests.get(f"{BASE}/api/s/{code}", timeout=30, allow_redirects=False)
+        assert s.status_code in (200, 302, 307) and task["invite_token"] in (s.text + (s.headers.get("location") or ""))
+
+    def test_book_in_process_store_line_sends_link_once(self, key, mgr):
+        """Happy path with a working store line (Twilio patched): ONE confirmation text with the link from the store line,
+        task marked invited so the 45 s rep-number auto-invite is cancelled, Jessi's reply mentions the calendar link."""
+        j = _start_chat(key, "b9")
+        sid = j["sid"]
+        sl = requests.get(f"{BASE}/api/w/{key}/chat/{sid}/slots", timeout=30).json()
+        day = sl["days"][0]
+        sent = []
+
+        async def fake_send_sms(to_phone, message, media_urls=None, from_phone=None, **kw):
+            sent.append({"to": to_phone, "from": from_phone, "body": message})
+            return {"success": True, "message_sid": "SMqa", "sid": "SMqa", "mock": True}
+
+        async def flow():
+            from routers.database import get_db
+            from services import twilio_service, widget_chat, widgets as W
+            db = get_db()
+            w = await W.load(db, key)
+            session = await db.widget_chats.find_one({"sid": sid})
+            orig = twilio_service.send_sms
+            twilio_service.send_sms = fake_send_sms
+            try:
+                res = await widget_chat.book(db, w, session, {"kind": "service", "date": day["date"], "time": day["slots"][-1]["v"],
+                                                              "vehicle": "2019 F-150", "name": "QA Servicer", "phone": "5005550043"}, "9.9.9.9")
+            finally:
+                twilio_service.send_sms = orig
+            s2 = await db.widget_chats.find_one({"sid": sid})
+            task = await db.tasks.find_one({"_id": ObjectId(str(s2["booking"]["task_id"]))})
+            conv = await db.conversations.find_one({"_id": ObjectId(str(s2["conversation_id"]))}, {"rep_phone": 1})
+            msgs = await db.messages.find({"conversation_id": str(s2["conversation_id"]), "is_intake_text": True}).to_list(10)
+            return res, task, conv, msgs
+        from bson import ObjectId
+        res, task, conv, msgs = run(flow())
+        assert res["booked"] is True and "link to add it to your calendar" in res["reply"]
+        confirm = [m for m in sent if "You're booked" in m["body"]]
+        assert len(confirm) == 1 and len(sent) == 1, sent
+        assert confirm[0]["from"] == conv["rep_phone"] == "+15005550200" and confirm[0]["to"] == "+15005550043"
+        assert "Service visit (2019 F-150)" in confirm[0]["body"] and "Tap to add it to your calendar: http" in confirm[0]["body"]
+        link = confirm[0]["body"].split("calendar: ")[1].split()[0]
+        assert task["appointment_type"] == "service" and task["invite_short_url"] == link and task.get("invite_sent_at")
+        assert "invite_dirty_at" not in task and task["invite_channels"] == ["sms"]
+        assert any(m["content"] == confirm[0]["body"] for m in msgs)
+        page = requests.get(f"{BASE}/api/public/appt/{task['invite_token']}", timeout=30)
+        assert page.status_code == 200 and "Service visit" not in page.text and "You're all set" in page.text
+        time.sleep(1)
+
 
     def test_bad_time_bad_date_missing_phone(self, key):
         j = _start_chat(key, "b3")

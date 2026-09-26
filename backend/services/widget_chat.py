@@ -385,9 +385,8 @@ async def give_contact(db, w: dict, session: dict, body: dict, ip: str) -> dict:
     return {**public_state(session), "reply": text, "handoff": True}
 
 
-async def _handoff(db, w: dict, session: dict, phone: str, name: str, cfg: dict, store: dict, reason: str = "", quiet: bool = False, intake_text: Optional[str] = None) -> str:
-    """Create the lead through the intake pipeline; the transcript lands in the thread; the visitor gets the store-line text
-    (none when quiet, the booking confirmation when intake_text is given)."""
+async def _handoff(db, w: dict, session: dict, phone: str, name: str, cfg: dict, store: dict, reason: str = "", quiet: bool = False) -> str:
+    """Create the lead through the intake pipeline; the transcript lands in the thread; the visitor gets the store-line text (none when quiet)."""
     first, last = W.split_name(name or "Website Visitor")
     reason = reason or session.get("handoff_reason") or "asked for a person"
     source = await db.lead_sources.find_one({"_id": ObjectId(w["lead_source_id"])}) if w.get("lead_source_id") else None
@@ -407,8 +406,7 @@ async def _handoff(db, w: dict, session: dict, phone: str, name: str, cfg: dict,
     store_name = store.get("name") or "our team"
     if quiet:
         src["intake_text"] = src["after_hours_text"] = ""
-    elif intake_text:
-        src["intake_text"] = src["after_hours_text"] = intake_text
+        normalized["no_intake_text"] = True
     else:
         src["intake_text"] = (cfg["routing"].get("chat_intake_text") or "").replace("{{first_name}}", first).replace("{first_name}", first).replace("{{store_name}}", store_name).replace("{store_name}", store_name)
     from routers.lead_intake import process_inbound_lead
@@ -484,6 +482,28 @@ async def _booking_rep(db, session: dict, cfg: dict) -> Optional[str]:
     return str(reps[0]) if reps else None
 
 
+async def _text_booked(db, session: dict, uid: Optional[str], phone: str, body: str) -> bool:
+    """Booking confirmation from the thread's line (store line, else the rep's number); logged on the thread so replies land there."""
+    conv_id = str(session.get("conversation_id") or "")
+    conv = await db.conversations.find_one({"_id": ObjectId(conv_id)}, {"rep_phone": 1}) if ObjectId.is_valid(conv_id) else None
+    frm = (conv or {}).get("rep_phone") or ""
+    if not frm and uid and ObjectId.is_valid(uid):
+        rep = await db.users.find_one({"_id": ObjectId(uid)}, {"twilio_number": 1, "mvpline_number": 1})
+        frm = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number") or ""
+    frm = frm or os.environ.get("TWILIO_PHONE_NUMBER", "")
+    if conv:
+        from routers.lead_intake import _send_intake_sms
+        res = await _send_intake_sms(db, conv_id, phone, frm, body)
+        if res.get("success") and not conv.get("rep_phone") and frm:
+            await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"rep_phone": frm}})
+    else:
+        from services.twilio_service import send_sms
+        res = await send_sms(phone, body, from_phone=frm or None)
+    if not res.get("success"):
+        logger.warning(f"[WidgetChat] {session['sid']} booking text failed: {res.get('error')}")
+    return bool(res.get("success"))
+
+
 async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
     if not W.allow(ip, "lead", 5):
         raise ValueError("Please wait a minute before sending again.")
@@ -511,16 +531,17 @@ async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
     first = W.split_name(name)[0]
     store_name = store.get("name") or "the store"
     what = kind_label + (f" ({vehicle})" if vehicle else "")
-    confirm = f"Hi {first}, {store_name} here. You're booked: {what} on {when}. Reply here if anything changes. See you then!"
     if not session.get("contact_id"):
-        await _handoff(db, w, session, phone, name, cfg, store, reason=f"booked a {kind_label.lower()}", intake_text=confirm)
+        await _handoff(db, w, session, phone, name, cfg, store, reason=f"booked a {kind_label.lower()}", quiet=True)
     uid = await _booking_rep(db, session, cfg)
     booking = {"kind": kind, "kind_label": kind_label, "date": d, "time": t, "when_label": when, "vehicle": vehicle, "start": start.isoformat(),
                "user_id": uid, "appointment_id": None, "task_id": None, "created_at": _now()}
+    link = ""
     if uid:
         try:
             from routers.calendar import create_appointment_from_ai
             from routers.tasks import create_task
+            from services.calendar_invite import invite_link
             title = f"{kind_label}: {name}" + (f" · {vehicle}" if vehicle else "")
             a = await create_appointment_from_ai(uid, {"contact_id": session.get("contact_id"), "conversation_id": session.get("conversation_id"), "contact_name": name, "contact_phone": phone,
                                                       "title": title, "start_time": start.isoformat(), "end_time": (start + timedelta(minutes=30)).isoformat(), "location": store_name,
@@ -529,13 +550,24 @@ async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
                                          "appointment_type": kind, "action_type": "manual", "due_date": start.astimezone(timezone.utc).isoformat(), "has_time": True, "priority": "high"})
             booking["appointment_id"] = (a or {}).get("appointment_id")
             booking["task_id"] = (tk or {}).get("_id") or (tk or {}).get("id")
+            task = await db.tasks.find_one({"_id": ObjectId(str(booking["task_id"]))}) if booking["task_id"] else None
+            if task and task.get("contact_id"):
+                link = await invite_link(db, task)
         except Exception as e:
             logger.warning(f"[WidgetChat] booking calendar/task failed: {e}")
+    confirm = (f"Hi {first}, {store_name} here. You're booked: {what} on {when}. "
+               + (f"Tap to add it to your calendar: {link}\n" if link else "") + "Reply here if anything changes. See you then!")
+    texted = await _text_booked(db, session, uid, phone, confirm)
+    if texted and link:
+        from services.calendar_invite import mark_invite_sent
+        await mark_invite_sent(db, str(booking["task_id"]), link)
     if session.get("conversation_id") and ObjectId.is_valid(str(session["conversation_id"])):
         await db.messages.insert_one({"conversation_id": session["conversation_id"], "contact_id": session.get("contact_id"), "sender": "contact", "direction": "inbound", "channel": "webchat",
                                       "type": "webchat_booking", "content": f"Booked in the web chat: {what} on {when}.", "read": False, "timestamp": _now(), "created_at": _now(), "webchat_sid": session["sid"]})
         await db.conversations.update_one({"_id": ObjectId(session["conversation_id"])}, {"$set": {"last_message_at": _now()}})
-    text = f"You're all set, {first}. {what} on {when}. {store_name} just texted you a confirmation and a team member will be ready for you. Anything else I can help with?"
+    tail = (f"{store_name} just texted you a confirmation{' with a link to add it to your calendar' if link else ''}, and a team member will be ready for you."
+            if texted else "A team member will be ready for you.")
+    text = f"You're all set, {first}. {what} on {when}. {tail} Anything else I can help with?"
     session["messages"] = list(session.get("messages") or []) + [_msg("jessi", text)]
     session.update({"booking": booking, "offer_booking": False})
     await _save(db, session)

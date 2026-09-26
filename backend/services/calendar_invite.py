@@ -18,7 +18,7 @@ from utils.activity_log import log_activity
 
 logger = logging.getLogger(__name__)
 
-INVITE_TYPES = ("appointment", "test_drive", "delivery", "meeting")
+INVITE_TYPES = ("appointment", "test_drive", "delivery", "meeting", "service", "visit")
 DURATION_MIN = 60
 AUTO_SOURCES = ("manual", "call_extraction")  # text-extracted appointments wait for the rep to tap Send
 REMINDER_HOUR = 8
@@ -157,6 +157,20 @@ async def _short_link(db, task: dict, token: str) -> str:
         return url
 
 
+async def invite_link(db, task: dict) -> str:
+    """The customer's Add-to-Calendar link for a task, minted once and reused."""
+    return task.get("invite_short_url") or await _short_link(db, task, await ensure_token(db, task))
+
+
+async def mark_invite_sent(db, task_id: str, link: str) -> None:
+    """A booking flow already texted the link itself: record it and cancel the pending auto-invite."""
+    now = datetime.now(timezone.utc)
+    await db.tasks.update_one({"_id": ObjectId(task_id)}, {
+        "$set": {"invite_short_url": link, "invite_sent_at": now, "invite_attempted_at": now, "invite_channels": ["sms"],
+                 "invite_sms_status": "sent", "invite_email_status": "skipped", "invite_last_reason": "booked", "invite_sequence": 0},
+        "$unset": {"invite_dirty_at": ""}})
+
+
 async def _conversation(db, ctx: dict) -> dict | None:
     """Same (rep_phone, contact_phone) key the Twilio webhook uses, so the customer's reply lands in this thread."""
     task, user = ctx["task"], ctx["user"]
@@ -271,8 +285,7 @@ async def send_calendar_invite(task_id: str, *, reason: str = "booked", force: b
     updated = reason == "updated"
     seq = int(task.get("invite_sequence") or 0) + (1 if updated else 0)
     task["invite_sequence"] = seq
-    token = await ensure_token(db, task)
-    link = task.get("invite_short_url") or await _short_link(db, task, token)
+    link = await invite_link(db, task)
 
     sms = await _text_customer(db, ctx, _sms_body(ctx, link, updated), "calendar_invite")
     email = await _email_customer(ctx, link, updated)

@@ -176,7 +176,7 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
     } catch (e: any) { showToast?.(e?.response?.data?.detail || 'Could not send the invite', 'error'); }
     finally { setSendingInvite(false); }
   };
-  const canInvite = (t: any) => taskKind(t) === 'appointment' && t.has_time && !!(contact?.phone || contact?.email);
+  const canInvite = (t: any) => ['appointment', 'test_drive', 'delivery', 'meeting', 'service', 'visit'].includes(taskKind(t)) && t.has_time && !!(contact?.phone || contact?.email);
 
   const fw = featured ? whenLabel(featured) : null;
   const fKind = featured ? taskKind(featured) : 'task';

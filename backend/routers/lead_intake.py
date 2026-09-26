@@ -523,6 +523,8 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     # A source pointed at a shared inbox inherits its members, routing, first reply and number
     from services.inboxes import apply_inbox
     source = await apply_inbox(db, source)
+    if normalized.get("no_intake_text"):
+        source = {**source, "intake_text": "", "after_hours_text": ""}  # the caller texts the lead itself (web chat booking / rep save)
 
     phone = normalized.get("phone", "")
     email = normalized.get("email", "")
