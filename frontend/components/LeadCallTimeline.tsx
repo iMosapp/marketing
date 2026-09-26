@@ -145,7 +145,8 @@ export const LeadCallTimeline = ({ conversationId, colors, headless, forceOpen, 
   const isOwner = !!data?.claimed_by && data.claimed_by === user?._id;
   const showKeep = !!releaseAt && !ret.resolved && !ret.released_at && (isOwner || ['super_admin', 'org_admin', 'store_manager', 'manager', 'admin'].includes(user?.role || ''));
   const summary = ready ? summarizeLead(data, minsLeft, showKeep) : null;
-  useEffect(() => { onSummary?.(summary); }, [summary?.title, summary?.sub, summary?.tone, summary?.urgent, summary?.receivedAt, ready]);  // eslint-disable-line react-hooks/exhaustive-deps
+  // Report only settled states (never the loading gap), so the parent strip does not flicker while a fetch is in flight.
+  useEffect(() => { if (ready) onSummary?.(summary); else if (hidden) onSummary?.(null); }, [summary?.title, summary?.sub, summary?.tone, summary?.urgent, summary?.receivedAt, ready, hidden]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!ready || headless) return null;
   const job = data.job;

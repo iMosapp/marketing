@@ -45,15 +45,12 @@ export const ThreadStatusStrip = ({ conversationId, isInternetLead, closed, kbOp
     if (lead.urgent || fresh) items.push({ key: 'lead', tone: lead.tone, icon: lead.hasJob ? 'call' : 'chatbubbles-outline', title: lead.title, sub: lead.sub, muted: !lead.urgent });
   }
 
-  const timeline = isInternetLead && conversationId ? (
-    <LeadCallTimeline conversationId={conversationId} colors={colors} headless={!expanded || kbOpen} forceOpen={expanded} onToggle={() => setExpanded(false)} onSummary={setLead} />
-  ) : null;
-
-  if (kbOpen || closed || !items.length) return <>{timeline}</>;
+  const show = !kbOpen && !closed && items.length > 0;
   const top = items[0];
   const rest = items.slice(1).filter(i => i.key !== 'lead');
   const more = items.length - 1;
   const canExpand = items.length > 1 || !!lead;
+  const open = show && expanded;
   const row = (i: Item, header?: boolean) => (
     <View key={i.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 12, marginBottom: header ? 4 : 6, marginTop: header ? 6 : 0, paddingLeft: 12, paddingRight: 8, paddingVertical: header && !expanded ? 0 : 10, minHeight: 44, borderRadius: 14, backgroundColor: i.muted ? colors.surface : i.tone + '14', borderWidth: 1, borderColor: i.muted ? colors.border : i.tone + '45' }} {...tid(`thread-status-row-${i.key}`)}>
       <Ionicons name={i.icon} size={16} color={i.muted ? colors.textSecondary : i.tone} />
@@ -75,15 +72,14 @@ export const ThreadStatusStrip = ({ conversationId, isInternetLead, closed, kbOp
     </View>
   );
 
+  // The timeline always renders in the same slot (last child) so it never remounts and refetches when the strip appears or empties.
   return (
     <View {...tid('thread-status-strip')}>
-      {expanded && top.key === 'lead' ? null : row(top, true)}
-      {expanded ? (
-        <View {...tid('thread-status-details')}>
-          {rest.map(i => row(i))}
-          {timeline}
-        </View>
-      ) : timeline}
+      {show && !(open && top.key === 'lead') ? row(top, true) : null}
+      {open ? <View {...tid('thread-status-details')}>{rest.map(i => row(i))}</View> : null}
+      {isInternetLead && conversationId ? (
+        <LeadCallTimeline conversationId={conversationId} colors={colors} headless={!open} forceOpen={open} onToggle={() => setExpanded(false)} onSummary={setLead} />
+      ) : null}
     </View>
   );
 };
