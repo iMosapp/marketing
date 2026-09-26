@@ -23,6 +23,7 @@ import { WebSafeButton } from '../../components/WebSafeButton';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+import { ListSearch } from '../../components/common/ListSearch';
 
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 export default function OrganizationsScreen() {
@@ -36,7 +37,6 @@ export default function OrganizationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [partners, setPartners] = useState<any[]>([]);
@@ -244,37 +244,10 @@ export default function OrganizationsScreen() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScreenHeader title="Organizations" testID="organizations-header" right={<View style={{ flexDirection: 'row' }}><HeaderIconButton icon="search" onPress={() => setShowSearch(!showSearch)} testID="organizations-search-btn" /><HeaderIconButton icon="add-circle" onPress={() => setShowCreateModal(true)} testID="organizations-add-btn" /></View>} />
+      <ScreenHeader title="Organizations" testID="organizations-header" right={<HeaderIconButton icon="add-circle" onPress={() => setShowCreateModal(true)} testID="organizations-add-btn" />} />
       
-      {/* Search Bar */}
-      {showSearch && (
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color={colors.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by name, email, city..."
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-          {searchQuery && (
-            <Text style={styles.searchResultCount}>
-              {filteredOrganizations.length} result{filteredOrganizations.length !== 1 ? 's' : ''}
-            </Text>
-          )}
-        </View>
-      )}
-      
+      <ListSearch value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, email, city…" testID="organizations-search-input" count={filteredOrganizations.length} total={organizations.length} />
+
       {/* List */}
       {loading ? (
         <View style={styles.loadingContainer}>

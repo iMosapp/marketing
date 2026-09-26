@@ -7,6 +7,7 @@ import api from '../../../services/api';
 import { useThemeStore } from '../../../store/themeStore';
 import { useToast } from '../../../components/common/Toast';
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
+import { ListSearch } from '../../../components/common/ListSearch';
 import { GOLD, tid, errText, timeAgo } from '../../../components/inbox/ownership';
 
 const Door = ({ on, label, colors }: { on: boolean; label: string; colors: any }) => (
@@ -22,6 +23,7 @@ export default function WebsiteWidgets() {
   const { showToast } = useToast();
   const [data, setData] = useState<any>(null);
   const [creating, setCreating] = useState<string | null>(null);
+  const [q, setQ] = useState('');
 
   const load = useCallback(async () => {
     try { setData((await api.get('/widgets')).data); }
@@ -39,15 +41,21 @@ export default function WebsiteWidgets() {
     finally { setCreating(null); }
   };
 
-  const widgets: any[] = data?.widgets || [];
-  const free: any[] = (data?.stores || []).filter((s: any) => !s.has_widget);
+  const allWidgets: any[] = data?.widgets || [];
+  const allFree: any[] = (data?.stores || []).filter((s: any) => !s.has_widget);
+  const term = q.trim().toLowerCase();
+  const hit = (...vals: any[]) => !term || vals.some(v => String(v || '').toLowerCase().includes(term));
+  const widgets = allWidgets.filter(w => hit(w.store_name, w.name, w.key, w.last_seen_host));
+  const free = allFree.filter((s: any) => hit(s.name));
+  const showSearch = allWidgets.length + allFree.length > 3;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScreenHeader title="Website Widget" subtitle="Text Us and Call Me Now on your own site" testID="widgets-header" />
+      {data && showSearch ? <ListSearch value={q} onChange={setQ} placeholder="Search stores, widget keys, sites…" testID="widgets-search-input" count={widgets.length + free.length} total={allWidgets.length + allFree.length} /> : null}
       {!data ? <ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /> : (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80, gap: 14 }}>
-          {widgets.length === 0 && (
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80, gap: 14 }} keyboardShouldPersistTaps="handled">
+          {widgets.length === 0 && !term && (
             <View style={{ alignItems: 'center', paddingVertical: 30, paddingHorizontal: 20, gap: 12 }} {...tid('widgets-empty')}>
               <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name="chatbubble-ellipses" size={34} color={GOLD} />
@@ -89,7 +97,10 @@ export default function WebsiteWidgets() {
               ))}
             </View>
           )}
-          {data.can_manage && free.length === 0 && widgets.length === 0 && (
+          {term && widgets.length === 0 && free.length === 0 ? (
+            <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }} {...tid('widgets-search-empty')}>Nothing here matches "{q.trim()}".</Text>
+          ) : null}
+          {data.can_manage && !term && free.length === 0 && widgets.length === 0 && (
             <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }} {...tid('widgets-no-store')}>Your account is not linked to a store yet, so there is nothing to attach a widget to.</Text>
           )}
         </ScrollView>

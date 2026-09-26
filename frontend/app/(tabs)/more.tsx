@@ -557,6 +557,7 @@ export default function MoreScreen() {
   // ============================================================
   if (isSuperAdmin || isPartner) {
     const items: MenuItem[] = [
+      { icon: 'search', title: 'Find Anything', subtitle: 'Search organizations, accounts, people, widgets and lead sources', onPress: () => router.push('/admin/search' as any), color: '#C9A962' },
       { icon: 'rocket', title: 'Onboarding Hub', subtitle: 'Create & onboard new accounts', onPress: () => router.push('/admin/onboarding-hub' as any), color: '#C9A962' },
       { icon: 'pulse', title: 'Account Health', subtitle: 'Retention dashboard & reports', onPress: () => router.push('/admin/account-health' as any), color: '#00C7BE' },
       ...(isSuperAdmin ? [

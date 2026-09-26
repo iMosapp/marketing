@@ -19,6 +19,7 @@ import { WebModal } from '../../components/WebModal';
 
 import { useThemeStore } from '../../store/themeStore';
 import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+import { ListSearch } from '../../components/common/ListSearch';
 
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 interface PendingUser {
@@ -57,6 +58,9 @@ export default function PendingUsersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const term = searchQuery.trim().toLowerCase();
+  const shownUsers = term ? pendingUsers.filter(u => [u.name, u.email, u.phone, u.organization_name, u.requested_role].some(v => String(v || '').toLowerCase().replace(/_/g, ' ').includes(term))) : pendingUsers;
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   
@@ -231,6 +235,7 @@ export default function PendingUsersScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScreenHeader title="Pending Users" subtitle={`${pendingUsers.length} waiting`} testID="pending-users-header" />
+      {pendingUsers.length > 3 ? <ListSearch value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, email, organization…" testID="pending-users-search-input" count={shownUsers.length} total={pendingUsers.length} /> : null}
       
       {/* Content */}
       {loading ? (
@@ -239,7 +244,8 @@ export default function PendingUsersScreen() {
         </View>
       ) : (
         <FlatList
-          data={pendingUsers}
+          data={shownUsers}
+          keyboardShouldPersistTaps="handled"
           renderItem={renderUser}
           keyExtractor={item => item._id}
           contentContainerStyle={styles.listContent}

@@ -22,6 +22,7 @@ import api from '../../services/api';
 import { showSimpleAlert, showAlert } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
 import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+import { ListSearch } from '../../components/common/ListSearch';
 import { FS } from '../../constants/typography';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -294,15 +295,19 @@ export default function UsersScreen() {
   };
 
   // Filter and group users - separate active and inactive
+  const matches = (user: any) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+    const digits = query.replace(/\D/g, '');
+    return (
+      user.name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query) ||
+      (digits.length >= 3 && String(user.phone || '').replace(/\D/g, '').includes(digits))
+    );
+  };
+  const matchCount = useMemo(() => users.filter(matches).length, [users, searchQuery]);
   const sections = useMemo(() => {
-    const filteredUsers = users.filter(user => {
-      if (!searchQuery.trim()) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        user.name?.toLowerCase().includes(query) ||
-        user.email?.toLowerCase().includes(query)
-      );
-    });
+    const filteredUsers = users.filter(matches);
 
     // Separate active and inactive users
     const activeUsers = filteredUsers.filter(u => u.is_active !== false);
@@ -412,27 +417,7 @@ export default function UsersScreen() {
         right={<HeaderIconButton icon="person-add" onPress={() => setShowAddModal(true)} testID="add-user-btn" />}
       />
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color={colors.textSecondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or email..."
-            placeholderTextColor={colors.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-            {...tid('user-search-input')}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} {...tid('user-search-clear')}>
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      <ListSearch value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, email or phone…" testID="user-search-input" count={matchCount} total={users.length} />
       
       {loading ? (
         <View style={styles.loadingContainer}>

@@ -487,6 +487,99 @@ async def create_store(store_data: StoreCreate, x_user_id: str = Header(None, al
     
     return store_dict
 
+@router.get("/search")
+async def admin_search(q: str = "", x_user_id: str = Header(None, alias="X-User-ID")):
+    """Find anything: organizations, accounts, team members, widgets and lead sources in one query, scoped by role."""
+    import re as _re
+    db = get_db()
+    user = await get_requesting_user(x_user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="Sign in first")
+    role = user.get("role", "user")
+    if role not in ("super_admin", "org_admin", "store_manager", "manager", "admin"):
+        raise HTTPException(status_code=403, detail="Managers and admins only")
+    q = (q or "").strip()
+    empty = {"q": q, "organizations": [], "stores": [], "users": [], "widgets": [], "lead_sources": []}
+    if len(q) < 2:
+        return empty
+    rx = {"$regex": _re.escape(q), "$options": "i"}
+    digits = _re.sub(r"\D", "", q)
+    phone_rx = {"$regex": digits, "$options": "i"} if len(digits) >= 3 else None
+    lim = 8
+
+    org_ids = None if role == "super_admin" else await get_scoped_organization_ids(user)
+    store_ids = None if role == "super_admin" else await get_scoped_store_ids(user)
+    store_oids = None if store_ids is None else [o for o in (safe_objectid(x) for x in store_ids) if o is not None]
+
+    # Organizations (super admin + org admins)
+    orgs = []
+    if role in ("super_admin", "org_admin"):
+        oq = {"$or": [{"name": rx}, {"city": rx}, {"state": rx}, {"admin_email": rx}]}
+        if org_ids is not None:
+            oq["_id"] = {"$in": [o for o in (safe_objectid(x) for x in org_ids) if o is not None]}
+        async for o in db.organizations.find(oq, {"name": 1, "city": 1, "state": 1, "admin_email": 1, "active": 1}).limit(lim):
+            orgs.append({"id": str(o["_id"]), "name": o.get("name"), "subtitle": ", ".join([x for x in (o.get("city"), o.get("state")) if x]) or (o.get("admin_email") or ""), "active": o.get("active", True)})
+
+    # Stores / accounts
+    sq = {"$or": [{"name": rx}, {"city": rx}, {"state": rx}, {"website": rx}] + ([{"phone": phone_rx}] if phone_rx else [])}
+    if store_oids is not None:
+        sq["_id"] = {"$in": store_oids}
+    stores = await db.stores.find(sq, {"name": 1, "city": 1, "state": 1, "organization_id": 1, "active": 1, "phone": 1}).limit(lim).to_list(lim)
+    org_names = {}
+    if stores:
+        oids = [o for o in (safe_objectid(s.get("organization_id")) for s in stores) if o is not None]
+        async for o in db.organizations.find({"_id": {"$in": oids}}, {"name": 1}):
+            org_names[str(o["_id"])] = o.get("name")
+    store_rows = [{"id": str(s["_id"]), "name": s.get("name"), "subtitle": " · ".join([x for x in (org_names.get(str(s.get("organization_id"))), ", ".join([y for y in (s.get("city"), s.get("state")) if y])) if x]), "active": s.get("active", True)} for s in stores]
+
+    # Team members
+    uq = {"$or": [{"name": rx}, {"email": rx}] + ([{"phone": phone_rx}] if phone_rx else [])}
+    if role == "org_admin":
+        uq["organization_id"] = {"$in": org_ids or []}
+    elif role != "super_admin":
+        uq["$and"] = [{"$or": [{"store_id": {"$in": store_ids or []}}, {"store_ids": {"$in": store_ids or []}}]}]
+    users = await db.users.find(uq, {"name": 1, "email": 1, "role": 1, "is_active": 1, "store_id": 1}).limit(lim).to_list(lim)
+    sn = {}
+    if users:
+        soids = [o for o in (safe_objectid(u.get("store_id")) for u in users) if o is not None]
+        async for st in db.stores.find({"_id": {"$in": soids}}, {"name": 1}):
+            sn[str(st["_id"])] = st.get("name")
+    user_rows = [{"id": str(u["_id"]), "name": u.get("name") or u.get("email"), "subtitle": " · ".join([x for x in ((u.get("role") or "user").replace("_", " "), sn.get(str(u.get("store_id"))), u.get("email")) if x]), "active": u.get("is_active", True)} for u in users]
+
+    # Website widgets: by key, host or the store's name
+    wq_or = [{"key": rx}, {"name": rx}, {"last_seen_host": rx}]
+    name_store_q = {"name": rx}
+    if store_oids is not None:
+        name_store_q["_id"] = {"$in": store_oids}
+    matched_store_ids = [str(s["_id"]) async for s in db.stores.find(name_store_q, {"_id": 1}).limit(50)]
+    if matched_store_ids:
+        wq_or.append({"store_id": {"$in": matched_store_ids}})
+    wq = {"$or": wq_or, "is_active": {"$ne": False}}
+    if store_ids is not None:
+        wq["store_id"] = {"$in": store_ids}
+    widgets = await db.widgets.find(wq, {"key": 1, "name": 1, "store_id": 1, "last_seen_host": 1, "last_seen_at": 1}).limit(lim).to_list(lim)
+    wsn = {}
+    if widgets:
+        woids = [o for o in (safe_objectid(w.get("store_id")) for w in widgets) if o is not None]
+        async for st in db.stores.find({"_id": {"$in": woids}}, {"name": 1}):
+            wsn[str(st["_id"])] = st.get("name")
+    widget_rows = [{"id": str(w["_id"]), "name": wsn.get(str(w.get("store_id"))) or w.get("name") or w.get("key"), "subtitle": (f"Live on {w['last_seen_host']}" if w.get("last_seen_host") else "Not installed yet") + f" · key {w.get('key')}", "active": True} for w in widgets]
+
+    # Lead sources
+    lq = {"name": rx}
+    if store_ids is not None:
+        lq["store_id"] = {"$in": store_ids}
+    sources = await db.lead_sources.find(lq, {"name": 1, "store_id": 1, "source_type": 1, "is_active": 1}).limit(lim).to_list(lim)
+    lsn = {}
+    if sources:
+        loids = [o for o in (safe_objectid(x.get("store_id")) for x in sources) if o is not None]
+        async for st in db.stores.find({"_id": {"$in": loids}}, {"name": 1}):
+            lsn[str(st["_id"])] = st.get("name")
+    source_rows = [{"id": str(x["_id"]), "name": x.get("name"), "subtitle": " · ".join([y for y in (lsn.get(str(x.get("store_id"))), (x.get("source_type") or "").replace("_", " ")) if y]), "active": x.get("is_active", True), "store_id": x.get("store_id")} for x in sources]
+
+    return {"q": q, "organizations": orgs, "stores": store_rows, "users": user_rows, "widgets": widget_rows, "lead_sources": source_rows}
+
+
 @router.get("/stores")
 async def list_stores(
     organization_id: Optional[str] = None,

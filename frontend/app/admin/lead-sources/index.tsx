@@ -19,6 +19,7 @@ import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
 import { showAlert } from '../../../services/alert';
 import { ScreenHeader, HeaderIconButton } from '../../../components/common/ScreenHeader';
+import { ListSearch } from '../../../components/common/ListSearch';
 
 const GOLD = '#C9A962';
 
@@ -43,6 +44,7 @@ export default function LeadSourcesScreen() {
   const { user } = useAuthStore();
 const { showToast } = useToast();
     const [sources, setSources] = useState<LeadSource[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -100,6 +102,9 @@ const { showToast } = useToast();
     if (ok) showToast(`${label} copied to clipboard`);
     else showAlert('Error', 'Could not copy to clipboard');
   };
+
+  const term = searchQuery.trim().toLowerCase();
+  const shown = term ? sources.filter(x => [x.name, x.description, (x as any).source_type, x.assignment_method].some(v => String(v || '').toLowerCase().replace(/_/g, ' ').includes(term))) : sources;
 
   const renderSource = ({ item }: { item: LeadSource }) => (
     <TouchableOpacity
@@ -167,8 +172,10 @@ const { showToast } = useToast();
       <ScreenHeader title="Lead Source Config" testID="lead-sources-header"
         right={<HeaderIconButton icon="add-circle" onPress={() => router.push('/admin/lead-sources/new')} testID="lead-sources-add-btn" />} />
 
+      {sources.length > 3 ? <ListSearch value={searchQuery} onChange={setSearchQuery} placeholder="Search lead sources…" testID="lead-sources-search-input" count={shown.length} total={sources.length} /> : null}
       <FlatList
-        data={sources}
+        data={shown}
+        keyboardShouldPersistTaps="handled"
         renderItem={renderSource}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}

@@ -22,6 +22,7 @@ import { WebSafeButton } from '../../components/WebSafeButton';
 
 import { useThemeStore } from '../../store/themeStore';
 import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+import { ListSearch } from '../../components/common/ListSearch';
 export default function StoresScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
@@ -31,7 +32,6 @@ export default function StoresScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [stores, setStores] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   
@@ -211,37 +211,10 @@ export default function StoresScreen() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScreenHeader title="Accounts" testID="accounts-header" right={<View style={{ flexDirection: 'row' }}><HeaderIconButton icon="search" onPress={() => setShowSearch(!showSearch)} testID="accounts-search-btn" /><HeaderIconButton icon="add-circle" onPress={() => setShowCreateModal(true)} testID="accounts-add-btn" /></View>} />
+      <ScreenHeader title="Accounts" testID="accounts-header" right={<HeaderIconButton icon="add-circle" onPress={() => setShowCreateModal(true)} testID="accounts-add-btn" />} />
       
-      {/* Search Bar */}
-      {showSearch && (
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color={colors.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by name, city, organization..."
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-          {searchQuery && (
-            <Text style={styles.searchResultCount}>
-              {totalFiltered} result{totalFiltered !== 1 ? 's' : ''}
-            </Text>
-          )}
-        </View>
-      )}
-      
+      <ListSearch value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, city, organization…" testID="accounts-search-input" count={totalFiltered} total={stores.length} />
+
       {/* List */}
       {loading ? (
         <View style={styles.loadingContainer}>

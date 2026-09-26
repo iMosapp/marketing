@@ -16,6 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { useThemeStore } from '../../store/themeStore';
+import { ListSearch } from '../../components/common/ListSearch';
 
 interface OrgItem {
   _id: string;
@@ -43,6 +44,9 @@ export default function PartnerOrgsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [orgs, setOrgs] = useState<OrgItem[]>([]);
   const [orgStores, setOrgStores] = useState<Record<string, StoreItem[]>>({});
+  const [orgSearch, setOrgSearch] = useState('');
+  const orgTerm = orgSearch.trim().toLowerCase();
+  const shownOrgs = orgTerm ? orgs.filter(o => o.name?.toLowerCase().includes(orgTerm) || (orgStores[o._id] || []).some(st => st.name?.toLowerCase().includes(orgTerm))) : orgs;
 
   // Link existing org
   const [showLinkOrg, setShowLinkOrg] = useState(false);
@@ -178,8 +182,10 @@ export default function PartnerOrgsScreen() {
         </TouchableOpacity>
       </View>
 
+      {orgs.length > 3 ? <ListSearch value={orgSearch} onChange={setOrgSearch} placeholder="Search organizations and accounts…" testID="partner-orgs-search-input" count={shownOrgs.length} total={orgs.length} /> : null}
       <ScrollView
         contentContainerStyle={s.scroll}
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />}
       >
         {/* Link existing org panel */}
@@ -235,7 +241,7 @@ export default function PartnerOrgsScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          orgs.map(org => {
+          shownOrgs.map(org => {
             const stores = orgStores[org._id] || [];
             return (
               <View key={org._id} style={s.orgCard} data-testid={`org-card-${org._id}`}>
