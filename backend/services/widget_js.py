@@ -84,8 +84,9 @@ var rule = null; (A.page_rules || []).some(function(r){ if (r && r.match && PATH
 var side = A.position === 'left' ? 'left' : 'right';
 var bubble = A.bubble_color || '#2196F3', fg = A.text_color || '#FFFFFF', panelBg = A.panel_color || '#FFFFFF', panelFg = A.panel_text || '#111111';
 var font = A.font === 'inherit' ? 'inherit' : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+var ox = A.offset_x == null ? 20 : +A.offset_x, oy = A.offset_y == null ? 20 : +A.offset_y, oyCss = 'calc(' + oy + 'px + env(safe-area-inset-bottom,0px))';
 var css = '\
-.imosw-root{position:fixed;z-index:2147483000;bottom:' + (A.offset_y || 20) + 'px;' + side + ':' + (A.offset_x || 20) + 'px;font-family:' + font + ';font-size:15px;line-height:1.4;color:' + panelFg + ';-webkit-font-smoothing:antialiased}\
+.imosw-root{position:fixed;z-index:2147483000;bottom:' + oyCss + ';' + side + ':calc(' + ox + 'px + env(safe-area-inset-' + side + ',0px));font-family:' + font + ';font-size:15px;line-height:1.4;color:' + panelFg + ';-webkit-font-smoothing:antialiased}\
 .imosw-root *{box-sizing:border-box;margin:0;padding:0}\
 .imosw-launch{display:flex;align-items:center;gap:10px;height:56px;padding:0 ' + (A.label_on && A.label ? '20px 0 16px' : '15px') + ';border:0;border-radius:999px;background:' + bubble + ';color:' + fg + ';cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.22);font-weight:700;font-size:16px;font-family:inherit;transition:transform .15s ease,box-shadow .15s ease}\
 .imosw-launch:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.26)}\
@@ -95,7 +96,7 @@ var css = '\
 .imosw-tuck svg{width:14px;height:14px;display:block;transform:' + (side === 'right' ? 'scaleX(-1)' : 'none') + '}\
 .imosw-root:hover .imosw-tuck,.imosw-tuck:focus-visible{opacity:1;transform:none}\
 @media (hover:none){.imosw-tuck{opacity:1;transform:none}}\
-.imosw-tab{display:none;position:fixed;bottom:' + (A.offset_y || 20) + 'px;' + side + ':0;width:30px;height:56px;border:0;padding:0;background:' + bubble + ';color:' + fg + ';cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.22);border-radius:' + (side === 'right' ? '999px 0 0 999px' : '0 999px 999px 0') + ';align-items:center;justify-content:center;transition:width .15s ease;animation:imosw-tab-in .25s ease}\
+.imosw-tab{display:none;position:fixed;bottom:' + oyCss + ';' + side + ':0;width:30px;height:56px;border:0;padding:0;background:' + bubble + ';color:' + fg + ';cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.22);border-radius:' + (side === 'right' ? '999px 0 0 999px' : '0 999px 999px 0') + ';align-items:center;justify-content:center;transition:width .15s ease;animation:imosw-tab-in .25s ease}\
 .imosw-tab:hover{width:40px}\
 .imosw-tab svg{width:18px;height:18px;display:block;transform:' + (side === 'right' ? 'none' : 'scaleX(-1)') + '}\
 .imosw-root.tucked .imosw-launch,.imosw-root.tucked .imosw-greet,.imosw-root.tucked .imosw-tuck{display:none}\
@@ -119,7 +120,7 @@ var css = '\
 .imosw-door b{display:block;font-size:15px}\
 .imosw-door span{display:block;font-size:12.5px;opacity:.7;margin-top:2px}\
 .imosw-lbl{display:block;font-size:12px;font-weight:700;opacity:.75;margin:10px 0 5px}\
-.imosw-in{width:100%;height:44px;border:1.5px solid rgba(0,0,0,.14);border-radius:10px;padding:0 12px;font-size:15px;font-family:inherit;color:inherit;background:transparent;outline:none}\
+.imosw-in{width:100%;height:44px;border:1.5px solid rgba(0,0,0,.14);border-radius:10px;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;background:transparent;outline:none}\
 .imosw-in:focus{border-color:' + bubble + '}\
 textarea.imosw-in{height:74px;padding:10px 12px;resize:none}\
 .imosw-btn{width:100%;height:48px;border:0;border-radius:12px;background:' + bubble + ';color:' + fg + ';font-weight:800;font-size:15px;cursor:pointer;margin-top:14px;font-family:inherit}\
@@ -166,7 +167,7 @@ textarea.imosw-in{height:74px;padding:10px 12px;resize:none}\
 .imosw-cform .imosw-btn{margin-top:4px;height:42px}\
 @keyframes imosw-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}\
 @keyframes imosw-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(0,0,0,.15)}50%{transform:scale(1.06);box-shadow:0 0 0 14px rgba(0,0,0,0)}}\
-@media (max-width:520px){.imosw-panel{position:fixed;left:8px;right:8px;bottom:8px;width:auto;max-width:none;max-height:calc(100vh - 16px);overflow:auto}}';
+@media (max-width:520px){.imosw-panel{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;max-width:none;max-height:calc(100vh - 16px);overflow:auto}}';
 document.head.appendChild(h('style', { html: css }));
 
 var root = h('div', { 'class': 'imosw-root', 'data-imos-widget': C.key });

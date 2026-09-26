@@ -45,6 +45,8 @@ export const LookTab = ({ form, set, colors, swatches, siteUrl, setSiteUrl, onMa
         <Label colors={colors} top>Corner of the screen</Label>
         <Chips options={[{ value: 'right', label: 'Bottom right', icon: 'arrow-forward' }, { value: 'left', label: 'Bottom left', icon: 'arrow-back' }]} value={a.position} onChange={v => set('appearance', { position: v })} colors={colors} testId="widget-position" />
         <Stepper label="Distance from the bottom" value={Number(a.offset_y)} onChange={v => set('appearance', { offset_y: v })} min={0} max={200} step={10} unit="px" colors={colors} testId="widget-offset-y" />
+        <Stepper label="Distance from the side" value={Number(a.offset_x ?? 20)} onChange={v => set('appearance', { offset_x: v })} min={0} max={120} step={10} unit="px" colors={colors} testId="widget-offset-x" />
+        <Hint colors={colors}>On phones the bubble also stays clear of the home bar on its own. Nudge these if it crowds a sticky button on your site.</Hint>
         <ToggleRow label="Hide on phones" hint="Skip the bubble on screens narrower than 520px (if your site already has a sticky call bar)." value={!!a.hide_mobile} onChange={v => set('appearance', { hide_mobile: v })} colors={colors} testId="widget-hide-mobile" />
         <ToggleRow label="Let visitors tuck it away" hint="A small arrow on the bubble slides it off the edge, leaving a slim tab they can tap to bring it back. Remembered on their device." value={a.tuck_on !== false} onChange={v => set('appearance', { tuck_on: v })} colors={colors} testId="widget-tuck-on" />
       </Section>
