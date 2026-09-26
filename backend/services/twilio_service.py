@@ -81,6 +81,12 @@ def _status_callback_url() -> Optional[str]:
     return f"{base}/api/webhooks/twilio/status"
 
 
+def _held_by_preview_guard(to_phone: str) -> bool:
+    """SMS_SEND_ONLY_TO (preview .env): comma list of number prefixes that may really receive texts; everyone else gets a mock success."""
+    allow = [p.strip() for p in os.environ.get("SMS_SEND_ONLY_TO", "").split(",") if p.strip()]
+    return bool(allow) and not any(to_phone.startswith(p) for p in allow)
+
+
 async def send_sms(
     to_phone: str,
     message: str,
@@ -119,6 +125,10 @@ async def send_sms(
         if blocked:
             logger.warning(f"[SMS] blocked from {from_phone}: {blocked}")
             return {"success": False, "error": blocked, "error_code": "not_ready", "mock": False}
+
+    if _held_by_preview_guard(to_phone):
+        logger.info(f"[SMS] preview guard: not sending to {to_phone} | {message[:60]}...")
+        return {"success": True, "message_sid": "GUARD_" + str(abs(hash(message + to_phone)))[:8], "sid": "GUARD_" + str(abs(hash(message + to_phone)))[:8], "mock": True, "guarded": True}
 
     if not TWILIO_ENABLED or not twilio_client:
         logger.info(f"[MOCK SMS] To: {to_phone} | from: {from_phone or 'messaging_svc'} | {message[:60]}...")

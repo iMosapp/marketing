@@ -1,5 +1,12 @@
 # CHANGELOG — iMOs App
 
+## Sep 26 2026 — "Who is Quinn?": preview scheduler texted the owner QA digest data; preview SMS guard added (COMPLETED; guard verified in-process, backend restarted, door-stats suite 4/4)
+- Forest got "Morning Forest, Jessi here. 1 of your new people is stuck in onboarding: Quinn (44h): the setup call" from (385) 444-3045, but production's Jessi Onboarding screen has no Quinn. Quinn QA-Onboard (+15005550077) was seeded in the PREVIEW DB by `tests/seed_jessi_onboarding_demo.py` (Sep 25); preview runs the same schedulers with live Twilio creds and Forest's real mobile on his preview user, so PREVIEW's `run_digests` texted him (users.jessi_digest_last at 14:04 UTC in preview confirms it).
+- Cleanup: `python tests/seed_jessi_onboarding_demo.py --wipe` (0 onboarding docs / QA users left in preview).
+- Guard: `services/twilio_service.py send_sms()` now honours `SMS_SEND_ONLY_TO` (comma list of allowed number prefixes): anything else returns a mock success `{mock: true, guarded: true}` and logs "[SMS] preview guard: not sending to ...". Preview `.env`: `SMS_SEND_ONLY_TO=+1500555,+18016349122` (Twilio test range + Forest). NOT set in production -> production unchanged. Same idea as `WIDGET_RING_DRY_RUN`.
+- RULE for agents: never run demo seeds that leave "waiting on them" people in preview without wiping them; preview texts are real unless guarded. Voice calls from preview are NOT guarded yet (only widget ring has DRY_RUN).
+- Ship: nothing to deploy (preview-only env + a guard that is inert without the env var). Deploy whenever convenient.
+
 ## Sep 26 2026 — Home "AI ON" pill: Cancel crashed the app (BUG FIX; tsc clean for both files; web check: dismissing the confirm leaves Home with AI ON)
 - User (production iPhone): tapping the AI ON pill -> "Pause ALL AI replies?" -> Cancel closed the app. `home.tsx toggleAiMaster` passed `'Pause AI'` as `showConfirm`'s 4th argument, which is `onCancel`, so the Cancel button's onPress was a string -> native TypeError -> crash (and the confirm button read "OK"). Now `showConfirm(title, msg, onConfirm, undefined, 'Pause AI')`.
 - Same tsc sweep: `app/auth/signup.tsx` had a local `showAlert` that shadowed the imported one and called ITSELF on native (infinite recursion right after a successful signup). Removed; the file now uses `services/alert.showAlert` (web/native aware) everywhere.

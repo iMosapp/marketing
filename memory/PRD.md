@@ -40,6 +40,7 @@ Every reply that changes code MUST end with a numbered "Your steps" block, exact
 State which of 2/3/4 are NOT needed this time so nothing is guessed.
 
 ## Pending / Backlog
+- **Preview SMS guard (Sep 26 2026) - DONE.** Preview `.env` `SMS_SEND_ONLY_TO=+1500555,+18016349122`: preview only really texts Twilio test numbers and Forest; all other sends return mock success. Quinn/Riley QA onboarding seeds wiped from preview. Details in CHANGELOG.md.
 - **AI ON pill Cancel crash (Sep 26 2026) - FIXED (home.tsx showConfirm arg order; also removed self-recursive showAlert in signup.tsx). USER VERIFICATION PENDING after eas update: tap AI ON -> Cancel stays in the app; OK now reads "Pause AI".**
 - **Widget tuck-away (Sep 26 2026) - DONE, verified on the demo page. USER VERIFICATION PENDING after Deploy: on your site hover the bubble, tap the small › badge, the bubble slides into a slim edge tab; tap the tab to bring it back and open it.** Toggle in Look tab ("Let visitors tuck it away"). Details in CHANGELOG.md.
 - **Chat Now booking texts the calendar link (Sep 26 2026) - BUG FIX DONE, pytest 16/16 + 9/9. USER VERIFICATION PENDING in production after Deploy: book a visit in the website chat, the ONE confirmation text from the store line should read "...You're booked: Store visit on Mon Sep 28 at 10 AM. Tap to add it to your calendar: https://app.imonsocial.com/api/s/XXXX".** Root cause + details in CHANGELOG.md. Marketing `build/vercel.json` now redirects `/s/:code` (needed before setting `SHORT_URL_DOMAIN`).
