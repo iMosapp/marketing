@@ -48,7 +48,7 @@ DEFAULTS = {
         "icon": "text", "icon_url": "", "label_on": True, "label": "Text Us", "position": "right", "offset_x": 20, "offset_y": 20,
         "bubble_color": "#2196F3", "text_color": "#FFFFFF", "panel_color": "#FFFFFF", "panel_text": "#111111", "radius": 20,
         "greeting_on": False, "greeting": "Hi there! Have a question? Text us and a real person replies in minutes.", "greeting_delay_s": 4,
-        "avatar_url": "", "font": "inherit", "hide_mobile": False,
+        "avatar_url": "", "font": "inherit", "hide_mobile": False, "page_rules": [],
     },
     "doors": {
         "text": {"on": True, "label": "Text us", "intro": "Text with a real person. We usually reply within a few minutes.", "button": "Send text",
@@ -56,7 +56,10 @@ DEFAULTS = {
         "call": {"on": True, "label": "Call me now", "intro": "Enter your number and one of us calls you back right away.", "button": "Call me now",
                  "success_ringing": "Ringing the team…", "success_connected": "Connecting you to {rep}…",
                  "missed": "Everyone is tied up this second. We just texted you instead.", "after_hours": "We're closed right now. We just texted you and we'll call when we open."},
+        "chat": {"on": True, "label": "Chat now", "intro": "Ask Jessi about hours, what's in stock or the store. A real person is one tap away.", "button": "Start chat",
+                 "placeholder": "Type your question", "human": "Talk to a person"},
     },
+    "kb": {"welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False},
     "copy": {
         "title": "How can we help?", "name_label": "Name", "phone_label": "Mobile number", "message_label": "Message (optional)",
         "optin": "By submitting, you agree to receive texts from {store}. Message and data rates may apply. Reply STOP to opt out.",
@@ -67,6 +70,7 @@ DEFAULTS = {
         "call_intake_text": "Hi {{first_name}}, this is {{store_name}}. We're calling you right now from this number, pick up and let's talk!",
         "after_hours_text": "Hi {{first_name}}, thanks for reaching out to {{store_name}}. We're closed right now but we'll be on this first thing when we open. Feel free to reply here in the meantime.",
         "missed_text": "Hi {{first_name}}, {{store_name}} here. Sorry, everyone was on the phone when you asked for a call. Reply here or tell us a good time and we'll call you right back.",
+        "chat_intake_text": "Hi {{first_name}}, {{store_name}} here. Jessi handed your web chat to me, a real person. I'm reading it now, what's the best way to help?",
     },
     "hours": {"mode": "store"},
 }
@@ -98,13 +102,31 @@ def normalize_config(cfg: dict) -> dict:
     a["offset_x"] = max(0, min(int(a.get("offset_x") or 20), 120))
     a["offset_y"] = max(0, min(int(a.get("offset_y") or 20), 200))
     a["greeting_delay_s"] = max(0, min(int(a.get("greeting_delay_s") if a.get("greeting_delay_s") is not None else 4), 120))
+    rules = []
+    for r_ in (a.get("page_rules") or [])[:12]:
+        if isinstance(r_, dict) and str(r_.get("match") or "").strip() and str(r_.get("greeting") or "").strip():
+            rules.append({"match": str(r_["match"]).strip()[:120], "greeting": str(r_["greeting"]).strip()[:200],
+                          "door": r_.get("door") if r_.get("door") in ("text", "call", "chat") else ""})
+    a["page_rules"] = rules
+    kb = c["kb"]
+    kb["welcome"] = str(kb.get("welcome") or "")[:300]
+    kb["notes"] = str(kb.get("notes") or "")[:2000]
+    kb["share_listed_prices"] = bool(kb.get("share_listed_prices"))
+    kb["never"] = [str(x).strip()[:80] for x in (kb.get("never") or []) if str(x).strip()][:20]
+    specials = []
+    for sp in (kb.get("specials") or [])[:20]:
+        if isinstance(sp, dict) and str(sp.get("title") or "").strip():
+            ends = str(sp.get("ends") or "").strip()[:10]
+            specials.append({"id": str(sp.get("id") or secrets.token_hex(4)), "title": str(sp["title"]).strip()[:80], "details": str(sp.get("details") or "").strip()[:300],
+                             "ends": ends if re.match(r"^\d{4}-\d{2}-\d{2}$", ends) else ""})
+    kb["specials"] = specials
     r = c["routing"]
     r["call_user_ids"] = [str(u) for u in (r.get("call_user_ids") or []) if u][:25]
     r["text_send_from"] = "rep_line" if r.get("text_send_from") == "rep_line" else "store_line"
     r["assignment_method"] = r["assignment_method"] if r["assignment_method"] in ("round_robin", "jump_ball", "weighted_round_robin") else "round_robin"
     r["ring_seconds"] = max(15, min(int(r.get("ring_seconds") or 40), 90))
     c["hours"]["mode"] = "always" if c["hours"].get("mode") == "always" else "store"
-    for d in ("text", "call"):
+    for d in ("text", "call", "chat"):
         c["doors"][d]["on"] = bool(c["doors"][d].get("on"))
         for k, v in list(c["doors"][d].items()):
             if isinstance(v, str):
@@ -153,8 +175,11 @@ def serialize(w: dict, store: Optional[dict] = None) -> dict:
 
 def public_config(w: dict, store: Optional[dict], preview: bool = False) -> dict:
     cfg = normalize_config(w)
-    return {"key": w["key"], "api": f"{app_url()}/api/w/{w['key']}", "store_name": (store or {}).get("name") or w.get("store_name") or "",
-            "appearance": cfg["appearance"], "doors": {d: {k: v for k, v in cfg["doors"][d].items()} for d in cfg["doors"]}, "copy": cfg["copy"], "preview": preview}
+    out = {"key": w["key"], "api": f"{app_url()}/api/w/{w['key']}", "store_name": (store or {}).get("name") or w.get("store_name") or "",
+           "appearance": cfg["appearance"], "doors": {d: {k: v for k, v in cfg["doors"][d].items()} for d in cfg["doors"]}, "copy": cfg["copy"], "preview": preview}
+    if preview:
+        out["chat_welcome"] = cfg["kb"]["welcome"]
+    return out
 
 
 # ---------------------------------------------------------------- lead source behind the widget
@@ -241,7 +266,7 @@ def domain_ok(w: dict, page: str) -> bool:
 
 async def touch(db, w: dict, page: str, kind: str):
     upd = {"$set": {"last_seen_at": _now(), "last_seen_host": host_of(page) or w.get("last_seen_host")}}
-    field = {"load": "loads", "open": "opens", "greeting": "greetings", "lead": "leads"}.get(kind)
+    field = {"load": "loads", "open": "opens", "greeting": "greetings", "lead": "leads", "chat": "chat_starts"}.get(kind)
     if field:
         upd["$inc"] = {f"stats.{field}": 1}
     await db[COLL].update_one({"_id": w["_id"]}, upd)
@@ -302,6 +327,7 @@ async def stats(db, w: dict) -> dict:
             by_day[d][e["kind"] + "s"] += 1
     s = w.get("stats") or {}
     return {"loads": s.get("loads", 0), "opens": s.get("opens", 0), "text_leads": s.get("text_leads", 0), "call_requests": len(calls) if len(calls) < 200 else s.get("call_requests", len(calls)),
+            "chats": s.get("chats", 0), "chat_handoffs": s.get("chat_handoffs", 0),
             "calls_connected": len(connected), "calls_missed": len([c for c in calls if c.get("status") in ("missed", "missed_customer")]),
             "calls_after_hours": len([c for c in calls if c.get("status") == "after_hours"]), "avg_seconds_to_connect": avg,
             "leads_7d": leads_week, "by_day": by_day, "open_rate": round(100 * s.get("opens", 0) / s["loads"]) if s.get("loads") else None}

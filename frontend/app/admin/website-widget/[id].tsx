@@ -11,14 +11,15 @@ import { GOLD, tid, errText } from '../../../components/inbox/ownership';
 import { WidgetPreview } from '../../../components/widget/WidgetPreview';
 import { LookTab } from '../../../components/widget/LookTab';
 import { DoorsTab } from '../../../components/widget/DoorsTab';
+import { JessiTab } from '../../../components/widget/JessiTab';
 import { RoutingTab } from '../../../components/widget/RoutingTab';
 import { InstallCard } from '../../../components/widget/InstallCard';
 import { StatsCard } from '../../../components/widget/StatsCard';
 import { Swatch } from '../../../components/widget/parts';
 
-type Tab = 'look' | 'doors' | 'routing' | 'install';
-const TABS: [Tab, string][] = [['look', 'Look'], ['doors', 'Doors'], ['routing', 'Routing'], ['install', 'Install']];
-const pick = (w: any) => ({ name: w.name, appearance: w.appearance, doors: w.doors, copy: w.copy, routing: w.routing, hours: w.hours });
+type Tab = 'look' | 'doors' | 'jessi' | 'routing' | 'install';
+const TABS: [Tab, string][] = [['look', 'Look'], ['doors', 'Doors'], ['jessi', 'Jessi'], ['routing', 'Routing'], ['install', 'Install']];
+const pick = (w: any) => ({ name: w.name, appearance: w.appearance, doors: w.doors, kb: w.kb, copy: w.copy, routing: w.routing, hours: w.hours });
 
 export default function WidgetEditor() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function WidgetEditor() {
   const { width } = useWindowDimensions();
   const [detail, setDetail] = useState<any>(null);
   const [form, setForm] = useState<any>(null);
+  const [facts, setFacts] = useState<any[]>([]);
   const [domains, setDomains] = useState('');
   const [tab, setTab] = useState<Tab>((tabParam as Tab) || 'look');
   const [saving, setSaving] = useState(false);
@@ -36,11 +38,12 @@ export default function WidgetEditor() {
   const [siteUrl, setSiteUrl] = useState('');
   const [matching, setMatching] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [previewPath, setPreviewPath] = useState('');
 
   const load = useCallback(async () => {
     try {
       const d = (await api.get(`/widgets/${id}`)).data;
-      setDetail(d); setForm(pick(d.widget)); setDomains((d.widget.domains || []).join(', '));
+      setDetail(d); setForm(pick(d.widget)); setDomains((d.widget.domains || []).join(', ')); setFacts(d.facts || []);
       if (!siteUrl) setSiteUrl(d.store_website || d.widget.last_seen_host || '');
     } catch (e: any) { showToast(errText(e, 'Could not load the widget'), 'error'); if (e?.response?.status === 404) router.back(); }
   }, [id]);
@@ -84,20 +87,21 @@ export default function WidgetEditor() {
   if (!form || !detail) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}><ScreenHeader title="Website Widget" testID="widget-editor-header" /><ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /></SafeAreaView>;
   const w = detail.widget;
   const wide = width >= 900;
-  const preview = <WidgetPreview widgetKey={w.key} config={{ appearance: form.appearance, doors: form.doors, copy: form.copy }} colors={colors} height={wide ? 620 : 380} />;
-  const canPreview = tab === 'look' || tab === 'doors';
+  const canManage = detail.can_manage !== false;
+  const canPreview = tab === 'look' || tab === 'doors' || tab === 'jessi';
+  const preview = <WidgetPreview widgetKey={w.key} config={{ appearance: form.appearance, doors: form.doors, copy: form.copy, kb: form.kb, path: tab === 'look' ? previewPath : '', door: tab === 'jessi' && form.doors?.chat?.on ? 'chat' : '' }} colors={colors} height={wide ? 620 : 380} />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScreenHeader title={w.store_name || w.name || 'Website Widget'} subtitle={w.installed ? `Live on ${w.last_seen_host}` : 'Not installed yet'} testID="widget-editor-header"
-        right={<HeaderTextButton label={saving ? 'Saving…' : 'Save'} onPress={save} disabled={saving || !dirty} testID="widget-save" color={dirty ? GOLD : colors.textSecondary} />} />
+        right={canManage ? <HeaderTextButton label={saving ? 'Saving…' : 'Save'} onPress={save} disabled={saving || !dirty} testID="widget-save" color={dirty ? GOLD : colors.textSecondary} /> : undefined} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={{ flex: 1, flexDirection: wide ? 'row' : 'column' }}>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 90, gap: 14 }} keyboardShouldPersistTaps="handled">
             <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, gap: 4 }}>
               {TABS.map(([k, l]) => (
                 <TouchableOpacity key={k} onPress={() => setTab(k)} style={{ flex: 1, paddingVertical: 10, borderRadius: 9, alignItems: 'center', backgroundColor: tab === k ? GOLD : 'transparent' }} {...tid(`widget-tab-${k}`)}>
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: tab === k ? '#111' : colors.textSecondary }}>{l}</Text>
+                  <Text style={{ fontSize: 12.5, fontWeight: '800', color: tab === k ? '#111' : colors.textSecondary }} numberOfLines={1}>{l}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -109,8 +113,9 @@ export default function WidgetEditor() {
                 {showPreview ? preview : null}
               </View>
             ) : null}
-            {tab === 'look' && <LookTab form={form} set={set} colors={colors} swatches={swatches} siteUrl={siteUrl} setSiteUrl={setSiteUrl} onMatchSite={matchSite} matching={matching} />}
+            {tab === 'look' && <LookTab form={form} set={set} colors={colors} swatches={swatches} siteUrl={siteUrl} setSiteUrl={setSiteUrl} onMatchSite={matchSite} matching={matching} previewPath={previewPath} setPreviewPath={setPreviewPath} />}
             {tab === 'doors' && <DoorsTab form={form} set={set} colors={colors} />}
+            {tab === 'jessi' && <JessiTab widgetId={String(id)} form={form} set={set} colors={colors} facts={facts} setFacts={setFacts} storeName={detail.store_name} showToast={showToast} canManage={canManage} recentChats={detail.recent_chats || []} chatOn={!!form.doors?.chat?.on} onTurnOnChat={() => set('doors', { chat: { ...(form.doors?.chat || {}), on: true } })} />}
             {tab === 'routing' && <RoutingTab form={form} set={set} colors={colors} reps={detail.reps || []} inboxes={detail.inboxes || []} storeName={detail.store_name} storeHours={detail.store_hours} />}
             {tab === 'install' && (
               <>

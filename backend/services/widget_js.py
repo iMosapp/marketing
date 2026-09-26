@@ -7,6 +7,7 @@ ICONS = {
     "phone": '<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
     "menu": '<path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
     "sparkles": '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" fill="currentColor"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z" fill="currentColor"/>',
+    "send": '<path d="M3 11.5 21 3l-8.5 18-2.5-7.5L3 11.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
 }
 
 
@@ -16,10 +17,11 @@ def render(cfg: dict) -> str:
     return TEMPLATE.replace("__CONFIG__", payload).replace("__ICONS__", icons)
 
 
-def demo_html(store_name: str, js: str) -> str:
-    """A stand-in dealership page so the widget can be seen exactly as visitors will see it."""
+def demo_html(store_name: str, js: str, path: str = "", door: str = "") -> str:
+    """A stand-in dealership page so the widget can be seen exactly as visitors will see it. `path` fakes the page URL for page rules."""
     name = (store_name or "Your Dealership").replace("<", "&lt;")
-    return DEMO.replace("__NAME__", name).replace("__JS__", js)
+    flags = f"window.IMOS_WIDGET_PREVIEW = true; window.IMOS_WIDGET_PATH = {json.dumps(path or '')}; window.IMOS_WIDGET_DOOR = {json.dumps(door or '')};"
+    return DEMO.replace("__NAME__", name).replace("__FLAGS__", flags).replace("__JS__", js)
 
 
 DEMO = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -47,7 +49,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 <div class="card"><div class="img"></div><div class="t"><b>2021 Minivan</b><small>$27,300 · 41,000 mi</small></div></div>
 </div>
 <div class="tag">Preview: nothing here sends a real text or call</div>
-<script>window.IMOS_WIDGET_PREVIEW = true;</script>
+<script>__FLAGS__</script>
 <script>__JS__</script>
 </body></html>"""
 
@@ -76,6 +78,8 @@ function svg(name) { return '<svg viewBox="0 0 24 24" width="26" height="26" ari
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function fill(s, ctx) { return String(s || '').replace(/\{(\w+)\}/g, function(_, k){ return ctx[k] != null ? ctx[k] : ''; }); }
 
+var PATH = String(window.IMOS_WIDGET_PATH || (location.pathname + location.search)).toLowerCase();
+var rule = null; (A.page_rules || []).some(function(r){ if (r && r.match && PATH.indexOf(String(r.match).toLowerCase()) >= 0) { rule = r; return true; } return false; });
 var side = A.position === 'left' ? 'left' : 'right';
 var bubble = A.bubble_color || '#2196F3', fg = A.text_color || '#FFFFFF', panelBg = A.panel_color || '#FFFFFF', panelFg = A.panel_text || '#111111';
 var font = A.font === 'inherit' ? 'inherit' : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -86,7 +90,7 @@ var css = '\
 .imosw-launch:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.26)}\
 .imosw-launch svg{display:block}\
 .imosw-launch img{width:28px;height:28px;border-radius:50%;object-fit:cover;display:block}\
-.imosw-greet{position:absolute;bottom:68px;' + side + ':0;max-width:300px;background:' + panelBg + ';color:' + panelFg + ';border-radius:16px;padding:12px 14px 12px 12px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;gap:10px;align-items:flex-start;cursor:pointer;animation:imosw-in .25s ease}\
+.imosw-greet{position:absolute;bottom:68px;' + side + ':0;width:max-content;max-width:min(300px,calc(100vw - 40px));background:' + panelBg + ';color:' + panelFg + ';border-radius:16px;padding:12px 14px 12px 12px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;gap:10px;align-items:flex-start;cursor:pointer;animation:imosw-in .25s ease}\
 .imosw-greet:after{content:"";position:absolute;bottom:-7px;' + side + ':22px;border:7px solid transparent;border-top-color:' + panelBg + ';border-bottom:0}\
 .imosw-greet .x{position:absolute;top:-8px;' + (side === 'right' ? 'left' : 'right') + ':-8px;width:22px;height:22px;border-radius:50%;background:#fff;color:#555;border:1px solid #ddd;font-size:13px;line-height:20px;text-align:center;cursor:pointer}\
 .imosw-av{width:34px;height:34px;border-radius:50%;background:' + bubble + ';color:' + fg + ';display:flex;align-items:center;justify-content:center;flex:none;font-weight:800;overflow:hidden}\
@@ -121,6 +125,21 @@ textarea.imosw-in{height:74px;padding:10px 12px;resize:none}\
 .imosw-foot{text-align:center;font-size:10.5px;opacity:.5;padding:0 0 10px}\
 .imosw-foot a{color:inherit;text-decoration:none}\
 .imosw-hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}\
+.imosw-chat{display:flex;flex-direction:column;height:440px;max-height:62vh}\
+.imosw-msgs{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:8px}\
+.imosw-m{max-width:84%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word}\
+.imosw-m.j{align-self:flex-start;background:rgba(0,0,0,.06);border-bottom-left-radius:4px}\
+.imosw-m.v{align-self:flex-end;background:' + bubble + ';color:' + fg + ';border-bottom-right-radius:4px}\
+.imosw-typing{align-self:flex-start;opacity:.6;font-size:13px;padding:2px 12px}\
+.imosw-compose{display:flex;gap:8px;padding:10px 12px 6px;border-top:1px solid rgba(0,0,0,.08)}\
+.imosw-compose .imosw-in{height:42px}\
+.imosw-send{width:42px;height:42px;border-radius:50%;background:' + bubble + ';color:' + fg + ';border:0;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center}\
+.imosw-send[disabled]{opacity:.5}\
+.imosw-human{text-align:center;padding:0 0 6px}\
+.imosw-human button{background:none;border:0;color:inherit;opacity:.7;font-size:12.5px;cursor:pointer;font-family:inherit;text-decoration:underline}\
+.imosw-cform{align-self:stretch;background:rgba(0,0,0,.04);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}\
+.imosw-cform .imosw-in{height:40px}\
+.imosw-cform .imosw-btn{margin-top:4px;height:42px}\
 @keyframes imosw-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}\
 @keyframes imosw-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(0,0,0,.15)}50%{transform:scale(1.06);box-shadow:0 0 0 14px rgba(0,0,0,0)}}\
 @media (max-width:520px){.imosw-panel{position:fixed;left:8px;right:8px;bottom:8px;width:auto;max-width:none;max-height:calc(100vh - 16px);overflow:auto}}';
@@ -134,24 +153,29 @@ document.body.appendChild(root);
 track('load');
 
 var panel = null, greet = null, opened = false;
-var doors = []; if (D.text && D.text.on) doors.push('text'); if (D.call && D.call.on) doors.push('call');
+var doors = []; if (D.text && D.text.on) doors.push('text'); if (D.call && D.call.on) doors.push('call'); if (D.chat && D.chat.on) doors.push('chat');
+var ruleDoor = rule && rule.door && doors.indexOf(rule.door) >= 0 ? rule.door : null;
+var greetingText = rule ? rule.greeting : (A.greeting_on ? A.greeting : '');
 var avatarHtml = A.avatar_url ? '<img src="' + esc(A.avatar_url) + '" alt="">' : esc((C.store_name || 'Us').charAt(0).toUpperCase());
 
-if (A.greeting_on && A.greeting && !saved.greet_dismissed) {
+if (greetingText && doors.length && !saved.greet_dismissed) {
   setTimeout(function(){ if (opened) return;
-    greet = h('div', { 'class': 'imosw-greet', onclick: function(e){ if (e.target.className === 'x') return; open(); } }, [
+    greet = h('div', { 'class': 'imosw-greet', onclick: function(e){ if (e.target.className === 'x') return; open(ruleDoor); } }, [
       h('div', { 'class': 'imosw-av', html: avatarHtml }),
-      h('div', { style: 'font-size:14px' }, [fill(A.greeting, { store: C.store_name })]),
+      h('div', { style: 'font-size:14px' }, [fill(greetingText, { store: C.store_name })]),
       h('div', { 'class': 'x', html: '&times;', onclick: function(e){ e.stopPropagation(); remember('greet_dismissed', 1); if (greet) { root.removeChild(greet); greet = null; } } })
     ]);
     root.appendChild(greet); track('greeting');
-  }, Math.max(0, (A.greeting_delay_s == null ? 4 : A.greeting_delay_s) * 1000));
+  }, Math.max(0, (rule ? Math.min(A.greeting_delay_s == null ? 4 : A.greeting_delay_s, 3) : (A.greeting_delay_s == null ? 4 : A.greeting_delay_s)) * 1000));
 }
 
-function open(){ if (opened) return; opened = true; if (greet) { root.removeChild(greet); greet = null; }
+function showDoor(d){ if (d === 'chat') showChat(); else showForm(d); }
+function open(door){ if (opened) return; opened = true; if (greet) { root.removeChild(greet); greet = null; }
   panel = h('div', { 'class': 'imosw-panel', role: 'dialog' });
   root.appendChild(panel); launch.style.display = 'none'; track('open');
-  if (doors.length === 1) showForm(doors[0]); else showDoors();
+  if (!doors.length) { showDoors(); return; }
+  var d = door && doors.indexOf(door) >= 0 ? door : (ruleDoor || (chat.sid && doors.indexOf('chat') >= 0 && chat.status !== 'closed' ? 'chat' : null));
+  if (d) showDoor(d); else if (doors.length === 1) showDoor(doors[0]); else showDoors();
 }
 function close(){ if (!panel) return; root.removeChild(panel); panel = null; opened = false; launch.style.display = ''; }
 function header(title, sub){ return h('div', { 'class': 'imosw-head' }, [ h('div', { 'class': 'imosw-av', html: avatarHtml }), h('div', {}, [ h('h3', {}, [title]), sub ? h('p', {}, [sub]) : null ]), h('button', { 'class': 'imosw-close', type: 'button', 'aria-label': 'Close', html: '&times;', onclick: close }) ]); }
@@ -161,7 +185,7 @@ function render(children){ panel.innerHTML = ''; children.forEach(function(c){ i
 function showDoors(){
   var body = h('div', { 'class': 'imosw-body' });
   doors.forEach(function(d){ var cfg = D[d];
-    body.appendChild(h('button', { 'class': 'imosw-door', type: 'button', onclick: function(){ showForm(d); }, html: '<div class="ic">' + svg(d === 'call' ? 'phone' : 'text') + '</div><div><b>' + esc(cfg.label) + '</b><span>' + esc(cfg.intro) + '</span></div>' }));
+    body.appendChild(h('button', { 'class': 'imosw-door', type: 'button', onclick: function(){ showDoor(d); }, html: '<div class="ic">' + svg(d === 'call' ? 'phone' : d === 'chat' ? 'chat' : 'text') + '</div><div><b>' + esc(cfg.label) + '</b><span>' + esc(cfg.intro) + '</span></div>' }));
   });
   render([header(T.title || 'How can we help?', C.store_name), body, foot()]);
 }
@@ -216,7 +240,58 @@ function showCallStatus(r, n){
   } else if (st === 'ringing' && r.request_id === 'preview') { pollTimer = setTimeout(function(){ if (panel) showCallStatus({ status: 'connecting', rep_first: 'Chuck', from_display: '(555) 010-2030', request_id: 'preview' }, n); }, 2500); }
 }
 
-if (PREVIEW) { setTimeout(open, 250); }
+var chat = { sid: saved.chat_sid || null, msgs: [], busy: false, need: false, status: 'open', started: false };
+function previewReply(t){ if (/price|cost|payment|much|trade|finance|person|human/i.test(t)) { chat.need = true; return 'That one is a team member\'s call, and they\'re quick. What\'s your first name and mobile number? They\'ll text you right away.'; }
+  return 'This is the preview, so I\'m not looking anything up. On your live site I answer from your hours, store facts, specials and live inventory, and I hand pricing to your team.'; }
+function showChat(){
+  var cfg = D.chat; var ctx = { store: C.store_name };
+  var wrap = h('div', { 'class': 'imosw-chat' });
+  var list = h('div', { 'class': 'imosw-msgs' });
+  var input = h('input', { 'class': 'imosw-in', type: 'text', placeholder: cfg.placeholder || 'Type your question', autocomplete: 'off', 'aria-label': 'Your message' });
+  var send = h('button', { 'class': 'imosw-send', type: 'button', 'aria-label': 'Send', html: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' + ICONS.send + '</svg>' });
+  var human = h('div', { 'class': 'imosw-human' }, [ h('button', { type: 'button', onclick: function(){ askHuman(); } }, [cfg.human || 'Talk to a person']) ]);
+  function apply(r){ if (r.messages) chat.msgs = r.messages; chat.need = !!r.need_contact; chat.status = r.status || chat.status; }
+  function contactForm(){
+    var nm = h('input', { 'class': 'imosw-in', type: 'text', autocomplete: 'name', placeholder: T.name_label || 'First name', value: saved.name || '' });
+    var ph = h('input', { 'class': 'imosw-in', type: 'tel', autocomplete: 'tel', inputmode: 'tel', placeholder: T.phone_label || 'Mobile number', value: saved.phone || '' });
+    var hp = h('input', { 'class': 'imosw-hp', type: 'text', name: 'website', tabindex: '-1', autocomplete: 'off' });
+    var err = h('div', { 'class': 'imosw-err' });
+    var btn = h('button', { 'class': 'imosw-btn', type: 'button' }, ['Text me']);
+    btn.addEventListener('click', function(){
+      var n = nm.value.trim(), p = ph.value.replace(/\D/g, '');
+      if (!n) { err.textContent = 'Please add your name.'; return; } if (p.length < 10) { err.textContent = 'Please enter a 10 digit mobile number.'; return; }
+      remember('name', n); remember('phone', ph.value); btn.disabled = true; btn.textContent = 'Sending\u2026';
+      if (PREVIEW) { chat.need = false; chat.status = 'handed_off'; chat.msgs.push({ role: 'jessi', text: 'Done, ' + n.split(' ')[0] + '. ' + (C.store_name || 'The store') + ' just texted you, reply there and a real person takes it from here.' }); draw(); return; }
+      post('/chat/' + chat.sid + '/contact', { name: n, phone: ph.value, website: hp.value }).then(function(r){ apply(r); draw(); track('lead', { door: 'chat' }); })
+        .catch(function(e){ btn.disabled = false; btn.textContent = 'Text me'; err.textContent = typeof e === 'string' ? e : 'Something went wrong. Please try again.'; });
+    });
+    return h('div', { 'class': 'imosw-cform' }, [nm, ph, hp, btn, err, h('div', { 'class': 'imosw-fine', style: 'margin-top:4px' }, [fill(T.optin, ctx)])]);
+  }
+  function draw(){ list.innerHTML = '';
+    chat.msgs.forEach(function(m){ list.appendChild(h('div', { 'class': 'imosw-m ' + (m.role === 'visitor' ? 'v' : 'j') }, [m.text])); });
+    if (chat.need) list.appendChild(contactForm());
+    if (chat.busy) list.appendChild(h('div', { 'class': 'imosw-typing' }, ['Jessi is typing\u2026']));
+    send.disabled = chat.busy; list.scrollTop = list.scrollHeight; }
+  function fail(e){ chat.busy = false; chat.msgs.push({ role: 'jessi', text: typeof e === 'string' ? e : 'Hmm, something hiccuped on my end. Try that once more.' }); draw(); }
+  function submit(){ var t = input.value.trim(); if (!t || chat.busy) return; input.value = ''; chat.msgs.push({ role: 'visitor', text: t }); chat.busy = true; draw();
+    if (PREVIEW) { setTimeout(function(){ chat.busy = false; chat.msgs.push({ role: 'jessi', text: previewReply(t) }); draw(); }, 700); return; }
+    post('/chat/' + chat.sid + '/message', { text: t }).then(function(r){ chat.busy = false; apply(r); draw(); }).catch(fail); }
+  function askHuman(){ if (chat.busy) return; chat.busy = true; draw();
+    if (PREVIEW) { setTimeout(function(){ chat.busy = false; chat.need = chat.status !== 'handed_off'; chat.msgs.push({ role: 'jessi', text: chat.status === 'handed_off' ? 'A team member already has your number and is texting you now.' : 'Happy to. What\'s your first name and mobile number? A team member will text you in a minute.' }); draw(); }, 500); return; }
+    post('/chat/' + chat.sid + '/human', {}).then(function(r){ chat.busy = false; apply(r); draw(); }).catch(fail); }
+  function begin(){ chat.busy = true; draw();
+    post('/chat/start', { page: location.href, title: document.title, visitor: visitor }).then(function(r){ chat.busy = false; chat.sid = r.sid; chat.status = 'open'; remember('chat_sid', r.sid); chat.msgs = [{ role: 'jessi', text: r.greeting }]; draw(); }).catch(fail); }
+  send.addEventListener('click', submit); input.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  wrap.appendChild(list); wrap.appendChild(h('div', { 'class': 'imosw-compose' }, [input, send])); wrap.appendChild(human);
+  if (doors.length > 1) wrap.appendChild(h('div', { style: 'text-align:center;padding:0 0 6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', style: 'margin-top:0', onclick: showDoors }, ['\u2190 Other options']) ]));
+  render([header(cfg.label || 'Chat now', 'Jessi \u00b7 ' + (C.store_name || '')), wrap, foot()]);
+  if (PREVIEW) { if (!chat.msgs.length) chat.msgs = [{ role: 'jessi', text: C.chat_welcome || ('Hi! I\'m Jessi, ' + (C.store_name || 'the store') + '\'s assistant. Ask me about hours, what\'s in stock or anything about the store. Want a person? Just say so.') }]; draw(); }
+  else if (chat.sid) { fetch(API + '/chat/' + chat.sid).then(function(x){ if (!x.ok) throw 0; return x.json(); }).then(function(r){ apply(r); draw(); }).catch(function(){ chat.sid = null; remember('chat_sid', null); begin(); }); }
+  else begin();
+  setTimeout(function(){ input.focus(); }, 80);
+}
+
+if (PREVIEW) { setTimeout(function(){ if (window.IMOS_WIDGET_PATH && !window.IMOS_WIDGET_DOOR) return; open(window.IMOS_WIDGET_DOOR || null); }, 250); }
 window.IMOSWidget = { open: open, close: close };
 })();
 """

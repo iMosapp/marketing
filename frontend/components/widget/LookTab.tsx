@@ -4,15 +4,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { GOLD, tid } from '../inbox/ownership';
 import { Section, Label, Hint, inputStyle } from '../inbox/InboxEditorParts';
 import { ColorField, Chips, Field, ToggleRow, Stepper, Swatch, contrastText } from './parts';
+import { PageRulesSection } from './PageRulesSection';
 
 const ICONS = [
   { value: 'text', label: 'Text', icon: 'phone-portrait-outline' }, { value: 'chat', label: 'Chat', icon: 'chatbubble-outline' }, { value: 'phone', label: 'Phone', icon: 'call-outline' },
   { value: 'sparkles', label: 'Sparkle', icon: 'sparkles-outline' }, { value: 'menu', label: 'Menu', icon: 'menu-outline' }, { value: 'image', label: 'My own', icon: 'image-outline' },
 ];
 
-type Props = { form: any; set: (section: string, patch: any) => void; colors: any; swatches: Swatch[]; siteUrl: string; setSiteUrl: (v: string) => void; onMatchSite: () => void; matching: boolean };
+type Props = { form: any; set: (section: string, patch: any) => void; colors: any; swatches: Swatch[]; siteUrl: string; setSiteUrl: (v: string) => void; onMatchSite: () => void; matching: boolean; previewPath: string; setPreviewPath: (p: string) => void };
 
-export const LookTab = ({ form, set, colors, swatches, siteUrl, setSiteUrl, onMatchSite, matching }: Props) => {
+export const LookTab = ({ form, set, colors, swatches, siteUrl, setSiteUrl, onMatchSite, matching, previewPath, setPreviewPath }: Props) => {
   const a = form.appearance;
   const [showCustom, setShowCustom] = useState(false);
   return (
@@ -54,6 +55,8 @@ export const LookTab = ({ form, set, colors, swatches, siteUrl, setSiteUrl, onMa
           </>
         ) : null}
       </Section>
+
+      <PageRulesSection rules={a.page_rules || []} onChange={rules => set('appearance', { page_rules: rules })} doors={form.doors} colors={colors} onPreview={setPreviewPath} previewPath={previewPath} />
 
       <Section colors={colors} testId="widget-section-panel">
         <Label colors={colors}>The window</Label>

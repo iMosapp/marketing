@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from routers.database import get_db
 from routers.lead_sources import require_manager, require_user
 from services import widget_calls as WC
+from services import widget_chat as WCH
 from services import widget_js
 from services import widgets as W
 
@@ -81,7 +82,12 @@ async def _detail(db, w: dict, me: dict) -> dict:
         "recent_calls": [{"id": str(c["_id"]), "name": c.get("name"), "phone_last4": (c.get("phone") or "")[-4:], "status": c.get("status"), "rep": c.get("winner_first"),
                           "seconds": c.get("seconds_to_connect"), "reason": c.get("missed_reason"), "host": W.host_of(c.get("page") or ""),
                           "at": c["created_at"].isoformat() if c.get("created_at") else None} for c in calls],
-        "demo_url": f"{W.app_url()}/api/w/{w['key']}/demo",
+        "demo_url": f"{W.app_url()}/api/w/{w['key']}/demo", "can_manage": W.can_manage(me),
+        "facts": [{"id": f.get("id"), "text": f.get("text"), "added_by_name": f.get("added_by_name")} for f in store.get("va_facts") or [] if f.get("text")],
+        "recent_chats": [{"id": c["sid"], "status": c.get("status"), "name": c.get("name") or "Visitor", "turns": c.get("turns", 0), "reason": c.get("handoff_reason") or "",
+                          "host": c.get("host") or "", "at": c["created_at"].isoformat() if c.get("created_at") else None,
+                          "last": next((m["text"] for m in reversed(c.get("messages") or []) if m.get("role") == "visitor"), "")[:120]}
+                         for c in await db[WCH.COLL].find({"widget_id": str(w["_id"])}, {"messages": {"$slice": -6}, "sid": 1, "status": 1, "name": 1, "turns": 1, "handoff_reason": 1, "host": 1, "created_at": 1}).sort("created_at", -1).limit(20).to_list(20)],
     }
 
 
@@ -93,6 +99,14 @@ class CreateBody(BaseModel):
 
 class PaletteBody(BaseModel):
     url: str
+
+
+class AskBody(BaseModel):
+    question: str
+
+
+class FactBody(BaseModel):
+    text: str
 
 
 @admin.get("")
@@ -210,6 +224,40 @@ async def widget_stats(wid: str, request: Request):
     return await W.stats(db, await _load_scoped(db, request.state.user, wid))
 
 
+@admin.post("/{wid}/ask")
+async def ask_jessi(wid: str, body: AskBody, request: Request):
+    """'Test Jessi' in the editor: what she would say to a visitor, with what she used."""
+    db = get_db()
+    w = await _load_scoped(db, request.state.user, wid)
+    q = " ".join(body.question.split())[:500]
+    if not q:
+        raise HTTPException(status_code=400, detail="Type a question first")
+    return await WCH.ask(db, w, q)
+
+
+@admin.post("/{wid}/facts")
+async def add_fact(wid: str, body: FactBody, request: Request, _m: dict = Depends(require_manager)):
+    """Store facts are shared with SMS Jessi (My VA -> store facts); this just edits them from the widget's store."""
+    db = get_db()
+    w = await _load_scoped(db, request.state.user, wid)
+    text = " ".join(body.text.split())
+    if len(text) < 3 or not (w.get("store_id") and ObjectId.is_valid(str(w["store_id"]))):
+        raise HTTPException(status_code=400, detail="Write the fact out, that is too short")
+    from services.va_prompt import _fact
+    fact = _fact(text, request.state.user, "store")
+    await db.stores.update_one({"_id": ObjectId(w["store_id"])}, {"$push": {"va_facts": fact}})
+    return {"fact": {"id": fact["id"], "text": fact["text"], "added_by_name": fact.get("added_by_name")}}
+
+
+@admin.delete("/{wid}/facts/{fact_id}")
+async def remove_fact(wid: str, fact_id: str, request: Request, _m: dict = Depends(require_manager)):
+    db = get_db()
+    w = await _load_scoped(db, request.state.user, wid)
+    if w.get("store_id") and ObjectId.is_valid(str(w["store_id"])):
+        await db.stores.update_one({"_id": ObjectId(w["store_id"])}, {"$pull": {"va_facts": {"id": fact_id}}})
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------- public: the embed + visitor handlers
 async def _widget_or_404(db, key: str) -> dict:
     w = await W.load(db, key)
@@ -228,7 +276,7 @@ def _preview_overrides(request: Request) -> dict:
         import json
         pad = "=" * (-len(raw) % 4)
         data = json.loads(base64.urlsafe_b64decode(raw + pad).decode("utf-8"))
-        return {k: v for k, v in data.items() if k in ("appearance", "doors", "copy") and isinstance(v, dict)}
+        return {k: v for k, v in data.items() if k in ("appearance", "doors", "copy", "kb") and isinstance(v, dict)}
     except Exception:
         return {}
 
@@ -255,7 +303,9 @@ async def widget_demo(key: str, request: Request):
     store = await W.store_of(db, w)
     over = _preview_overrides(request)
     cfg = W.public_config(W._merge(w, over) if over else w, store, preview=True)
-    return HTMLResponse(widget_js.demo_html(store.get("name") or w.get("name") or "Your Dealership", widget_js.render(cfg)), headers=NO_CACHE)
+    path = request.query_params.get("path", "")[:200]
+    door = request.query_params.get("door", "")
+    return HTMLResponse(widget_js.demo_html(store.get("name") or w.get("name") or "Your Dealership", widget_js.render(cfg), path, door if door in ("text", "call", "chat") else ""), headers=NO_CACHE)
 
 
 @public.get("/{key}/config")
@@ -309,6 +359,67 @@ async def widget_call(key: str, request: Request):
 @public.get("/{key}/call/{req_id}")
 async def widget_call_status(key: str, req_id: str):
     return await WC.visitor_status(get_db(), key, req_id)
+
+
+# ---------------------------------------------------------------- public: Chat now (Jessi)
+async def _chat_session(db, key: str, sid: str):
+    w = await _widget_or_404(db, key)
+    s = await WCH.load(db, key, sid)
+    if not s:
+        raise HTTPException(status_code=404, detail="That chat has ended. Start a new one.")
+    return w, s
+
+
+@public.post("/{key}/chat/start")
+async def chat_start(key: str, request: Request):
+    db = get_db()
+    w = await _widget_or_404(db, key)
+    body = await request.json()
+    if not W.domain_ok(w, body.get("page") or ""):
+        raise HTTPException(status_code=403, detail="This widget isn't set up for this website yet.")
+    if not W.normalize_config(w)["doors"]["chat"]["on"]:
+        raise HTTPException(status_code=400, detail="Chat is turned off for this site.")
+    try:
+        return await WCH.start(db, w, body, _ip(request))
+    except ValueError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+
+
+@public.get("/{key}/chat/{sid}")
+async def chat_state(key: str, sid: str):
+    _, s = await _chat_session(get_db(), key, sid)
+    return WCH.public_state(s)
+
+
+@public.post("/{key}/chat/{sid}/message")
+async def chat_message(key: str, sid: str, request: Request):
+    db = get_db()
+    w, s = await _chat_session(db, key, sid)
+    body = await request.json()
+    try:
+        return await WCH.reply(db, w, s, body.get("text") or "", _ip(request))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@public.post("/{key}/chat/{sid}/contact")
+async def chat_contact(key: str, sid: str, request: Request):
+    db = get_db()
+    w, s = await _chat_session(db, key, sid)
+    body = await request.json()
+    if body.get("website"):
+        return {**WCH.public_state(s), "reply": "Thanks!", "handoff": True}
+    try:
+        return await WCH.give_contact(db, w, s, body, _ip(request))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@public.post("/{key}/chat/{sid}/human")
+async def chat_human(key: str, sid: str):
+    db = get_db()
+    w, s = await _chat_session(db, key, sid)
+    return await WCH.request_human(db, w, s)
 
 
 # ---------------------------------------------------------------- Twilio: the ring group
