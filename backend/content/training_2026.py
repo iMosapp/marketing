@@ -6,7 +6,7 @@ Alerts, the rep-first Home, Share the App, one Phone Numbers screen.
 """
 from datetime import datetime, timezone
 
-CONTENT_VERSION = 5
+CONTENT_VERSION = 6
 APP_STORE_URL = "https://apps.apple.com/us/app/im-on-social/id6774618559"
 
 
@@ -66,7 +66,7 @@ SALES_TEAM_TRACK = {
                 "### Needs a Reply\n"
                 "Conversations waiting on you. A red **WAITING** badge means Jessi stepped back and the customer is waiting for a human. Tap the row, read, reply. **Open Inbox** shows everything.\n\n"
                 "### The gold + button\n"
-                "Always in the corner: **SOLD!** (log a sale), **Make a Call**, **Voice Note**, **Send Photo**, **Calendar**.\n\n"
+                "Always in the corner: **SOLD!** (log a sale), **Calendar**, **Review**, **Card**, **Contact**. Calls live on the **Phone** tab in the bottom bar.\n\n"
                 "### Top of the screen\n"
                 "- **QR icon**: your card as a QR code for a customer to scan.\n"
                 "- **AI ON**: Jessi is answering your texts. Tap to pause her for everyone.\n"
@@ -339,7 +339,7 @@ MANAGER_TRACK = {
                 "## What Reps See\n\n"
                 "Salespeople get a focused app. Managers, admins and partners see everything.\n\n"
                 "### Rep Home\n"
-                "Do This Next, Your 3 for Today, Needs a Reply, and the gold + (SOLD!, Call, Voice Note, Send Photo, Calendar). Nothing else.\n\n"
+                "Do This Next, Your 3 for Today, Needs a Reply, and the gold + (SOLD!, Calendar, Review, Card, Contact). Nothing else.\n\n"
                 "### Rep Tools\n"
                 "Five items: **Today** (Touchpoints, Calendar, My Numbers, AI Follow-ups), **My Brand** (Card, Share My Card, Get Reviews, Showcase, Link Page, Share the App), **Inventory**, **Learning**, **Settings**.\n\n"
                 "### See it yourself\n"
@@ -518,8 +518,8 @@ LEADS_INBOXES_SOPS = [
 MANAGER_ROLES = ["manager", "admin", "store_manager", "org_admin", "super_admin"]
 
 NAVIGATION_MAP = (
-    "TABS (bottom bar): Home, Contacts, Inbox, Activity, Tools.\n"
-    "HOME (salesperson): Do This Next card, Your 3 for Today (Text / Check / X per card, See all), Needs a Reply (WAITING badge, Open Inbox), gold + button (SOLD!, Calendar, Send Photo, Voice Note, Make a Call). Header: QR icon (my card), AI ON / AI PAUSED toggle, bell (Alerts).\n"
+    "TABS (bottom bar): Home, Contacts, Inbox, Tasks, Phone (the dialer; Tools and Activity are under the avatar top-left > All tools).\n"
+    "HOME (salesperson): Do This Next card, Your 3 for Today (Text / Check / X per card, See all), Needs a Reply (WAITING badge, Open Inbox), gold + button (SOLD!, Calendar, Review, Card, Contact; calls are on the Phone tab). Header: QR icon (my card), AI ON / AI PAUSED toggle, bell (Alerts).\n"
     "HOME (manager, extra): Leads Waiting, AI Reply Health, Hot This Week vehicles, Weekly Wins, Book of Business, quick tiles SOLD! / Contact / Card / Review.\n"
     "TOOLS (salesperson): Today (Touchpoints, Calendar, My Numbers, AI Follow-ups), My Brand (My Digital Card, Share My Card, Get Reviews, My Showcase, My Link Page, Share the App), Inventory, Learning (Training Hub, Help Center, Report a Bug), Settings (My Profile, My VA, Notifications, My Schedule, My Templates, Security). Profile strip at the top with Profile and My VA pills.\n"
     "TOOLS (manager/admin, additional folders): Leads (Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, Connect Zapier / Make, Team Availability), Manage (Tags, Calendar, Keyword Auto-Tags, Keyword Search, Inventory, Review Center, Showcase, Inventory Feed, Review Links), My Tools, Campaigns (Campaigns, Broadcast, Date Triggers), My Performance (My Stats, Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics), Set Up (Store Profile, Brand Kit, Messaging Channels, SMS Notifications, Phone Numbers, Team Members, Invite Team, Integrations), Learning, Settings. View as Rep link previews the salesperson layout.\n"
