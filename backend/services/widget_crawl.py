@@ -21,10 +21,13 @@ logger = logging.getLogger(__name__)
 COLL = "widget_crawls"
 PAGES_COLL = "widget_site_pages"
 MAX_PAGES = 7
-SITE_MAX_PAGES = 40
+SITE_MAX_PAGES = 60
 PAGE_CHARS = 6000
-SITE_PAGE_CHARS = 5000
-SITE_FIRST = re.compile(r"(pric|plan|cost|about|contact|faq|feature|how-it-works|how_it_works|demo|integration|support|compare|trial|why|team|hours|location)", re.I)
+SITE_PAGE_CHARS = 40000   # decks and feature sheets run long; retrieval picks the relevant passages per question
+SITE_BUDGET = 7000
+SITE_SEG = 700
+SITE_FIRST = re.compile(r"(pric|plan|cost|about|contact|faq|feature|sheet|present|deck|platform|product|solution|industr|how-it-works|how_it_works|demo|integration|support|compare|trial|why|team|hours|location|help)", re.I)
+SITE_DECK = re.compile(r"(feature.?sheet|present|deck|platform|brochure|one.?pager|playbook)", re.I)
 WANT = re.compile(r"(about|hours|contact|direction|location|service|special|offer|deal|promo|coupon|finance|parts|why|faq|team|staff|warranty|review|amenit|shuttle|loaner|deliver|espanol|español)", re.I)
 SKIP = re.compile(r"\.(pdf|jpg|jpeg|png|gif|svg|webp|zip|mp4)$|/(inventory|vehicle|vdp|srp|used|new|search|blog|news|privacy|terms|sitemap|login|cart)\b|#|mailto:|tel:", re.I)
 SITE_SKIP = re.compile(r"\.(pdf|jpg|jpeg|png|gif|svg|webp|zip|mp4|mp3|css|js|xml|json)$|/(blog|news|privacy|terms|legal|sitemap|login|signin|sign-in|signup|cart|checkout|wp-admin|tag|category|author|feed|go|s|get)(/|$)|\?|#|mailto:|tel:", re.I)
@@ -67,8 +70,8 @@ def _all_links(html: str, base: str) -> list:
     return out
 
 
-async def fetch_site(url: str, limit: int = SITE_MAX_PAGES) -> list:
-    """Breadth-first read of the site: home, everything home links to, then what those pages link to, up to `limit` pages."""
+async def fetch_site(url: str, limit: int = SITE_MAX_PAGES, seeds: Optional[list] = None) -> list:
+    """Breadth-first read of the site: home (+ sitemap.xml + owner-added seed pages), everything they link to, then the next hop, up to `limit` pages."""
     import httpx
     headers = {"User-Agent": "Mozilla/5.0 (compatible; iMOS-JessiReader/1.0; +https://www.imonsocial.com)"}
     pages, seen, queue = [], set(), []
@@ -89,6 +92,23 @@ async def fetch_site(url: str, limit: int = SITE_MAX_PAGES) -> list:
             if link not in seen:
                 seen.add(link)
                 queue.append(link)
+        # owner-added pages first (decks, feature sheets, industry pages that nothing links to), then the sitemap if the site has one
+        host = urlparse(base).netloc.lower().replace("www.", "")
+        for sd in (seeds or []):
+            sd = _norm_url(sd).split("#")[0].rstrip("/")
+            if urlparse(sd).netloc.lower().replace("www.", "") == host and sd not in seen:
+                seen.add(sd)
+                queue.insert(0, sd)
+        try:
+            sm = await client.get(urljoin(base, "/sitemap.xml"))
+            if sm.status_code == 200 and "<loc>" in sm.text:
+                for loc in re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", sm.text)[:200]:
+                    loc = loc.split("#")[0].rstrip("/")
+                    if urlparse(loc).netloc.lower().replace("www.", "") == host and not SITE_SKIP.search(loc) and loc not in seen:
+                        seen.add(loc)
+                        queue.append(loc)
+        except Exception:
+            pass
 
         async def one(u: str):
             try:
@@ -125,7 +145,9 @@ async def site_knowledge_meta(db, w: dict) -> dict:
     wid = str(w["_id"])
     n = await db[PAGES_COLL].count_documents({"widget_id": wid})
     first = await db[PAGES_COLL].find_one({"widget_id": wid}, {"at": 1}) if n else None
-    return {"pages": n, "read_at": first["at"].isoformat() if first and first.get("at") else None}
+    decks = [p["title"] or p["url"] async for p in db[PAGES_COLL].find({"widget_id": wid, "url": {"$regex": SITE_DECK.pattern, "$options": "i"}}, {"title": 1, "url": 1}).limit(20)] if n else []
+    return {"pages": n, "read_at": first["at"].isoformat() if first and first.get("at") else None,
+            "decks": [re.sub(r"\s*[-|·]\s*i'?m on social.*$", "", d, flags=re.I).strip() for d in decks]}
 
 
 _STOP = {"the", "and", "for", "you", "your", "with", "that", "this", "have", "what", "how", "does", "can", "are", "our", "from", "about", "into", "will",
@@ -136,28 +158,60 @@ def _tokens(text: str) -> set:
     return {t for t in re.findall(r"[a-z0-9]{3,}", (text or "").lower()) if t not in _STOP}
 
 
-async def site_context(db, w: dict, question: str, top: int = 4, chars: int = 2600) -> str:
-    """The pages of the site most relevant to the visitor's question (home page always), as plain text for the prompt."""
+def _segments(text: str, size: int = SITE_SEG) -> list:
+    """Split page text into ~size-char passages on sentence / line boundaries so a 93-feature sheet yields the 3 features that matter."""
+    parts, cur = [], ""
+    for piece in re.split(r"(?<=[.!?])\s+|\n+", text or ""):
+        piece = piece.strip()
+        if not piece:
+            continue
+        if cur and len(cur) + len(piece) + 1 > size:
+            parts.append(cur)
+            cur = piece
+        else:
+            cur = f"{cur} {piece}".strip()
+    if cur:
+        parts.append(cur)
+    return parts
+
+
+async def site_context(db, w: dict, question: str, top: int = 5, chars: int = SITE_BUDGET) -> str:
+    """The passages of the site most relevant to the visitor's question (home page intro always), grouped by page, for the prompt.
+    `top` = max pages quoted, `chars` = total budget across all passages."""
     wid = str(w["_id"])
     pages = await db[PAGES_COLL].find({"widget_id": wid}, {"url": 1, "title": 1, "text": 1}).to_list(SITE_MAX_PAGES)
     if not pages:
         return ""
     q = _tokens(question)
     money = bool(re.search(r"\b(price|prices|pricing|cost|costs|plan|plans|month|monthly|year|yearly|fee|fees|pay|paying|subscription|trial|free)\b", question or "", re.I))
-
-    def score(p):
-        words = _tokens(p["title"] + " " + p["text"])
-        s = sum(3 if t in _tokens(p["title"] + " " + p["url"]) else 1 for t in q if t in words)
-        if money and re.search(r"pric|plan", p["url"] + " " + p["title"], re.I):
-            s += 12
-        return s
-
     home = min(pages, key=lambda p: len(p["url"]))
-    ranked = sorted((p for p in pages if p is not home), key=score, reverse=True)
-    picked = [home] + [p for p in ranked if score(p) > 0][: top - 1]
-    if len(picked) < 2 and ranked:
-        picked.append(ranked[0])
-    return "\n\n".join(f"=== {p['title'] or p['url']} ({p['url']}) ===\n{p['text'][:chars]}" for p in picked)
+
+    scored = []
+    for p in pages:
+        head = _tokens((p["title"] or "") + " " + p["url"])
+        boost = 12 if money and re.search(r"pric|plan", p["url"] + " " + (p["title"] or ""), re.I) else 0
+        for i, seg in enumerate(_segments(p["text"])):
+            words = _tokens(seg)
+            sc = sum(3 if t in head else 2 for t in q if t in words) + boost
+            if sc > boost or (p is home and i == 0):
+                scored.append((sc + (2 if p is home and i == 0 else 0), p, i, seg))
+    scored.sort(key=lambda x: -x[0])
+
+    chosen: dict = {}
+    used = 0
+    for sc, p, i, seg in scored:
+        if used + len(seg) > chars or (len(chosen) >= top and p["url"] not in chosen):
+            continue
+        chosen.setdefault(p["url"], {"p": p, "segs": []})["segs"].append((i, seg))
+        used += len(seg)
+    if not chosen:
+        chosen[home["url"]] = {"p": home, "segs": [(0, (home["text"] or "")[:1200])]}
+    blocks = []
+    for url, d in chosen.items():
+        p = d["p"]
+        body = "\n…\n".join(seg for _, seg in sorted(d["segs"]))
+        blocks.append(f"=== {p['title'] or p['url']} ({p['url']}) ===\n{body}")
+    return "\n\n".join(blocks)
 
 
 def _links(html: str, base: str) -> list:
@@ -301,7 +355,7 @@ async def run(job_id: str):
         w = await db[W.COLL].find_one({"_id": ObjectId(job["widget_id"])})
         store = await W.store_of(db, w or {})
         business = (job.get("mode") or W.normalize_config(w or {})["kb"]["mode"]) == "business"
-        pages = await fetch_site(job["url"]) if business else await _fetch_pages(job["url"])
+        pages = await fetch_site(job["url"], seeds=W.normalize_config(w or {})["kb"].get("extra_urls") or []) if business else await _fetch_pages(job["url"])
         await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"pages": [{"url": p["url"], "title": p["title"], "chars": len(p["text"])} for p in pages], "updated_at": _now()}})
         if not pages or sum(len(p["text"]) for p in pages) < 300:
             raise RuntimeError("That site did not give me any readable text (it may block robots or be all images).")

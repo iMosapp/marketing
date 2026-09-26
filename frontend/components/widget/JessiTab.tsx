@@ -42,6 +42,9 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
   const [q, setQ] = useState('');
   const [asking, setAsking] = useState(false);
   const [answer, setAnswer] = useState<any>(null);
+  const [teach, setTeach] = useState<string | null>(null);
+  const [scriptQ, setScriptQ] = useState('');
+  const [scriptA, setScriptA] = useState('');
 
   const addFact = async (text: string) => {
     setFactBusy(true);
@@ -63,6 +66,13 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
   const specials: any[] = kb.specials || [];
   const patchSpecial = (i: number, p: any) => setKb({ specials: specials.map((s, j) => (j === i ? { ...s, ...p } : s)) });
   const business = kb.mode === 'business';
+  const pb = kb.playbook || { on: true, goal: '', questions: [], offer_after: 2, pitch: '' };
+  const setPb = (p: any) => setKb({ playbook: { ...pb, ...p } });
+  const scripts: { q: string; a: string }[] = kb.scripts || [];
+  const addScript = (qq: string, aa: string) => { const q2 = qq.trim(), a2 = aa.trim(); if (!q2 || !a2) return false; setKb({ scripts: [...scripts.filter(x => x.q.toLowerCase() !== q2.toLowerCase()), { q: q2, a: a2 }].slice(-25) }); return true; };
+  const PB_DEFAULT = business
+    ? { goal: 'Book a demo', questions: ['What kind of business are you, and how big is the sales team?', 'What are you using today for follow-up: a CRM, texting, spreadsheets?', 'What is the one thing you would want fixed first?'], pitch: 'The fastest way to see if it fits is a 20-minute demo on your own numbers. Want me to grab you a time?' }
+    : { goal: 'Book a test drive', questions: ['What are you looking for: new or pre-owned, and any model in mind?', 'Do you have a trade-in?', 'When are you hoping to be driving it?'], pitch: 'Easiest next step is a quick test drive so you can feel it for yourself. Want me to grab you a time?' };
 
   return (
     <>
@@ -101,8 +111,75 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
           <View style={{ marginTop: 10, padding: 12, borderRadius: 12, backgroundColor: colors.surface, gap: 6 }} {...tid('widget-ask-answer')}>
             <Text style={{ fontSize: 14, color: colors.text, lineHeight: 20 }}>{answer.reply}</Text>
             <Text style={{ fontSize: 11, color: answer.handoff ? '#FF9500' : colors.textSecondary }}>
-              {answer.handoff ? `Hands off to the team (${answer.reason})` : 'Answered herself'} · used {answer.used?.facts || 0} facts, {answer.used?.specials || 0} {answer.used?.mode === 'business' ? 'offers' : 'specials'}{answer.used?.mode === 'business' ? `, ${answer.used?.site_pages || 0} website pages` : `, ${answer.used?.inventory_matches || 0} of ${answer.used?.inventory_total || 0} vehicles${answer.used?.hours ? ', store hours' : ', no hours on file'}`}
+              {answer.handoff ? `Hands off to the team (${answer.reason})` : 'Answered herself'} · used {answer.used?.facts || 0} facts, {answer.used?.specials || 0} {answer.used?.mode === 'business' ? 'offers' : 'specials'}{answer.used?.mode === 'business' ? `, ${answer.used?.site_pages || 0} website pages` : `, ${answer.used?.inventory_matches || 0} of ${answer.used?.inventory_total || 0} vehicles${answer.used?.hours ? ', store hours' : ', no hours on file'}`}{answer.used?.scripts ? `, ${answer.used.scripts} scripted answer${answer.used.scripts === 1 ? '' : 's'}` : ''}
             </Text>
+            {teach === null ? (
+              <TouchableOpacity onPress={() => setTeach('')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 4 }} {...tid('widget-ask-teach')}>
+                <Ionicons name="school-outline" size={16} color={GOLD} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: GOLD }}>Not right? Teach her the answer</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ gap: 8, marginTop: 4 }} {...tid('widget-ask-teach-box')}>
+                <TextInput value={teach} onChangeText={setTeach} placeholder={`What should Jessi say when asked "${q.trim()}"?`} placeholderTextColor={colors.textSecondary} multiline style={[inputStyle(colors), { minHeight: 70, paddingTop: 10 }]} {...tid('widget-ask-teach-input')} />
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity onPress={() => { if (addScript(q, teach || '')) { setTeach(null); showToast('Added to Scripted answers. Tap Save to apply.', 'success', 3000); } }} disabled={!(teach || '').trim()} style={{ height: 40, paddingHorizontal: 14, borderRadius: 10, backgroundColor: GOLD, justifyContent: 'center', opacity: (teach || '').trim() ? 1 : 0.5 }} {...tid('widget-ask-teach-save')}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#111' }}>Save as scripted answer</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setTeach(null)} style={{ height: 40, paddingHorizontal: 12, justifyContent: 'center' }} {...tid('widget-ask-teach-cancel')}><Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary }}>Cancel</Text></TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        ) : null}
+      </Section>
+
+      <Section colors={colors} testId="widget-section-playbook">
+        <ToggleRow label="Playbook: guide every chat toward a booking" hint={`Jessi answers what they asked with a specific, then asks one qualifying question per reply. After ${pb.offer_after || 2} answered she delivers your pitch and opens the booking form.`} value={pb.on !== false} onChange={v => setPb({ on: v })} colors={colors} testId="widget-pb-on" />
+        {pb.on !== false ? (
+          <>
+            <Field label="Goal" value={pb.goal || ''} onChange={v => setPb({ goal: v })} placeholder={PB_DEFAULT.goal} colors={colors} testId="widget-pb-goal" maxLength={80} />
+            <Label colors={colors}>Qualifying questions, in order (up to 5)</Label>
+            <Hint colors={colors}>{(pb.questions || []).length ? 'She skips any the visitor already answered.' : `Blank = defaults: ${PB_DEFAULT.questions.map(x => `"${x}"`).join(' · ')}`}</Hint>
+            {(pb.questions || []).map((qq: string, i: number) => (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }} {...tid(`widget-pb-q-${i}`)}>
+                <Text style={{ width: 18, fontSize: 13, fontWeight: '800', color: colors.textSecondary }}>{i + 1}.</Text>
+                <Text style={{ flex: 1, fontSize: 13.5, color: colors.text }}>{qq}</Text>
+                <TouchableOpacity onPress={() => setPb({ questions: pb.questions.filter((_: string, j: number) => j !== i) })} hitSlop={6} {...tid(`widget-pb-q-${i}-remove`)}><Ionicons name="close-circle" size={18} color={colors.textSecondary} /></TouchableOpacity>
+              </View>
+            ))}
+            {(pb.questions || []).length < 5 ? <AddRow placeholder={(pb.questions || []).length ? 'Next question she should ask' : PB_DEFAULT.questions[0]} onAdd={t => setPb({ questions: [...(pb.questions || []), t] })} colors={colors} testId="widget-pb-q" /> : null}
+            <Label colors={colors}>Pitch after how many answers?</Label>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 6 }}>
+              {[1, 2, 3, 4, 5].map(n => { const on = (pb.offer_after || 2) === n; return (
+                <TouchableOpacity key={n} onPress={() => setPb({ offer_after: n })} style={{ width: 40, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? GOLD : colors.surface, borderWidth: 1, borderColor: on ? GOLD : colors.border }} {...tid(`widget-pb-after-${n}`)}>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: on ? '#111' : colors.text }}>{n}</Text>
+                </TouchableOpacity>
+              ); })}
+            </View>
+            <Field label="Pitch line" hint="Said once, adapted to what they told you, right before the booking form opens." value={pb.pitch || ''} onChange={v => setPb({ pitch: v })} placeholder={PB_DEFAULT.pitch} multiline colors={colors} testId="widget-pb-pitch" maxLength={300} top={false} />
+          </>
+        ) : null}
+      </Section>
+
+      <Section colors={colors} testId="widget-section-scripts">
+        <Label colors={colors}>Scripted answers</Label>
+        <Hint colors={colors}>Question and the exact answer you want. When a visitor asks something close, Jessi uses your wording. Up to 25. The fastest way to add them: test a question above and tap "Teach her".</Hint>
+        {scripts.map((sc, i) => (
+          <View key={i} style={{ padding: 10, borderRadius: 12, backgroundColor: colors.surface, marginBottom: 8, gap: 4 }} {...tid(`widget-script-${i}`)}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+              <Text style={{ flex: 1, fontSize: 13.5, fontWeight: '800', color: colors.text }}>Q: {sc.q}</Text>
+              <TouchableOpacity onPress={() => setKb({ scripts: scripts.filter((_, j) => j !== i) })} hitSlop={6} {...tid(`widget-script-${i}-remove`)}><Ionicons name="trash-outline" size={18} color="#FF3B30" /></TouchableOpacity>
+            </View>
+            <Text style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>A: {sc.a}</Text>
+          </View>
+        ))}
+        {scripts.length < 25 ? (
+          <View style={{ gap: 8, marginTop: 4 }}>
+            <TextInput value={scriptQ} onChangeText={setScriptQ} placeholder={business ? 'Do you integrate with our CRM?' : 'Do you take trade-ins?'} placeholderTextColor={colors.textSecondary} style={inputStyle(colors)} {...tid('widget-script-q')} />
+            <TextInput value={scriptA} onChangeText={setScriptA} placeholder="Exactly what she should say" placeholderTextColor={colors.textSecondary} multiline style={[inputStyle(colors), { minHeight: 64, paddingTop: 10 }]} {...tid('widget-script-a')} />
+            <TouchableOpacity onPress={() => { if (addScript(scriptQ, scriptA)) { setScriptQ(''); setScriptA(''); } }} disabled={!scriptQ.trim() || !scriptA.trim()} style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 14, borderRadius: 10, backgroundColor: GOLD, opacity: scriptQ.trim() && scriptA.trim() ? 1 : 0.5 }} {...tid('widget-script-add')}>
+              <Ionicons name="add" size={18} color="#111" /><Text style={{ fontSize: 13, fontWeight: '800', color: '#111' }}>Add scripted answer</Text>
+            </TouchableOpacity>
           </View>
         ) : null}
       </Section>
@@ -132,7 +209,7 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
         {canManage ? <AddRow placeholder="Add a fact Jessi can use" onAdd={addFact} colors={colors} testId="widget-fact" busy={factBusy} /> : null}
       </Section>
 
-      <SiteCrawlCard widgetId={widgetId} siteUrl={siteUrl} colors={colors} canManage={canManage} showToast={showToast} business={business} onApplied={r => { setFacts(r.facts); onKbSaved(r.kb); }} />
+      <SiteCrawlCard widgetId={widgetId} siteUrl={siteUrl} colors={colors} canManage={canManage} showToast={showToast} business={business} onApplied={r => { setFacts(r.facts); onKbSaved(r.kb); }} extraUrls={kb.extra_urls || []} onExtraUrls={u => setKb({ extra_urls: u })} />
 
       <Section colors={colors} testId="widget-section-specials">
         <Label colors={colors}>{business ? 'Current offers' : 'Specials'}</Label>

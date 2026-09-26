@@ -2,7 +2,7 @@
 import copy
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List
 
 from bson import ObjectId
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, Response, UploadFile
@@ -114,6 +114,7 @@ class FactBody(BaseModel):
 class CrawlBody(BaseModel):
     url: str
     mode: Optional[str] = None
+    seeds: Optional[List[str]] = None
 
 
 class RepText(BaseModel):
@@ -376,6 +377,10 @@ async def remove_fact(wid: str, fact_id: str, request: Request, _m: dict = Depen
 async def crawl_start(wid: str, body: CrawlBody, request: Request, bg: BackgroundTasks, _m: dict = Depends(require_manager)):
     db = get_db()
     w = await _load_scoped(db, request.state.user, wid)
+    if body.seeds is not None:
+        kb = {**(w.get("kb") or {}), "extra_urls": body.seeds}
+        await db[W.COLL].update_one({"_id": w["_id"]}, {"$set": {"kb": kb, "updated_at": W._now()}})
+        w["kb"] = kb
     try:
         job = await WCR.start(db, w, body.url, request.state.user, mode=body.mode)
     except ValueError as e:

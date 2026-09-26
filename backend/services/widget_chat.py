@@ -149,7 +149,8 @@ def knowledge_text(store: dict, kb: dict, facts: list, inv_lines: list, inv_tota
     if (kb.get("notes") or "").strip():
         parts.append("MORE FROM THE MANAGER:\n" + kb["notes"].strip()[:2000])
     if site:
-        parts.append("WHAT THE WEBSITE SAYS (the source of truth for the product, features, plans and prices; quote it plainly and specifically):\n" + site)
+        parts.append("WHAT THE WEBSITE SAYS (the source of truth for the product, features, plans and prices; passages are pulled from the pages, feature sheet and industry presentations that match this question; "
+                     "quote feature names, numbers and outcomes from them plainly and specifically, and when the visitor names their industry lean on that industry's presentation):\n" + site)
     elif business:
         parts.append("WEBSITE: not read yet, so only use the facts above; when something is not covered, offer a demo or a team member.")
     if business:
@@ -161,9 +162,9 @@ def knowledge_text(store: dict, kb: dict, facts: list, inv_lines: list, inv_tota
     return "\n\n".join(parts)
 
 
-def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False) -> str:
+def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False, coach: str = "") -> str:
     if kb.get("mode") == "business":
-        return business_prompt(store, kb, knowledge, mode, have_contact, booking)
+        return business_prompt(store, kb, knowledge, mode, have_contact, booking) + coach
     name = store.get("name") or "the store"
     never = "; ".join(kb.get("never") or []) or "none listed"
     price_rule = ("You may state a vehicle's listed price only when it appears in the inventory lines. " if kb.get("share_listed_prices")
@@ -186,7 +187,7 @@ def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact
     if booking:
         base += ("\nBOOKING: The visitor wants to come in (test drive, service or a visit). In one or two sentences say you can set that up right here and point them to the "
                  "booking form that just appeared below (pick a day and time). Do not ask them to call and do not ask for their number in the text; the form collects it.")
-    return base
+    return base + coach
 
 
 def business_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False) -> str:
@@ -216,6 +217,58 @@ def business_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_conta
     return base
 
 
+def _rank_scripts(scripts: list, text: str, top: int = 6) -> list:
+    toks = set(re.findall(r"[a-z0-9]{3,}", (text or "").lower()))
+    def sc(s):
+        return len(toks & set(re.findall(r"[a-z0-9]{3,}", s["q"].lower())))
+    return sorted([s for s in scripts if sc(s) > 0], key=sc, reverse=True)[:top]
+
+
+def coaching(cfg: dict, pb_state: dict, text: str, mode: str, booking: bool, pitch: bool = False) -> tuple:
+    """Owner training layered on the prompt: specificity rule, scripted answers that match this line, and the playbook's next question or pitch.
+    Returns (prompt_text, index_of_question_to_ask_or_None)."""
+    kb = cfg["kb"]
+    out = ["\nSPECIFICITY: Lead with a concrete detail from WHAT YOU KNOW: a number, a named plan or feature, a step, a real example. "
+           "Never a generic summary like 'we offer a range of solutions'. If asked what something costs or includes, name the plan or item. Vague is a failure."]
+    scripts = _rank_scripts(kb.get("scripts") or [], text)
+    if scripts:
+        out.append("SCRIPTED ANSWERS (the owner wrote these; when the visitor's line matches one, answer with that wording, only lightly adapted):\n"
+                   + "\n".join(f"- Q: {s['q']}\n  A: {s['a']}" for s in scripts))
+    pb = W.playbook_for(cfg)
+    next_q = None
+    if pb["on"] and pitch:
+        out.append(f"CLOSE NOW: They have answered your qualifying questions, this is the moment to ask for the {pb['goal'].lower()}. Answer their last line in one or two specific sentences, "
+                   f"then transition with the owner's pitch line adapted to what they told you: \"{pb['pitch']}\" Finish by pointing them to the booking form that just appeared below "
+                   "(pick a day and time). Do not ask another qualifying question and do not ask for their number; the form collects it.")
+    elif pb["on"] and mode == "normal" and not booking:
+        asked = set(pb_state.get("asked") or [])
+        remaining = [(i, q) for i, q in enumerate(pb["questions"]) if i not in asked]
+        if remaining:
+            next_q = remaining[0][0]
+            lst = "\n".join(f"  {n + 1}. {q}" for n, (_, q) in enumerate(remaining))
+            out.append(f"PLAYBOOK: Your goal is to get this visitor to {pb['goal'].lower()}. Answer their last line first with specifics, then end your reply with ONE qualifying question, "
+                       f"worded naturally in one sentence. Take the first question on this list that the visitor has NOT already answered anywhere in the conversation (skip answered ones):\n{lst}\n"
+                       "Ask exactly one question and make it the last sentence. Keep the whole reply under 80 words before the question. Do not ask for their contact details.")
+    return "\n".join(out), next_q
+
+
+def _asked_index(reply: str, cfg: dict, pb_state: dict) -> Optional[int]:
+    """Which playbook question did Jessi actually end with? Best token overlap among the ones not asked yet (None if she asked none)."""
+    asked = set(pb_state.get("asked") or [])
+    qs = re.findall(r"[^.!?\n]*\?", reply or "")
+    if not qs:
+        return None
+    toks = set(re.findall(r"[a-z0-9]{3,}", qs[-1].lower()))  # only the closing question, not the product talk above it
+    best, score = None, 0
+    for i, q in enumerate(W.playbook_for(cfg)["questions"]):
+        if i in asked:
+            continue
+        hit = len(toks & set(re.findall(r"[a-z0-9]{3,}", q.lower())))
+        if hit > score:
+            best, score = i, hit
+    return best if score >= 2 else None
+
+
 async def _llm(system: str, transcript: str) -> Optional[str]:
     api_key = os.environ.get("EMERGENT_LLM_KEY")
     if not api_key:
@@ -227,8 +280,12 @@ async def _llm(system: str, transcript: str) -> Optional[str]:
     except Exception as e:
         logger.warning(f"[WidgetChat] LLM failed: {e}")
         return None
-    text = no_em_dash((out if isinstance(out, str) else str(out)).strip())
-    return re.sub(r"\n{3,}", "\n\n", text)[:900] or None
+    text = re.sub(r"\n{3,}", "\n\n", no_em_dash((out if isinstance(out, str) else str(out)).strip()))
+    if len(text) > 1100:
+        cut = text[:1100]
+        end = max(cut.rfind(". "), cut.rfind("? "), cut.rfind("! "), cut.rfind("\n"))
+        text = cut[: end + 1].strip() if end > 300 else cut.rstrip()  # never chop mid-sentence, the closing question matters
+    return text or None
 
 
 def _transcript(session: dict, limit: int = HISTORY) -> str:
@@ -384,16 +441,37 @@ async def reply(db, w: dict, session: dict, text: str, ip: str) -> dict:
     if answer is None and mode in ("normal", "handed_off") and cfg["doors"]["chat"].get("booking_on", True) and not session.get("booking") and _wants_booking(kb, text):
         booking = True
         updates["offer_booking"] = session["offer_booking"] = True
+    # playbook progress: the line after a qualifying question counts as its answer
+    pb_state = dict(session.get("pb") or {})
+    if pb_state.get("pending") is not None:
+        pb_state["asked"] = list(pb_state.get("asked") or []) + [pb_state["pending"]]
+        pb_state["answered"] = int(pb_state.get("answered") or 0) + 1
+        pb_state["pending"] = None
+    pitch = False
+    if (answer is None and mode == "normal" and not booking and not session.get("booking") and not pb_state.get("pitched")
+            and cfg["doors"]["chat"].get("booking_on", True) and W.playbook_for(cfg)["on"] and int(pb_state.get("answered") or 0) >= W.playbook_for(cfg)["offer_after"]):
+        booking = pitch = True
+        pb_state["pitched"] = True
+        updates["offer_booking"] = session["offer_booking"] = True
     if answer is None:
         knowledge, _, _ = await _knowledge(db, w, store, kb, text)
-        system = system_prompt(store, kb, knowledge, mode, bool(session.get("phone")), booking=booking)
+        coach, next_q = coaching(cfg, pb_state, text, mode, booking, pitch)
+        system = system_prompt(store, kb, knowledge, mode, bool(session.get("phone")), booking=booking and not pitch, coach=coach)
         answer = await _llm(system, _transcript(session) + "\n\nReply to the visitor's last line as Jessi.")
+        if next_q is not None and answer:
+            hit = _asked_index(answer, cfg, pb_state)
+            # she skipped ahead: everything before the one she asked counts as already answered
+            if hit is not None:
+                pb_state["asked"] = sorted(set(pb_state.get("asked") or []) | {i for i in range(hit) })
+                pb_state["answered"] = max(int(pb_state.get("answered") or 0), len(pb_state["asked"]))
+            pb_state["pending"] = hit if hit is not None else next_q
         if not answer:
             answer = ("Happy to set that up. Pick a day and time below and I'll get you booked." if booking else ASK_CONTACT if mode == "handoff" else FALLBACK)
             if mode != "handoff" and not booking and not session.get("phone"):
                 updates["awaiting_contact"] = session["awaiting_contact"] = True
     msgs.append(_msg("jessi", answer))
     updates["messages"] = msgs
+    updates["pb"] = session["pb"] = pb_state
     for k in ("status", "phone", "name", "lead_id", "contact_id", "conversation_id", "awaiting_contact", "handed_off_at"):
         if k in session and k not in updates:
             updates[k] = session[k]
@@ -767,9 +845,11 @@ async def ask(db, w: dict, question: str) -> dict:
     reason = _detect(kb, question)
     knowledge, inv_lines, inv_total = await _knowledge(db, w, store, kb, question)
     facts = await store_facts(db, store)
-    system = system_prompt(store, kb, knowledge, "handoff" if reason else "normal", False)
+    coach, _ = coaching(cfg, {}, question, "handoff" if reason else "normal", False)
+    system = system_prompt(store, kb, knowledge, "handoff" if reason else "normal", False, coach=coach)
     answer = await _llm(system, f"Visitor: {question}\n\nReply to the visitor's last line as Jessi.") or (ASK_CONTACT if reason else FALLBACK)
     from services.widget_crawl import PAGES_COLL
     pages = await db[PAGES_COLL].count_documents({"widget_id": str(w["_id"])}) if kb.get("mode") == "business" else 0
     return {"reply": answer, "handoff": bool(reason), "reason": reason, "used": {"facts": len(facts), "specials": len(_active_specials(kb)), "inventory_matches": len([l for l in inv_lines if not l.startswith("...")]),
-                                                                                    "inventory_total": inv_total, "hours": bool(hours_lines(store)), "site_pages": pages, "mode": kb.get("mode")}}
+                                                                                    "inventory_total": inv_total, "hours": bool(hours_lines(store)), "site_pages": pages, "mode": kb.get("mode"),
+                                                                                    "scripts": len(_rank_scripts(kb.get("scripts") or [], question)), "playbook": W.playbook_for(cfg)["on"]}}
