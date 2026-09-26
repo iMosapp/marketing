@@ -1,0 +1,38 @@
+{
+  "summary": "Backend + Frontend testing of Phase 2/3 Website Widget: Jessi chat door, Knowledge Base editor, page-rule greetings, public chat flow with real LLM, and preview overrides. All 9 backend pytest cases pass (test_website_widget_jessi.py). Frontend editor renders all 5 tabs (Look/Doors/Jessi/Routing/Install); Jessi tab exposes every documented section (test, welcome, facts, specials, never, notes, recent-chats); Doors tab shows chat door with all sub-fields; Look tab page-rules editor supports empty state, quick-add chips, add/remove, and Preview toggle mutates the iframe src to include &path=%2Finventory. Save persists across reload; Ask Jessi returned a real LLM answer in ~10s with no em dashes. Widget left in the required clean state (chat.on=true, page_rules=[], kb blank, QA facts removed, preserved store fact intact).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "verified_flows": [
+    "GET /api/widgets/{id} as manager: can_manage=true, facts[], recent_chats[], widget.kb {welcome, specials, never, notes, share_listed_prices}, widget.doors.chat {on,label,intro,button,placeholder,human}, widget.appearance.page_rules present.",
+    "PUT /api/widgets/{id} round-trip: 12-rule cap enforced (submitted 19 -> capped), rule without greeting dropped, bad door 'sms' becomes '', good rules preserved verbatim. kb.welcome/specials/never/notes/share_listed_prices all round-trip.",
+    "As rep (activation-tester): GET 200 with can_manage=false, PUT 403, POST facts 403.",
+    "POST /api/widgets/{id}/facts adds fact.id, appears in GET detail, DELETE removes it; preserved store fact 'We take walk-ins weekdays until 6 pm' untouched.",
+    "POST /api/widgets/{id}/ask 'What are your hours?' -> reply, handoff, reason, used {facts, specials, inventory_matches, inventory_total, hours} present; 'How much is the cheapest truck with financing?' -> handoff=true; no em dashes in either reply.",
+    "Public chat: POST /api/w/{key}/chat/start returns sid + greeting=kb.welcome when set; GET state has messages; POST message 'Are you open Saturday?' returns Jessi LLM reply; POST message 'What is my trade worth?' -> handoff/need_contact true; POST /contact with 5005550031 -> handoff true; fresh session POST /human -> need_contact true; bad sid -> 404.",
+    "Chat door off (PUT doors.chat.on=false) -> POST /chat/start 400; turning back on restores.",
+    "GET /api/w/{key}/demo?path=%2Finventory contains window.IMOS_WIDGET_PATH = \"/inventory\"; ?c=<b64 kb.welcome=Howdy> yields chat_welcome:\"Howdy in HTML; GET /api/w/{key}.js contains 'page_rules' and does NOT expose kb notes/specials (KB stays private in non-preview JS).",
+    "Frontend: 5 editor tabs (widget-tab-look/doors/jessi/routing/install) all render.",
+    "Doors tab: widget-section-chat-door + widget-door-chat-on + widget-chat-label/intro/placeholder/human all visible. Editing widget-chat-label enables widget-save; Save shows toast 'Widget saved. Your site picks it up within two minutes.'; after in-app navigate-away/back, the new label persists (verified 'Chat with QA Jessi' reloaded), then restored to original.",
+    "Jessi tab: widget-section-test with widget-ask-input/widget-ask-btn produced widget-ask-answer (real LLM, ~10s). widget-section-welcome (widget-kb-welcome + widget-kb-share-prices), widget-section-facts (existing 'We take walk-ins weekdays until 6 pm' pill, widget-fact-input + widget-fact-add adds a new pill immediately with data-testid widget-fact-{id}-remove; removal works), widget-section-specials (widget-special-add), widget-section-never (widget-never-input/add + 4 built-in pills visible in screenshot), widget-section-notes (widget-kb-notes), widget-section-recent-chats all render.",
+    "Look tab: widget-section-page-rules with widget-page-rules-empty when list is empty; widget-page-rule-suggest-inventory quick-add creates a rule row with widget-page-rule-0-match/greeting/remove/preview and door chips widget-page-rule-0-door-'', -text, -call, -chat. Tapping widget-page-rule-0-preview toggles the widget-preview iframe src to include &path=%2Finventory (verified in src string).",
+    "Preview iframe: on Jessi tab the chat panel auto-opens showing 'Chat with Jessi' header and Jessi's welcome greeting text (screenshot confirmed).",
+    "Regression sanity: WIDGET_RING_DRY_RUN=true, and POST /api/w/{key}/text on qa-dealer.test page returns non-500 (200/403 depending on domain state)."
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_website_widget_jessi.py",
+    "/app/test_reports/pytest/jessi_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Widget key rotates each time the pre-existing test_website_widget.py runs (test_rotate_key_kills_the_old_script). Future testing agents must always re-read the key from GET /api/widgets/{id} rather than caching. Current live key at end of this run: 8QpkPBWp.",
+    "The public /api/w/{key}.js response correctly excludes kb.notes/specials in non-preview mode; kb text is only rendered when ?c= override is provided (preview) or via chat_welcome. This privacy boundary is verified by tests."
+  ],
+  "updated_files": ["/app/backend/tests/test_website_widget_jessi.py"],
+  "success_rate": {"backend": "100% (9/9 new + 7/7 preexisting untouched)", "frontend": "100%"},
+  "test_credentials": "qa-manager@invalid.imonsocial.test / Manager123! ; activation-tester@invalid.imonsocial.test / NewPass123! ; widget id 6ab72996c248f5420bf0a14a store 69a0b7095fddcede09591668",
+  "seed_data_creation": "None left. QA facts, specials, never entries, notes, page rules, kb.welcome, chat door labels — all reverted. Chat sessions created for the flow test remain in DB with 500-555 phone numbers (per instructions, these may be left).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Widget key at end of this run: 8QpkPBWp (may rotate again if test_website_widget.py runs). Always re-read via GET /api/widgets/6ab72996c248f5420bf0a14a. To reach the Jessi tab in the FE: login as qa-manager -> pushState('/admin/website-widget/6ab72996c248f5420bf0a14a') + popstate. All expected data-testids exist on the page (see verified_flows). Preview iframe is data-testid=widget-preview and contains an <iframe> element; check its .src for path/door/c query params.",
+  "rca of the issue": "No bugs found. Phase 2/3 wiring (Jessi tab, Chat door, Page rules, KB privacy in JS, kb.welcome in preview chat, greeting bubble handling) all work as specified."
+}
