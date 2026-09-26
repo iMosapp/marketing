@@ -179,7 +179,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dialer"
         options={{
-          title: 'Call',
+          title: 'Phone',
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="call" size={size} color={isPending ? '#3C3C3E' : color} />
