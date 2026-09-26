@@ -195,8 +195,44 @@ async def call_brief(db, pending: dict) -> dict:
     tags.sort(key=lambda t: next((i for i, p in enumerate(TAG_PRIORITY) if p in t.lower()), len(TAG_PRIORITY)))
     if tags:
         facts.append(f"Tagged {', '.join(tags[:3])}.")
-    opener = f"Hey {rep_first}, calling {name}{f' about {vehicle}' if vehicle else ''}. " + " ".join(facts[1:] if vehicle else facts) + " Say connect when you're ready, or ask me anything first."
-    return {"rep_first": rep_first, "customer_first": first, "who": name, "facts": facts, "opener": no_em_dash(re.sub(r"\s+", " ", opener)).strip(), "contact_id": cid, "rep_user_id": uid}
+    opener = f"Hey {rep_first}, calling {name}{f' about {vehicle}' if vehicle else ''}. " + " ".join(facts[1:] if vehicle else facts) + f" Say connect when you're ready, or ask me anything about {first} first."
+    return {"rep_first": rep_first, "customer_first": first, "who": name, "facts": facts, "opener": no_em_dash(re.sub(r"\s+", " ", opener)).strip(), "contact_id": cid, "rep_user_id": uid,
+            "sheet": await customer_sheet(db, contact, tz)}
+
+
+SHEET_BUDGET = 3500
+
+
+async def customer_sheet(db, contact: dict, tz: ZoneInfo) -> str:
+    """Everything Jessi should be able to answer on the spot: who they are (spouse, kids, pets, hobbies, work, dates), what they
+    bought and when, notes, relationship intel, and the freshest slice of the timeline. Loaded into her instructions up front so
+    'ask me anything' is true without a round trip."""
+    try:
+        from services import contact_ask, sales
+        rec = await contact_ask.build_record(db, contact, tz=str(tz))
+        parts = [(rec.get("profile") or "")[:1800]]   # intel paragraphs can run long; leave room for purchases + recent history
+        extra = []
+        for k in ("birthday", "anniversary", "company", "job_title", "address", "city"):
+            v = contact.get(k)
+            if v and isinstance(v, (str, int, float)):
+                extra.append(f"{k.replace('_', ' ')}: {v}")
+        if extra:
+            parts.append("ALSO ON FILE: " + "; ".join(extra))
+        entries = sales.sort_entries([sales.normalize_entry(e) for e in (contact.get("purchase_history") or []) if isinstance(e, dict)])
+        if not entries and (contact.get("vehicle") or contact.get("date_sold")):
+            entries = [sales.normalize_entry({"title": contact.get("vehicle") or "", "date": contact.get("date_sold")})]
+        if entries:
+            parts.append("PURCHASES: " + "; ".join(f"{e['title'] or 'vehicle'}{' on ' + e['date'] if e.get('date') else ''}{' (' + e['notes'][:80] + ')' if e.get('notes') else ''}" for e in entries[:6]))
+        timeline = [l for l in (rec.get("timeline") or "").split("\n") if l.strip()]
+        recent = "\n".join(timeline[-14:])
+        head = "\n".join(p for p in parts if p)
+        room = SHEET_BUDGET - len(head) - 40
+        if room > 200 and recent:
+            head += "\nRECENT HISTORY (oldest to newest):\n" + (recent[-room:] if len(recent) > room else recent)
+        return head[:SHEET_BUDGET]
+    except Exception as e:
+        logger.debug(f"[LiveHost] customer sheet failed: {e}")
+        return ""
 
 
 def shop_brief(session: dict) -> dict:
@@ -209,7 +245,7 @@ def shop_brief(session: dict) -> dict:
 
 
 # ── instructions ──────────────────────────────────────────────────────────────
-STYLE = ("Sound like a sharp, warm assistant on the phone: contractions, one or two short sentences at a time, no lists, no filler, never say 'great question'. "
+STYLE = ("Sound like a sharp colleague leaning over the desk, not a receptionist: natural pace, contractions, one or two short sentences at a time, no lists, no filler, never say 'great question', never read field names out loud (say 'his wife is Sarah', not 'spouse: Sarah'). "
          "You are talking to the REP only; the customer is not on the line and never will be while you are. "
          "Interruption policy: stop speaking the moment the rep talks over you and listen. Backchannel policy: none. No em dashes. ")
 
@@ -217,13 +253,17 @@ STYLE = ("Sound like a sharp, warm assistant on the phone: contractions, one or 
 def instructions(kind: str, brief: dict, cfg: dict) -> str:
     if kind == "call":
         facts = " ".join(brief.get("facts") or []) or "Nothing else on file."
+        sheet = (brief.get("sheet") or "").strip() or "Only the facts above."
         return (f"You are Jessi, {brief['rep_first']}'s assistant at I'm On Social, on the line with {brief['rep_first']} for a few seconds before their call to {brief['who']} goes through. "
-                f"You speak first, right away: \"{brief['opener']}\" (your own words are fine, every fact kept, under 20 seconds). Then wait.\n"
-                f"FACTS YOU HAVE: {facts}\n"
+                f"You speak first, right away: \"{brief['opener']}\" (your own words are fine, every fact kept, under 15 seconds). Then wait.\n"
+                f"HEADLINE FACTS: {facts}\n"
+                f"CUSTOMER SHEET (everything on file about {brief['customer_first']}; this IS your access to their record):\n{sheet}\n"
                 f"WHAT HAPPENS NEXT: when the rep says connect, ready, yes, go, dial or presses 1: say exactly \"{CONNECT_LINE}\" and then delegate to the backend immediately; the backend dials {brief['customer_first']}. "
                 f"When the rep says not now, later, cancel, skip or presses 2: say \"{CANCEL_LINE}\" and delegate immediately. "
-                "When the rep asks something about the customer: answer from FACTS in one or two sentences, then ask 'ready to connect?'. If FACTS do not cover it, delegate; the backend whispers the answer to you, then you say it. "
-                "Never make anything up about the customer. Never delegate for anything else. After you delegate, say nothing more.\n"
+                f"When the rep asks about the customer (spouse, kids, pets, hobbies, work, what they drive, what they bought and when, birthday, what they last said, what you owe them, anything): answer from the CUSTOMER SHEET in one or two natural sentences, then ask 'ready to connect?'. "
+                f"If the sheet truly does not cover it, say 'Let me check' and delegate; the backend searches the full history and whispers the answer to you, then you say it. "
+                "Never say you don't have access, can't see the record, or can't help with that: you have the whole file. If something is genuinely not on file say 'nothing on file about that' and move on. "
+                "Never make anything up about the customer. Never delegate for anything else. After you delegate for connect or cancel, say nothing more.\n"
                 + STYLE + numbers_rule("en-US"))
     return (f"You are Jessi from I'm On Social, calling {brief['rep_first']} with a practice call. You speak first, right away: \"{brief['opener']}\" (your own words are fine, every fact kept). Then wait.\n"
             f"WHAT HAPPENS NEXT: when the rep says ready, yes, go, okay or presses 1: say exactly \"{brief['go_line']}\" and then delegate to the backend immediately; the backend rings the {'customer' if brief['direction'] == 'inbound' else 'lead'} in. "
@@ -269,12 +309,14 @@ async def answer_question(db, brief: dict, question: str) -> str:
         contact = await db.contacts.find_one({"_id": ObjectId(brief["contact_id"])}) if ObjectId.is_valid(str(brief.get("contact_id") or "")) else None
         if not contact:
             return "I have nothing else on file for them."
-        rec = await contact_ask.build_record(db, contact)
-        text = rec.get("text") if isinstance(rec, dict) else str(rec)
-        lines = [l for l in str(text or "").split("\n") if l.strip()]
-        record = "\n".join(lines[-80:])[-6000:]
+        rec = await contact_ask.build_record(db, contact, tz=str(await _rep_tz(str(brief.get("rep_user_id") or ""))))
+        # profile (personal details, notes, intel) always in; the newest slice of the timeline fills the rest
+        profile = rec.get("profile") or ""
+        lines = [l for l in (rec.get("timeline") or "").split("\n") if l.strip()]
+        record = profile + "\n" + "\n".join(lines[-80:])[-(6000 - len(profile)):]
         out = await scr._llm("You are Jessi, a sales rep's assistant, answering ONE spoken question about a customer right before the rep calls them. Use only the record below. "
-                             "Answer in one or two short spoken sentences, plain words, dates as 'last Tuesday' style, no citations, no lists, no em dashes. If the record does not say, say so in one sentence.\n\nRECORD:\n" + record,
+                             "Answer in one or two short spoken sentences, plain words, dates as 'last Tuesday' style, no citations, no lists, no em dashes, never read field names aloud. "
+                             "If the record does not say, answer exactly 'Nothing on file about that.' Never say you lack access.\n\nRECORD:\n" + record,
                              question, timeout=15)
         return no_em_dash(speakable(out.strip(), "en-US"))[:400] or "I have nothing on that."
     except Exception as e:
