@@ -62,6 +62,7 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
   };
   const specials: any[] = kb.specials || [];
   const patchSpecial = (i: number, p: any) => setKb({ specials: specials.map((s, j) => (j === i ? { ...s, ...p } : s)) });
+  const business = kb.mode === 'business';
 
   return (
     <>
@@ -72,11 +73,26 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
           {canManage ? <TouchableOpacity onPress={onTurnOnChat} style={{ paddingHorizontal: 12, height: 34, borderRadius: 17, backgroundColor: GOLD, justifyContent: 'center' }} {...tid('widget-chat-turn-on')}><Text style={{ fontSize: 13, fontWeight: '800', color: '#111' }}>Turn on</Text></TouchableOpacity> : null}
         </View>
       ) : null}
+      <Section colors={colors} testId="widget-section-mode">
+        <Label colors={colors}>What kind of site is this?</Label>
+        <Hint colors={colors}>{business ? 'Jessi is the product expert: she answers what it does, features, plans and pricing straight from your website, and books demos. Only "talk to a person" hands off.' : 'Jessi answers hours, inventory and store questions, books test drives and service, and hands prices, payments and trade values to a person.'}</Hint>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {[{ v: 'dealership', l: 'Dealership', icon: 'car-sport-outline' }, { v: 'business', l: 'Business or software', icon: 'briefcase-outline' }].map(o => {
+            const on = (kb.mode || 'dealership') === o.v;
+            return (
+              <TouchableOpacity key={o.v} onPress={() => setKb({ mode: o.v })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 12, backgroundColor: on ? GOLD : colors.surface, borderWidth: 1, borderColor: on ? GOLD : colors.border }} {...tid(`widget-kb-mode-${o.v}`)}>
+                <Ionicons name={o.icon as any} size={17} color={on ? '#111' : colors.textSecondary} />
+                <Text style={{ fontSize: 13.5, fontWeight: '800', color: on ? '#111' : colors.text }}>{o.l}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Section>
       <Section colors={colors} testId="widget-section-test">
         <Label colors={colors}>Test Jessi</Label>
         <Hint colors={colors}>Ask what a visitor would ask. Unsaved changes on this tab are not used until you Save.</Hint>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TextInput value={q} onChangeText={setQ} placeholder="Do you have any trucks under 40k?" placeholderTextColor={colors.textSecondary} onSubmitEditing={ask} style={[inputStyle(colors), { flex: 1 }]} {...tid('widget-ask-input')} />
+          <TextInput value={q} onChangeText={setQ} placeholder={business ? 'How much does it cost per month?' : 'Do you have any trucks under 40k?'} placeholderTextColor={colors.textSecondary} onSubmitEditing={ask} style={[inputStyle(colors), { flex: 1 }]} {...tid('widget-ask-input')} />
           <TouchableOpacity onPress={ask} disabled={asking || !q.trim()} style={{ height: 46, paddingHorizontal: 14, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', opacity: asking || !q.trim() ? 0.5 : 1 }} {...tid('widget-ask-btn')}>
             {asking ? <ActivityIndicator color="#111" /> : <Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>Ask</Text>}
           </TouchableOpacity>
@@ -85,20 +101,20 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
           <View style={{ marginTop: 10, padding: 12, borderRadius: 12, backgroundColor: colors.surface, gap: 6 }} {...tid('widget-ask-answer')}>
             <Text style={{ fontSize: 14, color: colors.text, lineHeight: 20 }}>{answer.reply}</Text>
             <Text style={{ fontSize: 11, color: answer.handoff ? '#FF9500' : colors.textSecondary }}>
-              {answer.handoff ? `Hands off to the team (${answer.reason})` : 'Answered herself'} · used {answer.used?.facts || 0} facts, {answer.used?.specials || 0} specials, {answer.used?.inventory_matches || 0} of {answer.used?.inventory_total || 0} vehicles{answer.used?.hours ? ', store hours' : ', no hours on file'}
+              {answer.handoff ? `Hands off to the team (${answer.reason})` : 'Answered herself'} · used {answer.used?.facts || 0} facts, {answer.used?.specials || 0} {answer.used?.mode === 'business' ? 'offers' : 'specials'}{answer.used?.mode === 'business' ? `, ${answer.used?.site_pages || 0} website pages` : `, ${answer.used?.inventory_matches || 0} of ${answer.used?.inventory_total || 0} vehicles${answer.used?.hours ? ', store hours' : ', no hours on file'}`}
             </Text>
           </View>
         ) : null}
       </Section>
 
       <Section colors={colors} testId="widget-section-welcome">
-        <Field label="First thing Jessi says" hint="Blank = a friendly default that mentions hours, inventory and 'want a person, just say so'." value={kb.welcome || ''} onChange={v => setKb({ welcome: v })} multiline colors={colors} testId="widget-kb-welcome" maxLength={300} top={false} />
-        <ToggleRow label="Let Jessi state listed prices" hint="Off = she never mentions a price, even the sticker in your feed. Payments, discounts and trade values always go to a person." value={!!kb.share_listed_prices} onChange={v => setKb({ share_listed_prices: v })} colors={colors} testId="widget-kb-share-prices" />
+        <Field label="First thing Jessi says" hint={business ? "Blank = a friendly default that invites questions about what you do, how it works and pricing." : "Blank = a friendly default that mentions hours, inventory and 'want a person, just say so'."} value={kb.welcome || ''} onChange={v => setKb({ welcome: v })} multiline colors={colors} testId="widget-kb-welcome" maxLength={300} top={false} />
+        {!business ? <ToggleRow label="Let Jessi state listed prices" hint="Off = she never mentions a price, even the sticker in your feed. Payments, discounts and trade values always go to a person." value={!!kb.share_listed_prices} onChange={v => setKb({ share_listed_prices: v })} colors={colors} testId="widget-kb-share-prices" /> : null}
       </Section>
 
       <Section colors={colors} testId="widget-section-facts">
-        <Label colors={colors}>Store facts</Label>
-        <Hint colors={colors}>Shared with Jessi's texts (My VA → store facts). One plain sentence each: "Service is open Saturdays until 4", "We deliver within 100 miles". Hours and address come from the Store Profile automatically.</Hint>
+        <Label colors={colors}>{business ? 'Company facts' : 'Store facts'}</Label>
+        <Hint colors={colors}>{business ? 'One plain sentence each: "Setup takes about 20 minutes", "Works with any CRM through Zapier". Anything the website does not say clearly.' : 'Shared with Jessi\'s texts (My VA → store facts). One plain sentence each: "Service is open Saturdays until 4", "We deliver within 100 miles". Hours and address come from the Store Profile automatically.'}</Hint>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           {facts.length === 0 ? <Text style={{ fontSize: 13, color: colors.textSecondary }} {...tid('widget-facts-empty')}>No facts yet{storeName ? ` for ${storeName}` : ''}.</Text> : null}
           {facts.map(f => <Pill key={f.id} text={f.text} onRemove={canManage ? () => removeFact(f.id) : undefined} colors={colors} testId={`widget-fact-${f.id}`} />)}
@@ -106,10 +122,10 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
         {canManage ? <AddRow placeholder="Add a fact Jessi can use" onAdd={addFact} colors={colors} testId="widget-fact" busy={factBusy} /> : null}
       </Section>
 
-      <SiteCrawlCard widgetId={widgetId} siteUrl={siteUrl} colors={colors} canManage={canManage} showToast={showToast} onApplied={r => { setFacts(r.facts); onKbSaved(r.kb); }} />
+      <SiteCrawlCard widgetId={widgetId} siteUrl={siteUrl} colors={colors} canManage={canManage} showToast={showToast} business={business} onApplied={r => { setFacts(r.facts); onKbSaved(r.kb); }} />
 
       <Section colors={colors} testId="widget-section-specials">
-        <Label colors={colors}>Specials</Label>
+        <Label colors={colors}>{business ? 'Current offers' : 'Specials'}</Label>
         <Hint colors={colors}>Jessi repeats these word for word and never adds numbers of her own. Expired ones stop being used on their own.</Hint>
         {specials.map((s, i) => (
           <View key={s.id || i} style={{ padding: 10, borderRadius: 12, backgroundColor: colors.surface, marginBottom: 8, gap: 6 }} {...tid(`widget-special-${i}`)}>
@@ -129,9 +145,9 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
 
       <Section colors={colors} testId="widget-section-never">
         <Label colors={colors}>Always hand these to a person</Label>
-        <Hint colors={colors}>Prices, payments, financing, trade values and discounts are already on the list. Add anything else: warranty claims, complaints, employment.</Hint>
+        <Hint colors={colors}>{business ? 'Jessi answers pricing and plans herself from your site. Add anything she should leave to the team: custom quotes, contracts, refunds, complaints, jobs.' : 'Prices, payments, financing, trade values and discounts are already on the list. Add anything else: warranty claims, complaints, employment.'}</Hint>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          {['Prices & payments', 'Financing terms', 'Trade-in values', 'Discounts & offers'].map(t => <Pill key={t} text={t} colors={colors} testId={`widget-never-builtin-${t.split(' ')[0].toLowerCase()}`} />)}
+          {(business ? ['Asked for a person'] : ['Prices & payments', 'Financing terms', 'Trade-in values', 'Discounts & offers']).map(t => <Pill key={t} text={t} colors={colors} testId={`widget-never-builtin-${t.split(' ')[0].toLowerCase()}`} />)}
           {(kb.never || []).map((n: string, i: number) => <Pill key={n + i} text={n} onRemove={() => setKb({ never: kb.never.filter((_: string, j: number) => j !== i) })} colors={colors} testId={`widget-never-${i}`} />)}
         </View>
         <AddRow placeholder="Topic Jessi must not answer" onAdd={t => setKb({ never: [...(kb.never || []), t] })} colors={colors} testId="widget-never" />

@@ -48,6 +48,16 @@ def key(mgr):
     return r.json()["widget"]["key"]
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _dealership_mode(mgr):
+    # Booking / hand-off flows assume the dealership persona; restore whatever mode the widget had afterwards.
+    before = requests.get(f"{BASE}/api/widgets/{WID}", headers=mgr, timeout=30).json()["widget"].get("kb") or {}
+    prev_mode = before.get("mode") or "dealership"
+    requests.put(f"{BASE}/api/widgets/{WID}", json={"kb": {"mode": "dealership"}}, headers=mgr, timeout=30)
+    yield
+    requests.put(f"{BASE}/api/widgets/{WID}", json={"kb": {"mode": prev_mode}}, headers=mgr, timeout=30)
+
+
 def _start_chat(key, visitor_suffix=""):
     r = requests.post(
         f"{BASE}/api/w/{key}/chat/start",

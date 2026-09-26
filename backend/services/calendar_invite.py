@@ -18,7 +18,7 @@ from utils.activity_log import log_activity
 
 logger = logging.getLogger(__name__)
 
-INVITE_TYPES = ("appointment", "test_drive", "delivery", "meeting", "service", "visit")
+INVITE_TYPES = ("appointment", "test_drive", "delivery", "meeting", "service", "visit", "demo")
 DURATION_MIN = 60
 AUTO_SOURCES = ("manual", "call_extraction")  # text-extracted appointments wait for the rep to tap Send
 REMINDER_HOUR = 8

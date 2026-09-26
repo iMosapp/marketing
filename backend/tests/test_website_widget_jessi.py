@@ -255,6 +255,10 @@ def test_regression_text_and_call_preview(key):
 # ---------- Cleanup: restore clean state ----------
 @pytest.fixture(scope="module", autouse=True)
 def _final_cleanup(mgr):
+    # These flows assume the dealership persona (price hand-off etc.); remember the mode the widget had and put it back.
+    before = requests.get(f"{BASE}/api/widgets/{WID}", headers=mgr, timeout=30).json()["widget"].get("kb") or {}
+    prev_mode = before.get("mode") or "dealership"
+    requests.put(f"{BASE}/api/widgets/{WID}", json={"kb": {"mode": "dealership"}}, headers=mgr, timeout=30)
     yield
     # Reset kb + page rules + chat on, defaults for doors
     body = {
@@ -262,7 +266,7 @@ def _final_cleanup(mgr):
         "doors": {
             "chat": {"on": True, "label": "Chat with Jessi", "intro": "", "button": "", "placeholder": "", "human": ""},
         },
-        "kb": {"welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False},
+        "kb": {"welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False, "mode": prev_mode},
     }
     try:
         requests.put(f"{BASE}/api/widgets/{WID}", json=body, headers=mgr, timeout=30)

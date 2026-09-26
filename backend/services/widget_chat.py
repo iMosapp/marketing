@@ -28,6 +28,11 @@ LIVE_WINDOW_MIN = 20     # a chat is "live" while something happened in the last
 HERE_S = 25              # the visitor still has the window open if it polled in the last 25 s
 PUBLIC_ROLES = ("visitor", "jessi", "rep", "system")   # "note" is rep-only
 BOOK_KINDS = {"test_drive": "Test drive", "service": "Service visit", "visit": "Store visit"}
+BUSINESS_KINDS = {"demo": "Demo", "meeting": "Call with the team"}
+
+
+def kinds_for(cfg: dict) -> dict:
+    return BUSINESS_KINDS if cfg["kb"].get("mode") == "business" else BOOK_KINDS
 
 HANDOFF = re.compile(r"\b(price|prices|pricing|cost|costs|how much|payment|payments|monthly|per month|a month|lease|leasing|financ\w*|apr|interest rate|"
                      r"trade[- ]?in|trade value|my trade|discount|discounts|deal|deals|negotiat\w*|best price|out the door|otd|msrp|down payment|"
@@ -36,6 +41,8 @@ HUMAN = re.compile(r"\b((talk|speak|chat)\s+(to|with)\s+(a\s+|an\s+)?(someone|so
                    r"(real person|a human|salesperson|sales rep|representative|call me|someone call|have someone|actual person)\b", re.I)
 BOOK = re.compile(r"\b(test[- ]?drive|appointment|appt|schedule|book(ing)?|come (in|by|down)|stop by|swing by|drop (it|my car|the car) off|bring (it|my car) in|"
                   r"come (see|look at|check out)|see it in person|set up a time|what time (can|could) i|oil change|service visit|reserve)\b", re.I)
+BOOK_BUSINESS = re.compile(r"\b(demo|walk ?through|walk me through|show me (how|the)|see it in action|schedule|book(ing)?|set up a (time|call|meeting)|appointment|"
+                           r"(talk|speak|get) (to|with|on) (a|the) (call|phone)|call with|meeting|consult\w*|get started|sign ?up|start a trial|free trial|onboard\w*)\b", re.I)
 PHONE = re.compile(r"(?:\+?1[\s.-]?)?\(?(\d{3})\)?[\s.-]?(\d{3})[\s.-]?(\d{4})\b")
 NAME = re.compile(r"\b(?:i am|i'm|im|my name is|this is|it's|its|name's)\s+([A-Z][a-zA-Z'-]{1,20})(?:\s+([A-Z][a-zA-Z'-]{1,25}))?", re.I)
 DAYS = [("monday", "Mon"), ("tuesday", "Tue"), ("wednesday", "Wed"), ("thursday", "Thu"), ("friday", "Fri"), ("saturday", "Sat"), ("sunday", "Sun")]
@@ -116,9 +123,10 @@ async def inventory_lines(db, store_id: str, message: str, share_prices: bool) -
     return lines, total
 
 
-def knowledge_text(store: dict, kb: dict, facts: list, inv_lines: list, inv_total: int) -> str:
-    name = store.get("name") or "the store"
-    parts = [f"STORE: {name}"]
+def knowledge_text(store: dict, kb: dict, facts: list, inv_lines: list, inv_total: int, site: str = "") -> str:
+    business = kb.get("mode") == "business"
+    name = store.get("name") or ("the company" if business else "the store")
+    parts = [f"{'COMPANY' if business else 'STORE'}: {name}"]
     addr = ", ".join(str(x) for x in [store.get("address"), store.get("city"), store.get("state"), store.get("zip") or store.get("zip_code")] if x)
     if addr:
         parts.append(f"ADDRESS: {addr}")
@@ -127,15 +135,25 @@ def knowledge_text(store: dict, kb: dict, facts: list, inv_lines: list, inv_tota
     if store.get("website"):
         parts.append(f"WEBSITE: {store['website']}")
     hl = hours_lines(store)
-    parts.append("HOURS:\n" + "\n".join(hl) if hl else "HOURS: not on file (say you will have the team confirm)")
+    if business:
+        if hl:
+            parts.append("OFFICE / SUPPORT HOURS:\n" + "\n".join(hl))
+    else:
+        parts.append("HOURS:\n" + "\n".join(hl) if hl else "HOURS: not on file (say you will have the team confirm)")
     if facts:
-        parts.append("STORE FACTS (accurate, quote plainly):\n" + "\n".join(f"- {f}" for f in facts[:30]))
+        parts.append(("COMPANY FACTS" if business else "STORE FACTS") + " (accurate, quote plainly):\n" + "\n".join(f"- {f}" for f in facts[:30]))
     sp = _active_specials(kb)
     if sp:
-        parts.append("CURRENT SPECIALS (you may mention these exactly as written, never add numbers of your own):\n" + "\n".join(
+        parts.append(("CURRENT OFFERS" if business else "CURRENT SPECIALS") + " (you may mention these exactly as written, never add numbers of your own):\n" + "\n".join(
             f"- {s['title']}" + (f": {s['details']}" if s.get("details") else "") + (f" (through {s['ends']})" if s.get("ends") else "") for s in sp[:10]))
     if (kb.get("notes") or "").strip():
         parts.append("MORE FROM THE MANAGER:\n" + kb["notes"].strip()[:2000])
+    if site:
+        parts.append("WHAT THE WEBSITE SAYS (the source of truth for the product, features, plans and prices; quote it plainly and specifically):\n" + site)
+    elif business:
+        parts.append("WEBSITE: not read yet, so only use the facts above; when something is not covered, offer a demo or a team member.")
+    if business:
+        return "\n\n".join(parts)
     if inv_total:
         parts.append(f"INVENTORY: {inv_total} vehicles available right now." + ("\nMATCHES FOR WHAT THEY ASKED:\n" + "\n".join(f"- {l}" for l in inv_lines) if inv_lines else ""))
     else:
@@ -144,6 +162,8 @@ def knowledge_text(store: dict, kb: dict, facts: list, inv_lines: list, inv_tota
 
 
 def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False) -> str:
+    if kb.get("mode") == "business":
+        return business_prompt(store, kb, knowledge, mode, have_contact, booking)
     name = store.get("name") or "the store"
     never = "; ".join(kb.get("never") or []) or "none listed"
     price_rule = ("You may state a vehicle's listed price only when it appears in the inventory lines. " if kb.get("share_listed_prices")
@@ -166,6 +186,33 @@ def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact
     if booking:
         base += ("\nBOOKING: The visitor wants to come in (test drive, service or a visit). In one or two sentences say you can set that up right here and point them to the "
                  "booking form that just appeared below (pick a day and time). Do not ask them to call and do not ask for their number in the text; the form collects it.")
+    return base
+
+
+def business_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False) -> str:
+    name = store.get("name") or "the company"
+    never = "; ".join(kb.get("never") or []) or "none listed"
+    base = (
+        f"You are Jessi, the assistant in the chat window on {name}'s website, and you are the resident expert on {name}: what it does, who it is for, every feature, "
+        "how it works, plans and pricing, setup and support. You are talking to a prospect or customer visiting the site.\n"
+        "STYLE: warm, confident, plain English, like a sharp teammate who knows the product cold. Two to four short sentences; a short list of up to four items is fine when they ask what is included. "
+        "No emojis, no em dashes, no headings. Answer the question directly first, then add the one detail that helps most, then a natural next step when it fits "
+        "(see it in a demo, start, or talk to the team). Do not push the demo in every message.\n"
+        "TRUTH: Use WHAT THE WEBSITE SAYS and the facts as your source. Quote plan names, prices, limits and feature names exactly as written there. "
+        "Never invent features, numbers, integrations, dates or policies. If the site and facts do not cover something, say so in one sentence, give the closest thing you do know, and offer to have a team member follow up.\n"
+        f"HARD RULES: never discuss: {never}. Never pretend to be human; if asked, you are Jessi, {name}'s assistant, and a real person is one tap away. "
+        "Do not ask for contact details unless a hand-off is happening.\n\n"
+        f"WHAT YOU KNOW:\n{knowledge}\n"
+    )
+    if mode == "handoff":
+        base += ("\nMODE: HAND-OFF. The visitor asked for a person or for something only the team handles. In one or two sentences say a real person on the team will take it and that they are fast. "
+                 + ("Their name and mobile are already on file, so tell them the team is texting them right now and offer to keep helping meanwhile."
+                    if have_contact else "Ask for their first name and mobile number so the team can text them right away."))
+    elif mode == "handed_off":
+        base += "\nMODE: A team member already has this visitor's number and is texting them. Keep answering product questions fully; remind them the team member has anything you cannot answer."
+    if booking:
+        base += ("\nBOOKING: The visitor wants a demo or a call. In one or two sentences say you can set that up right here and point them to the "
+                 "booking form that just appeared below (pick a day and time). Do not ask for their number in the text; the form collects it.")
     return base
 
 
@@ -212,7 +259,10 @@ async def start(db, w: dict, body: dict, ip: str) -> dict:
         raise ValueError("Too many chats started from this connection. Give it a minute.")
     cfg = W.normalize_config(w)
     store = await W.store_of(db, w)
-    greeting = (cfg["kb"].get("welcome") or "").strip() or f"Hi! I'm Jessi, {store.get('name') or 'the store'}'s assistant. Ask me about hours, what's in stock or anything about the store. Want a person? Just say so."
+    sname = store.get("name") or ("the company" if cfg["kb"].get("mode") == "business" else "the store")
+    default = (f"Hi! I'm Jessi, {sname}'s assistant. Ask me anything about what we do, how it works or pricing. Want a person? Just say so."
+               if cfg["kb"].get("mode") == "business" else f"Hi! I'm Jessi, {sname}'s assistant. Ask me about hours, what's in stock or anything about the store. Want a person? Just say so.")
+    greeting = (cfg["kb"].get("welcome") or "").strip() or default
     greeting = greeting.replace("{store}", store.get("name") or "").replace("{{store_name}}", store.get("name") or "")
     doc = {"sid": secrets.token_urlsafe(18), "widget_id": str(w["_id"]), "key": w["key"], "store_id": w.get("store_id"),
            "visitor": (body.get("visitor") or "")[:64], "page": (body.get("page") or "")[:500], "title": (body.get("title") or "")[:200], "host": W.host_of(body.get("page") or ""),
@@ -247,10 +297,23 @@ def public_state(session: dict) -> dict:
 def _detect(kb: dict, text: str) -> str:
     if HUMAN.search(text or ""):
         return "asked for a person"
-    if HANDOFF.search(text or ""):
+    if kb.get("mode") != "business" and HANDOFF.search(text or ""):
         return "pricing / payments / trade"
     hit = never_hit(kb, text)
     return f"topic the store keeps for the team ({hit})" if hit else ""
+
+
+def _wants_booking(kb: dict, text: str) -> bool:
+    return bool((BOOK_BUSINESS if kb.get("mode") == "business" else BOOK).search(text or ""))
+
+
+async def _knowledge(db, w: dict, store: dict, kb: dict, text: str) -> tuple:
+    """(knowledge text, inventory lines, inventory total) for this turn; business sites pull the relevant website pages instead of inventory."""
+    if kb.get("mode") == "business":
+        from services.widget_crawl import site_context
+        return knowledge_text(store, kb, await store_facts(db, store), [], 0, site=await site_context(db, w, text)), [], 0
+    inv_lines, inv_total = await inventory_lines(db, w.get("store_id"), text, bool(kb.get("share_listed_prices")))
+    return knowledge_text(store, kb, await store_facts(db, store), inv_lines, inv_total), inv_lines, inv_total
 
 
 async def _notify_live(db, w: dict, cfg: dict, session: dict, text: str):
@@ -318,12 +381,11 @@ async def reply(db, w: dict, session: dict, text: str, ip: str) -> dict:
             answer = await _handoff(db, w, session, session["phone"], session.get("name") or "", cfg, store)
         else:
             updates["awaiting_contact"] = session["awaiting_contact"] = True
-    if answer is None and mode in ("normal", "handed_off") and cfg["doors"]["chat"].get("booking_on", True) and not session.get("booking") and BOOK.search(text):
+    if answer is None and mode in ("normal", "handed_off") and cfg["doors"]["chat"].get("booking_on", True) and not session.get("booking") and _wants_booking(kb, text):
         booking = True
         updates["offer_booking"] = session["offer_booking"] = True
     if answer is None:
-        inv_lines, inv_total = await inventory_lines(db, w.get("store_id"), text, bool(kb.get("share_listed_prices")))
-        knowledge = knowledge_text(store, kb, await store_facts(db, store), inv_lines, inv_total)
+        knowledge, _, _ = await _knowledge(db, w, store, kb, text)
         system = system_prompt(store, kb, knowledge, mode, bool(session.get("phone")), booking=booking)
         answer = await _llm(system, _transcript(session) + "\n\nReply to the visitor's last line as Jessi.")
         if not answer:
@@ -447,7 +509,7 @@ def _hm(hhmm: str, default: str) -> dtime:
         return dtime(h, m)
 
 
-def slots(store: dict, days: int = 10) -> dict:
+def slots(store: dict, days: int = 10, kinds: Optional[dict] = None) -> dict:
     """Open half-hour slots for the next `days` days, in the store's time zone, inside its hours (9 to 6 when none are on file)."""
     tz = _tz(store)
     now = datetime.now(tz)
@@ -468,7 +530,7 @@ def slots(store: dict, days: int = 10) -> dict:
             cur += timedelta(minutes=30)
         if ss:
             out.append({"date": day.isoformat(), "label": "Today" if i == 0 else "Tomorrow" if i == 1 else day.strftime("%a %b ") + str(day.day), "slots": ss})
-    return {"tz": tz.key, "days": out, "kinds": [{"v": k, "l": l} for k, l in BOOK_KINDS.items()]}
+    return {"tz": tz.key, "days": out, "kinds": [{"v": k, "l": l} for k, l in (kinds or BOOK_KINDS).items()]}
 
 
 async def _booking_rep(db, session: dict, cfg: dict) -> Optional[str]:
@@ -515,7 +577,8 @@ async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
     if not cfg["doors"]["chat"].get("booking_on", True):
         raise ValueError("Booking is turned off for this site.")
     store = await W.store_of(db, w)
-    kind = body.get("kind") if body.get("kind") in BOOK_KINDS else "visit"
+    kinds = kinds_for(cfg)
+    kind = body.get("kind") if body.get("kind") in kinds else next(iter(kinds))
     d, t = str(body.get("date") or "")[:10], str(body.get("time") or "")[:5]
     day = next((x for x in slots(store)["days"] if x["date"] == d), None)
     if not day or t not in [s["v"] for s in day["slots"]]:
@@ -527,7 +590,7 @@ async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
     vehicle = " ".join((body.get("vehicle") or "").split())[:80]
     start = datetime.combine(date.fromisoformat(d), _hm(t, "09:00"), _tz(store))
     when = f"{start.strftime('%A %b ')}{start.day} at {_t12(t)}"
-    kind_label = BOOK_KINDS[kind]
+    kind_label = kinds[kind]
     first = W.split_name(name)[0]
     store_name = store.get("name") or "the store"
     what = kind_label + (f" ({vehicle})" if vehicle else "")
@@ -687,10 +750,11 @@ async def ask(db, w: dict, question: str) -> dict:
     kb = cfg["kb"]
     store = await W.store_of(db, w)
     reason = _detect(kb, question)
-    inv_lines, inv_total = await inventory_lines(db, w.get("store_id"), question, bool(kb.get("share_listed_prices")))
+    knowledge, inv_lines, inv_total = await _knowledge(db, w, store, kb, question)
     facts = await store_facts(db, store)
-    knowledge = knowledge_text(store, kb, facts, inv_lines, inv_total)
     system = system_prompt(store, kb, knowledge, "handoff" if reason else "normal", False)
     answer = await _llm(system, f"Visitor: {question}\n\nReply to the visitor's last line as Jessi.") or (ASK_CONTACT if reason else FALLBACK)
+    from services.widget_crawl import PAGES_COLL
+    pages = await db[PAGES_COLL].count_documents({"widget_id": str(w["_id"])}) if kb.get("mode") == "business" else 0
     return {"reply": answer, "handoff": bool(reason), "reason": reason, "used": {"facts": len(facts), "specials": len(_active_specials(kb)), "inventory_matches": len([l for l in inv_lines if not l.startswith("...")]),
-                                                                                    "inventory_total": inv_total, "hours": bool(hours_lines(store))}}
+                                                                                    "inventory_total": inv_total, "hours": bool(hours_lines(store)), "site_pages": pages, "mode": kb.get("mode")}}

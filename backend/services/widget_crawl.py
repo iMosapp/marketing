@@ -19,10 +19,15 @@ from utils.text_sanitize import no_em_dash
 logger = logging.getLogger(__name__)
 
 COLL = "widget_crawls"
+PAGES_COLL = "widget_site_pages"
 MAX_PAGES = 7
+SITE_MAX_PAGES = 40
 PAGE_CHARS = 6000
+SITE_PAGE_CHARS = 5000
+SITE_FIRST = re.compile(r"(pric|plan|cost|about|contact|faq|feature|how-it-works|how_it_works|demo|integration|support|compare|trial|why|team|hours|location)", re.I)
 WANT = re.compile(r"(about|hours|contact|direction|location|service|special|offer|deal|promo|coupon|finance|parts|why|faq|team|staff|warranty|review|amenit|shuttle|loaner|deliver|espanol|español)", re.I)
 SKIP = re.compile(r"\.(pdf|jpg|jpeg|png|gif|svg|webp|zip|mp4)$|/(inventory|vehicle|vdp|srp|used|new|search|blog|news|privacy|terms|sitemap|login|cart)\b|#|mailto:|tel:", re.I)
+SITE_SKIP = re.compile(r"\.(pdf|jpg|jpeg|png|gif|svg|webp|zip|mp4|mp3|css|js|xml|json)$|/(blog|news|privacy|terms|legal|sitemap|login|signin|sign-in|signup|cart|checkout|wp-admin|tag|category|author|feed|go|s|get)(/|$)|\?|#|mailto:|tel:", re.I)
 
 
 def _now():
@@ -34,7 +39,7 @@ def _norm_url(url: str) -> str:
     return url if re.match(r"^https?://", url) else f"https://{url}"
 
 
-def _text(html: str) -> str:
+def _text(html: str, limit: int = PAGE_CHARS) -> str:
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(html or "", "html.parser")
     for t in soup(["script", "style", "noscript", "svg", "iframe", "form", "nav", "footer"]):
@@ -42,7 +47,117 @@ def _text(html: str) -> str:
     text = soup.get_text(" ")
     text = re.sub(r"[ \t\r\f\v]+", " ", text)
     text = re.sub(r"\s*\n\s*", "\n", text)
-    return re.sub(r"\n{2,}", "\n", text).strip()[:PAGE_CHARS]
+    return re.sub(r"\n{2,}", "\n", text).strip()[:limit]
+
+
+def _all_links(html: str, base: str) -> list:
+    """Every same-site HTML page linked from `base`, for the whole-site read."""
+    host = urlparse(base).netloc.lower().replace("www.", "")
+    out, seen = [], set()
+    for m in re.finditer(r'<a[^>]+href=["\']([^"\']+)["\']', html or "", re.I):
+        full = urljoin(base, m.group(1).strip())
+        p = urlparse(full)
+        if p.scheme not in ("http", "https") or p.netloc.lower().replace("www.", "") != host or SITE_SKIP.search(full):
+            continue
+        clean = full.split("?")[0].split("#")[0].rstrip("/") or full
+        if clean in seen or clean == base.rstrip("/"):
+            continue
+        seen.add(clean)
+        out.append(clean)
+    return out
+
+
+async def fetch_site(url: str, limit: int = SITE_MAX_PAGES) -> list:
+    """Breadth-first read of the site: home, everything home links to, then what those pages link to, up to `limit` pages."""
+    import httpx
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; iMOS-JessiReader/1.0; +https://www.imonsocial.com)"}
+    pages, seen, queue = [], set(), []
+    async with httpx.AsyncClient(timeout=12, follow_redirects=True, headers=headers) as client:
+        r = await client.get(url)
+        r.raise_for_status()
+        base = str(r.url)
+        seen.add(base.rstrip("/"))
+
+        def keep(u: str, html: str):
+            t = (re.search(r"<title[^>]*>(.*?)</title>", html, re.I | re.S) or [None, ""])[1]
+            txt = _text(html[:900000], SITE_PAGE_CHARS)
+            if len(txt) > 150:
+                pages.append({"url": u, "title": re.sub(r"\s+", " ", t or "").strip()[:120], "text": txt})
+            return _all_links(html, u)
+
+        for link in keep(base, r.text):
+            if link not in seen:
+                seen.add(link)
+                queue.append(link)
+
+        async def one(u: str):
+            try:
+                x = await client.get(u)
+                if x.status_code == 200 and "text/html" in (x.headers.get("content-type") or ""):
+                    return u, x.text
+            except Exception as e:
+                logger.debug(f"[Crawl] skip {u}: {e}")
+            return u, None
+
+        while queue and len(pages) < limit:
+            queue.sort(key=lambda u: 0 if SITE_FIRST.search(u) else 1)
+            batch, queue = queue[:8], queue[8:]
+            for u, html in await asyncio.gather(*[one(u) for u in batch]):
+                if not html or len(pages) >= limit:
+                    continue
+                for link in keep(u, html):
+                    if link not in seen and len(seen) < limit * 4:
+                        seen.add(link)
+                        queue.append(link)
+    return pages[:limit]
+
+
+async def save_site_pages(db, w: dict, pages: list) -> int:
+    wid = str(w["_id"])
+    await db[PAGES_COLL].delete_many({"widget_id": wid})
+    if pages:
+        now = _now()
+        await db[PAGES_COLL].insert_many([{"widget_id": wid, "url": p["url"], "title": p["title"], "text": p["text"], "at": now} for p in pages])
+    return len(pages)
+
+
+async def site_knowledge_meta(db, w: dict) -> dict:
+    wid = str(w["_id"])
+    n = await db[PAGES_COLL].count_documents({"widget_id": wid})
+    first = await db[PAGES_COLL].find_one({"widget_id": wid}, {"at": 1}) if n else None
+    return {"pages": n, "read_at": first["at"].isoformat() if first and first.get("at") else None}
+
+
+_STOP = {"the", "and", "for", "you", "your", "with", "that", "this", "have", "what", "how", "does", "can", "are", "our", "from", "about", "into", "will",
+         "they", "them", "when", "where", "which", "there", "here", "just", "like", "want", "need", "know", "much", "many", "more", "some", "any", "all"}
+
+
+def _tokens(text: str) -> set:
+    return {t for t in re.findall(r"[a-z0-9]{3,}", (text or "").lower()) if t not in _STOP}
+
+
+async def site_context(db, w: dict, question: str, top: int = 4, chars: int = 2600) -> str:
+    """The pages of the site most relevant to the visitor's question (home page always), as plain text for the prompt."""
+    wid = str(w["_id"])
+    pages = await db[PAGES_COLL].find({"widget_id": wid}, {"url": 1, "title": 1, "text": 1}).to_list(SITE_MAX_PAGES)
+    if not pages:
+        return ""
+    q = _tokens(question)
+    money = bool(re.search(r"\b(price|prices|pricing|cost|costs|plan|plans|month|monthly|year|yearly|fee|fees|pay|paying|subscription|trial|free)\b", question or "", re.I))
+
+    def score(p):
+        words = _tokens(p["title"] + " " + p["text"])
+        s = sum(3 if t in _tokens(p["title"] + " " + p["url"]) else 1 for t in q if t in words)
+        if money and re.search(r"pric|plan", p["url"] + " " + p["title"], re.I):
+            s += 12
+        return s
+
+    home = min(pages, key=lambda p: len(p["url"]))
+    ranked = sorted((p for p in pages if p is not home), key=score, reverse=True)
+    picked = [home] + [p for p in ranked if score(p) > 0][: top - 1]
+    if len(picked) < 2 and ranked:
+        picked.append(ranked[0])
+    return "\n\n".join(f"=== {p['title'] or p['url']} ({p['url']}) ===\n{p['text'][:chars]}" for p in picked)
 
 
 def _links(html: str, base: str) -> list:
@@ -109,6 +224,25 @@ PAGES:
 """
 
 
+PROMPT_BUSINESS = """You are helping a business owner set up Jessi, the assistant that chats with visitors on their company website.
+Below is text scraped from the company's own site. Draft the knowledge Jessi should use. Only use what the pages say; never invent.
+
+Return STRICT JSON with exactly these keys:
+{{
+  "facts": ["one plain sentence each, max 14, things a prospect would ask: what the product or service does, who it is for, key features, integrations, how setup or onboarding works, support, guarantees, awards, years in business, plan names and prices exactly as written"],
+  "specials": [{{"title": "current offer or promotion exactly as advertised, max 80 chars", "details": "what is included, max 300 chars, may be empty", "ends": "YYYY-MM-DD or empty string"}}],
+  "notes": "2 to 4 plain sentences on what makes this company different and the best next step for an interested visitor (demo, trial, call). Empty string if nothing.",
+  "hours_seen": "support or office hours as written on the site, or empty string"
+}}
+Rules: plain English, no em dashes, no emojis, no marketing fluff, no duplicates. Specials max 8.
+
+COMPANY NAME: {name}
+
+PAGES:
+{pages}
+"""
+
+
 def _cut(text: str, n: int) -> str:
     text = " ".join(str(text or "").split())
     if len(text) <= n:
@@ -131,18 +265,19 @@ def _parse(out: str) -> dict:
             "hours_seen": no_em_dash(" ".join(str(data.get("hours_seen") or "").split()))[:400]}
 
 
-async def _draft(store: dict, pages: list) -> dict:
+async def _draft(store: dict, pages: list, business: bool = False) -> dict:
     api_key = os.environ.get("EMERGENT_LLM_KEY")
     if not api_key:
         raise RuntimeError("Jessi's brain is not configured on this server (EMERGENT_LLM_KEY).")
     from emergentintegrations.llm.chat import LlmChat, UserMessage
-    body = "\n\n".join(f"=== {p['title'] or p['url']} ({p['url']}) ===\n{p['text']}" for p in pages)[:42000]
-    chat = LlmChat(api_key=api_key, session_id=f"crawl_{secrets.token_hex(4)}", system_message="You write precise JSON for a dealership knowledge base.").with_model(*CUSTOMER_TEXT_MODEL)
-    out = await asyncio.wait_for(chat.send_message(UserMessage(text=PROMPT.format(name=store.get("name") or "the store", pages=body))), timeout=90)
+    body = "\n\n".join(f"=== {p['title'] or p['url']} ({p['url']}) ===\n{p['text'][:PAGE_CHARS]}" for p in pages)[:42000]
+    chat = LlmChat(api_key=api_key, session_id=f"crawl_{secrets.token_hex(4)}", system_message="You write precise JSON for a business knowledge base.").with_model(*CUSTOMER_TEXT_MODEL)
+    prompt = (PROMPT_BUSINESS if business else PROMPT).format(name=store.get("name") or "the store", pages=body)
+    out = await asyncio.wait_for(chat.send_message(UserMessage(text=prompt)), timeout=90)
     return _parse(out if isinstance(out, str) else str(out))
 
 
-async def start(db, w: dict, url: str, user: dict) -> dict:
+async def start(db, w: dict, url: str, user: dict, mode: Optional[str] = None) -> dict:
     url = _norm_url(url)
     if not re.match(r"^https?://[^/\s]+\.[a-z]{2,}", url, re.I):
         raise ValueError("That does not look like a website address.")
@@ -150,7 +285,7 @@ async def start(db, w: dict, url: str, user: dict) -> dict:
     if running and (_now() - running["created_at"].replace(tzinfo=timezone.utc)).total_seconds() < 180:
         return public(running)
     doc = {"widget_id": str(w["_id"]), "store_id": w.get("store_id"), "url": url, "status": "running", "pages": [], "draft": None, "error": "",
-           "created_by": str(user["_id"]), "created_at": _now(), "updated_at": _now()}
+           "mode": mode if mode in ("business", "dealership") else W.normalize_config(w)["kb"]["mode"], "created_by": str(user["_id"]), "created_at": _now(), "updated_at": _now()}
     res = await db[COLL].insert_one(doc)
     doc["_id"] = res.inserted_id
     return public(doc)
@@ -165,13 +300,15 @@ async def run(job_id: str):
     try:
         w = await db[W.COLL].find_one({"_id": ObjectId(job["widget_id"])})
         store = await W.store_of(db, w or {})
-        pages = await _fetch_pages(job["url"])
+        business = (job.get("mode") or W.normalize_config(w or {})["kb"]["mode"]) == "business"
+        pages = await fetch_site(job["url"]) if business else await _fetch_pages(job["url"])
         await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"pages": [{"url": p["url"], "title": p["title"], "chars": len(p["text"])} for p in pages], "updated_at": _now()}})
         if not pages or sum(len(p["text"]) for p in pages) < 300:
             raise RuntimeError("That site did not give me any readable text (it may block robots or be all images).")
-        draft = await _draft(store, pages)
-        await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"status": "done", "draft": draft, "updated_at": _now()}})
-        logger.info(f"[Crawl] {job['url']}: {len(pages)} pages -> {len(draft['facts'])} facts, {len(draft['specials'])} specials")
+        saved = await save_site_pages(db, w, pages) if business else 0
+        draft = await _draft(store, pages, business)
+        await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"status": "done", "draft": draft, "site_pages_saved": saved, "updated_at": _now()}})
+        logger.info(f"[Crawl] {job['url']}: {len(pages)} pages -> {len(draft['facts'])} facts, {len(draft['specials'])} specials, {saved} pages kept for answers")
     except Exception as e:
         logger.warning(f"[Crawl] {job.get('url')} failed: {e}")
         await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"status": "failed", "error": no_em_dash(str(e))[:300], "updated_at": _now()}})
@@ -184,7 +321,8 @@ async def latest(db, w: dict) -> Optional[dict]:
 
 def public(job: dict) -> dict:
     return {"id": str(job["_id"]), "url": job.get("url"), "status": job.get("status"), "error": job.get("error") or "", "pages": job.get("pages") or [],
-            "draft": job.get("draft"), "created_at": job["created_at"].isoformat() if job.get("created_at") else None, "applied_at": job["applied_at"].isoformat() if job.get("applied_at") else None}
+            "draft": job.get("draft"), "site_pages_saved": int(job.get("site_pages_saved") or 0),
+            "created_at": job["created_at"].isoformat() if job.get("created_at") else None, "applied_at": job["applied_at"].isoformat() if job.get("applied_at") else None}
 
 
 async def apply(db, w: dict, body: dict, user: dict) -> dict:

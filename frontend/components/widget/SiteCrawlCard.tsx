@@ -5,7 +5,7 @@ import api from '../../services/api';
 import { GOLD, tid, errText } from '../inbox/ownership';
 import { Section, Label, Hint, inputStyle } from '../inbox/InboxEditorParts';
 
-type Props = { widgetId: string; siteUrl: string; colors: any; canManage: boolean; showToast: (m: string, t?: any, d?: number) => void; onApplied: (r: { facts: any[]; kb: any; added_facts: number }) => void };
+type Props = { widgetId: string; siteUrl: string; colors: any; canManage: boolean; showToast: (m: string, t?: any, d?: number) => void; business?: boolean; onApplied: (r: { facts: any[]; kb: any; added_facts: number }) => void };
 
 const Check = ({ on, label, sub, onPress, colors, testId }: { on: boolean; label: string; sub?: string; onPress: () => void; colors: any; testId: string }) => (
   <TouchableOpacity onPress={onPress} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 7 }} {...tid(testId)}>
@@ -18,9 +18,10 @@ const Check = ({ on, label, sub, onPress, colors, testId }: { on: boolean; label
 );
 
 // "Let Jessi read your website": start a crawl, poll it, tick what to keep, apply.
-export const SiteCrawlCard = ({ widgetId, siteUrl, colors, canManage, showToast, onApplied }: Props) => {
+export const SiteCrawlCard = ({ widgetId, siteUrl, colors, canManage, showToast, business, onApplied }: Props) => {
   const [url, setUrl] = useState(siteUrl);
   const [job, setJob] = useState<any>(null);
+  const [site, setSite] = useState<{ pages: number; read_at: string | null } | null>(null);
   const [starting, setStarting] = useState(false);
   const [applying, setApplying] = useState(false);
   const [pick, setPick] = useState<{ facts: Record<number, boolean>; specials: Record<number, boolean>; notes: boolean }>({ facts: {}, specials: {}, notes: true });
@@ -28,8 +29,9 @@ export const SiteCrawlCard = ({ widgetId, siteUrl, colors, canManage, showToast,
 
   const refresh = useCallback(async () => {
     try {
-      const j = (await api.get(`/widgets/${widgetId}/crawl`)).data.job;
-      setJob(j);
+      const r = (await api.get(`/widgets/${widgetId}/crawl`)).data;
+      const j = r.job;
+      setJob(j); setSite(r.site || null);
       if (j?.status === 'done' && j.draft) setPick({ facts: Object.fromEntries((j.draft.facts || []).map((_: any, i: number) => [i, true])), specials: Object.fromEntries((j.draft.specials || []).map((_: any, i: number) => [i, true])), notes: !!j.draft.notes });
     } catch {}
   }, [widgetId]);
@@ -38,7 +40,7 @@ export const SiteCrawlCard = ({ widgetId, siteUrl, colors, canManage, showToast,
 
   const start = async () => {
     setStarting(true);
-    try { setJob((await api.post(`/widgets/${widgetId}/crawl`, { url: url.trim() })).data); }
+    try { setJob((await api.post(`/widgets/${widgetId}/crawl`, { url: url.trim(), mode: business ? 'business' : 'dealership' })).data); }
     catch (e: any) { showToast(errText(e, 'Could not read that site'), 'error', 3500); }
     finally { setStarting(false); }
   };
@@ -55,19 +57,25 @@ export const SiteCrawlCard = ({ widgetId, siteUrl, colors, canManage, showToast,
   return (
     <Section colors={colors} testId="widget-section-crawl">
       <Label colors={colors}>Let Jessi read your website</Label>
-      <Hint colors={colors}>She reads your home page plus about, hours, service and specials pages, then drafts store facts and specials. You tick what to keep.</Hint>
+      <Hint colors={colors}>{business ? 'She reads up to 40 pages of your site (pricing, features, integrations, about and contact first) and answers visitors straight from them, quoting plans and prices as written. She also drafts facts you can keep. Read it again whenever the site changes.' : 'She reads your home page plus about, hours, service and specials pages, then drafts store facts and specials. You tick what to keep.'}</Hint>
+      {business ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, padding: 10, borderRadius: 10, backgroundColor: colors.surface }} {...tid('widget-site-knowledge')}>
+          <Ionicons name={site?.pages ? 'library' : 'library-outline'} size={18} color={site?.pages ? GOLD : colors.textSecondary} />
+          <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>{site?.pages ? `Jessi has read ${site.pages} page${site.pages === 1 ? '' : 's'} of your site${site.read_at ? ` · ${new Date(site.read_at).toLocaleDateString()}` : ''}` : 'Jessi has not read your site yet, so she only knows the facts above.'}</Text>
+        </View>
+      ) : null}
       {canManage ? (
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TextInput value={url} onChangeText={setUrl} placeholder="www.yourdealership.com" placeholderTextColor={colors.textSecondary} autoCapitalize="none" autoCorrect={false} keyboardType="url" style={[inputStyle(colors), { flex: 1 }]} {...tid('widget-crawl-url')} />
           <TouchableOpacity onPress={start} disabled={starting || job?.status === 'running' || !url.trim()} style={{ height: 46, paddingHorizontal: 14, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', opacity: starting || job?.status === 'running' || !url.trim() ? 0.5 : 1 }} {...tid('widget-crawl-start')}>
-            {starting ? <ActivityIndicator color="#111" /> : <Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>{job?.status === 'done' ? 'Read again' : 'Read my site'}</Text>}
+            {starting ? <ActivityIndicator color="#111" /> : <Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>{job?.status === 'done' || site?.pages ? 'Read again' : 'Read my site'}</Text>}
           </TouchableOpacity>
         </View>
       ) : null}
       {job?.status === 'running' ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }} {...tid('widget-crawl-running')}>
           <ActivityIndicator color={GOLD} />
-          <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary }}>{job.pages?.length ? `Read ${job.pages.length} page${job.pages.length === 1 ? '' : 's'}, Jessi is writing the draft…` : `Reading ${job.url}…`} Usually under a minute.</Text>
+          <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary }}>{job.pages?.length ? `Read ${job.pages.length} page${job.pages.length === 1 ? '' : 's'}, Jessi is writing the draft…` : `Reading ${job.url}…`} {business ? 'A whole site takes a minute or two.' : 'Usually under a minute.'}</Text>
         </View>
       ) : null}
       {job?.status === 'failed' ? <Text style={{ fontSize: 13, color: '#FF3B30', marginTop: 10 }} {...tid('widget-crawl-error')}>{job.error || 'That did not work.'}</Text> : null}

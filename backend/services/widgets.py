@@ -60,7 +60,7 @@ DEFAULTS = {
         "chat": {"on": True, "label": "Chat now", "intro": "Ask Jessi about hours, what's in stock or the store. A real person is one tap away.", "button": "Start chat",
                  "placeholder": "Type your question", "human": "Talk to a person", "booking_on": True, "booking_label": "Book a visit", "notify_reps": True},
     },
-    "kb": {"welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False},
+    "kb": {"mode": "dealership", "welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False},
     "copy": {
         "title": "How can we help?", "name_label": "Name", "phone_label": "Mobile number", "message_label": "Message (optional)",
         "optin": "By submitting, you agree to receive texts from {store}. Message and data rates may apply. Reply STOP to opt out.",
@@ -111,6 +111,7 @@ def normalize_config(cfg: dict) -> dict:
                           "door": r_.get("door") if r_.get("door") in ("text", "call", "chat") else ""})
     a["page_rules"] = rules
     kb = c["kb"]
+    kb["mode"] = "business" if kb.get("mode") == "business" else "dealership"
     kb["welcome"] = str(kb.get("welcome") or "")[:300]
     kb["notes"] = str(kb.get("notes") or "")[:2000]
     kb["share_listed_prices"] = bool(kb.get("share_listed_prices"))
@@ -183,6 +184,7 @@ def public_config(w: dict, store: Optional[dict], preview: bool = False) -> dict
            "appearance": cfg["appearance"], "doors": {d: {k: v for k, v in cfg["doors"][d].items()} for d in cfg["doors"]}, "copy": cfg["copy"], "preview": preview}
     if preview:
         out["chat_welcome"] = cfg["kb"]["welcome"]
+        out["chat_mode"] = cfg["kb"]["mode"]
     return out
 
 

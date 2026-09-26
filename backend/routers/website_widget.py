@@ -113,6 +113,7 @@ class FactBody(BaseModel):
 
 class CrawlBody(BaseModel):
     url: str
+    mode: Optional[str] = None
 
 
 class RepText(BaseModel):
@@ -376,7 +377,7 @@ async def crawl_start(wid: str, body: CrawlBody, request: Request, bg: Backgroun
     db = get_db()
     w = await _load_scoped(db, request.state.user, wid)
     try:
-        job = await WCR.start(db, w, body.url, request.state.user)
+        job = await WCR.start(db, w, body.url, request.state.user, mode=body.mode)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     if job["status"] == "running" and not job.get("pages"):
@@ -388,7 +389,7 @@ async def crawl_start(wid: str, body: CrawlBody, request: Request, bg: Backgroun
 async def crawl_status(wid: str, request: Request):
     db = get_db()
     w = await _load_scoped(db, request.state.user, wid)
-    return {"job": await WCR.latest(db, w)}
+    return {"job": await WCR.latest(db, w), "site": await WCR.site_knowledge_meta(db, w)}
 
 
 @admin.post("/{wid}/crawl/apply")
@@ -565,7 +566,7 @@ async def chat_state(key: str, sid: str):
 async def chat_slots(key: str, sid: str):
     db = get_db()
     w, _ = await _chat_session(db, key, sid)
-    return WCH.slots(await W.store_of(db, w))
+    return WCH.slots(await W.store_of(db, w), kinds=WCH.kinds_for(W.normalize_config(w)))
 
 
 @public.post("/{key}/chat/{sid}/book")
