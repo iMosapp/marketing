@@ -429,6 +429,7 @@ function HomeScreen() {
         'Pause ALL AI replies?',
         "Jessi will stop auto-replying in EVERY conversation — even ones set to \"Jessi is handling this\" — until you turn this back on.",
         () => applyAiMaster(true),
+        undefined,
         'Pause AI'
       );
       return;

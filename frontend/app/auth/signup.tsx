@@ -94,17 +94,6 @@ export default function SignupScreen() {
     }
   };
   
-  // Web-compatible alert function
-  const showAlert = (title: string, message: string, onOk?: () => void) => {
-    if (Platform.OS === 'web') {
-      // Use window.alert for web, then execute callback
-      window.alert(`${title}\n\n${message}`);
-      if (onOk) onOk();
-    } else {
-      showAlert(title, message, onOk ? [{ text: 'OK', onPress: onOk }] : undefined);
-    }
-  };
-
   // Toggle optional fields section
   const toggleOptionalFields = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

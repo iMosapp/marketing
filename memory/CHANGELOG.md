@@ -1,5 +1,11 @@
 # CHANGELOG — iMOs App
 
+## Sep 26 2026 — Home "AI ON" pill: Cancel crashed the app (BUG FIX; tsc clean for both files; web check: dismissing the confirm leaves Home with AI ON)
+- User (production iPhone): tapping the AI ON pill -> "Pause ALL AI replies?" -> Cancel closed the app. `home.tsx toggleAiMaster` passed `'Pause AI'` as `showConfirm`'s 4th argument, which is `onCancel`, so the Cancel button's onPress was a string -> native TypeError -> crash (and the confirm button read "OK"). Now `showConfirm(title, msg, onConfirm, undefined, 'Pause AI')`.
+- Same tsc sweep: `app/auth/signup.tsx` had a local `showAlert` that shadowed the imported one and called ITSELF on native (infinite recursion right after a successful signup). Removed; the file now uses `services/alert.showAlert` (web/native aware) everywhere.
+- RULE: run `npx tsc --noEmit -p .` before shipping frontend changes; TS2345 "'string' not assignable to '() => void'" on a `showConfirm` call is a Cancel-button crash.
+- Ship: eas update only (no backend change).
+
 ## Sep 26 2026 — Website widget bubble can be tucked off the screen edge (COMPLETED; demo verified with Playwright: hover shows handle, click tucks to a 30x56 edge tab at x=1890/1920, tab click restores + opens, close leaves bubble out; pytest 3/3 new checks)
 - User: "The new chat widget needs to be able to be minimized off the edge of the screen but still where I can click it and open it back up".
 - `services/widget_js.py`: hover (always on touch) shows a small `.imosw-tuck` chevron badge on the bubble's outer top corner; clicking adds `tucked` to `.imosw-root`, hiding bubble + greeting and showing `.imosw-tab`, a slim half-pill flush to the screen edge (`position:fixed; right/left:0`, widens on hover) with an inward chevron; tapping the tab untucks AND opens the panel. State in `localStorage imos_tuck_{key}` (per site, not persisted in PREVIEW); greeting timer skips while tucked. New icon `chev`.
