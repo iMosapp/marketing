@@ -594,6 +594,8 @@ async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
     first = W.split_name(name)[0]
     store_name = store.get("name") or "the store"
     what = kind_label + (f" ({vehicle})" if vehicle else "")
+    biz = cfg["kb"].get("mode") == "business"
+    meeting = cfg["doors"]["chat"].get("meeting_link") or "" if biz else ""
     if not session.get("contact_id"):
         await _handoff(db, w, session, phone, name, cfg, store, reason=f"booked a {kind_label.lower()}", quiet=True)
     uid = await _booking_rep(db, session, cfg)
@@ -607,19 +609,26 @@ async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
             from services.calendar_invite import invite_link
             title = f"{kind_label}: {name}" + (f" · {vehicle}" if vehicle else "")
             a = await create_appointment_from_ai(uid, {"contact_id": session.get("contact_id"), "conversation_id": session.get("conversation_id"), "contact_name": name, "contact_phone": phone,
-                                                      "title": title, "start_time": start.isoformat(), "end_time": (start + timedelta(minutes=30)).isoformat(), "location": store_name,
+                                                      "title": title, "start_time": start.isoformat(), "end_time": (start + timedelta(minutes=30)).isoformat(), "location": meeting or store_name,
                                                       "notes": f"Booked in the website chat ({session.get('host') or 'website'})."})
             tk = await create_task(uid, {"title": title, "description": f"Booked in the website chat, {when}.", "contact_id": session.get("contact_id") or "", "type": "appointment",
                                          "appointment_type": kind, "action_type": "manual", "due_date": start.astimezone(timezone.utc).isoformat(), "has_time": True, "priority": "high"})
             booking["appointment_id"] = (a or {}).get("appointment_id")
             booking["task_id"] = (tk or {}).get("_id") or (tk or {}).get("id")
+            if booking["task_id"] and biz:
+                await db.tasks.update_one({"_id": ObjectId(str(booking["task_id"]))}, {"$set": {"meeting_link": meeting, "event_kind": kind_label}})
             task = await db.tasks.find_one({"_id": ObjectId(str(booking["task_id"]))}) if booking["task_id"] else None
             if task and task.get("contact_id"):
                 link = await invite_link(db, task)
         except Exception as e:
             logger.warning(f"[WidgetChat] booking calendar/task failed: {e}")
-    confirm = (f"Hi {first}, {store_name} here. You're booked: {what} on {when}. "
-               + (f"Tap to add it to your calendar: {link}\n" if link else "") + "Reply here if anything changes. See you then!")
+    if biz:
+        confirm = (f"Hi {first}, {store_name} here. Your {what.lower()} is set for {when}. "
+                   + (f"Join here: {meeting}\n" if meeting else "") + (f"Add it to your calendar: {link}\n" if link else "")
+                   + "Reply here if anything changes. Talk soon!")
+    else:
+        confirm = (f"Hi {first}, {store_name} here. You're booked: {what} on {when}. "
+                   + (f"Tap to add it to your calendar: {link}\n" if link else "") + "Reply here if anything changes. See you then!")
     texted = await _text_booked(db, session, uid, phone, confirm)
     if texted and link:
         from services.calendar_invite import mark_invite_sent
@@ -628,9 +637,15 @@ async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
         await db.messages.insert_one({"conversation_id": session["conversation_id"], "contact_id": session.get("contact_id"), "sender": "contact", "direction": "inbound", "channel": "webchat",
                                       "type": "webchat_booking", "content": f"Booked in the web chat: {what} on {when}.", "read": False, "timestamp": _now(), "created_at": _now(), "webchat_sid": session["sid"]})
         await db.conversations.update_one({"_id": ObjectId(session["conversation_id"])}, {"$set": {"last_message_at": _now()}})
-    tail = (f"{store_name} just texted you a confirmation{' with a link to add it to your calendar' if link else ''}, and a team member will be ready for you."
-            if texted else "A team member will be ready for you.")
-    text = f"You're all set, {first}. {what} on {when}. {tail} Anything else I can help with?"
+    if biz:
+        extras = [x for x in ["the meeting link" if meeting else "", "a link to add it to your calendar" if link else ""] if x]
+        tail = (f"We just texted you the details{(' with ' + ' and '.join(extras)) if extras else ''}, and someone from the team will be on the call."
+                if texted else "Someone from the team will be on the call.")
+        text = f"You're all set, {first}. {what} on {when}. {tail} Anything else I can answer in the meantime?"
+    else:
+        tail = (f"{store_name} just texted you a confirmation{' with a link to add it to your calendar' if link else ''}, and a team member will be ready for you."
+                if texted else "A team member will be ready for you.")
+        text = f"You're all set, {first}. {what} on {when}. {tail} Anything else I can help with?"
     session["messages"] = list(session.get("messages") or []) + [_msg("jessi", text)]
     session.update({"booking": booking, "offer_booking": False})
     await _save(db, session)

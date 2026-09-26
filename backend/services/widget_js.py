@@ -150,6 +150,7 @@ textarea.imosw-in{height:74px;padding:10px 12px;resize:none}\
 .imosw-chips.scroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}\
 .imosw-chip{flex:none;height:32px;padding:0 12px;border-radius:16px;border:1.5px solid rgba(0,0,0,.12);background:transparent;color:inherit;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}\
 .imosw-chip.on{background:' + bubble + ';color:' + fg + ';border-color:' + bubble + '}\
+.imosw-starters{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 6px;align-self:flex-start}.imosw-starters .imosw-chip{border-color:' + bubble + ';color:' + bubble + ';background:transparent}.imosw-starters .imosw-chip:hover{background:' + bubble + ';color:' + fg + '}\
 .imosw-human .sep{opacity:.5;font-size:12.5px}\
 .imosw-typing{align-self:flex-start;display:flex;gap:5px;align-items:center;padding:12px 14px;border-radius:14px;border-bottom-left-radius:4px;background:rgba(0,0,0,.06);animation:imosw-in .2s ease}\
 .imosw-typing i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.35;animation:imosw-dot 1.2s ease-in-out infinite}\
@@ -342,7 +343,7 @@ function showChat(){
       if (!bk.time) { err.textContent = 'Pick a time first.'; return; } if (!n) { err.textContent = 'Please add your name.'; return; } if (p.length < 10) { err.textContent = 'Please enter a 10 digit mobile number.'; return; }
       remember('name', n); remember('phone', ph.value); btn.disabled = true; btn.textContent = 'Booking\u2026';
       var lab = (day.label + ' at ' + (day.slots.filter(function(x){ return x.v === bk.time; })[0] || {}).l);
-      if (PREVIEW) { setTimeout(function(){ chat.booking = { kind: (s.kinds.filter(function(k){ return k.v === bk.kind; })[0] || {}).l, when: lab }; chat.showBook = false; chat.offer = false; chat.status = 'handed_off'; chat.msgs.push({ role: 'jessi', text: 'You\'re all set, ' + n.split(' ')[0] + '. ' + chat.booking.kind + ' on ' + lab + '. ' + (C.store_name || 'The store') + ' just texted you a confirmation.' }); draw(); }, 600); return; }
+      if (PREVIEW) { setTimeout(function(){ chat.booking = { kind: (s.kinds.filter(function(k){ return k.v === bk.kind; })[0] || {}).l, when: lab }; chat.showBook = false; chat.offer = false; chat.status = 'handed_off'; chat.msgs.push({ role: 'jessi', text: 'You\'re all set, ' + n.split(' ')[0] + '. ' + chat.booking.kind + ' on ' + lab + '. ' + (C.chat_mode === 'business' ? 'We just texted you the details' + (cfg.meeting_link ? ' and the meeting link' : '') + ', and someone from the team will be on the call.' : (C.store_name || 'The store') + ' just texted you a confirmation.') }); draw(); }, 600); return; }
       post('/chat/' + chat.sid + '/book', { kind: bk.kind, date: bk.date, time: bk.time, vehicle: veh ? veh.value.trim() : '', name: n, phone: ph.value, website: hp.value })
         .then(function(r){ apply(r); chat.showBook = false; draw(); track('lead', { door: 'chat', booked: 1 }); })
         .catch(function(e){ btn.disabled = false; btn.textContent = 'Book it'; err.textContent = typeof e === 'string' ? e : 'Something went wrong. Please try again.'; if (/not open/i.test(String(e))) { chat.slots = null; bk.time = ''; draw(); } });
@@ -358,6 +359,10 @@ function showChat(){
       if (m.role === 'rep' && m.who) el.appendChild(h('div', { 'class': 'who' }, [m.who]));
       el.appendChild(document.createTextNode(m.text)); list.appendChild(el); });
     if (chat.booking) list.appendChild(h('div', { 'class': 'imosw-booked' }, ['\u2713 ' + chat.booking.kind + ' \u00b7 ' + chat.booking.when]));
+    if (chat.msgs.length === 1 && chat.msgs[0].role === 'jessi' && !chat.busy && !chat.need && !chat.showBook && chat.status !== 'closed' && chat.mode !== 'human' && (C.starters || []).length) {
+      var st = h('div', { 'class': 'imosw-starters', role: 'group', 'aria-label': 'Suggested questions' });
+      (C.starters || []).slice(0, 3).forEach(function(q){ st.appendChild(h('button', { type: 'button', 'class': 'imosw-chip', onclick: function(){ starter(q); } }, [q])); });
+      list.appendChild(st); }
     if (chat.need && chat.status !== 'closed') list.appendChild(contactForm());
     if ((chat.offer || chat.showBook) && !chat.booking && chat.status !== 'closed' && chat.mode !== 'human') list.appendChild(bookForm());
     if (chat.busy && chat.mode !== 'human') list.appendChild(h('div', { 'class': 'imosw-typing', 'aria-label': 'Jessi is typing', html: '<i></i><i></i><i></i>' }));
@@ -370,6 +375,9 @@ function showChat(){
     var t0 = Date.now();
     if (PREVIEW) { setTimeout(function(){ chat.busy = false; chat.msgs.push({ role: 'jessi', text: previewReply(t) }); draw(); }, 1800); return; }
     post('/chat/' + chat.sid + '/message', { text: t }).then(function(r){ paced(t0, r, function(){ chat.busy = false; apply(r); draw(); }); }).catch(fail); }
+  function starter(q){ if (chat.busy || chat.status === 'closed') return; track('starter', { door: 'chat', q: q });
+    if (cfg.booking_on !== false && /\b(book|schedule|demo|test[- ]?drive|appointment|visit)\b/i.test(q)) { chat.showBook = true; draw(); return; }
+    input.value = q; submit(); }
   function askHuman(){ if (chat.busy) return; chat.busy = true; draw();
     var t0 = Date.now();
     if (PREVIEW) { setTimeout(function(){ chat.busy = false; chat.need = chat.status !== 'handed_off'; chat.msgs.push({ role: 'jessi', text: chat.status === 'handed_off' ? 'A team member already has your number and is texting you now.' : 'Happy to. What\'s your first name and mobile number? A team member will text you in a minute.' }); draw(); }, 1200); return; }

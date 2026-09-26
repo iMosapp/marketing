@@ -487,7 +487,7 @@ async def widget_event(key: str, request: Request):
     db = get_db()
     w = await W.load(db, key)
     body = await request.json()
-    if not w or not isinstance(body, dict) or body.get("kind") not in ("load", "open", "greeting", "door") or not W.allow(_ip(request), "event", 120):
+    if not w or not isinstance(body, dict) or body.get("kind") not in ("load", "open", "greeting", "door", "starter") or not W.allow(_ip(request), "event", 120):
         return {"ok": False}
     if body["kind"] == "door" and body.get("door") not in W.DOORS:
         return {"ok": False}

@@ -112,6 +112,16 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
         {!business ? <ToggleRow label="Let Jessi state listed prices" hint="Off = she never mentions a price, even the sticker in your feed. Payments, discounts and trade values always go to a person." value={!!kb.share_listed_prices} onChange={v => setKb({ share_listed_prices: v })} colors={colors} testId="widget-kb-share-prices" /> : null}
       </Section>
 
+      <Section colors={colors} testId="widget-section-starters">
+        <Label colors={colors}>Starter questions</Label>
+        <Hint colors={colors}>Up to three tap-to-ask chips under Jessi's greeting so visitors see what she can answer. Blank = {business ? '"What does it cost?", "How does it work?", "Book a demo"' : '"What are your hours?", "Is it still available?", "Book a test drive"'}. Anything with book, schedule, demo or test drive opens the booking form.</Hint>
+        {[0, 1, 2].map(i => (
+          <TextInput key={i} value={(kb.starters || [])[i] || ''} onChangeText={v => { const next = [...(kb.starters || ['', '', ''])]; while (next.length < 3) next.push(''); next[i] = v; setKb({ starters: next }); }}
+            placeholder={(business ? ['What does it cost?', 'How does it work?', 'Book a demo'] : ['What are your hours?', 'Is it still available?', 'Book a test drive'])[i]} placeholderTextColor={colors.textSecondary} maxLength={60}
+            style={[inputStyle(colors), { marginBottom: 8 }]} {...tid(`widget-kb-starter-${i}`)} />
+        ))}
+      </Section>
+
       <Section colors={colors} testId="widget-section-facts">
         <Label colors={colors}>{business ? 'Company facts' : 'Store facts'}</Label>
         <Hint colors={colors}>{business ? 'One plain sentence each: "Setup takes about 20 minutes", "Works with any CRM through Zapier". Anything the website does not say clearly.' : 'Shared with Jessi\'s texts (My VA → store facts). One plain sentence each: "Service is open Saturdays until 4", "We deliver within 100 miles". Hours and address come from the Store Profile automatically.'}</Hint>

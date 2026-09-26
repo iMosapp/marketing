@@ -577,7 +577,31 @@ async def admin_search(q: str = "", x_user_id: str = Header(None, alias="X-User-
             lsn[str(st["_id"])] = st.get("name")
     source_rows = [{"id": str(x["_id"]), "name": x.get("name"), "subtitle": " · ".join([y for y in (lsn.get(str(x.get("store_id"))), (x.get("source_type") or "").replace("_", " ")) if y]), "active": x.get("is_active", True), "store_id": x.get("store_id")} for x in sources]
 
-    return {"q": q, "organizations": orgs, "stores": store_rows, "users": user_rows, "widgets": widget_rows, "lead_sources": source_rows}
+    # Customers (contacts): name, phone digits or email, limited to the reps this admin can see; opens their thread
+    toks = q.split()
+    cq_or = [{"first_name": rx}, {"last_name": rx}, {"name": rx}, {"email": rx}] + ([{"phone": phone_rx}] if phone_rx else [])
+    if len(toks) >= 2:
+        cq_or.append({"$and": [{"first_name": {"$regex": _re.escape(toks[0]), "$options": "i"}}, {"last_name": {"$regex": _re.escape(" ".join(toks[1:])), "$options": "i"}}]})
+    cq = {"$or": cq_or}
+    if role != "super_admin":
+        cq["user_id"] = {"$in": await get_scoped_user_ids(user)}
+    contacts = await db.contacts.find(cq, {"first_name": 1, "last_name": 1, "name": 1, "phone": 1, "email": 1, "user_id": 1}).sort("updated_at", -1).limit(lim).to_list(lim)
+    owners = {}
+    if contacts:
+        uoids = [o for o in (safe_objectid(c.get("user_id")) for c in contacts) if o is not None]
+        async for u in db.users.find({"_id": {"$in": uoids}}, {"name": 1}):
+            owners[str(u["_id"])] = u.get("name")
+    def _pretty(p):
+        d = _re.sub(r"\D", "", p or "")
+        return f"({d[-10:-7]}) {d[-7:-4]}-{d[-4:]}" if len(d) >= 10 else (p or "")
+    contact_rows = []
+    for c in contacts:
+        owner = owners.get(str(c.get("user_id")))
+        contact_rows.append({"id": str(c["_id"]), "active": True,
+                             "name": " ".join([x for x in (c.get("first_name"), c.get("last_name")) if x]) or c.get("name") or _pretty(c.get("phone")) or "Customer",
+                             "subtitle": " · ".join([x for x in (_pretty(c.get("phone")), c.get("email"), f"{owner}'s customer" if owner else "") if x])})
+
+    return {"q": q, "organizations": orgs, "stores": store_rows, "users": user_rows, "widgets": widget_rows, "lead_sources": source_rows, "contacts": contact_rows}
 
 
 @router.get("/stores")

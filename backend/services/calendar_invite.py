@@ -82,10 +82,10 @@ async def load_context(db, task: dict) -> dict | None:
         "rep_name": rep_name, "rep_first": rep_name.split()[0],
         "rep_number": user.get("twilio_number") or user.get("mvpline_number") or "",
         "store_name": store_name, "address": address,
-        "location": ", ".join(p for p in [store_name, address] if p),
+        "location": task.get("meeting_link") or ", ".join(p for p in [store_name, address] if p),
         "first": (contact.get("first_name") or "").strip() or "there",
         "phone": contact.get("phone") or "", "email": (contact.get("email") or "").strip(),
-        "event_title": f"Appointment with {rep_name}" + (f" at {store_name}" if store_name else ""),
+        "event_title": (f"{task['event_kind']} with {rep_name}" if task.get("event_kind") else f"Appointment with {rep_name}") + (f" at {store_name}" if store_name and not task.get("meeting_link") else ""),
     }
 
 

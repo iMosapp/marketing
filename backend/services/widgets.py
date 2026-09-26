@@ -44,6 +44,11 @@ def contrast_text(bg: str) -> str:
     return "#111111" if lum > 0.6 else "#FFFFFF"
 
 
+STARTERS = {
+    "dealership": ["What are your hours?", "Is it still available?", "Book a test drive"],
+    "business": ["What does it cost?", "How does it work?", "Book a demo"],
+}
+
 DEFAULTS = {
     "appearance": {
         "icon": "text", "icon_url": "", "label_on": True, "label": "Text Us", "position": "right", "offset_x": 20, "offset_y": 20,
@@ -58,9 +63,9 @@ DEFAULTS = {
                  "success_ringing": "Ringing the team…", "success_connected": "Connecting you to {rep}…",
                  "missed": "Everyone is tied up this second. We just texted you instead.", "after_hours": "We're closed right now. We just texted you and we'll call when we open."},
         "chat": {"on": True, "label": "Chat now", "intro": "Ask Jessi about hours, what's in stock or the store. A real person is one tap away.", "button": "Start chat",
-                 "placeholder": "Type your question", "human": "Talk to a person", "booking_on": True, "booking_label": "Book a visit", "notify_reps": True},
+                 "placeholder": "Type your question", "human": "Talk to a person", "booking_on": True, "booking_label": "Book a visit", "meeting_link": "", "notify_reps": True},
     },
-    "kb": {"mode": "dealership", "welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False},
+    "kb": {"mode": "dealership", "welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False, "starters": []},
     "copy": {
         "title": "How can we help?", "name_label": "Name", "phone_label": "Mobile number", "message_label": "Message (optional)",
         "optin": "By submitting, you agree to receive texts from {store}. Message and data rates may apply. Reply STOP to opt out.",
@@ -116,6 +121,9 @@ def normalize_config(cfg: dict) -> dict:
     kb["notes"] = str(kb.get("notes") or "")[:2000]
     kb["share_listed_prices"] = bool(kb.get("share_listed_prices"))
     kb["never"] = [str(x).strip()[:80] for x in (kb.get("never") or []) if str(x).strip()][:20]
+    kb["starters"] = [str(x).strip()[:60] for x in (kb.get("starters") or []) if str(x).strip()][:3]
+    ml = str(c["doors"]["chat"].get("meeting_link") or "").strip()[:300]
+    c["doors"]["chat"]["meeting_link"] = ml if ml.lower().startswith(("http://", "https://")) else ""
     specials = []
     for sp in (kb.get("specials") or [])[:20]:
         if isinstance(sp, dict) and str(sp.get("title") or "").strip():
@@ -183,6 +191,7 @@ def public_config(w: dict, store: Optional[dict], preview: bool = False) -> dict
     out = {"key": w["key"], "api": f"{app_url()}/api/w/{w['key']}", "store_name": (store or {}).get("name") or w.get("store_name") or "",
            "appearance": cfg["appearance"], "doors": {d: {k: v for k, v in cfg["doors"][d].items()} for d in cfg["doors"]}, "copy": cfg["copy"], "preview": preview}
     out["chat_mode"] = cfg["kb"]["mode"]
+    out["starters"] = cfg["kb"]["starters"] or STARTERS[cfg["kb"]["mode"]]
     if cfg["kb"]["mode"] == "business" and out["doors"]["chat"].get("booking_label") in ("", None, DEFAULTS["doors"]["chat"]["booking_label"]):
         out["doors"]["chat"]["booking_label"] = "Book a demo"
     if preview:
