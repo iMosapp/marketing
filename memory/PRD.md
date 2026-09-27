@@ -32,6 +32,17 @@ Phase 2 "Relationship OS" UX enhancements: robust backend security, intent-based
 
 
 ## STANDING RULE (Sep 20 2026, user: "always give me steps I need to do such as GitHub, deploy, and eas updates")
+**HARD RULE (reinforced 3x by the user, latest Sep 27 2026: "I need the EAS update line every single time we do any kind of update. I want the process.") — EVERY message that changes ANY code (backend, frontend, one-liners, bug fixes, memory-only changes excepted) MUST end with this exact 3-step block, verbatim, in this order, with the EAS command in its own fenced code block. No verdicts like "EAS update: NO" and no omitting steps: the user wants the same full process every time so he never has to think about it.**
+
+**Ship it:**
+1. Save to GitHub
+2. Deploy
+3. Paste into Terminal:
+```
+cd ~/imonsocial-clone/frontend && git checkout -- app.json yarn.lock 2>/dev/null; git pull && yarn install && eas update --branch production --message "$(git log -1 --pretty=%s)"
+```
+
+(Old nuance below kept for reference only; the user has overridden it: ALWAYS print all 3 steps.)
 Every reply that changes code MUST end with a numbered "Your steps" block, exactly these lines as applicable:
 1. Save to GitHub (always)
 2. Deploy (when anything under /app/backend changed, including .env keys)
