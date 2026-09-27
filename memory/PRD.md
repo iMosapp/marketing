@@ -32,7 +32,7 @@ Phase 2 "Relationship OS" UX enhancements: robust backend security, intent-based
 
 
 ## STANDING RULE (Sep 20 2026, user: "always give me steps I need to do such as GitHub, deploy, and eas updates")
-**HARD RULE (reinforced 3x by the user, latest Sep 27 2026: "I need the EAS update line every single time we do any kind of update. I want the process.") — EVERY message that changes ANY code (backend, frontend, one-liners, bug fixes, memory-only changes excepted) MUST end with this exact 3-step block, verbatim, in this order, with the EAS command in its own fenced code block. No verdicts like "EAS update: NO" and no omitting steps: the user wants the same full process every time so he never has to think about it.**
+**HARD RULE (reinforced 4x by the user, latest Sep 27 2026: "give me eas update prompt to send ALWAYS everytime... I'm getting sick of having to tell you this every other time!") — EVERY message that changes ANY code (backend, frontend, one-liners, bug fixes, memory-only changes excepted) MUST end with this exact 3-step block, verbatim, in this order, with the EAS command in its own fenced code block. No verdicts like "EAS update: NO" and no omitting steps: the user wants the same full process every time so he never has to think about it. THE AGENT HAS FAILED THIS RULE TWICE IN ONE SESSION — before sending any reply after a code change, re-read the draft and confirm the fenced eas block is the LAST thing in it.**
 
 **Ship it:**
 1. Save to GitHub
