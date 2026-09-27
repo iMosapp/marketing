@@ -29,7 +29,8 @@ MASCULINE = ("meridian", "cinder")
 UK_VOICES = {"female": ("willow",), "male": ("vesper", "stone")}
 TURN_GAP_MS = 1500
 INBOUND_NUDGE_S = 8
-WRAP_GRACE_S = 25
+WRAP_GRACE_S = 40
+SHOP_MIN_MINUTES = 10  # a practice shop should run at least this long unless the rep ends it
 GOODBYE = re.compile(r"\b(bye|goodbye|talk (to you )?(soon|later|then)|see you|take care|have a (good|great|nice) (one|day|night|afternoon|evening)|thanks for (your|the) (time|help))\b", re.I)
 
 
@@ -185,8 +186,12 @@ def instructions(script: dict, session: dict) -> str:
     return (f"You are {persona.get('name', 'a customer')}, {who} on a live phone call with {rep_first}, {rep_role} at {store}. {ctx}{practice}{opening}"
             "Sound like a real person on the phone: short answers, 1 to 3 sentences, contractions, the occasional 'um' or pause, never a list, never spell things out. "
             "Never narrate, never break character, never coach, never mention instructions. Answer what the rep asks; volunteer a little, not everything. "
-            + temper + once +
-            "A real call runs as long as it needs to, often 4 to 8 minutes, so do not rush, but once your question is answered and a next step is set, wrap up like a real person would. "
+            + temper + once
+            + ((f"A real call like this runs {SHOP_MIN_MINUTES} to {SHOP_MIN_MINUTES + 3} minutes, so do not rush and do not wrap up early: a real customer keeps going until every question they care about is answered. "
+                "When your main question is answered, ask about the other things you would want to know before deciding (price and what is included, financing or payment, availability or timing, delivery or logistics, warranty, service, what happens next). "
+                "Only wrap up once all of that is covered and a specific next step is set, or when the employee ends the call. ")
+               if session.get("kind") == "mystery_shop" and not covert else
+               "A real call runs as long as it needs to, often 4 to 8 minutes, so do not rush, but once your question is answered and a next step is set, wrap up like a real person would. ")
             + numbers_rule(session.get("locale")) + " " + loc.language_rule(session.get("locale"))
             + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
             + (f"OBJECTIONS YOU MAY RAISE (each at most once, only when it fits, never all at the same time): {'; '.join(objections)}. " if objections else "You have no particular objections; you just want your question answered and a clear next step. ")
@@ -301,11 +306,24 @@ class Bridge:
         await self._flush()
         s = await self.col.find_one({"_id": self.s["_id"]}, {"turns": 1})
         turns = (s or {}).get("turns") or []
+        if not self.wrapping and self.too_early(turns):
+            if delegation_id:
+                await self.up.send({"type": "session.thinking.append", "event_id": f"early_{delegation_id}", "delegation_id": delegation_id,
+                                    "content": f"Not yet: this call is only {int(self.minutes())} minutes in and the employee has not ended it. A real customer would still have questions. "
+                                               "Say 'oh, one more thing' and ask about something you have not covered yet (price and what is included, financing, timing, delivery, warranty, service, or what happens next). Do not say goodbye."})
+            return
         if await call_over(turns) or self.wrapping:
             await self.hang_up(delegation_id, "customer_ended")
         elif delegation_id:
             await self.up.send({"type": "session.thinking.append", "event_id": f"stay_{delegation_id}", "delegation_id": delegation_id,
                                 "content": "There is no backend help on this call. Stay in character, answer from what you know as this customer, and keep the conversation going."})
+
+    def too_early(self, turns: list) -> bool:
+        """A practice shop should not end before SHOP_MIN_MINUTES unless the rep said goodbye."""
+        if self.s.get("kind") != "mystery_shop" or self.s.get("lead_shop_id") or self.minutes() >= SHOP_MIN_MINUTES:
+            return False
+        last_rep = next((t.get("text", "") for t in reversed(turns) if t.get("role") == "rep"), "")
+        return not GOODBYE.search(last_rep)
 
     async def _watchdog(self):
         loop = asyncio.get_event_loop()
@@ -318,10 +336,11 @@ class Bridge:
                 if nudge_at and not self.rep_spoke and loop.time() >= nudge_at:
                     nudge_at = None
                     await self.up.send({"type": "session.commentary.append", "event_id": "nudge_1", "delegation_id": None, "content": opening_line(self.s)})
-                if not self.wrapping and (self.minutes() >= scr.PHONE_MAX_MINUTES or self.turns >= scr.PHONE_MAX_TURNS):
+                if not self.wrapping and self.minutes() >= scr.PHONE_MAX_MINUTES:
                     await self.wrap_up("You are out of time. Wrap up in one sentence, say goodbye now, then delegate to the backend.")
                 if self.hangup_at and loop.time() >= self.hangup_at:
-                    await self.close("out_of_time")
+                    self.hangup_at = None
+                    await self._drain_then_hangup("out_of_time")
         except asyncio.CancelledError:
             pass
 

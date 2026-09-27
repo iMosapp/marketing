@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 MODEL = ("openai", "gpt-5.2")
 MERGE_FIELDS = ["first_name", "vehicle", "store", "rep_name", "appointment_time", "trade"]
 MAX_TURNS = 24
-PHONE_MAX_MINUTES = 15
-PHONE_MAX_TURNS = 60
+PHONE_MAX_MINUTES = 20
+PHONE_MAX_TURNS = 150  # relay text loop only: one exchange per rep utterance
 CALL_TIME_LIMIT_S = (PHONE_MAX_MINUTES + 3) * 60  # Twilio-side ceiling: announcement + the call itself can never run past this
 
 # ---------------------------------------------------------------- starter phone scripts (global library, stores override by copying)
@@ -823,7 +823,8 @@ async def start_session(db, me: dict, script: dict, assignment: Optional[dict] =
 
 
 def _turn_out(t: dict) -> dict:
-    return {"role": t["role"], "text": t["text"], "audio_url": t.get("audio_url"), "mood": t.get("mood"), "at": t["at"].isoformat() if hasattr(t["at"], "isoformat") else t["at"]}
+    at = t.get("at")
+    return {"role": t["role"], "text": t["text"], "audio_url": t.get("audio_url"), "mood": t.get("mood"), "at": at.isoformat() if hasattr(at, "isoformat") else at}
 
 
 async def customer_turn(db, session: dict, rep_text: str) -> dict:

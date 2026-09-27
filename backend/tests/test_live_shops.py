@@ -229,7 +229,7 @@ async def test_bridge_inbound_nudge_and_no_delegation_before_goodbye(monkeypatch
         assert "session.commentary.append" not in up.types(), "inbound waits for the rep to answer"
         assert await _wait(lambda: any(e.get("event_id") == "nudge_1" for e in up.sent), timeout=4), "nobody spoke: nudge with the opening line"
         await up.q.put({"type": "session.delegation.created", "delegation": {"id": "item_mid", "target": "client"}})
-        assert await _wait(lambda: any(e.get("event_id") == "stay_item_mid" for e in up.sent))
+        assert await _wait(lambda: any(e.get("event_id") in ("stay_item_mid", "early_item_mid") for e in up.sent))
         assert not bridge.closed
         await bridge.on_twilio({"event": "stop"})
         assert bridge.closed and bridge.reason == "twilio_stop"

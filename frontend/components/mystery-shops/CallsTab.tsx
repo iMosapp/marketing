@@ -14,6 +14,13 @@ import { makeT, fmtWhenL, type Lang } from './i18n';
 
 type Props = { client: Client; colors: any; month: string; onMonth: (m: string) => void; refreshKey: number; onChanged: () => void };
 
+const END_REASONS: Record<string, string> = { customer_ended: 'Shopper said goodbye', out_of_time: 'Hit the 20-minute limit', twilio_stop: 'Rep hung up', websocket_closed: 'Line dropped', upstream_closed: 'Voice session dropped', upstream_failed: 'Voice session never connected', config_failed: 'Could not set up the shopper' };
+const endedHow = (reason: string, seconds?: number) => {
+  const how = END_REASONS[reason] || reason.replace(/_/g, ' ');
+  return seconds ? `${how} · ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')} on the line` : how;
+};
+
+
 export const CallsTab = ({ client, colors, month, onMonth, refreshKey, onChanged }: Props) => {
   const { showToast } = useToast();
   const depts = deptsOfClient(client);
@@ -139,6 +146,7 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }
               {!!speed && <Text style={{ fontSize: 12.5, fontWeight: '700', color: isTextLive(d) && d.text?.first_reply_s == null ? GOLD : d.text?.first_reply_s == null ? RED : d.text.first_reply_s <= (isEmail ? 1800 : 300) ? GREEN : GOLD }} {...tid('shop-call-speed')}>{speed}</Text>}
               <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{fmtWhenL(d.ended_at || d.started_at || d.scheduled_for, lang)}{d.persona_name || d.persona?.name ? ` · ${who} ${(d.persona_name || d.persona?.name)}` : ''}{d.attempts > 1 ? ` · ${tr('call.tries', { n: d.attempts })}` : ''}</Text>
               {ev?.scorecard_name && <Text style={{ fontSize: 12, color: colors.textSecondary }}>{tr('call.graded_with', { name: ev.scorecard_name })}{d.adherence_pct != null ? ` · ${tr('call.script', { v: d.adherence_pct })}` : ''}</Text>}
+              {!!(d as any).live_end_reason && <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('shop-call-ended-how')}>{endedHow((d as any).live_end_reason, (d as any).live_seconds)}</Text>}
               {!!d.fail_reason && d.status !== 'completed' && <Text style={{ fontSize: 12.5, color: RED }}>{d.fail_reason}</Text>}
             </View>
           </View>

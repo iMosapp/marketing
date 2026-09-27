@@ -526,7 +526,8 @@ def serialize_call(s: dict) -> dict:
             "score_url": f"{scr._app_url()}/shop-score/{s['score_token']}" if s.get("score_token") else None, "score_sms_status": s.get("score_sms_status"), "score_views": s.get("score_views") or 0,
             "channel": s.get("mode") if s.get("mode") in ("text", "email") else "call", "text": tx.stats(s) if s.get("mode") in ("text", "email") else None,
             "subject": s.get("subject") if s.get("mode") == "email" else None, "rep_email": s.get("rep_email") if s.get("mode") == "email" else None,
-            "live_transport": s.get("live_transport"), "live_voice": s.get("live_voice"), "live_skip_reason": s.get("live_skip_reason"), "host": _host_info(s)}
+            "live_transport": s.get("live_transport"), "live_voice": s.get("live_voice"), "live_skip_reason": s.get("live_skip_reason"), "host": _host_info(s),
+            "live_end_reason": s.get("live_end_reason"), "live_seconds": s.get("live_seconds")}
 
 
 def _host_info(s: dict):
@@ -1903,6 +1904,49 @@ async def ensure_kubota_demo_client(db) -> bool:
            "active": True, "industry": "equipment", "record_calls": True, "text_scorecards": True, "notes": KUBOTA_NOTES,
            "report_token": uuid.uuid4().hex, "billing": {}, "created_by": str(owner["_id"]) if owner else "system", "created_at": now, "updated_at": now}
     await db.shop_clients.insert_one(doc)
+    return True
+
+
+async def ensure_kubota_sample_shop(db) -> bool:
+    """One finished, graded Kubota sales shop on the Kubota Demo account (idempotent). Dated inside the current month so the report shows it."""
+    from services import kubota_sample_shop as ks
+    client = await db.shop_clients.find_one({"seed_key": KUBOTA_DEMO_KEY}, {"_id": 1})
+    if not client or await db.roleplay_sessions.find_one({"seed_key": ks.SEED_KEY}, {"_id": 1}):
+        return False
+    cid = str(client["_id"])
+    now = _now()
+    when = now - timedelta(days=2)
+    if when.month != now.month:
+        when = now - timedelta(hours=3)
+    when = when.replace(minute=12, second=0, microsecond=0)
+    script = await db.scripts.find_one({"slug": "kubota_sales_master", "pool": "mystery_shop", "shop_client_id": None}, {"_id": 1, "title": 1})
+    target = await db.shop_targets.find_one({"client_id": cid, "seed_key": ks.SEED_KEY}, {"_id": 1})
+    if not target:
+        res = await db.shop_targets.insert_one({**ks.PERSON, "client_id": cid, "seed_key": ks.SEED_KEY, "active": True, "challenge_history": [str(script["_id"])] if script else [], "created_at": when, "updated_at": when})
+        tid = str(res.inserted_id)
+    else:
+        tid = str(target["_id"])
+    sid = ObjectId()
+    duration_s = 372
+    step = duration_s / max(1, len(ks.TURNS))
+    turns = [{**t, "at": when + timedelta(seconds=round(i * step)), "audio_url": None, "mood": "neutral"} for i, t in enumerate(ks.TURNS)]
+    ev = {"call_sid": f"RP_{sid}", "is_roleplay": False, "is_mystery_shop": True, "roleplay_session_id": str(sid), "assignment_id": None, "shop_client_id": cid, "shop_target_id": tid,
+          "user_id": None, "rep_name": ks.PERSON["name"], "store_id": None, "contact_id": None, "contact_name": f"{ks.PERSONA['name']} (mystery shopper)", "conversation_id": None, "inbox_id": None,
+          "scorecard_id": None, "scorecard_name": "Equipment Sales Call", "department": "Sales", "duration_s": duration_s, "direction": "inbound", "call_at": when,
+          "results": [dict(r, ai_passed=r["passed"], confidence=0.9, override=None) for r in ks.RESULTS], "score_pct": ks.SCORE_PCT, "critical_misses": [],
+          "summary": ks.SUMMARY, "wins": ks.WINS, "coaching": ks.COACHING, "customer_sentiment": "positive", "call_type": "mystery_shop",
+          "script_id": str(script["_id"]) if script else None, "script_title": "Kubota Sales Practice Call", "channel": "call", "adherence": ks.ADHERENCE,
+          "transcript": scr.transcript_text({"turns": ks.TURNS}), "model": "seed", "graded_by": "seed", "seed_key": ks.SEED_KEY,
+          "created_at": when + timedelta(seconds=duration_s + 40), "updated_at": when + timedelta(seconds=duration_s + 40), "alerts_sent_at": None, "alerted_user_ids": []}
+    ev_res = await db.call_evaluations.insert_one(ev)
+    await db.roleplay_sessions.insert_one({
+        "_id": sid, "kind": "mystery_shop", "seed_key": ks.SEED_KEY, "client_id": cid, "target_id": tid, "rep_name": ks.PERSON["name"], "rep_phone": ks.PERSON["phone"], "department": "eq_sales", "industry": "equipment",
+        "status": "completed", "outcome": "completed", "direction": "inbound", "difficulty": "medium", "manual": True, "attempts": 1, "max_attempts": 1,
+        "live_transport": "gpt-live", "live_end_reason": "customer_ended", "live_seconds": duration_s,
+        "script_id": str(script["_id"]) if script else None, "script_title": "Kubota Sales Practice Call", "persona": dict(ks.PERSONA), "curveballs": list(ks.CURVEBALLS),
+        "scheduled_for": when, "started_at": when, "ended_at": when + timedelta(seconds=duration_s), "turns": turns,
+        "score_pct": ks.SCORE_PCT, "adherence_pct": ks.ADHERENCE["score_pct"], "evaluation_id": str(ev_res.inserted_id), "score_token": uuid.uuid4().hex, "score_sms_status": None,
+        "created_at": when, "updated_at": when + timedelta(seconds=duration_s + 40)})
     return True
 
 
