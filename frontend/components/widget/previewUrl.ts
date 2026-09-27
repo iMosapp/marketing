@@ -8,11 +8,11 @@ const b64url = (s: string) => {
   } catch { return ''; }
 };
 
-export type PreviewConfig = { appearance: any; doors: any; copy: any; kb?: any; path?: string; door?: string };
+export type PreviewConfig = { appearance: any; doors: any; copy: any; kb?: any; persona?: any; path?: string; door?: string };
 
 // `path` fakes the visitor's page address (page greetings), `door` opens straight into one door.
 export const previewUrl = (key: string, config: PreviewConfig, bust: number) => {
-  const c = b64url(JSON.stringify({ appearance: config.appearance, doors: config.doors, copy: config.copy, kb: config.kb ? { welcome: config.kb.welcome } : undefined }));
+  const c = b64url(JSON.stringify({ appearance: config.appearance, doors: config.doors, copy: config.copy, kb: config.kb ? { welcome: config.kb.welcome, mode: config.kb.mode } : undefined, persona: config.persona }));
   const extra = `${config.path ? `&path=${encodeURIComponent(config.path)}` : ''}${config.door ? `&door=${config.door}` : ''}`;
   return `${API_BASE_URL}/w/${key}/demo?v=${bust}${c ? `&c=${c}` : ''}${extra}`;
 };

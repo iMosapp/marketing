@@ -58,7 +58,8 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 TEMPLATE = r"""(function(){
 if (window.__imosWidgetLoaded) return; window.__imosWidgetLoaded = true;
 var C = __CONFIG__; var ICONS = __ICONS__;
-var A = C.appearance, D = C.doors, T = C.copy, PREVIEW = !!(window.IMOS_WIDGET_PREVIEW || C.preview);
+var A = C.appearance, D = C.doors, T = C.copy, VA = C.va || { on: false, name: 'Jessi' }, PERSON = A.launcher === 'person', PREVIEW = !!(window.IMOS_WIDGET_PREVIEW || C.preview);
+var NAME = VA.name || 'Jessi';
 var API = (function(){ try { var s = document.currentScript && document.currentScript.src; if (s && /\/api\/w\/[^\/?]+\.js/.test(s)) return s.replace(/\.js(\?.*)?$/, ''); } catch (e) {} return C.api; })();
 var isMobile = function(){ return window.innerWidth < 520; };
 if (A.hide_mobile && isMobile() && !PREVIEW) return;
@@ -107,6 +108,18 @@ var css = '\
 .imosw-greet .x{position:absolute;top:-8px;' + (side === 'right' ? 'left' : 'right') + ':-8px;width:22px;height:22px;border-radius:50%;background:#fff;color:#555;border:1px solid #ddd;font-size:13px;line-height:20px;text-align:center;cursor:pointer}\
 .imosw-av{width:34px;height:34px;border-radius:50%;background:' + bubble + ';color:' + fg + ';display:flex;align-items:center;justify-content:center;flex:none;font-weight:800;overflow:hidden}\
 .imosw-av img{width:100%;height:100%;object-fit:cover}\
+.imosw-launch.person{width:64px;height:64px;padding:0;border-radius:50%;justify-content:center;background:' + (VA.photo ? '#fff' : bubble) + ';border:3px solid #fff;box-shadow:0 8px 24px rgba(0,0,0,.25);position:relative;font-size:24px}\
+.imosw-launch.person img{width:100%;height:100%;border-radius:50%}\
+.imosw-launch.person .imosw-dot{position:absolute;right:1px;bottom:1px;width:15px;height:15px;border-radius:50%;background:#2FB35B;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}\
+.imosw-root.person .imosw-tuck{top:-4px}\
+.imosw-root.person .imosw-greet{bottom:8px;' + side + ':80px;max-width:min(320px,calc(100vw - 120px));padding:14px 40px 14px 16px;border-radius:18px;border:2px solid rgba(0,0,0,.85);box-shadow:0 10px 30px rgba(0,0,0,.2)}\
+.imosw-root.person .imosw-greet div{font-size:16px !important;line-height:1.35}\
+.imosw-root.person .imosw-greet:after{bottom:auto;top:50%;margin-top:-9px;' + side + ':-11px;' + (side === 'right' ? 'left' : 'right') + ':auto;border:9px solid transparent;border-' + (side === 'right' ? 'left' : 'right') + '-color:rgba(0,0,0,.85);border-' + side + ':0;border-bottom:9px solid transparent}\
+.imosw-root.person .imosw-greet:before{content:"";position:absolute;top:50%;margin-top:-7px;' + side + ':-7px;border:7px solid transparent;border-' + (side === 'right' ? 'left' : 'right') + '-color:' + panelBg + ';border-' + side + ':0;z-index:1}\
+.imosw-root.person .imosw-greet .x{top:10px;right:10px;left:auto;border:0;background:transparent;font-size:20px;line-height:20px;color:inherit;opacity:.7}\
+.imosw-root.person .imosw-greet .imosw-av{display:none}\
+.imosw-tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;background:rgba(255,255,255,.24);padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:2px}\
+.imosw-head .imosw-av.photo{background:#fff}\
 .imosw-panel{position:absolute;bottom:68px;' + side + ':0;width:360px;max-width:calc(100vw - 24px);background:' + panelBg + ';color:' + panelFg + ';border-radius:' + (A.radius || 20) + 'px;box-shadow:0 18px 50px rgba(0,0,0,.28);overflow:hidden;animation:imosw-in .22s ease}\
 .imosw-head{background:' + bubble + ';color:' + fg + ';padding:16px 16px 14px;display:flex;align-items:center;gap:12px}\
 .imosw-head .imosw-av{background:rgba(255,255,255,.22);color:' + fg + ';width:40px;height:40px}\
@@ -173,24 +186,31 @@ document.head.appendChild(h('style', { html: css }));
 
 var root = h('div', { 'class': 'imosw-root', 'data-imos-widget': C.key });
 var launchInner = A.icon === 'image' && A.icon_url ? '<img src="' + esc(A.icon_url) + '" alt="">' : svg(A.icon || 'chat');
-var launch = h('button', { 'class': 'imosw-launch', type: 'button', 'aria-label': A.label || 'Chat with us', html: launchInner + (A.label_on && A.label ? '<span>' + esc(A.label) + '</span>' : ''), onclick: function(){ open(); } });
+if (PERSON) launchInner = (VA.photo ? '<img src="' + esc(VA.photo) + '" alt="' + esc(NAME) + '">' : (A.avatar_url ? '<img src="' + esc(A.avatar_url) + '" alt="">' : esc(NAME.charAt(0).toUpperCase()))) + '<span class="imosw-dot" aria-hidden="true"></span>';
+var launch = h('button', { 'class': 'imosw-launch' + (PERSON ? ' person' : ''), type: 'button', 'aria-label': PERSON ? 'Chat with ' + NAME : (A.label || 'Chat with us'), html: launchInner + (!PERSON && A.label_on && A.label ? '<span>' + esc(A.label) + '</span>' : ''), onclick: function(){ open(); } });
+if (PERSON) root.className += ' person';
 root.appendChild(launch);
 var TUCK_KEY = 'imos_tuck_' + C.key, tucked = false;
 if (A.tuck_on !== false) {
   try { tucked = !PREVIEW && localStorage.getItem(TUCK_KEY) === '1'; } catch (e) {}
   root.appendChild(h('button', { 'class': 'imosw-tuck', type: 'button', 'aria-label': 'Hide the chat button', title: 'Hide', html: svg('chev'), onclick: function(e){ e.stopPropagation(); setTuck(true); } }));
   root.appendChild(h('button', { 'class': 'imosw-tab', type: 'button', 'aria-label': A.label || 'Chat with us', title: A.label || 'Chat with us', html: svg('chev'), onclick: function(){ setTuck(false); open(); } }));
-  if (tucked) root.className = 'imosw-root tucked';
+  if (tucked) root.className = 'imosw-root' + (PERSON ? ' person' : '') + ' tucked';
 }
-function setTuck(on){ tucked = on; root.className = 'imosw-root' + (on ? ' tucked' : ''); if (on && greet) { root.removeChild(greet); greet = null; } if (!PREVIEW) { try { on ? localStorage.setItem(TUCK_KEY, '1') : localStorage.removeItem(TUCK_KEY); } catch (e) {} } }
+function setTuck(on){ tucked = on; root.className = 'imosw-root' + (PERSON ? ' person' : '') + (on ? ' tucked' : ''); if (on && greet) { root.removeChild(greet); greet = null; } if (!PREVIEW) { try { on ? localStorage.setItem(TUCK_KEY, '1') : localStorage.removeItem(TUCK_KEY); } catch (e) {} } }
 document.body.appendChild(root);
 track('load');
 
 var panel = null, greet = null, opened = false;
 var doors = []; if (D.text && D.text.on) doors.push('text'); if (D.call && D.call.on) doors.push('call'); if (D.chat && D.chat.on) doors.push('chat');
 var ruleDoor = rule && rule.door && doors.indexOf(rule.door) >= 0 ? rule.door : null;
-var greetingText = rule ? rule.greeting : (A.greeting_on ? A.greeting : '');
-var avatarHtml = A.avatar_url ? '<img src="' + esc(A.avatar_url) + '" alt="">' : esc((C.store_name || 'Us').charAt(0).toUpperCase());
+function pageType(){ var p = PATH.split('?')[0]; if (!p || p === '/' || /^\/index\.[a-z]+$/.test(p)) return 'home';
+  var tests = C.chat_mode === 'business' ? [['pricing', /pric|\/plans?\b|cost/], ['features', /feature|product|how-it-works|solution|platform|tour|demo/]]
+    : [['vehicle', /vdp|vehicle-details|\/detail|vin=|\/stock|[a-hj-npr-z0-9]{17}/i], ['inventory', /inventory|\/new\b|\/new-|\/used|pre-?owned|vehicles|\/cars\b|search|listing|showroom|certified/], ['service', /service|parts|\/oil|tire|repair|maintenance/], ['finance', /financ|credit|loan|payment|lease|pre-?approv/], ['specials', /special|offer|deal|promo|incentive|rebate|\/sale\b/]];
+  for (var i = 0; i < tests.length; i++) { if (tests[i][1].test(PATH)) return tests[i][0]; } return 'other'; }
+var smart = A.smart_teasers_on !== false && A.smart_teasers ? A.smart_teasers[pageType()] : '';
+var greetingText = rule ? rule.greeting : (A.greeting_on ? (smart || A.greeting) : '');
+var avatarHtml = VA.on && VA.photo ? '<img src="' + esc(VA.photo) + '" alt="">' : (A.avatar_url ? '<img src="' + esc(A.avatar_url) + '" alt="">' : esc((VA.on ? NAME : (C.store_name || 'Us')).charAt(0).toUpperCase()));
 
 if (greetingText && doors.length && !saved.greet_dismissed) {
   setTimeout(function(){ if (opened || tucked) return;
@@ -212,7 +232,7 @@ function open(door){ if (opened) return; opened = true; if (greet) { root.remove
   if (d) showDoor(d); else if (doors.length === 1) showDoor(doors[0]); else showDoors();
 }
 function close(){ if (!panel) return; stopPoll(); root.removeChild(panel); panel = null; opened = false; launch.style.display = ''; }
-function header(title, sub){ return h('div', { 'class': 'imosw-head' }, [ h('div', { 'class': 'imosw-av', html: avatarHtml }), h('div', {}, [ h('h3', {}, [title]), sub ? h('p', {}, [sub]) : null ]), h('button', { 'class': 'imosw-close', type: 'button', 'aria-label': 'Close', html: '&times;', onclick: close }) ]); }
+function header(title, sub, tag){ return h('div', { 'class': 'imosw-head' }, [ h('div', { 'class': 'imosw-av' + (VA.on && VA.photo ? ' photo' : ''), html: avatarHtml }), h('div', {}, [ h('h3', { html: esc(title) + (tag ? '<span class="imosw-tag">' + esc(tag) + '</span>' : '') }), sub ? h('p', {}, [sub]) : null ]), h('button', { 'class': 'imosw-close', type: 'button', 'aria-label': 'Close', html: '&times;', onclick: close }) ]); }
 function foot(){ return h('div', { 'class': 'imosw-foot', html: 'Powered by <a href="https://www.imonsocial.com" target="_blank" rel="noopener">i\'M On Social</a>' }); }
 function render(children){ panel.innerHTML = ''; children.forEach(function(c){ if (c) panel.appendChild(c); }); }
 
@@ -295,8 +315,10 @@ function showChat(){
   var bookBtn = h('button', { type: 'button', onclick: function(){ chat.showBook = !chat.showBook; draw(); } }, [cfg.booking_label || 'Book a visit']);
   var sep = h('span', { 'class': 'sep' }, [' \u00b7 ']);
   var human = h('div', { 'class': 'imosw-human' }, [humanBtn, cfg.booking_on !== false ? sep : null, cfg.booking_on !== false ? bookBtn : null]);
-  var head = header(cfg.label || 'Chat now', 'Jessi \u00b7 ' + (C.store_name || ''));
-  function sub(){ var p = head.querySelector('p'); if (p) p.textContent = (chat.mode === 'human' && chat.agent ? chat.agent : 'Jessi') + ' \u00b7 ' + (C.store_name || ''); }
+  var head = VA.on ? header(NAME, (VA.title ? VA.title + ' \u00b7 ' : '') + 'Online now', 'AI assistant') : header(cfg.label || 'Chat now', NAME + ' \u00b7 ' + (C.store_name || ''));
+  function sub(){ var p = head.querySelector('p'), t = head.querySelector('h3'); if (!p) return;
+    if (chat.mode === 'human' && chat.agent) { if (VA.on && t) t.innerHTML = esc(chat.agent) + '<span class="imosw-tag">Team member</span>'; p.textContent = VA.on ? 'Real person \u00b7 ' + (C.store_name || '') : chat.agent + ' \u00b7 ' + (C.store_name || ''); }
+    else { if (VA.on && t) t.innerHTML = esc(NAME) + '<span class="imosw-tag">AI assistant</span>'; p.textContent = VA.on ? (VA.title ? VA.title + ' \u00b7 ' : '') + 'Online now' : NAME + ' \u00b7 ' + (C.store_name || ''); } }
   function apply(r){ if (r.messages) chat.msgs = r.messages; chat.need = !!r.need_contact; chat.status = r.status || chat.status; chat.mode = r.mode || 'jessi'; chat.agent = r.agent || ''; chat.offer = !!r.offer_booking; chat.booking = r.booking || null; if (chat.booking) chat.showBook = false; sub(); }
   function contactForm(){
     var nm = h('input', { 'class': 'imosw-in', type: 'text', autocomplete: 'name', placeholder: T.name_label || 'First name', value: saved.name || '' });
@@ -365,7 +387,7 @@ function showChat(){
       list.appendChild(st); }
     if (chat.need && chat.status !== 'closed') list.appendChild(contactForm());
     if ((chat.offer || chat.showBook) && !chat.booking && chat.status !== 'closed' && chat.mode !== 'human') list.appendChild(bookForm());
-    if (chat.busy && chat.mode !== 'human') list.appendChild(h('div', { 'class': 'imosw-typing', 'aria-label': 'Jessi is typing', html: '<i></i><i></i><i></i>' }));
+    if (chat.busy && chat.mode !== 'human') list.appendChild(h('div', { 'class': 'imosw-typing', 'aria-label': NAME + ' is typing', html: '<i></i><i></i><i></i>' }));
     if (chat.status === 'closed') list.appendChild(h('div', { style: 'text-align:center;padding:6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', onclick: function(){ chat.sid = null; remember('chat_sid', null); chat.msgs = []; chat.status = 'open'; chat.mode = 'jessi'; chat.agent = ''; chat.booking = null; chat.offer = false; sub(); begin(); } }, ['Start a new chat']) ]));
     send.disabled = chat.busy || chat.status === 'closed'; input.disabled = chat.status === 'closed'; humanBtn.style.display = chat.status === 'closed' ? 'none' : ''; sep.style.display = bookBtn.style.display = (chat.status === 'closed' || chat.booking || chat.mode === 'human') ? 'none' : '';
     list.scrollTop = list.scrollHeight; }
@@ -391,7 +413,7 @@ function showChat(){
   wrap.appendChild(list); wrap.appendChild(h('div', { 'class': 'imosw-compose' }, [input, send])); wrap.appendChild(human);
   if (doors.length > 1) wrap.appendChild(h('div', { style: 'text-align:center;padding:0 0 6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', style: 'margin-top:0', onclick: function(){ stopPoll(); showDoors(); } }, ['\u2190 Other options']) ]));
   render([head, wrap, foot()]);
-  if (PREVIEW) { if (!chat.msgs.length) chat.msgs = [{ role: 'jessi', text: C.chat_welcome || (C.chat_mode === 'business' ? 'Hi! I\'m Jessi, ' + (C.store_name || 'the company') + '\'s assistant. Ask me anything about what we do, how it works or pricing. Want a person? Just say so.' : 'Hi! I\'m Jessi, ' + (C.store_name || 'the store') + '\'s assistant. Ask me about hours, what\'s in stock or anything about the store. Want a person? Just say so.') }]; draw(); }
+  if (PREVIEW) { if (!chat.msgs.length) chat.msgs = [{ role: 'jessi', text: C.chat_welcome || (C.chat_mode === 'business' ? 'Hi! I\'m ' + NAME + ', ' + (C.store_name || 'the company') + '\'s assistant. Ask me anything about what we do, how it works or pricing. Want a person? Just say so.' : 'Hi! I\'m ' + NAME + ', ' + (C.store_name || 'the store') + '\'s assistant. Ask me about hours, what\'s in stock or anything about the store. Want a person? Just say so.') }]; draw(); }
   else if (chat.sid) { fetch(API + '/chat/' + chat.sid).then(function(x){ if (!x.ok) throw 0; return x.json(); }).then(function(r){ apply(r); draw(); poll(); }).catch(function(){ chat.sid = null; remember('chat_sid', null); begin(); }); }
   else begin();
   setTimeout(function(){ input.focus(); }, 80);

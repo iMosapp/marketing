@@ -68,13 +68,53 @@ STARTERS = {
     "business": ["What does it cost?", "How does it work?", "Book a demo"],
 }
 
+# Teaser lines picked by the page the visitor is on (when no page rule matches). Keys the widget JS detects from the URL.
+SMART_TEASER_KEYS = ("home", "inventory", "vehicle", "service", "finance", "specials", "pricing", "features")
+SMART_TEASERS = {
+    "dealership": {
+        "home": "Hi! Looking for something specific today? I can help.",
+        "inventory": "Not sure which to pick? I can help you narrow it down.",
+        "vehicle": "Have a question about this one? Ask me, or I can set up a test drive.",
+        "service": "Need service? I can get you scheduled in about a minute.",
+        "finance": "Questions about financing or payments? I can point you the right way.",
+        "specials": "Wondering if a special applies to you? Just ask.",
+    },
+    "business": {
+        "home": "Hi! Want a quick tour of what we do?",
+        "pricing": "Questions about plans or pricing? Ask away, I know them cold.",
+        "features": "Want to see how this would work for your team? I can walk you through it.",
+    },
+}
+
+
+async def resolve_persona(db, w: dict) -> dict:
+    """The face and name the widget speaks as: a real team member (live photo/title) or a custom VA. Off = Jessi."""
+    p = normalize_config(w)["persona"]
+    if not p["on"]:
+        return {"on": False, "name": "Jessi"}
+    out = {"on": True, "source": p["source"], "name": p["name"], "title": p["title"], "photo": p["photo_url"], "tone": p["tone"], "intro": p["intro"]}
+    if p["source"] == "team" and ObjectId.is_valid(p["user_id"]):
+        u = await db.users.find_one({"_id": ObjectId(p["user_id"])}, {"name": 1, "title": 1, "photo_url": 1, "photo_path": 1, "photo_avatar_path": 1})
+        if u:
+            from utils.image_urls import resolve_user_photo
+            photo = resolve_user_photo(u) or ""
+            out["name"] = (u.get("name") or "").split(" ")[0] or out["name"]
+            out["title"] = u.get("title") or out["title"]
+            out["photo"] = (f"{app_url()}{photo}" if photo.startswith("/") else photo) or out["photo"]
+    if out["photo"].startswith("/"):
+        out["photo"] = f"{app_url()}{out['photo']}"
+    out["name"] = out["name"] or "Jessi"
+    return out
+
 DEFAULTS = {
     "appearance": {
         "icon": "text", "icon_url": "", "label_on": True, "label": "Text Us", "position": "right", "offset_x": 20, "offset_y": 20,
         "bubble_color": "#2196F3", "text_color": "#FFFFFF", "panel_color": "#FFFFFF", "panel_text": "#111111", "radius": 20,
         "greeting_on": False, "greeting": "Hi there! Have a question? Text us and a real person replies in minutes.", "greeting_delay_s": 4,
         "avatar_url": "", "font": "inherit", "hide_mobile": False, "tuck_on": True, "page_rules": [],
+        "launcher": "bubble", "smart_teasers_on": True, "smart_teasers": {},
     },
+    "persona": {"on": False, "source": "custom", "user_id": "", "name": "", "title": "", "photo_url": "", "tone": "", "intro": ""},
     "doors": {
         "text": {"on": True, "label": "Text us", "intro": "Text with a real person. We usually reply within a few minutes.", "button": "Send text",
                  "success": "Check your phone, we just texted you.", "ask_message": True},
@@ -135,6 +175,18 @@ def normalize_config(cfg: dict) -> dict:
             rules.append({"match": str(r_["match"]).strip()[:120], "greeting": str(r_["greeting"]).strip()[:200],
                           "door": r_.get("door") if r_.get("door") in ("text", "call", "chat") else ""})
     a["page_rules"] = rules
+    a["launcher"] = "person" if a.get("launcher") == "person" else "bubble"
+    a["smart_teasers_on"] = a.get("smart_teasers_on") is not False
+    st = a.get("smart_teasers") if isinstance(a.get("smart_teasers"), dict) else {}
+    a["smart_teasers"] = {k: str(st.get(k) or "").strip()[:160] for k in SMART_TEASER_KEYS if str(st.get(k) or "").strip()}
+    pz = c["persona"]
+    pz["on"] = bool(pz.get("on"))
+    pz["source"] = "team" if pz.get("source") == "team" else "custom"
+    pz["user_id"] = str(pz.get("user_id") or "")[:40]
+    for k, n in (("name", 40), ("title", 60), ("photo_url", 300), ("tone", 160), ("intro", 240)):
+        pz[k] = str(pz.get(k) or "").strip()[:n]
+    if pz["photo_url"] and not pz["photo_url"].lower().startswith(("http://", "https://", "/")):
+        pz["photo_url"] = ""
     kb = c["kb"]
     kb["mode"] = "business" if kb.get("mode") == "business" else "dealership"
     kb["welcome"] = str(kb.get("welcome") or "")[:300]
@@ -216,11 +268,13 @@ def serialize(w: dict, store: Optional[dict] = None) -> dict:
     }
 
 
-def public_config(w: dict, store: Optional[dict], preview: bool = False) -> dict:
+def public_config(w: dict, store: Optional[dict], preview: bool = False, va: Optional[dict] = None) -> dict:
     cfg = normalize_config(w)
     out = {"key": w["key"], "api": f"{app_url()}/api/w/{w['key']}", "store_name": (store or {}).get("name") or w.get("store_name") or "",
            "appearance": cfg["appearance"], "doors": {d: {k: v for k, v in cfg["doors"][d].items()} for d in cfg["doors"]}, "copy": cfg["copy"], "preview": preview}
     out["chat_mode"] = cfg["kb"]["mode"]
+    out["appearance"]["smart_teasers"] = {**SMART_TEASERS[out["chat_mode"]], **cfg["appearance"]["smart_teasers"]}
+    out["va"] = va if va and va.get("on") else {"on": False, "name": "Jessi"}
     out["starters"] = cfg["kb"]["starters"] or STARTERS[cfg["kb"]["mode"]]
     if cfg["kb"]["mode"] == "business" and out["doors"]["chat"].get("booking_label") in ("", None, DEFAULTS["doors"]["chat"]["booking_label"]):
         out["doors"]["chat"]["booking_label"] = "Book a demo"

@@ -162,19 +162,39 @@ def knowledge_text(store: dict, kb: dict, facts: list, inv_lines: list, inv_tota
     return "\n\n".join(parts)
 
 
-def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False, coach: str = "") -> str:
+def va_name(va: Optional[dict]) -> str:
+    return ((va or {}).get("name") or "Jessi").strip() or "Jessi"
+
+
+def persona_lines(va: Optional[dict], store_name: str) -> str:
+    """Who the assistant is when the store gave it a name and a face (Look tab). Always an AI, never a human."""
+    if not va or not va.get("on"):
+        return ""
+    nm = va_name(va)
+    s = f"IDENTITY: You go by {nm}" + (f", {va['title']} at {store_name}" if va.get("title") else "") + ". "
+    if va.get("tone"):
+        s += f"Personality and tone: {va['tone']}. "
+    if va.get("intro"):
+        s += f"About you: {va['intro']} "
+    s += f"You are {store_name}'s AI assistant with a name and a face. Speak in first person as {nm}; never claim to be a human being, and if asked say you are the AI assistant and a real person is one tap away.\n"
+    return s
+
+
+def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False, coach: str = "", va: Optional[dict] = None) -> str:
     if kb.get("mode") == "business":
-        return business_prompt(store, kb, knowledge, mode, have_contact, booking) + coach
+        return business_prompt(store, kb, knowledge, mode, have_contact, booking, va=va) + coach
     name = store.get("name") or "the store"
+    nm = va_name(va)
     never = "; ".join(kb.get("never") or []) or "none listed"
     price_rule = ("You may state a vehicle's listed price only when it appears in the inventory lines. " if kb.get("share_listed_prices")
                   else "Never state prices, even listed ones. ")
     base = (
-        f"You are Jessi, the assistant in the chat window on {name}'s website. You are talking to a website visitor, not a customer on file.\n"
+        f"You are {nm}, the assistant in the chat window on {name}'s website. You are talking to a website visitor, not a customer on file.\n"
+        + persona_lines(va, name) +
         "STYLE: warm, quick, plain English. One to three short sentences. No bullet lists longer than three items, no emojis, no em dashes, no headings. "
         "Never invent facts, hours, availability, policies or numbers. If the knowledge below does not cover it, say so in one sentence and offer to have a team member text them.\n"
         f"HARD RULES: {price_rule}Never quote or negotiate payments, lease or finance terms, APR, trade-in values, discounts, rebates or 'best price'; "
-        f"never discuss: {never}. Those belong to a team member. Never pretend to be human; if asked, you are Jessi, the store's assistant, and a real person is one tap away. "
+        f"never discuss: {never}. Those belong to a team member. Never pretend to be human; if asked, you are {nm}, the store's AI assistant, and a real person is one tap away. "
         "Do not ask for their contact details unless a hand-off is happening.\n\n"
         f"WHAT YOU KNOW:\n{knowledge}\n"
     )
@@ -190,12 +210,14 @@ def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact
     return base + coach
 
 
-def business_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False) -> str:
+def business_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False, va: Optional[dict] = None) -> str:
     name = store.get("name") or "the company"
+    nm = va_name(va)
     never = "; ".join(kb.get("never") or []) or "none listed"
     base = (
-        f"You are Jessi, the assistant in the chat window on {name}'s website, and you are the resident expert on {name}: what it does, who it is for, every feature, "
+        f"You are {nm}, the assistant in the chat window on {name}'s website, and you are the resident expert on {name}: what it does, who it is for, every feature, "
         "how it works, plans and pricing, setup and support. You are talking to a prospect or customer visiting the site.\n"
+        + persona_lines(va, name) +
         "STYLE: warm, confident, plain English, like the sharpest person on the team who knows the product cold and has demoed it a thousand times. Two to four short sentences; a short list of up to four items is fine when they ask what is included. "
         "No emojis, no em dashes, no headings. Answer the question directly first with a concrete (a feature name, a number, how it works, an example for their kind of business), then the one detail that helps most.\n"
         "CONFIDENCE: You always answer as the expert. Never say you do not have something loaded, on file, in front of you, or from the website; never say you are not sure, cannot see, or would need to check; never apologize for missing detail; "
@@ -204,7 +226,7 @@ def business_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_conta
         "NEVER DENY: never say the product does not do, include or offer something unless WHAT YOU KNOW or the never-discuss list says so in plain words. Absence from your notes is not a no. "
         "If you cannot confirm a capability, describe the closest thing you do know and say the demo will show exactly how it is handled.\n"
         "TRUTH: WHAT YOU KNOW is your source. Quote plan names, prices, limits and feature names exactly as written there. Never invent features, numbers, integrations, dates or policies.\n"
-        f"HARD RULES: never discuss: {never}. Never pretend to be human; if asked, you are Jessi, {name}'s assistant, and a real person is one tap away. "
+        f"HARD RULES: never discuss: {never}. Never pretend to be human; if asked, you are {nm}, {name}'s AI assistant, and a real person is one tap away. "
         "Do not ask for contact details unless a hand-off is happening.\n\n"
         f"WHAT YOU KNOW:\n{knowledge}\n"
     )
@@ -339,8 +361,9 @@ async def start(db, w: dict, body: dict, ip: str) -> dict:
     cfg = W.normalize_config(w)
     store = await W.store_of(db, w)
     sname = store.get("name") or ("the company" if cfg["kb"].get("mode") == "business" else "the store")
-    default = (f"Hi! I'm Jessi, {sname}'s assistant. Ask me anything about what we do, how it works or pricing. Want a person? Just say so."
-               if cfg["kb"].get("mode") == "business" else f"Hi! I'm Jessi, {sname}'s assistant. Ask me about hours, what's in stock or anything about the store. Want a person? Just say so.")
+    nm = va_name(await W.resolve_persona(db, w))
+    default = (f"Hi! I'm {nm}, {sname}'s assistant. Ask me anything about what we do, how it works or pricing. Want a person? Just say so."
+               if cfg["kb"].get("mode") == "business" else f"Hi! I'm {nm}, {sname}'s assistant. Ask me about hours, what's in stock or anything about the store. Want a person? Just say so.")
     greeting = (cfg["kb"].get("welcome") or "").strip() or default
     greeting = greeting.replace("{store}", store.get("name") or "").replace("{{store_name}}", store.get("name") or "")
     doc = {"sid": secrets.token_urlsafe(18), "widget_id": str(w["_id"]), "key": w["key"], "store_id": w.get("store_id"),
@@ -478,9 +501,10 @@ async def reply(db, w: dict, session: dict, text: str, ip: str) -> dict:
     if answer is None:
         knowledge, _, _ = await _knowledge(db, w, store, kb, text)
         coach, next_q = coaching(cfg, pb_state, text, mode, booking, pitch)
-        system = system_prompt(store, kb, knowledge, mode, bool(session.get("phone")), booking=booking and not pitch, coach=coach)
+        va = await W.resolve_persona(db, w)
+        system = system_prompt(store, kb, knowledge, mode, bool(session.get("phone")), booking=booking and not pitch, coach=coach, va=va)
         gen = _confident if kb.get("mode") == "business" else _llm
-        answer = await gen(system, _transcript(session) + "\n\nReply to the visitor's last line as Jessi.")
+        answer = await gen(system, _transcript(session) + f"\n\nReply to the visitor's last line as {va_name(va)}.")
         if next_q is not None and answer:
             hit = _asked_index(answer, cfg, pb_state)
             # she skipped ahead: everything before the one she asked counts as already answered
@@ -895,9 +919,10 @@ async def ask(db, w: dict, question: str) -> dict:
     knowledge, inv_lines, inv_total = await _knowledge(db, w, store, kb, question)
     facts = await store_facts(db, store)
     coach, _ = coaching(cfg, {}, question, "handoff" if reason else "normal", False)
-    system = system_prompt(store, kb, knowledge, "handoff" if reason else "normal", False, coach=coach)
+    va = await W.resolve_persona(db, w)
+    system = system_prompt(store, kb, knowledge, "handoff" if reason else "normal", False, coach=coach, va=va)
     gen = _confident if kb.get("mode") == "business" else _llm
-    answer = await gen(system, f"Visitor: {question}\n\nReply to the visitor's last line as Jessi.") or (ASK_CONTACT if reason else FALLBACK)
+    answer = await gen(system, f"Visitor: {question}\n\nReply to the visitor's last line as {va_name(va)}.") or (ASK_CONTACT if reason else FALLBACK)
     from services.widget_crawl import PAGES_COLL
     pages = await db[PAGES_COLL].count_documents({"widget_id": str(w["_id"])}) if kb.get("mode") == "business" else 0
     return {"reply": answer, "handoff": bool(reason), "reason": reason, "used": {"facts": len(facts), "specials": len(_active_specials(kb)), "inventory_matches": len([l for l in inv_lines if not l.startswith("...")]),

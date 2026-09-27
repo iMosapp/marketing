@@ -412,6 +412,23 @@ async def crawl_apply(wid: str, request: Request, _m: dict = Depends(require_man
 
 
 # ---------------------------------------------------------------- manager: upload the header photo / bubble icon
+@admin.get("/{wid}/team")
+async def widget_team(wid: str, request: Request, _m: dict = Depends(require_manager)):
+    """People at the widget's store who can be the face of the assistant (Look tab -> Person launcher)."""
+    from utils.image_urls import resolve_user_photo
+    db = get_db()
+    w = await _load_scoped(db, request.state.user, wid)
+    sid = str(w.get("store_id") or "")
+    q = {"is_active": {"$ne": False}, "$or": [{"store_id": sid}, {"store_ids": sid}]}
+    rows = await db.users.find(q, {"name": 1, "title": 1, "role": 1, "photo_url": 1, "photo_path": 1, "photo_avatar_path": 1}).sort("name", 1).to_list(60)
+    out = []
+    for u in rows:
+        photo = resolve_user_photo(u) or ""
+        out.append({"id": str(u["_id"]), "name": u.get("name") or "", "first": (u.get("name") or "").split(" ")[0], "title": u.get("title") or "",
+                    "photo": f"{W.app_url()}{photo}" if photo.startswith("/") else photo})
+    return {"members": out}
+
+
 @admin.post("/{wid}/upload")
 async def widget_upload(wid: str, request: Request, file: UploadFile = File(...), target: str = Form("avatar"), _m: dict = Depends(require_manager)):
     """Returns app-relative /api/images/... URLs; the app makes them absolute for the dealer's site."""
@@ -452,7 +469,7 @@ def _preview_overrides(request: Request) -> dict:
         import json
         pad = "=" * (-len(raw) % 4)
         data = json.loads(base64.urlsafe_b64decode(raw + pad).decode("utf-8"))
-        return {k: v for k, v in data.items() if k in ("appearance", "doors", "copy", "kb") and isinstance(v, dict)}
+        return {k: v for k, v in data.items() if k in ("appearance", "doors", "copy", "kb", "persona") and isinstance(v, dict)}
     except Exception:
         return {}
 
@@ -466,7 +483,8 @@ async def widget_script(key: str, request: Request):
     store = await W.store_of(db, w)
     preview = request.query_params.get("preview") == "1"
     over = _preview_overrides(request)
-    cfg = W.public_config(W._merge(w, over) if over else w, store, preview=preview or bool(over))
+    merged = W._merge(w, over) if over else w
+    cfg = W.public_config(merged, store, preview=preview or bool(over), va=await W.resolve_persona(db, merged))
     return Response(widget_js.render(cfg), media_type="application/javascript; charset=utf-8",
                     headers={"Cache-Control": "no-store" if (preview or over) else "public, max-age=120"})
 
@@ -478,7 +496,8 @@ async def widget_demo(key: str, request: Request):
     w = await _widget_or_404(db, key)
     store = await W.store_of(db, w)
     over = _preview_overrides(request)
-    cfg = W.public_config(W._merge(w, over) if over else w, store, preview=True)
+    merged = W._merge(w, over) if over else w
+    cfg = W.public_config(merged, store, preview=True, va=await W.resolve_persona(db, merged))
     path = request.query_params.get("path", "")[:200]
     door = request.query_params.get("door", "")
     return HTMLResponse(widget_js.demo_html(store.get("name") or w.get("name") or "Your Dealership", widget_js.render(cfg), path, door if door in ("text", "call", "chat") else ""), headers=NO_CACHE)
@@ -488,7 +507,7 @@ async def widget_demo(key: str, request: Request):
 async def widget_config(key: str):
     db = get_db()
     w = await _widget_or_404(db, key)
-    return W.public_config(w, await W.store_of(db, w))
+    return W.public_config(w, await W.store_of(db, w), va=await W.resolve_persona(db, w))
 
 
 @public.post("/{key}/event")

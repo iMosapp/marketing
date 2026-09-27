@@ -82,3 +82,21 @@ def test_funnel_asks_then_pitches_and_opens_booking(key):
     # after two answers: pitch + booking form offered
     assert replies[2]["offer_booking"] is True
     assert "demo" in replies[2]["messages"][-1]["text"].lower()
+
+
+# ---------------------------------------------------------------- persona / person launcher (Sep 27 2026)
+def test_persona_normalizes_and_prompts_as_the_named_va():
+    import asyncio
+    from services import widgets as W
+    from services import widget_chat as C
+    cfg = W.normalize_config({"appearance": {"launcher": "person", "smart_teasers": {"inventory": "Pick one? I can help.", "bogus": "x"}},
+                              "persona": {"on": True, "source": "custom", "name": "Amanda", "title": "Product Specialist", "photo_url": "javascript:alert(1)"}})
+    assert cfg["appearance"]["launcher"] == "person" and cfg["appearance"]["smart_teasers"] == {"inventory": "Pick one? I can help."}
+    assert cfg["persona"]["photo_url"] == "" and cfg["persona"]["name"] == "Amanda"
+    pub = W.public_config({"key": "k", **cfg}, {"name": "QA Jeep"}, va={"on": True, "name": "Amanda", "title": "Product Specialist", "photo": ""})
+    assert pub["va"]["name"] == "Amanda" and pub["appearance"]["smart_teasers"]["inventory"] == "Pick one? I can help." and pub["appearance"]["smart_teasers"]["service"]
+    off = W.public_config({"key": "k", **W.normalize_config({})}, {"name": "QA Jeep"})
+    assert off["va"] == {"on": False, "name": "Jessi"}
+    p = C.system_prompt({"name": "QA Jeep"}, {"mode": "dealership"}, "K", "normal", False, va={"on": True, "name": "Amanda", "title": "Product Specialist", "tone": "warm"})
+    assert p.startswith("You are Amanda") and "AI assistant" in p and "Jessi" not in p
+    assert C.system_prompt({"name": "QA Jeep"}, {"mode": "business"}, "K", "normal", False).startswith("You are Jessi")

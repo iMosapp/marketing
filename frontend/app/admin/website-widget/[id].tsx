@@ -19,7 +19,7 @@ import { Swatch } from '../../../components/widget/parts';
 
 type Tab = 'look' | 'doors' | 'jessi' | 'routing' | 'install';
 const TABS: [Tab, string][] = [['look', 'Look'], ['doors', 'Doors'], ['jessi', 'Jessi'], ['routing', 'Routing'], ['install', 'Install']];
-const pick = (w: any) => ({ name: w.name, appearance: w.appearance, doors: w.doors, kb: w.kb, copy: w.copy, routing: w.routing, hours: w.hours });
+const pick = (w: any) => ({ name: w.name, appearance: w.appearance, doors: w.doors, kb: w.kb, copy: w.copy, routing: w.routing, hours: w.hours, persona: w.persona || { on: false, source: 'custom' } });
 
 export default function WidgetEditor() {
   const router = useRouter();
@@ -89,7 +89,7 @@ export default function WidgetEditor() {
   const wide = width >= 900;
   const canManage = detail.can_manage !== false;
   const canPreview = tab === 'look' || tab === 'doors' || tab === 'jessi';
-  const preview = <WidgetPreview widgetKey={w.key} config={{ appearance: form.appearance, doors: form.doors, copy: form.copy, kb: form.kb, path: tab === 'look' ? previewPath : '', door: tab === 'jessi' && form.doors?.chat?.on ? 'chat' : '' }} colors={colors} height={wide ? 620 : 380} />;
+  const preview = <WidgetPreview widgetKey={w.key} config={{ appearance: form.appearance, doors: form.doors, copy: form.copy, kb: form.kb, persona: form.persona, path: tab === 'look' ? previewPath : '', door: tab === 'jessi' && form.doors?.chat?.on ? 'chat' : '' }} colors={colors} height={wide ? 620 : 380} />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
