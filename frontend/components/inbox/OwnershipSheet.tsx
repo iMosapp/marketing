@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../Avatar';
 import { GOLD, tid, Ownership, RepCard, ownershipAPI, errText, fmtPhone, firstName, timeAgo } from './ownership';
 import { RepPicker, InboxPicker, NoteConfirm } from './OwnershipPickers';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 type Mode = 'main' | 'assign' | 'share' | 'move' | 'release' | 'graduate';
 
@@ -239,7 +240,7 @@ export function OwnershipSheet({ visible, conversationId, meId, colors, onClose,
       <View style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}>
         <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} {...tid('ownership-sheet-backdrop')} />
         <View style={{ backgroundColor: c.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' }} {...tid('ownership-sheet')}>
-          <View style={{ alignItems: 'center', paddingTop: 8 }}><View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: c.border }} /></View>
+          <SheetGrabber onClose={onClose} color={c.border} width={36} style={{ paddingTop: 8, paddingBottom: 2 }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 18, fontWeight: '800', color: c.text }}>Who's on this</Text>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Modal, Pressable, TouchableOpacity, TextInput, ActivityIndicator, Platform, Linking, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const BLUE = '#0A84FF';
 const GREEN = '#34C759';
@@ -59,7 +60,7 @@ export const ThankSheet = ({ visible, userId, advocate, colors, onClose, onSent 
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={st.backdrop} onPress={onClose} testID="thank-sheet-backdrop" />
       <View style={[st.sheet, { backgroundColor: colors.card }]} testID="thank-sheet">
-        <View style={st.handle} />
+        <SheetGrabber onClose={onClose} color="rgba(255,255,255,0.18)" style={{ marginTop: -6, marginBottom: 8 }} />
         <Text style={[st.title, { color: colors.text }]}>Thank {first}</Text>
         <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
           {viaTwilio ? 'Sends from your business number and lands on their timeline.' : 'Opens your Messages app with the text ready to go.'}

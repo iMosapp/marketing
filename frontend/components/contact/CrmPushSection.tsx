@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 // Push a contact to any CRM as an ADF/XML lead (emailed to the CRM's intake address)
 export default function CrmPushSection({ userId, contactId, contactName, colors, s }: any) {
@@ -68,7 +69,7 @@ export default function CrmPushSection({ userId, contactId, contactName, colors,
         <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setOpen(false)}>
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 }} data-testid="crm-push-sheet">
-              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
+              <SheetGrabber onClose={() => setOpen(false)} color={colors.border} style={{ marginTop: -6, marginBottom: 10 }} />
               <Text style={{ fontSize: 19, fontWeight: '800', color: colors.text }}>Push to CRM</Text>
               <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4, lineHeight: 18 }}>
                 Sends {contactName || 'this contact'} as an industry-standard ADF/XML lead. Every major CRM (VinSolutions, Elead, DriveCentric...) gives you a lead intake email address — paste it below.

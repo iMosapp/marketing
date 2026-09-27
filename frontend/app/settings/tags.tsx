@@ -23,6 +23,7 @@ import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
 import { useThemeStore } from '../../store/themeStore';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 interface Tag {
   _id: string;
   name: string;
@@ -437,7 +438,7 @@ export default function TagsSettings() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%', paddingBottom: insets.bottom + 16 }}>
             {/* Handle */}
-            <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 }} />
+            <SheetGrabber onClose={() => setShowModal(false)} color={colors.border} style={{ paddingTop: 12, paddingBottom: 4 }} />
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>

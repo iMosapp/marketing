@@ -15,6 +15,7 @@ import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 const IS_WEB = Platform.OS === 'web';
 const BASE_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
 
@@ -740,7 +741,7 @@ export default function CreateCardPage() {
             <TouchableOpacity activeOpacity={1} onPress={() => {}}>
               <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12, paddingHorizontal: 20, paddingBottom: 40, maxHeight: 560 }}>
                 {/* Drag handle */}
-                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
+                <SheetGrabber onClose={() => setShowTypePicker(false)} color={colors.border} style={{ marginTop: -6, marginBottom: 10 }} />
                 {/* Header with close button */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text }}>Choose Card Type</Text>

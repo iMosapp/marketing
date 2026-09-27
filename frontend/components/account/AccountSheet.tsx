@@ -8,6 +8,7 @@ import { resolveUserPhotoUrl } from '../../utils/photoUrl';
 import { showSimpleAlert } from '../../services/alert';
 import { tid } from '../scripts/shared';
 import { useAccountSheet } from './accountSheetStore';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const GOLD = '#C9A962';
 
@@ -126,7 +127,7 @@ export const AccountSheet = () => {
     <Modal visible transparent animationType="fade" onRequestClose={close}>
       <TouchableOpacity activeOpacity={1} onPress={close} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
         <TouchableOpacity activeOpacity={1} style={{ maxHeight: '88%', backgroundColor: colors.bg, borderTopLeftRadius: 22, borderTopRightRadius: 22, borderWidth: 1, borderColor: colors.border }} {...tid('account-sheet')}>
-          <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, marginTop: 8 }} />
+          <SheetGrabber onClose={close} color={colors.border} width={36} style={{ paddingTop: 8, paddingBottom: 2 }} />
           {impersonating && (
             <TouchableOpacity onPress={exitImpersonation} disabled={exiting} activeOpacity={0.8}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: 'rgba(255,59,48,0.12)', borderWidth: 1, borderColor: 'rgba(255,59,48,0.45)' }}

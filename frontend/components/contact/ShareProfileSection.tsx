@@ -6,6 +6,7 @@ import { File as ExpoFile, Paths } from 'expo-file-system';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 import { copyToClipboard } from '../../utils/clipboard';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -103,7 +104,7 @@ export default function ShareProfileSection({ userId, contactId, contactName, co
         <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setOpen(false)}>
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 }} {...tid('share-profile-sheet')}>
-              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
+              <SheetGrabber onClose={() => setOpen(false)} color={colors.border} style={{ marginTop: -6, marginBottom: 10 }} />
               <Text style={{ fontSize: 19, fontWeight: '800', color: colors.text }}>Share {contactName || 'this contact'}</Text>
               <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4, lineHeight: 18 }}>
                 Works for anyone, even without the app. The contact card saves straight into their phone with the photo; the link opens a read-only profile page.

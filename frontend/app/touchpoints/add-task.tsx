@@ -10,6 +10,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { tasksAPI, contactsAPI } from '../../services/api';
 import { useContactSearch } from '../../hooks/useContactSearch';
 import { showSimpleAlert } from '../../services/alert';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const PRIORITIES = [
   { key: 'high', label: 'High', selClass: 'rgba(255,59,48,0.1)', selColor: '#FF3B30', selBorder: 'rgba(255,59,48,0.3)' },
@@ -262,7 +263,7 @@ export default function AddTaskScreen() {
       {/* Contact Picker Modal */}
       <Modal visible={showContactPicker} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={() => setShowContactPicker(false)} onDismiss={() => setShowContactPicker(false)}>
         <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
-          {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
+          {Platform.OS === 'ios' && <SheetGrabber onClose={() => setShowContactPicker(false)} color="rgba(142,142,147,0.45)" width={36} height={5} style={{ paddingTop: 6, paddingBottom: 2 }} />}
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
             <TouchableOpacity onPress={() => setShowContactPicker(false)} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} data-testid="contact-picker-back">
               <Ionicons name="chevron-back" size={24} color={colors.text} />

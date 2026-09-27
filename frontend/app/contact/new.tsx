@@ -32,6 +32,7 @@ import { useToast } from '../../components/common/Toast';
 import { getS } from '../../components/contact/contactStyles';
 import { PrimaryButton } from '../../components/ui/PrimaryButton';
 import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint } from '../../components/ui/tokens';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -669,7 +670,7 @@ export default function NewContactScreen() {
       {/* ── Referral Picker Modal ── */}
       <Modal visible={showReferralPicker} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={() => setShowReferralPicker(false)} onDismiss={() => setShowReferralPicker(false)}>
         <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
-          {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
+          {Platform.OS === 'ios' && <SheetGrabber onClose={() => setShowReferralPicker(false)} color="rgba(142,142,147,0.45)" width={36} height={5} style={{ paddingTop: 6, paddingBottom: 2 }} />}
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Select Referrer</Text>

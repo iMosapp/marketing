@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GOLD, tid } from './utils';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 type ShellProps = {
   title: string;
@@ -21,9 +22,7 @@ export function SheetShell({ title, subtitle, onClose, children, footer, testId,
         <View style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} {...tid(`${testId}-backdrop`)} />
           <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%' }} {...tid(testId)}>
-            <View style={{ alignItems: 'center', paddingTop: 8 }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
-            </View>
+            <SheetGrabber onClose={onClose} color={colors.border} width={36} style={{ paddingTop: 8, paddingBottom: 2 }} />
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>{title}</Text>

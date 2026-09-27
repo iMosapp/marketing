@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 interface Tag { _id: string; name: string; color: string; icon: string; contact_count: number; }
 
@@ -77,7 +78,7 @@ export function ContactFilterSheet({
       <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} onPress={() => {}}>
           <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34, maxHeight: 560 }} testID="contact-filter-sheet" dataSet={{ testid: "contact-filter-sheet" } as any}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 14 }} />
+            <SheetGrabber onClose={onClose} color={colors.border} style={{ marginTop: -6, marginBottom: 8 }} testID="contact-filter-grabber" />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>Filters</Text>
               <TouchableOpacity onPress={onReset} testID="filter-reset-btn" dataSet={{ testid: "filter-reset-btn" } as any}>

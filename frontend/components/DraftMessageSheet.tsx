@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
+import { SheetGrabber } from '../components/common/SheetGrabber';
 
 // "What to send" sheet — full reason + AI-drafted ready-to-send message.
 // item: { contact_id, first_name, last_name, phone, reason_key, reason_label, icon, color, context? }
@@ -52,7 +53,7 @@ export function DraftMessageSheet({ userId, item, onClose, onUsed, hideViewConta
       <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} onPress={() => {}}>
           <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 }} testID="draft-sheet" dataSet={{ testid: 'draft-sheet' } as any}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
+            <SheetGrabber onClose={onClose} color={colors.border} style={{ marginTop: -6, marginBottom: 10 }} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: (item?.color || '#C9A962') + '20', alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name={(item?.icon as any) || 'chatbubble'} size={19} color={item?.color || '#C9A962'} />

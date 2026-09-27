@@ -8,6 +8,7 @@ import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { useToast } from './common/Toast';
 import api from '../services/api';
+import { SheetGrabber } from '../components/common/SheetGrabber';
 
 type Channel = {
   id: string; name: string; icon: string; color: string;
@@ -124,7 +125,7 @@ export default function ChannelPicker({ message, phone, email, link, onSent, vis
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
         <View style={[styles.sheet, { backgroundColor: colors.card, borderColor: colors.surface }]} data-testid="channel-picker-modal">
-          <View style={styles.handle} />
+          <SheetGrabber onClose={onClose} color="#666" width={36} style={{ marginTop: -6, marginBottom: 10 }} />
           <Text style={[styles.sheetTitle, { color: colors.text }]}>Send via</Text>
 
           <View style={styles.grid}>

@@ -40,6 +40,7 @@ import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tid, tint } from '../../componen
 import { WelcomeTour, shouldShowWelcomeTour, markWelcomeTourSeen } from '../../components/home/WelcomeTour';
 import { WelcomeVideo, markWelcomeVideoSeen } from '../../components/home/WelcomeVideo';
 import { AvatarButton } from '../../components/account/AvatarButton';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -209,7 +210,7 @@ function ContactActionModal({
     <Modal visible={visible} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={onClose} onDismiss={onClose}>
       {/* iOS pageSheet sits below the status bar and swipes down to close; Android stays full-screen so we pad the inset by hand */}
       <View style={[{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
-        {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
+        {Platform.OS === 'ios' && <SheetGrabber onClose={onClose} color="rgba(142,142,147,0.45)" width={36} height={5} style={{ paddingTop: 6, paddingBottom: 2 }} />}
         {/* Clean header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
           <TouchableOpacity onPress={onClose} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} data-testid="close-action-modal">
@@ -1108,9 +1109,7 @@ function HomeScreen() {
             onStartShouldSetResponder={() => true}
           >
             {/* Handle */}
-            <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
-              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
-            </View>
+            <SheetGrabber onClose={() => setShowSharePicker(false)} color={colors.border} style={{ paddingTop: 12, paddingBottom: 8 }} />
 
             <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 4 }}>
               What do you want to share?
@@ -1273,7 +1272,7 @@ function HomeScreen() {
       {/* Action Picker — Pick a contact then navigate to their record to complete the action */}
       <Modal visible={showActionPicker} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={() => setShowActionPicker(false)} onDismiss={() => setShowActionPicker(false)}>
         <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
-          {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
+          {Platform.OS === 'ios' && <SheetGrabber onClose={() => setShowActionPicker(false)} color="rgba(142,142,147,0.45)" width={36} height={5} style={{ paddingTop: 6, paddingBottom: 2 }} />}
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
             <TouchableOpacity onPress={() => setShowActionPicker(false)} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} data-testid="action-picker-back-btn">
               <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -1336,7 +1335,7 @@ function HomeScreen() {
       {/* Send a Card  - Step 1: Template Picker, Step 2: Contact Search */}
       <Modal visible={showSendCard} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={() => setShowSendCard(false)} onDismiss={() => setShowSendCard(false)}>
         <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
-          {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
+          {Platform.OS === 'ios' && <SheetGrabber onClose={() => setShowSendCard(false)} color="rgba(142,142,147,0.45)" width={36} height={5} style={{ paddingTop: 6, paddingBottom: 2 }} />}
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
             <TouchableOpacity onPress={() => { if (sendCardStep === 'contact') { setSendCardStep('type'); } else { setShowSendCard(false); } }} style={{ padding: 4 }} data-testid="send-card-back-btn">
               <Ionicons name="chevron-back" size={24} color={colors.text} />

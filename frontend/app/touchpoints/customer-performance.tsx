@@ -8,6 +8,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 import { FS } from '../../constants/typography';
 import api from '../../services/api';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
@@ -242,9 +243,7 @@ export default function CustomerPerformanceScreen() {
       <Modal visible={!!selectedContact} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '75%', paddingBottom: 30 }} {...tid('customer-detail-modal')}>
-            <View style={{ alignItems: 'center', paddingVertical: 10 }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
-            </View>
+            <SheetGrabber onClose={() => setSelectedContact(null)} color={colors.border} width={36} style={{ paddingVertical: 10 }} />
 
             {selectedContact && (
               <>

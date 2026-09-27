@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../services/api';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const GOLD = '#C9A962';
 export const MAX_PHOTOS = 6;
@@ -47,7 +48,7 @@ export const PhotoGallerySheet = ({ visible, userId, item, colors, onClose, onCh
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={st.backdrop} onPress={onClose} testID="gallery-backdrop" />
       <View style={[st.sheet, { backgroundColor: colors.card }]} testID="gallery-sheet">
-        <View style={st.handle} />
+        <SheetGrabber onClose={onClose} color="rgba(255,255,255,0.18)" style={{ marginTop: -6, marginBottom: 8 }} />
         <Text style={[st.title, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
         <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }} testID="gallery-count">
           {photos.length} of {MAX_PHOTOS} photos · Jessi texts the first {Math.min(3, Math.max(photos.length, 1))} when a customer asks about this car

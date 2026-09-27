@@ -46,6 +46,7 @@ import { useToast } from '../../components/common/Toast';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert, showAlert, showConfirm } from '../../services/alert';
+import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 // Web platform detection
 const IS_WEB = Platform.OS === 'web';
@@ -3066,7 +3067,7 @@ function ThreadScreen() {
         >
           <View style={styles.templatesModal} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
-              <View style={styles.modalHandle} />
+              <SheetGrabber onClose={() => setShowTemplates(false)} color="#3C3C3E" width={36} height={5} style={{ marginTop: -6, marginBottom: 10 }} />
               <Text style={styles.modalTitle}>Message Templates</Text>
             </View>
             
@@ -3127,7 +3128,7 @@ function ThreadScreen() {
         >
           <View style={styles.templatesModal} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
-              <View style={styles.modalHandle} />
+              <SheetGrabber onClose={() => setShowBusinessCard(false)} color="#3C3C3E" width={36} height={5} style={{ marginTop: -6, marginBottom: 10 }} />
             </View>
             
             <View style={styles.cardModalContent}>
@@ -3406,7 +3407,7 @@ function ThreadScreen() {
             />
             <View style={styles.congratsModal} onStartShouldSetResponder={() => true}>
               <View style={styles.modalHeader}>
-                <View style={styles.modalHandle} />
+                <SheetGrabber onClose={() => setShowCongratsCardModal(false)} color="#3C3C3E" width={36} height={5} style={{ marginTop: -6, marginBottom: 10 }} />
                 <Text style={styles.modalTitle}>Create {(CARD_TYPES.find(ct => ct.key === selectedCardType) || CARD_TYPES[0]).label} Card</Text>
               </View>
               
@@ -3605,7 +3606,7 @@ function ThreadScreen() {
         >
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             <View style={[styles.modalContent, { maxHeight: '85%' }]}>
-              <View style={styles.modalHandle} />
+              <SheetGrabber onClose={() => setShowSettings(false)} color="#3C3C3E" width={36} height={5} style={{ marginTop: -6, marginBottom: 10 }} />
 
               {/* Close button for native */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
