@@ -164,7 +164,8 @@ def focus_line(contact: Optional[dict]) -> str:
 
 def assistant_instructions(cfg: dict, user: dict, language: str = "English", contact: Optional[dict] = None) -> str:
     return (personality(cfg) + "\n" + rep_line(user) + focus_line(contact) + f"\nSpeak {language} unless the rep switches.\n\n"
-            "Backchannel policy: Use moderate backchannels. Acknowledge naturally without competing with the main response.\n\n"
+            "Backchannel policy: none. Never make thinking or listening sounds ('hmm', 'mm', 'mm-hm', 'uh-huh', 'um', 'uh', 'let's see'). "
+            "Stay silent while the rep talks; when you do speak, start straight in with words, never a sound.\n\n"
             "Interruption policy: Stop speaking when the rep interrupts. Listen to what they say.\n\n"
             "Delegation policy:\n"
             "Backend tools:\n"
