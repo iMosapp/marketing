@@ -816,8 +816,10 @@ async def get_congrats_card(card_id: str, request: Request):
         "crawler", "spider", "preview", "fetch/", "headless",
     ]
     is_bot = any(p in ua for p in bot_patterns)
+    # A logged-in rep opening their own card from the thread is not a customer view.
+    counts = not is_bot and not request.headers.get("authorization") and request.query_params.get("preview") != "rep"
     
-    if not is_bot and await db.congrats_cards.find_one({"card_id": card_id}, {"_id": 1}):
+    if counts and await db.congrats_cards.find_one({"card_id": card_id}, {"_id": 1}):
         await db.congrats_cards.update_one(
             {"card_id": card_id},
             {"$inc": {"views": 1}}
@@ -861,7 +863,7 @@ async def get_congrats_card(card_id: str, request: Request):
             "created_at": {"$gte": recent_cutoff}
         })
         
-        if salesman_id and not existing:
+        if counts and salesman_id and not existing:
             await log_activity_for_customer(
                 user_id=salesman_id,
                 customer_phone=customer_phone,
@@ -881,13 +883,14 @@ async def get_congrats_card(card_id: str, request: Request):
     try:
         from routers.engagement_signals import record_signal
         contact_id = card.get("contact_id")
-        await record_signal(
-            signal_type="card_viewed",
-            user_id=card.get("salesman_id", ""),
-            contact_id=contact_id,
-            contact_name=card.get("customer_name"),
-            metadata={"card_id": card_id, "card_type": card.get("card_type", "congrats")},
-        )
+        if counts:
+            await record_signal(
+                signal_type="card_viewed",
+                user_id=card.get("salesman_id", ""),
+                contact_id=contact_id,
+                contact_name=card.get("customer_name"),
+                metadata={"card_id": card_id, "card_type": card.get("card_type", "congrats")},
+            )
     except Exception as e:
         logger.debug(f"Engagement signal failed: {e}")
     

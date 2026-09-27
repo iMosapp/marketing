@@ -4786,6 +4786,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   // Business Card Modal Styles
   cardModalContent: {
     padding: 20,
+    flex: 1,
   },
   cardPreview: {
     alignItems: 'center',

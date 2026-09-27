@@ -3,6 +3,32 @@ import { View, Text, TouchableOpacity, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
+import { API_BASE_URL } from '../../services/api';
+
+const URL_RE = /(https?:\/\/[^\s<>"')\]]+)/g;
+const openUrl = (url: string) => { if (Platform.OS === 'web') window.open(url, '_blank'); else Linking.openURL(url); };
+const CARD_LABEL: Record<string, string> = { congrats: 'Congrats card', birthday: 'Birthday card', anniversary: 'Anniversary card', thank_you: 'Thank-you card', thankyou: 'Thank-you card', welcome: 'Welcome card', holiday: 'Holiday card' };
+
+// A sent card, shown as the actual card so the rep can see (and reopen) exactly what the customer got.
+const CardTile = ({ card, colors }: { card: any; colors: any }) => {
+  const label = CARD_LABEL[card.card_type] || `${String(card.card_type || 'custom').replace(/_/g, ' ')} card`;
+  const open = () => router.push(`/congrats/${card.card_id}?preview=rep` as any);
+  return (
+    <TouchableOpacity activeOpacity={0.9} onPress={open} style={{ flexDirection: 'row', gap: 12, backgroundColor: colors.bg, borderRadius: 14, padding: 10, marginBottom: 8, borderWidth: 1, borderColor: colors.border }} testID="card-preview-tile" dataSet={{ testid: 'card-preview-tile' }}>
+      <Image source={{ uri: card.image_path ? `${API_BASE_URL}${card.image_path}` : card.image_url }} style={{ width: 72, height: 90, borderRadius: 10, backgroundColor: card.background || '#111' }} contentFit="cover" transition={200} />
+      <View style={{ flex: 1, justifyContent: 'center', gap: 3 }}>
+        <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', color: card.accent || '#C9A962' }}>{label}</Text>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }} numberOfLines={2}>{card.headline || `For ${card.customer_name || 'your customer'}`}</Text>
+        <Text style={{ fontSize: 12, color: card.views > 0 ? '#34C759' : colors.textTertiary }} testID="card-preview-opens">{card.views > 0 ? `Opened ${card.views}\u00d7` : 'Not opened yet'}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+          <Ionicons name="eye-outline" size={14} color="#007AFF" />
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#007AFF' }}>View card</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 type Props = {
   item: any;
@@ -46,6 +72,10 @@ export const MessageBubble = ({
 }: Props) => {
   const hasMedia = item.has_media && item.media_urls && item.media_urls.length > 0;
   const status = (item as any).status as string | undefined;
+  const cardLink = (item.links || []).find((l: any) => l && l.card);
+  const linkify = (text: string) => text.split(URL_RE).map((seg, i) => /^https?:\/\//.test(seg)
+    ? <Text key={i} onPress={() => openUrl(seg)} style={{ textDecorationLine: 'underline', fontWeight: '600' }} testID="message-link" dataSet={{ testid: 'message-link' }}>{highlight(seg)}</Text>
+    : <React.Fragment key={i}>{highlight(seg)}</React.Fragment>);
   const canInspect = isUser && !!onShowDelivery && !!item._id && item.channel !== 'sms_personal' && item.channel !== 'email';
   const Bubble: any = canInspect ? TouchableOpacity : View;
 
@@ -209,6 +239,8 @@ export const MessageBubble = ({
             </View>
           )}
 
+          {cardLink ? <CardTile card={cardLink.card} colors={colors} /> : null}
+
           {/* Text content */}
           {item.content ? (
             <Text style={[
@@ -217,7 +249,7 @@ export const MessageBubble = ({
                 ? { color: colors.text }
                 : isUser ? { color: colors.userBubbleText } : { color: colors.contactBubbleText },
             ]}>
-              {highlight(item.content)}
+              {linkify(item.content)}
             </Text>
           ) : null}
 

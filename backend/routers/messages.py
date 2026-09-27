@@ -311,6 +311,7 @@ async def get_conversation(user_id: str, conversation_id: str):
     messages = await get_db().messages.find(
         {"conversation_id": conversation_id}
     ).sort("timestamp", 1).limit(500).to_list(500)
+    previews = await _link_previews(get_db(), messages)
     
     conv['messages'] = [{
         "_id": str(m['_id']),
@@ -322,6 +323,7 @@ async def get_conversation(user_id: str, conversation_id: str):
         "error_code": m.get('error_code'),
         "twilio_status": m.get('twilio_status'),
         "resent_as": m.get('resent_as'),
+        "links": [previews[c] for c in _short_codes(m.get('content') or '') if c in previews],
         "media_dropped": m.get('media_dropped', False),
         "has_media": m.get('has_media', False),
         "media_urls": m.get('media_urls', []),
@@ -731,6 +733,37 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
 
 
 MANAGER_ROLES = ("super_admin", "org_admin", "store_manager")
+
+
+def _short_codes(text: str) -> list:
+    from routers.short_urls import find_short_codes
+    return find_short_codes(text)
+
+
+async def _link_previews(db, messages: list) -> dict:
+    """short code -> what the rep actually sent (card preview image, headline, opens), so the thread can show it."""
+    from routers.short_urls import short_link, get_short_url_base
+    codes = {c for m in messages if m.get("direction", "outbound") == "outbound" for c in _short_codes(m.get("content") or "")}
+    if not codes:
+        return {}
+    docs = await db.short_urls.find({"short_code": {"$in": list(codes)}}, {"short_code": 1, "link_type": 1, "reference_id": 1, "click_count": 1, "original_url": 1}).to_list(len(codes))
+    card_ids = [d["reference_id"] for d in docs if d.get("reference_id") and (d.get("link_type") or "").endswith("_card")]
+    cards = {}
+    if card_ids:
+        async for c in db.congrats_cards.find({"card_id": {"$in": card_ids}}, {"card_id": 1, "card_type": 1, "headline": 1, "message": 1, "customer_name": 1, "views": 1, "background_color": 1, "accent_color": 1}):
+            cards[c["card_id"]] = c
+    base = get_short_url_base()
+    out = {}
+    for d in docs:
+        card = cards.get(d.get("reference_id"))
+        out[d["short_code"]] = {
+            "url": short_link(d["short_code"]), "type": d.get("link_type") or "", "clicks": int(d.get("click_count") or 0), "destination": d.get("original_url"),
+            "card": {"card_id": card["card_id"], "card_type": card.get("card_type") or "congrats", "headline": card.get("headline") or "", "message": (card.get("message") or "")[:140],
+                     "customer_name": card.get("customer_name") or "", "views": int(card.get("views") or 0),
+                     "image_path": f"/congrats/card/{card['card_id']}/image", "image_url": f"{base}/api/congrats/card/{card['card_id']}/image", "open_url": f"{base}/congrats/{card['card_id']}?preview=rep",
+                     "accent": card.get("accent_color") or "", "background": card.get("background_color") or ""} if card else None,
+        }
+    return out
 
 
 async def _assert_can_act_as(request: Request, user_id: str) -> dict:
@@ -1931,7 +1964,7 @@ async def get_conversation_info(conversation_id: str):
 
 
 @router.get("/thread/{conversation_id}")
-async def get_thread_messages(conversation_id: str):
+async def get_thread_messages(conversation_id: str, request: Request):
     """Get all messages for a conversation thread.
     Loads by contact_id so messages with mismatched conversation_ids are always included."""
     db = get_db()
@@ -1939,6 +1972,7 @@ async def get_thread_messages(conversation_id: str):
     # Primary: get messages by conversation_id
     conv_ids = [conversation_id]
     contact_id_filter = None
+    conv = None
 
     try:
         from bson import ObjectId as _OId
@@ -1970,6 +2004,12 @@ async def get_thread_messages(conversation_id: str):
 
     messages = await db.messages.find(query).sort("timestamp", 1).limit(500).to_list(500)
 
+    owner = str((conv or {}).get("user_id") or next((m.get("user_id") for m in messages if m.get("user_id")), "") or "")
+    if owner:
+        await _assert_can_act_as(request, owner)
+    else:
+        await get_current_user(request)
+
     # Deduplicate by _id
     seen = set()
     unique = []
@@ -1978,6 +2018,7 @@ async def get_thread_messages(conversation_id: str):
         if mid not in seen:
             seen.add(mid)
             unique.append(m)
+    previews = await _link_previews(db, unique)
 
     return [{
         "_id": str(m["_id"]),
@@ -1986,6 +2027,10 @@ async def get_thread_messages(conversation_id: str):
         "timestamp": m["timestamp"].isoformat() if m.get("timestamp") and hasattr(m["timestamp"], "isoformat") else str(m.get("timestamp", "")),
         "status": m.get("status", "sent"),
         "error_message": m.get("error_message"),
+        "error_code": m.get("error_code"),
+        "twilio_status": m.get("twilio_status"),
+        "resent_as": m.get("resent_as"),
+        "links": [previews[c] for c in _short_codes(m.get("content") or "") if c in previews],
         "media_dropped": m.get("media_dropped", False),
         "ai_generated": m.get("ai_generated", False),
         "intent_detected": m.get("intent_detected"),
