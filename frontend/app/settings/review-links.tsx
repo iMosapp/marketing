@@ -70,7 +70,8 @@ const { showToast } = useToast();
 
       // Get store review links
       const response = await api.get(`/admin/users/${user._id}/store-review-links`);
-      setLinks(response.data);
+      const data = response.data || {};
+      setLinks({ ...data, custom: Array.isArray(data.custom) ? data.custom : [] });
     } catch (error) {
       console.error('Error loading review links:', error);
     } finally {

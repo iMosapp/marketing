@@ -1,0 +1,52 @@
+{
+  "summary": "Frontend regression after the security hardening (X-User-ID binding + role/scope enforcement on ~66 admin routes + WebSocket auth + SSRF/widget caps). Ran multi-role web smoke: super admin (forest), store manager (qa-manager) and regular rep (mjeast1985). No 401 / 403 was returned to any legitimately authenticated user on any of the tested routes, no session-restore loop, no forced logout. Impersonation start (forest -> Matthew Easton) worked and post-impersonation /home, /contacts, /inbox all loaded clean (0 x 401/403), confirming the token-bound X-User-ID middleware accepts the impersonate_* token as the identity source. Rep hitting admin-only routes directly (/admin/billing, /admin/individuals) correctly gets 403 from backend and the UI renders empty-state / $0 dashboard instead of crashing, which is the expected behavior. One non-auth JS bug found on the store-manager Review Links screen: ReviewLinksScreen crashes with TypeError: Cannot read properties of undefined (reading 'map'). This is NOT caused by the security refactor (no 401/403 on the review-links call) - it is a data-shape bug in the screen (see details below).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "app/settings/review-links.tsx (ReviewLinksScreen)",
+        "issue": "Page crashes with 'TypeError: Cannot read properties of undefined (reading map)' when opened as store manager qa-manager@invalid.imonsocial.test. ErrorBoundary catches it and the screen never renders. loadReviewLinks() sets state directly to response.data from GET /api/admin/users/{user._id}/store-review-links; if the store document has a legacy review_links object missing the 'custom' array, links.custom.map(...) at line 212 throws. Backend default only kicks in when review_links is absent entirely (store.get('review_links', {...defaults})). Fix: normalize response, e.g. setLinks({google:null, yelp:null, facebook:null, dealerrater:null, cars_com:null, custom:[], ...response.data, custom: response.data?.custom || []}).",
+        "selector": "app/settings/review-links.tsx L69-74 and L212",
+        "priority": "MEDIUM (functional bug, unrelated to auth refactor, but blocks Review Links save flow described in the review request)"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix ReviewLinksScreen data-shape crash so the qa-manager save flow can be exercised (defensive default for links.custom).",
+    "Optional: /admin/team route redirects to /home (no /admin/team screen exists; the actual screen is /admin/manage-team). Not a regression, but review-request line 5 named it as if the route was /admin/team - update the internal link if you want it to be reachable by that path."
+  ],
+  "critical_code_review_comments": [
+    "services/api.ts request interceptor sends both Authorization: Bearer <token> and X-User-ID header - good, consistent with new middleware.",
+    "bind_identity_header middleware allowlist correctly covers /api/admin/partners/by-slug/* and /api/admin/team/shared-inboxes/{id}/webhook (checked - GET /api/admin/team/shared-inboxes?user_id=<own> still works when bound identity == user_id).",
+    "Impersonation token path: impersonate_* Bearer works for /home, /contacts, /inbox with 0 401/403; confirms token->identity binding accepts impersonation prefix.",
+    "ReviewLinksScreen defensive coding is weak: setLinks(response.data) with no shape validation - already causing runtime crash today (see ui_bugs).",
+    "Regular rep hitting /admin/billing and /admin/individuals: backend correctly returns 403 (Insufficient permissions. Required: super_admin, Your role: user). UI does not surface an access-denied banner, just renders the empty state. Consider a role-guard redirect on the screen so reps do not land on admin pages at all."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "11/12 flows clean (all auth checks green); 1 non-auth JS crash on ReviewLinksScreen"},
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin); qa-manager@invalid.imonsocial.test / Manager123! (store_manager store 69a0b7095fddcede09591668); mjeast1985@gmail.com / NavyBean1! (rep, no store); Matthew Easton user id 69c75782e051d06491e6fa9f used for impersonation.",
+  "seed_data_creation": "None. No writes to real data (no destructive save). Attempted Save on store profile (harmless) - 200 OK, 0 401/403.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Auth regression is CLEAN across all three roles. Every route in the review request loaded without any 401/403 for the legitimate role. Rep 403s on admin routes are expected/correct. The only defect surfaced is a pre-existing data-shape bug in ReviewLinksScreen. Impersonation flow: from /admin/users -> click user row -> 'Impersonate User' button. Stop-impersonate button not exercised (no banner surfaced in the desktop web build during this run); however post-impersonate /home, /contacts, /inbox are clean which is the important check per the request.",
+  "verified_flows": [
+    "forest login -> /home; no 401/403.",
+    "forest /admin (admin index/dashboard): 6 admin API calls, all green (stats/detailed, stats/data, activity/recent implicit via page load).",
+    "forest /admin/stores: list loads (1 API call, 200).",
+    "forest /admin/stores/69a0b7095fddcede09591668: campaign settings + AI security + intent-preview sections load (7 admin API calls, 0 x 401/403). Save AI security button click: 1 API call, 200.",
+    "forest /admin/pending-users: 2 API calls, 200.",
+    "forest /admin/manage-team (Team Members): shared-inboxes and team users via user_id=<own>, 0 x 401/403.",
+    "forest /admin/white-label: partners list loads, 0 x 401/403.",
+    "forest /admin/search + typed 'fo': results groups render, 0 x 401/403.",
+    "forest Impersonate Matthew Easton -> /home /contacts /inbox all clean (25 + 8 + 0 API calls, 0 x 401/403).",
+    "qa-manager login -> /home; 0 x 401/403.",
+    "qa-manager /settings/store-profile: loads and Save succeeds (200, 0 x 401/403).",
+    "qa-manager /inbox: loads, 0 x 401/403.",
+    "qa-manager /settings/review-links: JS crash (see ui_bugs); backend call itself does NOT 401/403.",
+    "mjeast1985 login -> lands on /my-account; /home /contacts /my-profile /more all clean, 0 x 401/403.",
+    "mjeast1985 direct /admin/billing and /admin/individuals: backend returns 403 (correct), UI renders empty state without crashing."
+  ]
+}
