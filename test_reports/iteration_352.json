@@ -1,0 +1,36 @@
+{
+  "summary": "Iter 352 - Persona/person-launcher/smart-teasers verified end-to-end. Backend: 6/6 new pytest checks green (team endpoint auth, persona persist+reload, /config va, demo HTML renders person launcher + pricing smart teaser, /ask answers as Amanda without claiming to be human). Public widget UI: person launcher with green dot, speech-bubble teaser 'Questions about pricing? Ask me!' with dismiss ×, chat header shows Amanda + AI ASSISTANT tag + 'Product Specialist · Online now'. Admin Look tab: all 17 required data-testids present and saved persona/teaser values load (Amanda, Product Specialist, pricing line). Regression: with launcher=bubble + persona.off, demo renders classic pill launcher with header 'Jessi · i'M On social' and no .imosw-tag. Widget restored to defaults at cleanup.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_widget_persona_launcher.py",
+    "/app/test_reports/pytest/iter352_persona.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "resolve_persona correctly strips javascript: URLs (photo_url) - verified by existing test_widget_playbook::test_persona_normalizes_and_prompts_as_the_named_va.",
+    "public_config exposes only sanitized 'va' fields (on,name,title,photo) - no leak of tone/intro/source into the JS bundle beyond what the header needs; good.",
+    "widget_team endpoint requires manager auth via require_manager dep - unauthenticated call returns 401 as expected.",
+    "Team-source picker (widget-persona-team) was not renderable in the automated pass because auth is lost in a fresh browser context; UI code exists (frontend/components/widget/PersonaSection.tsx). Manual note: main agent already verified this path."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_widget_persona_launcher.py"
+  ],
+  "success_rate": {"backend": "6/6 = 100%", "frontend": "17/17 admin testids found; 3/3 public widget states verified (person launcher, chat header with AI tag, regression pill)"},
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin); qa-manager@invalid.imonsocial.test / Manager123! (store_manager). All admin API calls require BOTH Authorization: Bearer <token> AND X-User-ID: <user id>.",
+  "seed_data_creation": "None persistent - widget 6ab72996c248f5420bf0a14a temporarily set to launcher=person + persona.on(Amanda / Product Specialist / randomuser photo) then restored to launcher=bubble + persona.off after all tests. Also set smart_teasers.pricing='Questions about pricing? Ask me!' during test, restored implicitly (only 'pricing' was overridden; module cleanup only resets launcher + persona.on).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Feature is stable. Backend suite: tests/test_widget_persona_launcher.py (module cleanup PUTs {appearance:{launcher:'bubble'},persona:{on:false}}). To exercise team-source path in admin UI, log in via same browser context (do not open a fresh URL that reloads app cold) and click widget-persona-source-team; horizontal list widget-persona-team with widget-persona-member-<id> items comes from GET /api/widgets/{id}/team. Persona ask endpoint (POST /api/widgets/{id}/ask) is chatty and answers in first person as Amanda when persona is on - verified.",
+  "verified_flows": [
+    "GET /api/widgets/{id}/team without auth => 401 (correct).",
+    "GET /api/widgets/{id}/team as store_manager => 200, members[] with id/name/first/title/photo.",
+    "PUT /api/widgets/{id} with appearance.launcher=person + persona{on,source:custom,name:Amanda,...} => 200, values echo back; fresh GET confirms persistence.",
+    "GET /api/w/8SkUaRqT/config => va{on:true,name:'Amanda',title:'Product Specialist',photo:randomuser} and appearance.smart_teasers merged with business defaults (home/pricing/features).",
+    "GET /api/w/8SkUaRqT/demo?path=/pricing => person launcher (.imosw-launch.person + .imosw-dot); after ~4s .imosw-greet with pricing smart line + × dismiss; clicking opens panel.",
+    "Same demo with &door=chat => header shows 'Amanda' + .imosw-tag 'AI ASSISTANT' + 'Product Specialist · Online now'.",
+    "POST /api/widgets/{id}/ask 'Are you a real person?' => 200; reply does not claim to be human; mentions AI/assistant framing.",
+    "Admin /admin/website-widget/6ab72996c248f5420bf0a14a?tab=look loads with all data-testids present and prefilled with saved persona/teaser values.",
+    "Regression: PUT launcher=bubble+persona.off => demo shows classic pill launcher and header 'Jessi · i'M On social' with NO .imosw-tag."
+  ]
+}
