@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
@@ -68,6 +68,7 @@ export default function NewBroadcastScreen() {
   const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
+  const { tag: tagParam } = useLocalSearchParams<{ tag?: string }>();
   
   // Form state
 const { showToast } = useToast();
@@ -84,7 +85,7 @@ const { showToast } = useToast();
   
   // Filters
   const [filters, setFilters] = useState<FilterState>({
-    tags: [],
+    tags: tagParam ? [tagParam] : [],
     exclude_tags: [],
     contact_ids: [],
     purchase_month: null,

@@ -94,18 +94,18 @@ async def tag_person(db, user: dict, args: dict, focus: Optional[dict], live: Op
     tag = re.sub(r"\s+", " ", (args.get("tag") or "").strip(" .,\"'"))
     if not tag:
         return f"Which tag should I put on {_first(contact)}?", None
-    first, uid, cid = _first(contact), str(user["_id"]), str(contact["_id"])
+    uid, cid = str(user["_id"]), str(contact["_id"])
     have = [t for t in contact.get("tags") or [] if isinstance(t, str)]
     if (args.get("action") or "add") == "remove":
         hit = next((t for t in have if _same_tag(t, tag)), None)
         if not hit:
-            return f"{first} is not tagged {tag}. Their tags are {', '.join(have) if have else 'none'}.", lv._open_target("contact", contact)
+            return f"{lv._first_last(contact)} is not tagged {tag}. Their tags are {', '.join(have) if have else 'none'}.", lv._open_target("contact", contact)
         from routers.tags import remove_tag_from_contacts
         await remove_tag_from_contacts(uid, {"tag_name": hit, "contact_ids": [cid]})
-        return lv._with_note(f"Took {hit} off {first}.", contact), lv._open_target("contact", contact)
+        return lv._with_note(f"Took {hit} off {lv._first_last(contact)}" + (f", the record at {lv._fmt_phone(contact['phone'])}." if contact.get("phone") else ".") + await _tag_reach(db, user, hit), contact), lv._open_target("contact", contact)
     already = next((t for t in have if _same_tag(t, tag)), None)
     if already:
-        return f"{first} is already tagged {already}.", lv._open_target("contact", contact)
+        return f"{lv._first_last(contact)}" + (f" at {lv._fmt_phone(contact['phone'])}" if contact.get("phone") else "") + f" is already tagged {already}." + await _tag_reach(db, user, already), lv._open_target("contact", contact)
     from routers.tags import get_tags, assign_tag_to_contacts
     known = [t.get("name") for t in await get_tags(uid) if t.get("name")]
     final = next((k for k in known if _same_tag(k, tag)), None)
@@ -118,7 +118,22 @@ async def tag_person(db, user: dict, args: dict, focus: Optional[dict], live: Op
     if enrolled:
         c = await db.campaigns.find_one({"_id": ObjectId(enrolled["campaign_id"])}, {"name": 1}) if ObjectId.is_valid(str(enrolled.get("campaign_id"))) else None
         camp = f" That puts them on the {c.get('name')} campaign." if c else " That started a campaign for them."
-    return lv._with_note(f"Tagged {first} as {final}." + (" New tag, it is in your list now." if is_new else "") + camp, contact), lv._open_target("contact", contact)
+    who = lv._first_last(contact) + (f", the record at {lv._fmt_phone(contact['phone'])}" if contact.get("phone") else ", the record with no phone on file")
+    return lv._with_note(f"Tagged {who} as {final}." + (" New tag, it is in your list now." if is_new else "") + await _tag_reach(db, user, final) + camp, contact), lv._open_target("contact", contact)
+
+
+async def _tag_reach(db, user: dict, tag: str) -> str:
+    """How many of the rep's own contacts carry the tag, and the store-wide number the Tags screen shows when it differs."""
+    from routers.tags import get_tag_scope, _count_scope_user_ids
+    uid = str(user["_id"])
+    mine = await db.contacts.count_documents({"user_id": uid, "tags": tag})
+    _org, store_id, _role, _adm = await get_tag_scope(uid)
+    scope = await _count_scope_user_ids(db, uid, store_id)
+    store_n = await db.contacts.count_documents({"user_id": {"$in": scope}, "tags": tag}) if len(scope) > 1 else mine
+    line = f" {tag} is now on {mine} of your contacts"
+    if store_n > mine:
+        line += f", {store_n} across the store counting your teammates' customers"
+    return line + "."
 
 
 # ── sold ──────────────────────────────────────────────────────────────────────

@@ -1884,6 +1884,27 @@ async def notify_kickoff(db, client: dict, people_added: int, people_total: int)
 DEMO_CLIENT_NAME = "Quick shops"
 QUICK_NOTES = "Built-in bucket for quick shops: anyone you shop without a client account lands here. Never billed."
 
+KUBOTA_DEMO_KEY = "kubota_demo"
+KUBOTA_DEMO_NAME = "Kubota Demo"
+KUBOTA_NOTES = ("Ready-made demo account for equipment dealerships: Sales, Service, Parts and Rental practice calls are loaded. "
+                "Add the person you are shopping on the People tab, tap Shop now. Nothing is scheduled and nothing is billed.")
+
+
+async def ensure_kubota_demo_client(db) -> bool:
+    """Seed the Kubota demo account once (idempotent, keyed on seed_key). Returns True when it was created on this boot."""
+    if await db.shop_clients.find_one({"seed_key": KUBOTA_DEMO_KEY}, {"_id": 1}):
+        return False
+    owner = await db.users.find_one({"role": "super_admin"}, {"_id": 1}, sort=[("created_at", 1)])
+    now = datetime.now(timezone.utc)
+    doc = {"name": KUBOTA_DEMO_NAME, "seed_key": KUBOTA_DEMO_KEY, "brand": "Kubota", "city": "", "state": "", "timezone": "America/Denver",
+           "contact_name": "", "contact_email": "", "contact_phone": "", "contact_title": "",
+           "plan": {"per_month": {}, "text_per_month": {}, "email_per_month": {}, "price_monthly": 0.0}, "hours": dict(ALWAYS_OPEN),
+           "vehicles": ["BX and B sub-compact tractors", "L and LX compact tractors", "M series utility tractors", "RTV utility vehicles", "KX and U compact excavators", "SVL track loaders", "Z and F mowers"],
+           "active": True, "industry": "equipment", "record_calls": True, "text_scorecards": True, "notes": KUBOTA_NOTES,
+           "report_token": uuid.uuid4().hex, "billing": {}, "created_by": str(owner["_id"]) if owner else "system", "created_at": now, "updated_at": now}
+    await db.shop_clients.insert_one(doc)
+    return True
+
 
 async def rename_legacy_quick_bucket(db):
     await db.shop_clients.update_many({"demo": True, "name": {"$ne": DEMO_CLIENT_NAME}}, {"$set": {"name": DEMO_CLIENT_NAME, "notes": QUICK_NOTES}})

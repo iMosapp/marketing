@@ -448,6 +448,27 @@ export default function TagsSettings() {
                 <Ionicons name="close-circle" size={26} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
+            {/* Everyone with this tag, at once */}
+            {!tagContactsLoading && tagContacts.length > 0 && contactListTag && (
+              <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingVertical: 12 }}>
+                <TouchableOpacity
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+                  onPress={() => { const t = contactListTag.name; setContactListTag(null); router.push(`/(tabs)/contacts?tag=${encodeURIComponent(t)}` as any); }}
+                  data-testid="tag-open-in-contacts-btn"
+                >
+                  <Ionicons name="people" size={16} color={colors.text} />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>Open in Contacts</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12, backgroundColor: GOLD }}
+                  onPress={() => { const t = contactListTag.name; setContactListTag(null); router.push(`/broadcast/new?tag=${encodeURIComponent(t)}` as any); }}
+                  data-testid="tag-text-everyone-btn"
+                >
+                  <Ionicons name="chatbubble-ellipses" size={16} color="#1A1A1A" />
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#1A1A1A' }}>Text everyone</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             {/* Contact list */}
             {tagContactsLoading ? (
               <View style={{ padding: 40, alignItems: 'center' }}>

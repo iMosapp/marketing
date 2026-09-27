@@ -48,6 +48,7 @@ export default function ContactsScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const { tag: tagParam, smart: smartParam } = useLocalSearchParams<{ tag?: string; smart?: string }>();
+  useEffect(() => { if (tagParam) setSelectedTag(tagParam); }, [tagParam]);
 
   const [search, setSearch] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);

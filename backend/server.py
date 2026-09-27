@@ -1883,6 +1883,16 @@ async def startup_event():
             logger.warning(f"[Startup] Quick shops cleanup failed: {e}")
     _aio2.create_task(_quick_shops_cleanup())
 
+    # Kubota demo account (equipment industry) exists everywhere after a Deploy
+    async def _kubota_demo_seed():
+        try:
+            from services.mystery_shops import ensure_kubota_demo_client
+            if await ensure_kubota_demo_client(get_db()):
+                logger.info("[Startup] Kubota Demo shop client created")
+        except Exception as e:
+            logger.warning(f"[Startup] Kubota demo seed failed: {e}")
+    _aio2.create_task(_kubota_demo_seed())
+
 
     # Sync internal docs (PRD / Ops Manual / App Scope) from repo files into Admin → Docs
     async def _doc_sync():
