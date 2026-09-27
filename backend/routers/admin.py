@@ -6,7 +6,7 @@ Split architecture:
   admin_hierarchy.py  — Org/store assignment, role changes, hierarchy views
   admin_helpers.py    — Shared utilities (safe_objectid, send_invite_email, etc.)
 """
-from fastapi import APIRouter, HTTPException, Header, UploadFile, File, Request
+from fastapi import APIRouter, HTTPException, Header, UploadFile, File, Request, Depends
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
@@ -26,7 +26,10 @@ from routers.rbac import (
     verify_store_access,
     verify_user_access,
     has_permission,
-    ROLE_HIERARCHY
+    ROLE_HIERARCHY,
+    require_role,
+    require_store_access,
+    require_user_access,
 )
 
 from routers.auth import hash_password
@@ -698,7 +701,7 @@ async def get_store(store_id: str, x_user_id: str = Header(None, alias="X-User-I
     store['_id'] = str(store['_id'])
     return store
 
-@router.put("/stores/{store_id}")
+@router.put("/stores/{store_id}", dependencies=[Depends(require_store_access("store_manager"))])
 async def update_store(store_id: str, store_data: dict, request: Request):
     """Update a store with all profile fields"""
     allowed_fields = [
@@ -735,7 +738,7 @@ async def update_store(store_id: str, store_data: dict, request: Request):
     return {"message": "Store updated"}
 
 # ============= REVIEW LINKS ENDPOINTS =============
-@router.get("/stores/{store_id}/review-links")
+@router.get("/stores/{store_id}/review-links", dependencies=[Depends(require_store_access("user"))])
 async def get_store_review_links(store_id: str):
     """Get review links for a store"""
     store = await get_db().stores.find_one({"_id": ObjectId(store_id)})
@@ -751,7 +754,7 @@ async def get_store_review_links(store_id: str):
         "custom": []
     })
 
-@router.put("/stores/{store_id}/review-links")
+@router.put("/stores/{store_id}/review-links", dependencies=[Depends(require_store_access("store_manager"))])
 async def update_store_review_links(store_id: str, review_links: dict):
     """Update review links for a store"""
     result = await get_db().stores.update_one(
@@ -764,7 +767,7 @@ async def update_store_review_links(store_id: str, review_links: dict):
     
     return {"message": "Review links updated", "review_links": review_links}
 
-@router.get("/users/{user_id}/store-review-links")
+@router.get("/users/{user_id}/store-review-links", dependencies=[Depends(require_user_access("store_manager"))])
 async def get_user_store_review_links(user_id: str):
     """Get review links for the store the user belongs to"""
     user = await get_db().users.find_one({"_id": ObjectId(user_id)})
@@ -803,7 +806,7 @@ async def get_user_store_review_links(user_id: str):
     })
 
 # ============= STORE CAMPAIGN SETTINGS =============
-@router.get("/stores/{store_id}/campaign-settings")
+@router.get("/stores/{store_id}/campaign-settings", dependencies=[Depends(require_store_access("store_manager"))])
 async def get_store_campaign_settings(store_id: str):
     """Get campaign permission settings for a store"""
     store = await get_db().stores.find_one({"_id": ObjectId(store_id)})
@@ -819,7 +822,7 @@ async def get_store_campaign_settings(store_id: str):
     return campaign_settings
 
 
-@router.put("/stores/{store_id}/campaign-settings")
+@router.put("/stores/{store_id}/campaign-settings", dependencies=[Depends(require_store_access("store_manager"))])
 async def update_store_campaign_settings(store_id: str, campaign_settings: dict):
     """Update campaign permission settings for a store"""
     allowed_fields = ['managers_can_edit', 'sales_can_edit']
@@ -839,7 +842,7 @@ async def update_store_campaign_settings(store_id: str, campaign_settings: dict)
     return {"message": "Campaign settings updated", "settings": update_dict}
 
 
-@router.get("/stores/{store_id}/ai-security-settings")
+@router.get("/stores/{store_id}/ai-security-settings", dependencies=[Depends(require_store_access("store_manager"))])
 async def get_store_ai_security_settings(store_id: str):
     """Get AI intent sensitivity + login lockout settings for a store."""
     store = await get_db().stores.find_one(
@@ -857,7 +860,7 @@ async def get_store_ai_security_settings(store_id: str):
     }
 
 
-@router.put("/stores/{store_id}/ai-security-settings")
+@router.put("/stores/{store_id}/ai-security-settings", dependencies=[Depends(require_store_access("store_manager"))])
 async def update_store_ai_security_settings(store_id: str, data: dict):
     """Update AI intent sensitivity + login lockout settings for a store."""
     update = {}
@@ -886,7 +889,7 @@ async def update_store_ai_security_settings(store_id: str, data: dict):
     return {"message": "Settings updated", **update}
 
 
-@router.get("/stores/{store_id}/intent-preview")
+@router.get("/stores/{store_id}/intent-preview", dependencies=[Depends(require_store_access("store_manager"))])
 async def get_store_intent_preview(store_id: str, limit: int = 15):
     """Recent intent-scored conversations for this store — powers the
     sensitivity preview so admins can see what each threshold would catch."""
@@ -930,7 +933,7 @@ async def get_store_intent_preview(store_id: str, limit: int = 15):
     return {"conversations": out}
 
 
-@router.delete("/stores/{store_id}")
+@router.delete("/stores/{store_id}", dependencies=[Depends(require_store_access("org_admin"))])
 async def delete_store(store_id: str):
     """Delete a store"""
     result = await get_db().stores.delete_one({"_id": ObjectId(store_id)})
@@ -940,7 +943,7 @@ async def delete_store(store_id: str):
     return {"message": "Store deleted"}
 
 # ============= PLATFORM STATS =============
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(require_role("store_manager"))])
 async def get_platform_stats():
     """Get platform-wide statistics"""
     total_users = await get_db().users.count_documents({})
@@ -962,7 +965,7 @@ async def get_platform_stats():
     }
 
 
-@router.get("/stats/detailed")
+@router.get("/stats/detailed", dependencies=[Depends(require_role("store_manager"))])
 async def get_detailed_stats():
     """Get detailed statistics with active/inactive counts for admin dashboard tiles"""
     db = get_db()
@@ -1023,7 +1026,7 @@ async def get_detailed_stats():
     }
 
 
-@router.get("/stats/data")
+@router.get("/stats/data", dependencies=[Depends(require_role("store_manager"))])
 async def get_data_stats(
     time_range: Optional[str] = None,
     organization_id: Optional[str] = None
@@ -1145,7 +1148,7 @@ async def get_data_stats(
     }
 
 
-@router.get("/congrats-cards")
+@router.get("/congrats-cards", dependencies=[Depends(require_role("store_manager"))])
 async def get_congrats_cards(
     organization_id: Optional[str] = None,
     limit: int = 100
@@ -1205,7 +1208,7 @@ async def get_congrats_cards(
     return result
 
 
-@router.get("/activity/recent")
+@router.get("/activity/recent", dependencies=[Depends(require_role("store_manager"))])
 async def get_recent_activity(
     limit: int = 20,
     organization_id: Optional[str] = None
@@ -1372,7 +1375,7 @@ def get_template_color(template_type: str) -> str:
     return colors.get(template_type, "#8E8E93")
 
 
-@router.get("/individuals")
+@router.get("/individuals", dependencies=[Depends(require_role("super_admin"))])
 async def get_individuals():
     """
     Get all individual/sole proprietor users (users without an organization).
@@ -1453,7 +1456,7 @@ async def create_individual(
 
 
 # ============= BILLING & REVENUE ENDPOINTS =============
-@router.get("/billing/summary")
+@router.get("/billing/summary", dependencies=[Depends(require_role("super_admin"))])
 async def get_billing_summary(
     time_range: Optional[str] = None,
     organization_id: Optional[str] = None
@@ -1545,7 +1548,7 @@ async def get_billing_summary(
     }
 
 
-@router.get("/billing/transactions")
+@router.get("/billing/transactions", dependencies=[Depends(require_role("super_admin"))])
 async def get_billing_transactions(
     limit: int = 50,
     skip: int = 0,
@@ -1609,7 +1612,7 @@ async def get_billing_transactions(
     }
 
 
-@router.get("/billing/mrr")
+@router.get("/billing/mrr", dependencies=[Depends(require_role("super_admin"))])
 async def get_mrr_metrics():
     """
     Get Monthly Recurring Revenue metrics.
@@ -1660,7 +1663,7 @@ async def get_mrr_metrics():
 
 
 # ============= PHONE NUMBER ASSIGNMENT ENDPOINTS =============
-@router.get("/phone-assignments/users")
+@router.get("/phone-assignments/users", dependencies=[Depends(require_role("super_admin"))])
 async def get_users_for_phone_assignment():
     """Get all users with their phone assignment status"""
     users = await get_db().users.find(
@@ -1680,7 +1683,7 @@ async def get_users_for_phone_assignment():
     } for u in users]
 
 
-@router.put("/phone-assignments/users/{user_id}")
+@router.put("/phone-assignments/users/{user_id}", dependencies=[Depends(require_role("super_admin"))])
 async def update_user_phone_assignment(user_id: str, data: dict):
     """Assign or update a user's I'm On Social phone number"""
     mvpline_number = data.get("mvpline_number")
@@ -1725,7 +1728,7 @@ async def update_user_phone_assignment(user_id: str, data: dict):
     return {"message": "Phone number updated", "mvpline_number": mvpline_number}
 
 
-@router.get("/phone-assignments/summary")
+@router.get("/phone-assignments/summary", dependencies=[Depends(require_role("super_admin"))])
 async def get_phone_assignments_summary():
     """Get a summary of all phone number assignments"""
     # Get users with phone numbers
@@ -2123,7 +2126,7 @@ async def get_admin_contacts(
     return result
 
 
-@router.post("/migrate-mms-media")
+@router.post("/migrate-mms-media", dependencies=[Depends(require_role("super_admin"))])
 async def migrate_mms_media():
     """
     Migrate existing messages with Twilio media URLs to use our stored media.

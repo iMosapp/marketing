@@ -18,7 +18,7 @@ interface WebSocketMessage {
 type MessageHandler = (msg: WebSocketMessage) => void;
 
 export function useWebSocket() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, token } = useAuthStore();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [connected, setConnected] = useState(false);
@@ -32,7 +32,7 @@ export function useWebSocket() {
   const connectRef = useRef<() => void>();
 
   const connect = useCallback(() => {
-    if (!user?._id || !isAuthenticated) return;
+    if (!user?._id || !isAuthenticated || !token) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     // Don't attempt WebSocket on native if URL is empty or invalid
     if (!BACKEND_URL || BACKEND_URL.startsWith('/')) return;
@@ -40,7 +40,7 @@ export function useWebSocket() {
     const wsUrl = BACKEND_URL
       .replace(/^https:/, 'wss:')
       .replace(/^http:/, 'ws:')
-      + `/api/ws/${user._id}`;
+      + `/api/ws/${user._id}?token=${encodeURIComponent(token)}`;
 
     try {
       const ws = new WebSocket(wsUrl);
@@ -73,7 +73,7 @@ export function useWebSocket() {
     } catch (e) {
       reconnectTimer.current = setTimeout(() => connectRef.current?.(), 5000);
     }
-  }, [user?._id, isAuthenticated]);
+  }, [user?._id, isAuthenticated, token]);
 
   // Keep connectRef current so ws.onclose always has the latest version
   useEffect(() => { connectRef.current = connect; });

@@ -114,6 +114,54 @@ def require_role(min_role: str):
     return check_role
 
 
+def _at_least(user: dict, min_role: str) -> None:
+    if ROLE_HIERARCHY.get(user.get('role', 'user'), 0) < ROLE_HIERARCHY.get(min_role, 0):
+        raise HTTPException(status_code=403, detail=f"Insufficient permissions. Required: {min_role}")
+
+
+def require_store_access(min_role: str = "store_manager"):
+    """Route dependency for /.../{store_id}/... paths: caller must hold min_role and be scoped to that store."""
+    async def check(request: Request, store_id: str):
+        user = await get_current_user(request)
+        _at_least(user, min_role)
+        if user.get('role') != 'super_admin' and store_id not in await get_scoped_store_ids(user) and store_id not in (user.get('store_ids') or []):
+            raise HTTPException(status_code=403, detail="Access denied to this store")
+        return user
+    return check
+
+
+def require_org_access(min_role: str = "org_admin"):
+    """Route dependency for /.../{org_id}/... paths."""
+    async def check(request: Request, org_id: str):
+        user = await get_current_user(request)
+        _at_least(user, min_role)
+        if user.get('role') != 'super_admin' and not await verify_organization_access(user, org_id):
+            raise HTTPException(status_code=403, detail="Access denied to this organization")
+        return user
+    return check
+
+
+def require_user_access(min_role: str = "store_manager"):
+    """Route dependency for /.../{user_id}/... paths: self is always allowed, otherwise min_role + scope."""
+    async def check(request: Request, user_id: str):
+        user = await get_current_user(request)
+        if str(user.get('_id')) == user_id:
+            return user
+        _at_least(user, min_role)
+        if user.get('role') != 'super_admin' and not await verify_user_access(user, user_id):
+            raise HTTPException(status_code=403, detail="Access denied to this user")
+        return user
+    return check
+
+
+async def bind_query_user(request: Request, user_id: str) -> dict:
+    """Legacy routes that name the caller via ?user_id=: it must be the user proven by the Bearer token."""
+    user = await get_current_user(request)
+    if str(user.get('_id')) != user_id:
+        raise HTTPException(status_code=403, detail="user_id does not match the authenticated user")
+    return user
+
+
 async def get_user_partner_id(user: dict) -> Optional[str]:
     """Resolve the partner_id for a user via their org or store."""
     db = get_db()

@@ -11,10 +11,22 @@ FOREST_ID = "69a0b7095fddcede09591667"
 QA_MGR_ID = "6a9b2b82cc6e7504dafc33f2"
 
 
+_TOKENS: dict = {}
+
+
 def _login(email, password):
     r = requests.post(LOGIN, json={"email": email, "password": password}, timeout=15)
     r.raise_for_status()
-    return r.json()
+    data = r.json()
+    u = data.get("user", {})
+    _TOKENS[u.get("id") or u.get("_id")] = data["token"]
+    return data
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _sessions():
+    _login("forest@imosapp.com", "Admin123!")
+    _login("qa-manager@invalid.imonsocial.test", "Manager123!")
 
 
 @pytest.fixture(scope="module")
@@ -27,6 +39,16 @@ def activation_id():
         pytest.skip("activation-tester login failed")
 
 
+def _h(uid):
+    """X-User-ID alone is rejected since the identity-binding fix: the JWT of that user must come with it."""
+    return {"X-User-ID": uid, "Authorization": f"Bearer {_TOKENS[uid]}"}
+
+
+def test_spoofed_user_id_without_token_is_rejected():
+    r = requests.get(SEARCH, params={"q": "emerald"}, headers={"X-User-ID": FOREST_ID}, timeout=15)
+    assert r.status_code == 401, r.text
+
+
 # ---------- 401 / 403 auth guards ----------
 
 def test_missing_user_id_returns_401():
@@ -35,14 +57,11 @@ def test_missing_user_id_returns_401():
 
 
 def test_plain_user_forbidden(activation_id):
-    r = requests.get(SEARCH, params={"q": "emerald"}, headers={"X-User-ID": activation_id}, timeout=15)
+    r = requests.get(SEARCH, params={"q": "emerald"}, headers=_h(activation_id), timeout=15)
     assert r.status_code == 403, r.text
 
 
 # ---------- super admin (forest) ----------
-
-def _h(uid):
-    return {"X-User-ID": uid}
 
 
 def test_forest_short_query_returns_empty_groups():

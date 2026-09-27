@@ -98,6 +98,8 @@ async def request_call(db, w: dict, body: dict, ip: str) -> dict:
         raise ValueError("Please add your name and a 10 digit mobile number.")
     if not W.allow(ip, "call", 3) or not W.allow(phone, "call_phone", 2, 300):
         raise ValueError("We already have a call going for this number. Give it a minute.")
+    if not W.allow(phone, "lead_phone_day", W.DAILY_PER_PHONE, 86400) or not W.allow(w["key"], "lead_widget_day", W.DAILY_PER_WIDGET, 86400):
+        raise ValueError("This number has reached today's limit. Please call us directly.")
     store = await W.store_of(db, w)
     cfg = W.normalize_config(w)
     source = await db.lead_sources.find_one({"_id": ObjectId(w["lead_source_id"])}) if w.get("lead_source_id") else None

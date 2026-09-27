@@ -2,7 +2,7 @@
 I'm On Social API Server - Main entry point
 Refactored to use modular routers for maintainability
 """
-from fastapi import FastAPI, APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import FileResponse, RedirectResponse, JSONResponse as _JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -133,6 +133,46 @@ logger = logging.getLogger(__name__)
 
 # ============= PERFORMANCE MONITORING MIDDLEWARE =============
 import time
+
+ADMIN_PUBLIC_RE = re.compile(r"^/api/admin/(partners/by-slug/|team/shared-inboxes/[^/]+/webhook$)")
+
+
+async def _verified_caller_id(request: Request):
+    """User id proven by the Bearer token (signed JWT or live impersonation session), else None."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+    token = auth[7:]
+    from routers.auth import verify_jwt_token
+    payload = verify_jwt_token(token)
+    if payload and payload.get("sub"):
+        return str(payload["sub"])
+    if token.startswith("impersonate_"):
+        from routers.rbac import resolve_impersonation_session
+        return await resolve_impersonation_session(token)
+    return None
+
+
+@app.middleware("http")
+async def bind_identity_header(request: Request, call_next):
+    """X-User-ID is never trusted on its own: it must equal the user proven by the Bearer token.
+    When it is absent it is filled in from the token, so legacy handlers always see the verified caller.
+    Every /api/admin/* route (except the public allowlist) requires a proven caller."""
+    path = request.url.path
+    if request.method == "OPTIONS" or path.startswith("/api/auth/"):
+        return await call_next(request)
+    claimed = (request.headers.get("X-User-ID") or "").strip()
+    is_admin = path.startswith("/api/admin/") and not ADMIN_PUBLIC_RE.match(path)
+    if not claimed and not is_admin:
+        return await call_next(request)
+    caller = await _verified_caller_id(request)
+    if not caller or (claimed and claimed != caller):
+        logger.warning(f"[IDENTITY] Rejected {request.method} {path} — X-User-ID={claimed or '-'} caller={caller or '-'}")
+        return _JSONResponse({"detail": "Authentication required"}, status_code=401)
+    if not claimed:
+        request.scope["headers"] = [h for h in request.scope["headers"] if h[0] != b"x-user-id"] + [(b"x-user-id", caller.encode())]
+    return await call_next(request)
+
 
 @app.middleware("http")
 async def enforce_user_ownership(request: Request, call_next):
@@ -326,6 +366,9 @@ static_dir = ROOT_DIR / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
+from routers.rbac import require_role as _require_role
+_super_admin = _require_role("super_admin")
+
 # ============= HEALTH CHECK =============
 @api_router.get("/")
 async def root():
@@ -341,7 +384,7 @@ async def api_health():
     return {"status": "healthy", "message": "I'm On Social API v2.0"}
 
 
-@api_router.post("/admin/backfill-last-activity")
+@api_router.post("/admin/backfill-last-activity", dependencies=[Depends(_super_admin)])
 async def backfill_last_activity(request: Request):
     """
     One-time admin backfill: populate contacts.last_activity_at from contact_events.
@@ -354,7 +397,7 @@ async def backfill_last_activity(request: Request):
     return {"success": True, **result}
 
 
-@api_router.post("/admin/migrate-sold-campaign")
+@api_router.post("/admin/migrate-sold-campaign", dependencies=[Depends(_super_admin)])
 async def migrate_sold_campaign_endpoint():
     """One-time migration: update all Sold campaigns to long-term only (day 7+). Run once after deploying the SOLD wizard."""
     from services.seed_defaults import migrate_sold_campaign_remove_immediate_steps
@@ -362,7 +405,7 @@ async def migrate_sold_campaign_endpoint():
     return result
 
 
-@api_router.post("/admin/deduplicate-campaigns")
+@api_router.post("/admin/deduplicate-campaigns", dependencies=[Depends(_super_admin)])
 async def deduplicate_campaigns():
     """
     EMERGENCY: Remove duplicate campaigns created by seeder running multiple times.
@@ -420,7 +463,7 @@ async def deduplicate_campaigns():
     }
 
 
-@api_router.post("/admin/fix-sold-campaign-sequences")
+@api_router.post("/admin/fix-sold-campaign-sequences", dependencies=[Depends(_super_admin)])
 async def fix_sold_campaign_sequences():
     """
     Fix Sold campaigns so they start at day 7 (not day 0).
@@ -465,7 +508,7 @@ async def fix_sold_campaign_sequences():
     }
 
 
-@api_router.post("/admin/backfill-user-contact-links")
+@api_router.post("/admin/backfill-user-contact-links", dependencies=[Depends(_super_admin)])
 async def backfill_user_contact_links(request: Request):
     """
     One-time backfill: find all users and link any matching contacts (by email/phone).
@@ -779,7 +822,19 @@ api_router.include_router(upcoming.router)
 
 # ============= WEBSOCKET ENDPOINT =============
 @app.websocket("/api/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str):
+async def websocket_endpoint(websocket: WebSocket, user_id: str, token: str = ""):
+    """Live pushes for one user: the ?token= (JWT / impersonation session) must prove that user_id."""
+    caller = None
+    if token:
+        from routers.auth import verify_jwt_token
+        payload = verify_jwt_token(token)
+        caller = str(payload["sub"]) if payload and payload.get("sub") else None
+        if not caller and token.startswith("impersonate_"):
+            from routers.rbac import resolve_impersonation_session
+            caller = await resolve_impersonation_session(token)
+    if caller != user_id:
+        await websocket.close(code=1008)
+        return
     await ws_manager.connect(websocket, user_id)
     try:
         while True:

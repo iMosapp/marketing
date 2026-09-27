@@ -53,7 +53,7 @@ export default function TrainingHubScreen() {
       const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || '';
       const url = `${backendUrl}/api/training/certificate/${trackId}`;
       if (IS_WEB) {
-        const res = await fetch(url, { headers: { 'X-User-ID': user._id } });
+        const res = await fetch(url, { headers: { 'X-User-ID': user._id, Authorization: `Bearer ${useAuthStore.getState().token || ''}` } });
         if (!res.ok) throw new Error(await res.text());
         const blob = await res.blob();
         const a = document.createElement('a');

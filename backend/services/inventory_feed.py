@@ -345,8 +345,9 @@ async def _fetch_url(feed: dict, max_bytes: int = 60 * 1024 * 1024) -> str:
     auth = None
     if feed.get("feed_auth_user"):
         auth = (feed["feed_auth_user"], decrypt_secret(feed.get("feed_auth_password_enc", "")))
-    async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=20.0), follow_redirects=True,
-                                 headers={"User-Agent": "iMOnSocial-InventoryFeed/1.0"}) as client:
+    from services.safe_fetch import safe_client
+    async with safe_client(timeout=httpx.Timeout(60.0, connect=20.0), follow_redirects=True,
+                           headers={"User-Agent": "iMOnSocial-InventoryFeed/1.0"}) as client:
         async with client.stream("GET", url, auth=auth) as resp:
             if resp.status_code >= 400:
                 raise ValueError(f"Feed URL returned HTTP {resp.status_code}")

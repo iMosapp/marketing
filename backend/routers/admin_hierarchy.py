@@ -3,7 +3,7 @@ admin_hierarchy.py — User hierarchy management: org/store assignment, role cha
 Extracted from admin.py for focused ownership of hierarchy logic.
 All hierarchy bugs start here — single place to look and fix.
 """
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
@@ -15,6 +15,9 @@ from routers.rbac import (
     get_scoped_organization_ids,
     get_scoped_store_ids,
     get_scoped_user_ids,
+    require_store_access,
+    require_org_access,
+    require_user_access,
 )
 
 router = APIRouter(prefix="/admin", tags=["Admin - Hierarchy"])
@@ -81,7 +84,7 @@ async def get_hierarchy_overview(x_user_id: str = Header(None, alias="X-User-ID"
     }
 
 
-@router.get("/hierarchy/organization/{org_id}")
+@router.get("/hierarchy/organization/{org_id}", dependencies=[Depends(require_org_access("store_manager"))])
 async def get_organization_hierarchy(org_id: str):
     """Get full hierarchy for a specific organization"""
     org = await get_db().organizations.find_one({"_id": ObjectId(org_id)})
@@ -168,7 +171,7 @@ async def get_organization_hierarchy(org_id: str):
     }
 
 
-@router.get("/hierarchy/store/{store_id}")
+@router.get("/hierarchy/store/{store_id}", dependencies=[Depends(require_store_access("store_manager"))])
 async def get_store_hierarchy(store_id: str):
     """Get all users for a specific store"""
     store = await get_db().stores.find_one({"_id": ObjectId(store_id)})
@@ -338,7 +341,7 @@ async def get_all_users_hierarchy(
     }
 
 
-@router.put("/hierarchy/users/{user_id}/assign-org")
+@router.put("/hierarchy/users/{user_id}/assign-org", dependencies=[Depends(require_user_access("org_admin"))])
 async def assign_user_to_org(user_id: str, data: dict):
     """Assign or change a user's organization"""
     org_id = data.get("organization_id")
@@ -372,7 +375,7 @@ async def assign_user_to_org(user_id: str, data: dict):
     return {"message": "User organization updated", "organization_id": org_id, "role": role}
 
 
-@router.put("/hierarchy/users/{user_id}/assign-store")
+@router.put("/hierarchy/users/{user_id}/assign-store", dependencies=[Depends(require_user_access("store_manager"))])
 async def assign_user_to_store(user_id: str, data: dict):
     """Add a user to a store (supports multi-store assignment)"""
     store_id = data.get("store_id")
@@ -413,7 +416,7 @@ async def assign_user_to_store(user_id: str, data: dict):
     return {"message": "User added to store", "store_ids": current_stores}
 
 
-@router.put("/hierarchy/users/{user_id}/remove-store")
+@router.put("/hierarchy/users/{user_id}/remove-store", dependencies=[Depends(require_user_access("store_manager"))])
 async def remove_user_from_store(user_id: str, data: dict):
     """Remove a user from a store"""
     store_id = data.get("store_id")
@@ -480,7 +483,7 @@ async def update_user_role(user_id: str, data: dict, x_user_id: str = Header(Non
 # ============= DATA ENDPOINTS =============
 
 
-@router.put("/hierarchy/users/{user_id}/change-organization")
+@router.put("/hierarchy/users/{user_id}/change-organization", dependencies=[Depends(require_user_access("org_admin"))])
 async def change_user_organization(user_id: str, data: dict):
     """Move a user to a different organization"""
     db = get_db()

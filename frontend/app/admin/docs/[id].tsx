@@ -106,7 +106,7 @@ export default function DocViewerScreen() {
       const url = `/api/docs/${id}/export-pdf`;
       if (Platform.OS === 'web') {
         const response = await fetch(url, {
-          headers: { 'X-User-ID': user._id },
+          headers: { 'X-User-ID': user._id, Authorization: `Bearer ${useAuthStore.getState().token || ''}` },
         });
         if (!response.ok) throw new Error('Download failed');
         const blob = await response.blob();

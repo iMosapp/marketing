@@ -3,7 +3,7 @@ admin_users.py — User management: CRUD, pending users, impersonation, permissi
 Extracted from admin.py for focused ownership of user logic.
 The single source of truth for how users are created, modified, and managed.
 """
-from fastapi import APIRouter, HTTPException, Header, UploadFile, File, Request
+from fastapi import APIRouter, HTTPException, Header, UploadFile, File, Request, Depends
 from bson import ObjectId
 from datetime import datetime, timedelta
 from typing import Optional
@@ -21,6 +21,10 @@ from routers.admin_helpers import (
 from routers.rbac import (
     get_scoped_store_ids,
     verify_user_access,
+    require_role,
+    require_store_access,
+    require_org_access,
+    require_user_access,
 )
 from routers.auth import hash_password
 
@@ -1275,7 +1279,7 @@ async def impersonate_user(user_id: str, request: Request):
 
 
 # ============= PENDING USERS =============
-@router.get("/pending-users")
+@router.get("/pending-users", dependencies=[Depends(require_role("org_admin"))])
 async def get_pending_users():
     """Get all users with pending status"""
     users = await get_db().users.find(
@@ -1308,7 +1312,7 @@ async def get_pending_users():
     
     return result
 
-@router.get("/pending-users/count")
+@router.get("/pending-users/count", dependencies=[Depends(require_role("org_admin"))])
 async def get_pending_users_count():
     """Get count of pending users (for notification badge). Cached 60s."""
     import time as _t
@@ -1321,7 +1325,7 @@ async def get_pending_users_count():
     get_pending_users_count._cache = (count, _t.monotonic())
     return {"count": count}
 
-@router.put("/pending-users/{user_id}/approve")
+@router.put("/pending-users/{user_id}/approve", dependencies=[Depends(require_role("org_admin"))])
 async def approve_pending_user(user_id: str, data: dict):
     """Approve a pending user and configure their access"""
     user = await get_db().users.find_one({"_id": ObjectId(user_id)})
@@ -1354,7 +1358,7 @@ async def approve_pending_user(user_id: str, data: dict):
     
     return {"message": "User approved", "user_id": user_id}
 
-@router.put("/pending-users/{user_id}/reject")
+@router.put("/pending-users/{user_id}/reject", dependencies=[Depends(require_role("org_admin"))])
 async def reject_pending_user(user_id: str, data: dict = None):
     """Reject/delete a pending user"""
     data = data or {}
@@ -1373,7 +1377,7 @@ async def reject_pending_user(user_id: str, data: dict = None):
 
 
 
-@router.post("/users/add-team-member")
+@router.post("/users/add-team-member", dependencies=[Depends(require_role("store_manager"))])
 async def add_team_member(data: AddTeamMemberRequest):
     """
     Add a new team member to a store.
@@ -1541,7 +1545,7 @@ async def add_team_member(data: AddTeamMemberRequest):
 
 
 
-@router.put("/users/{user_id}/status")
+@router.put("/users/{user_id}/status", dependencies=[Depends(require_user_access("store_manager"))])
 async def update_user_status(user_id: str, data: dict):
     """
     Activate or deactivate a user.
@@ -1608,7 +1612,7 @@ def _resize_image(contents: bytes, max_size: int = 128) -> str:
     return f"data:image/png;base64,{b64}"
 
 
-@router.post("/users/{primary_id}/merge/{secondary_id}")
+@router.post("/users/{primary_id}/merge/{secondary_id}", dependencies=[Depends(require_role("super_admin"))])
 async def merge_users(primary_id: str, secondary_id: str):
     """
     Merge two user accounts. The PRIMARY account survives.
@@ -1751,7 +1755,7 @@ def _logo_ops(result, logo_url: str, thumb_url: str, avatar_url: str) -> dict:
     return ops
 
 
-@router.post("/stores/{store_id}/upload-logo")
+@router.post("/stores/{store_id}/upload-logo", dependencies=[Depends(require_store_access("store_manager"))])
 async def upload_store_logo(store_id: str, file: UploadFile = File(...)):
     """Upload a logo for a store/account. Stores original + generates thumbnail & avatar."""
     db = get_db()
@@ -1787,7 +1791,7 @@ async def upload_store_logo(store_id: str, file: UploadFile = File(...)):
     return {"success": True, "logo_url": logo_url, "thumbnail_url": thumb_url, "avatar_url": avatar_url}
 
 
-@router.post("/organizations/{org_id}/upload-logo")
+@router.post("/organizations/{org_id}/upload-logo", dependencies=[Depends(require_org_access("org_admin"))])
 async def upload_org_logo(org_id: str, file: UploadFile = File(...)):
     """Upload a logo for an organization. Stores original + generates thumbnail & avatar."""
     db = get_db()
@@ -1823,7 +1827,7 @@ async def upload_org_logo(org_id: str, file: UploadFile = File(...)):
     return {"success": True, "logo_url": logo_url, "thumbnail_url": thumb_url, "avatar_url": avatar_url}
 
 
-@router.post("/seed/backfill-all")
+@router.post("/seed/backfill-all", dependencies=[Depends(require_role("super_admin"))])
 async def backfill_all_user_defaults():
     """Backfill default templates, campaigns, and date triggers for ALL existing users."""
     try:

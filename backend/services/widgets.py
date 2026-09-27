@@ -269,6 +269,8 @@ async def store_of(db, w: dict) -> dict:
 
 # ---------------------------------------------------------------- abuse guard
 _hits: dict = {}
+DAILY_PER_PHONE = 6       # texts + calls one visitor number can trigger per day across all widgets
+DAILY_PER_WIDGET = 300    # outbound texts / calls one widget can trigger per day
 
 
 def allow(ip: str, bucket: str, limit: int, window_s: int = 60) -> bool:
@@ -303,12 +305,16 @@ def host_of(url: str) -> str:
     return (m.group(1) if m else "").lower().replace("www.", "")
 
 
-def domain_ok(w: dict, page: str) -> bool:
+def domain_ok(w: dict, page: str, origin: str = "") -> bool:
+    """When the owner listed domains, the browser Origin/Referer (when present) and the reported page must both belong to one of them."""
     allowed = [d.lower().replace("www.", "").strip() for d in (w.get("domains") or []) if d.strip()]
     if not allowed:
         return True
-    host = host_of(page)
-    return any(host == d or host.endswith("." + d) for d in allowed)
+
+    def ok(u: str) -> bool:
+        host = host_of(u)
+        return any(host == d or host.endswith("." + d) for d in allowed)
+    return ok(page) and (not origin or ok(origin))
 
 
 async def touch(db, w: dict, page: str, kind: str):
@@ -334,6 +340,8 @@ async def text_lead(db, w: dict, body: dict, ip: str) -> dict:
         raise ValueError("Please add your name and a 10 digit mobile number.")
     if not allow(ip, "lead", 5) or not allow(phone, "lead_phone", 2, 120):
         raise ValueError("Please wait a minute before sending another message.")
+    if not allow(phone, "lead_phone_day", DAILY_PER_PHONE, 86400) or not allow(w["key"], "lead_widget_day", DAILY_PER_WIDGET, 86400):
+        raise ValueError("This number has reached today's limit. Please call us instead.")
     store = await store_of(db, w)
     source = await db.lead_sources.find_one({"_id": ObjectId(w["lead_source_id"])}) if w.get("lead_source_id") else None
     if not source:
@@ -444,7 +452,7 @@ def _boring(hx: str) -> bool:
 
 
 async def site_palette(url: str) -> dict:
-    import httpx
+    from services.safe_fetch import safe_client
     if not re.match(r"^https?://", url or ""):
         url = "https://" + (url or "").strip()
     headers = {"User-Agent": "Mozilla/5.0 (compatible; iMOS-WidgetPalette/1.0)"}
@@ -457,7 +465,7 @@ async def site_palette(url: str) -> dict:
         found[hx] = found.get(hx, 0) + weight
         labels.setdefault(hx, label)
 
-    async with httpx.AsyncClient(timeout=10, follow_redirects=True, headers=headers) as client:
+    async with safe_client(timeout=10, follow_redirects=True, headers=headers) as client:
         r = await client.get(url)
         html = r.text[:600000]
         base = str(r.url)

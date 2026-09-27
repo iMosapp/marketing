@@ -72,10 +72,10 @@ def _all_links(html: str, base: str) -> list:
 
 async def fetch_site(url: str, limit: int = SITE_MAX_PAGES, seeds: Optional[list] = None) -> list:
     """Breadth-first read of the site: home (+ sitemap.xml + owner-added seed pages), everything they link to, then the next hop, up to `limit` pages."""
-    import httpx
+    from services.safe_fetch import safe_client
     headers = {"User-Agent": "Mozilla/5.0 (compatible; iMOS-JessiReader/1.0; +https://www.imonsocial.com)"}
     pages, seen, queue = [], set(), []
-    async with httpx.AsyncClient(timeout=12, follow_redirects=True, headers=headers) as client:
+    async with safe_client(timeout=12, follow_redirects=True, headers=headers) as client:
         r = await client.get(url)
         r.raise_for_status()
         base = str(r.url)
@@ -233,10 +233,10 @@ def _links(html: str, base: str) -> list:
 
 
 async def _fetch_pages(url: str) -> list:
-    import httpx
+    from services.safe_fetch import safe_client
     headers = {"User-Agent": "Mozilla/5.0 (compatible; iMOS-JessiReader/1.0; +https://www.imonsocial.com)"}
     pages = []
-    async with httpx.AsyncClient(timeout=12, follow_redirects=True, headers=headers) as client:
+    async with safe_client(timeout=12, follow_redirects=True, headers=headers) as client:
         r = await client.get(url)
         r.raise_for_status()
         home = r.text[:900000]

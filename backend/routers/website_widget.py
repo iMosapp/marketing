@@ -34,6 +34,10 @@ def _ip(request: Request) -> str:
     return (request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "") or "?")
 
 
+def _origin(request: Request) -> str:
+    return request.headers.get("origin") or request.headers.get("referer") or ""
+
+
 async def _stores_for(db, me: dict) -> list:
     role = me.get("role")
     if role == "super_admin":
@@ -507,7 +511,7 @@ async def widget_text(key: str, request: Request):
     db = get_db()
     w = await _widget_or_404(db, key)
     body = await request.json()
-    if not W.domain_ok(w, body.get("page") or ""):
+    if not W.domain_ok(w, body.get("page") or "", _origin(request)):
         raise HTTPException(status_code=403, detail="This widget isn't set up for this website yet.")
     try:
         return await W.text_lead(db, w, body, _ip(request))
@@ -520,7 +524,7 @@ async def widget_call(key: str, request: Request):
     db = get_db()
     w = await _widget_or_404(db, key)
     body = await request.json()
-    if not W.domain_ok(w, body.get("page") or ""):
+    if not W.domain_ok(w, body.get("page") or "", _origin(request)):
         raise HTTPException(status_code=403, detail="This widget isn't set up for this website yet.")
     if not W.normalize_config(w)["doors"]["call"]["on"]:
         raise HTTPException(status_code=400, detail="Call me now is turned off for this site.")

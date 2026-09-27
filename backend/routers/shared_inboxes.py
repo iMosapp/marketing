@@ -5,7 +5,8 @@ Features:
 1. Shared Inboxes - Assign multiple users to a single phone number/inbox
 2. Bulk Customer Transfers - Transfer all contacts/conversations from one user to another
 """
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
+from routers.rbac import bind_query_user
 from pydantic import BaseModel
 from bson import ObjectId
 from datetime import datetime
@@ -15,6 +16,7 @@ import logging
 from routers.database import get_db, get_user_by_id
 
 router = APIRouter(prefix="/admin/team", tags=["Shared Inboxes & Transfers"])
+_bound = [Depends(bind_query_user)]
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +52,7 @@ class BulkTransferRequest(BaseModel):
 
 # ============= SHARED INBOX ENDPOINTS =============
 
-@router.post("/shared-inboxes")
+@router.post("/shared-inboxes", dependencies=_bound)
 async def create_shared_inbox(inbox: SharedInboxCreate, user_id: str):
     """Create a new shared inbox that multiple users can access"""
     db = get_db()
@@ -95,7 +97,7 @@ async def create_shared_inbox(inbox: SharedInboxCreate, user_id: str):
     }
 
 
-@router.get("/shared-inboxes")
+@router.get("/shared-inboxes", dependencies=_bound)
 async def list_shared_inboxes(user_id: str):
     """List all shared inboxes accessible to the user"""
     db = get_db()
@@ -149,7 +151,7 @@ async def list_shared_inboxes(user_id: str):
     return result
 
 
-@router.get("/shared-inboxes/{inbox_id}")
+@router.get("/shared-inboxes/{inbox_id}", dependencies=_bound)
 async def get_shared_inbox(inbox_id: str, user_id: str):
     """Get details of a specific shared inbox"""
     db = get_db()
@@ -188,7 +190,7 @@ async def get_shared_inbox(inbox_id: str, user_id: str):
     }
 
 
-@router.put("/shared-inboxes/{inbox_id}")
+@router.put("/shared-inboxes/{inbox_id}", dependencies=_bound)
 async def update_shared_inbox(inbox_id: str, update: SharedInboxUpdate, user_id: str):
     """Update a shared inbox - add/remove users, change settings"""
     db = get_db()
@@ -356,7 +358,7 @@ async def inbox_webhook(inbox_id: str, request: Request):
             raise HTTPException(status_code=500, detail=f"Lead intake failed: {fb_err}")
 
 
-@router.get("/shared-inboxes/{inbox_id}/webhook-info")
+@router.get("/shared-inboxes/{inbox_id}/webhook-info", dependencies=_bound)
 async def get_webhook_info(inbox_id: str, user_id: str):
     """Return the webhook URL and example payload for this inbox."""
     db = get_db()
@@ -382,7 +384,7 @@ async def get_webhook_info(inbox_id: str, user_id: str):
     }
 
 
-@router.delete("/shared-inboxes/{inbox_id}")
+@router.delete("/shared-inboxes/{inbox_id}", dependencies=_bound)
 async def delete_shared_inbox(inbox_id: str, user_id: str):
     """Delete (deactivate) a shared inbox"""
     db = get_db()
@@ -407,7 +409,7 @@ async def delete_shared_inbox(inbox_id: str, user_id: str):
     return {"message": "Shared inbox deleted", "id": inbox_id}
 
 
-@router.post("/shared-inboxes/{inbox_id}/assign")
+@router.post("/shared-inboxes/{inbox_id}/assign", dependencies=_bound)
 async def assign_user_to_inbox(inbox_id: str, target_user_id: str, user_id: str):
     """Assign a single user to a shared inbox"""
     db = get_db()
@@ -443,7 +445,7 @@ async def assign_user_to_inbox(inbox_id: str, target_user_id: str, user_id: str)
     }
 
 
-@router.post("/shared-inboxes/{inbox_id}/unassign")
+@router.post("/shared-inboxes/{inbox_id}/unassign", dependencies=_bound)
 async def unassign_user_from_inbox(inbox_id: str, target_user_id: str, user_id: str):
     """Remove a user from a shared inbox"""
     db = get_db()
@@ -469,7 +471,7 @@ async def unassign_user_from_inbox(inbox_id: str, target_user_id: str, user_id: 
 
 # ============= BULK CUSTOMER TRANSFER ENDPOINTS =============
 
-@router.post("/bulk-transfer")
+@router.post("/bulk-transfer", dependencies=_bound)
 async def initiate_bulk_transfer(transfer: BulkTransferRequest, user_id: str):
     """
     Transfer all customer data from one user to another.
@@ -571,7 +573,7 @@ async def initiate_bulk_transfer(transfer: BulkTransferRequest, user_id: str):
     }
 
 
-@router.get("/bulk-transfer/history")
+@router.get("/bulk-transfer/history", dependencies=_bound)
 async def get_transfer_history(user_id: str, limit: int = 20):
     """Get history of bulk transfers"""
     db = get_db()
@@ -599,7 +601,7 @@ async def get_transfer_history(user_id: str, limit: int = 20):
     return result
 
 
-@router.get("/bulk-transfer/preview")
+@router.get("/bulk-transfer/preview", dependencies=_bound)
 async def preview_bulk_transfer(from_user_id: str, user_id: str):
     """Preview what would be transferred without actually doing it"""
     db = get_db()
@@ -636,7 +638,7 @@ async def preview_bulk_transfer(from_user_id: str, user_id: str):
 
 # ============= USER LISTING FOR ASSIGNMENT =============
 
-@router.get("/users")
+@router.get("/users", dependencies=_bound)
 async def list_users_for_assignment(user_id: str, search: Optional[str] = None):
     """List users available for inbox assignment or transfer"""
     db = get_db()

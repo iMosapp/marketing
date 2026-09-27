@@ -2,7 +2,8 @@
 White Label Partners router  - manages partner branding that cascades 
 to all their organizations, accounts, and users.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from routers.rbac import require_role
 from bson import ObjectId
 from datetime import datetime, timezone
 from typing import Optional
@@ -24,7 +25,7 @@ def serialize_partner(p: dict) -> dict:
     return p
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_role("super_admin"))])
 async def list_partners():
     db = get_db()
     partners = await db.white_label_partners.find({}, {"_id": 1, "name": 1, "slug": 1, "logo": 1, "primary_color": 1, "is_active": 1, "commission_notes": 1, "sold_workflow_enabled": 1, "event_delivery": 1}).to_list(100)
@@ -33,7 +34,7 @@ async def list_partners():
     return partners
 
 
-@router.get("/{partner_id}")
+@router.get("/{partner_id}", dependencies=[Depends(require_role("super_admin"))])
 async def get_partner(partner_id: str):
     db = get_db()
     p = await db.white_label_partners.find_one({"_id": ObjectId(partner_id)})
@@ -42,7 +43,7 @@ async def get_partner(partner_id: str):
     return serialize_partner(p)
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_role("super_admin"))])
 async def create_partner(data: dict):
     db = get_db()
     now = datetime.now(timezone.utc)
@@ -82,7 +83,7 @@ async def create_partner(data: dict):
     return partner
 
 
-@router.put("/{partner_id}")
+@router.put("/{partner_id}", dependencies=[Depends(require_role("super_admin"))])
 async def update_partner(partner_id: str, data: dict):
     db = get_db()
     data.pop("_id", None)
@@ -98,7 +99,7 @@ async def update_partner(partner_id: str, data: dict):
     return serialize_partner(result)
 
 
-@router.delete("/{partner_id}")
+@router.delete("/{partner_id}", dependencies=[Depends(require_role("super_admin"))])
 async def delete_partner(partner_id: str):
     db = get_db()
     await db.white_label_partners.delete_one({"_id": ObjectId(partner_id)})
@@ -110,7 +111,7 @@ async def delete_partner(partner_id: str):
     return {"status": "deleted"}
 
 
-@router.post("/{partner_id}/assign-org/{org_id}")
+@router.post("/{partner_id}/assign-org/{org_id}", dependencies=[Depends(require_role("super_admin"))])
 async def assign_org_to_partner(partner_id: str, org_id: str):
     db = get_db()
     partner = await db.white_label_partners.find_one({"_id": ObjectId(partner_id)}, {"_id": 1})
@@ -123,7 +124,7 @@ async def assign_org_to_partner(partner_id: str, org_id: str):
     return {"status": "assigned"}
 
 
-@router.post("/{partner_id}/unassign-org/{org_id}")
+@router.post("/{partner_id}/unassign-org/{org_id}", dependencies=[Depends(require_role("super_admin"))])
 async def unassign_org_from_partner(partner_id: str, org_id: str):
     db = get_db()
     await db.organizations.update_one(
@@ -133,7 +134,7 @@ async def unassign_org_from_partner(partner_id: str, org_id: str):
     return {"status": "unassigned"}
 
 
-@router.get("/{partner_id}/orgs")
+@router.get("/{partner_id}/orgs", dependencies=[Depends(require_role("super_admin"))])
 async def get_partner_orgs(partner_id: str):
     db = get_db()
     orgs = await db.organizations.find(
