@@ -10,6 +10,7 @@ import {
   Switch,
   Modal,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -363,7 +364,7 @@ export default function KeywordRulesScreen() {
 
       {/* Add/Edit modal */}
       <Modal visible={modalOpen} transparent animationType="slide" onRequestClose={() => setModalOpen(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modalCard}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <Text style={styles.modalTitle}>{editRule ? 'Edit Rule' : 'New Keyword Rule'}</Text>
@@ -372,6 +373,7 @@ export default function KeywordRulesScreen() {
               </TouchableOpacity>
             </View>
 
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 4 }}>
             <Text style={styles.fieldLabel}>Tag to apply</Text>
             <TextInput
               style={styles.input}
@@ -459,8 +461,9 @@ export default function KeywordRulesScreen() {
                 <Text style={styles.saveBtnText}>{editRule ? 'Save Changes' : 'Create Rule'}</Text>
               )}
             </TouchableOpacity>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -486,7 +489,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   eventTime: { fontSize: 11, color: colors.textTertiary },
   eventSnippet: { fontSize: 12, color: colors.textSecondary, marginTop: 3, fontStyle: 'italic' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 },
+  modalCard: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36, maxHeight: '92%' },
   modalTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   fieldLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 6, letterSpacing: 0.4 },
   input: { backgroundColor: colors.surface, borderRadius: 10, padding: 12, fontSize: 15, color: colors.text, marginBottom: 16, borderWidth: 1, borderColor: colors.border },
