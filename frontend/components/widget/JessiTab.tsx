@@ -66,13 +66,13 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
   const specials: any[] = kb.specials || [];
   const patchSpecial = (i: number, p: any) => setKb({ specials: specials.map((s, j) => (j === i ? { ...s, ...p } : s)) });
   const business = kb.mode === 'business';
-  const pb = kb.playbook || { on: true, goal: '', questions: [], offer_after: 2, pitch: '' };
+  const pb = kb.playbook || { on: true, goal: '', questions: [], offer_after: 3, pitch: '' };
   const setPb = (p: any) => setKb({ playbook: { ...pb, ...p } });
   const scripts: { q: string; a: string }[] = kb.scripts || [];
   const addScript = (qq: string, aa: string) => { const q2 = qq.trim(), a2 = aa.trim(); if (!q2 || !a2) return false; setKb({ scripts: [...scripts.filter(x => x.q.toLowerCase() !== q2.toLowerCase()), { q: q2, a: a2 }].slice(-25) }); return true; };
   const PB_DEFAULT = business
-    ? { goal: 'Book a demo', questions: ['What kind of business are you, and how big is the sales team?', 'What are you using today for follow-up: a CRM, texting, spreadsheets?', 'What is the one thing you would want fixed first?'], pitch: 'The fastest way to see if it fits is a 20-minute demo on your own numbers. Want me to grab you a time?' }
-    : { goal: 'Book a test drive', questions: ['What are you looking for: new or pre-owned, and any model in mind?', 'Do you have a trade-in?', 'When are you hoping to be driving it?'], pitch: 'Easiest next step is a quick test drive so you can feel it for yourself. Want me to grab you a time?' };
+    ? { goal: 'Book a demo', questions: ['What kind of business are you, and how big is the sales team?', 'What are you using today for follow-up: a CRM, texting, spreadsheets?', 'What is the one thing you would want fixed first?', 'Who would be on the demo with you: just you, or a manager or owner too?'], pitch: 'The fastest way to see if it fits is a 20-minute demo on your own numbers. Want me to grab you a time?' }
+    : { goal: 'Book a test drive', questions: ['What are you looking for: new or pre-owned, and any model in mind?', 'Do you have a trade-in?', 'When are you hoping to be driving it?', 'Will this be financed, leased or paid outright?'], pitch: 'Easiest next step is a quick test drive so you can feel it for yourself. Want me to grab you a time?' };
 
   return (
     <>
@@ -134,7 +134,7 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
       </Section>
 
       <Section colors={colors} testId="widget-section-playbook">
-        <ToggleRow label="Playbook: guide every chat toward a booking" hint={`Jessi answers what they asked with a specific, then asks one qualifying question per reply. After ${pb.offer_after || 2} answered she delivers your pitch and opens the booking form.`} value={pb.on !== false} onChange={v => setPb({ on: v })} colors={colors} testId="widget-pb-on" />
+        <ToggleRow label="Playbook: guide every chat toward a booking" hint={`Jessi answers what they asked with a specific, then asks one qualifying question per reply. After ${pb.offer_after || 3} answered she delivers your pitch and opens the booking form.`} value={pb.on !== false} onChange={v => setPb({ on: v })} colors={colors} testId="widget-pb-on" />
         {pb.on !== false ? (
           <>
             <Field label="Goal" value={pb.goal || ''} onChange={v => setPb({ goal: v })} placeholder={PB_DEFAULT.goal} colors={colors} testId="widget-pb-goal" maxLength={80} />
@@ -150,7 +150,7 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
             {(pb.questions || []).length < 5 ? <AddRow placeholder={(pb.questions || []).length ? 'Next question she should ask' : PB_DEFAULT.questions[0]} onAdd={t => setPb({ questions: [...(pb.questions || []), t] })} colors={colors} testId="widget-pb-q" /> : null}
             <Label colors={colors}>Pitch after how many answers?</Label>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 6 }}>
-              {[1, 2, 3, 4, 5].map(n => { const on = (pb.offer_after || 2) === n; return (
+              {[1, 2, 3, 4, 5].map(n => { const on = (pb.offer_after || 3) === n; return (
                 <TouchableOpacity key={n} onPress={() => setPb({ offer_after: n })} style={{ width: 40, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? GOLD : colors.surface, borderWidth: 1, borderColor: on ? GOLD : colors.border }} {...tid(`widget-pb-after-${n}`)}>
                   <Text style={{ fontSize: 14, fontWeight: '800', color: on ? '#111' : colors.text }}>{n}</Text>
                 </TouchableOpacity>

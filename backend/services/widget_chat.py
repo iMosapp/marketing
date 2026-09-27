@@ -196,11 +196,12 @@ def business_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_conta
     base = (
         f"You are Jessi, the assistant in the chat window on {name}'s website, and you are the resident expert on {name}: what it does, who it is for, every feature, "
         "how it works, plans and pricing, setup and support. You are talking to a prospect or customer visiting the site.\n"
-        "STYLE: warm, confident, plain English, like a sharp teammate who knows the product cold. Two to four short sentences; a short list of up to four items is fine when they ask what is included. "
-        "No emojis, no em dashes, no headings. Answer the question directly first, then add the one detail that helps most, then a natural next step when it fits "
-        "(see it in a demo, start, or talk to the team). Do not push the demo in every message.\n"
-        "TRUTH: Use WHAT THE WEBSITE SAYS and the facts as your source. Quote plan names, prices, limits and feature names exactly as written there. "
-        "Never invent features, numbers, integrations, dates or policies. If the site and facts do not cover something, say so in one sentence, give the closest thing you do know, and offer to have a team member follow up.\n"
+        "STYLE: warm, confident, plain English, like the sharpest person on the team who knows the product cold and has demoed it a thousand times. Two to four short sentences; a short list of up to four items is fine when they ask what is included. "
+        "No emojis, no em dashes, no headings. Answer the question directly first with a concrete (a feature name, a number, how it works, an example for their kind of business), then the one detail that helps most.\n"
+        "CONFIDENCE: You always answer as the expert. Never say you do not have something loaded, on file, in front of you, or from the website; never say you are not sure, cannot see, or would need to check; never apologize for missing detail; "
+        "never point people to support hours, a phone number or an email unless they ask how to reach the team. If a specific detail is not in WHAT YOU KNOW, speak to it at the level you do know (what the capability does, the outcome, who uses it) "
+        "and move on; the demo is where the fine print gets shown. Never guess what the product does from its name.\n"
+        "TRUTH: WHAT YOU KNOW is your source. Quote plan names, prices, limits and feature names exactly as written there. Never invent features, numbers, integrations, dates or policies.\n"
         f"HARD RULES: never discuss: {never}. Never pretend to be human; if asked, you are Jessi, {name}'s assistant, and a real person is one tap away. "
         "Do not ask for contact details unless a hand-off is happening.\n\n"
         f"WHAT YOU KNOW:\n{knowledge}\n"
@@ -267,6 +268,25 @@ def _asked_index(reply: str, cfg: dict, pb_state: dict) -> Optional[int]:
         if hit > score:
             best, score = i, hit
     return best if score >= 2 else None
+
+
+HEDGE = re.compile(r"(don'?t have|do not have|not (yet )?loaded|in front of me|on file yet|i'?m not sure|not certain|can'?t see|cannot see|unable to (see|find)|would need to check|i'?d need to check|no (exact|specific) (details?|steps?) (on|from)|isn'?t (listed|loaded|covered)|not (listed|covered) (on|in) (our|the) (site|website))", re.I)
+
+
+def hedges(text: str) -> bool:
+    return bool(HEDGE.search(text or ""))
+
+
+async def _confident(system: str, transcript: str) -> Optional[str]:
+    """Business-mode reply with one rewrite pass if Jessi hedged; she answers as the expert or not at all."""
+    answer = await _llm(system, transcript)
+    if answer and hedges(answer):
+        redo = await _llm(system + "\nREWRITE: your draft hedged (said you lacked something, were unsure, or pointed to support). Rewrite it: state what the product does for them at the level you know, confidently, "
+                          "no disclaimers, no phone numbers or hours, same closing question if there was one.\nDRAFT:\n" + answer, transcript)
+        if redo and not hedges(redo):
+            return redo
+        return HEDGE.sub("", answer).strip() if redo is None else redo
+    return answer
 
 
 async def _llm(system: str, transcript: str) -> Optional[str]:
@@ -457,13 +477,13 @@ async def reply(db, w: dict, session: dict, text: str, ip: str) -> dict:
         knowledge, _, _ = await _knowledge(db, w, store, kb, text)
         coach, next_q = coaching(cfg, pb_state, text, mode, booking, pitch)
         system = system_prompt(store, kb, knowledge, mode, bool(session.get("phone")), booking=booking and not pitch, coach=coach)
-        answer = await _llm(system, _transcript(session) + "\n\nReply to the visitor's last line as Jessi.")
+        gen = _confident if kb.get("mode") == "business" else _llm
+        answer = await gen(system, _transcript(session) + "\n\nReply to the visitor's last line as Jessi.")
         if next_q is not None and answer:
             hit = _asked_index(answer, cfg, pb_state)
             # she skipped ahead: everything before the one she asked counts as already answered
             if hit is not None:
-                pb_state["asked"] = sorted(set(pb_state.get("asked") or []) | {i for i in range(hit) })
-                pb_state["answered"] = max(int(pb_state.get("answered") or 0), len(pb_state["asked"]))
+                pb_state["asked"] = sorted(set(pb_state.get("asked") or []) | {i for i in range(hit)})  # skipped ones are done, but only real exchanges count toward the pitch
             pb_state["pending"] = hit if hit is not None else next_q
         if not answer:
             answer = ("Happy to set that up. Pick a day and time below and I'll get you booked." if booking else ASK_CONTACT if mode == "handoff" else FALLBACK)
@@ -847,7 +867,8 @@ async def ask(db, w: dict, question: str) -> dict:
     facts = await store_facts(db, store)
     coach, _ = coaching(cfg, {}, question, "handoff" if reason else "normal", False)
     system = system_prompt(store, kb, knowledge, "handoff" if reason else "normal", False, coach=coach)
-    answer = await _llm(system, f"Visitor: {question}\n\nReply to the visitor's last line as Jessi.") or (ASK_CONTACT if reason else FALLBACK)
+    gen = _confident if kb.get("mode") == "business" else _llm
+    answer = await gen(system, f"Visitor: {question}\n\nReply to the visitor's last line as Jessi.") or (ASK_CONTACT if reason else FALLBACK)
     from services.widget_crawl import PAGES_COLL
     pages = await db[PAGES_COLL].count_documents({"widget_id": str(w["_id"])}) if kb.get("mode") == "business" else 0
     return {"reply": answer, "handoff": bool(reason), "reason": reason, "used": {"facts": len(facts), "specials": len(_active_specials(kb)), "inventory_matches": len([l for l in inv_lines if not l.startswith("...")]),

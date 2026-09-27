@@ -46,10 +46,10 @@ def contrast_text(bg: str) -> str:
 
 PLAYBOOKS = {
     "dealership": {"goal": "Book a test drive",
-                   "questions": ["What are you looking for: new or pre-owned, and any model in mind?", "Do you have a trade-in?", "When are you hoping to be driving it?"],
+                   "questions": ["What are you looking for: new or pre-owned, and any model in mind?", "Do you have a trade-in?", "When are you hoping to be driving it?", "Will this be financed, leased or paid outright?"],
                    "pitch": "Easiest next step is a quick test drive so you can feel it for yourself. Want me to grab you a time?"},
     "business": {"goal": "Book a demo",
-                 "questions": ["What kind of business are you, and how big is the sales team?", "What are you using today for follow-up: a CRM, texting, spreadsheets?", "What is the one thing you would want fixed first?"],
+                 "questions": ["What kind of business are you, and how big is the sales team?", "What are you using today for follow-up: a CRM, texting, spreadsheets?", "What is the one thing you would want fixed first?", "Who would be on the demo with you: just you, or a manager or owner too?"],
                  "pitch": "The fastest way to see if it fits is a 20-minute demo on your own numbers. Want me to grab you a time?"},
 }
 
@@ -60,7 +60,7 @@ def playbook_for(cfg: dict) -> dict:
     pb = kb.get("playbook") or {}
     d = PLAYBOOKS["business" if kb.get("mode") == "business" else "dealership"]
     return {"on": pb.get("on", True), "goal": pb.get("goal") or d["goal"], "questions": pb.get("questions") or d["questions"],
-            "offer_after": int(pb.get("offer_after") or 2), "pitch": pb.get("pitch") or d["pitch"]}
+            "offer_after": int(pb.get("offer_after") or 3), "pitch": pb.get("pitch") or d["pitch"]}
 
 
 STARTERS = {
@@ -85,7 +85,7 @@ DEFAULTS = {
                  "placeholder": "Type your question", "human": "Talk to a person", "booking_on": True, "booking_label": "Book a visit", "meeting_link": "", "notify_reps": True},
     },
     "kb": {"mode": "dealership", "welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False, "starters": [],
-           "playbook": {"on": True, "goal": "", "questions": [], "offer_after": 2, "pitch": ""}, "scripts": [], "extra_urls": []},
+           "playbook": {"on": True, "goal": "", "questions": [], "offer_after": 3, "pitch": ""}, "scripts": [], "extra_urls": []},
     "copy": {
         "title": "How can we help?", "name_label": "Name", "phone_label": "Mobile number", "message_label": "Message (optional)",
         "optin": "By submitting, you agree to receive texts from {store}. Message and data rates may apply. Reply STOP to opt out.",
@@ -145,7 +145,7 @@ def normalize_config(cfg: dict) -> dict:
     pb = kb.get("playbook") if isinstance(kb.get("playbook"), dict) else {}
     kb["playbook"] = {"on": pb.get("on") is not False, "goal": str(pb.get("goal") or "").strip()[:80],
                       "questions": [str(x).strip()[:160] for x in (pb.get("questions") or []) if str(x).strip()][:5],
-                      "offer_after": max(1, min(int(pb.get("offer_after") or 2), 5)), "pitch": str(pb.get("pitch") or "").strip()[:300]}
+                      "offer_after": max(1, min(int(pb.get("offer_after") or 3), 5)), "pitch": str(pb.get("pitch") or "").strip()[:300]}
     scripts = []
     for sc in (kb.get("scripts") or [])[:25]:
         if isinstance(sc, dict) and str(sc.get("q") or "").strip() and str(sc.get("a") or "").strip():
