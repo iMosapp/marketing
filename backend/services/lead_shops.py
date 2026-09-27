@@ -87,7 +87,8 @@ async def pool_state(db) -> dict:
 
 async def buy_number(db, me: Optional[dict], area_code: Optional[str] = None) -> dict:
     from routers.twilio_admin import _get_twilio_client, _twilio_call, NUMBER_MONTHLY_COST
-    if (os.environ.get("LEAD_SHOP_BUY_NUMBERS") or "true").strip().lower() in ("0", "false", "no", "off"):
+    from services.runtime_env import is_preview_runtime
+    if is_preview_runtime() and (os.environ.get("LEAD_SHOP_BUY_NUMBERS") or "true").strip().lower() in ("0", "false", "no", "off"):
         raise ValueError("Buying shopper numbers is switched off in this environment (LEAD_SHOP_BUY_NUMBERS)")
     if await db[POOL].count_documents({"purpose": POOL_PURPOSE}) >= POOL_CAP:
         raise ValueError(f"The shopper number pool is at its cap of {POOL_CAP}")

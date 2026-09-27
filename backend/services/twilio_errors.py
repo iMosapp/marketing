@@ -60,7 +60,8 @@ def explain(msg: dict) -> dict:
     if status == "delivered" or tw == "delivered":
         return {"title": "Delivered", "detail": "The carrier confirmed it reached the customer's phone.", "action": None, "tone": "good", "code": None}
     if status == "sent_mock" or str(msg.get("twilio_sid") or "").startswith(("MOCK_", "GUARD_")):
-        return {"title": "Test mode", "detail": "This message was not actually sent (preview / test environment).", "action": None, "tone": "muted", "code": None}
+        return {"title": "Never sent", "detail": "The server's test-mode send guard held this message, so it never went to the carrier. The customer did not get it.",
+                "action": "Resend it.", "tone": "bad", "code": None}
     if status in ("sending", "queued") or tw in ("queued", "accepted", "sending"):
         return {"title": "Queued", "detail": "Twilio has it and is handing it to the carrier.", "action": None, "tone": "muted", "code": None}
     if age is not None and age > STALE_AFTER_S:

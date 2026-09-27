@@ -82,7 +82,11 @@ def _status_callback_url() -> Optional[str]:
 
 
 def _held_by_preview_guard(to_phone: str) -> bool:
-    """SMS_SEND_ONLY_TO (preview .env): comma list of number prefixes that may really receive texts; everyone else gets a mock success."""
+    """SMS_SEND_ONLY_TO (preview .env): comma list of number prefixes that may really receive texts; everyone else gets a mock success.
+    Only ever active on the preview runtime: Deploy copies .env keys to production, where this must be inert."""
+    from services.runtime_env import is_preview_runtime
+    if not is_preview_runtime():
+        return False
     allow = [p.strip() for p in os.environ.get("SMS_SEND_ONLY_TO", "").split(",") if p.strip()]
     return bool(allow) and not any(to_phone.startswith(p) for p in allow)
 

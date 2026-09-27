@@ -197,3 +197,6 @@ If ANY step fails, the change is not ready for production.
 5. **Missing email in navigation (search.tsx, tasks/index.tsx, contact/[id].tsx line 740):** Multiple navigation paths didn't pass `contact_email`. Fixed: ALL navigation paths to thread now pass email.
 **Audit scope:** contact/[id].tsx, thread/[id].tsx, inbox.tsx, search.tsx, tasks/index.tsx, messages.py
 **Lesson:** EVERY navigation to a thread page must pass `contact_name`, `contact_phone`, AND `contact_email`. Use `email || email_work` everywhere.
+
+## Preview-only switches (Sep 27 2026, caused a production texting outage)
+Deploy copies backend/.env keys into production. Any preview-only safety flag (SMS_SEND_ONLY_TO, WIDGET_RING_DRY_RUN, LEAD_SHOP_BUY_NUMBERS, future ones) MUST be gated in code with `services.runtime_env.is_preview_runtime()` (local Mongo = preview). Never rely on "production doesn't have that key".

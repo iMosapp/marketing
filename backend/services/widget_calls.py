@@ -45,7 +45,8 @@ class _DryClient:
 
 
 def _twilio():
-    if os.environ.get("WIDGET_RING_DRY_RUN", "").lower() == "true":
+    from services.runtime_env import is_preview_runtime
+    if os.environ.get("WIDGET_RING_DRY_RUN", "").lower() == "true" and is_preview_runtime():
         return _DryClient()
     sid, tok = os.environ.get("TWILIO_ACCOUNT_SID"), os.environ.get("TWILIO_AUTH_TOKEN")
     if not (sid and tok):
