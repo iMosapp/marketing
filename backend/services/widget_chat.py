@@ -664,6 +664,26 @@ async def _text_booked(db, session: dict, uid: Optional[str], phone: str, body: 
     return bool(res.get("success"))
 
 
+async def _notify_booked(db, cfg: dict, session: dict, uid: Optional[str], name: str, what: str, when: str, phone: str):
+    """Push the rep (or the ring group) so a human follows up personally before the appointment; Jessi is done texting."""
+    reps = [uid] if uid else list(cfg["routing"].get("call_user_ids") or [])
+    if not reps:
+        return
+    try:
+        from routers.push_notifications import send_push_to_users
+        first = W.split_name(name or "A visitor")[0]
+        link = f"/thread/{session['conversation_id']}" if session.get("conversation_id") else f"/webchat/{session['sid']}"
+        await send_push_to_users(reps, f"{what} booked: {first}, {when}",
+                                 f"Booked in the web chat on {session.get('host') or 'your website'}. Jessi stopped texting them; reach out personally before the {what.lower()} ({_fmt(phone)}).",
+                                 link, "calendar")
+        for r in reps:
+            await db.notifications.insert_one({"user_id": r, "type": "webchat_booked", "title": f"{what} booked: {first}, {when}",
+                                               "message": f"Personal follow-up needed before the {what.lower()}. Jessi is no longer texting this customer.",
+                                               "link": link, "conversation_id": session.get("conversation_id"), "read": False, "created_at": _now()})
+    except Exception as e:
+        logger.warning(f"[WidgetChat] booked notify failed: {e}")
+
+
 async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
     if not W.allow(ip, "lead", 5):
         raise ValueError("Please wait a minute before sending again.")
@@ -734,7 +754,14 @@ async def book(db, w: dict, session: dict, body: dict, ip: str) -> dict:
     if session.get("conversation_id") and ObjectId.is_valid(str(session["conversation_id"])):
         await db.messages.insert_one({"conversation_id": session["conversation_id"], "contact_id": session.get("contact_id"), "sender": "contact", "direction": "inbound", "channel": "webchat",
                                       "type": "webchat_booking", "content": f"Booked in the web chat: {what} on {when}.", "read": False, "timestamp": _now(), "created_at": _now(), "webchat_sid": session["sid"]})
-        await db.conversations.update_one({"_id": ObjectId(session["conversation_id"])}, {"$set": {"last_message_at": _now()}})
+        # Appointment set: no more automated texting on this thread (Jessi drafts, a person sends), the lead is resolved, a person follows up
+        await db.conversations.update_one({"_id": ObjectId(session["conversation_id"])},
+                                          {"$set": {"last_message_at": _now(), "ai_mode": "draft_only", "ai_enabled": False, "booked_appointment": True, "routing_resolved": True,
+                                                    "release_at": None, "owner_alert_at": None, "needs_personal_followup": True}})
+        await db.messages.insert_one({"conversation_id": session["conversation_id"], "sender": "system", "direction": "system", "channel": "system", "type": "event",
+                                      "content": f"{what} booked in the web chat for {when}. Jessi stepped back: no automatic texts on this thread, a person follows up.",
+                                      "timestamp": _now(), "created_at": _now()})
+    await _notify_booked(db, cfg, session, uid, name, what, when, phone)
     if biz:
         extras = [x for x in ["the meeting link" if meeting else "", "a link to add it to your calendar" if link else ""] if x]
         tail = (f"We just texted you the details{(' with ' + ' and '.join(extras)) if extras else ''}, and someone from the team will be on the call."

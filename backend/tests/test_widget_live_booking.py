@@ -229,9 +229,18 @@ class TestBooking:
                     twilio_service.send_sms = orig
                 s2 = await db.widget_chats.find_one({"sid": sid})
                 task = await db.tasks.find_one({"_id": ObjectId(str(s2["booking"]["task_id"]))})
-                return res, task
+                conv = await db.conversations.find_one({"_id": ObjectId(str(s2["conversation_id"]))})
+                lead = await db.inbound_leads.find_one({"conversation_id": str(s2["conversation_id"])}, sort=[("created_at", -1)])
+                notif = await db.notifications.find_one({"type": "webchat_booked", "conversation_id": str(s2["conversation_id"])})
+                ev = await db.messages.find_one({"conversation_id": str(s2["conversation_id"]), "type": "event", "content": {"$regex": "Jessi stepped back"}})
+                return res, task, conv, lead, notif, ev
             from bson import ObjectId
-            res, task = run(flow())
+            res, task, conv, lead, notif, ev = run(flow())
+            # appointment set: Jessi stops texting (drafts only), no legacy AI first message queued, lead resolved, rep pinged for a personal follow-up
+            assert conv["ai_mode"] == "draft_only" and conv["ai_enabled"] is False and conv["booked_appointment"] is True and conv["routing_resolved"] is True
+            assert lead["status"] == "skipped" and lead["skip_reason"] in ("caller_texts", "intake_text_workflow"), lead.get("status")
+            assert notif and "Demo booked" in notif["title"] and "Personal follow-up" in notif["message"]
+            assert ev is not None
             assert res["booked"] is True and res["booking"]["kind"] == "Demo"
             assert "meeting link" in res["reply"] and "on the call" in res["reply"] and "store" not in res["reply"].lower()
             assert len(sent) == 1, sent

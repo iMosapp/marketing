@@ -741,8 +741,10 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "is_test":           is_test,
         # The workflow intake text is the first touch when configured; the legacy AI first
         # message only runs for sources without one (never two texts in 90 seconds).
-        "status":            "skipped" if (source.get("intake_text") or "").strip() else "queued",   # queued → sent | failed
-        "skip_reason":       "intake_text_workflow" if (source.get("intake_text") or "").strip() else None,
+        # The workflow intake text is the first touch when configured; the legacy AI first message only runs for sources
+        # without one, and never when the caller texts the lead itself (web chat booking / rep save): no surprise second text.
+        "status":            "skipped" if ((source.get("intake_text") or "").strip() or normalized.get("no_intake_text")) else "queued",   # queued → sent | failed
+        "skip_reason":       "intake_text_workflow" if (source.get("intake_text") or "").strip() else ("caller_texts" if normalized.get("no_intake_text") else None),
         "raw_body":          raw_body[:4000] if raw_body else "",
         "received_at":       now,
         "created_at":        now,
