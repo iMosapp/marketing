@@ -2008,6 +2008,7 @@ async def get_thread_messages(conversation_id: str, request: Request):
     if owner:
         await _assert_can_act_as(request, owner)
     else:
+        from routers.rbac import get_current_user
         await get_current_user(request)
 
     # Deduplicate by _id

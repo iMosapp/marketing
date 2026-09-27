@@ -332,6 +332,7 @@ async def list_industries(request: Request):
     """Every industry pack: nouns, departments, what the caller can mention. The app renders pickers from this, never from constants.
     Any signed-in user may read it (managers and reps need the labels for scorecards and courses); the router dependency already enforces login."""
     db = get_db()
+    await ms.ensure_challenges(db)
     counts = {}
     async for row in db.scripts.aggregate([{"$match": {"pool": "mystery_shop", "shop_client_id": None, "active": {"$ne": False}}}, {"$group": {"_id": "$department", "n": {"$sum": 1}}}]):
         counts[row["_id"]] = row["n"]
@@ -1136,10 +1137,12 @@ def _challenge_fields(body: ChallengeBody) -> dict:
     persona = body.persona or {}
     if not (persona.get("name") or "").strip() or not (persona.get("opening_line") or "").strip():
         raise HTTPException(status_code=400, detail="The shopper needs a name and an opening line")
-    return {"department": body.department, "industry": ind.industry_of_dept(body.department), "direction": "outbound" if body.direction == "outbound" else "inbound", "category": CATEGORY_BY_DEPT.get(body.department) or ind.dept_label(body.department), "title": no_em_dash(body.title.strip())[:120], "runtime": (body.runtime or "").strip()[:40], "purpose": no_em_dash(body.purpose or "")[:400], "body": no_em_dash(body.body)[:8000],
-            "success_points": [str(p).strip()[:160] for p in (body.success_points or []) if str(p).strip()][:12], "curveballs": [no_em_dash(str(c)).strip()[:160] for c in (body.curveballs or []) if str(c).strip()][:4],
-            "persona": {"name": str(persona.get("name")).strip()[:60], "voice": persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female", "summary": no_em_dash(str(persona.get("summary") or ""))[:400],
-                        "goals": no_em_dash(str(persona.get("goals") or ""))[:200], "objections": [no_em_dash(str(o))[:160] for o in (persona.get("objections") or []) if str(o).strip()][:6], "opening_line": no_em_dash(str(persona.get("opening_line")))[:240]}}
+    return {"department": body.department, "industry": ind.industry_of_dept(body.department), "direction": "outbound" if body.direction == "outbound" else "inbound", "category": CATEGORY_BY_DEPT.get(body.department) or ind.dept_label(body.department), "title": no_em_dash(body.title.strip())[:120], "runtime": (body.runtime or "").strip()[:40], "purpose": no_em_dash(body.purpose or "")[:900], "body": no_em_dash(body.body)[:8000],
+            "success_points": [str(p).strip()[:200] for p in (body.success_points or []) if str(p).strip()][:16], "curveballs": [no_em_dash(str(c)).strip()[:200] for c in (body.curveballs or []) if str(c).strip()][:6],
+            "persona": {"name": str(persona.get("name")).strip()[:60], "voice": persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female", "summary": no_em_dash(str(persona.get("summary") or ""))[:3000],
+                        "goals": no_em_dash(str(persona.get("goals") or ""))[:600], "objections": [no_em_dash(str(o))[:160] for o in (persona.get("objections") or []) if str(o).strip()][:8], "opening_line": no_em_dash(str(persona.get("opening_line")))[:240],
+                        # master challenges (Kubota pack) offer several names / voices / openings; a call rolls one of each
+                        **{k: [str(x).strip()[:240] for x in (persona.get(k) or []) if str(x).strip()][:12] for k in ("names", "voices", "opening_lines") if persona.get(k)}}}
 
 
 async def _insert_challenge(db, me: dict, body: ChallengeBody, cid: Optional[str]) -> dict:

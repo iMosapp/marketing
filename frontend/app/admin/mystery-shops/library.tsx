@@ -72,7 +72,7 @@ export default function ChallengeLibrary() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScreenHeader title="Challenge Library" subtitle={rows ? (foreign ? `${mine.length} ${languages.find(l => l.code === language)?.label || language} · ${review?.pending || 0} to review` : `${rows.length} challenges across ${inds.length} industries`) : undefined} testID="library-header" right={<HeaderIconButton icon="add-circle" onPress={() => setEditor({})} testID="library-add" />} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 6, paddingVertical: 8 }} style={{ flexGrow: 0, flexShrink: 0 }}>
-        {inds.map(i => { const n = (rows || []).filter(r => i.departments.some(d => d.key === r.department)).length; return <Chip key={i.key} label={`${i.label}${rows ? ` · ${n}` : ''}`} small active={industry === i.key} onPress={() => setIndustry(i.key)} colors={colors} testID={`library-industry-${i.key}`} />; })}
+        {inds.map(i => { const n = industry === i.key ? (rows || []).filter(r => i.departments.some(d => d.key === r.department)).length : i.departments.reduce((s, d: any) => s + (d.challenges || 0), 0); const showN = rows && (industry === i.key || !foreign); return <Chip key={i.key} label={`${i.label}${showN ? ` · ${n}` : ''}`} small active={industry === i.key} onPress={() => setIndustry(i.key)} colors={colors} testID={`library-industry-${i.key}`} />; })}
       </ScrollView>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingBottom: 8 }} {...tid('library-languages')}>
         <Ionicons name="language" size={14} color={colors.textSecondary} />

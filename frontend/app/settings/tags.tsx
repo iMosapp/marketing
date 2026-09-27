@@ -287,16 +287,16 @@ export default function TagsSettings() {
     setTagContacts([]);
     setTagContactsLoading(true);
     try {
-      const res = await api.get(`/contacts/${user!._id}/by-tag/${encodeURIComponent(tag.name)}`);
+      const res = await api.get(`/tags/${user!._id}/contacts/${encodeURIComponent(tag.name)}`);
       setTagContacts(res.data.contacts || []);
     } catch { setTagContacts([]); }
     finally { setTagContactsLoading(false); }
   };
 
-  const removeTagFromContact = async (contactId: string, tagName: string) => {
+  const removeTagFromContact = async (contact: any, tagName: string) => {
     try {
-      await api.patch(`/contacts/${user!._id}/${contactId}/remove-tag/${encodeURIComponent(tagName)}`);
-      setTagContacts(prev => prev.filter(c => c._id !== contactId));
+      await api.patch(`/contacts/${contact.user_id || user!._id}/${contact._id}/remove-tag/${encodeURIComponent(tagName)}`);
+      setTagContacts(prev => prev.filter(c => c._id !== contact._id));
       setTags(prev => prev.map(t => t.name === tagName ? { ...t, contact_count: Math.max(0, t.contact_count - 1) } : t));
     } catch { showAlert('Error', 'Failed to remove tag'); }
   };
@@ -420,14 +420,6 @@ export default function TagsSettings() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Create/Edit Modal */}
-      <Modal
-        visible={showModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowModal(false)}
-      >
-
       {/* Tag Contacts Panel */}
       <Modal
         visible={!!contactListTag}
@@ -436,9 +428,9 @@ export default function TagsSettings() {
         onRequestClose={() => setContactListTag(null)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%', paddingBottom: insets.bottom + 16 }}>
+          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%', paddingBottom: insets.bottom + 16 }} data-testid="tag-contacts-sheet">
             {/* Handle */}
-            <SheetGrabber onClose={() => setShowModal(false)} color={colors.border} style={{ paddingTop: 12, paddingBottom: 4 }} />
+            <SheetGrabber onClose={() => setContactListTag(null)} color={colors.border} style={{ paddingTop: 12, paddingBottom: 4 }} />
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -477,9 +469,11 @@ export default function TagsSettings() {
                       </Text>
                     </View>
                     {/* Info */}
-                    <TouchableOpacity style={{ flex: 1 }} onPress={() => { setContactListTag(null); router.push(`/contact/${contact._id}` as any); }}>
+                    <TouchableOpacity style={{ flex: 1 }} onPress={() => { setContactListTag(null); router.push(`/contact/${contact._id}` as any); }} data-testid={`tag-contact-row-${contact._id}`}>
                       <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{contact.name || 'Unknown'}</Text>
-                      <Text style={{ fontSize: 13, color: colors.textSecondary }}>{contact.phone || contact.vehicle || ''}</Text>
+                      <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                        {[contact.phone || contact.vehicle || '', contact.owner_name ? `${contact.owner_name}'s customer` : ''].filter(Boolean).join(' · ')}
+                      </Text>
                     </TouchableOpacity>
                     {/* Remove tag X */}
                     <TouchableOpacity
@@ -488,7 +482,7 @@ export default function TagsSettings() {
                         `Remove "${contactListTag?.name}" from ${contact.name}?`,
                         [
                           { text: 'Cancel', style: 'cancel' },
-                          { text: 'Remove', style: 'destructive', onPress: () => removeTagFromContact(contact._id, contactListTag!.name) }
+                          { text: 'Remove', style: 'destructive', onPress: () => removeTagFromContact(contact, contactListTag!.name) }
                         ]
                       )}
                       style={{ padding: 8 }}
@@ -504,6 +498,14 @@ export default function TagsSettings() {
           </View>
         </View>
       </Modal>
+
+      {/* Create/Edit Modal */}
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowModal(false)}
+      >
         <View style={styles.modalContainer}>
           <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
             <TouchableOpacity onPress={() => setShowModal(false)}>

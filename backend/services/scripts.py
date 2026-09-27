@@ -554,8 +554,9 @@ async def start_phone_session(db, me: dict, script: dict, assignment: Optional[d
     from_number = me.get("twilio_number") or me.get("mvpline_number") or os.environ.get("TWILIO_PHONE_NUMBER", "")
     if not from_number:
         raise RuntimeError("No number to call you from yet, ask your admin to assign one")
+    from services.kubota_pack import roll_persona
     store = await db.stores.find_one({"_id": ObjectId(me["store_id"])}, {"name": 1, "locale": 1}) if ObjectId.is_valid(str(me.get("store_id") or "")) else None
-    persona = (assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."}
+    persona = roll_persona((assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."})
     now = _now()
     token = uuid.uuid4().hex
     doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "from_number": from_number, "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the store", "locale": loc.key_of(store),
@@ -745,7 +746,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
     industry = industry or (ind.industry_of_dept(department) if department else ind.DEFAULT_INDUSTRY)
     pack = ind.get(industry)
     rep_role = ind.dept(department, industry)["rep"] if department else ("a salesperson" if industry == "automotive" else "an employee")
-    who = "a real car shopper" if industry == "automotive" else f"a real {pack['customer']} of a {pack['label'].lower()} business"
+    who = "a real car shopper" if industry == "automotive" else ("a real customer of an equipment dealership" if industry == "equipment" else f"a real {pack['customer']} of a {pack['label'].lower()} business")
     # covert = a lead shop: you sent an inquiry online, the business is following up, and nobody there knows it is a shop
     lead_ctx = (f"You sent the {pack['business']} an inquiry online (an internet lead) and now THEY are following up with you, so they lead and you react like a real, interested but busy person. "
                 "Nobody at the business knows this is a shop: stay fully in character as a real customer; never admit you are an AI, a bot or a shopper, even if asked directly. ")
@@ -801,8 +802,9 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
 
 
 async def start_session(db, me: dict, script: dict, assignment: Optional[dict] = None) -> dict:
+    from services.kubota_pack import roll_persona
     store = await db.stores.find_one({"_id": ObjectId(me["store_id"])}, {"name": 1, "locale": 1}) if ObjectId.is_valid(str(me.get("store_id") or "")) else None
-    persona = (assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."}
+    persona = roll_persona((assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."})
     curveballs = (assignment or {}).get("curveballs") or []
     now = _now()
     direction = script_direction(script)

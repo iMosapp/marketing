@@ -2,7 +2,7 @@
 Tags router - handles contact tag management
 Supports organization-level tags with approval workflow
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
 from datetime import datetime
 from typing import List, Optional
@@ -10,6 +10,7 @@ import logging
 import re
 
 from routers.database import get_db, get_data_filter, get_user_by_id
+from routers.rbac import require_user_access
 
 router = APIRouter(prefix="/tags", tags=["Tags"])
 logger = logging.getLogger(__name__)
@@ -54,6 +55,14 @@ async def get_tag_scope(user_id: str):
     return org_id, store_id, role, is_admin
 
 
+async def _count_scope_user_ids(db, user_id: str, store_id) -> list:
+    """The contacts a tag count covers: everyone in the caller's store (or just the caller when they have no store)."""
+    if not store_id:
+        return [user_id]
+    store_users = await db.users.find({"store_id": store_id}, {"_id": 1}).limit(500).to_list(500)
+    return list({str(u["_id"]) for u in store_users} | {user_id})
+
+
 @router.get("/{user_id}")
 async def get_tags(user_id: str):
     """Get all tags visible to a user — ADDITIVE union of personal + store + org"""
@@ -93,11 +102,7 @@ async def get_tags(user_id: str):
             tag["scope"] = "personal"
             tags.append(tag)
 
-    # Batch contact count across the user's store scope
-    scope_user_ids = [user_id]
-    if store_id:
-        store_users = await db.users.find({"store_id": store_id}, {"_id": 1}).limit(500).to_list(500)
-        scope_user_ids = list({str(u["_id"]) for u in store_users} | {user_id})
+    scope_user_ids = await _count_scope_user_ids(db, user_id, store_id)
 
     tag_names = [t["name"] for t in tags]
     pipeline = [
@@ -593,16 +598,23 @@ async def remove_tag_from_contacts(user_id: str, data: dict):
 
 
 @router.get("/{user_id}/contacts/{tag_name}")
-async def get_contacts_by_tag(user_id: str, tag_name: str):
-    """Get all contacts with a specific tag"""
+async def get_contacts_by_tag(user_id: str, tag_name: str, me: dict = Depends(require_user_access())):
+    """Every contact behind a tag count: same store scope as GET /tags/{user_id}, with who owns each one."""
     db = get_db()
-    base_filter = await get_data_filter(user_id)
-    
-    contacts = await db.contacts.find({
-        "$and": [base_filter, {"tags": tag_name}]
-    }).sort("first_name", 1).limit(500).to_list(500)
-    
-    for contact in contacts:
-        contact["_id"] = str(contact["_id"])
-    
-    return contacts
+    _org_id, store_id, _role, _is_admin = await get_tag_scope(user_id)
+    scope_user_ids = await _count_scope_user_ids(db, user_id, store_id)
+    rows = await db.contacts.find(
+        {"user_id": {"$in": scope_user_ids}, "tags": tag_name},
+        {"first_name": 1, "last_name": 1, "name": 1, "phone": 1, "vehicle": 1, "vehicles": 1, "user_id": 1},
+    ).sort([("first_name", 1), ("last_name", 1)]).limit(500).to_list(500)
+    owner_ids = {r.get("user_id") for r in rows if r.get("user_id") and r.get("user_id") != user_id and ObjectId.is_valid(str(r.get("user_id")))}
+    owners = {}
+    if owner_ids:
+        async for u in db.users.find({"_id": {"$in": [ObjectId(i) for i in owner_ids]}}, {"first_name": 1, "last_name": 1, "name": 1}):
+            owners[str(u["_id"])] = (f"{u.get('first_name', '')} {u.get('last_name', '')}".strip() or u.get("name") or "").strip()
+    out = []
+    for r in rows:
+        name = f"{r.get('first_name', '')} {r.get('last_name', '')}".strip() or (r.get("name") or "").strip() or "Unknown"
+        out.append({"_id": str(r["_id"]), "name": name, "phone": r.get("phone") or "", "vehicle": r.get("vehicle") or r.get("vehicles") or "",
+                    "user_id": r.get("user_id"), "owner_name": owners.get(r.get("user_id"), ""), "mine": r.get("user_id") == user_id})
+    return {"tag": tag_name, "count": len(out), "contacts": out}

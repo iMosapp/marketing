@@ -407,6 +407,12 @@ async def ensure_challenges(db) -> int:
             {"slug": tpl["slug"], "pool": "mystery_shop", "shop_client_id": None},
             {"$setOnInsert": {**tpl, "kind": "phone", "pool": "mystery_shop", "industry": "automotive", "store_id": None, "shop_client_id": None, "direction": tpl.get("direction") if tpl.get("direction") in DIRECTIONS else "inbound", "active": True, "created_at": _now(), "updated_at": _now()}}, upsert=True)
         n += 1 if res.upserted_id else 0
+    from services.kubota_pack import KUBOTA_CHALLENGES
+    for tpl in KUBOTA_CHALLENGES:
+        res = await db.scripts.update_one(
+            {"slug": tpl["slug"], "pool": "mystery_shop", "shop_client_id": None},
+            {"$setOnInsert": {**tpl, "kind": "phone", "pool": "mystery_shop", "industry": "equipment", "store_id": None, "shop_client_id": None, "generated_from": "kubota_pack", "active": True, "created_at": _now(), "updated_at": _now()}}, upsert=True)
+        n += 1 if res.upserted_id else 0
     await db.scripts.update_many({"pool": "mystery_shop", "industry": {"$exists": False}}, {"$set": {"industry": "automotive"}})
     return n
 
@@ -530,6 +536,8 @@ def _host_info(s: dict):
 
 # ---------------------------------------------------------------- challenge rotation
 def fill_persona(persona: dict, client: dict, department: str) -> dict:
+    from services.kubota_pack import roll_persona
+    persona = roll_persona(persona)
     industry = ind.key_of(client)
     d = ind.dept(department, industry)
     pool = offerings_of(client) or d.get("defaults") or ["what you have listed online"]

@@ -162,7 +162,7 @@ def instructions(script: dict, session: dict) -> str:
     industry = session.get("industry") or (ind.industry_of_dept(department) if department else ind.DEFAULT_INDUSTRY)
     pack = ind.get(industry)
     rep_role = ind.dept(department, industry)["rep"] if department else ("a salesperson" if industry == "automotive" else "an employee")
-    who = "a real car shopper" if industry == "automotive" else f"a real {pack['customer']} of a {pack['label'].lower()} business"
+    who = "a real car shopper" if industry == "automotive" else ("a real customer of an equipment dealership" if industry == "equipment" else f"a real {pack['customer']} of a {pack['label'].lower()} business")
     rep_first = (session.get("rep_name") or "the salesperson").split(" ")[0]
     store = session.get("store_name") or "the business"
     covert = bool(session.get("lead_shop_id"))
