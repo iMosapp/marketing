@@ -50,6 +50,11 @@ def _is_satisfied_reply(text: str) -> bool:
 router = APIRouter(prefix="/webhooks/twilio", tags=["Twilio Webhooks"])
 logger = logging.getLogger(__name__)
 
+# Inbound calls to a rep's business number: ring their cell this long (carrier voicemail usually answers at ~20 s),
+# and give them this long to press a key in the whisper before the caller goes to the app's voicemail.
+REP_RING_S = 18
+WHISPER_ACCEPT_S = 6
+
 # Backend URL for constructing media URLs
 BACKEND_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", os.environ.get("REACT_APP_BACKEND_URL", "https://app.imonsocial.com")))
 
@@ -1434,10 +1439,26 @@ async def call_whisper(
         except Exception:
             display = f"a customer ending in {caller_phone[-4:]}" if caller_phone else "a customer"
 
+    app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>I'm On Social. Incoming call from {display}.</Say>
+  <Gather numDigits="1" timeout="{WHISPER_ACCEPT_S}" action="{app_url}/api/webhooks/twilio/call-whisper/accept" method="POST">
+    <Say>I'm On Social. Incoming call from {display}. Press 1 to accept.</Say>
+  </Gather>
+  <Say>Sending them to your voicemail.</Say>
+  <Hangup/>
 </Response>"""
+    return Response(content=twiml, media_type="application/xml")
+
+
+@router.post("/call-whisper/accept")
+async def call_whisper_accept(Digits: str = Form(default="")):
+    """Any key from the rep proves a human answered (a carrier voicemail never presses anything): connect the customer.
+    No key: hang up the rep leg so <Dial> ends unbridged and voice-fallback records the voicemail in the app."""
+    if Digits.strip():
+        twiml = """<?xml version="1.0" encoding="UTF-8"?><Response></Response>"""
+    else:
+        twiml = """<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sending them to your voicemail.</Say><Hangup/></Response>"""
     return Response(content=twiml, media_type="application/xml")
 
 
@@ -2316,7 +2337,7 @@ async def handle_inbound_voice(
 
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="{to_phone}" timeout="25"
+  <Dial callerId="{to_phone}" timeout="{REP_RING_S}"
         record="record-from-answer-dual"
         recordingStatusCallback="{recording_cb}"
         recordingStatusCallbackMethod="POST"
@@ -2351,13 +2372,14 @@ async def handle_inbound_voice(
 async def handle_voice_fallback(
     request: Request,
     DialCallStatus: str = Form(default=""),
+    DialBridged: str = Form(default=""),
     To:  str = Form(default=""),
     From: str = Form(default=""),
     CallSid: str = Form(default=""),
 ):
     """
     Called by Twilio after the <Dial> completes.
-    If the rep didn't answer, record a voicemail.
+    If the rep didn't answer, or answered but never pressed a key (or their carrier voicemail picked up), record a voicemail in the app.
     """
     from_phone = normalize_phone(From)
     db = get_db()
@@ -2368,9 +2390,10 @@ async def handle_voice_fallback(
     rep_name = (rep_user.get("name") or "the team").split()[0] if rep_user else "the team"
     app_url  = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
-    logger.info(f"[Voice] Dial status={DialCallStatus} from {from_phone}")
+    unaccepted = DialCallStatus == "completed" and DialBridged.strip().lower() == "false"
+    logger.info(f"[Voice] Dial status={DialCallStatus} bridged={DialBridged or '?'} from {from_phone}")
 
-    if DialCallStatus in ("no-answer", "busy", "failed", "canceled"):
+    if DialCallStatus in ("no-answer", "busy", "failed", "canceled") or unaccepted:
         # The call is in the Voicemail inbox from this moment (missed); a recording upgrades it to a voicemail
         try:
             from services import voicemails as _vm
