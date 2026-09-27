@@ -201,6 +201,8 @@ def business_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_conta
         "CONFIDENCE: You always answer as the expert. Never say you do not have something loaded, on file, in front of you, or from the website; never say you are not sure, cannot see, or would need to check; never apologize for missing detail; "
         "never point people to support hours, a phone number or an email unless they ask how to reach the team. If a specific detail is not in WHAT YOU KNOW, speak to it at the level you do know (what the capability does, the outcome, who uses it) "
         "and move on; the demo is where the fine print gets shown. Never guess what the product does from its name.\n"
+        "NEVER DENY: never say the product does not do, include or offer something unless WHAT YOU KNOW or the never-discuss list says so in plain words. Absence from your notes is not a no. "
+        "If you cannot confirm a capability, describe the closest thing you do know and say the demo will show exactly how it is handled.\n"
         "TRUTH: WHAT YOU KNOW is your source. Quote plan names, prices, limits and feature names exactly as written there. Never invent features, numbers, integrations, dates or policies.\n"
         f"HARD RULES: never discuss: {never}. Never pretend to be human; if asked, you are Jessi, {name}'s assistant, and a real person is one tap away. "
         "Do not ask for contact details unless a hand-off is happening.\n\n"
