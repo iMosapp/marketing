@@ -17,6 +17,7 @@ type Props = {
   userName?: string;
   highlight: (text: string) => React.ReactNode;
   isCurrentMatch: boolean;
+  onShowDelivery?: (item: any) => void;
 };
 
 const CARD_DISPLAY: Record<string, { icon: string; color: string; label: string }> = {
@@ -41,9 +42,12 @@ const detectFromContent = (text: string): string => {
 
 export const MessageBubble = ({
   item, isUser, timestamp, showDateSep, dateLabel, styles, colors,
-  contactName, myPhoto, userName, highlight, isCurrentMatch,
+  contactName, myPhoto, userName, highlight, isCurrentMatch, onShowDelivery,
 }: Props) => {
   const hasMedia = item.has_media && item.media_urls && item.media_urls.length > 0;
+  const status = (item as any).status as string | undefined;
+  const canInspect = isUser && !!onShowDelivery && !!item._id && item.channel !== 'sms_personal' && item.channel !== 'email';
+  const Bubble: any = canInspect ? TouchableOpacity : View;
 
   // Detect rich content types
   const content = item.content || '';
@@ -104,7 +108,8 @@ export const MessageBubble = ({
           {isUser ? (item.ai_generated ? 'Jessi AI' : 'You') : contactName} · {format(timestamp, 'h:mm a')}
         </Text>
 
-        <View
+        <Bubble
+          {...(canInspect ? { activeOpacity: 0.85, onPress: () => onShowDelivery!(item), testID: 'outbound-message-bubble', dataSet: { testid: 'outbound-message-bubble' } } : {})}
           style={[
             styles.messageBubble,
             isUser ? styles.userMessageBubble : styles.contactMessageBubble,
@@ -244,10 +249,17 @@ export const MessageBubble = ({
             </View>
           )}
 
-          {isUser && (item as any).status === 'delivered' && (
+          {isUser && status === 'delivered' && (
             <View style={styles.personalSmsBadge} data-testid="message-delivered-badge">
               <Ionicons name="checkmark-done" size={12} color="#34C759" />
               <Text style={[styles.personalSmsText, { color: '#34C759' }]}>Delivered</Text>
+            </View>
+          )}
+
+          {canInspect && (status === 'sent' || status === 'sending') && (
+            <View style={styles.personalSmsBadge} data-testid="message-sent-badge">
+              <Ionicons name="checkmark" size={12} color={colors.textTertiary} />
+              <Text style={[styles.personalSmsText, { color: colors.textTertiary }]}>{status === 'sending' ? 'Sending' : 'Sent'} · tap for details</Text>
             </View>
           )}
 
@@ -264,7 +276,14 @@ export const MessageBubble = ({
               <Text style={[styles.personalSmsText, { color: '#FF9F0A', flexShrink: 1 }]} numberOfLines={2}>Sent without the photo (carrier rejected it)</Text>
             </View>
           )}
-        </View>
+
+          {isUser && (item as any).resent_as && (
+            <View style={styles.personalSmsBadge} data-testid="message-resent-badge">
+              <Ionicons name="refresh" size={10} color={colors.textTertiary} />
+              <Text style={[styles.personalSmsText, { color: colors.textTertiary }]}>Resent as plain text</Text>
+            </View>
+          )}
+        </Bubble>
 
         {/* Auto-applied keyword tags */}
         {item.auto_tags?.length > 0 && (

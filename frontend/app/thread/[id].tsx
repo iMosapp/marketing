@@ -35,6 +35,7 @@ import { VoiceMemoResultSheet, type MemoNote } from '../../components/thread/Voi
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
 import { CallLogCard } from '../../components/thread/CallLogCard';
 import { MessageBubble } from '../../components/thread/MessageBubble';
+import { DeliveryDetailsSheet } from '../../components/thread/DeliveryDetailsSheet';
 import { ThreadSearchBar } from '../../components/thread/ThreadSearchBar';
 import { InboxThreadBanner } from '../../components/inbox/InboxThreadBanner';
 import { ThreadStatusStrip } from '../../components/thread/ThreadStatusStrip';
@@ -813,6 +814,8 @@ function ThreadScreen() {
   }, [user?._id, contactIdForNav]);
 
   
+  const [deliveryMsgId, setDeliveryMsgId] = useState<string | null>(null);
+
   const loadMessages = async () => {
     const convId = actualConversationId || id as string;
     if (!convId) return;
@@ -2196,6 +2199,7 @@ function ThreadScreen() {
         userName={user?.name}
         highlight={renderHighlightedText}
         isCurrentMatch={threadSearchOpen && threadSearchQuery.trim() !== '' && searchMatches[currentMatchIdx] === index}
+        onShowDelivery={(m) => setDeliveryMsgId(m._id)}
       />
     );
   };
@@ -3866,6 +3870,7 @@ function ThreadScreen() {
         <VoiceMemoResultSheet note={memoResult} userId={user._id} contactId={String(contactIdForNav || id)} contactFirst={(contactName || 'the customer').split(' ')[0]}
           colors={colors} onClose={() => setMemoResult(null)} />
       )}
+      <DeliveryDetailsSheet messageId={deliveryMsgId} colors={{ ...colors, text: colors.textPrimary, card: colors.surface }} onClose={() => setDeliveryMsgId(null)} onResent={() => loadMessages()} />
     </SafeAreaView>
   );
 }

@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import api from '../../../services/api';
+import { showSimpleAlert } from '../../../services/alert';
 
 import { useThemeStore } from '../../../store/themeStore';
 interface Message {
@@ -24,7 +25,15 @@ interface Message {
   direction: 'inbound' | 'outbound';
   created_at: string;
   status?: string;
+  twilio_status?: string;
+  twilio_sid?: string;
+  error_code?: string;
+  error_message?: string;
+  has_media?: boolean;
+  delivery?: { title: string; detail: string; action?: string | null; tone: 'good' | 'bad' | 'warn' | 'muted'; code?: string | null } | null;
 }
+
+const TONE_COLOR: Record<string, string> = { good: '#34C759', bad: '#FF453A', warn: '#FF9F0A', muted: '#8E8E93' };
 
 export default function MessagesDataScreen() {
   const { colors } = useThemeStore();
@@ -55,8 +64,15 @@ export default function MessagesDataScreen() {
     loadMessages();
   }, []);
 
+  const showDelivery = (item: Message) => {
+    if (!item.delivery) return;
+    const d = item.delivery;
+    const lines = [d.detail, d.action ? `What to do: ${d.action}` : '', item.error_code ? `Twilio code: ${item.error_code}` : '', item.twilio_status ? `Twilio status: ${item.twilio_status}` : '', item.twilio_sid ? `Twilio ID: ${item.twilio_sid}` : ''].filter(Boolean);
+    showSimpleAlert(d.title, lines.join('\n\n'));
+  };
+
   const renderMessage = ({ item }: { item: Message }) => (
-    <View style={styles.messageItem}>
+    <TouchableOpacity style={styles.messageItem} activeOpacity={item.delivery ? 0.8 : 1} onPress={() => showDelivery(item)} data-testid={`admin-message-row-${item._id}`}>
       <View style={[styles.directionIcon, { backgroundColor: item.direction === 'inbound' ? '#34C75920' : '#007AFF20' }]}>
         <Ionicons 
           name={item.direction === 'inbound' ? 'arrow-down' : 'arrow-up'} 
@@ -71,8 +87,17 @@ export default function MessagesDataScreen() {
         </View>
         <Text style={styles.userName}>via {item.user_name || 'System'}</Text>
         <Text style={styles.messageText} numberOfLines={2}>{item.content}</Text>
+        {item.delivery ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 }} data-testid={`admin-message-delivery-${item._id}`}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: TONE_COLOR[item.delivery.tone] || '#8E8E93' }} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: TONE_COLOR[item.delivery.tone] || '#8E8E93' }}>
+              {item.delivery.title}{item.error_code ? ` · ${item.error_code}` : ''}{item.has_media ? ' · attachment' : ''}
+            </Text>
+            <Text style={{ fontSize: 11, color: colors.textTertiary }}>· tap</Text>
+          </View>
+        ) : null}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading) {

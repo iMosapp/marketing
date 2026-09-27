@@ -1817,7 +1817,7 @@ async def get_data_messages(
         if store_ids:
             query['store_id'] = {'$in': store_ids}
     
-    messages = await db.messages.find(query).sort('created_at', -1).limit(limit).to_list(limit)
+    messages = await db.messages.find(query).sort([('timestamp', -1), ('created_at', -1)]).limit(limit).to_list(limit)
     
     # Get user names
     user_ids = list(set(m.get('user_id') for m in messages if m.get('user_id')))
@@ -1826,8 +1826,10 @@ async def get_data_messages(
         user_docs = await db.users.find({'_id': {'$in': [ObjectId(uid) for uid in user_ids]}}).to_list(100)
         users = {str(u['_id']): u.get('name') for u in user_docs}
     
+    from services.twilio_errors import explain as _explain
     result = []
     for m in messages:
+        ex = _explain(m) if m.get('direction', 'outbound') == 'outbound' else None
         result.append({
             '_id': str(m['_id']),
             'contact_name': m.get('contact_name'),
@@ -1835,8 +1837,14 @@ async def get_data_messages(
             'user_name': users.get(m.get('user_id')),
             'content': m.get('content') or m.get('body') or '',
             'direction': m.get('direction', 'outbound'),
-            'created_at': m.get('created_at', datetime.utcnow()).isoformat(),
-            'status': m.get('status')
+            'created_at': (m.get('created_at') or m.get('timestamp') or datetime.utcnow()).isoformat(),
+            'status': m.get('status'),
+            'twilio_status': m.get('twilio_status'),
+            'twilio_sid': m.get('twilio_sid'),
+            'error_code': m.get('error_code'),
+            'error_message': m.get('error_message'),
+            'has_media': bool(m.get('has_media')),
+            'delivery': ex,
         })
     
     return result

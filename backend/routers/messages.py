@@ -319,6 +319,9 @@ async def get_conversation(user_id: str, conversation_id: str):
         "timestamp": m['timestamp'],
         "status": m.get('status', 'sent'),
         "error_message": m.get('error_message'),
+        "error_code": m.get('error_code'),
+        "twilio_status": m.get('twilio_status'),
+        "resent_as": m.get('resent_as'),
         "media_dropped": m.get('media_dropped', False),
         "has_media": m.get('has_media', False),
         "media_urls": m.get('media_urls', []),
@@ -727,6 +730,110 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     return message
 
 
+MANAGER_ROLES = ("super_admin", "org_admin", "store_manager")
+
+
+async def _assert_can_act_as(request: Request, user_id: str) -> dict:
+    """The proven caller must be user_id, or a manager who can see that user."""
+    from routers.rbac import get_current_user, verify_user_access
+    me = await get_current_user(request)
+    if str(me.get("_id")) == str(user_id):
+        return me
+    if me.get("role") in MANAGER_ROLES and (me.get("role") == "super_admin" or await verify_user_access(me, str(user_id))):
+        return me
+    raise HTTPException(status_code=403, detail="You can only send as yourself")
+
+
+def _twilio_status_to_app(tw: str) -> Optional[str]:
+    return {"queued": "sending", "accepted": "sending", "sending": "sending", "sent": "sent",
+            "delivered": "delivered", "undelivered": "failed", "failed": "failed"}.get((tw or "").lower())
+
+
+async def _rep_number(db, user_id: str) -> Optional[str]:
+    try:
+        u = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1})
+    except Exception:
+        return None
+    return (u or {}).get("twilio_number") or (u or {}).get("mvpline_number")
+
+
+async def _load_outbound_message(request: Request, message_id: str) -> tuple:
+    db = get_db()
+    try:
+        m = await db.messages.find_one({"_id": ObjectId(message_id)})
+    except Exception:
+        m = None
+    if not m:
+        raise HTTPException(status_code=404, detail="Message not found")
+    me = await _assert_can_act_as(request, str(m.get("user_id") or ""))
+    return db, m, me
+
+
+@router.get("/{message_id}/delivery")
+async def message_delivery(message_id: str, request: Request):
+    """Everything a rep needs to know about why a text did or did not land: status, Twilio code, plain-English reason.
+    When no delivery receipt ever arrived, asks Twilio for the live status first."""
+    from services.twilio_service import fetch_message_status
+    from services.twilio_errors import explain
+    db, m, _ = await _load_outbound_message(request, message_id)
+    live = None
+    sid = m.get("twilio_sid") or ""
+    if m.get("direction", "outbound") == "outbound" and m.get("status") not in ("delivered", "failed") and sid:
+        conv = await db.conversations.find_one({"_id": ObjectId(m["conversation_id"])}, {"rep_phone": 1}) if ObjectId.is_valid(str(m.get("conversation_id") or "")) else None
+        live = await fetch_message_status(sid, (conv or {}).get("rep_phone") or await _rep_number(db, str(m.get("user_id") or "")))
+        if live:
+            upd = {"twilio_status": live["status"], "status_updated_at": datetime.utcnow()}
+            if live.get("error_code"):
+                upd["error_code"], upd["error_message"] = live["error_code"], live.get("error_message")
+            app_status = _twilio_status_to_app(live["status"])
+            if app_status:
+                upd["status"] = app_status
+            await db.messages.update_one({"_id": m["_id"]}, {"$set": upd})
+            m.update(upd)
+    media = m.get("media_urls") or []
+    kinds = ["contact card" if (".vcf" in (u or "").lower() or "/vcard" in (u or "").lower()) else "photo" for u in media]
+    has_link = bool(re.search(r"https?://\S+", m.get("content") or ""))
+    can_resend = m.get("direction", "outbound") == "outbound" and m.get("status") != "delivered" and not m.get("resent_as") and bool(m.get("content") or media)
+    return {
+        "id": str(m["_id"]), "status": m.get("status"), "twilio_status": m.get("twilio_status"), "twilio_sid": sid or None,
+        "error_code": m.get("error_code"), "error_message": m.get("error_message"),
+        "sent_at": m.get("timestamp") or m.get("created_at"), "status_updated_at": m.get("status_updated_at"),
+        "has_media": bool(media), "media_kinds": kinds, "has_link": has_link, "live_checked": live is not None,
+        "explanation": explain(m), "can_resend_text": can_resend, "resent_as": m.get("resent_as"),
+    }
+
+
+@router.post("/{message_id}/resend-text")
+async def message_resend_text(message_id: str, request: Request):
+    """Send the same words again with no attachment (a contact card becomes a link), from the rep's number."""
+    from services.twilio_errors import vcard_media_to_link
+    db, m, _ = await _load_outbound_message(request, message_id)
+    if m.get("direction", "outbound") != "outbound":
+        raise HTTPException(status_code=400, detail="Only your own outbound messages can be resent")
+    body, _dropped = vcard_media_to_link(m.get("content") or "", m.get("media_urls") or [])
+    if not body:
+        raise HTTPException(status_code=400, detail="Nothing to resend as text (photo-only message)")
+    conv = await db.conversations.find_one({"_id": ObjectId(m["conversation_id"])}) if ObjectId.is_valid(str(m.get("conversation_id") or "")) else None
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    user_id = str(m.get("user_id") or conv.get("user_id") or "")
+    from_phone = conv.get("rep_phone") or await _rep_number(db, user_id)
+    result = await send_sms(conv["contact_phone"], body, media_urls=None, from_phone=from_phone, user_id=user_id, contact_id=str(conv.get("contact_id") or "") or None)
+    if not result.get("success"):
+        raise HTTPException(status_code=502, detail=result.get("error") or "Send failed")
+    now = datetime.utcnow()
+    new_doc = {
+        "conversation_id": str(conv["_id"]), "user_id": user_id, "contact_id": conv.get("contact_id"), "content": body,
+        "direction": "outbound", "channel": "sms", "sender": "user", "twilio_sid": result.get("message_sid"),
+        "status": "sent" if not result.get("mock") else "sent_mock", "event_type": m.get("event_type") or "personal_sms",
+        "has_media": False, "media_urls": [], "timestamp": now, "resend_of": str(m["_id"]),
+    }
+    r = await db.messages.insert_one(new_doc)
+    await db.messages.update_one({"_id": m["_id"]}, {"$set": {"resent_as": str(r.inserted_id)}})
+    await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"last_message_at": now, "updated_at": now}})
+    return {"success": True, "message_id": str(r.inserted_id), "message_sid": result.get("message_sid"), "body": body}
+
+
 @router.post("/twilio-send")
 async def send_via_twilio(request: Request):
     """
@@ -744,6 +851,7 @@ async def send_via_twilio(request: Request):
     media_urls = data.get("media_urls") or []          # ← MMS support
     if not to_phone or not body:
         raise HTTPException(status_code=400, detail="to and body are required")
+    await _assert_can_act_as(request, user_id)
     # Always use the rep's dedicated Twilio number
     rep_twilio_number = None
     try:

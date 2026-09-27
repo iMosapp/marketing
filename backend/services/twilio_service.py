@@ -112,7 +112,8 @@ async def send_sms(
         org_id / user_id / contact_id: optional attribution for usage tracking (resolved from from_phone when omitted)
     """
     to_phone = normalize_phone(to_phone)
-    media_urls = mms_safe_media(media_urls)
+    from services.twilio_errors import vcard_media_to_link
+    message, media_urls = vcard_media_to_link(message, mms_safe_media(media_urls))
 
     if from_phone:
         try:
@@ -209,6 +210,23 @@ async def _record_usage(from_phone, media_urls, segments, org_id, user_id):
         await record_usage(get_db(), direction="outbound", phone_number=from_phone or "", segments=int(segments or 1), mms=bool(media_urls), org_id=org_id, user_id=user_id)
     except Exception as e:
         logger.debug(f"[SMS] usage skipped: {e}")
+
+
+async def fetch_message_status(sid: str, from_phone: Optional[str] = None) -> Optional[dict]:
+    """Ask Twilio for a message's current status (used when no delivery receipt ever arrived)."""
+    if not sid or sid.startswith(("MOCK_", "GUARD_")) or not TWILIO_ENABLED:
+        return None
+    try:
+        client = await _client_for_sender(normalize_phone(from_phone) if from_phone else None) or twilio_client
+        m = client.messages(sid).fetch()
+        return {"status": m.status, "error_code": str(m.error_code) if m.error_code else None, "error_message": m.error_message,
+                "date_sent": m.date_sent, "date_updated": m.date_updated, "num_media": int(m.num_media or 0)}
+    except TwilioRestException as e:
+        logger.warning(f"[SMS] status fetch failed for {sid}: [{e.code}] {e.msg}")
+        return None
+    except Exception as e:
+        logger.warning(f"[SMS] status fetch error for {sid}: {e}")
+        return None
 
 
 async def get_twilio_status() -> dict:
