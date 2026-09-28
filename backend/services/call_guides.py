@@ -314,10 +314,10 @@ def _example() -> str:
     return json.dumps(g, ensure_ascii=False)
 
 
-def guide_sms(client: dict, person: dict, guide: dict, sender_first: str) -> str:
+def guide_sms(client: dict, person: dict, guide: dict, sender_first: str, url: Optional[str] = None, when: str = "") -> str:
     first = (person.get("name") or "there").split(" ")[0]
     brand = (client.get("brand") or "").strip()
     dept = (ind.dept(guide["department"], guide["industry"]).get("label") or "").lower()
     what = f"{brand} {dept}".strip() if brand else dept
     return (f"Hi {first}, it's {sender_first} with I'm On Social. Your {what} practice call is coming up. "
-            f"Read along with the call guide and go for 100: {guide_url(guide['industry'], guide['department'])}")
+            f"Read along with the call guide and go for 100: {url or guide_url(guide['industry'], guide['department'])}" + (f" {when}" if when else ""))

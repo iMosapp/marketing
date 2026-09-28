@@ -493,7 +493,7 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
            "industry": ind.key_of(c), "industry_label": ind.get(ind.key_of(c))["label"], "departments": ind.dept_options(ind.key_of(c)), "offering": ind.get(ind.key_of(c))["offering"], "customer_noun": ind.get(ind.key_of(c))["customer"],
            "hours": _hours(c), "vehicles": offerings_of(c), "offerings": offerings_of(c), "active": c.get("active", True), "record_calls": c.get("record_calls", True), "live_calls": c.get("live_calls"), "notes": c.get("notes", ""),
            "from_number": c.get("from_number") or "", "report_token": c.get("report_token"), "scorecards": c.get("scorecards") or {}, "billing": c.get("billing") or {},
-           "demo": bool(c.get("demo")), "text_scorecards": bool(c.get("text_scorecards")), "text_guide": bool(c.get("text_guide")),
+           "demo": bool(c.get("demo")), "text_scorecards": bool(c.get("text_scorecards")), "text_guide": bool(c.get("text_guide")), "guide_lead_min": lead_minutes(c.get("guide_lead_min")),
            "difficulty": c.get("difficulty") if c.get("difficulty") in DIFFICULTIES else "medium", "direction_mix": direction_mix(c), "retry": retry_policy(c), "retry_by_dept": ((c.get("retry") or {}).get("by_dept") or {}),
            "reissue_unreachable": bool(c.get("reissue_unreachable", True)), "night_guard": {"start": NIGHT_GUARD[0], "end": NIGHT_GUARD[1]},
            "created_at": c.get("created_at").isoformat() if c.get("created_at") else None}
@@ -1018,7 +1018,7 @@ async def place_shop_call(db, call: dict) -> bool:
     base = f"{scr._app_url()}/api/scripts/roleplay"
     now = _now()
     want_guide = call["text_guide"] if "text_guide" in call else bool(client.get("text_guide") and not call.get("lead_shop_id"))
-    if want_guide and call.get("target_id") and ObjectId.is_valid(str(call["target_id"])):
+    if want_guide and not call.get("guide_texted_at") and call.get("target_id") and ObjectId.is_valid(str(call["target_id"])):
         try:  # the read-along guide lands on their phone seconds before it rings; never blocks the call
             t = await db.shop_targets.find_one({"_id": ObjectId(str(call["target_id"]))})
             if t:
@@ -1048,14 +1048,24 @@ async def dial_now(db, call: dict) -> bool:
     return await place_shop_call(db, call)
 
 
-async def text_guide(db, client: dict, target: dict, by: Optional[str] = None) -> dict:
-    """Text a person the read-along call guide for their department from the shop number; the result lands on the person row."""
+async def text_guide(db, client: dict, target: dict, by: Optional[str] = None, call: Optional[dict] = None) -> dict:
+    """Text a person the read-along call guide for their department from the shop number; the result lands on the person row.
+    With a pending call the link carries the call token so the guide page can show the countdown and the Ready button."""
     from services import call_guides as cg
     from services.twilio_service import send_sms
     industry = ind.key_of(client)
     keys = ind.dept_keys(industry)
     department = target.get("department") if target.get("department") in keys else keys[0]
-    url = cg.guide_url(industry, department)
+    url = cg.guide_url(industry, department) + (f"?s={call['token']}" if call and call.get("token") else "")
+    when = ""
+    if call:
+        lead = int(call.get("guide_lead_min") or 0)
+        if call.get("ready_only"):
+            when = "Tap I'm ready at the bottom of the guide when you want the call to come."
+        elif lead > 0:
+            when = f"It rings in about {lead} minute{'s' if lead != 1 else ''}, or sooner when you tap I'm ready at the bottom."
+        else:
+            when = "It is about to ring."
     g = await cg.get_guide(db, industry, department)
     if not g:
         rec = {"sent_at": _now(), "ok": False, "error": "Jessi could not write that call guide just now. Try again in a minute.", "by": by, "url": url}
@@ -1067,13 +1077,86 @@ async def text_guide(db, client: dict, target: dict, by: Optional[str] = None) -
         if uid and ObjectId.is_valid(str(uid)):
             u = await db.users.find_one({"_id": ObjectId(str(uid))}, {"first_name": 1, "name": 1})
             sender = ((u or {}).get("first_name") or (u or {}).get("name") or sender).split(" ")[0]
-        r = await send_sms(target["phone"], cg.guide_sms(client, target, g, sender), from_phone=(await from_number(db, client)) or None)
+        r = await send_sms(target["phone"], cg.guide_sms(client, target, g, sender, url=url, when=when), from_phone=(await from_number(db, client)) or None)
         ok = bool(r.get("success"))
         rec = {"sent_at": _now(), "ok": ok, "error": None if ok else (r.get("error") or "Could not send"), "by": by, "url": url}
     await db.shop_targets.update_one({"_id": target["_id"]}, {"$set": {"guide_text": rec}})
+    if call:
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"guide_texted_at": _now(), "guide_text_ok": rec["ok"]}})
     if not rec["ok"]:
         logger.warning(f"[MysteryShop] guide text to {target.get('name')} failed: {rec['error']}")
     return {"ok": rec["ok"], "error": rec["error"], "url": url}
+
+
+READY_WAIT_MIN = 45  # a "ring when they tap Ready" shop that nobody taps is cancelled after this
+LEAD_OPTIONS = (0, 1, 2, 3, 5)  # minutes of head start after the guide text, before the phone rings
+
+
+def lead_minutes(v) -> int:
+    try:
+        v = int(v)
+    except (TypeError, ValueError):
+        return 0
+    return v if v in LEAD_OPTIONS else 0
+
+
+async def _guide_heads_up(db, now):
+    """Planner-scheduled phone shops on clients with the guide toggle: text the guide guide_lead_min before the ring (the tick is every 2 minutes)."""
+    horizon = now + timedelta(minutes=max(LEAD_OPTIONS))
+    soon = await db.roleplay_sessions.find({"kind": "mystery_shop", "status": "scheduled", "mode": "phone", "manual": {"$ne": True}, "lead_shop_id": None, "guide_texted_at": None,
+                                            "scheduled_for": {"$lte": horizon}}).sort("scheduled_for", 1).limit(20).to_list(20)
+    for s in soon:
+        client = await db.shop_clients.find_one({"_id": _oid(s["client_id"])})
+        lead = lead_minutes((client or {}).get("guide_lead_min"))
+        if not client or not client.get("text_guide") or not lead or s["scheduled_for"] > now + timedelta(minutes=lead):
+            continue
+        target = await _target_of(db, s)
+        if target:
+            await text_guide(db, client, target, None, call={**s, "guide_lead_min": lead})
+
+
+async def ring_later(sid: str, delay_s: float):
+    """Head start after the guide text: ring when the timer runs out unless Ready already rang it (the 2-minute tick is the fallback)."""
+    await asyncio.sleep(max(0, delay_s))
+    from routers.database import get_db
+    db = get_db()
+    call = await db.roleplay_sessions.find_one({"_id": _oid(sid), "status": "scheduled"})
+    if call:
+        await dial_now(db, call)
+
+
+def pending_view(s: Optional[dict]) -> dict:
+    """What the guide page shows under the script for the call behind the texted link."""
+    if not s:
+        return {"state": "none"}
+    st = s.get("status")
+    when = s.get("scheduled_for")
+    if when is not None and when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    rings_in = int((when - _now()).total_seconds()) if st == "scheduled" and when and not s.get("ready_only") else None
+    if st == "scheduled":
+        state = "waiting" if s.get("ready_only") else "countdown"
+    elif st in ("dialing", "live", "ending"):
+        state = "calling" if st == "dialing" else "live"
+    elif st in ("grading", "completed"):
+        state = "done"
+    else:
+        state = "over"
+    first = (s.get("rep_name") or "").split(" ")[0]
+    return {"state": state, "status": st, "rings_in_s": max(0, rings_in) if rings_in is not None else None, "first_name": first, "ready_only": bool(s.get("ready_only")),
+            "score_pct": s.get("score_pct"), "direction": s.get("direction")}
+
+
+async def ready_now(db, token: str) -> dict:
+    """The person tapped I'm ready on the guide: ring them now if their shop is still waiting."""
+    s = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "token": token})
+    if not s:
+        return {"state": "none"}
+    if s.get("status") == "scheduled":
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"ready_tapped_at": _now(), "ready_only": False}})
+        await dial_now(db, {**s, "ready_only": False})
+        s = await db.roleplay_sessions.find_one({"_id": s["_id"]})
+    return pending_view(s)
 
 
 async def busy_with(db, query: dict) -> Optional[dict]:
@@ -1199,11 +1282,18 @@ async def run_due_calls(db, limit: int = 3) -> int:
         await lead_shop_sweep(db)
     except Exception as e:
         logger.warning(f"[MysteryShop] lead shop sweep failed: {e}")
+    try:
+        await _guide_heads_up(db, now)
+    except Exception as e:
+        logger.warning(f"[MysteryShop] guide heads-up failed: {e}")
     due = await db.roleplay_sessions.find({"kind": "mystery_shop", "status": "scheduled", "scheduled_for": {"$lte": now}}).sort("scheduled_for", 1).limit(limit * 3).to_list(limit * 3)
     placed = 0
     for call in due:
         if placed >= limit:
             break
+        if call.get("ready_only"):  # nobody tapped I'm ready inside the window
+            await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "canceled", "fail_reason": f"No I'm ready tap within {READY_WAIT_MIN} minutes", "updated_at": now}})
+            continue
         client = await db.shop_clients.find_one({"_id": _oid(call["client_id"])})
         if not client or not client.get("active", True):
             await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "canceled", "fail_reason": "Client paused", "updated_at": now}})
@@ -1939,7 +2029,7 @@ async def ensure_kubota_demo_client(db) -> bool:
            "contact_name": "", "contact_email": "", "contact_phone": "", "contact_title": "",
            "plan": {"per_month": {}, "text_per_month": {}, "email_per_month": {}, "price_monthly": 0.0}, "hours": dict(ALWAYS_OPEN),
            "vehicles": ["BX and B sub-compact tractors", "L and LX compact tractors", "M series utility tractors", "RTV utility vehicles", "KX and U compact excavators", "SVL track loaders", "Z and F mowers"],
-           "active": True, "industry": "equipment", "record_calls": True, "text_scorecards": True, "text_guide": True, "notes": KUBOTA_NOTES,
+           "active": True, "industry": "equipment", "record_calls": True, "text_scorecards": True, "text_guide": True, "guide_lead_min": 2, "notes": KUBOTA_NOTES,
            "report_token": uuid.uuid4().hex, "billing": {}, "created_by": str(owner["_id"]) if owner else "system", "created_at": now, "updated_at": now}
     await db.shop_clients.insert_one(doc)
     return True

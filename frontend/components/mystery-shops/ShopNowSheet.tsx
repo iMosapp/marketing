@@ -18,11 +18,12 @@ export const ShopNowSheet = ({ person, client, colors, onClose, onStarted }: Pro
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [textGuide, setTextGuide] = useState(true);
+  const [lead, setLead] = useState<string>(String(client.guide_lead_min ?? 0));
   const first = (person?.name || '').split(' ')[0];
 
   useEffect(() => {
     if (!person) return;
-    setDirection(null); setDifficulty('medium'); setScriptId(null); setQuery(''); setError('');
+    setDirection(null); setDifficulty('medium'); setScriptId(null); setQuery(''); setError(''); setLead(String(client.guide_lead_min ?? 0));
     api.get(`/shop-clients/${client.id}/challenges`).then(r => setChallenges(r.data.challenges || [])).catch(() => setChallenges([]));
   }, [person?.id]);
 
@@ -42,12 +43,15 @@ export const ShopNowSheet = ({ person, client, colors, onClose, onStarted }: Pro
     try {
       const r = await api.post(`/shop-clients/${client.id}/calls/shop-now`, {
         target_id: person.id, difficulty, text_guide: textGuide,
+        ...(textGuide ? (lead === 'ready' ? { ready_only: true } : { guide_lead_min: Number(lead) }) : {}),
         ...(scriptId ? { script_id: scriptId } : {}),
         ...(direction && !picked?.direction ? { direction } : {}),
       });
       const gt = r.data?.guide_text;
-      if (gt && !gt.ok) showToast(`Calling ${first} now, but the guide text failed: ${gt.error || 'could not send'}`, 'error');
-      else showToast(gt?.ok ? `Calling ${first} now · call guide texted` : `Calling ${first} now`, 'success');
+      const later = textGuide && lead !== '0';
+      const ringLine = later ? (lead === 'ready' ? `rings when ${first} taps I\u2019m ready` : `rings in ${lead} min`) : `Calling ${first} now`;
+      if (gt && !gt.ok) showToast(`${later ? 'Shop set up, ' + ringLine : ringLine}, but the guide text failed: ${gt.error || 'could not send'}`, 'error');
+      else showToast(later ? `Guide texted to ${first} \u00b7 ${ringLine}` : (gt?.ok ? `${ringLine} \u00b7 call guide texted` : ringLine), 'success');
       onClose(); onStarted();
     } catch (e: any) {
       const msg = e?.response?.data?.detail || (!e?.response ? 'No connection to the server, try again in a moment' : 'Could not place the call');
@@ -57,7 +61,7 @@ export const ShopNowSheet = ({ person, client, colors, onClose, onStarted }: Pro
 
   return (
     <Sheet visible={!!person} onClose={onClose} title={person ? `Shop ${first} now` : 'Shop now'} colors={colors} testID="shop-now-sheet" error={error}
-      footer={<GoldButton label={`Call ${first || 'them'} now`} onPress={go} busy={busy} icon="call" testID="shop-now-call" />}>
+      footer={<GoldButton label={textGuide && lead !== '0' ? (lead === 'ready' ? `Text guide, ring when ${first || 'they'} taps Ready` : `Text guide, ring in ${lead} min`) : `Call ${first || 'them'} now`} onPress={go} busy={busy} icon={textGuide && lead !== '0' ? 'chatbubble-ellipses' : 'call'} testID="shop-now-call" />}>
       {!!person && <Text style={{ fontSize: 13.5, color: colors.textSecondary, lineHeight: 19 }} {...tid('shop-now-text')}>The AI {client.customer_noun || 'shopper'} calls {fmtPhone(person.phone)} in a few seconds. Business hours don't apply; if they don't pick up or press 2, the shop waits for you to tap Try again.</Text>}
 
       <View style={{ gap: 6 }}>
@@ -123,6 +127,24 @@ export const ShopNowSheet = ({ person, client, colors, onClose, onStarted }: Pro
           <Text style={{ fontSize: 12, color: colors.textSecondary }}>The read-along script and 100-point scorecard for {deptLabel(person?.department || '', deptsOfClient(client)).toLowerCase()}, so they can follow it while the shopper is on the line.</Text>
         </View>
       </TouchableOpacity>
+      {textGuide && (
+        <View style={{ gap: 6 }}>
+          <Label t="THEN RING" colors={colors} />
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            {LEADS.map(l => <Chip key={l.key} label={l.label} active={lead === l.key} onPress={() => setLead(l.key)} colors={colors} testID={`shop-now-lead-${l.key}`} />)}
+          </View>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('shop-now-lead-hint')}>{LEADS.find(l => l.key === lead)?.hint.replace('{first}', first || 'they')}</Text>
+        </View>
+      )}
     </Sheet>
   );
 };
+
+const LEADS: { key: string; label: string; hint: string }[] = [
+  { key: '0', label: 'Right away', hint: 'The text and the ring land together.' },
+  { key: '1', label: 'In 1 min', hint: 'One minute to skim the guide, or sooner when {first} taps I\u2019m ready at the bottom of it.' },
+  { key: '2', label: 'In 2 min', hint: 'Two minutes to read the guide, or sooner when {first} taps I\u2019m ready at the bottom of it.' },
+  { key: '3', label: 'In 3 min', hint: 'Three minutes to read the guide, or sooner when {first} taps I\u2019m ready at the bottom of it.' },
+  { key: '5', label: 'In 5 min', hint: 'Five minutes to read the guide, or sooner when {first} taps I\u2019m ready at the bottom of it.' },
+  { key: 'ready', label: 'When they tap Ready', hint: 'No timer: the phone rings only when {first} taps I\u2019m ready on the guide. Cancels itself after 45 minutes.' },
+];

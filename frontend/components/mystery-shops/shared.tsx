@@ -24,7 +24,7 @@ export type Client = {
   industry: string; industry_label: string; departments: Dept[]; offering: Offering; customer_noun: string; offerings: string[];
   plan: Plan; hours: Hours; vehicles: string[]; active: boolean; record_calls: boolean; notes: string; from_number: string; report_token?: string; scorecards: Record<string, string | null>;
   billing?: { status?: string; last_invoice?: any }; progress?: Record<string, DeptStat>; avg_score?: number | null; completed?: number; planned?: number; needs_training?: number; people?: number;
-  demo?: boolean; text_scorecards?: boolean; text_guide?: boolean;
+  demo?: boolean; text_scorecards?: boolean; text_guide?: boolean; guide_lead_min?: number;
   difficulty?: Difficulty | 'mixed'; direction_mix?: 'inbound' | 'outbound' | 'mixed'; retry?: RetryPolicy; retry_by_dept?: Record<string, Partial<RetryPolicy>>; reissue_unreachable?: boolean; night_guard?: { start: string; end: string };
   locale?: string; language?: string; currency?: string; currency_symbol?: string; country?: string; locale_label?: string; vat_id?: string;
   number_state?: { own: boolean; needs_local_number: boolean; error?: string | null };

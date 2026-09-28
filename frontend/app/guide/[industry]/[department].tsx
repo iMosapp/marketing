@@ -14,7 +14,7 @@ type Guide = { title: string; industry_label: string; department_label: string; 
 const C = { bg: '#0E0F12', card: '#17191E', border: '#262932', text: '#F4F1E8', dim: '#9A9A94', quote: '#FFFFFF' };
 
 export default function CallGuideScreen() {
-  const { industry, department } = useLocalSearchParams<{ industry: string; department: string }>();
+  const { industry, department, s: token } = useLocalSearchParams<{ industry: string; department: string; s?: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [g, setG] = useState<Guide | null>(null);
@@ -60,9 +60,42 @@ export default function CallGuideScreen() {
           <Text style={{ fontSize: 11.5, color: C.dim, textAlign: 'center', marginTop: 8 }}>{g.source === 'ai' ? 'Drafted by Jessi from this department\u2019s scorecard.' : 'Customer Engagement Standard.'} Checkmarks stay on this device only.</Text>
         </ScrollView>
       )}
+      {!!token && g && <PendingCallBar token={token} />}
     </SafeAreaView>
   );
 }
+
+// The call behind the texted link: countdown, or ring it now with I'm ready.
+type Pending = { state: 'none' | 'countdown' | 'waiting' | 'calling' | 'live' | 'done' | 'over'; rings_in_s?: number | null; first_name?: string; score_pct?: number | null };
+const PendingCallBar = ({ token }: { token: string }) => {
+  const [p, setP] = useState<Pending | null>(null);
+  const [left, setLeft] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = () => api.get(`/public/call-guide/pending/${token}`).then(r => { setP(r.data); setLeft(r.data?.rings_in_s ?? null); }).catch(() => {});
+  useEffect(() => { load(); const iv = setInterval(load, 5000); return () => clearInterval(iv); }, [token]);
+  useEffect(() => { if (left == null || left <= 0) return; const t = setTimeout(() => setLeft(l => (l == null ? null : Math.max(0, l - 1))), 1000); return () => clearTimeout(t); }, [left]);
+  const ready = async () => { setBusy(true); try { const r = await api.post(`/public/call-guide/ready/${token}`); setP(r.data); setLeft(null); } catch {} finally { setBusy(false); } };
+  if (!p || p.state === 'none') return null;
+  const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const canRing = p.state === 'countdown' || p.state === 'waiting';
+  const line = p.state === 'countdown' ? (left && left > 0 ? `Your practice call rings in ${mmss(left)}` : 'Your practice call is ringing any second') :
+    p.state === 'waiting' ? 'Your practice call is waiting for you' : p.state === 'calling' ? 'Calling you now, pick up!' : p.state === 'live' ? 'You are on the call. Go get 100.' :
+    p.state === 'done' ? (p.score_pct != null ? `Call done: ${p.score_pct}%. Your scorecard is on its way.` : 'Call done. Your scorecard is on its way.') : 'This practice call is over.';
+  return (
+    <View style={{ borderTopWidth: 1, borderTopColor: GOLD + '66', backgroundColor: '#14161A', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, gap: 10 }} {...tid('guide-pending-bar')}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Ionicons name={p.state === 'calling' || p.state === 'live' ? 'call' : p.state === 'done' ? 'checkmark-circle' : 'time'} size={20} color={p.state === 'done' ? GREEN : GOLD} />
+        <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: C.text }} {...tid('guide-pending-line')}>{line}</Text>
+      </View>
+      {canRing && (
+        <TouchableOpacity onPress={ready} disabled={busy} style={{ backgroundColor: GOLD, borderRadius: 14, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: busy ? 0.7 : 1 }} {...tid('guide-ready-btn')}>
+          {busy ? <ActivityIndicator color="#111" /> : <Ionicons name="call" size={20} color="#111" />}
+          <Text style={{ fontSize: 17, fontWeight: '900', color: '#111' }}>I{'\u2019'}m ready, call me now</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
 
 const GuideHeader = ({ g, f }: { g: Guide; f: number }) => (
   <View style={{ gap: 10, marginBottom: 6 }} {...tid('guide-header')}>

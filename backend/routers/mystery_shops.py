@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from bson import ObjectId
@@ -108,6 +108,7 @@ class ClientBody(BaseModel):
     scorecards: Optional[dict] = None
     text_scorecards: Optional[bool] = None
     text_guide: Optional[bool] = None
+    guide_lead_min: Optional[int] = None
     locale: Optional[str] = None
     vat_id: Optional[str] = None
     difficulty: Optional[str] = None
@@ -157,6 +158,8 @@ class ShopNowBody(BaseModel):
     direction: Optional[str] = None
     difficulty: Optional[str] = None
     text_guide: Optional[bool] = False
+    guide_lead_min: Optional[int] = None  # head start after the guide text before it rings (0, 1, 2, 3, 5)
+    ready_only: Optional[bool] = False  # ring only when they tap I'm ready on the guide
 
 
 class PlanBody(BaseModel):
@@ -246,6 +249,8 @@ def _client_fields(body: ClientBody) -> dict:
             d["timezone"] = loc.get(d["locale"])["timezone"]
     if "vat_id" in d:
         d["vat_id"] = (d["vat_id"] or "").strip().upper()[:40]
+    if "guide_lead_min" in d:
+        d["guide_lead_min"] = ms.lead_minutes(d["guide_lead_min"])
     if "plan" in d:
         p = d["plan"] or {}
         per = p.get("per_month") if isinstance(p.get("per_month"), dict) else {k: p.get(f"{k}_per_month") for k in ("sales", "service") if p.get(f"{k}_per_month") is not None}
@@ -1052,6 +1057,19 @@ async def text_call_guide(cid: str, tid: str, request: Request):
     return out
 
 
+@public_router.get("/call-guide/pending/{token}")
+async def guide_pending(token: str):
+    """The call behind a texted guide link: countdown, waiting for Ready, calling, or done."""
+    s = await get_db().roleplay_sessions.find_one({"kind": "mystery_shop", "token": token})
+    return ms.pending_view(s)
+
+
+@public_router.post("/call-guide/ready/{token}")
+async def guide_ready(token: str):
+    """I'm ready: ring the person now instead of waiting out the head start."""
+    return await ms.ready_now(get_db(), token)
+
+
 @public_router.get("/call-guide/{industry}/{department}")
 async def public_call_guide(industry: str, department: str):
     """No-login read-along page data. Key space is the fixed industry/department list, so Jessi writes at most one guide per pair."""
@@ -1080,24 +1098,43 @@ async def shop_now(cid: str, body: ShopNowBody, request: Request):
     busy = await ms.busy_with(db, {"target_id": body.target_id, **ms.mode_q(mode)})
     if busy:
         raise HTTPException(status_code=409, detail=ms.busy_label(busy, t["name"], mode))
+    waiting = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "target_id": body.target_id, "status": "scheduled", "manual": True, "mode": "phone", "guide_texted_at": {"$ne": None}})
+    if waiting and mode == "phone":
+        first = t["name"].split(" ")[0]
+        rings = waiting["scheduled_for"].replace(tzinfo=timezone.utc) if waiting["scheduled_for"].tzinfo is None else waiting["scheduled_for"]
+        raise HTTPException(status_code=409, detail=f"{first} already has a practice call waiting on the guide" + (" (rings when they tap I'm ready)." if waiting.get("ready_only") else f" (rings in about {max(1, int((rings - datetime.now(timezone.utc)).total_seconds() // 60))} min)."))
     script = None
     if body.script_id:
         script = await db.scripts.find_one({"_id": _oid(body.script_id, "Challenge"), "pool": "mystery_shop"})
-    call = await ms.create_shop_call(db, c, t, datetime.now(timezone.utc), created_by=str(me["_id"]), manual=True, script=script, mode=mode, direction=body.direction, difficulty=body.difficulty)
+    lead = ms.lead_minutes(body.guide_lead_min) if body.text_guide else 0
+    ready_only = bool(body.text_guide and body.ready_only)
+    ring_at = datetime.now(timezone.utc) + timedelta(minutes=ms.READY_WAIT_MIN if ready_only else lead)
+    call = await ms.create_shop_call(db, c, t, ring_at, created_by=str(me["_id"]), manual=True, script=script, mode=mode, direction=body.direction, difficulty=body.difficulty)
     if not call:
         raise HTTPException(status_code=400, detail=f"No {ind.dept_label(t.get('department'))} challenges in the pool yet. Open the Challenge Library and let Jessi write the starters.")
+    guide_text = None
     if mode == "phone":
-        call["text_guide"] = bool(body.text_guide)  # place_shop_call texts the read-along guide right before it dials
-        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"text_guide": bool(body.text_guide)}})
+        flags = {"text_guide": bool(body.text_guide), "guide_lead_min": lead, "ready_only": ready_only}
+        call.update(flags)
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": flags})
+        if body.text_guide:  # the text goes first (with the call token so the guide page shows the countdown and I'm ready)
+            guide_text = await ms.text_guide(db, c, t, str(me["_id"]), call=call)
+            call["guide_texted_at"] = datetime.now(timezone.utc)
+    if mode == "phone" and (lead > 0 or ready_only):
+        if not ready_only:
+            asyncio.create_task(ms.ring_later(str(call["_id"]), lead * 60))
+        s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
+        out = ms.serialize_call(s)
+        out["guide_text"] = guide_text
+        out["rings_at"] = ring_at.isoformat()
+        return out
     ok = await ms.dial_now(db, call)
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
     if not ok:
         raise HTTPException(status_code=503, detail=s.get("fail_reason") or _send_fail(mode))
     out = ms.serialize_call(s)
-    if body.text_guide and mode == "phone":
-        t2 = await db.shop_targets.find_one({"_id": t["_id"]}, {"guide_text": 1})
-        gt = (t2 or {}).get("guide_text") or {}
-        out["guide_text"] = {"ok": bool(gt.get("ok")), "error": gt.get("error"), "url": gt.get("url")}
+    if guide_text:
+        out["guide_text"] = guide_text
     return out
 
 
