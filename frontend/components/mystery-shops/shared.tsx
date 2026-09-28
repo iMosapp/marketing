@@ -24,7 +24,7 @@ export type Client = {
   industry: string; industry_label: string; departments: Dept[]; offering: Offering; customer_noun: string; offerings: string[];
   plan: Plan; hours: Hours; vehicles: string[]; active: boolean; record_calls: boolean; notes: string; from_number: string; report_token?: string; scorecards: Record<string, string | null>;
   billing?: { status?: string; last_invoice?: any }; progress?: Record<string, DeptStat>; avg_score?: number | null; completed?: number; planned?: number; needs_training?: number; people?: number;
-  demo?: boolean; text_scorecards?: boolean;
+  demo?: boolean; text_scorecards?: boolean; text_guide?: boolean;
   difficulty?: Difficulty | 'mixed'; direction_mix?: 'inbound' | 'outbound' | 'mixed'; retry?: RetryPolicy; retry_by_dept?: Record<string, Partial<RetryPolicy>>; reissue_unreachable?: boolean; night_guard?: { start: string; end: string };
   locale?: string; language?: string; currency?: string; currency_symbol?: string; country?: string; locale_label?: string; vat_id?: string;
   number_state?: { own: boolean; needs_local_number: boolean; error?: string | null };
@@ -32,6 +32,7 @@ export type Client = {
 export type Locale = { code: string; label: string; language: string; language_label: string; country: string; currency: string; symbol: string; timezone: string; flag: string; relay_language: string; say_voice: string; voices: Record<string, string> };
 export type PersonMonth = { planned: number; completed: number; scheduled: number; unreachable: number; inbound: number; outbound: number; avg_score: number | null; quota: number; next_at: string | null };
 export type Person = { id: string; client_id: string; name: string; phone: string; email?: string; department: string; department_label?: string; title: string; notes: string; active: boolean; challenge_history: string[]; contact_card_sent_at?: string | null; contact_card_ok?: boolean | null; contact_card_error?: string | null;
+  guide_text_sent_at?: string | null; guide_text_ok?: boolean | null; guide_text_error?: string | null;
   hours?: Hours | null; timezone?: string | null; difficulty?: Difficulty | null; monthly_quota?: number | null; month?: PersonMonth };
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Direction = 'inbound' | 'outbound';

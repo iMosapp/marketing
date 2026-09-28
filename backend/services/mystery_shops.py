@@ -493,7 +493,7 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
            "industry": ind.key_of(c), "industry_label": ind.get(ind.key_of(c))["label"], "departments": ind.dept_options(ind.key_of(c)), "offering": ind.get(ind.key_of(c))["offering"], "customer_noun": ind.get(ind.key_of(c))["customer"],
            "hours": _hours(c), "vehicles": offerings_of(c), "offerings": offerings_of(c), "active": c.get("active", True), "record_calls": c.get("record_calls", True), "live_calls": c.get("live_calls"), "notes": c.get("notes", ""),
            "from_number": c.get("from_number") or "", "report_token": c.get("report_token"), "scorecards": c.get("scorecards") or {}, "billing": c.get("billing") or {},
-           "demo": bool(c.get("demo")), "text_scorecards": bool(c.get("text_scorecards")),
+           "demo": bool(c.get("demo")), "text_scorecards": bool(c.get("text_scorecards")), "text_guide": bool(c.get("text_guide")),
            "difficulty": c.get("difficulty") if c.get("difficulty") in DIFFICULTIES else "medium", "direction_mix": direction_mix(c), "retry": retry_policy(c), "retry_by_dept": ((c.get("retry") or {}).get("by_dept") or {}),
            "reissue_unreachable": bool(c.get("reissue_unreachable", True)), "night_guard": {"start": NIGHT_GUARD[0], "end": NIGHT_GUARD[1]},
            "created_at": c.get("created_at").isoformat() if c.get("created_at") else None}
@@ -504,11 +504,13 @@ def serialize_client(c: dict, extra: Optional[dict] = None) -> dict:
 
 def serialize_target(t: dict, extra: Optional[dict] = None) -> dict:
     cc = t.get("contact_card") or {}
+    gt = t.get("guide_text") or {}
     out = {"id": str(t["_id"]), "client_id": t.get("client_id"), "name": t.get("name", ""), "phone": t.get("phone", ""), "email": t.get("email", ""), "department": t.get("department", "sales"), "department_label": ind.dept_label(t.get("department")), "title": t.get("title", ""),
            "notes": t.get("notes", ""), "active": t.get("active", True), "challenge_history": t.get("challenge_history") or [], "created_at": t.get("created_at").isoformat() if t.get("created_at") else None,
            "hours": _own_hours(t), "timezone": t.get("timezone") or None, "difficulty": t.get("difficulty") if t.get("difficulty") in DIFFICULTIES else None,
            "monthly_quota": int(t["monthly_quota"]) if isinstance(t.get("monthly_quota"), (int, float)) else None,
-           "contact_card_sent_at": cc["sent_at"].isoformat() if hasattr(cc.get("sent_at"), "isoformat") else None, "contact_card_ok": cc.get("ok"), "contact_card_error": cc.get("error")}
+           "contact_card_sent_at": cc["sent_at"].isoformat() if hasattr(cc.get("sent_at"), "isoformat") else None, "contact_card_ok": cc.get("ok"), "contact_card_error": cc.get("error"),
+           "guide_text_sent_at": gt["sent_at"].isoformat() if hasattr(gt.get("sent_at"), "isoformat") else None, "guide_text_ok": gt.get("ok"), "guide_text_error": gt.get("error")}
     if extra:
         out.update(extra)
     return out
@@ -1015,6 +1017,14 @@ async def place_shop_call(db, call: dict) -> bool:
     sid, token = str(call["_id"]), call["token"]
     base = f"{scr._app_url()}/api/scripts/roleplay"
     now = _now()
+    want_guide = call["text_guide"] if "text_guide" in call else bool(client.get("text_guide") and not call.get("lead_shop_id"))
+    if want_guide and call.get("target_id") and ObjectId.is_valid(str(call["target_id"])):
+        try:  # the read-along guide lands on their phone seconds before it rings; never blocks the call
+            t = await db.shop_targets.find_one({"_id": ObjectId(str(call["target_id"]))})
+            if t:
+                await text_guide(db, client, t, call.get("created_by"))
+        except Exception as e:
+            logger.warning(f"[MysteryShop] guide text before call {sid} failed: {e}")
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "dialing", "started_at": now, "last_attempt_at": now, "updated_at": now, "from_number": frm}, "$inc": {"attempts": 1}})
     try:
         tw_call = await asyncio.to_thread(
@@ -1036,6 +1046,34 @@ async def dial_now(db, call: dict) -> bool:
     if not claimed:
         return True  # the scheduler tick got there first and is already dialing it
     return await place_shop_call(db, call)
+
+
+async def text_guide(db, client: dict, target: dict, by: Optional[str] = None) -> dict:
+    """Text a person the read-along call guide for their department from the shop number; the result lands on the person row."""
+    from services import call_guides as cg
+    from services.twilio_service import send_sms
+    industry = ind.key_of(client)
+    keys = ind.dept_keys(industry)
+    department = target.get("department") if target.get("department") in keys else keys[0]
+    url = cg.guide_url(industry, department)
+    g = await cg.get_guide(db, industry, department)
+    if not g:
+        rec = {"sent_at": _now(), "ok": False, "error": "Jessi could not write that call guide just now. Try again in a minute.", "by": by, "url": url}
+    elif not target.get("phone"):
+        rec = {"sent_at": _now(), "ok": False, "error": "No cell number on file", "by": by, "url": url}
+    else:
+        sender = "the team"
+        uid = by or client.get("created_by")
+        if uid and ObjectId.is_valid(str(uid)):
+            u = await db.users.find_one({"_id": ObjectId(str(uid))}, {"first_name": 1, "name": 1})
+            sender = ((u or {}).get("first_name") or (u or {}).get("name") or sender).split(" ")[0]
+        r = await send_sms(target["phone"], cg.guide_sms(client, target, g, sender), from_phone=(await from_number(db, client)) or None)
+        ok = bool(r.get("success"))
+        rec = {"sent_at": _now(), "ok": ok, "error": None if ok else (r.get("error") or "Could not send"), "by": by, "url": url}
+    await db.shop_targets.update_one({"_id": target["_id"]}, {"$set": {"guide_text": rec}})
+    if not rec["ok"]:
+        logger.warning(f"[MysteryShop] guide text to {target.get('name')} failed: {rec['error']}")
+    return {"ok": rec["ok"], "error": rec["error"], "url": url}
 
 
 async def busy_with(db, query: dict) -> Optional[dict]:
@@ -1901,7 +1939,7 @@ async def ensure_kubota_demo_client(db) -> bool:
            "contact_name": "", "contact_email": "", "contact_phone": "", "contact_title": "",
            "plan": {"per_month": {}, "text_per_month": {}, "email_per_month": {}, "price_monthly": 0.0}, "hours": dict(ALWAYS_OPEN),
            "vehicles": ["BX and B sub-compact tractors", "L and LX compact tractors", "M series utility tractors", "RTV utility vehicles", "KX and U compact excavators", "SVL track loaders", "Z and F mowers"],
-           "active": True, "industry": "equipment", "record_calls": True, "text_scorecards": True, "notes": KUBOTA_NOTES,
+           "active": True, "industry": "equipment", "record_calls": True, "text_scorecards": True, "text_guide": True, "notes": KUBOTA_NOTES,
            "report_token": uuid.uuid4().hex, "billing": {}, "created_by": str(owner["_id"]) if owner else "system", "created_at": now, "updated_at": now}
     await db.shop_clients.insert_one(doc)
     return True

@@ -40,12 +40,15 @@ export const ShopNowSheet = ({ person, client, colors, onClose, onStarted }: Pro
     if (!person) return;
     setBusy(true); setError('');
     try {
-      await api.post(`/shop-clients/${client.id}/calls/shop-now`, {
+      const r = await api.post(`/shop-clients/${client.id}/calls/shop-now`, {
         target_id: person.id, difficulty, text_guide: textGuide,
         ...(scriptId ? { script_id: scriptId } : {}),
         ...(direction && !picked?.direction ? { direction } : {}),
       });
-      showToast(`Calling ${first} now`, 'success'); onClose(); onStarted();
+      const gt = r.data?.guide_text;
+      if (gt && !gt.ok) showToast(`Calling ${first} now, but the guide text failed: ${gt.error || 'could not send'}`, 'error');
+      else showToast(gt?.ok ? `Calling ${first} now · call guide texted` : `Calling ${first} now`, 'success');
+      onClose(); onStarted();
     } catch (e: any) {
       const msg = e?.response?.data?.detail || (!e?.response ? 'No connection to the server, try again in a moment' : 'Could not place the call');
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));

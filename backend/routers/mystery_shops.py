@@ -107,6 +107,7 @@ class ClientBody(BaseModel):
     from_number: Optional[str] = None
     scorecards: Optional[dict] = None
     text_scorecards: Optional[bool] = None
+    text_guide: Optional[bool] = None
     locale: Optional[str] = None
     vat_id: Optional[str] = None
     difficulty: Optional[str] = None
@@ -1024,22 +1025,6 @@ async def list_calls(cid: str, request: Request, month: Optional[str] = None):
     return {"calls": [ms.serialize_call(s) for s in rows], "month": start.astimezone(ms._tz(c)).strftime("%Y-%m")}
 
 
-async def _text_guide(db, client: dict, target: dict, me: dict) -> dict:
-    """Text a person the read-along call guide for their department from the client's shop number."""
-    from services import call_guides as cg
-    from services.twilio_service import send_sms
-    industry = ind.key_of(client)
-    department = target.get("department") if target.get("department") in ind.dept_keys(industry) else ind.dept_keys(industry)[0]
-    g = await cg.get_guide(db, industry, department)
-    if not g:
-        raise HTTPException(status_code=503, detail="Jessi could not write that call guide just now. Try again in a minute.")
-    sender = ((me.get("first_name") or me.get("name") or "Forest").split(" ")[0])
-    r = await send_sms(target["phone"], cg.guide_sms(client, target, g, sender), from_phone=(await ms.from_number(db, client)) or None)
-    ok = bool(r.get("success"))
-    await db.shop_targets.update_one({"_id": target["_id"]}, {"$set": {"guide_text": {"sent_at": datetime.now(timezone.utc), "ok": ok, "error": None if ok else (r.get("error") or "Could not send"), "by": str(me.get("_id"))}}})
-    return {"ok": ok, "error": None if ok else (r.get("error") or "Could not send"), "url": cg.guide_url(industry, department)}
-
-
 @router.get("/guides/{industry}/{department}")
 async def admin_call_guide(industry: str, department: str, request: Request):
     """The read-along guide for a department; Jessi writes it on first open where there is no seed."""
@@ -1061,7 +1046,7 @@ async def text_call_guide(cid: str, tid: str, request: Request):
     t = await db.shop_targets.find_one({"_id": _oid(tid, "Person"), "client_id": cid})
     if not t:
         raise HTTPException(status_code=404, detail="Person not found")
-    out = await _text_guide(db, c, t, me)
+    out = await ms.text_guide(db, c, t, str(me["_id"]))
     if not out["ok"]:
         raise HTTPException(status_code=502, detail=out["error"])
     return out
@@ -1101,16 +1086,19 @@ async def shop_now(cid: str, body: ShopNowBody, request: Request):
     call = await ms.create_shop_call(db, c, t, datetime.now(timezone.utc), created_by=str(me["_id"]), manual=True, script=script, mode=mode, direction=body.direction, difficulty=body.difficulty)
     if not call:
         raise HTTPException(status_code=400, detail=f"No {ind.dept_label(t.get('department'))} challenges in the pool yet. Open the Challenge Library and let Jessi write the starters.")
-    if body.text_guide and mode == "call":
-        try:
-            await _text_guide(db, c, t, me)
-        except Exception as e:  # the guide text is a courtesy; never block the call on it
-            logger.warning(f"[MysteryShop] guide text before shop-now failed: {e}")
+    if mode == "phone":
+        call["text_guide"] = bool(body.text_guide)  # place_shop_call texts the read-along guide right before it dials
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"text_guide": bool(body.text_guide)}})
     ok = await ms.dial_now(db, call)
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
     if not ok:
         raise HTTPException(status_code=503, detail=s.get("fail_reason") or _send_fail(mode))
-    return ms.serialize_call(s)
+    out = ms.serialize_call(s)
+    if body.text_guide and mode == "phone":
+        t2 = await db.shop_targets.find_one({"_id": t["_id"]}, {"guide_text": 1})
+        gt = (t2 or {}).get("guide_text") or {}
+        out["guide_text"] = {"ok": bool(gt.get("ok")), "error": gt.get("error"), "url": gt.get("url")}
+    return out
 
 
 @router.post("/{cid}/plan-month")

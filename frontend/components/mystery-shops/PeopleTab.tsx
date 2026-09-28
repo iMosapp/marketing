@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -80,6 +80,20 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
     finally { setSendingCard(null); }
   }, undefined, 'Send');
 
+  const openGuide = (p: Person) => router.push(`/guide/${client.industry || 'automotive'}/${p.department}` as any);
+  const textGuide = async (p: Person) => {
+    const first = p.name.split(' ')[0];
+    try { await api.post(`/shop-clients/${client.id}/people/${p.id}/text-guide`); showToast(`Call guide texted to ${first}`, 'success'); onChanged(); }
+    catch (e: any) { showToast(e?.response?.data?.detail || 'Could not text the guide', 'error'); onChanged(); }
+  };
+  const guideAction = (p: Person) => {
+    if (Platform.OS === 'web') return openGuide(p);
+    const first = p.name.split(' ')[0];
+    Alert.alert(`${p.department_label || deptLabel(p.department)} call guide`, `Read it here, or text ${first} the link at ${fmtPhone(p.phone)} so it is on their phone before the call.`, [
+      { text: 'Cancel', style: 'cancel' }, { text: 'Open here', onPress: () => openGuide(p) }, { text: `Text ${first}`, onPress: () => textGuide(p) },
+    ]);
+  };
+
   const known = new Set(depts.map(d => d.key));
   const groups = [...depts, ...[...new Set(people.map(p => p.department).filter(k => !known.has(k)))].map(k => ({ key: k, label: deptLabel(k) }))].map(d => ({ ...d, rows: people.filter(p => p.department === d.key) }));
   return (
@@ -119,9 +133,10 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
                   <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{p.name}</Text>
                   <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{[p.title, fmtPhone(p.phone), p.email].filter(Boolean).join(' · ')}{p.challenge_history?.length ? ` · ${p.challenge_history.length} challenge${p.challenge_history.length === 1 ? '' : 's'} used` : ''}</Text>
                   {!client.demo && !!monthLine(p) && <Text style={{ fontSize: 12, color: GOLD, fontWeight: '700', marginTop: 2 }} {...tid(`person-month-${p.id}`)}>{monthLine(p)}</Text>}
+                  {!!p.guide_text_sent_at && <Text style={{ fontSize: 12, color: p.guide_text_ok ? GREEN : RED, marginTop: 2 }} {...tid(`person-guide-status-${p.id}`)}>{p.guide_text_ok ? `Call guide texted ${fmtWhen(p.guide_text_sent_at)}` : `Call guide text failed: ${p.guide_text_error || 'could not send'}`}</Text>}
                   {(!!p.hours || !!p.difficulty) && <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }} {...tid(`person-prefs-${p.id}`)}>{[p.hours ? `Own hours ${p.hours.start} to ${p.hours.end}${p.timezone && p.timezone !== client.timezone ? ` ${p.timezone}` : ''}` : '', p.difficulty ? `${difficultyLabel(p.difficulty)} shopper` : ''].filter(Boolean).join(' · ')}</Text>}
                 </View>
-                <TouchableOpacity onPress={() => router.push(`/guide/${client.industry || 'automotive'}/${p.department}` as any)} hitSlop={8} {...tid(`person-guide-${p.id}`)}><Ionicons name="book-outline" size={20} color={colors.textSecondary} /></TouchableOpacity>
+                <TouchableOpacity onPress={() => guideAction(p)} hitSlop={8} {...tid(`person-guide-${p.id}`)}><Ionicons name={p.guide_text_ok ? 'book' : 'book-outline'} size={20} color={p.guide_text_ok ? GREEN : p.guide_text_error ? RED : colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => sendCard(p)} disabled={sendingCard === p.id} hitSlop={8} {...tid(`person-send-card-${p.id}`)}><Ionicons name={p.contact_card_ok ? 'person-circle' : 'person-circle-outline'} size={21} color={p.contact_card_ok ? GREEN : p.contact_card_error ? RED : colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => open(p)} hitSlop={8} {...tid(`person-edit-${p.id}`)}><Ionicons name="create-outline" size={20} color={colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => remove(p)} hitSlop={8} {...tid(`person-remove-${p.id}`)}><Ionicons name="trash-outline" size={19} color={RED} /></TouchableOpacity>

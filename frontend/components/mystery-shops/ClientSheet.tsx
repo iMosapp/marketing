@@ -9,7 +9,7 @@ type Grading = Record<string, Record<string, { name?: string | null; custom_id?:
 type Props = { visible: boolean; onClose: () => void; colors: any; client?: Client | null; onSaved: (c: Client) => void; defaultFrom?: string; grading?: Grading | null; scorecardOptions?: { id: string; name: string; department?: string }[] };
 
 const blank = { name: '', industry: 'automotive', locale: 'en-US', vat_id: '', brand: '', city: '', state: '', contact_name: '', contact_email: '', contact_phone: '', contact_title: '', per: { sales: '20', service: '20' } as Record<string, string>, textPer: {} as Record<string, string>, price: '400', start: '09:00', end: '18:00', days: [0, 1, 2, 3, 4, 5], vehicles: '', from_number: '', record: true, notes: '', timezone: 'America/Denver',
-  difficulty: 'medium', direction_mix: 'mixed', tries: 3, spacing: 'next_day', reissue: true, scorecards: {} as Record<string, string | null> };
+  difficulty: 'medium', direction_mix: 'mixed', tries: 3, spacing: 'next_day', reissue: true, text_guide: false, scorecards: {} as Record<string, string | null> };
 const SPACING = [['same_day', 'Later the same day'], ['next_day', 'Next open day'], ['two_days', 'Two open days later']] as const;
 const MIX = [['mixed', 'Both, alternating', 'Each person gets inbound and outbound shops turn about'], ['inbound', 'Inbound only', 'The shopper always calls the store'], ['outbound', 'Outbound only', 'The shopper always leaves a lead and the rep calls back']] as const;
 
@@ -29,7 +29,7 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
     Promise.all([loadIndustries(), loadLocales()]).then(() => setTick(t => t + 1));
     if (client) setF({ name: client.name, industry: client.industry || 'automotive', locale: client.locale || 'en-US', vat_id: client.vat_id || '', brand: client.brand, city: client.city, state: client.state, contact_name: client.contact_name, contact_email: client.contact_email, contact_phone: client.contact_phone, contact_title: client.contact_title,
       per: Object.fromEntries(Object.entries(client.plan.per_month || {}).map(([k, v]) => [k, String(v)])), textPer: Object.fromEntries(Object.entries(client.plan.text_per_month || {}).map(([k, v]) => [k, String(v)])), price: String(client.plan.price_monthly), start: client.hours.start, end: client.hours.end, days: client.hours.days, vehicles: (client.offerings || client.vehicles || []).join('\n'),
-      from_number: client.from_number || '', record: client.record_calls, notes: client.notes || '', timezone: client.timezone, text_scorecards: !!client.text_scorecards, live_calls: (client as any).live_calls ?? null,
+      from_number: client.from_number || '', record: client.record_calls, notes: client.notes || '', timezone: client.timezone, text_scorecards: !!client.text_scorecards, text_guide: !!client.text_guide, live_calls: (client as any).live_calls ?? null,
       difficulty: client.difficulty || 'medium', direction_mix: client.direction_mix || 'mixed', tries: client.retry?.tries ?? 3, spacing: client.retry?.spacing || 'next_day', reissue: client.reissue_unreachable !== false, scorecards: { ...(client.scorecards || {}) } });
     else setF(blank);
   }, [visible, client?.id]);
@@ -52,7 +52,7 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
       const text_per_month = Object.fromEntries(depts.map(d => [d.key, Number(f.textPer?.[d.key]) || 0]));
       const payload = { name: f.name, industry: f.industry, locale: f.locale, vat_id: f.vat_id || '', brand: f.brand, city: f.city, state: f.state, timezone: f.timezone, contact_name: f.contact_name, contact_email: f.contact_email.trim(), contact_phone: f.contact_phone, contact_title: f.contact_title,
         plan: { per_month, text_per_month, price_monthly: Number(f.price) || 0 }, hours: { start: f.start, end: f.end, days: f.days },
-        vehicles: f.vehicles.split('\n').map((v: string) => v.trim()).filter(Boolean), from_number: f.from_number || '', record_calls: f.record, notes: f.notes, text_scorecards: !!f.text_scorecards, live_calls: f.live_calls === undefined ? null : f.live_calls,
+        vehicles: f.vehicles.split('\n').map((v: string) => v.trim()).filter(Boolean), from_number: f.from_number || '', record_calls: f.record, notes: f.notes, text_scorecards: !!f.text_scorecards, text_guide: !!f.text_guide, live_calls: f.live_calls === undefined ? null : f.live_calls,
         difficulty: f.difficulty, direction_mix: f.direction_mix, retry: { tries: f.tries, spacing: f.spacing }, reissue_unreachable: !!f.reissue, ...(grading ? { scorecards: f.scorecards } : {}) };
       const res = client ? await api.put(`/shop-clients/${client.id}`, payload) : await api.post('/shop-clients', payload);
       onSaved(res.data); onClose(); showToast(client ? 'Saved' : 'Client added', 'success');
@@ -175,6 +175,11 @@ export const ClientSheet = ({ visible, onClose, colors, client, onSaved, default
         <Ionicons name="chatbubble-ellipses" size={18} color={GOLD} />
         <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Text people their scorecard</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>Right after each shop is graded, the person gets a text with their score, top win, top fix and a link to the full scorecard and recording.</Text></View>
         <Switch value={!!f.text_scorecards} onValueChange={(v) => set('text_scorecards', v)} {...tid('client-text-scorecards-toggle')} />
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+        <Ionicons name="book" size={18} color={GOLD} />
+        <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Text the call guide before every shop</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>Seconds before the shopper calls, the person gets a text from the shop number with the read-along script and 100-point scorecard for their department.</Text></View>
+        <Switch value={!!f.text_guide} onValueChange={(v) => set('text_guide', v)} {...tid('client-text-guide-toggle')} />
       </View>
       {(f.locale || 'en-US').startsWith('en') && (
         <View style={{ gap: 10, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }} {...tid('client-live-calls')}>
