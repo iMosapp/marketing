@@ -1891,6 +1891,9 @@ async def startup_event():
                 logger.info("[Startup] Kubota Demo shop client created")
             if await ensure_kubota_sample_shop(get_db()):
                 logger.info("[Startup] Kubota Demo sample shop seeded")
+            from services.call_guides import ensure_call_guides
+            if await ensure_call_guides(get_db()):
+                logger.info("[Startup] Kubota call guides seeded")
         except Exception as e:
             logger.warning(f"[Startup] Kubota demo seed failed: {e}")
     _aio2.create_task(_kubota_demo_seed())

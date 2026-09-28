@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
@@ -31,6 +32,7 @@ export const monthLine = (p: Person) => {
 };
 
 export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, kickoffUrl, kickoff }: Props) => {
+  const router = useRouter();
   const { showToast } = useToast();
   const depts = deptsOfClient(client);
   const firstDept = depts[0]?.key || 'sales';
@@ -119,6 +121,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
                   {!client.demo && !!monthLine(p) && <Text style={{ fontSize: 12, color: GOLD, fontWeight: '700', marginTop: 2 }} {...tid(`person-month-${p.id}`)}>{monthLine(p)}</Text>}
                   {(!!p.hours || !!p.difficulty) && <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }} {...tid(`person-prefs-${p.id}`)}>{[p.hours ? `Own hours ${p.hours.start} to ${p.hours.end}${p.timezone && p.timezone !== client.timezone ? ` ${p.timezone}` : ''}` : '', p.difficulty ? `${difficultyLabel(p.difficulty)} shopper` : ''].filter(Boolean).join(' · ')}</Text>}
                 </View>
+                <TouchableOpacity onPress={() => router.push(`/guide/${client.industry || 'automotive'}/${p.department}` as any)} hitSlop={8} {...tid(`person-guide-${p.id}`)}><Ionicons name="book-outline" size={20} color={colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => sendCard(p)} disabled={sendingCard === p.id} hitSlop={8} {...tid(`person-send-card-${p.id}`)}><Ionicons name={p.contact_card_ok ? 'person-circle' : 'person-circle-outline'} size={21} color={p.contact_card_ok ? GREEN : p.contact_card_error ? RED : colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => open(p)} hitSlop={8} {...tid(`person-edit-${p.id}`)}><Ionicons name="create-outline" size={20} color={colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => remove(p)} hitSlop={8} {...tid(`person-remove-${p.id}`)}><Ionicons name="trash-outline" size={19} color={RED} /></TouchableOpacity>

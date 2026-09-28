@@ -155,6 +155,7 @@ class ShopNowBody(BaseModel):
     channel: Optional[str] = "call"
     direction: Optional[str] = None
     difficulty: Optional[str] = None
+    text_guide: Optional[bool] = False
 
 
 class PlanBody(BaseModel):
@@ -1023,6 +1024,61 @@ async def list_calls(cid: str, request: Request, month: Optional[str] = None):
     return {"calls": [ms.serialize_call(s) for s in rows], "month": start.astimezone(ms._tz(c)).strftime("%Y-%m")}
 
 
+async def _text_guide(db, client: dict, target: dict, me: dict) -> dict:
+    """Text a person the read-along call guide for their department from the client's shop number."""
+    from services import call_guides as cg
+    from services.twilio_service import send_sms
+    industry = ind.key_of(client)
+    department = target.get("department") if target.get("department") in ind.dept_keys(industry) else ind.dept_keys(industry)[0]
+    g = await cg.get_guide(db, industry, department)
+    if not g:
+        raise HTTPException(status_code=503, detail="Jessi could not write that call guide just now. Try again in a minute.")
+    sender = ((me.get("first_name") or me.get("name") or "Forest").split(" ")[0])
+    r = await send_sms(target["phone"], cg.guide_sms(client, target, g, sender), from_phone=(await ms.from_number(db, client)) or None)
+    ok = bool(r.get("success"))
+    await db.shop_targets.update_one({"_id": target["_id"]}, {"$set": {"guide_text": {"sent_at": datetime.now(timezone.utc), "ok": ok, "error": None if ok else (r.get("error") or "Could not send"), "by": str(me.get("_id"))}}})
+    return {"ok": ok, "error": None if ok else (r.get("error") or "Could not send"), "url": cg.guide_url(industry, department)}
+
+
+@router.get("/guides/{industry}/{department}")
+async def admin_call_guide(industry: str, department: str, request: Request):
+    """The read-along guide for a department; Jessi writes it on first open where there is no seed."""
+    from services import call_guides as cg
+    await require_admin(request)
+    if not cg.valid_keys(industry, department):
+        raise HTTPException(status_code=404, detail="No such department")
+    g = await cg.get_guide(get_db(), industry, department)
+    if not g:
+        raise HTTPException(status_code=503, detail="Jessi could not write that call guide just now. Try again in a minute.")
+    return cg.serialize(g)
+
+
+@router.post("/{cid}/people/{tid}/text-guide")
+async def text_call_guide(cid: str, tid: str, request: Request):
+    me = await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    t = await db.shop_targets.find_one({"_id": _oid(tid, "Person"), "client_id": cid})
+    if not t:
+        raise HTTPException(status_code=404, detail="Person not found")
+    out = await _text_guide(db, c, t, me)
+    if not out["ok"]:
+        raise HTTPException(status_code=502, detail=out["error"])
+    return out
+
+
+@public_router.get("/call-guide/{industry}/{department}")
+async def public_call_guide(industry: str, department: str):
+    """No-login read-along page data. Key space is the fixed industry/department list, so Jessi writes at most one guide per pair."""
+    from services import call_guides as cg
+    if not cg.valid_keys(industry, department):
+        raise HTTPException(status_code=404, detail="No such department")
+    g = await cg.get_guide(get_db(), industry, department)
+    if not g:
+        raise HTTPException(status_code=503, detail="This guide is still being written. Try again in a minute.")
+    return cg.serialize(g)
+
+
 @router.post("/{cid}/calls/shop-now")
 async def shop_now(cid: str, body: ShopNowBody, request: Request):
     me = await require_admin(request)
@@ -1045,6 +1101,11 @@ async def shop_now(cid: str, body: ShopNowBody, request: Request):
     call = await ms.create_shop_call(db, c, t, datetime.now(timezone.utc), created_by=str(me["_id"]), manual=True, script=script, mode=mode, direction=body.direction, difficulty=body.difficulty)
     if not call:
         raise HTTPException(status_code=400, detail=f"No {ind.dept_label(t.get('department'))} challenges in the pool yet. Open the Challenge Library and let Jessi write the starters.")
+    if body.text_guide and mode == "call":
+        try:
+            await _text_guide(db, c, t, me)
+        except Exception as e:  # the guide text is a courtesy; never block the call on it
+            logger.warning(f"[MysteryShop] guide text before shop-now failed: {e}")
     ok = await ms.dial_now(db, call)
     s = await db.roleplay_sessions.find_one({"_id": call["_id"]})
     if not ok:

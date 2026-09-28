@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { showConfirm } from '../../services/alert';
 import { useToast } from '../common/Toast';
 import { ChallengeEditorSheet } from './ChallengeEditorSheet';
 import { ChallengeDetailSheet, ChallengeGroups } from './ChallengeDetailSheet';
 import { GeneratorSheet } from './GeneratorSheet';
-import { GOLD, PURPLE, tid, afterModal, deptsOfClient, type Challenge, type ChallengeDraft, type Client } from './shared';
+import { Chip, GOLD, PURPLE, tid, afterModal, deptsOfClient, type Challenge, type ChallengeDraft, type Client } from './shared';
 
 // The challenge pool for one client: global library scenarios (for its industry) + scenarios written for this client only.
 export const ChallengesTab = ({ client, colors }: { client: Client; colors: any }) => {
+  const router = useRouter();
   const { showToast } = useToast();
   const [rows, setRows] = useState<Challenge[] | null>(null);
   const [open, setOpen] = useState<Challenge | null>(null);
@@ -46,6 +48,16 @@ export const ChallengesTab = ({ client, colors }: { client: Client; colors: any 
         <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
       </TouchableOpacity>
       <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>Every shop picks a challenge the person has not had yet, fills in one of the account's {client.offering?.plural || 'offerings'}, and adds 0 to 2 random curveballs. Once someone has had them all, the rotation starts over with the oldest.</Text>
+      <View style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 8 }} {...tid('call-guides-card')}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Ionicons name="book" size={16} color={GOLD} />
+          <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>Call guides</Text>
+        </View>
+        <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>The read-along script and 100-point scorecard a person follows while the shopper is on the line. Shop now can text it to them first.</Text>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          {depts.map(d => <Chip key={d.key} label={d.label} active={false} onPress={() => router.push(`/guide/${client.industry || 'automotive'}/${d.key}` as any)} colors={colors} testID={`call-guide-${d.key}`} />)}
+        </View>
+      </View>
       <ChallengeGroups rows={rows} colors={colors} onOpen={setOpen} departments={depts} emptyHint="Nothing in the library for this department yet. Have Jessi write one above." />
       <ChallengeDetailSheet open={open} onClose={() => setOpen(null)} colors={colors} onEdit={(c) => { setOpen(null); afterModal(() => setEditor({ existing: c })); }} onDelete={remove} onApprove={approve} />
       <ChallengeEditorSheet visible={!!editor} onClose={() => setEditor(null)} colors={colors} existing={editor?.existing} initial={editor?.draft} scope={scope} onSaved={load} />

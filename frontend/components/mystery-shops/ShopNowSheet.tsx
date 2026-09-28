@@ -17,6 +17,7 @@ export const ShopNowSheet = ({ person, client, colors, onClose, onStarted }: Pro
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [textGuide, setTextGuide] = useState(true);
   const first = (person?.name || '').split(' ')[0];
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export const ShopNowSheet = ({ person, client, colors, onClose, onStarted }: Pro
     setBusy(true); setError('');
     try {
       await api.post(`/shop-clients/${client.id}/calls/shop-now`, {
-        target_id: person.id, difficulty,
+        target_id: person.id, difficulty, text_guide: textGuide,
         ...(scriptId ? { script_id: scriptId } : {}),
         ...(direction && !picked?.direction ? { direction } : {}),
       });
@@ -111,6 +112,14 @@ export const ShopNowSheet = ({ person, client, colors, onClose, onStarted }: Pro
         </View>
         <Text style={{ fontSize: 12, color: colors.textSecondary }}>{DIFFICULTIES.find(d => d.key === difficulty)?.hint}</Text>
       </View>
+
+      <TouchableOpacity onPress={() => setTextGuide(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: textGuide ? GOLD : colors.border, padding: 12 }} {...tid('shop-now-text-guide')}>
+        <Ionicons name={textGuide ? 'checkbox' : 'square-outline'} size={22} color={textGuide ? GOLD : colors.textSecondary} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 13.5, fontWeight: '700', color: colors.text }}>Text {first || 'them'} the call guide first</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>The read-along script and 100-point scorecard for {deptLabel(person?.department || '', deptsOfClient(client)).toLowerCase()}, so they can follow it while the shopper is on the line.</Text>
+        </View>
+      </TouchableOpacity>
     </Sheet>
   );
 };
