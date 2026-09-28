@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../services/api';
 import { trackCustomerAction } from '../../services/tracking';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
 // Hydration guard — avoids React #418 errors from SSR/client mismatch
 function useHydrated() {
@@ -108,7 +109,13 @@ export default function CongratsCardPage() {
   const loadCardData = async () => {
     try {
       const response = await api.get(`/congrats/card/${cardId}`);
-      setCardData(response.data);
+      const d = response.data || {};
+      setCardData({
+        ...d,
+        customer_photo: resolvePhotoUrl(d.customer_photo) || '',
+        store: d.store ? { ...d.store, logo: resolvePhotoUrl(d.store.logo) || d.store.logo } : d.store,
+        salesman: d.salesman ? { ...d.salesman, photo: resolvePhotoUrl(d.salesman.photo) || d.salesman.photo } : d.salesman,
+      });
       // Pre-fetch store slug for the review link
       if (response.data?.salesman_id) {
         try {

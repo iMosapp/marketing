@@ -18,6 +18,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../services/api';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
 import { SEOHead } from '../../components/SEOHead';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
 const IS_WEB = Platform.OS === 'web';
 const ACCENT = '#C9A962';
@@ -482,7 +483,7 @@ export default function ShowcasePage() {
               {entry.customer_photo && (
                 <View style={styles.photoContainer}>
                   <Image
-                    source={{ uri: entry.customer_photo }}
+                    source={{ uri: resolvePhotoUrl(entry.customer_photo) || entry.customer_photo }}
                     style={styles.deliveryPhoto}
                     resizeMode="cover"
                   />

@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../services/api';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -61,7 +62,13 @@ export default function BirthdayCardPage() {
     try {
       // Use the unified congrats endpoint (handles both new and legacy birthday cards)
       const res = await api.get(`/congrats/card/${cardId}`);
-      setCard(res.data);
+      const d = res.data || {};
+      setCard({
+        ...d,
+        customer_photo: resolvePhotoUrl(d.customer_photo) || d.customer_photo,
+        store: d.store ? { ...d.store, logo: resolvePhotoUrl(d.store.logo) || d.store.logo } : d.store,
+        salesman: d.salesman ? { ...d.salesman, photo: resolvePhotoUrl(d.salesman.photo) || d.salesman.photo } : d.salesman,
+      });
     } catch (e: any) {
       setError(e.response?.data?.detail || 'Card not found');
     } finally {
