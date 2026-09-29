@@ -22,6 +22,7 @@ COLL = "scorecards"
 EVAL_COLL = "call_evaluations"
 MIN_DURATION_S = 30
 MODEL = ("openai", "gpt-5.2")
+GRADE_TIMEOUT_S = 180.0  # an 8-minute call is a 20k-character transcript; the grader needs well over a minute for it
 DEPARTMENTS = ["Internet Sales", "Sales Floor", "Service BDC", "Service Advisor", "Finance", "Parts", "Rental", "Body Shop"]
 
 TEMPLATES = [
@@ -525,12 +526,12 @@ async def grade_with_ai(card: dict, transcript: str, rep_name: str, contact_name
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     chat = LlmChat(api_key=api_key, session_id=f"scorecard-{uuid.uuid4().hex[:12]}",
                    system_message=_grader_prompt(card, rep_name, contact_name, direction, duration_s, industry, language, channel)).with_model(*MODEL)
-    resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"TRANSCRIPT:\n{transcript[:24000]}")), timeout=60.0)
+    resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"TRANSCRIPT:\n{transcript[:24000]}")), timeout=GRADE_TIMEOUT_S)
     text = resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
     data = _parse_json(text)
     if not data:
         logger.warning(f"[Scorecards] grader returned unparseable JSON, retrying once: {text[:160]!r}")
-        resp = await asyncio.wait_for(chat.send_message(UserMessage(text="Your last reply was not valid JSON. Reply again with ONLY the JSON object, no prose, no escaped quotes around values.")), timeout=60.0)
+        resp = await asyncio.wait_for(chat.send_message(UserMessage(text="Your last reply was not valid JSON. Reply again with ONLY the JSON object, no prose, no escaped quotes around values.")), timeout=GRADE_TIMEOUT_S)
         data = _parse_json(resp if isinstance(resp, str) else getattr(resp, "text", "") or "")
     if not data:
         raise ValueError("The grader did not return valid JSON")

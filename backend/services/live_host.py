@@ -450,6 +450,11 @@ class HostBridge(ls.Bridge):
         try:
             while not self.closed:
                 await asyncio.sleep(0.5)
+                stall = self.stalled()
+                if stall:
+                    logger.warning(f"[{self.TAG}] {self.sid} {stall}: Jessi never got on the line, classic announcement takes over")
+                    await self.close(stall)
+                    break
                 if not self.ready:
                     continue
                 now = loop.time()

@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from routers.database import get_db
 from services import scorecards as sc
 from services import scripts as svc
+from services import live_shops
 from services.lead_flows import MANAGER_ROLES, user_store_id
 
 logger = logging.getLogger(__name__)
@@ -705,6 +706,12 @@ async def _after(s: dict, sid: str, request: Request) -> Response:
             await get_db().roleplay_sessions.update_one({"_id": s["_id"], "status": {"$in": ["dialing", "live"]}},
                                                         {"$set": {"status": "failed", "fail_reason": f"The practice line had a problem ({form.get('ErrorCode') or 'relay'})", "updated_at": datetime.now(timezone.utc)}})
             return _twiml(svc.hangup_twiml("Sorry, de oefenlijn had een probleem. Probeer het over een minuut opnieuw." if svc.loc.language(s.get("locale")) == "nl" else "Sorry, the practice line had a problem. Please try again in a minute.", s.get("locale")))
+    if s.get("kind") == "mystery_shop" and s.get("live_end_reason") in live_shops.STALL_REASONS and not any(x.get("role") == "rep" for x in s.get("turns", [])) and form.get("CallStatus") == "in-progress":
+        from services.mystery_shops import retry_after_stall
+        retry_in = await retry_after_stall(get_db(), s)  # dead air is our fault: say so and ring back in a couple of minutes
+        if retry_in:
+            return _twiml(svc.hangup_twiml("Sorry, de oefenklant kwam niet aan de lijn. We bellen je over een paar minuten terug." if svc.loc.language(s.get("locale")) == "nl" else "Sorry about that, the practice customer did not make it onto the line. We will call you back in a couple of minutes.", s.get("locale")))
+        return _twiml(svc.hangup_twiml("Sorry, de oefenlijn had een probleem. Je kunt het zo opnieuw proberen." if svc.loc.language(s.get("locale")) == "nl" else "Sorry, the practice line had a problem. Your admin can hit Try again in a moment.", s.get("locale")))
     asyncio.create_task(svc.finalize_session(get_db(), sid, f"relay_{form.get('SessionStatus') or 'ended'}"))
     if s.get("kind") == "mystery_shop":
         return _twiml('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>')

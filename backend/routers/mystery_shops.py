@@ -1057,6 +1057,17 @@ async def text_call_guide(cid: str, tid: str, request: Request):
     return out
 
 
+@router.post("/calls/{sid}/regrade")
+async def regrade_call(sid: str, request: Request):
+    """Run the grader again on a finished shop (the scorecard came back empty, or the admin wants a re-score)."""
+    await require_admin(request)
+    try:
+        out = await ms.regrade(get_db(), sid)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "score_pct": out.get("score_pct"), "adherence_pct": (out.get("adherence") or {}).get("score_pct")}
+
+
 @public_router.get("/call-guide/pending/{token}")
 async def guide_pending(token: str):
     """The call behind a texted guide link: countdown, waiting for Ready, calling, or done."""

@@ -529,7 +529,7 @@ def serialize_call(s: dict) -> dict:
             "channel": s.get("mode") if s.get("mode") in ("text", "email") else "call", "text": tx.stats(s) if s.get("mode") in ("text", "email") else None,
             "subject": s.get("subject") if s.get("mode") == "email" else None, "rep_email": s.get("rep_email") if s.get("mode") == "email" else None,
             "live_transport": s.get("live_transport"), "live_voice": s.get("live_voice"), "live_skip_reason": s.get("live_skip_reason"), "host": _host_info(s),
-            "live_end_reason": s.get("live_end_reason"), "live_seconds": s.get("live_seconds")}
+            "live_end_reason": s.get("live_end_reason"), "live_seconds": s.get("live_seconds"), "needs_regrade": bool(s.get("needs_regrade"))}
 
 
 def _host_info(s: dict):
@@ -1211,6 +1211,23 @@ async def postpone_call(db, call: dict, hours: int = 2):
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": when, "outcome": "postponed", "fail_reason": OUTCOME_LABEL["postponed"], "call_sid": None, "call_status": None, "turns": [], "updated_at": now},
                                                                "$inc": {"attempts": -1 if int(call.get("attempts") or 0) > 0 else 0},
                                                                "$push": {"attempt_history": history}})
+
+
+async def retry_after_stall(db, call: dict) -> int:
+    """The shopper never got on the line (GPT-Live stall). Ring back in 2 minutes, up to 3 goes; returns the delay in minutes, 0 when we give up."""
+    stalls = int(call.get("stall_retries") or 0) + 1
+    now = _now()
+    history = {"at": now, "outcome": "stalled", "reason": call.get("live_end_reason"), "call_sid": call.get("call_sid")}
+    if stalls > 3:
+        await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "unreachable", "outcome": "stalled", "fail_reason": f"The practice customer could not get on the line ({call.get('live_end_reason')}), 3 tries", "ended_at": now, "updated_at": now},
+                                                                   "$push": {"attempt_history": history}})
+        return 0
+    when = now + timedelta(minutes=2)
+    await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "scheduled", "scheduled_for": when, "stall_retries": stalls, "outcome": "stalled", "ready_only": False,
+                                                                           "fail_reason": f"The practice customer could not get on the line ({call.get('live_end_reason')}), calling back in 2 min", "call_sid": None, "call_status": None, "turns": [],
+                                                                           "live_end_reason": None, "updated_at": now}, "$push": {"attempt_history": history}})
+    asyncio.create_task(ring_later(str(call["_id"]), 120))
+    return 2
 
 
 async def record_outcome(db, call: dict, outcome: str, reason: Optional[str] = None):
@@ -2160,6 +2177,22 @@ async def _course_line(db, s: dict, pct, lang: str = "en") -> str:
     return i18n.t(lang, "sms.course", course=course.get('title'), done=done, total=len(ids)) + ("" if this_passed else i18n.t(lang, "sms.course_retry", need=need))
 
 
+async def regrade(db, sid: str) -> dict:
+    """Run the grader again on a finished shop whose scorecard came back empty (or that the admin wants re-scored)."""
+    s = await db.roleplay_sessions.find_one({"_id": _oid(sid), "kind": "mystery_shop"})
+    if not s:
+        raise ValueError("Shop not found")
+    if s.get("status") not in ("completed", "failed", "grading") or len([t for t in s.get("turns") or [] if t.get("role") == "rep"]) < 1:
+        raise ValueError("Only a finished call with a transcript can be regraded")
+    await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "grading", "updated_at": _now()}, "$unset": {"needs_regrade": ""}})
+    try:
+        out = await scr.grade_session(db, {**s, "status": "grading"})
+    except Exception as e:
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "completed", "needs_regrade": True, "updated_at": _now()}})
+        raise ValueError(f"Grading failed again: {e}")
+    return out
+
+
 async def after_graded(db, sid: str):
     """Grading just finished for a shop call: give it a public scorecard link, text the person if wanted, ping the admin who set it up."""
     s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)})
@@ -2181,6 +2214,11 @@ async def after_graded(db, sid: str):
         await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"score_token": token}})
     url = f"{scr._app_url()}/shop-score/{token}"
     want_sms = s.get("notify_sms") if s.get("notify_sms") is not None else bool(client.get("text_scorecards") or s.get("enrollment_id"))
+    if ev.get("score_pct") is None and ev.get("results") == [] and len([t for t in s.get("turns") or [] if t.get("role") == "rep"]) >= 2:
+        # the grader never came back: hold the text (an empty "--" scorecard helps nobody), let the admin regrade
+        logger.warning(f"[MysteryShop] {sid} has no score after grading; scorecard text held, regrade needed")
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"needs_regrade": True, "score_sms_status": "held"}})
+        want_sms = False
     if want_sms and s.get("rep_phone") and not s.get("score_sms_sent_at"):
         from services.twilio_service import send_sms
         lang = loc.dialect(s.get("locale") or loc.key_of(client))

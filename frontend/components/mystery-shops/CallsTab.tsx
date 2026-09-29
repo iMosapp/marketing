@@ -14,7 +14,7 @@ import { makeT, fmtWhenL, type Lang } from './i18n';
 
 type Props = { client: Client; colors: any; month: string; onMonth: (m: string) => void; refreshKey: number; onChanged: () => void };
 
-const END_REASONS: Record<string, string> = { customer_ended: 'Shopper said goodbye', out_of_time: 'Hit the 20-minute limit', twilio_stop: 'Rep hung up', websocket_closed: 'Line dropped', upstream_closed: 'Voice session dropped', upstream_failed: 'Voice session never connected', config_failed: 'Could not set up the shopper' };
+const END_REASONS: Record<string, string> = { customer_ended: 'Shopper said goodbye', out_of_time: 'Hit the 20-minute limit', twilio_stop: 'Rep hung up', websocket_closed: 'Line dropped', upstream_closed: 'Voice session dropped', upstream_failed: 'Voice session never connected', config_failed: 'Could not set up the shopper', no_session: 'Voice session never answered (dead air cut short)', no_voice: 'Shopper never spoke (dead air cut short)' };
 const endedHow = (reason: string, seconds?: number) => {
   const how = END_REASONS[reason] || reason.replace(/_/g, ' ');
   return seconds ? `${how} · ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')} on the line` : how;
@@ -102,6 +102,14 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }
   const { showToast } = useToast();
   const tr = makeT(lang);
   const [d, setD] = useState<any>(null);
+  const [regrading, setRegrading] = useState(false);
+  const regrade = async () => {
+    if (!id) return;
+    setRegrading(true);
+    try { const r = await api.post(`/shop-clients/calls/${id}/regrade`, {}, { timeout: 400000 }); showToast(r.data?.score_pct != null ? `Graded: ${r.data.score_pct}%` : 'Graded, but the scorecard still came back empty', r.data?.score_pct != null ? 'success' : 'error'); const fresh = await api.get(`/shop-clients/calls/${id}`); setD(fresh.data); }
+    catch (e: any) { showToast(e?.response?.data?.detail || 'Could not regrade', 'error'); }
+    finally { setRegrading(false); }
+  };
   useEffect(() => {
     if (!id) { setD(null); return; }
     if (publicData) { setD(publicData); return; }
@@ -147,6 +155,12 @@ export const CallDetailSheet = ({ id, onClose, colors, publicData, lang = 'en' }
               <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{fmtWhenL(d.ended_at || d.started_at || d.scheduled_for, lang)}{d.persona_name || d.persona?.name ? ` · ${who} ${(d.persona_name || d.persona?.name)}` : ''}{d.attempts > 1 ? ` · ${tr('call.tries', { n: d.attempts })}` : ''}</Text>
               {ev?.scorecard_name && <Text style={{ fontSize: 12, color: colors.textSecondary }}>{tr('call.graded_with', { name: ev.scorecard_name })}{d.adherence_pct != null ? ` · ${tr('call.script', { v: d.adherence_pct })}` : ''}</Text>}
               {!!(d as any).live_end_reason && <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('shop-call-ended-how')}>{endedHow((d as any).live_end_reason, (d as any).live_seconds)}</Text>}
+              {d.status === 'completed' && d.score_pct == null && !publicData && (
+                <TouchableOpacity onPress={regrade} disabled={regrading} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: GOLD + '22', borderRadius: 10, padding: 10, marginTop: 4 }} {...tid('shop-call-regrade')}>
+                  {regrading ? <ActivityIndicator color={GOLD} /> : <Ionicons name="refresh" size={16} color={GOLD} />}
+                  <Text style={{ flex: 1, fontSize: 12.5, color: colors.text }}>{regrading ? 'Jessi is grading it again, this can take a couple of minutes on a long call.' : 'The grader came back empty on this one. Tap to grade it again (the scorecard text goes out once it has a score).'}</Text>
+                </TouchableOpacity>
+              )}
               {!!d.fail_reason && d.status !== 'completed' && <Text style={{ fontSize: 12.5, color: RED }}>{d.fail_reason}</Text>}
             </View>
           </View>

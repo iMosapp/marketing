@@ -902,14 +902,19 @@ async def grade_session(db, session: dict) -> dict:
         card = await sc.pick_scorecard(db, rep, None)
     graded = None
     if card and card.get("criteria") and len(rep_turns) >= (1 if thread else 2):
-        try:
-            graded = await sc.grade_with_ai(card, (thread.grader_transcript(session) if thread else transcript).replace("REP:", f"{rep_first}:"), rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60),
-                                            industry=session.get("industry"), language=loc.dialect(session.get("locale")), channel="text" if text else "email" if email else "call")
-            if thread and graded:
-                thread.apply_speed(session, graded)
-        except Exception as e:
-            logger.warning(f"[Roleplay] scorecard grading failed: {e}")
+        grader_transcript = (thread.grader_transcript(session) if thread else transcript).replace("REP:", f"{rep_first}:")
+        for attempt in (1, 2):  # long calls grade slowly; one more try before we give up on the scorecard
+            try:
+                graded = await sc.grade_with_ai(card, grader_transcript, rep_first, persona.get("name") or "the customer", session.get("direction") or "inbound", max(duration_s, 60),
+                                                industry=session.get("industry"), language=loc.dialect(session.get("locale")), channel="text" if text else "email" if email else "call")
+                if thread and graded:
+                    thread.apply_speed(session, graded)
+                break
+            except Exception as e:
+                logger.warning(f"[Roleplay] scorecard grading failed (try {attempt}): {e}")
     adherence = await _grade_adherence(script, transcript, rep_first) if len(rep_turns) >= 1 else {"score_pct": None, "hits": [], "misses": [], "coaching": [], "summary": "Too short to grade."}
+    if adherence.get("score_pct") is None and len(rep_turns) >= 1 and (script.get("success_points") or []):
+        adherence = await _grade_adherence(script, transcript, rep_first)
     pct, misses = (sc.compute_score(graded["results"], card["criteria"]) if graded else (None, []))
     now = _now()
     ev = {
@@ -955,9 +960,9 @@ async def _grade_adherence(script: dict, transcript: str, rep_first: str) -> dic
     system = ("You grade whether an employee followed their phone script on a practice call. Return ONLY JSON: "
               "{\"points\": [{\"point\": str, \"hit\": true|false, \"evidence\": \"short quote or empty\"}], \"summary\": \"2 sentences, plain\", "
               "\"coaching\": [\"up to 3 specific, kind, actionable tips\"]}. Judge intent, not exact wording. No em dashes.")
-    user = f"SCRIPT: {script.get('title')}\nPOINTS A GREAT CALL HITS:\n" + "\n".join(f"- {p}" for p in points) + f"\n\nCALL TRANSCRIPT ({rep_first} is REP):\n{transcript}"
+    user = f"SCRIPT: {script.get('title')}\nPOINTS A GREAT CALL HITS:\n" + "\n".join(f"- {p}" for p in points) + f"\n\nCALL TRANSCRIPT ({rep_first} is REP):\n{transcript[:24000]}"
     try:
-        data = await _llm_json(system, user, timeout=60)
+        data = await _llm_json(system, user, timeout=150)
     except Exception as e:
         logger.warning(f"[Roleplay] adherence grading failed: {e}")
         data = {}

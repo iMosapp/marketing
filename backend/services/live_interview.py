@@ -161,6 +161,10 @@ class InterviewBridge(ls.Bridge):
         try:
             while not self.closed:
                 await asyncio.sleep(1)
+                stall = self.stalled()
+                if stall:
+                    await self.close(stall)
+                    break
                 if not self.ready:
                     continue
                 if not self.wrapping and self.minutes() >= iv.MAX_MINUTES:

@@ -29,6 +29,9 @@ MASCULINE = ("meridian", "cinder")
 UK_VOICES = {"female": ("willow",), "male": ("vesper", "stone")}
 TURN_GAP_MS = 1500
 INBOUND_NUDGE_S = 8
+READY_DEADLINE_S = 12   # stream open but GPT-Live never said session.started -> give up, do not leave the rep in silence
+FIRST_VOICE_S = 20      # session started but not one byte of audio (inbound gets its 8 s nudge first) -> same
+STALL_REASONS = ("upstream_failed", "config_failed", "no_session", "no_voice", "upstream_closed")  # the customer never really got on the line
 WRAP_GRACE_S = 40
 SHOP_MIN_MINUTES = 10  # a practice shop should run at least this long unless the rep ends it
 GOODBYE = re.compile(r"\b(bye|goodbye|talk (to you )?(soon|later|then)|see you|take care|have a (good|great|nice) (one|day|night|afternoon|evening)|thanks for (your|the) (time|help))\b", re.I)
@@ -263,6 +266,8 @@ class Bridge:
         self.turns = 0
         self.rep_spoke = False
         self.last_output_at = 0.0
+        self.stream_at: Optional[float] = None  # when Twilio's stream started
+        self.ready_at: Optional[float] = None  # when GPT-Live said session.started
         self.wrapping = False
         self.hangup_at: Optional[float] = None
         self.tasks: list = []
@@ -331,6 +336,11 @@ class Bridge:
         try:
             while not self.closed:
                 await asyncio.sleep(1)
+                stall = self.stalled()
+                if stall:
+                    logger.warning(f"[{self.TAG}] {self.sid} {stall}: closing so the rep is not left in dead air")
+                    await self.close(stall)
+                    break
                 if not self.ready:
                     continue
                 if nudge_at and not self.rep_spoke and loop.time() >= nudge_at:
@@ -348,6 +358,15 @@ class Bridge:
     def minutes(self) -> float:
         return (_now() - self.started_at).total_seconds() / 60 if self.started_at else 0.0
 
+    def stalled(self) -> Optional[str]:
+        """Dead air detector: no session.started soon after the stream opened, or a session that never produced a word of audio."""
+        now = asyncio.get_event_loop().time()
+        if not self.ready:
+            return "no_session" if self.stream_at and now - self.stream_at >= READY_DEADLINE_S else None
+        if not self.last_output_at and self.ready_at and now - self.ready_at >= FIRST_VOICE_S:
+            return "no_voice"
+        return None
+
     async def wrap_up(self, content: str):
         self.wrapping = True
         self.hangup_at = asyncio.get_event_loop().time() + WRAP_GRACE_S
@@ -362,6 +381,7 @@ class Bridge:
         ev = msg.get("event")
         if ev == "start":
             self.stream_sid = (msg.get("start") or {}).get("streamSid") or msg.get("streamSid")
+            self.stream_at = asyncio.get_event_loop().time()
             try:
                 self.cfg = await self.session_config()
             except Exception as e:
@@ -416,6 +436,7 @@ class Bridge:
         t = ev.get("type")
         if t == "session.started":
             self.ready = True
+            self.ready_at = asyncio.get_event_loop().time()
             self.openai_session_id = (ev.get("session") or {}).get("id")
             await self.col.update_one({"_id": self.s["_id"]}, {"$set": {"openai_session_id": self.openai_session_id, "updated_at": _now()}})
             await self.on_started()
