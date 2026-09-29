@@ -462,6 +462,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     
     result = await get_db().messages.insert_one(message)
     message['_id'] = str(result.inserted_id)
+    await get_db().message_drafts.delete_many({"user_id": user_id, "contact_id": str(contact_id)})
     # Keyword auto-tagging (fire-and-forget)
     try:
         from services.keyword_tagging import schedule_keyword_tagging
@@ -775,6 +776,21 @@ async def _assert_can_act_as(request: Request, user_id: str) -> dict:
     if me.get("role") in MANAGER_ROLES and (me.get("role") == "super_admin" or await verify_user_access(me, str(user_id))):
         return me
     raise HTTPException(status_code=403, detail="You can only send as yourself")
+
+
+@router.get("/draft/{user_id}/{contact_id}")
+async def get_message_draft(user_id: str, contact_id: str, request: Request):
+    """The wording Jessi parked in this thread's composer (live voice draft), or null. Cleared automatically when any text goes out."""
+    await _assert_can_act_as(request, user_id)
+    d = await get_db().message_drafts.find_one({"user_id": user_id, "contact_id": contact_id})
+    return {"draft": {"text": d.get("text") or "", "source": d.get("source") or "", "at": d["at"].isoformat() if hasattr(d.get("at"), "isoformat") else d.get("at")} if d else None}
+
+
+@router.delete("/draft/{user_id}/{contact_id}")
+async def clear_message_draft(user_id: str, contact_id: str, request: Request):
+    await _assert_can_act_as(request, user_id)
+    r = await get_db().message_drafts.delete_many({"user_id": user_id, "contact_id": contact_id})
+    return {"cleared": r.deleted_count}
 
 
 def _twilio_status_to_app(tw: str) -> Optional[str]:
@@ -2234,6 +2250,7 @@ async def send_message_simple(user_id: str, message_data: dict):
     result = await db.messages.insert_one(message)
     message_id = str(result.inserted_id)
     message['_id'] = message_id
+    await db.message_drafts.delete_many({"user_id": user_id, "contact_id": str(conv.get("contact_id") or contact_id or "")})
 
     # Keyword auto-tagging (fire-and-forget)
     try:

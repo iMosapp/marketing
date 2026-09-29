@@ -7,7 +7,7 @@ import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, nativeR
 export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
 export type LiveOptions = { mode: 'assistant' | 'lab' | 'shopper'; overrides?: Record<string, any>; contactId?: string };
-export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions'; id?: string; name?: string; first?: string; contact_id?: string; query?: string };
+export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions'; id?: string; name?: string; first?: string; contact_id?: string; query?: string; draft?: string };
 
 const TOOL_LABELS: Record<string, string> = {
   who_today: 'Pulled up your people for today', find_person: 'Looked them up', recall_person: 'Read their history', send_text: 'Text ready to send',

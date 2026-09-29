@@ -3,6 +3,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useLiveJessi, LiveOptions, OpenTarget } from '../../hooks/useLiveJessi';
 import { LiveJessiSheet } from './LiveJessiSheet';
 import { LiveJessiPill } from './LiveJessiPill';
+import { useDraftStore } from '../../store/draftStore';
 
 export type LiveLaunch = { options: LiveOptions; title?: string; who?: string; hint?: string; onClose?: () => void };
 type Ctx = { open: (launch: LiveLaunch) => void; active: boolean };
@@ -35,6 +36,7 @@ export const LiveJessiProvider = ({ children }: { children: React.ReactNode }) =
   const launchRef = useRef<LiveLaunch | null>(null);
 
   const onOpen = useCallback((t: OpenTarget) => {
+    if (t.kind === 'thread' && t.id && t.draft) useDraftStore.getState().set(t.id, t.draft);
     const path = pathFor(t);
     if (!path) return;
     setTarget(t);

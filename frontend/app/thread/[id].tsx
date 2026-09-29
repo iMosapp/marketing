@@ -42,6 +42,7 @@ import { ThreadStatusStrip } from '../../components/thread/ThreadStatusStrip';
 import { OwnershipSheet } from '../../components/inbox/OwnershipSheet';
 import { ownershipAPI, errText as ownershipErr } from '../../components/inbox/ownership';
 import { useAuthStore } from '../../store/authStore';
+import { useDraftStore } from '../../store/draftStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useToast } from '../../components/common/Toast';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
@@ -313,6 +314,27 @@ function ThreadScreen() {
       setMessage(prefill);
     }
   }, [prefill]);
+
+  // Jessi's live-voice draft for this thread: instant via the store when Jessi drafts while this screen is open, from the server on open.
+  const liveDraft = useDraftStore((s) => s.drafts[String(id)]);
+  const clearStoreDraft = useDraftStore((s) => s.clear);
+  const [jessiDraft, setJessiDraft] = useState<string | null>(null);
+  useEffect(() => {
+    if (liveDraft?.text) { setMessage(liveDraft.text); setJessiDraft(liveDraft.text); }
+  }, [liveDraft?.at]);
+  useEffect(() => {
+    if (!user?._id || !id) return;
+    api.get(`/messages/draft/${user._id}/${id}`).then((r) => {
+      const t = r.data?.draft?.text;
+      if (t) { setJessiDraft(t); setMessage((cur) => (cur.trim() ? cur : t)); }
+    }).catch(() => {});
+  }, [user?._id, id]);
+  const dropJessiDraft = () => {
+    if (message === jessiDraft) setMessage('');
+    setJessiDraft(null);
+    clearStoreDraft(String(id));
+    if (user?._id) api.delete(`/messages/draft/${user._id}/${id}`).catch(() => {});
+  };
   
   const loadMessagePreferences = async () => {
     try {
@@ -1064,6 +1086,8 @@ function ThreadScreen() {
       };
       setMessages((prev) => [...prev, optimisticMessage]);
       setMessage('');
+      setJessiDraft(null);
+      clearStoreDraft(String(id));
       setInputHeight(36);
       setShowAISuggestion(false);
       setSending(true);
@@ -1194,6 +1218,8 @@ function ThreadScreen() {
       
       setMessages((prev) => [...prev, optimisticMessage]);
       setMessage('');
+      setJessiDraft(null);
+      clearStoreDraft(String(id));
       setInputHeight(36);
       setShowAISuggestion(false);
       
@@ -2749,6 +2775,13 @@ function ThreadScreen() {
             )}
             
             {/* Text input area (+ compact single-row layout while the keyboard is up) */}
+            {!!jessiDraft && message === jessiDraft && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, marginHorizontal: 8, marginBottom: 4, borderRadius: 10, backgroundColor: '#C9A96222', borderWidth: 1, borderColor: '#C9A96266' }} testID="jessi-draft-chip" dataSet={{ testid: 'jessi-draft-chip' }}>
+                <Ionicons name="sparkles" size={13} color="#C9A962" />
+                <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', color: colors.text }}>Jessi's draft. Edit it or send it when you're ready.</Text>
+                <TouchableOpacity onPress={dropJessiDraft} hitSlop={8} testID="jessi-draft-clear" dataSet={{ testid: 'jessi-draft-clear' }}><Ionicons name="close-circle" size={18} color={colors.textSecondary} /></TouchableOpacity>
+              </View>
+            )}
             <View style={compactComposer ? { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 4, paddingRight: 6, paddingBottom: 4 } : undefined}>
               {compactComposer && (
                 <TouchableOpacity onPress={() => setToolsOpen(o => !o)} style={{ width: 38, height: 44, alignItems: 'center', justifyContent: 'center' }} testID="composer-tools-toggle" dataSet={{ testid: 'composer-tools-toggle' } as any}>

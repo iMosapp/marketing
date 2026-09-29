@@ -753,6 +753,11 @@ async def _draft(db, user: dict, contact: dict, intent: str, wording: str = "") 
     return await clean_ai_text(text, str(user["_id"]))
 
 
+async def stage_draft(db, user_id: str, contact_id: str, text: str, source: str = "jessi_live") -> None:
+    """Park the wording in the contact's thread composer (message_drafts) so the rep can edit or send it later, even if they never say yes."""
+    await db.message_drafts.update_one({"user_id": user_id, "contact_id": contact_id}, {"$set": {"text": text[:1200], "source": source, "at": _now()}}, upsert=True)
+
+
 async def _send_now(db, user: dict, pending: dict) -> str:
     from routers.messages import send_message_simple
     try:
@@ -986,9 +991,10 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             else:
                 content = await _draft(db, user, contact, args.get("intent") or "", args.get("message") or "")
                 new_pending = {"type": "send_text", "contact_id": str(contact["_id"]), "name": _first_last(contact), "content": content, "at": _now().isoformat()}
-                result = _with_note(f"Here is the text for {contact.get('first_name')}: \"{content}\" Say yes and I will send it, or tell me what to change." if tool == "send_text"
-                                    else f"Here is a draft for {contact.get('first_name')}: \"{content}\" Want me to send it, or will you?", contact)
-                opened = _open_target("thread", contact)
+                await stage_draft(db, str(user["_id"]), str(contact["_id"]), content)
+                result = _with_note(f"Here is the text for {contact.get('first_name')}: \"{content}\" It is sitting in their thread ready to go. Say yes and I will send it, or tell me what to change." if tool == "send_text"
+                                    else f"Here is a draft for {contact.get('first_name')}: \"{content}\" It is in their thread ready to edit or send. Want me to send it, or will you?", contact)
+                opened = {**_open_target("thread", contact), "draft": content}
         elif tool == "set_reminder":
             result, task = await _reminder(db, user, args, focus, live)
             opened = _open_target("task", task=task) if task else None
