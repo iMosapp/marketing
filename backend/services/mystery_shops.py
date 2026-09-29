@@ -2365,15 +2365,37 @@ def normalize_draft(d: dict, department: str) -> Optional[dict]:
     }
 
 
-async def generate_challenges(department: str, scenario: str, count: int = 1, client: Optional[dict] = None, industry: Optional[str] = None) -> list:
-    """Forest describes a situation in plain words; Jessi drafts count distinct challenges (persona, opening line, what a great rep does, graded points, curveballs). Nothing is saved."""
-    count = max(1, min(5, int(count or 1)))
+async def _guide_rulebook(db, industry: str, department: str) -> str:
+    """The department's read-along guide (KPI chain, checks, scorecard) as prompt text, so drafts grade the same things the rep is texted before the call."""
+    if db is None:
+        return ""
+    try:
+        from services import call_guides as cg
+        g = await cg.get_guide(db, industry, department, build=False)
+    except Exception:
+        g = None
+    if not g:
+        return ""
+    checks = [k for s in (g.get("sections") or []) for k in (s.get("kpi") or [])]
+    rows = [f"{r['label']} ({r['points']} pts)" for r in (g.get("scorecard") or [])]
+    return (f" RULEBOOK: the rep follows '{g.get('title')}' (primary KPI: {' > '.join(g.get('kpi_chain') or [])}). Its KPI checks: {'; '.join(checks[:24])}. "
+            f"Its scorecard: {', '.join(rows[:16])}. Every draft's success_points must map onto those checks and scorecard rows (same behaviours, plain words), and the caller's situation must give the rep a real chance to hit each one.")
+
+
+async def generate_challenges(department: str, scenario: str, count: int = 1, client: Optional[dict] = None, industry: Optional[str] = None, db=None, avoid_titles: Optional[list] = None) -> list:
+    """Forest describes a situation in plain words (or leaves it blank for the everyday versions of the call); Jessi drafts count distinct challenges
+    (persona, opening line, what a great rep does, graded points, curveballs), grounded in the department's call guide when one exists. Nothing is saved."""
+    count = max(1, min(10, int(count or 1)))
     industry = industry if industry in ind.INDUSTRIES else ind.industry_of_dept(department)
     pack, d = ind.get(industry), ind.dept(department, industry)
     off = pack["offering"]
     store = f" The client is {client.get('name')}{' (' + client.get('brand') + ')' if client.get('brand') else ''}." if client else ""
+    rulebook = await _guide_rulebook(db, industry, department)
+    avoid = f" Already in the library (do NOT repeat these situations, find different customers and wrinkles): {'; '.join(str(t)[:80] for t in avoid_titles[:40])}." if avoid_titles else ""
+    scenario = (scenario or "").strip() or (f"The everyday, most common versions of this call for a {pack['label'].lower()} team: {d['brief']}. Cover different customer types, different {off['label']}s and different emotional tones. "
+                                            f"Typical curveballs: {'; '.join(d.get('curveballs', [])[:3])}.")
     system = (f"You are Jessi, a {pack['trainer']} who writes mystery-shop challenges for {pack['label'].lower()} teams. A challenge is a realistic phone call the AI {pack['customer']} will act out against a real employee ({d['rep']}), then grade. "
-              f"Department context: {d['brief']}.{store} "
+              f"Department context: {d['brief']}.{store}{rulebook}{avoid} "
               f"Write {count} DISTINCT challenge{'s' if count > 1 else ''} from the scenario below (vary the person, the wrinkle and the emotional tone; do not repeat the same caller twice). "
               f"Each challenge: title (short, starts with '{d['prefix']}'), runtime like '3 to 5 min', "
               "purpose (one or two sentences: what the situation is and what a great rep does), "
@@ -2383,7 +2405,7 @@ async def generate_challenges(department: str, scenario: str, count: int = 1, cl
               "goals (one sentence), objections (2 to 4 things they push back with), opening_line (the exact first thing they say when the rep answers; may use {offering} and {store}). "
               "Sound like a real person on the phone, never corporate. Never use em dashes. "
               "Return JSON: {\"challenges\": [{title, runtime, purpose, body, success_points:[...], curveballs:[...], persona:{name, voice, summary, goals, objections:[...], opening_line}}]}")
-    data = await scr._llm_json(system, f"SCENARIO ({pack['label']} / {d['label']}):\n{scenario.strip()[:3000]}", timeout=120)
+    data = await scr._llm_json(system, f"SCENARIO ({pack['label']} / {d['label']}):\n{scenario[:3000]}", timeout=120 if count <= 5 else 240)
     raw = data.get("challenges") if isinstance(data, dict) else None
     if isinstance(data, dict) and not raw and data.get("title"):
         raw = [data]

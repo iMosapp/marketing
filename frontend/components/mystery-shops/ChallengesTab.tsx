@@ -20,8 +20,6 @@ export const ChallengesTab = ({ client, colors }: { client: Client; colors: any 
   const [generator, setGenerator] = useState(false);
   const depts = deptsOfClient(client);
   const scope = { clientId: client.id, clientName: client.name, industry: client.industry, departments: depts };
-  const deptList = depts.map(d => d.label.toLowerCase());
-  const deptText = deptList.length > 1 ? `${deptList.slice(0, -1).join(', ')} or ${deptList[deptList.length - 1]}` : deptList[0] || 'any department';
 
   const load = async () => { try { const r = await api.get(`/shop-clients/${client.id}/challenges`); setRows(r.data.challenges); } catch { setRows([]); } };
   useEffect(() => { load(); }, [client.id]);
@@ -39,7 +37,7 @@ export const ChallengesTab = ({ client, colors }: { client: Client; colors: any 
     <View style={{ gap: 16 }}>
       <TouchableOpacity onPress={() => setGenerator(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: GOLD + '1A', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: GOLD + '66' }} {...tid('challenge-generate')}>
         <Ionicons name="sparkles" size={20} color={GOLD} />
-        <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Describe a scenario, Jessi writes the challenge</Text><Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{deptText.replace(/^\w/, c => c.toUpperCase())}. Save it to the library or just for {client.name}.</Text></View>
+        <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Have Jessi write challenges</Text><Text style={{ fontSize: 12.5, color: colors.textSecondary }}>Pick departments, up to 10 each, describe a situation or let her pick the everyday calls. Save them to the library or just for {client.name}.</Text></View>
         <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
       </TouchableOpacity>
       <TouchableOpacity onPress={() => setEditor({})} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }} {...tid('challenge-add')}>

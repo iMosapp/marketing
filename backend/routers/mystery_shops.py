@@ -1302,21 +1302,51 @@ async def add_global_challenge(body: ChallengeBody, request: Request):
 
 @router.post("/challenges/generate")
 async def generate_challenges(body: GenerateBody, request: Request):
-    """Plain-words scenario in, 1 to 5 challenge drafts out. Nothing is saved until Forest hits save on a draft."""
+    """Plain-words scenario in (or blank for the everyday versions of the call), 1 to 10 challenge drafts out. Nothing is saved until Forest hits save."""
     await require_admin(request)
     if body.department not in ind.all_dept_keys():
         raise HTTPException(status_code=400, detail="Pick a department from the list")
-    if len((body.scenario or "").strip()) < 15:
-        raise HTTPException(status_code=400, detail="Describe the situation in a sentence or two")
-    client = await get_db().shop_clients.find_one({"_id": _oid(body.client_id, "Client")}) if body.client_id else None
+    scenario = (body.scenario or "").strip()
+    if scenario and len(scenario) < 15:
+        raise HTTPException(status_code=400, detail="Describe the situation in a sentence or two, or leave it blank and Jessi picks the everyday calls")
+    db = get_db()
+    client = await db.shop_clients.find_one({"_id": _oid(body.client_id, "Client")}) if body.client_id else None
+    industry = ind.key_of(client) if client else ind.industry_of_dept(body.department)
+    pool_q = {"kind": "phone", "pool": "mystery_shop", "department": body.department, "active": {"$ne": False}, "$or": [{"shop_client_id": None}, {"shop_client_id": body.client_id}]}
+    have = [s.get("title") for s in await db.scripts.find(pool_q, {"title": 1}).to_list(80)]
     try:
-        drafts = await ms.generate_challenges(body.department, body.scenario, body.count or 1, client, ind.industry_of_dept(body.department))
+        drafts = await ms.generate_challenges(body.department, scenario, body.count or 1, client, industry, db=db, avoid_titles=have)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         logger.warning(f"[MysteryShop] generate failed: {e}")
         raise HTTPException(status_code=503, detail="Jessi is busy right now, try again in a moment")
-    return {"drafts": drafts, "scenario": body.scenario.strip()}
+    return {"drafts": drafts, "scenario": scenario or "everyday calls"}
+
+
+class BulkChallengeBody(BaseModel):
+    drafts: list
+    client_id: Optional[str] = None
+
+
+@router.post("/challenges/bulk")
+async def add_challenges_bulk(body: BulkChallengeBody, request: Request):
+    """Save a stack of reviewed drafts in one go: to the global library, or only for one client when client_id is given."""
+    me = await require_admin(request)
+    db = get_db()
+    if body.client_id:
+        await _client(db, body.client_id)
+    if not body.drafts or len(body.drafts) > 40:
+        raise HTTPException(status_code=400, detail="Send between 1 and 40 drafts")
+    saved, failed = [], []
+    for i, raw in enumerate(body.drafts):
+        try:
+            saved.append(await _insert_challenge(db, me, ChallengeBody(**raw), body.client_id))
+        except HTTPException as e:
+            failed.append({"index": i, "title": (raw or {}).get("title"), "detail": e.detail})
+        except Exception as e:
+            failed.append({"index": i, "title": (raw or {}).get("title"), "detail": str(e)[:200]})
+    return {"saved": saved, "failed": failed}
 
 
 @router.put("/challenges/{script_id}")
