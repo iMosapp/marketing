@@ -134,6 +134,7 @@ export const GeneratorSheet = ({ visible, onClose, colors, scope, onSaved, onEdi
           </View>
           <View style={{ gap: 2 }}><Label t={`GRADED POINTS · ${d.success_points?.length || 0}`} colors={colors} />{(d.success_points || []).map((p, j) => <Text key={j} style={{ fontSize: 13, color: colors.text }}>• {p}</Text>)}</View>
           {!!d.curveballs?.length && <View style={{ gap: 2 }}><Label t="CURVEBALLS" colors={colors} />{d.curveballs.map((p, j) => <Text key={j} style={{ fontSize: 13, color: colors.textSecondary }}>• {p}</Text>)}</View>}
+          {!!d.guide_note && <View style={{ gap: 2 }}><Label t="ON THE REP'S GUIDE" colors={colors} /><Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>{d.guide_note}</Text></View>}
           {!d.savedAs && (
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
               <TouchableOpacity onPress={() => save(i, 'library')} disabled={saving !== null} style={{ flex: 1, minWidth: 140, height: 38, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center' }} {...tid(`draft-save-library-${i}`)}><Text style={{ fontSize: 13, fontWeight: '800', color: '#111' }}>{saving === i ? 'Saving…' : 'Save to library'}</Text></TouchableOpacity>

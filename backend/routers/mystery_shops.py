@@ -178,6 +178,12 @@ class ChallengeBody(BaseModel):
     runtime: Optional[str] = ""
     curveballs: Optional[list] = None
     generated_from: Optional[str] = None
+    guide_note: Optional[str] = ""
+
+
+class PreviewCallBody(BaseModel):
+    phone: Optional[str] = None
+    difficulty: Optional[str] = None
 
 
 class GenerateBody(BaseModel):
@@ -1114,9 +1120,16 @@ async def regrade_call(sid: str, request: Request):
 
 @public_router.get("/call-guide/pending/{token}")
 async def guide_pending(token: str):
-    """The call behind a texted guide link: countdown, waiting for Ready, calling, or done."""
-    s = await get_db().roleplay_sessions.find_one({"kind": "mystery_shop", "token": token})
-    return ms.pending_view(s)
+    """The call behind a texted guide link: countdown, waiting for Ready, calling, or done, plus the challenge's note for the rep."""
+    db = get_db()
+    s = await db.roleplay_sessions.find_one({"kind": "mystery_shop", "token": token})
+    out = ms.pending_view(s)
+    if s and s.get("script_id") and ObjectId.is_valid(str(s["script_id"])):
+        sc = await db.scripts.find_one({"_id": ObjectId(str(s["script_id"]))}, {"title": 1, "guide_note": 1})
+        if sc and sc.get("guide_note"):
+            out["challenge_title"] = sc.get("title") or ""
+            out["guide_note"] = sc["guide_note"]
+    return out
 
 
 @public_router.post("/call-guide/ready/{token}")
@@ -1264,7 +1277,8 @@ async def end_text_shop(sid: str, request: Request):
 def _challenge_out(s: dict) -> dict:
     rv = s.get("review") or {}
     return {**scr.serialize_script(s), "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "language": s.get("language") or "en", "source_slug": s.get("source_slug"), "direction": s.get("direction") if s.get("direction") in ms.DIRECTIONS else "inbound",
-            "review": {"status": rv.get("status") or "approved", "by_name": rv.get("by_name") or "", "at": rv["at"].isoformat() if hasattr(rv.get("at"), "isoformat") else rv.get("at")} if rv else None, "industry": s.get("industry") or ind.industry_of_dept(s.get("department")), "client_specific": bool(s.get("shop_client_id")), "shop_client_id": s.get("shop_client_id"), "curveballs": s.get("curveballs") or [], "generated": bool(s.get("generated_from"))}
+            "review": {"status": rv.get("status") or "approved", "by_name": rv.get("by_name") or "", "at": rv["at"].isoformat() if hasattr(rv.get("at"), "isoformat") else rv.get("at")} if rv else None, "industry": s.get("industry") or ind.industry_of_dept(s.get("department")), "client_specific": bool(s.get("shop_client_id")), "shop_client_id": s.get("shop_client_id"), "curveballs": s.get("curveballs") or [], "generated": bool(s.get("generated_from")) and s.get("generated_from") != "kubota_pack",
+            "guide_note": s.get("guide_note") or ""}
 
 
 CATEGORY_BY_DEPT = {"sales": "Sales calls", "service": "Service", "parts": "Parts", "rental": "Rental", "collision": "Body Shop"}
@@ -1279,6 +1293,7 @@ def _challenge_fields(body: ChallengeBody) -> dict:
     if not (persona.get("name") or "").strip() or not (persona.get("opening_line") or "").strip():
         raise HTTPException(status_code=400, detail="The shopper needs a name and an opening line")
     return {"department": body.department, "industry": ind.industry_of_dept(body.department), "direction": "outbound" if body.direction == "outbound" else "inbound", "category": CATEGORY_BY_DEPT.get(body.department) or ind.dept_label(body.department), "title": no_em_dash(body.title.strip())[:120], "runtime": (body.runtime or "").strip()[:40], "purpose": no_em_dash(body.purpose or "")[:900], "body": no_em_dash(body.body)[:8000],
+            "guide_note": no_em_dash(str(body.guide_note or "")).strip()[:600],
             "success_points": [str(p).strip()[:200] for p in (body.success_points or []) if str(p).strip()][:16], "curveballs": [no_em_dash(str(c)).strip()[:200] for c in (body.curveballs or []) if str(c).strip()][:6],
             "persona": {"name": str(persona.get("name")).strip()[:60], "voice": persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female", "summary": no_em_dash(str(persona.get("summary") or ""))[:3000],
                         "goals": no_em_dash(str(persona.get("goals") or ""))[:600], "objections": [no_em_dash(str(o))[:160] for o in (persona.get("objections") or []) if str(o).strip()][:8], "opening_line": no_em_dash(str(persona.get("opening_line")))[:240],
@@ -1347,6 +1362,46 @@ async def add_challenges_bulk(body: BulkChallengeBody, request: Request):
         except Exception as e:
             failed.append({"index": i, "title": (raw or {}).get("title"), "detail": str(e)[:200]})
     return {"saved": saved, "failed": failed}
+
+
+def _preview_phone(me: dict) -> str:
+    return (me.get("shop_preview_phone") or me.get("phone") or me.get("cell_phone") or "").strip()
+
+
+@router.get("/challenges/preview-phone")
+async def preview_phone(request: Request):
+    """The cell we ring when the admin auditions a challenge on themselves."""
+    me = await require_admin(request)
+    return {"phone": _preview_phone(me)}
+
+
+@router.post("/challenges/{script_id}/preview-call")
+async def preview_call(script_id: str, body: PreviewCallBody, request: Request):
+    """One tap: the shopper rings the admin's own cell with exactly this challenge, graded like a real shop, scorecard texted after.
+    Lands in the Quick shops bucket flagged preview. A phone in the body is remembered for next time."""
+    me = await require_admin(request)
+    db = get_db()
+    s = await db.scripts.find_one({"_id": _oid(script_id, "Challenge"), "pool": "mystery_shop", "active": {"$ne": False}})
+    if not s:
+        raise HTTPException(status_code=404, detail="That challenge is gone, pick another")
+    phone = _phone(body.phone or "") if (body.phone or "").strip() else _phone(_preview_phone(me))
+    if len(phone) < 8:
+        raise HTTPException(status_code=400, detail="Add the cell number we should ring")
+    if (body.phone or "").strip() and phone != _phone(_preview_phone(me)):
+        await db.users.update_one({"_id": ObjectId(str(me["_id"]))}, {"$set": {"shop_preview_phone": phone}})
+    busy = await ms.busy_with(db, {"rep_phone": phone, **ms.mode_q("phone")})
+    if busy:
+        raise HTTPException(status_code=409, detail=ms.busy_label(busy, "you", "phone"))
+    name = (me.get("name") or f"{me.get('first_name') or ''} {me.get('last_name') or ''}".strip() or "Admin preview")[:80]
+    industry = s.get("industry") if s.get("industry") in ind.INDUSTRIES else ind.industry_of_dept(s.get("department"))
+    r = await ms.demo_shop(db, me, name, phone, s.get("department") or "sales", "Preview", "", "", s, True, industry, "phone",
+                           direction=s.get("direction") if s.get("direction") in ms.DIRECTIONS else None, difficulty=body.difficulty if body.difficulty in ("easy", "medium", "hard") else None)
+    if r.get("error"):
+        raise HTTPException(status_code=400, detail=r["error"])
+    if not r.get("ok"):
+        raise HTTPException(status_code=503, detail=(r.get("call") or {}).get("fail_reason") or _send_fail("phone"))
+    await db.roleplay_sessions.update_one({"_id": r["call"]["_id"]}, {"$set": {"preview": True, "preview_by": str(me["_id"])}})
+    return {"call": ms.serialize_call(r["call"]), "client_id": r["client_id"], "phone": phone}
 
 
 @router.put("/challenges/{script_id}")

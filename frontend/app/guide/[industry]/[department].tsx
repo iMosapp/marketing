@@ -27,6 +27,7 @@ export default function CallGuideScreen() {
   const [earned, setEarned] = useState<Set<number>>(new Set());
   const [big, setBig] = useState(true);
   const [editing, setEditing] = useState(false);
+  const pending = usePendingCall(token);
 
   useEffect(() => {
     if (!industry || !department) return;
@@ -68,27 +69,47 @@ export default function CallGuideScreen() {
       {!!err && <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 }}><Text style={{ color: RED, fontSize: 15, textAlign: 'center' }} {...tid('guide-error')}>{err}</Text></View>}
       {g && (
         <ScrollView contentContainerStyle={{ paddingHorizontal: pad, paddingTop: 18, paddingBottom: 60, gap: 14 }} {...tid('guide-scroll')}>
+          {!!pending.p?.guide_note && pending.p.state !== 'over' && <ThisCallCard p={pending.p} f={f} />}
           <GuideHeader g={g} f={f} />
           {g.sections.map((s, i) => <GuideSection key={i} n={i + 1} s={s} f={f} hit={hit} onHit={toggleHit} />)}
           <Scorecard g={g} f={f} earned={earned} onToggle={toggleEarned} score={score} />
           <Text style={{ fontSize: 11.5, color: C.dim, textAlign: 'center', marginTop: 8 }} {...tid('guide-source-note')}>{g.source === 'ai' ? 'Drafted by Jessi from this department\u2019s scorecard.' : g.source === 'custom' ? 'Edited by your admin.' : 'Customer Engagement Standard.'} Checkmarks stay on this device only.</Text>
         </ScrollView>
       )}
-      {!!token && g && <PendingCallBar token={token} />}
+      {!!token && g && <PendingCallBar token={token} pending={pending} />}
     </SafeAreaView>
   );
 }
 
-// The call behind the texted link: countdown, or ring it now with I'm ready.
-type Pending = { state: 'none' | 'countdown' | 'waiting' | 'calling' | 'live' | 'done' | 'over'; rings_in_s?: number | null; first_name?: string; score_pct?: number | null };
-const PendingCallBar = ({ token }: { token: string }) => {
+// The call behind the texted link: countdown, or ring it now with I'm ready. Polled every 5 s; the challenge's guide note rides along.
+type Pending = { state: 'none' | 'countdown' | 'waiting' | 'calling' | 'live' | 'done' | 'over'; rings_in_s?: number | null; first_name?: string; score_pct?: number | null; challenge_title?: string; guide_note?: string };
+const usePendingCall = (token?: string) => {
   const [p, setP] = useState<Pending | null>(null);
   const [left, setLeft] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
-  const load = () => api.get(`/public/call-guide/pending/${token}`).then(r => { setP(r.data); setLeft(r.data?.rings_in_s ?? null); }).catch(() => {});
-  useEffect(() => { load(); const iv = setInterval(load, 5000); return () => clearInterval(iv); }, [token]);
+  useEffect(() => {
+    if (!token) return;
+    const load = () => api.get(`/public/call-guide/pending/${token}`).then(r => { setP(r.data); setLeft(r.data?.rings_in_s ?? null); }).catch(() => {});
+    load(); const iv = setInterval(load, 5000); return () => clearInterval(iv);
+  }, [token]);
   useEffect(() => { if (left == null || left <= 0) return; const t = setTimeout(() => setLeft(l => (l == null ? null : Math.max(0, l - 1))), 1000); return () => clearTimeout(t); }, [left]);
-  const ready = async () => { setBusy(true); try { const r = await api.post(`/public/call-guide/ready/${token}`); setP(r.data); setLeft(null); } catch {} finally { setBusy(false); } };
+  return { p, left, setP, setLeft };
+};
+
+const ThisCallCard = ({ p, f }: { p: Pending; f: number }) => (
+  <View style={{ backgroundColor: '#1B1A14', borderRadius: 16, borderWidth: 1, borderColor: GOLD, padding: 14, gap: 6 }} {...tid('guide-this-call')}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Ionicons name="flag" size={14 * f} color={GOLD} />
+      <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 1.2 }}>THIS CALL{p.first_name ? `, ${p.first_name.toUpperCase()}` : ''}</Text>
+    </View>
+    {!!p.challenge_title && <Text style={{ fontSize: 16 * f, fontWeight: '900', color: C.text }} {...tid('guide-this-call-title')}>{p.challenge_title}</Text>}
+    <Text style={{ fontSize: 15.5 * f, color: C.text, lineHeight: 23 * f }} {...tid('guide-this-call-note')}>{p.guide_note}</Text>
+  </View>
+);
+
+const PendingCallBar = ({ token, pending }: { token: string; pending: ReturnType<typeof usePendingCall> }) => {
+  const { p, left, setP, setLeft } = pending;
+  const [busy, setBusy] = useState(false);
+  const ready = async () => { setBusy(true); try { const r = await api.post(`/public/call-guide/ready/${token}`); setP(prev => ({ ...(prev || {}), ...r.data })); setLeft(null); } catch {} finally { setBusy(false); } };
   if (!p || p.state === 'none') return null;
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   const canRing = p.state === 'countdown' || p.state === 'waiting';

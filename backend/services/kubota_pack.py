@@ -188,7 +188,7 @@ _GOALS = {
 def _c(dept: str, n: int, title: str, purpose: str, this_call: str, name: str, voice: str, who: str, opening: str, objections: list, curveballs: list, runtime: str) -> dict:
     m = _MASTER[dept]
     return {"slug": f"kubota_{_SHORT[dept]}_{n:02d}", "department": dept, "category": m["category"], "title": f"Kubota {_LABEL[dept]}: {title}", "runtime": runtime, "direction": "inbound",
-            "purpose": purpose, "body": f"[This call]\n{this_call}\n\n" + m["body"], "success_points": list(m["success_points"]), "curveballs": curveballs,
+            "purpose": purpose, "body": f"[This call]\n{this_call}\n\n" + m["body"], "success_points": list(m["success_points"]), "curveballs": curveballs, "guide_note": this_call,
             "persona": {"name": name, "voice": voice, "summary": who + " " + WITHHOLD + AI_RULES, "goals": _GOALS[dept], "objections": objections, "opening_line": opening}}
 
 

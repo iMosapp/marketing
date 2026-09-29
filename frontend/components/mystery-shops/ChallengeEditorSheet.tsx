@@ -9,9 +9,9 @@ import { Sheet, Field, Label, Chip, GoldButton, GOLD, PURPLE, tid, useSheetScrol
 
 type Scope = { clientId?: string; clientName?: string; industry?: string; departments?: Dept[] };
 type Props = { visible: boolean; onClose: () => void; colors: any; initial?: ChallengeDraft | Challenge | null; existing?: Challenge | null; scope?: Scope; onSaved: (c: Challenge) => void };
-const blank = { title: '', industry: 'automotive', department: 'sales', direction: 'inbound', runtime: '', purpose: '', body: '', points: '', curveballs: '', name: '', voice: 'female', summary: '', goals: '', objections: '', opening_line: '' };
+const blank = { title: '', industry: 'automotive', department: 'sales', direction: 'inbound', runtime: '', purpose: '', body: '', points: '', curveballs: '', guide_note: '', name: '', voice: 'female', summary: '', goals: '', objections: '', opening_line: '' };
 
-const toForm = (c: any) => ({ title: c.title || '', industry: c.industry || industryOfDept(c.department).key, department: c.department || 'sales', direction: c.direction === 'outbound' ? 'outbound' : 'inbound', runtime: c.runtime || '', purpose: c.purpose || '', body: c.body || '', points: (c.success_points || []).join('\n'), curveballs: (c.curveballs || []).join('\n'),
+const toForm = (c: any) => ({ title: c.title || '', industry: c.industry || industryOfDept(c.department).key, department: c.department || 'sales', direction: c.direction === 'outbound' ? 'outbound' : 'inbound', runtime: c.runtime || '', purpose: c.purpose || '', body: c.body || '', points: (c.success_points || []).join('\n'), curveballs: (c.curveballs || []).join('\n'), guide_note: c.guide_note || '',
   name: c.persona?.name || '', voice: c.persona?.voice || 'female', summary: c.persona?.summary || '', goals: c.persona?.goals || '', objections: (c.persona?.objections || []).join('\n'), opening_line: c.persona?.opening_line || '' });
 
 // The paste-a-script panel lives inside the sheet (a second modal on top of a modal freezes iOS) and scrolls itself above the keyboard.
@@ -45,7 +45,7 @@ export const ChallengeEditorSheet = ({ visible, onClose, colors, initial, existi
 
   const save = async () => {
     setBusy(true);
-    const payload = { title: f.title, department: f.department, direction: f.direction, runtime: f.runtime, purpose: f.purpose, body: f.body, success_points: lines(f.points), curveballs: lines(f.curveballs), generated_from: (initial as any)?.generated_from,
+    const payload = { title: f.title, department: f.department, direction: f.direction, runtime: f.runtime, purpose: f.purpose, body: f.body, success_points: lines(f.points), curveballs: lines(f.curveballs), guide_note: f.guide_note, generated_from: (initial as any)?.generated_from,
       persona: { name: f.name, voice: f.voice, summary: f.summary, goals: f.goals, objections: lines(f.objections), opening_line: f.opening_line } };
     try {
       const r = existing ? await api.put(`/shop-clients/challenges/${existing.id}`, payload) : where === 'client' && scope?.clientId ? await api.post(`/shop-clients/${scope.clientId}/challenges`, payload) : await api.post('/shop-clients/challenges', payload);
@@ -94,6 +94,7 @@ export const ChallengeEditorSheet = ({ visible, onClose, colors, initial, existi
         <Field label="WHAT A GREAT REP DOES (GRADED FOR SCRIPT ADHERENCE)" value={f.body} onChange={(v: string) => set('body', v)} colors={colors} multiline placeholder="Answer the question, ask for the name and number, offer two times…" testID="challenge-body" />
         <Field label="GRADED POINTS (ONE PER LINE)" value={f.points} onChange={(v: string) => set('points', v)} colors={colors} multiline placeholder={'Answers with store and name\nOffers two appointment times'} testID="challenge-points" />
         <Field label="CURVEBALLS THE SHOPPER MAY THROW IN (ONE PER LINE, OPTIONAL)" value={f.curveballs} onChange={(v: string) => set('curveballs', v)} colors={colors} multiline placeholder={'You only have two minutes\nYou already have a quote from another store'} testID="challenge-curveballs" />
+        <Field label="NOTE ON THE REP'S READ-ALONG GUIDE (OPTIONAL)" value={f.guide_note} onChange={(v: string) => set('guide_note', v)} colors={colors} multiline placeholder="Shown at the top of the guide when this shop is texted: who is calling and the two or three things to nail. No curveball spoilers." testID="challenge-guide-note" />
         <View style={{ gap: 12, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: GOLD + '55' }}>
           <Text style={{ fontSize: 13, fontWeight: '800', color: colors.text }}>The {pack.customer} Jessi plays</Text>
           <Field label="NAME" value={f.name} onChange={(v: string) => set('name', v)} colors={colors} placeholder="Jo Rivera" testID="challenge-persona-name" />

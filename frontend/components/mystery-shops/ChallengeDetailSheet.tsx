@@ -2,11 +2,12 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Sheet, Label, GoldButton, deptLabel, industryOfDept, industries, GOLD, RED, AMBER, GREEN, PURPLE, tid, type Challenge, type Dept } from './shared';
+import { ChallengePreviewCall } from './ChallengePreviewCall';
 
 export const needsReview = (c: Challenge) => c.review?.status === 'needs_review';
 const LANG_NAME: Record<string, string> = { nl: 'DUTCH', 'en-GB': 'BRITISH ENGLISH' };
 
-// Read-only view of one challenge with edit + delete/hide in the footer. Localized drafts get an Approve button for the native reviewer.
+// Read-only view of one challenge with audition-by-phone, edit + delete/hide in the footer. Localized drafts get an Approve button for the native reviewer.
 export const ChallengeDetailSheet = ({ open, onClose, colors, onEdit, onDelete, onApprove }: { open: Challenge | null; onClose: () => void; colors: any; onEdit: (c: Challenge) => void; onDelete: (c: Challenge) => void; onApprove?: (c: Challenge, approved: boolean) => void }) => (
   <Sheet visible={!!open} onClose={onClose} title={open?.title || ''} colors={colors} testID="challenge-detail"
     footer={open ? (
@@ -15,7 +16,7 @@ export const ChallengeDetailSheet = ({ open, onClose, colors, onEdit, onDelete, 
           ? <GoldButton label="Approve, sounds like a native speaker" onPress={() => onApprove(open, true)} testID="challenge-approve" icon="checkmark-circle" color={GREEN} />
           : <GoldButton label="Send back for review" onPress={() => onApprove(open, false)} testID="challenge-unapprove" icon="arrow-undo-outline" outline color={AMBER} />)}
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <View style={{ flex: 1 }}><GoldButton label="Edit" onPress={() => onEdit(open)} testID="challenge-edit" icon="create-outline" /></View>
+          <View style={{ flex: 1 }}><GoldButton label="Edit" onPress={() => onEdit(open)} testID="challenge-edit" icon="create-outline" outline /></View>
           <View style={{ flex: 1 }}><GoldButton label={open.client_specific ? 'Delete' : 'Hide everywhere'} onPress={() => onDelete(open)} testID="challenge-delete" outline color={RED} icon="trash-outline" /></View>
         </View>
       </View>
@@ -23,6 +24,7 @@ export const ChallengeDetailSheet = ({ open, onClose, colors, onEdit, onDelete, 
     {open && (
       <>
         <Text style={{ fontSize: 12.5, fontWeight: '800', color: GOLD }}>{industryOfDept(open.department).label.toUpperCase()} · {(open.department_label || deptLabel(open.department)).toUpperCase()}{open.direction === 'outbound' ? ' · OUTBOUND (REP CALLS THEM)' : ' · INBOUND (THEY CALL IN)'}{open.runtime ? ` · ${open.runtime}` : ''}{open.generated ? ' · WRITTEN BY JESSI' : ''}{open.language && open.language !== 'en' ? ` · ${LANG_NAME[open.language] || open.language.toUpperCase()}` : ''}</Text>
+        <ChallengePreviewCall challenge={open} colors={colors} onClose={onClose} />
         {open.language && open.language !== 'en' && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: (needsReview(open) ? AMBER : GREEN) + '1A', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: (needsReview(open) ? AMBER : GREEN) + '66' }} {...tid('challenge-review-state')}>
             <Ionicons name={needsReview(open) ? 'eye-outline' : 'checkmark-circle'} size={16} color={needsReview(open) ? AMBER : GREEN} />
@@ -33,6 +35,7 @@ export const ChallengeDetailSheet = ({ open, onClose, colors, onEdit, onDelete, 
         <View style={{ gap: 4 }}><Label t="WHAT A GREAT REP DOES" colors={colors} /><Text style={{ fontSize: 14.5, color: colors.text, lineHeight: 21 }}>{open.body}</Text></View>
         {open.success_points?.length > 0 && <View style={{ gap: 4 }}><Label t="GRADED POINTS" colors={colors} />{open.success_points.map((p, i) => <Text key={i} style={{ fontSize: 13.5, color: colors.text }}>• {p}</Text>)}</View>}
         {!!open.curveballs?.length && <View style={{ gap: 4 }}><Label t="CURVEBALLS" colors={colors} />{open.curveballs.map((p, i) => <Text key={i} style={{ fontSize: 13.5, color: colors.text }}>• {p}</Text>)}</View>}
+        {!!open.guide_note && <View style={{ gap: 4, backgroundColor: GOLD + '14', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: GOLD + '44' }} {...tid('challenge-guide-note')}><Label t="ON THE REP'S READ-ALONG GUIDE" colors={colors} /><Text style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>{open.guide_note}</Text></View>}
         {open.persona && (
           <View style={{ gap: 4, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}>
             <Label t={`THE ${industryOfDept(open.department).customer.toUpperCase()} · ${open.persona.name}`} colors={colors} />
