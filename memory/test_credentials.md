@@ -176,3 +176,6 @@
 - Business mode (Sep 26 2026): the QA widget is left with `kb.mode = "business"` in preview (Jessi tab chips `widget-kb-mode-dealership|business`; 38 imonsocial.com pages in `widget_site_pages`). `test_website_widget_jessi.py` / `test_widget_live_booking.py` switch it to dealership for their run and put it back. Demo with the chat open: `/api/w/{key}/demo?door=chat` (typing dots `.imosw-typing` show for 1-4 s before each reply).
 
 - Admin search (Sep 26 2026): `GET /api/admin/search?q=emerald` with `X-User-ID: 69a0b7095fddcede09591667` (forest) -> orgs + stores; qa-manager id 6a9b2b82cc6e7504dafc33f2 sees only their store's users/lead sources; reps 403. Screen `/admin/search?q=...` (forest or qa-manager). `python -m pytest tests/test_admin_search.py -q` (9).
+
+## Score Trends / Weekly Leaderboard demo data (preview only, Sep 29 2026, `cd /app/backend && python tests/seed_trend_demo.py` re-seeds idempotently, `--wipe` removes)
+- Kubota Demo client 6ab983f954b9cb9243f0ba00: 12 graded shops over the past 6 weeks for Tyler Brandt (+15005550199) and Maya Torres (+15005550198, added by the seed). Powers the People-tab weekly leaderboard, the person score chart and the public /shop-score trend card.

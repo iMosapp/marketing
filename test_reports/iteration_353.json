@@ -1,0 +1,27 @@
+{
+  "summary": "Iter 353 - All 4 features (Score Trends, Weekly Leaderboard, Guide Editor, Babel modal-KAV regression) verified end-to-end on preview. Backend: 11/11 new HTTP-level pytest checks green + 4/4 pre-existing unit tests green. Frontend: weekly leaderboard on admin People tab + public shop-report shows summary+movers+per-department rows; prev/next week navigation works; row click opens person-detail-sheet with SVG score chart + caption. Report tab regression OK. Guide editor: pencil visible for admin, all 14 editor testids present, scorecard total shows 100, edit-title + save persists with 'Edited by your admin.' source note, reset restores 'Kubota Parts Customer Engagement Standard'; guide-edit-close returns without saving. Public /guide/equipment/eq_sales renders without pencil. Public /shop-score/{token} renders score-trend-chart with 'Up 30 points since first shop'. Modal regression: People 'Add someone to shop' still opens person-sheet, input accepts typing, no ModalKeyboardWrap console errors. Guide reset was run at the end - eq_parts is back to seed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter353_api.py",
+    "/app/backend/tests/test_trend_leaderboard.py",
+    "/app/test_reports/pytest/iter353.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend endpoints correctly enforce admin auth on /leaderboard (403 for store_manager) and admin-only guide PUT/reset.",
+    "Public endpoints (/api/public/shop-report/{token}/leaderboard, /api/public/shop-score/{token}, /api/public/call-guide/...) work without auth and 404 on bogus tokens.",
+    "score_history returns items oldest->newest with exactly one current=true; department_label, channel, at all populated.",
+    "Guide save returns source='custom' and title echoed; reset returns source='seed' with total=100 and canonical title.",
+    "Frontend guide-edit-scorecard-total did not visibly turn red when I set score-0.points to 55 via keyboard type; possible cause is RN web number TextInput not clearing on Ctrl+A (my test-script issue, not a product bug). Save + reset flow verified with a valid total. Main agent may wish to manually eyeball the red-total UX once.",
+    "No console errors related to babel modal-KAV plugin observed while opening person-sheet; typed into person-name input successfully."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter353_api.py"],
+  "success_rate": {"backend": "11/11 = 100% (plus 4/4 unit)", "frontend": "All required testids found across People tab weekly leaderboard, Person detail chart, Guide editor, public shop-report, public shop-score, public guide (logged-out), and add-person modal regression"},
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin); qa-manager@invalid.imonsocial.test / Manager123! (store_manager for 403 check).",
+  "seed_data_creation": "None. eq_parts guide edited during test and restored via /reset at the end.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Kubota Demo client_id 6ab983f954b9cb9243f0ba00, report_token 6c5cdb8560b14de2a86579da265b85b3, Tyler Brandt trend_demo score_token e4792e3c7bef452eabec3b5066ba4dd2. Backend API test: cd /app/backend && python -m pytest tests/test_iter353_api.py tests/test_trend_leaderboard.py -q. Web login: /auth/login -> then history.pushState to app routes (some pages like /admin/... shadowed by static pages if entered as first URL). Modal Babel plugin regression: opening people-add sheet, typing, and closing works with no ModalKeyboardWrap error.",
+  "rca of the issue": "N/A - all features working."
+}
