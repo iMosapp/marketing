@@ -6,6 +6,7 @@ import { useLocalSearchParams } from 'expo-router';
 import api from '../../services/api';
 import { CallRecordingPlayer } from '../../components/CallRecordingPlayer';
 import { ScoreRing } from '../../components/scorecards/ScoreRing';
+import { ScoreTrendChart } from '../../components/mystery-shops/ScoreTrendChart';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { Label, ChannelPill, channelKey, deptLabel, replyDur, LIGHT, GOLD, GREEN, RED, tid } from '../../components/mystery-shops/shared';
 import { makeT, langOf, fmtWhenL } from '../../components/mystery-shops/i18n';
@@ -51,6 +52,13 @@ export default function PublicShopScore() {
                 )}
                 {!!d.summary && <Text style={{ fontSize: 15, color: LIGHT.text, lineHeight: 23 }} {...tid('score-summary')}>{d.summary}</Text>}
               </Card>
+              {(d.history || []).length >= 2 && (
+                <Card testID="score-trend">
+                  <Label t={tr('sc.trend')} colors={LIGHT} />
+                  <ScoreTrendChart points={d.history.map((h: any) => ({ score: h.score_pct, at: h.at, current: h.current }))} colors={LIGHT} tr={tr} testID="score-trend-chart" />
+                  <Text style={{ fontSize: 12.5, color: LIGHT.textSecondary, lineHeight: 18 }} {...tid('score-trend-sub')}>{tr('sc.trend_sub', { n: d.history.length })}</Text>
+                </Card>
+              )}
               {(d.channel === 'text' || d.channel === 'email') && (d.transcript_turns || []).length > 0 && (
                 <Card testID="score-thread">
                   <Label t={tr('sc.thread')} colors={LIGHT} />

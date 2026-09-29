@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { CallDetailSheet } from './CallsTab';
+import { ScoreTrendChart } from './ScoreTrendChart';
 import { Sheet, Label, Stat, Bar, StatusChip, scoreColor, GOLD, RED, GREEN, tid } from './shared';
 import { makeT, fmtWhenL, shortMonthYearL, type Lang, type Tr } from './i18n';
 
@@ -61,6 +62,10 @@ export const PersonDetailSheet = ({ targetId, name, path, onClose, colors, lang 
   const s = data?.summary;
   const delta = s?.trend_delta;
   const shopsN = (n: number) => (n === 1 ? tr('per.shop_1') : tr('per.shop_n', { n }));
+  // every graded shop, oldest first, for the line chart (the history endpoint returns newest first)
+  const chartPts = (data?.shops || []).filter((c: any) => c.status === 'completed' && typeof c.score_pct === 'number')
+    .map((c: any) => ({ score: c.score_pct as number, at: (c.ended_at || c.scheduled_for) as string }))
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   return (
     <Sheet visible={!!targetId} onClose={onClose} title={data?.person.name || name || tr('per.title')} colors={colors} testID="person-detail-sheet">
       {error ? <Text style={{ fontSize: 14, color: RED }} {...tid('person-detail-error')}>{error}</Text> : !data || !s ? <ActivityIndicator color={GOLD} style={{ marginTop: 30 }} /> : (
@@ -93,6 +98,12 @@ export const PersonDetailSheet = ({ targetId, name, path, onClose, colors, lang 
                   <Delta d={data.vs_department?.[d]} colors={colors} what={tr('per.dept_line', { dept: x.label.toLowerCase() })} testID={`person-vs-dept-${d}`} tr={tr} />
                 </View>
               ))}
+            </View>
+          )}
+          {chartPts.length > 0 && (
+            <View style={{ gap: 8 }}>
+              <Label t={tr('per.chart', { n: chartPts.length })} colors={colors} />
+              <ScoreTrendChart points={chartPts} storeAvg={data.store?.avg_score} colors={colors} tr={tr} testID="person-score-chart" />
             </View>
           )}
           <View style={{ gap: 8 }}>

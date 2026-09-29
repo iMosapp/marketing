@@ -213,10 +213,10 @@ def _shape(g: dict) -> dict:
     """Normalise a guide (seed or model output) into the stored shape; drops anything malformed."""
     sections = []
     for s in g.get("sections") or []:
-        blocks = [{"kind": b.get("kind") if b.get("kind") in BLOCK_KINDS else "note", "text": str(b.get("text") or "").strip()} for b in (s.get("blocks") or []) if isinstance(b, dict) and str(b.get("text") or "").strip()]
-        kpi = [str(k).strip() for k in (s.get("kpi") or []) if str(k).strip()]
+        blocks = [{"kind": b.get("kind") if b.get("kind") in BLOCK_KINDS else "note", "text": str(b.get("text") or "").strip()[:1000]} for b in (s.get("blocks") or []) if isinstance(b, dict) and str(b.get("text") or "").strip()]
+        kpi = [str(k).strip()[:200] for k in (s.get("kpi") or []) if str(k).strip()]
         if str(s.get("title") or "").strip() and (blocks or kpi):
-            sections.append({"title": str(s["title"]).strip(), "blocks": blocks, "kpi": kpi})
+            sections.append({"title": str(s["title"]).strip()[:200], "blocks": blocks, "kpi": kpi})
     scorecard = []
     for row in g.get("scorecard") or []:
         label, pts = (row if isinstance(row, (list, tuple)) else (row.get("label"), row.get("points")))
@@ -225,9 +225,39 @@ def _shape(g: dict) -> dict:
         except (TypeError, ValueError):
             continue
         if str(label or "").strip() and pts > 0:
-            scorecard.append({"label": str(label).strip(), "points": pts})
-    return {"title": str(g.get("title") or "").strip(), "kpi_chain": [str(x).strip() for x in (g.get("kpi_chain") or []) if str(x).strip()][:5],
-            "kpi_note": str(g.get("kpi_note") or "").strip(), "sections": sections, "scorecard": scorecard, "total": sum(r["points"] for r in scorecard)}
+            scorecard.append({"label": str(label).strip()[:160], "points": min(100, pts)})
+    return {"title": str(g.get("title") or "").strip()[:200], "kpi_chain": [str(x).strip()[:60] for x in (g.get("kpi_chain") or []) if str(x).strip()][:5],
+            "kpi_note": str(g.get("kpi_note") or "").strip()[:1000], "sections": sections[:20], "scorecard": scorecard[:30], "total": sum(r["points"] for r in scorecard[:30])}
+
+
+def validate(g: dict) -> dict:
+    """Shape + sanity-check an admin's edit; the ValueError text is what the app shows."""
+    shaped = _shape(g)
+    if not shaped["title"]:
+        raise ValueError("Give the guide a title")
+    if not shaped["sections"]:
+        raise ValueError("Keep at least one section with a line or a KPI in it")
+    if not shaped["scorecard"]:
+        raise ValueError("The scorecard needs at least one row with points")
+    return shaped
+
+
+async def save_custom(db, industry: str, department: str, data: dict, by: Optional[str] = None) -> dict:
+    """An admin's edited guide replaces the seed / Jessi draft for that department; seed refreshes never touch it again."""
+    shaped = validate(data)
+    await db.call_guides.update_one({"industry": industry, "department": department},
+                                    {"$set": {**shaped, "source": "custom", "updated_at": _now(), "updated_by": by}, "$setOnInsert": {"created_at": _now()}}, upsert=True)
+    return await db.call_guides.find_one({"industry": industry, "department": department})
+
+
+async def reset_guide(db, industry: str, department: str) -> Optional[dict]:
+    """Drop the admin's edits: seeded pairs come back verbatim, every other pair gets a fresh Jessi draft."""
+    await db.call_guides.delete_one({"industry": industry, "department": department})
+    seed = SEEDS.get((industry, department))
+    if seed:
+        await db.call_guides.update_one({"industry": industry, "department": department},
+                                        {"$set": {**_shape(seed), "source": "seed", "seed_version": SEED_VERSION, "updated_at": _now()}, "$setOnInsert": {"created_at": _now()}}, upsert=True)
+    return await get_guide(db, industry, department)
 
 
 async def ensure_call_guides(db) -> int:

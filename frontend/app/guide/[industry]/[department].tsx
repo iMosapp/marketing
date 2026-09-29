@@ -4,7 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../../services/api';
+import { useAuthStore } from '../../../store/authStore';
 import { GOLD, GREEN, RED, tid } from '../../../components/mystery-shops/shared';
+import { GuideEditor } from '../../../components/mystery-shops/GuideEditor';
 
 // Read-along call guide: big type, one thumb. Tap a KPI when you hit it, tap a scorecard row when you earned it; the header keeps the tally.
 type Block = { kind: 'say' | 'ask' | 'label' | 'note' | 'warn' | 'list'; text: string };
@@ -17,11 +19,14 @@ export default function CallGuideScreen() {
   const { industry, department, s: token } = useLocalSearchParams<{ industry: string; department: string; s?: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const role = useAuthStore(s => s.user?.role);
+  const isAdmin = role === 'super_admin' || role === 'org_admin';
   const [g, setG] = useState<Guide | null>(null);
   const [err, setErr] = useState('');
   const [hit, setHit] = useState<Set<string>>(new Set());
   const [earned, setEarned] = useState<Set<number>>(new Set());
   const [big, setBig] = useState(true);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (!industry || !department) return;
@@ -39,6 +44,14 @@ export default function CallGuideScreen() {
   const pad = Math.max(16, (width - 720) / 2);
   const f = big ? 1 : 0.85;
 
+  if (editing && g) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'bottom']}>
+        <GuideEditor guide={g as any} industry={String(industry)} department={String(department)} onSaved={ng => { setG(ng as any); setEditing(false); reset(); }} onClose={() => setEditing(false)} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'bottom']}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.bg }} {...tid('guide-topbar')}>
@@ -47,6 +60,7 @@ export default function CallGuideScreen() {
           <Text style={{ fontSize: 12, fontWeight: '800', color: GOLD, letterSpacing: 1 }} numberOfLines={1}>{g ? `${g.department_label.toUpperCase()} CALL GUIDE` : 'CALL GUIDE'}</Text>
           <Text style={{ fontSize: 12.5, color: C.dim }} numberOfLines={1} {...tid('guide-tally')}>{g ? `${hit.size} of ${kpiTotal} KPIs · self-score ${score} / ${g.total || 100}` : ' '}</Text>
         </View>
+        {isAdmin && !!g && <TouchableOpacity onPress={() => setEditing(true)} hitSlop={8} {...tid('guide-edit-btn')}><Ionicons name="create-outline" size={21} color={GOLD} /></TouchableOpacity>}
         <TouchableOpacity onPress={() => setBig(b => !b)} hitSlop={8} {...tid('guide-text-size')}><Ionicons name="text" size={20} color={C.dim} /></TouchableOpacity>
         <TouchableOpacity onPress={reset} hitSlop={8} {...tid('guide-reset')}><Ionicons name="refresh" size={20} color={C.dim} /></TouchableOpacity>
       </View>
@@ -57,7 +71,7 @@ export default function CallGuideScreen() {
           <GuideHeader g={g} f={f} />
           {g.sections.map((s, i) => <GuideSection key={i} n={i + 1} s={s} f={f} hit={hit} onHit={toggleHit} />)}
           <Scorecard g={g} f={f} earned={earned} onToggle={toggleEarned} score={score} />
-          <Text style={{ fontSize: 11.5, color: C.dim, textAlign: 'center', marginTop: 8 }}>{g.source === 'ai' ? 'Drafted by Jessi from this department\u2019s scorecard.' : 'Customer Engagement Standard.'} Checkmarks stay on this device only.</Text>
+          <Text style={{ fontSize: 11.5, color: C.dim, textAlign: 'center', marginTop: 8 }} {...tid('guide-source-note')}>{g.source === 'ai' ? 'Drafted by Jessi from this department\u2019s scorecard.' : g.source === 'custom' ? 'Edited by your admin.' : 'Customer Engagement Standard.'} Checkmarks stay on this device only.</Text>
         </ScrollView>
       )}
       {!!token && g && <PendingCallBar token={token} />}

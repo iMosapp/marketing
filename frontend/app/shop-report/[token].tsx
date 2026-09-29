@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import api, { API_BASE_URL } from '../../services/api';
 import { ReportView, openUrl, type Report } from '../../components/mystery-shops/ReportView';
+import { WeeklyLeaderboard } from '../../components/mystery-shops/WeeklyLeaderboard';
+import { PersonDetailSheet } from '../../components/mystery-shops/PersonDetailSheet';
 import { shiftMonth, GOLD, tid } from '../../components/mystery-shops/shared';
 import { makeT, langOf, monthLabelL } from '../../components/mystery-shops/i18n';
 
@@ -17,6 +19,7 @@ export default function PublicShopReport() {
   const [report, setReport] = useState<Report | null>(null);
   const [month, setMonth] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [person, setPerson] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -51,7 +54,9 @@ export default function PublicShopReport() {
           {error ? <Text style={{ fontSize: 15, color: LIGHT.textSecondary }} {...tid('public-report-error')}>{tr('rep.invalid')}</Text> : !report ? <ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /> : (
             <>
               <Text style={{ fontSize: 14, color: LIGHT.textSecondary, lineHeight: 20 }}>{tr('rep.intro', { customer: (report.client as any)?.customer_noun || 'shopper' })}</Text>
+              <WeeklyLeaderboard path={o => `/public/shop-report/${token}/leaderboard?offset=${o}`} colors={LIGHT} lang={lang} onPerson={(id, name) => setPerson({ id, name })} />
               <ReportView report={report} colors={LIGHT} compact lang={lang} personPath={targetId => `/public/shop-report/${token}/people/${targetId}`} />
+              <PersonDetailSheet targetId={person?.id || null} name={person?.name} path={targetId => `/public/shop-report/${token}/people/${targetId}`} onClose={() => setPerson(null)} colors={LIGHT} lang={lang} />
               <Text style={{ fontSize: 12, color: LIGHT.textSecondary, textAlign: 'center', marginTop: 20 }}>{tr('rep.footer')}</Text>
             </>
           )}

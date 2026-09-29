@@ -1043,6 +1043,50 @@ async def admin_call_guide(industry: str, department: str, request: Request):
     return cg.serialize(g)
 
 
+class GuideBody(BaseModel):
+    title: str
+    kpi_chain: list = []
+    kpi_note: Optional[str] = ""
+    sections: list = []
+    scorecard: list = []
+
+
+@router.put("/guides/{industry}/{department}")
+async def save_call_guide(industry: str, department: str, body: GuideBody, request: Request):
+    """An admin edits the lines, KPIs and point values from the app; the result is the guide everyone reads from then on."""
+    from services import call_guides as cg
+    me = await require_admin(request)
+    if not cg.valid_keys(industry, department):
+        raise HTTPException(status_code=404, detail="No such department")
+    try:
+        g = await cg.save_custom(get_db(), industry, department, body.dict(), str(me["_id"]))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return cg.serialize(g)
+
+
+@router.post("/guides/{industry}/{department}/reset")
+async def reset_call_guide(industry: str, department: str, request: Request):
+    """Throw the edits away: Kubota guides come back verbatim, other departments get a fresh Jessi draft (about a minute)."""
+    from services import call_guides as cg
+    await require_admin(request)
+    if not cg.valid_keys(industry, department):
+        raise HTTPException(status_code=404, detail="No such department")
+    g = await cg.reset_guide(get_db(), industry, department)
+    if not g:
+        raise HTTPException(status_code=503, detail="Jessi could not rewrite that call guide just now. Open it again in a minute.")
+    return cg.serialize(g)
+
+
+@router.get("/{cid}/leaderboard")
+async def client_leaderboard(cid: str, request: Request, offset: int = 0):
+    """This week's ranking per department with each person's move since last week (offset -1 = last week, and so on)."""
+    await require_admin(request)
+    db = get_db()
+    c = await _client(db, cid)
+    return await ms.weekly_leaderboard(db, c, max(-52, min(0, offset)))
+
+
 @router.post("/{cid}/people/{tid}/text-guide")
 async def text_call_guide(cid: str, tid: str, request: Request):
     me = await require_admin(request)
@@ -1458,6 +1502,16 @@ async def public_person(token: str, target_id: str, months: int = 6):
     return out
 
 
+@public_router.get("/shop-report/{token}/leaderboard")
+async def public_leaderboard(token: str, offset: int = 0):
+    """The GM's no-login weekly board: same token as the report."""
+    db = get_db()
+    c = await db.shop_clients.find_one({"report_token": token})
+    if not c or len(token) < 16:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return await ms.weekly_leaderboard(db, c, max(-52, min(0, offset)))
+
+
 @public_router.get("/shop-report/{token}")
 async def public_report(token: str, month: Optional[str] = None):
     db = get_db()
@@ -1520,7 +1574,9 @@ async def public_score(token: str):
         raise HTTPException(status_code=404, detail="Scorecard not ready yet")
     client = await db.shop_clients.find_one({"_id": _oid(s["client_id"])}) if ObjectId.is_valid(str(s.get("client_id"))) else None
     await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$inc": {"score_views": 1}, "$set": {"score_viewed_at": datetime.now(timezone.utc)}})
-    return ms.public_score(s, ev, client or {})
+    out = ms.public_score(s, ev, client or {})
+    out["history"] = await ms.score_history(db, s)
+    return out
 
 
 

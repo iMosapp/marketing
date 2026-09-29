@@ -11,6 +11,8 @@ import { Sheet, Field, Label, Chip, GoldButton, deptLabel, deptsOfClient, fmtPho
 import { ClientNumberCard } from './ClientNumberCard';
 import { ContactCardPanel } from './ContactCardPanel';
 import { ShopNowSheet } from './ShopNowSheet';
+import { PersonDetailSheet } from './PersonDetailSheet';
+import { WeeklyLeaderboard } from './WeeklyLeaderboard';
 
 type Props = { client: Client; people: Person[]; colors: any; onChanged: () => void; onShopStarted: () => void; kickoffUrl?: string; kickoff?: { submitted_at?: string; submissions?: number } };
 type Form = { name: string; phone: string; email: string; department: string; title: string; notes: string; ownHours: boolean; start: string; end: string; days: number[]; timezone: string; difficulty: string; quota: string };
@@ -44,6 +46,8 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
   const [texting, setTexting] = useState<string | null>(null);
   const [sendingCard, setSendingCard] = useState<string | null>(null);
   const [cardKey, setCardKey] = useState(0);
+  const [history, setHistory] = useState<{ id: string; name: string } | null>(null);
+  const boardKey = people.map(p => `${p.id}:${p.month?.completed ?? 0}`).join(',');
   const copyKickoff = async () => { if (!kickoffUrl) return; await Clipboard.setStringAsync(kickoffUrl); showToast('Setup link copied', 'success'); };
 
   const open = (person?: Person) => { setF(formOf(person, firstDept, client)); setSheet({ person }); };
@@ -122,20 +126,23 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
       )}
       {!client.demo && <ClientNumberCard client={client} colors={colors} onChanged={onChanged} />}
       {!client.demo && <ContactCardPanel client={client} colors={colors} refreshKey={cardKey} onSent={onChanged} />}
+      {people.length > 0 && <WeeklyLeaderboard path={o => `/shop-clients/${client.id}/leaderboard?offset=${o}`} colors={colors} refreshKey={boardKey} onPerson={(id, name) => setHistory({ id, name })} />}
       {groups.filter(g => g.rows.length).map(g => (
         <View key={g.key} style={{ gap: 8 }}>
           <Label t={`${g.label.toUpperCase()} · ${g.rows.length}`} colors={colors} />
           {g.rows.map(p => (
             <View key={p.id} style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 8 }} {...tid(`person-${p.id}`)}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontWeight: '800', color: GOLD }}>{p.name.split(' ').map(x => x[0]).slice(0, 2).join('').toUpperCase()}</Text></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{p.name}</Text>
-                  <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{[p.title, fmtPhone(p.phone), p.email].filter(Boolean).join(' · ')}{p.challenge_history?.length ? ` · ${p.challenge_history.length} challenge${p.challenge_history.length === 1 ? '' : 's'} used` : ''}</Text>
-                  {!client.demo && !!monthLine(p) && <Text style={{ fontSize: 12, color: GOLD, fontWeight: '700', marginTop: 2 }} {...tid(`person-month-${p.id}`)}>{monthLine(p)}</Text>}
-                  {!!p.guide_text_sent_at && <Text style={{ fontSize: 12, color: p.guide_text_ok ? GREEN : RED, marginTop: 2 }} {...tid(`person-guide-status-${p.id}`)}>{p.guide_text_ok ? `Call guide texted ${fmtWhen(p.guide_text_sent_at)}` : `Call guide text failed: ${p.guide_text_error || 'could not send'}`}</Text>}
-                  {(!!p.hours || !!p.difficulty) && <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }} {...tid(`person-prefs-${p.id}`)}>{[p.hours ? `Own hours ${p.hours.start} to ${p.hours.end}${p.timezone && p.timezone !== client.timezone ? ` ${p.timezone}` : ''}` : '', p.difficulty ? `${difficultyLabel(p.difficulty)} shopper` : ''].filter(Boolean).join(' · ')}</Text>}
-                </View>
+                <TouchableOpacity onPress={() => setHistory({ id: p.id, name: p.name })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid(`person-open-${p.id}`)}>
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontWeight: '800', color: GOLD }}>{p.name.split(' ').map(x => x[0]).slice(0, 2).join('').toUpperCase()}</Text></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{p.name} <Ionicons name="stats-chart" size={12} color={GOLD} /></Text>
+                    <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{[p.title, fmtPhone(p.phone), p.email].filter(Boolean).join(' · ')}{p.challenge_history?.length ? ` · ${p.challenge_history.length} challenge${p.challenge_history.length === 1 ? '' : 's'} used` : ''}</Text>
+                    {!client.demo && !!monthLine(p) && <Text style={{ fontSize: 12, color: GOLD, fontWeight: '700', marginTop: 2 }} {...tid(`person-month-${p.id}`)}>{monthLine(p)}</Text>}
+                    {!!p.guide_text_sent_at && <Text style={{ fontSize: 12, color: p.guide_text_ok ? GREEN : RED, marginTop: 2 }} {...tid(`person-guide-status-${p.id}`)}>{p.guide_text_ok ? `Call guide texted ${fmtWhen(p.guide_text_sent_at)}` : `Call guide text failed: ${p.guide_text_error || 'could not send'}`}</Text>}
+                    {(!!p.hours || !!p.difficulty) && <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }} {...tid(`person-prefs-${p.id}`)}>{[p.hours ? `Own hours ${p.hours.start} to ${p.hours.end}${p.timezone && p.timezone !== client.timezone ? ` ${p.timezone}` : ''}` : '', p.difficulty ? `${difficultyLabel(p.difficulty)} shopper` : ''].filter(Boolean).join(' · ')}</Text>}
+                  </View>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => guideAction(p)} hitSlop={8} {...tid(`person-guide-${p.id}`)}><Ionicons name={p.guide_text_ok ? 'book' : 'book-outline'} size={20} color={p.guide_text_ok ? GREEN : p.guide_text_error ? RED : colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => sendCard(p)} disabled={sendingCard === p.id} hitSlop={8} {...tid(`person-send-card-${p.id}`)}><Ionicons name={p.contact_card_ok ? 'person-circle' : 'person-circle-outline'} size={21} color={p.contact_card_ok ? GREEN : p.contact_card_error ? RED : colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => open(p)} hitSlop={8} {...tid(`person-edit-${p.id}`)}><Ionicons name="create-outline" size={20} color={colors.textSecondary} /></TouchableOpacity>
@@ -207,6 +214,7 @@ export const PeopleTab = ({ client, people, colors, onChanged, onShopStarted, ki
         )}
       </Sheet>
       <ShopNowSheet person={shopping} client={client} colors={colors} onClose={() => setShopping(null)} onStarted={onShopStarted} />
+      <PersonDetailSheet targetId={history?.id || null} name={history?.name} path={id => `/shop-clients/${client.id}/people/${id}/history`} onClose={() => setHistory(null)} colors={colors} />
     </View>
   );
 };

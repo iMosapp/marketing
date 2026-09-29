@@ -1543,6 +1543,83 @@ def leaderboard(people: list, prev_scores: dict, prev_label: str) -> list:
     return board
 
 
+def week_bounds(client: dict, offset: int = 0) -> tuple:
+    """(monday_utc, next_monday_utc, label) for the client's local week; offset 0 = this week, -1 = last week."""
+    tz = _tz(client)
+    local = _now().astimezone(tz)
+    monday = (local - timedelta(days=local.weekday())).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=7 * offset)
+    sunday = monday + timedelta(days=6)
+    if loc.dialect(loc.key_of(client)) == "nl":
+        label = f"{monday.day} {i18n.month_label(monday, 'nl', short=True)} tot {sunday.day} {i18n.month_label(sunday, 'nl', short=True)}"
+    else:
+        label = f"{monday.strftime('%b')} {monday.day} to {sunday.strftime('%b')} {sunday.day}"
+    return monday.astimezone(timezone.utc), (monday + timedelta(days=7)).astimezone(timezone.utc), label
+
+
+def _week_q(cid: str, start, end) -> dict:
+    return {"kind": "mystery_shop", "client_id": cid, "lead_shop_id": None, "status": "completed",
+            "$or": [{"ended_at": {"$gte": start, "$lt": end}}, {"ended_at": None, "scheduled_for": {"$gte": start, "$lt": end}}]}
+
+
+async def weekly_leaderboard(db, client: dict, offset: int = 0) -> dict:
+    """This week's ranking per department (average first, then volume) with each person's move since last week, so the
+    People tab and the GM's report both show who is climbing."""
+    cid = str(client["_id"])
+    start, end, label = week_bounds(client, offset)
+    p_start, p_end, _ = week_bounds(client, offset - 1)
+    calls = await db.roleplay_sessions.find(_week_q(cid, start, end)).sort("ended_at", 1).to_list(500)
+    prev = await db.roleplay_sessions.find(_week_q(cid, p_start, p_end), {"target_id": 1, "department": 1, "score_pct": 1}).to_list(500)
+    ev_ids = [ObjectId(c["evaluation_id"]) for c in calls if c.get("evaluation_id") and ObjectId.is_valid(str(c["evaluation_id"]))]
+    evals = {str(e["_id"]): e for e in await db.call_evaluations.find({"_id": {"$in": ev_ids}}, {"critical_misses": 1}).to_list(500)} if ev_ids else {}
+    targets = {str(t["_id"]): t for t in await db.shop_targets.find({"client_id": cid}, {"name": 1, "title": 1}).to_list(500)}
+    rows: dict = {}
+    for c in calls:
+        dept = c.get("department") or "sales"
+        t = targets.get(c.get("target_id")) or {}
+        r = rows.setdefault((c["target_id"], dept), {"key": f"{c['target_id']}:{dept}", "target_id": c["target_id"], "name": c.get("rep_name") or t.get("name") or "", "title": t.get("title") or "",
+                                                    "department": dept, "completed": 0, "scores": [], "critical_misses": 0})
+        r["completed"] += 1
+        r["scores"].append(c.get("score_pct"))
+        r["critical_misses"] += len((evals.get(str(c.get("evaluation_id"))) or {}).get("critical_misses") or [])
+    for r in rows.values():
+        r["avg_score"] = _pct(r["scores"])
+        r["best"] = max([s for s in r["scores"] if s is not None], default=None)
+    prev_scores: dict = {}
+    for c in prev:
+        prev_scores.setdefault((c["target_id"], c.get("department") or "sales"), []).append(c.get("score_pct"))
+    lang = loc.dialect(loc.key_of(client))
+    prev_label = "vorige week" if lang == "nl" else "last week"
+    boards = []
+    for d in dict.fromkeys([*ind.dept_keys(ind.key_of(client)), *[r["department"] for r in rows.values()]]):
+        board = leaderboard([r for r in rows.values() if r["department"] == d], {k[0]: v for k, v in prev_scores.items() if k[1] == d}, prev_label)
+        if board:
+            boards.append({"department": d, "label": ind.dept_label_for(d, loc.key_of(client), ind.key_of(client)) if lang != "en" else ind.dept_label(d), "rows": board})
+    if lang != "en":
+        for b in boards:
+            for r in b["rows"]:
+                for bd in r["badges"]:
+                    bd["label"] = i18n.t(lang, f"badge.{bd['key']}")
+                    bd["detail"] = i18n.t(lang, f"badge.{bd['key']}.detail", v=(r.get("best") if bd["key"] == "top_score" else r.get("delta")), prev=prev_label, n=r.get("completed"))
+    movers = sorted([{**r, "department_label": b["label"]} for b in boards for r in b["rows"] if r["delta"] is not None and r["delta"] > 0], key=lambda r: -r["delta"])[:3]
+    return {"week_start": start.astimezone(_tz(client)).strftime("%Y-%m-%d"), "label": label, "offset": offset, "is_current": offset == 0, "prev_label": prev_label, "language": lang,
+            "completed": len(calls), "people": len({c["target_id"] for c in calls}), "avg_score": _pct([c.get("score_pct") for c in calls]), "prev_avg_score": _pct([c.get("score_pct") for c in prev]),
+            "boards": boards, "movers": [{"target_id": m["target_id"], "name": m["name"], "delta": m["delta"], "avg_score": m["avg_score"], "department_label": m["department_label"]} for m in movers]}
+
+
+async def score_history(db, s: dict, limit: int = 12) -> list:
+    """The person's last graded shops, oldest first, for the trend line under their scorecard (the current one is flagged)."""
+    if not s.get("target_id"):
+        return []
+    rows = await db.roleplay_sessions.find({"kind": "mystery_shop", "target_id": s["target_id"], "status": "completed", "score_pct": {"$ne": None}},
+                                           {"score_pct": 1, "ended_at": 1, "scheduled_for": 1, "department": 1, "mode": 1}).sort("ended_at", -1).to_list(limit)
+    out = []
+    for c in reversed(rows):
+        when = c.get("ended_at") or c.get("scheduled_for")
+        out.append({"id": str(c["_id"]), "score_pct": c.get("score_pct"), "at": when.isoformat() if when else None, "department": c.get("department"),
+                    "department_label": ind.dept_label(c.get("department") or "sales"), "channel": c.get("mode") if c.get("mode") in ("text", "email") else "call", "current": c["_id"] == s["_id"]})
+    return out
+
+
 async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     tz = _tz(client)
     start, end = month_bounds(month, tz)
