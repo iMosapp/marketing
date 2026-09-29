@@ -53,7 +53,8 @@ async def get_setup(cid: str, request: Request):
     await require_admin(request)
     c = await _client(get_db(), cid)
     return {"lead_email": c.get("lead_email") or "", "lead_website": c.get("lead_website") or "", "lead_process": ls.clean_process(c.get("lead_process")), "defaults": ls.DEFAULT_PROCESS,
-            "windows": [{"hours": h, "label": l} for h, l in ls.WINDOWS.items()], "email_ready": bool(ls.inbound_domain()), "pool": await ls.pool_state(get_db())}
+            "windows": [{"hours": h, "label": l} for h, l in ls.WINDOWS.items()], "email_ready": bool(ls.inbound_domain()), "pool": await ls.pool_state(get_db()),
+            "server": {"inbound_domain": ls.inbound_domain(), "sender_domain": ls.sender_domain(), "webhook_url": f"{ls._app_url()}/api/webhooks/resend/inbound"}}
 
 
 @router.put("/setup/{cid}")

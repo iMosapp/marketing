@@ -2,7 +2,7 @@ import { GOLD, GREEN, RED, AMBER, PURPLE, BLUE } from '../shared';
 import type { ShopCall } from '../shared';
 
 export type LeadProcess = { first_call_min: number; first_text_min: number; first_email_min: number; channels: string[]; day1_calls: number; follow_up_days: number; must: string[] };
-export type LeadSetup = { lead_email: string; lead_website: string; lead_process: LeadProcess; defaults: LeadProcess; windows: { hours: number; label: string }[]; email_ready: boolean; pool: Pool };
+export type LeadSetup = { lead_email: string; lead_website: string; lead_process: LeadProcess; defaults: LeadProcess; windows: { hours: number; label: string }[]; email_ready: boolean; pool: Pool; server?: { inbound_domain: string; sender_domain: string; webhook_url: string } };
 export type PoolNumber = { phone: string; status: string; lead_shop_id: string | null; cooling: boolean; cooldown_until: string | null; purchased_at: string | null; monthly_cost_usd: number | null };
 export type Pool = { numbers: PoolNumber[]; available: number; in_use: number; cap: number; total: number };
 export type LeadEvent = { at: string; since: string | null; channel: string; direction: string; kind: string; summary: string; from?: string; session_id?: string; automated?: boolean };

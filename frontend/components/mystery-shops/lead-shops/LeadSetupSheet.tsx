@@ -37,6 +37,12 @@ export const LeadSetupSheet = ({ visible, onClose, colors, clientId, setup, onSa
     <Sheet visible={visible} onClose={onClose} title="Lead shop setup" colors={colors} testID="lead-setup-sheet" footer={<GoldButton label="Save" onPress={save} busy={busy} testID="lead-setup-save" />}>
       <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>The lead lands in the store's CRM like any other internet lead. Nobody there knows it is a shop. Fill in where their leads go and the process they promised, and every lead shop is graded against it.</Text>
       <Field label="CRM LEAD INTAKE EMAIL (WHERE THEIR ADF/XML LEADS GO)" value={email} onChange={setEmail} colors={colors} placeholder="leads@dealership.crm.com" keyboardType="email-address" autoCapitalize="none" testID="lead-setup-email" />
+      {!!setup?.server && (
+        <View style={{ gap: 4, backgroundColor: colors.card, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: setup.email_ready ? colors.border : '#B4453A' }} {...tid('lead-setup-server')}>
+          <Label t="WHAT THE STORE SEES ON EMAIL" colors={colors} />
+          <Text style={{ fontSize: 12.5, color: colors.text, lineHeight: 18 }}>Lead arrives from <Text style={{ fontWeight: '800' }}>leads@{setup.server.sender_domain}</Text>{setup.email_ready ? <Text>, the shopper replies from <Text style={{ fontWeight: '800' }}>firstname.lastname.NN@{setup.server.inbound_domain}</Text></Text> : <Text style={{ color: '#B4453A' }}>. Replies cannot be received yet: set INBOUND_EMAIL_DOMAIN on the server (a domain with Receiving on in Resend) and point its email.received webhook at {setup.server.webhook_url}</Text>}.</Text>
+        </View>
+      )}
       <Field label="STORE WEBSITE (FOR THE MANUAL FORM OPTION)" value={site} onChange={setSite} colors={colors} placeholder="https://www.dealership.com" keyboardType="url" autoCapitalize="none" testID="lead-setup-website" />
       <View style={{ gap: 6 }}>
         <Label t="CHANNELS THE STORE PROMISED TO USE" colors={colors} />

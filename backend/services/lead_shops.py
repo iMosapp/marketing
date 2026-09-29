@@ -57,6 +57,11 @@ def inbound_domain() -> str:
     return (os.environ.get("INBOUND_EMAIL_DOMAIN") or "").strip().lower()
 
 
+def sender_domain() -> str:
+    """Domain the lead email itself is sent from. LEAD_SENDER_DOMAIN keeps it off the company brand; falls back to SENDER_EMAIL's domain."""
+    return ((os.environ.get("LEAD_SENDER_DOMAIN") or "").strip() or os.environ.get("SENDER_EMAIL", "notifications@imonsocial.com").split("@")[-1]).strip().lower()
+
+
 def clean_process(raw: Optional[dict]) -> dict:
     raw = raw or {}
     out = dict(DEFAULT_PROCESS)
@@ -222,8 +227,7 @@ async def deliver(db, shop: dict, client: dict) -> dict:
     auto = client.get("industry", "automotive") in (None, "automotive")
     body = adf_xml(shop, client) if auto else plain_lead_text(shop, client)
     subject = f"New Lead: {p['name']}" + (f" - {p.get('vehicle') or p.get('offering')}" if (p.get('vehicle') or p.get('offering')) else "")
-    sender_domain = (os.environ.get("SENDER_EMAIL", "notifications@imonsocial.com").split("@")[-1]).strip().lower()
-    payload = {"from": f"{shop.get('source_name') or 'Website'} Leads <leads@{sender_domain}>", "to": [to], "reply_to": p["email"], "subject": subject, "text": body,
+    payload = {"from": f"{shop.get('source_name') or 'Website'} Leads <leads@{sender_domain()}>", "to": [to], "reply_to": p["email"], "subject": subject, "text": body,
                "headers": {"X-Entity-Ref-ID": f"lead-shop-{shop['_id']}"}}
     if auto:
         payload["attachments"] = [{"filename": "lead.xml", "content": list(body.encode("utf-8"))}]
