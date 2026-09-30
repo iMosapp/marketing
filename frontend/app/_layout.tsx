@@ -10,6 +10,7 @@ import { ToastProvider } from '../components/common/Toast';
 import { LiveJessiProvider } from '../components/jessi/LiveJessiProvider';
 import JessieFloatingChat, { JESSI_BAR_HEIGHT } from '../components/JessieFloatingChat';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { HomeFab } from '../components/common/HomeFab';
 import { initGlobalErrorHandlers } from '../services/errorReporter';
 import { playLeadChime, isLeadPush } from '../utils/leadChime';
 
@@ -325,6 +326,7 @@ export default function RootLayout() {
                 <Stack.Screen name="review/[storeSlug]" />
                 <Stack.Screen name="l/[username]" />
               </Stack>
+              {showJessi && <HomeFab />}
             </View>
             </LiveJessiProvider>
             {/* Jessi floating chat hidden — causes keyboard offset issues */}
