@@ -82,6 +82,25 @@ def verify_password(plain: str, stored: str) -> bool:
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger(__name__)
 
+
+def _strip_binary(user: dict) -> dict:
+    """The session payload must never carry raw bytes: the Voice ID profile (services/voice_id.py) lives on the user doc as Binary."""
+    vid = user.get("voice_id")
+    if isinstance(vid, dict) and "profile" in vid:
+        user["voice_id"] = {**{k: v for k, v in vid.items() if k != "profile"}, "enrolled": bool(vid.get("profile"))}
+    return user
+
+
+def _session_json(obj):
+    """json.dumps default for login / me / refresh: dates and ids to strings, any stray bytes dropped instead of a 500."""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if isinstance(obj, ObjectId):
+        return str(obj)
+    if isinstance(obj, (bytes, bytearray)):
+        return None
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
 # ── Brute-force / rate-limit protection (MongoDB-backed, survives restarts) ─────
 _LOGIN_MAX_FAILS = int(os.environ.get("LOGIN_MAX_FAILS", "8"))       # failed tries before lockout
 _LOGIN_LOCKOUT_MINUTES = int(os.environ.get("LOGIN_LOCKOUT_MINUTES", "15"))
@@ -509,6 +528,7 @@ async def login(credentials: dict, request: Request = None):
     user['_id'] = str(user['_id'])
     # Remove password from response
     user.pop('password', None)
+    _strip_binary(user)
     if user.get('jessi_onboarding'):
         try:
             from services import jessi_onboarding as _jo
@@ -587,14 +607,7 @@ async def login(credentials: dict, request: Request = None):
     from fastapi.responses import JSONResponse
     import json as json_mod
 
-    def _serialize(obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        if isinstance(obj, ObjectId):
-            return str(obj)
-        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-
-    resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_serialize)))
+    resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_session_json)))
     resp.set_cookie(
         key="imonsocial_session",
         value=str(user['_id']),
@@ -694,6 +707,7 @@ async def _session_response(user: dict):
     user["_id"] = str(user["_id"])
     if "password" in user:
         del user["password"]
+    _strip_binary(user)
     for k in list(user.keys()):
         if isinstance(user[k], ObjectId):
             user[k] = str(user[k])
@@ -784,14 +798,7 @@ async def _session_response(user: dict):
     from fastapi.responses import JSONResponse
     import json as json_mod
 
-    def _serialize(obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        if isinstance(obj, ObjectId):
-            return str(obj)
-        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-
-    resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_serialize)))
+    resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_session_json)))
     resp.set_cookie(
         key="imonsocial_session",
         value=str(user['_id']),
