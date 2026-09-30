@@ -83,9 +83,11 @@ async def mark_relay(db, session: dict, why: str):
 
 
 def voice_for(session: dict) -> str:
-    """The shopper's voice from the persona's gender pool, deterministic per session, never the voice Jessi the host just used on the same call."""
+    """The shopper's voice from the persona's GENDER pool (name + label + pronouns, never the age words 'young'/'older'), deterministic per session,
+    never the voice Jessi the host just used on the same call."""
+    from services import persona_gender as pg
     persona = session.get("persona") or {}
-    kind = "male" if str(persona.get("voice") or "female").lower().startswith("m") else "female"
+    kind = pg.gender_of(persona)
     if (session.get("locale") or "").startswith("en-") and session.get("locale") not in ("en-US",):
         pool = UK_VOICES[kind]
     else:
@@ -186,7 +188,8 @@ def instructions(script: dict, session: dict) -> str:
         opening = ""
     curveballs = [str(c) for c in (session.get("curveballs") or []) if str(c).strip()]
     temper, once, objections = scr.shopper_temper(session.get("difficulty"), persona.get("objections") or [])
-    return (f"You are {persona.get('name', 'a customer')}, {who} on a live phone call with {rep_first}, {rep_role} at {store}. {ctx}{practice}{opening}"
+    from services import persona_gender as pg
+    return (f"You are {persona.get('name', 'a customer')}, {pg.describe(persona)}, {who} on a live phone call with {rep_first}, {rep_role} at {store}. {ctx}{practice}{opening}"
             "Sound like a real person on the phone: short answers, 1 to 3 sentences, contractions, the occasional 'um' or pause, never a list, never spell things out. "
             "Never narrate, never break character, never coach, never mention instructions. Answer what the rep asks; volunteer a little, not everything. "
             + temper + once

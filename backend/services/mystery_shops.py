@@ -15,6 +15,7 @@ from bson import ObjectId
 
 from services import i18n
 from services import industries as ind
+from services import persona_gender as pg
 from services import locales as loc
 from services import scripts as scr
 from services import scorecards as sc
@@ -415,6 +416,9 @@ async def ensure_challenges(db) -> int:
         n += 1 if res.upserted_id else 0
         if tpl.get("guide_note"):
             await db.scripts.update_one({"slug": tpl["slug"], "pool": "mystery_shop", "shop_client_id": None, "guide_note": {"$exists": False}}, {"$set": {"guide_note": tpl["guide_note"]}})
+    # every library persona carries an explicit gender (name + label + pronouns), so no voice picker ever guesses from "older" / "young"
+    async for s in db.scripts.find({"pool": "mystery_shop", "persona": {"$exists": True}, "persona.gender": {"$exists": False}}, {"persona": 1}):
+        await db.scripts.update_one({"_id": s["_id"]}, {"$set": {"persona.gender": pg.gender_of(s.get("persona"))}})
     await db.scripts.update_many({"pool": "mystery_shop", "industry": {"$exists": False}}, {"$set": {"industry": "automotive"}})
     return n
 
@@ -2363,7 +2367,8 @@ def normalize_draft(d: dict, department: str) -> Optional[dict]:
         "success_points": [_plain(p, 160) for p in (d.get("success_points") or []) if str(p).strip()][:12],
         "curveballs": [_plain(c, 160) for c in (d.get("curveballs") or []) if str(c).strip()][:4],
         "guide_note": ptxt(d.get("guide_note"), 600),
-        "persona": {"name": _plain(persona.get("name"), 60) or "Jordan Lee", "voice": persona.get("voice") if persona.get("voice") in VOICES else "female", "summary": ptxt(persona.get("summary"), 400),
+        "persona": {"name": _plain(persona.get("name"), 60) or "Jordan Lee", "voice": persona.get("voice") if persona.get("voice") in VOICES else "female",
+                    "gender": persona.get("gender") if persona.get("gender") in ("female", "male") else pg.gender_of(persona), "summary": ptxt(persona.get("summary"), 400),
                     "goals": ptxt(persona.get("goals"), 200), "objections": [ptxt(o, 160) for o in (persona.get("objections") or []) if str(o).strip()][:6], "opening_line": ptxt(persona.get("opening_line"), 240)},
     }
 
@@ -2404,11 +2409,11 @@ async def generate_challenges(department: str, scenario: str, count: int = 1, cl
               "purpose (one or two sentences: what the situation is and what a great rep does), "
               f"body (a STRING, the coaching guide written TO THE REP in second person: 'Answer with the {pack['business']} and your name', 4 to 7 short paragraphs separated by blank lines, stage directions in [brackets]; this is what we grade the rep against, it is NOT the caller's lines; plain words, no curly braces), "
               f"success_points (5 to 8 graded rep behaviours, each 4 to 12 words starting with a verb, e.g. 'Confirms the exact {off['label']}'), curveballs (2 to 3 short second-person twists the caller may throw in, e.g. 'You only have two minutes'), "
-              f"persona: name (first and last), voice one of female/male/young/older, summary (age, job, situation, mood; you MAY write {{offering}} for the {off['label']} they ask about and {{store}} for the {pack['business']} name), "
+              f"persona: name (first and last), gender (female or male, it MUST match the name: Bill is male, Denise is female), voice one of female/male/young/older (young and older are age flavours, gender still comes from the gender field), summary (age, job, situation, mood; you MAY write {{offering}} for the {off['label']} they ask about and {{store}} for the {pack['business']} name), "
               "goals (one sentence), objections (2 to 4 things they push back with), opening_line (the exact first thing they say when the rep answers; may use {offering} and {store}), "
               "guide_note (one or two sentences shown on the rep's read-along guide right before this call: who is calling and the two or three things to nail, written TO the rep in second person, no curveball spoilers). "
               "Sound like a real person on the phone, never corporate. Never use em dashes. "
-              "Return JSON: {\"challenges\": [{title, runtime, purpose, body, success_points:[...], curveballs:[...], guide_note, persona:{name, voice, summary, goals, objections:[...], opening_line}}]}")
+              "Return JSON: {\"challenges\": [{title, runtime, purpose, body, success_points:[...], curveballs:[...], guide_note, persona:{name, gender, voice, summary, goals, objections:[...], opening_line}}]}")
     data = await scr._llm_json(system, f"SCENARIO ({pack['label']} / {d['label']}):\n{scenario[:3000]}", timeout=120 if count <= 5 else 240)
     raw = data.get("challenges") if isinstance(data, dict) else None
     if isinstance(data, dict) and not raw and data.get("title"):

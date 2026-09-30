@@ -13,6 +13,7 @@ from bson import ObjectId
 
 from routers.database import get_db
 from services import locales as loc
+from services import persona_gender as pg
 from services.speech import numbers_rule, speakable
 from utils.text_sanitize import no_em_dash
 
@@ -426,7 +427,7 @@ def relay_twiml(session: dict, prelude: str = "") -> str:
     # inbound = the customer is calling in, so the AI stays quiet until the rep answers the phone
     locale = session.get("locale")
     greeting = "" if session.get("direction") == "inbound" else f'welcomeGreeting="{_xml(speakable(opening, locale))}" '
-    provider, voice = loc.relay_voice(locale, persona.get("voice"))
+    provider, voice = loc.relay_voice(locale, pg.voice_label(persona))  # gender from name/label/pronouns; "older"/"young" never mean female
     return (f'<?xml version="1.0" encoding="UTF-8"?><Response>{prelude}<Connect action="{_xml(base)}/api/scripts/roleplay/after/{sid}?t={token}">'
             f'<ConversationRelay url="{_xml(ws)}" {greeting}ttsProvider="{provider}" voice="{_xml(voice)}" language="{loc.get(locale)["relay_language"]}" '
             f'transcriptionProvider="Deepgram" speechModel="nova-3-general" interruptible="any" interruptSensitivity="medium" ignoreBackchannel="true" hints="{_xml(hints)}" />'
@@ -751,7 +752,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
     lead_ctx = (f"You sent the {pack['business']} an inquiry online (an internet lead) and now THEY are following up with you, so they lead and you react like a real, interested but busy person. "
                 "Nobody at the business knows this is a shop: stay fully in character as a real customer; never admit you are an AI, a bot or a shopper, even if asked directly. ")
     if channel == "email":
-        return (f"You are {persona.get('name', 'a customer')}, {who} emailing {rep_first}, {rep_role} at {store_name}. "
+        return (f"You are {persona.get('name', 'a customer')}, {pg.describe(persona)}, {who} emailing {rep_first}, {rep_role} at {store_name}. "
                 + (lead_ctx if covert else f"YOU emailed the {pack['business']} first, like a real internet lead who found them online, so you drive what you want. ")
                 + "Stay fully in character as a real customer: never admit you are an AI, a bot or a shopper, even if asked directly; a real customer would just sound confused and keep going. "
                 "This is an EMAIL thread: write like a real person emails a business from their phone. A one-line greeting, 2 to 5 short sentences, plain words, contractions, then sign off with just your first name. "
@@ -768,7 +769,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
                   "No em dashes. Return ONLY JSON: {\"subject\": \"short subject, first email only, else empty\", \"say\": \"the email body with line breaks\", \"ended\": true|false, \"mood\": \"warm|neutral|guarded|annoyed\"}. "
                 + f"The employee's script (they may or may not follow it): {script.get('title', '')}: {script.get('purpose', '')}")
     if channel == "text":
-        return (f"You are {persona.get('name', 'a customer')}, {who} texting (SMS) with {rep_first}, {rep_role} at {store_name}. "
+        return (f"You are {persona.get('name', 'a customer')}, {pg.describe(persona)}, {who} texting (SMS) with {rep_first}, {rep_role} at {store_name}. "
                 + (lead_ctx if covert else f"YOU texted the {pack['business']} first, like a real lead who found them online, so you drive what you want. ")
                 + "Stay fully in character as a real customer: never admit you are an AI, a bot or a shopper, even if asked directly; a real customer would just sound confused and keep going. "
                 "This is an SMS thread: write like a real person texts. 1 or 2 short sentences, under 240 characters, casual, contractions, no sign-off, no lists, no emojis unless the rep used one first. "
@@ -783,7 +784,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
                   "Set ended to true on your closing text only: after the appointment or next step is set, after you decline for good, or when the rep clearly ends the conversation. Never end before exchange 4 unless the rep is rude. "
                   "No em dashes. Return ONLY JSON: {\"say\": \"your text message\", \"ended\": true|false, \"mood\": \"warm|neutral|guarded|annoyed\"}. "
                 + f"The employee's script (they may or may not follow it): {script.get('title', '')}: {script.get('purpose', '')}")
-    return (f"You are {persona.get('name', 'a customer')}, {who} on a phone call with {rep_first}, {rep_role} at {store_name}. "
+    return (f"You are {persona.get('name', 'a customer')}, {pg.describe(persona)}, {who} on a phone call with {rep_first}, {rep_role} at {store_name}. "
             + (lead_ctx if covert else (f"YOU placed this call to the {pack['business']}, so you drive the reason for calling. " if direction == "inbound" else "The employee called YOU, so they drive the conversation and you react. "))
             + ("The rep was told this is a practice call, but you stay fully in character as a real customer: never admit you are an AI, a recording or a shopper, even if asked directly; a real customer would just sound confused and keep going. " if mystery and not covert else "")
             + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "

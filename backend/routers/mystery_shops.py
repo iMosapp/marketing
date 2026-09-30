@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from routers.database import get_db
 from routers.scripts import require_user, _resolve
 from services import industries as ind
+from services import persona_gender as pg
 from services import locales as loc
 from services import mystery_shops as ms
 from services import shop_report_mail as srm
@@ -1276,7 +1277,8 @@ async def end_text_shop(sid: str, request: Request):
 # ---------------------------------------------------------------- challenges
 def _challenge_out(s: dict) -> dict:
     rv = s.get("review") or {}
-    return {**scr.serialize_script(s), "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "language": s.get("language") or "en", "source_slug": s.get("source_slug"), "direction": s.get("direction") if s.get("direction") in ms.DIRECTIONS else "inbound",
+    persona = s.get("persona") or {}
+    return {**scr.serialize_script(s), "persona": {**persona, "gender": persona.get("gender") if persona.get("gender") in ("female", "male") else pg.gender_of(persona)}, "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "language": s.get("language") or "en", "source_slug": s.get("source_slug"), "direction": s.get("direction") if s.get("direction") in ms.DIRECTIONS else "inbound",
             "review": {"status": rv.get("status") or "approved", "by_name": rv.get("by_name") or "", "at": rv["at"].isoformat() if hasattr(rv.get("at"), "isoformat") else rv.get("at")} if rv else None, "industry": s.get("industry") or ind.industry_of_dept(s.get("department")), "client_specific": bool(s.get("shop_client_id")), "shop_client_id": s.get("shop_client_id"), "curveballs": s.get("curveballs") or [], "generated": bool(s.get("generated_from")) and s.get("generated_from") != "kubota_pack",
             "guide_note": s.get("guide_note") or ""}
 
@@ -1295,7 +1297,8 @@ def _challenge_fields(body: ChallengeBody) -> dict:
     return {"department": body.department, "industry": ind.industry_of_dept(body.department), "direction": "outbound" if body.direction == "outbound" else "inbound", "category": CATEGORY_BY_DEPT.get(body.department) or ind.dept_label(body.department), "title": no_em_dash(body.title.strip())[:120], "runtime": (body.runtime or "").strip()[:40], "purpose": no_em_dash(body.purpose or "")[:900], "body": no_em_dash(body.body)[:8000],
             "guide_note": no_em_dash(str(body.guide_note or "")).strip()[:600],
             "success_points": [str(p).strip()[:200] for p in (body.success_points or []) if str(p).strip()][:16], "curveballs": [no_em_dash(str(c)).strip()[:200] for c in (body.curveballs or []) if str(c).strip()][:6],
-            "persona": {"name": str(persona.get("name")).strip()[:60], "voice": persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female", "summary": no_em_dash(str(persona.get("summary") or ""))[:3000],
+            "persona": {"name": str(persona.get("name")).strip()[:60], "voice": persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female",
+                        "gender": persona.get("gender") if persona.get("gender") in ("female", "male") else pg.gender_of(persona), "summary": no_em_dash(str(persona.get("summary") or ""))[:3000],
                         "goals": no_em_dash(str(persona.get("goals") or ""))[:600], "objections": [no_em_dash(str(o))[:160] for o in (persona.get("objections") or []) if str(o).strip()][:8], "opening_line": no_em_dash(str(persona.get("opening_line")))[:240],
                         # master challenges (Kubota pack) offer several names / voices / openings; a call rolls one of each
                         **{k: [str(x).strip()[:240] for x in (persona.get(k) or []) if str(x).strip()][:12] for k in ("names", "voices", "opening_lines") if persona.get(k)}}}

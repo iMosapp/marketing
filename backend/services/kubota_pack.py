@@ -156,13 +156,26 @@ KUBOTA_CHALLENGES = [
 
 
 def roll_persona(persona: dict) -> dict:
-    """A concrete customer for THIS call: pick from names / voices / opening_lines when a challenge offers several."""
+    """A concrete customer for THIS call: pick from names / voices / opening_lines when a challenge offers several.
+    The name is rolled first and the voice must agree with it (a Bill never gets a woman's voice): 'female'/'male' labels are kept only
+    when they match the name's gender, 'young'/'older' are age flavours that fit either, and persona.gender is written out explicitly."""
     import random
+    from services import persona_gender as pg
     p = dict(persona or {})
-    for plural, single in (("names", "name"), ("voices", "voice"), ("opening_lines", "opening_line")):
-        opts = [o for o in (p.get(plural) or []) if str(o).strip()]
-        if opts:
-            p[single] = random.choice(opts)
+    names = [o for o in (p.get("names") or []) if str(o).strip()]
+    if names:
+        p["name"] = random.choice(names)
+    lines = [o for o in (p.get("opening_lines") or []) if str(o).strip()]
+    if lines:
+        p["opening_line"] = random.choice(lines)
+    g = pg.first_name_gender(p.get("name")) or pg.gender_of({k: v for k, v in p.items() if k != "voice"})
+    voices = [str(o).strip().lower() for o in (p.get("voices") or []) if str(o).strip()]
+    fits = [v for v in voices if v == g or v in ("young", "older")]
+    if fits:
+        p["voice"] = random.choice(fits)
+    elif str(p.get("voice") or "").lower() in ("female", "male") and p["voice"] != g:
+        p["voice"] = g
+    p["gender"] = g
     return p
 
 
@@ -203,7 +216,7 @@ KUBOTA_SCENARIOS = [
        ["Ask what the difference between a B and an L actually is, in plain words", "Mention your neighbor has a Deere 1025R and likes it", "Say you saw a used one on Marketplace for a lot less"], "5 to 8 min"),
     _c("eq_sales", 2, "Hay producer before the season", "An experienced hay producer needs a bigger utility tractor before first cutting and has a trade. The salesperson must learn the operation, the implements and the timeline, then move to a trade evaluation and quote.",
        "This customer knows tractors and will not tolerate a spec dump. Ask about acres in hay, cuttings, the baler and mower conditioner, loader work, hours per year and the trade. Tie the recommendation to uptime in a short season. Book the trade look.",
-       "Randy Coker", "older", "Randy Coker, 61, runs 220 acres of hay and 60 cow-calf pairs. His 2009 M-series has 4,100 hours and a tired clutch. Runs a round baler, a 10-foot mower conditioner and a loader daily in season. "
+       "Randy Coker", "male", "Randy Coker, 61, runs 220 acres of hay and 60 cow-calf pairs. His 2009 M-series has 4,100 hours and a tired clutch. Runs a round baler, a 10-foot mower conditioner and a loader daily in season. "
        "First cutting is five weeks out. Wants to trade the old tractor and needs to know what it is worth before he decides. Not in a hurry to talk, in a hurry to be done.",
        "I need another tractor before hay season.",
        ["I'm not paying new prices for a tractor that sits half the year", "What are you going to give me for my trade?", "Deere quoted me already", "I don't need all the electronics"],
@@ -224,7 +237,7 @@ KUBOTA_SCENARIOS = [
        ["Ask what the KX weighs with a thumb and a bucket because your trailer is rated 10,000", "Say the Bobcat dealer offered a demo on your site tomorrow", "Ask whether you can get a loaner if it goes down under warranty"], "6 to 9 min"),
     _c("eq_sales", 5, "Deere owner thinking about switching", "A lifelong John Deere owner is considering Kubota for the first time and leads with 'why Kubota'. The salesperson must discover the work, respect the current brand and connect the recommendation to the job without bashing.",
        "Do not take the bait on brand wars. Ask what he runs now, what it does well, what frustrates him and what changed. Connect Kubota to his application: productivity, reliability, dealer support, operator comfort. Set a walk-around.",
-       "Gary Pettit", "older", "Gary Pettit, 58, has owned three Deere tractors and runs 80 acres of pasture and a small cattle herd. His 5-series needs work and the Deere dealer's service wait has been long. Curious about a Kubota M-series and about the dealership itself, not just the iron. "
+       "Gary Pettit", "male", "Gary Pettit, 58, has owned three Deere tractors and runs 80 acres of pasture and a small cattle herd. His 5-series needs work and the Deere dealer's service wait has been long. Curious about a Kubota M-series and about the dealership itself, not just the iron. "
        "Loyal by nature, skeptical of anyone who trashes Deere. Would consider a trade.",
        "I've been looking at Kubota and Deere and I'm trying to figure out which way to go.",
        ["John Deere has something pretty similar, why should I buy Kubota?", "Resale on a Deere is better", "My Deere dealer knows my equipment", "I've never had a problem with green"],
@@ -245,7 +258,7 @@ KUBOTA_SCENARIOS = [
        ["Ask whether they sell on a state or cooperative contract", "Say the director wants to see it cut before anything is signed", "Mention the last dealer took six weeks to get a part"], "6 to 9 min"),
     _c("eq_sales", 8, "Rancher choosing an RTV", "A rancher wants a utility vehicle for fence and cattle work and asks what the difference is between the RTVs. The salesperson must discover the terrain, the loads, the passengers and the hours before explaining models, then set a test drive.",
        "Do not answer the spec question first. Ask about the terrain, the distances, what rides in the bed, how many people, weather and hours. Then explain the differences in her words and set a test drive at a real time.",
-       "Dale Whitcomb", "older", "Dale Whitcomb, 66, runs 400 acres of rolling pasture with creek crossings. Checks fence and cattle daily, hauls mineral tubs, fence posts and a calf now and then. Two people some days, a dog always. "
+       "Dale Whitcomb", "male", "Dale Whitcomb, 66, runs 400 acres of rolling pasture with creek crossings. Checks fence and cattle daily, hauls mineral tubs, fence posts and a calf now and then. Two people some days, a dog always. "
        "Considered a side-by-side from a powersports dealer but wants something built to work. Winters are muddy. Retiring from the day job next year, wants it to last.",
        "What's the difference between your RTVs?",
        ["The powersports place has a side-by-side for less", "Do I really need diesel?", "Can you just give me the price?", "I don't need a cab"],
@@ -282,7 +295,7 @@ KUBOTA_SCENARIOS = [
        ["Ask them to just tell you what is wrong over the phone", "Say you are considering calling the other dealer if they cannot look at it today", "Ask whether they have a rental you can use in the meantime"], "5 to 7 min"),
     _c("eq_service", 3, "Warning light mid-hay season", "A farmer has an intermittent warning light on an M-series tractor during hay season and wants to keep running. The advisor must gather symptoms and indicator details, avoid telling them it is fine, and set the next action.",
        "Do not say 'you're probably fine to run it'. Ask what the light is, what the display says, when it comes on, whether it is intermittent, hours, recent service, how it is being used and the season deadline. Give an honest next step with a time.",
-       "Mike Stroud", "older", "Mike Stroud, 59, farms 300 acres of hay and grain. His M6-111 with 2,300 hours started showing an amber warning on the display two days ago, intermittent, usually after an hour of baling. "
+       "Mike Stroud", "male", "Mike Stroud, 59, farms 300 acres of hay and grain. His M6-111 with 2,300 hours started showing an amber warning on the display two days ago, intermittent, usually after an hour of baling. "
        "Runs fine otherwise. Weather window is this week and he wants to keep going. Serviced last fall, not sure of the hours since. Cannot afford to have it in the shop three days.",
        "I've got a warning light on my Kubota.",
        ["Can I keep running it?", "I can't lose it this week", "Just tell me if it's serious", "Last time it took you a week to get to it"],
@@ -296,7 +309,7 @@ KUBOTA_SCENARIOS = [
        ["Ask whether they can send a technician to the site", "Say it might be fuel because you got a load from a farm tank", "Ask about a rental for Monday if the fix takes longer"], "5 to 7 min"),
     _c("eq_service", 5, "Why pay dealer prices", "A price-sensitive owner is considering an independent shop and challenges dealer service pricing. The advisor must not argue, must still gather machine information, and must explain the value of factory training, tooling, genuine parts and records.",
        "Stay calm and curious. Ask about the machine, the hours and what service is needed before defending anything. Explain what the dealership brings: trained technicians, diagnostic tools, genuine parts, service records that help resale. Offer a specific option and recap.",
-       "Bill Harmon", "older", "Bill Harmon, 63, owns an L4701 with 600 hours on a hobby farm. Got a quote from an independent shop for a 600-hour service that is about 30 percent less than the dealer. "
+       "Bill Harmon", "male", "Bill Harmon, 63, owns an L4701 with 600 hours on a hobby farm. Got a quote from an independent shop for a 600-hour service that is about 30 percent less than the dealer. "
        "Not angry, just practical, and he likes to be talked to like an adult. Will stay with the dealer if someone gives him a real reason.",
        "Why should I pay dealer prices when the shop down the street can service it?",
        ["Your service is expensive", "It's the same oil and filters", "He's been working on tractors for 30 years", "Convince me"],
@@ -331,7 +344,7 @@ KUBOTA_SCENARIOS = [
        ["Ask whether the undercarriage should be measured", "Say you have a slow week in two weeks and want it done then", "Ask if a service plan exists"], "4 to 6 min"),
     _c("eq_service", 10, "Needs it before planting, cannot haul", "A farmer wants the tractor gone through before planting in four days and cannot bring it in. The advisor must gather the machine and needs, offer pickup or a field technician honestly, and commit to a specific action.",
        "Deadline plus transportation problem. Ask what needs doing, model, hours, any concerns, where the tractor is and access for a truck. Offer the honest options (pickup, field service) with real times, and set an expectation you can keep.",
-       "Owen Pruett", "older", "Owen Pruett, 57, farms 500 acres and plants in four days. His M7 with 1,100 hours needs a pre-season service and has a slow hydraulic leak at a fitting. No way to haul it this week. "
+       "Owen Pruett", "male", "Owen Pruett, 57, farms 500 acres and plants in four days. His M7 with 1,100 hours needs a pre-season service and has a slow hydraulic leak at a fitting. No way to haul it this week. "
        "Farm is 40 minutes out with good gravel access. Calm, but the calendar is not.",
        "I need my tractor gone through before I plant next week and I can't get it to you.",
        ["Can you come to me?", "I need it by Monday", "I can't lose planting days", "What's the field call cost?"],
@@ -361,7 +374,7 @@ KUBOTA_SCENARIOS = [
        ["Ask them to just guess which belt it takes", "Say you can go look at the machine if they tell you where the sticker is", "Ask if they can find it under your husband's name"], "4 to 6 min"),
     _c("eq_parts", 4, "Doing the 200-hour service himself", "A do-it-yourself owner wants filters for an L-series service this weekend and has not thought about the oil, fluids or the exact model. The counterperson must identify the machine, verify the filters and help complete the whole job without pushing.",
        "Model first (L-series is not a model). Verify each filter, ask what service he is doing and whether he has oil, hydraulic fluid and the other filters, check stock and set pickup. Helping complete the job is the point; upselling is not.",
-       "Ed Baxter", "older", "Ed Baxter, 62, has an L2501 with about 195 hours and wants to do the 200-hour service Saturday. Says 'L-series' and has to look up the exact model. Wants filters, has not bought oil, does not know if hydraulic fluid is due. "
+       "Ed Baxter", "male", "Ed Baxter, 62, has an L2501 with about 195 hours and wants to do the 200-hour service Saturday. Says 'L-series' and has to look up the exact model. Wants filters, has not bought oil, does not know if hydraulic fluid is due. "
        "Handy and proud of it, appreciates a straight answer.",
        "I've got an L-series tractor and I need filters.",
        ["I just need the filters", "Do I really need Kubota oil?", "The manual's in the tractor", "How much for all of it?"],
@@ -389,14 +402,14 @@ KUBOTA_SCENARIOS = [
        ["Do not mention bolts until they ask", "Ask whether a reversible edge is worth it", "Say you can pick it up Thursday if it is in"], "3 to 5 min"),
     _c("eq_parts", 8, "RTV drive belt, please ship it", "A farmer needs a drive belt for an RTV and wants it shipped. The counterperson must identify the model and year, verify the belt, check availability, explain shipping options and confirm the address and number.",
        "Not urgent, still worth doing right. Model, year, serial if the belt depends on it, verify, check stock, explain shipping cost and timing, confirm the address and number. Ask if anything else is due since it is shipping anyway.",
-       "Cody Reinhart", "young", "Cody Reinhart, 29, works the family farm two hours away and runs an RTV-X900 that is slipping under load; he thinks it is the drive belt. Has the model and about 1,100 hours, can get the serial. "
+       "Cody Reinhart", "male", "Cody Reinhart, 29, works the family farm two hours away and runs an RTV-X900 that is slipping under load; he thinks it is the drive belt. Has the model and about 1,100 hours, can get the serial. "
        "Wants it shipped, not in a hurry, maybe wants a spare too.",
        "I need a drive belt for my RTV, can you ship it?",
        ["How much is shipping?", "How long will it take?", "Is that the right belt for sure?", "Can I get two?"],
        ["Ask whether you should buy a spare while you are at it", "Say you might also need a fuel filter if it is going in the same box", "Ask how they know it is the right belt without seeing the machine"], "3 to 5 min"),
     _c("eq_parts", 9, "Last time you ordered the wrong blades", "A customer is back after receiving the wrong mower blades last time and wants it right. The counterperson must own the history without excuses, verify carefully with the model and deck, and confirm before ordering.",
        "The trust is damaged, so verify twice. Acknowledge what happened, get model, deck size and serial, confirm blade count and style, read the part back, check stock and set the pickup. Get the number and make the recap explicit.",
-       "Gene Alcott", "older", "Gene Alcott, 64, has a Z724 with a 54-inch deck. Last time the blades ordered for him were the wrong length and he had to come back. Wants three blades. "
+       "Gene Alcott", "male", "Gene Alcott, 64, has a Z724 with a 54-inch deck. Last time the blades ordered for him were the wrong length and he had to come back. Wants three blades. "
        "Has the model and the deck size written down this time. Not rude, but he is watching.",
        "Last time you guys ordered me the wrong blades, so let's get it right this time.",
        ["Last time you guys ordered me the wrong part", "How do I know these are right?", "Can you read that back to me?", "Are they in stock or is this another wait?"],
@@ -461,21 +474,21 @@ KUBOTA_SCENARIOS = [
        ["Say you have run tractors for 40 years if they start explaining the controls", "Ask whether the loader comes with it", "Ask if the pond contractor's dozer already being there changes anything"], "4 to 6 min"),
     _c("eq_rental", 8, "Same track loader as usual, fourth time", "A repeat renter asks for the same track loader again; it is the fourth time this year. The coordinator must handle the reservation well and recognize the rent-versus-buy signal without forcing it.",
        "Handle the rental first: confirm the job, dates, attachments and delivery, verify availability. Then notice: four rentals this year. It is fair to mention that ownership might be worth comparing and offer to connect them with sales. Do not push.",
-       "Glen Tackett", "older", "Glen Tackett, 56, does small excavation and grading jobs on the side and has rented the same SVL75 four times this year, usually for a week. Wants it again next week with a bucket and grapple, delivered. "
+       "Glen Tackett", "male", "Glen Tackett, 56, does small excavation and grading jobs on the side and has rented the same SVL75 four times this year, usually for a week. Wants it again next week with a bucket and grapple, delivered. "
        "Has thought about buying but never brought it up. Will admit the count only if asked how often he rents.",
        "I need the same track loader I got last month, same as usual.",
        ["Just book it like last time", "I don't need the whole spiel", "Same rate as before?", "I'm not ready to buy anything"],
        ["You have rented the same machine four times this year (a rent-versus-buy signal): reveal it only if they ask how often you rent", "Ask whether the rental payments could go toward a purchase", "Say next week's job might run two weeks"], "4 to 6 min"),
     _c("eq_rental", 9, "Across town quoted less on a mini ex", "A price shopper says a competitor quoted a lower daily rate on a mini excavator for stump removal. The coordinator must learn the job, compare honestly (size, included items, delivery), and set a next action without bashing the competitor.",
        "Do not chase the number. Ask about the stumps, how many and how big, ground, access, attachments (thumb), dates, transport. Compare honestly what is included. If a smaller machine will not do the job, say why. Verify availability and set the reservation or a callback.",
-       "Kyle Mercer", "young", "Kyle Mercer, 31, homeowner pulling eight stumps, two of them 30 inches across, in a backyard with a 6-foot gate. A rental yard across town quoted $280 a day on 'a mini ex' but he is not sure what size. "
+       "Kyle Mercer", "male", "Kyle Mercer, 31, homeowner pulling eight stumps, two of them 30 inches across, in a backyard with a 6-foot gate. A rental yard across town quoted $280 a day on 'a mini ex' but he is not sure what size. "
        "Wants a thumb. Next Saturday. Price-first but reasonable.",
        "The place across town quoted me $280 a day on a mini ex, can you beat that?",
        ["The other rental place is cheaper", "Just give me the price", "Why do I need a thumb?", "Can you match it?"],
        ["Say you want the price twice before answering job questions", "Mention two of the stumps are 30 inches across only if they ask about size", "Ask what is included in their rate that the other place might not include"], "4 to 6 min"),
     _c("eq_rental", 10, "Loading round bales for two days", "A farmer needs a loader for two days to move round bales and mentions tight gates. The coordinator must understand the bale size and count, the ground, the access and the timing, recommend the right machine and attachment, verify and reserve.",
        "Short ag rental. Ask bale size and weight, how many, how far, ground conditions, gate widths, whether a bale spear is needed, dates, delivery. Recommend the tractor or loader and attachment, verify availability, explain rate and requirements, reserve. Recap.",
-       "Harold Teague", "older", "Harold Teague, 68, needs to move about 180 round bales (5 by 5, roughly 1,200 pounds) from a field to a barn a quarter mile away over two days next week. His own tractor is down. Gates are 12 feet. "
+       "Harold Teague", "male", "Harold Teague, 68, needs to move about 180 round bales (5 by 5, roughly 1,200 pounds) from a field to a barn a quarter mile away over two days next week. His own tractor is down. Gates are 12 feet. "
        "Needs a bale spear. Wants delivery to the farm. Old-school, appreciates plain talk.",
        "I need something to load round bales for a couple of days.",
        ["I just need it two days", "Can you deliver?", "Does it come with a spear?", "What's that going to run me?"],

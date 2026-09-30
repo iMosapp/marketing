@@ -39,6 +39,7 @@ export const ChallengeDetailSheet = ({ open, onClose, colors, onEdit, onDelete, 
         {open.persona && (
           <View style={{ gap: 4, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}>
             <Label t={`THE ${industryOfDept(open.department).customer.toUpperCase()} · ${open.persona.name}`} colors={colors} />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }} {...tid('challenge-voice-line')}>{open.persona.gender === 'male' ? "Man's voice" : "Woman's voice"}{open.persona.voice === 'older' ? ' · older' : open.persona.voice === 'young' ? ' · younger' : ''}</Text>
             <Text style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>{open.persona.summary}</Text>
             {!!open.persona.goals && <Text style={{ fontSize: 13, color: colors.textSecondary }}>Wants: {open.persona.goals}</Text>}
             {!!open.persona.opening_line && <Text style={{ fontSize: 13, color: colors.textSecondary }}>Opens with: "{open.persona.opening_line}"</Text>}

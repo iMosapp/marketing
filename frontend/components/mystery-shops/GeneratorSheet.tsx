@@ -128,7 +128,7 @@ export const GeneratorSheet = ({ visible, onClose, colors, scope, onSaved, onEdi
           <Text style={{ fontSize: 12.5, fontWeight: '800', color: GOLD }}>{deptLabel(d.department, depts).toUpperCase()} · {d.runtime}</Text>
           {!!d.purpose && <Text style={{ fontSize: 13.5, color: colors.textSecondary, fontStyle: 'italic', lineHeight: 19 }}>{d.purpose}</Text>}
           <View style={{ backgroundColor: colors.bg, borderRadius: 12, padding: 10, gap: 3 }}>
-            <Text style={{ fontSize: 12.5, fontWeight: '800', color: colors.text }}>{d.persona?.name} <Text style={{ fontWeight: '500', color: colors.textSecondary }}>· {d.persona?.voice} voice</Text></Text>
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: colors.text }}>{d.persona?.name} <Text style={{ fontWeight: '500', color: colors.textSecondary }}>· {d.persona?.gender === 'male' ? "man's" : "woman's"} voice{d.persona?.voice === 'older' ? ', older' : d.persona?.voice === 'young' ? ', younger' : ''}</Text></Text>
             <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>{d.persona?.summary}</Text>
             <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>Opens with: "{d.persona?.opening_line}"</Text>
           </View>
