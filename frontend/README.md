@@ -1,50 +1,60 @@
-# Welcome to your Expo app 👋
+# IMOS frontend (Expo / React Native)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The iOS, Android and web client of i'M On Social. One TypeScript codebase, Expo SDK 54, React Native 0.81,
+React 19, Expo Router (file-based navigation), react-native-web for the browser build.
 
-## Get started
+## Layout
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+app/                 screens = routes. app/(tabs)/ is the main tab bar; app/admin/ the admin console;
+                     app/thread/[id].tsx the SMS thread; app/guide/, app/shop-score/ etc. are public pages.
+components/          shared UI. components/ui = shadcn-style primitives; feature folders (mystery-shops/,
+                     thread/, widget/, contact/, common/ ...)
+services/api.ts      axios instance. Web: same-origin "/api". Native: EXPO_PUBLIC_BACKEND_URL + "/api".
+hooks/               data + platform hooks (useWebSocket, useContactSearch, liveRtc.native/web ...)
+store/               zustand stores (e.g. draftStore.ts)
+contexts/            React contexts (auth, theme, toast, Live Jessi provider)
+utils/ constants/ config/ types/
+assets/              icons, splash, sounds
+babel-plugin-*.js    compile-time transforms applied to app/ and components/ only:
+                     max-font (maxFontSizeMultiplier=1), keyboard (dismiss on drag + Done bar),
+                     modal-kav (KeyboardAvoidingView inside every <Modal>), testid (data-testid -> testID/dataSet)
+plugins/             Emergent preview tooling (health-check, visual-edits); not used by Metro builds
+public/              static files copied into the web export (ad pages, audio)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Run
 
-## Learn more
+```bash
+yarn install
+yarn start        # Expo web on :3000  (the platform proxies /api to the backend on :8001)
+yarn ios          # iOS simulator
+yarn android      # Android emulator
+yarn build:web    # static export -> dist/
+npx tsc --noEmit  # type check
+yarn lint
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Environment: copy `.env.example` to `.env`. Only `EXPO_PUBLIC_*` variables reach the bundle. Point
+`EXPO_PUBLIC_BACKEND_URL` / `EXPO_PUBLIC_APP_URL` at `https://app.imonsocial.com` before any `eas update`; the
+values are baked into the OTA bundle.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Conventions
 
-## Join the community
+- Every interactive or informative element carries a `data-testid` / `testID` (kebab-case, function not style).
+  Use the `tid('name')` helper where a component exports it.
+- Named exports for components, default exports for screens. Keep components small.
+- Bottom sheets use `components/common/SheetGrabber.tsx` (swipe to close). Do not hand-add
+  `KeyboardAvoidingView` to modals or `maxFontSizeMultiplier` to text; the Babel plugins do it.
+- After changing `babel.config.js` or a Babel plugin: `rm -rf node_modules/.cache .metro-cache` and restart Metro.
+- AI-written copy must never contain em/en dashes (product rule; see `docs/PRODUCT_RULES.md`).
 
-Join our community of developers creating universal apps.
+## Shipping
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- JS-only changes: `eas update --branch production --message "..."` (from a machine logged into the Expo account
+  that owns project `imos`). Native changes (new permission, native module, app.json): bump `expo.version`, then
+  `eas build --platform ios --profile production --auto-submit`.
+- Android is configured (`com.imonsocial.app`) but not published; `google-services.json` (push) and
+  `google-service-account.json` (Play submit) are intentionally not in the repo.
+
+See the root `README.md` and `docs/DEPLOYMENT.md` for the full release procedure.
