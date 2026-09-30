@@ -187,6 +187,13 @@ class PreviewCallBody(BaseModel):
     difficulty: Optional[str] = None
 
 
+class VoiceSampleBody(BaseModel):
+    voice: str
+    persona: Optional[dict] = None
+    industry: Optional[str] = None
+    department: Optional[str] = None
+
+
 class GenerateBody(BaseModel):
     department: str
     scenario: str
@@ -422,6 +429,44 @@ async def audition_options(request: Request):
     pools = [*live_shops.FEMININE, *live_shops.MASCULINE, *live_shops.UK_VOICES["female"], *live_shops.UK_VOICES["male"]]
     voices = [v for v in live_voice.VOICES if v["id"] in pools] + [v for v in live_voice.VOICES if v["id"] not in pools and "Portuguese" not in v["accent"]]
     return {"voices": voices, "configured": not live_voice.configured(), "reason": live_voice.configured()}
+
+
+@router.get("/voices")
+async def shop_voices(request: Request):
+    """The exact GPT-Live voices a challenge can pin, grouped the way voice_for picks them: US pools per gender, UK pools for en-GB / en-IE clients."""
+    await require_admin(request)
+    from services import live_shops, live_voice
+    pick = lambda ids: [next(v for v in live_voice.VOICES if v["id"] == i) for i in ids]
+    return {"female": pick(live_shops.FEMININE), "male": pick(live_shops.MASCULINE), "uk": {"female": pick(live_shops.UK_VOICES["female"]), "male": pick(live_shops.UK_VOICES["male"])},
+            "configured": not live_voice.configured(), "reason": live_voice.configured()}
+
+
+@router.post("/voices/sample")
+async def voice_sample(body: VoiceSampleBody, request: Request):
+    """Five seconds of that voice saying the persona's opening line, over the shop's own 8 kHz phone audio. Cached per voice + line."""
+    await require_admin(request)
+    from services import live_voice
+    from services import voice_samples as vs
+    if body.voice not in live_voice.VOICE_IDS:
+        raise HTTPException(status_code=400, detail="Pick one of the shopper voices")
+    reason = live_voice.configured()
+    if reason:
+        raise HTTPException(status_code=503, detail=reason)
+    try:
+        return await vs.get_or_make(get_db(), body.voice, body.persona or {}, body.industry, body.department)
+    except vs.VoiceSampleError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    except Exception as e:
+        logger.warning(f"[VoiceSample] {body.voice}: {e}")
+        raise HTTPException(status_code=502, detail="Could not reach GPT-Live for the sample. Tap play again in a moment.")
+
+
+@public_router.get("/voice-sample/{sid}.wav")
+async def voice_sample_wav(sid: str):
+    doc = await get_db().voice_samples.find_one({"_id": ObjectId(sid)}) if ObjectId.is_valid(sid) else None
+    if not doc:
+        raise HTTPException(status_code=404, detail="Sample not found")
+    return Response(content=bytes(doc["wav"]), media_type="audio/wav", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @router.get("/number")
@@ -1276,9 +1321,12 @@ async def end_text_shop(sid: str, request: Request):
 
 # ---------------------------------------------------------------- challenges
 def _challenge_out(s: dict) -> dict:
+    from services import live_voice as lv
     rv = s.get("review") or {}
     persona = s.get("persona") or {}
-    return {**scr.serialize_script(s), "persona": {**persona, "gender": persona.get("gender") if persona.get("gender") in ("female", "male") else pg.gender_of(persona)}, "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "language": s.get("language") or "en", "source_slug": s.get("source_slug"), "direction": s.get("direction") if s.get("direction") in ms.DIRECTIONS else "inbound",
+    pin = persona.get("live_voice") if persona.get("live_voice") in lv.VOICE_IDS else None
+    return {**scr.serialize_script(s), "persona": {**persona, "gender": persona.get("gender") if persona.get("gender") in ("female", "male") else pg.gender_of(persona),
+                                                   "live_voice": pin, "live_voice_label": next((v["name"] for v in lv.VOICES if v["id"] == pin), None)}, "department": s.get("department"), "department_label": ind.dept_label(s.get("department")), "language": s.get("language") or "en", "source_slug": s.get("source_slug"), "direction": s.get("direction") if s.get("direction") in ms.DIRECTIONS else "inbound",
             "review": {"status": rv.get("status") or "approved", "by_name": rv.get("by_name") or "", "at": rv["at"].isoformat() if hasattr(rv.get("at"), "isoformat") else rv.get("at")} if rv else None, "industry": s.get("industry") or ind.industry_of_dept(s.get("department")), "client_specific": bool(s.get("shop_client_id")), "shop_client_id": s.get("shop_client_id"), "curveballs": s.get("curveballs") or [], "generated": bool(s.get("generated_from")) and s.get("generated_from") != "kubota_pack",
             "guide_note": s.get("guide_note") or ""}
 
@@ -1294,11 +1342,14 @@ def _challenge_fields(body: ChallengeBody) -> dict:
     persona = body.persona or {}
     if not (persona.get("name") or "").strip() or not (persona.get("opening_line") or "").strip():
         raise HTTPException(status_code=400, detail="The shopper needs a name and an opening line")
+    from services import live_voice as lv
+    gender = persona.get("gender") if persona.get("gender") in ("female", "male") else pg.gender_of(persona)
+    pin = persona.get("live_voice") if persona.get("live_voice") in lv.VOICE_IDS and lv.voice_gender(persona.get("live_voice")) == gender else None
     return {"department": body.department, "industry": ind.industry_of_dept(body.department), "direction": "outbound" if body.direction == "outbound" else "inbound", "category": CATEGORY_BY_DEPT.get(body.department) or ind.dept_label(body.department), "title": no_em_dash(body.title.strip())[:120], "runtime": (body.runtime or "").strip()[:40], "purpose": no_em_dash(body.purpose or "")[:900], "body": no_em_dash(body.body)[:8000],
             "guide_note": no_em_dash(str(body.guide_note or "")).strip()[:600],
             "success_points": [str(p).strip()[:200] for p in (body.success_points or []) if str(p).strip()][:16], "curveballs": [no_em_dash(str(c)).strip()[:200] for c in (body.curveballs or []) if str(c).strip()][:6],
             "persona": {"name": str(persona.get("name")).strip()[:60], "voice": persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female",
-                        "gender": persona.get("gender") if persona.get("gender") in ("female", "male") else pg.gender_of(persona), "summary": no_em_dash(str(persona.get("summary") or ""))[:3000],
+                        "gender": gender, "live_voice": pin, "summary": no_em_dash(str(persona.get("summary") or ""))[:3000],
                         "goals": no_em_dash(str(persona.get("goals") or ""))[:600], "objections": [no_em_dash(str(o))[:160] for o in (persona.get("objections") or []) if str(o).strip()][:8], "opening_line": no_em_dash(str(persona.get("opening_line")))[:240],
                         # master challenges (Kubota pack) offer several names / voices / openings; a call rolls one of each
                         **{k: [str(x).strip()[:240] for x in (persona.get(k) or []) if str(x).strip()][:12] for k in ("names", "voices", "opening_lines") if persona.get(k)}}}

@@ -49,6 +49,14 @@ VOICES = [
     {"id": "tempo", "name": "Tempo", "accent": "Brazilian Portuguese", "tone": "masculine", "natural": True},
 ]
 VOICE_IDS = {v["id"] for v in VOICES}
+
+
+def voice_gender(voice_id: Optional[str]) -> Optional[str]:
+    """'male' / 'female' for a GPT-Live voice id, None for unknown ids."""
+    v = next((v for v in VOICES if v["id"] == voice_id), None)
+    return None if not v else "male" if v["tone"] == "masculine" else "female"
+
+
 DEFAULTS = {"voice": "gleam", "energy": 4, "pacing": 4, "playful": 3, "brevity": 4, "daily_cap_min": 15, "idle_close_s": 25,
             "greeting": "Hey {first}, it's Jessi. Who are we talking about today?", "contact_greeting": "Hey {first}. {contact} is up. What do you want to know?", "notes": ""}
 SLIDERS = ("energy", "pacing", "playful", "brevity")

@@ -176,6 +176,10 @@ def roll_persona(persona: dict) -> dict:
     elif str(p.get("voice") or "").lower() in ("female", "male") and p["voice"] != g:
         p["voice"] = g
     p["gender"] = g
+    if p.get("live_voice"):
+        from services import live_voice as lv
+        if lv.voice_gender(p["live_voice"]) != g:  # a pinned voice only survives a roll when it fits the name that came up
+            p.pop("live_voice")
     return p
 
 

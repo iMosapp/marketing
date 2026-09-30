@@ -83,12 +83,16 @@ async def mark_relay(db, session: dict, why: str):
 
 
 def voice_for(session: dict) -> str:
-    """The shopper's voice from the persona's GENDER pool (name + label + pronouns, never the age words 'young'/'older'), deterministic per session,
-    never the voice Jessi the host just used on the same call."""
+    """The shopper's voice: the one pinned on the challenge (persona.live_voice) when it fits the locale, else one from the persona's GENDER pool
+    (name + label + pronouns, never the age words 'young'/'older'), deterministic per session, never the voice Jessi the host just used on the same call."""
     from services import persona_gender as pg
     persona = session.get("persona") or {}
     kind = pg.gender_of(persona)
-    if (session.get("locale") or "").startswith("en-") and session.get("locale") not in ("en-US",):
+    uk = (session.get("locale") or "").startswith("en-") and session.get("locale") not in ("en-US",)
+    pin = persona.get("live_voice")
+    if pin in lv.VOICE_IDS and (not uk or pin in UK_VOICES[kind]):
+        return pin
+    if uk:
         pool = UK_VOICES[kind]
     else:
         pool = MASCULINE if kind == "male" else FEMININE
