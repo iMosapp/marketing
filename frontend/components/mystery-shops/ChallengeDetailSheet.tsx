@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Sheet, Label, GoldButton, deptLabel, industryOfDept, industries, GOLD, RED, AMBER, GREEN, PURPLE, tid, type Challenge, type Dept } from './shared';
 import { ChallengePreviewCall } from './ChallengePreviewCall';
+import { VoicePlayButton } from './VoicePlayButton';
 
 export const needsReview = (c: Challenge) => c.review?.status === 'needs_review';
+const canHear = (c: Challenge) => !!c.persona?.name && (!c.language || c.language === 'en' || c.language === 'en-GB');  // Dutch shops run on relay voices, no GPT-Live sample
 const LANG_NAME: Record<string, string> = { nl: 'DUTCH', 'en-GB': 'BRITISH ENGLISH' };
 
 // Read-only view of one challenge with audition-by-phone, edit + delete/hide in the footer. Localized drafts get an Approve button for the native reviewer.
@@ -39,7 +41,10 @@ export const ChallengeDetailSheet = ({ open, onClose, colors, onEdit, onDelete, 
         {open.persona && (
           <View style={{ gap: 4, backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border }}>
             <Label t={`THE ${industryOfDept(open.department).customer.toUpperCase()} · ${open.persona.name}`} colors={colors} />
-            <Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }} {...tid('challenge-voice-line')}>{open.persona.gender === 'male' ? "Man's voice" : "Woman's voice"}{open.persona.voice === 'older' ? ' · older' : open.persona.voice === 'young' ? ' · younger' : ''}{open.persona.live_voice_label ? ` · ${open.persona.live_voice_label}` : ''}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', color: GOLD }} {...tid('challenge-voice-line')}>{open.persona.gender === 'male' ? "Man's voice" : "Woman's voice"}{open.persona.voice === 'older' ? ' · older' : open.persona.voice === 'young' ? ' · younger' : ''}{open.persona.live_voice_label ? ` · ${open.persona.live_voice_label}` : ''}</Text>
+              {canHear(open) && <VoicePlayButton challengeId={open.id} size={28} testID="challenge-detail-voice-play" />}
+            </View>
             <Text style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>{open.persona.summary}</Text>
             {!!open.persona.goals && <Text style={{ fontSize: 13, color: colors.textSecondary }}>Wants: {open.persona.goals}</Text>}
             {!!open.persona.opening_line && <Text style={{ fontSize: 13, color: colors.textSecondary }}>Opens with: "{open.persona.opening_line}"</Text>}
@@ -72,6 +77,7 @@ export const ChallengeGroups = ({ rows, colors, onOpen, emptyHint, departments, 
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={{ flex: 1, fontSize: 14.5, fontWeight: '800', color: colors.text }}>{c.title}</Text>
                   {c.generated && <Ionicons name="sparkles" size={14} color={GOLD} />}
+                  {canHear(c) && <VoicePlayButton challengeId={c.id} size={28} />}
                   {needsReview(c) && <View style={{ paddingHorizontal: 8, height: 22, borderRadius: 11, backgroundColor: AMBER + '22', justifyContent: 'center' }} {...tid(`challenge-needs-review-${c.id}`)}><Text style={{ fontSize: 10.5, fontWeight: '800', color: AMBER }}>NEEDS REVIEW</Text></View>}
                   {c.client_specific && <View style={{ paddingHorizontal: 8, height: 22, borderRadius: 11, backgroundColor: PURPLE + '22', justifyContent: 'center' }}><Text style={{ fontSize: 10.5, fontWeight: '800', color: PURPLE }}>THIS CLIENT</Text></View>}
                 </View>

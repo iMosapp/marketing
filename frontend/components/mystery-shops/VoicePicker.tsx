@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
-import api, { API_BASE_URL } from '../../services/api';
+import api from '../../services/api';
 import { useToast } from '../common/Toast';
 import { Chip, GOLD, tid } from './shared';
+import { useSamplePlayer } from './samplePlayer';
 
 type Voice = { id: string; name: string; accent: string; tone: string };
 type Pools = { female: Voice[]; male: Voice[]; configured: boolean; reason?: string | null };
@@ -17,24 +17,13 @@ type Props = { gender: 'female' | 'male'; value: string; onChange: (v: string) =
 export const VoicePicker = ({ gender, value, onChange, persona, industry, department, colors }: Props) => {
   const { showToast } = useToast();
   const [pools, setPools] = useState<Pools | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [playing, setPlaying] = useState<string | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
-  useEffect(() => { loadPools().then(setPools); return () => { soundRef.current?.unloadAsync().catch(() => {}); }; }, []);
+  const { busy, playing, play } = useSamplePlayer();
+  useEffect(() => { loadPools().then(setPools); }, []);
 
-  const stop = async () => { const s = soundRef.current; soundRef.current = null; setPlaying(null); if (s) { try { await s.unloadAsync(); } catch {} } };
-  const play = async (v: Voice) => {
-    if (playing === v.id) return stop();
-    await stop();
-    setBusy(v.id);
+  const hear = async (v: Voice) => {
     try {
-      const r = await api.post('/shop-clients/voices/sample', { voice: v.id, persona, industry, department }, { timeout: 50000 });
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, allowsRecordingIOS: false }).catch(() => {});
-      const { sound } = await Audio.Sound.createAsync({ uri: `${API_BASE_URL}${r.data.url}` }, { shouldPlay: true }, st => { if (st.isLoaded && st.didJustFinish) setPlaying(null); });
-      soundRef.current = sound;
-      setPlaying(v.id);
+      await play(v.id, async () => (await api.post('/shop-clients/voices/sample', { voice: v.id, persona, industry, department }, { timeout: 50000 })).data.url);
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not play that voice right now', 'error'); }
-    finally { setBusy(null); }
   };
 
   const voices = pools?.[gender] || [];
@@ -55,7 +44,7 @@ export const VoicePicker = ({ gender, value, onChange, persona, industry, depart
               <TouchableOpacity onPress={() => onChange(v.id)} style={{ height: 28, justifyContent: 'center' }} {...tid(`voice-pick-${v.id}`)}>
                 <Text style={{ fontSize: 12, fontWeight: '800', color: ink }}>{v.name}<Text style={{ fontWeight: '500', color: on ? '#333' : colors.textSecondary }}> · {v.accent}</Text></Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => play(v)} disabled={!!busy} style={{ paddingHorizontal: 7, height: 28, justifyContent: 'center' }} {...tid(`voice-play-${v.id}`)}>
+              <TouchableOpacity onPress={() => hear(v)} disabled={!!busy} style={{ paddingHorizontal: 7, height: 28, justifyContent: 'center' }} {...tid(`voice-play-${v.id}`)}>
                 {busy === v.id ? <ActivityIndicator size="small" color={on ? '#111' : GOLD} /> : <Ionicons name={playing === v.id ? 'stop-circle' : 'play-circle'} size={19} color={on ? '#111' : GOLD} />}
               </TouchableOpacity>
             </View>

@@ -126,6 +126,35 @@ def test_api_voices_and_sample_guard():
     assert st == 404
 
 
+def test_script_voice_resolves_pin_or_pool_and_a_concrete_master_persona():
+    sid = ObjectId("000000000000000000000010")  # last two hex digits 10 -> 16 % pool size
+    voice, p, pinned = vs.script_voice({"_id": sid, "persona": {"name": "Bill Harmon", "live_voice": "cinder", "opening_line": "Hi"}})
+    assert (voice, pinned, p["gender"]) == ("cinder", True, "male")
+    voice, p, pinned = vs.script_voice({"_id": sid, "persona": {"name": "Bill Harmon", "live_voice": "gleam", "opening_line": "Hi"}})
+    assert voice in ls.MASCULINE and pinned is False and p["live_voice"] is None  # a woman's voice pinned on Bill is ignored
+    master = {"_id": sid, "persona": {"names": ["Denise Holloway", "Randy Coker"], "voices": ["male", "female"], "opening_lines": ["First line here", "Second"], "summary": "x"}}
+    voice, p, pinned = vs.script_voice(master)
+    assert p["name"] == "Denise Holloway" and p["opening_line"] == "First line here" and p["gender"] == "female" and "names" not in p and "voices" not in p
+    assert voice in ls.FEMININE and pinned is False
+    assert vs.script_voice(master) == vs.script_voice(master)  # the card always sounds the same
+    voice, _, _ = vs.script_voice({"_id": sid, "persona": {"name": "Bill Harmon", "opening_line": "Hi"}}, "en-GB")
+    assert voice in ls.UK_VOICES["male"]
+
+
+def test_api_challenge_voice_sample_guards():
+    tok, uid = login("forest@imosapp.com", "Admin123!")
+    st, b = call("POST", f"/api/shop-clients/challenges/{ObjectId()}/voice-sample", {}, headers=auth(tok, uid))
+    assert st == 404
+    st, lib = call("GET", "/api/shop-clients/challenges?industry=equipment", headers=auth(tok, uid))
+    rows = (lib or {}).get("challenges") if st == 200 else None
+    assert st == 200 and rows, lib
+    if not (os.environ.get("OPENAI_API_KEY") or "").strip():
+        st, b = call("POST", f"/api/shop-clients/challenges/{rows[0]['id']}/voice-sample", {}, headers=auth(tok, uid))
+        assert st == 503 and "OPENAI_API_KEY" in b
+    st, b = call("POST", f"/api/shop-clients/challenges/{rows[0]['id']}/voice-sample", {})
+    assert st == 401
+
+
 def test_api_challenge_keeps_a_matching_pin_and_drops_a_mismatch():
     tok, uid = login("forest@imosapp.com", "Admin123!")
     body = {"title": "QA voice pin", "department": "sales", "body": "Answer and book.", "persona": {"name": "Bill Harmon", "gender": "male", "voice": "older", "live_voice": "cinder", "opening_line": "Hi, is the Wrangler still there?"}}

@@ -84,6 +84,22 @@ def _out(doc: dict, cached: bool) -> dict:
             "url": f"/api/public/voice-sample/{doc['_id']}.wav"}
 
 
+def script_voice(script: dict, locale: str = "en-US") -> tuple:
+    """(voice, persona, pinned) for a challenge card: the pinned voice or the pool pick a shop with this script id would get, and one concrete
+    customer for master challenges that offer several names / opening lines (the first of each, so the card always sounds the same)."""
+    p = dict(script.get("persona") or {})
+    for many, one in (("names", "name"), ("opening_lines", "opening_line")):
+        vals = [str(x).strip() for x in (p.pop(many, None) or []) if str(x).strip()]
+        if vals and not str(p.get(one) or "").strip():
+            p[one] = vals[0]
+    p.pop("voices", None)
+    p["gender"] = p.get("gender") if p.get("gender") in ("female", "male") else pg.gender_of(p)
+    pin = p.get("live_voice") if p.get("live_voice") in lv.VOICE_IDS and lv.voice_gender(p.get("live_voice")) == p["gender"] else None
+    p["live_voice"] = pin
+    voice = ls.voice_for({"_id": script.get("_id"), "persona": p, "locale": locale})
+    return voice, p, bool(pin) and voice == pin
+
+
 async def get_or_make(db, voice: str, persona: dict, industry: Optional[str] = None, department: Optional[str] = None,
                       connect: Callable[[], Awaitable[ls.Upstream]] = ls.connect_openai) -> dict:
     if voice not in lv.VOICE_IDS:

@@ -1429,6 +1429,30 @@ async def preview_phone(request: Request):
     return {"phone": _preview_phone(me)}
 
 
+@router.post("/challenges/{script_id}/voice-sample")
+async def challenge_voice_sample(script_id: str, request: Request):
+    """The card's play button: five seconds of the voice a shop with this challenge would get (pinned or pool pick), saying its opening line."""
+    await require_admin(request)
+    from services import live_voice
+    from services import voice_samples as vs
+    db = get_db()
+    s = await db.scripts.find_one({"_id": _oid(script_id, "Challenge"), "pool": "mystery_shop"})
+    if not s:
+        raise HTTPException(status_code=404, detail="That challenge is gone, pick another")
+    reason = live_voice.configured()
+    if reason:
+        raise HTTPException(status_code=503, detail=reason)
+    voice, persona, pinned = vs.script_voice(s, "en-GB" if s.get("language") == "en-GB" else "en-US")
+    try:
+        out = await vs.get_or_make(db, voice, persona, s.get("industry"), s.get("department"))
+    except vs.VoiceSampleError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    except Exception as e:
+        logger.warning(f"[VoiceSample] {script_id} {voice}: {e}")
+        raise HTTPException(status_code=502, detail="Could not reach GPT-Live for the sample. Tap play again in a moment.")
+    return {**out, "pinned": pinned, "voice_label": next((v["name"] for v in live_voice.VOICES if v["id"] == voice), voice), "persona_name": persona.get("name")}
+
+
 @router.post("/challenges/{script_id}/preview-call")
 async def preview_call(script_id: str, body: PreviewCallBody, request: Request):
     """One tap: the shopper rings the admin's own cell with exactly this challenge, graded like a real shop, scorecard texted after.
