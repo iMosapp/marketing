@@ -5,10 +5,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useHomeFabOffset } from '../../store/homeFabStore';
 
 export default function ComposerCollapsed({ s, colors, firstName, draft, onOpen, onCall }: any) {
+  const liftHomeFab = useHomeFabOffset();
   return (
-    <View style={[s.composerContainer, { paddingTop: 8, paddingBottom: 14 }]} testID="contact-composer-collapsed" dataSet={{ testid: 'contact-composer-collapsed' } as any}>
+    <View onLayout={e => liftHomeFab(e.nativeEvent.layout.height)} style={[s.composerContainer, { paddingTop: 8, paddingBottom: 14 }]} testID="contact-composer-collapsed" dataSet={{ testid: 'contact-composer-collapsed' } as any}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <TouchableOpacity
           onPress={onOpen}

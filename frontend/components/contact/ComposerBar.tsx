@@ -8,10 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { showSimpleAlert } from '../../services/alert';
+import { useHideHomeFab } from '../../store/homeFabStore';
 
 const IS_WEB = Platform.OS === 'web';
 
 export default function ComposerBar(props: any) {
+  useHideHomeFab();
   const {
     s, colors, contact, contactId,
     composerMode, setComposerMode, composerMessage, setComposerMessage, composerSending,
