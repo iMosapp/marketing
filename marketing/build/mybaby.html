@@ -159,12 +159,6 @@
   .dots { position: fixed; right: 18px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 20; }
   .dots a { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: block; transition: background-color .2s ease, transform .2s ease; }
   .dots a.cur { background: var(--gold); transform: scale(1.35); }
-  .topbar { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 14px clamp(16px, 3vw, 32px); z-index: 20; pointer-events: none; }
-  .topbar > * { pointer-events: auto; }
-  .topbar .counter { font: 700 12px/1 var(--sans); letter-spacing: .18em; color: var(--muted); }
-  .topbar .tools { display: flex; gap: 8px; }
-  .topbar .tools a { font: 700 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 9px 12px; background: rgba(10,10,11,.7); backdrop-filter: blur(10px); }
-  .topbar .tools a:hover { color: var(--text); border-color: var(--gold); }
 
   @media (max-width: 980px) {
     .cover-grid, .moat, .complex, .versus { grid-template-columns: 1fr; }
@@ -184,7 +178,7 @@
     .node { --r: 36cqw; }
   }
   @media print {
-    .topbar, .dots, .progress, .noise, .lead-overlay { display: none !important; }
+    .dots, .progress, .noise, .lead-overlay, .imosw-root { display: none !important; }
     .appendix { display: block; }
     body { background: #fff; color: #111; scroll-snap-type: none; }
     :root { --bg: #fff; --bg2: #fff; --card: #f6f3ec; --line: #ddd6c6; --text: #111; --muted: #555; --gold: #8a6d2f; --gold2: #6f5520; --ink: #fff; }
@@ -197,13 +191,6 @@
 <body>
 <div class="noise"></div>
 <div class="progress" id="progress"></div>
-<div class="topbar">
-  <div class="counter" id="counter">01 / 08</div>
-  <div class="tools">
-    <a href="#" id="printBtn">Save as PDF</a>
-    <a href="https://imonsocial.com">imonsocial.com</a>
-  </div>
-</div>
 <nav class="dots" id="dots" aria-label="Slides"></nav>
 
 <!-- 1. COVER: the problem -->
@@ -415,12 +402,10 @@
 
   const slides = [...document.querySelectorAll('.slide')];
   const dots = document.getElementById('dots');
-  const counter = document.getElementById('counter');
   const progress = document.getElementById('progress');
   slides.forEach((s, i) => { const a = document.createElement('a'); a.href = '#' + s.id; a.title = s.id; a.setAttribute('aria-label', 'Slide ' + (i + 1)); dots.appendChild(a); });
-  const pad = n => String(n).padStart(2, '0');
   let current = 0;
-  const setCurrent = i => { current = i; counter.textContent = pad(i + 1) + ' / ' + pad(slides.length); [...dots.children].forEach((d, k) => d.classList.toggle('cur', k === i)); progress.style.width = ((i + 1) / slides.length * 100) + '%'; };
+  const setCurrent = i => { current = i; [...dots.children].forEach((d, k) => d.classList.toggle('cur', k === i)); progress.style.width = ((i + 1) / slides.length * 100) + '%'; };
   const ease = t => 1 - Math.pow(1 - t, 3);
   const countUp = el => { if (el.dataset.done) return; el.dataset.done = '1'; const end = +el.dataset.count, suffix = el.dataset.suffix || ''; const t0 = performance.now(), dur = 1400;
     const tick = now => { const p = Math.min(1, (now - t0) / dur); el.textContent = Math.round(end * ease(p)).toLocaleString('en-US') + suffix; if (p < 1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); };
@@ -428,8 +413,8 @@
   slides.forEach(s => io.observe(s));
   const go = i => { const n = Math.max(0, Math.min(slides.length - 1, i)); slides[n].scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   window.addEventListener('keydown', e => { if (leadOverlay.classList.contains('open') || /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) { if (e.key === 'Escape') closeLead(); return; } if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(current + 1); } if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); go(current - 1); } if (e.key === 'Home') go(0); if (e.key === 'End') go(slides.length - 1); });
-  document.getElementById('printBtn').addEventListener('click', e => { e.preventDefault(); slides.forEach(s => { s.classList.add('on'); s.querySelectorAll('[data-count]').forEach(el => { el.textContent = (+el.dataset.count).toLocaleString('en-US') + (el.dataset.suffix || ''); el.dataset.done = '1'; }); }); setTimeout(() => window.print(), 150); });
   setCurrent(0);
+  window.addEventListener('beforeprint', () => slides.forEach(s => { s.classList.add('on'); s.querySelectorAll('[data-count]').forEach(el => { el.textContent = (+el.dataset.count).toLocaleString('en-US') + (el.dataset.suffix || ''); el.dataset.done = '1'; }); }));
 
 
   const leadOverlay = document.getElementById('leadOverlay');
@@ -454,5 +439,6 @@
     } catch (ex) { btn.disabled = false; btn.textContent = 'Send'; err.textContent = "Couldn't reach the server. Please try again, or email forest@imonsocial.com."; err.style.display = 'block'; }
   });
 </script>
+<script src="https://app.imonsocial.com/api/w/XkTvZEUb.js" async></script>
 </body>
 </html>
