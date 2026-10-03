@@ -56,19 +56,12 @@
 
   /* metrics */
   .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 40px; }
-  .metrics.live { grid-template-columns: repeat(3, 1fr); }
   .metric { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px 22px 20px; position: relative; overflow: hidden; }
   .metric::after { content: ""; position: absolute; right: -40px; top: -40px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgba(201,169,98,.22), transparent 70%); }
   .metric .n { font-family: var(--serif); font-size: clamp(36px, 3.6vw, 56px); line-height: 1; color: var(--gold2); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-  .metrics.live .n { font-size: clamp(42px, 4.6vw, 72px); }
   .metric .l { margin-top: 10px; color: var(--muted); font-size: 14px; font-weight: 600; letter-spacing: .02em; }
-  .metrics.live .l { color: var(--text); }
-  .metric .s { margin-top: 4px; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
   .footnote { margin-top: 18px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
   .appendix { display: none; }
-  .steps { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 26px; font: 800 13px/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; }
-  .steps span { color: var(--text); } .steps em { color: var(--gold); font-style: normal; }
-  .steps span.hot { color: var(--gold2); }
 
   /* layers */
   .layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
@@ -176,7 +169,7 @@
   @media (max-width: 980px) {
     .cover-grid, .moat, .complex, .versus { grid-template-columns: 1fr; }
     .cover-right { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 20px; }
-    .metrics, .metrics.live { grid-template-columns: repeat(2, 1fr); }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
     .layers { grid-template-columns: 1fr 1fr; }
     .cost { grid-template-columns: 1fr 1fr; }
     .uses, .uses.four { grid-template-columns: 1fr 1fr; }
@@ -186,7 +179,7 @@
     .node { width: 96px; margin-left: -48px; font-size: 11px; }
   }
   @media (max-width: 560px) {
-    .metrics, .metrics.live, .layers, .cost, .uses, .uses.four { grid-template-columns: 1fr; }
+    .metrics, .layers, .cost, .uses, .uses.four { grid-template-columns: 1fr; }
     .bar div { width: 100%; }
     .node { --r: 36cqw; }
   }
@@ -205,7 +198,7 @@
 <div class="noise"></div>
 <div class="progress" id="progress"></div>
 <div class="topbar">
-  <div class="counter" id="counter">01 / 09</div>
+  <div class="counter" id="counter">01 / 08</div>
   <div class="tools">
     <a href="#" id="printBtn">Save as PDF</a>
     <a href="https://imonsocial.com">imonsocial.com</a>
@@ -238,7 +231,7 @@
     <p class="kicker reveal">What it actually does</p>
     <div class="moat">
       <div class="reveal">
-        <h2>A CRM stores what happened.<br/>IMOS understands what changed.</h2>
+        <h2 class="sm">A CRM stores what happened.<br/>i'M On Social understands what changed.</h2>
         <p class="lead">Something happens. The relationship changes. The system understands the change, and the next action changes with it. Every conversation, call and customer signal strengthens the record, so the platform can determine:</p>
         <div class="chain" aria-label="Decision chain">
           <span>Who needs attention</span><em>→</em><span>Why</span><em>→</em><span>What should happen next</span><em>→</em><span>When</span><em>→</em><span>How to execute it</span>
@@ -301,7 +294,7 @@
       <div class="c"><div class="v">12–15</div><div class="t">Engineers</div><p>Recreating the current platform would require a multidisciplinary team spanning backend, mobile, web, AI/voice, telephony, DevOps, QA and product.</p></div>
       <div class="c"><div class="v">18–24 mo</div><div class="t">To feature parity</div><p>Estimated development time for a dedicated team to rebuild the current platform and reach the same depth.</p></div>
       <div class="c"><div class="v">$5M–$8M</div><div class="t">Estimated equivalent build cost</div><p>Fully loaded US engineering cost to recreate ≈295K lines of production code plus the integration and compliance work around it.</p></div>
-      <div class="c"><div class="v">Live now</div><div class="t">Execution lead</div><p>While that team would be hiring and architecting, IMOS is already deployed, processing real conversations for real sales teams.</p></div>
+      <div class="c"><div class="v">Live now</div><div class="t">Execution lead</div><p>While that team would be hiring and architecting, i'M On Social is already deployed, processing real conversations for real sales teams.</p></div>
     </div>
     <div class="complex reveal">
       <div><span><b>Real-time voice bridge</b> between carrier media streams and a live AI model, with interruptions, watchdogs and fallbacks.</span></div>
@@ -325,7 +318,7 @@
   <div class="inner">
     <p class="kicker reveal">Founder-market fit</p>
     <h2 class="reveal">Thirty years on the sales floor.<br/>One tool built for the people on it.</h2>
-    <p class="lead wide reveal">Most sales systems are built around managing the pipeline. This one is built around helping the salesperson manage the relationship. IMOS wasn't designed by a software team that discovered automotive sales in a market report. It was built by a high-tech redneck who spent three decades carrying a quota, then built the tool he always needed, for the lifeblood of every company: <b>the salesperson.</b></p>
+    <p class="lead wide reveal">Most sales systems are built around managing the pipeline. This one is built around helping the salesperson manage the relationship. i'M On Social wasn't designed by a software team that discovered automotive sales in a market report. It was built by a high-tech redneck who spent three decades carrying a quota, then built the tool he always needed, for the lifeblood of every company: <b>the salesperson.</b></p>
     <div class="bar reveal">
       <div><b>30</b>years selling, not studying sales</div>
       <div><b>1</b>problem lived every single day</div>
@@ -334,25 +327,8 @@
   </div>
 </section>
 
-<!-- 7. EVIDENCE: live usage -->
-<section class="slide" id="live">
-  <div class="inner">
-    <p class="kicker reveal">Live today</p>
-    <h2 class="reveal">Does anybody want it?<br/>Here are the numbers.</h2>
-    <div class="steps reveal"><span>Built</span><em>→</em><span>Deployed</span><em>→</em><span class="hot">Used</span></div>
-    <div class="metrics live reveal" id="liveStats">
-      <div class="metric"><div class="n" data-stat="users">—</div><div class="l">Salespeople on the platform</div><div class="s">Active user accounts</div></div>
-      <div class="metric"><div class="n" data-stat="organizations">—</div><div class="l">Organizations</div><div class="s">Dealerships and businesses running IMOS</div></div>
-      <div class="metric"><div class="n" data-stat="contacts">—</div><div class="l">Relationships managed</div><div class="s">Customer records with a living profile</div></div>
-      <div class="metric"><div class="n" data-stat="messages">—</div><div class="l">Conversations processed</div><div class="s">Inbound and outbound messages across every channel</div></div>
-      <div class="metric"><div class="n" data-stat="ai_calls">—</div><div class="l">Calls handled by AI</div><div class="s">Transcribed, graded or role-played by the platform</div></div>
-      <div class="metric"><div class="n" data-stat="automations">—</div><div class="l">Automations executed</div><div class="s">Campaign steps and date triggers fired without a human</div></div>
-    </div>
-    <p class="footnote reveal" id="liveNote">Live aggregate counts pulled from the production platform as you read this. Not projections, not vanity metrics: every number is a record in the database.</p>
-  </div>
-</section>
 
-<!-- 8. GO TO MARKET -->
+<!-- 7. GO TO MARKET -->
 <section class="slide" id="gtm">
   <div class="inner">
     <p class="kicker reveal">Where we are now</p>
@@ -361,15 +337,15 @@
     <div class="uses reveal">
       <div class="use"><h3>Dealers first</h3><p>Automotive and powersports dealerships, where the pain is sharpest: hundreds of past customers every salesperson has simply forgotten.</p></div>
       <div class="use"><h3>Land and expand</h3><p>One rep becomes the store, the store becomes the group. Team leaderboards, manager views and the referral engine already drive this inside the product.</p></div>
-      <div class="use"><h3>Partners and white-label</h3><p>Partner, reseller and white-label programs are wired in, so industry channels can carry IMOS under their own brand.</p></div>
-      <div class="use"><h3>Plug into existing workflows</h3><p>Two-way sync with the CRMs and DMS platforms dealers already run, so IMOS slots in on day one instead of replacing anything.</p></div>
+      <div class="use"><h3>Partners and white-label</h3><p>Partner, reseller and white-label programs are wired in, so industry channels can carry i'M On Social under their own brand.</p></div>
+      <div class="use"><h3>Plug into existing workflows</h3><p>Two-way sync with the CRMs and DMS platforms dealers already run, so i'M On Social slots in on day one instead of replacing anything.</p></div>
       <div class="use"><h3>Adjacent industries</h3><p>Real estate, insurance, home services, medical and fitness: relationship-driven businesses the platform already supports with their own playbooks.</p></div>
     </div>
     <div class="risk reveal"><i></i> Built. Live. In use. The next chapter is distribution.</div>
   </div>
 </section>
 
-<!-- 9a. CLOSE (general audience) -->
+<!-- 8a. CLOSE (general audience) -->
 <section class="slide" id="close" data-mode="general">
   <div class="inner">
     <div class="brand reveal"><img src="logo.png" alt="i'M On Social" /><span>i'M On Social</span></div>
@@ -383,7 +359,7 @@
   </div>
 </section>
 
-<!-- 9b. ASK (investor mode: ?investor=1) -->
+<!-- 8b. ASK (investor mode: ?investor=1) -->
 <section class="slide" id="ask" data-mode="investor">
   <div class="inner">
     <p class="kicker reveal">Now we scale it</p>
@@ -391,8 +367,8 @@
     <p class="lead reveal">The product is built. The infrastructure is live. The market has been identified. <b>The next investment is distribution.</b></p>
     <div class="uses four reveal">
       <div class="use"><h3>Sales &amp; distribution</h3><p>A direct sales motion for dealer groups and multi-location operators, plus the partner and reseller channels already wired into the product.</p></div>
-      <div class="use"><h3>Strategic integrations</h3><p>Two-way sync with the CRMs and DMS platforms the market already runs, so IMOS becomes the relationship layer on top of existing systems.</p></div>
-      <div class="use"><h3>Enterprise deployment</h3><p>Onboarding, support, controls and reporting for groups rolling IMOS out across hundreds of reps at once.</p></div>
+      <div class="use"><h3>Strategic integrations</h3><p>Two-way sync with the CRMs and DMS platforms the market already runs, so i'M On Social becomes the relationship layer on top of existing systems.</p></div>
+      <div class="use"><h3>Enterprise deployment</h3><p>Onboarding, support, controls and reporting for groups rolling i'M On Social out across hundreds of reps at once.</p></div>
       <div class="use"><h3>Product expansion</h3><p>Deeper AI across voice, texting and coaching, and the adjacent industries the platform already supports.</p></div>
     </div>
     <p class="quote reveal">I've built the machine. <span>Now I'm looking for the right capital and partners to put fuel in it.</span></p>
@@ -455,11 +431,6 @@
   document.getElementById('printBtn').addEventListener('click', e => { e.preventDefault(); slides.forEach(s => { s.classList.add('on'); s.querySelectorAll('[data-count]').forEach(el => { el.textContent = (+el.dataset.count).toLocaleString('en-US') + (el.dataset.suffix || ''); el.dataset.done = '1'; }); }); setTimeout(() => window.print(), 150); });
   setCurrent(0);
 
-  // live usage numbers (read-only public aggregate endpoint)
-  const liveSlide = document.getElementById('live');
-  fetch('https://app.imonsocial.com/api/public/platform-stats').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
-    document.querySelectorAll('[data-stat]').forEach(el => { const v = d[el.dataset.stat]; if (typeof v !== 'number') return; el.dataset.count = v; el.textContent = '0'; if (liveSlide.classList.contains('on')) countUp(el); });
-  }).catch(() => { document.getElementById('liveNote').textContent = 'Live counts are temporarily unavailable. The platform is in production use; numbers refresh automatically when the connection returns.'; });
 
   const leadOverlay = document.getElementById('leadOverlay');
   const openLead = e => { e.preventDefault(); leadOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; setTimeout(() => document.getElementById('lf-name').focus(), 50); };
