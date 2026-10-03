@@ -126,6 +126,31 @@
   .btn.gold { background: var(--gold); color: var(--ink); border-color: var(--gold); }
   .btn.gold:hover { background: var(--gold2); }
 
+  /* lead form */
+  .lead-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 60; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .lead-overlay.open { display: flex; }
+  .lead-modal { position: relative; width: 100%; max-width: 520px; max-height: calc(100vh - 40px); overflow-y: auto; background: var(--bg2); border: 1px solid var(--line); border-radius: 22px; padding: 34px 32px 28px; box-shadow: 0 40px 100px rgba(0,0,0,.6); animation: leadIn .35s ease; }
+  @keyframes leadIn { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: none } }
+  .lead-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; transition: color .2s ease, border-color .2s ease; }
+  .lead-close:hover { color: var(--text); border-color: var(--muted); }
+  .lead-modal h2 { font-size: clamp(26px, 3vw, 34px); line-height: 1.1; margin-bottom: 8px; }
+  .lead-modal .sub { color: var(--muted); font-size: 14px; margin: 0 0 22px; line-height: 1.5; }
+  .lf { display: grid; gap: 14px; }
+  .lf .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .lf label { display: block; font: 700 11px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+  .lf input, .lf textarea { width: 100%; box-sizing: border-box; background: var(--card); border: 1px solid var(--line); border-radius: 12px; color: var(--text); font: 500 15px/1.4 var(--sans); padding: 13px 14px; outline: none; transition: border-color .2s ease; }
+  .lf input:focus, .lf textarea:focus { border-color: var(--gold); }
+  .lf textarea { min-height: 96px; resize: vertical; }
+  .lf .submit { margin-top: 6px; width: 100%; justify-content: center; cursor: pointer; font-family: var(--sans); }
+  .lf .submit:disabled { opacity: .6; cursor: default; transform: none; }
+  .lf .fine { font-size: 11.5px; color: var(--muted); text-align: center; margin: 4px 0 0; line-height: 1.5; }
+  .lf .err { display: none; color: #e07070; font-size: 13px; text-align: center; }
+  .lead-done { display: none; text-align: center; padding: 18px 0 8px; }
+  .lead-done i { display: block; width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%; border: 1.5px solid var(--gold); color: var(--gold2); font-style: normal; font-size: 26px; line-height: 56px; }
+  .lead-done h2 { margin-bottom: 10px; }
+  .lead-done p { color: var(--muted); font-size: 15px; margin: 0; line-height: 1.5; }
+  @media (max-width: 560px) { .lf .row { grid-template-columns: 1fr; } .lead-modal { padding: 28px 22px 22px; } }
+
   /* chrome */
   .progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; background: var(--gold); z-index: 20; transition: width .25s ease; }
   .dots { position: fixed; right: 18px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 20; }
@@ -158,7 +183,7 @@
     .node { --r: 36cqw; }
   }
   @media print {
-    .topbar, .dots, .progress, .hint, .noise { display: none !important; }
+    .topbar, .dots, .progress, .hint, .noise, .lead-overlay { display: none !important; }
     body { background: #fff; color: #111; scroll-snap-type: none; }
     :root { --bg: #fff; --bg2: #fff; --card: #f6f3ec; --line: #ddd6c6; --text: #111; --muted: #555; --gold: #8a6d2f; --gold2: #6f5520; --ink: #fff; }
     .slide { min-height: 100vh; height: auto; page-break-after: always; break-inside: avoid; border: 0; }
@@ -289,20 +314,20 @@
   </div>
 </section>
 
-<!-- 6. CAPITAL -->
+<!-- 6. GO TO MARKET -->
 <section class="slide" id="capital">
   <div class="inner">
-    <p class="kicker reveal">The investment story</p>
-    <h2 class="reveal">We are not raising money to find out<br/>whether this can be built.</h2>
-    <p class="lead reveal">The platform exists. Capital goes to what the platform can do <b>now</b>:</p>
+    <p class="kicker reveal">Where we are now</p>
+    <h2 class="reveal">Eight months of building.<br/>Now it goes to market.</h2>
+    <p class="lead reveal">The platform is live and in use. The focus shifts from building to getting it into the hands of the people it was built for. <b>Here is the plan:</b></p>
     <div class="uses reveal">
-      <div class="use"><h3>Finish commercialization</h3><p>Packaging, pricing, onboarding and the sales motion that turns a working product into a repeatable business.</p></div>
-      <div class="use"><h3>Accelerate integrations</h3><p>Two-way sync with the CRMs and DMS platforms dealers already run, so IMOS plugs into existing workflows on day one.</p></div>
-      <div class="use"><h3>Build distribution</h3><p>Partner and white-label programs, industry channels and the referral engine already wired into the product.</p></div>
-      <div class="use"><h3>Acquire customers</h3><p>Dealer groups and multi-location operators first, then adjacent relationship-driven industries already supported in the platform.</p></div>
-      <div class="use"><h3>Scale</h3><p>Infrastructure independence, enterprise controls, reporting and the team to support thousands of reps.</p></div>
+      <div class="use"><h3>Dealers first</h3><p>Automotive and powersports dealerships, where the pain is sharpest: hundreds of past customers every salesperson has simply forgotten.</p></div>
+      <div class="use"><h3>Land and expand</h3><p>One rep becomes the store, the store becomes the group. Team leaderboards, manager views and the referral engine already drive this inside the product.</p></div>
+      <div class="use"><h3>Partners and white-label</h3><p>Partner, reseller and white-label programs are wired in, so industry channels can carry IMOS under their own brand.</p></div>
+      <div class="use"><h3>Plug into existing workflows</h3><p>Two-way sync with the CRMs and DMS platforms dealers already run, so IMOS slots in on day one instead of replacing anything.</p></div>
+      <div class="use"><h3>Adjacent industries</h3><p>Real estate, insurance, home services, medical and fitness: relationship-driven businesses the platform already supports with their own playbooks.</p></div>
     </div>
-    <div class="risk reveal"><i></i> Technical execution risk: absorbed. Remaining risk: go-to-market, which is what capital is for.</div>
+    <div class="risk reveal"><i></i> Built. Live. In use. The next chapter is distribution.</div>
   </div>
 </section>
 
@@ -313,12 +338,41 @@
     <h1 class="reveal">Remember everyone.<br/>Understand every relationship.<br/><span style="color: var(--gold2)">Never miss what should happen next.</span></h1>
     <p class="lead reveal">From contact → relationship intelligence → action. One platform, already running.</p>
     <div class="cta reveal">
-      <a class="btn gold" href="mailto:forest@imonsocial.com?subject=i'M%20On%20Social%20investor%20conversation">Start a conversation</a>
+      <a class="btn gold" href="#" id="leadBtn">Start a conversation</a>
       <a class="btn" href="https://imonsocial.com">See the product</a>
       <a class="btn" href="https://app.imonsocial.com">Open the live app</a>
     </div>
   </div>
 </section>
+
+<div class="lead-overlay" id="leadOverlay" role="dialog" aria-modal="true" aria-labelledby="leadTitle">
+  <div class="lead-modal">
+    <button class="lead-close" id="leadClose" aria-label="Close">&times;</button>
+    <div id="leadFormWrap">
+      <h2 id="leadTitle">Let's talk.</h2>
+      <p class="sub">Leave your details and Forest will reach out personally.</p>
+      <form class="lf" id="leadForm" novalidate>
+        <div class="row">
+          <div><label for="lf-name">Name *</label><input id="lf-name" type="text" autocomplete="name" required /></div>
+          <div><label for="lf-company">Company</label><input id="lf-company" type="text" autocomplete="organization" /></div>
+        </div>
+        <div class="row">
+          <div><label for="lf-email">Email *</label><input id="lf-email" type="email" autocomplete="email" required /></div>
+          <div><label for="lf-phone">Phone</label><input id="lf-phone" type="tel" autocomplete="tel" /></div>
+        </div>
+        <div><label for="lf-msg">What would you like to discuss?</label><textarea id="lf-msg"></textarea></div>
+        <button type="submit" class="btn gold submit" id="leadSubmit">Send</button>
+        <p class="err" id="leadErr">Couldn't reach the server. Please try again, or email forest@imonsocial.com.</p>
+        <p class="fine">Your details go straight to Forest. No lists, no spam.</p>
+      </form>
+    </div>
+    <div class="lead-done" id="leadDone">
+      <i>&#10003;</i>
+      <h2>Got it.</h2>
+      <p>Thanks for reaching out. Forest will be in touch shortly.</p>
+    </div>
+  </div>
+</div>
 
 <script>
   const slides = [...document.querySelectorAll('.slide')];
@@ -335,9 +389,31 @@
   const io = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('on'); e.target.querySelectorAll('[data-count]').forEach(countUp); } if (e.isIntersecting && e.intersectionRatio > 0.5) setCurrent(slides.indexOf(e.target)); }); }, { threshold: [0.2, 0.6] });
   slides.forEach(s => io.observe(s));
   const go = i => { const n = Math.max(0, Math.min(slides.length - 1, i)); slides[n].scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  window.addEventListener('keydown', e => { if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(current + 1); } if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); go(current - 1); } if (e.key === 'Home') go(0); if (e.key === 'End') go(slides.length - 1); });
+  window.addEventListener('keydown', e => { if (leadOverlay.classList.contains('open') || /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) { if (e.key === 'Escape') closeLead(); return; } if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(current + 1); } if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); go(current - 1); } if (e.key === 'Home') go(0); if (e.key === 'End') go(slides.length - 1); });
   document.getElementById('printBtn').addEventListener('click', e => { e.preventDefault(); slides.forEach(s => { s.classList.add('on'); s.querySelectorAll('[data-count]').forEach(el => { el.textContent = (+el.dataset.count).toLocaleString('en-US') + (el.dataset.suffix || ''); el.dataset.done = '1'; }); }); setTimeout(() => window.print(), 150); });
   setCurrent(0);
+
+  const leadOverlay = document.getElementById('leadOverlay');
+  const openLead = e => { e.preventDefault(); leadOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; setTimeout(() => document.getElementById('lf-name').focus(), 50); };
+  const closeLead = () => { leadOverlay.classList.remove('open'); document.body.style.overflow = ''; };
+  document.getElementById('leadBtn').addEventListener('click', openLead);
+  document.getElementById('leadClose').addEventListener('click', closeLead);
+  leadOverlay.addEventListener('click', e => { if (e.target === leadOverlay) closeLead(); });
+  document.getElementById('leadForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const v = id => document.getElementById(id).value.trim();
+    const err = document.getElementById('leadErr'), btn = document.getElementById('leadSubmit');
+    err.style.display = 'none';
+    if (!v('lf-name') || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('lf-email'))) { err.textContent = 'Please enter your name and a valid email.'; err.style.display = 'block'; return; }
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const r = await fetch('https://app.imonsocial.com/api/demo-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: v('lf-name'), email: v('lf-email'), phone: v('lf-phone'), company: v('lf-company'), message: v('lf-msg'), source: 'platform_overview_cta', referrer: document.referrer }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.status === 'error') throw new Error(j.message || 'failed');
+      document.getElementById('leadFormWrap').style.display = 'none'; document.getElementById('leadDone').style.display = 'block';
+    } catch (ex) { btn.disabled = false; btn.textContent = 'Send'; err.textContent = "Couldn't reach the server. Please try again, or email forest@imonsocial.com."; err.style.display = 'block'; }
+  });
 </script>
 </body>
 </html>
