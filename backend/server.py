@@ -331,7 +331,7 @@ logger.info(f"[CORS] Allowed origins: {_allowed_origins}")
 
 # Lead-intake endpoints are called from the marketing site (imonsocial.com, Vercel previews,
 # partner pages). Those must accept any origin even when the app API is locked down.
-PUBLIC_CORS_PREFIXES = ("/api/demo-requests", "/api/public/go-card", "/api/w/")
+PUBLIC_CORS_PREFIXES = ("/api/demo-requests", "/api/public/go-card", "/api/public/platform-stats", "/api/w/")
 
 
 class PathAwareCORS:
@@ -780,6 +780,8 @@ from routers import app_links
 api_router.include_router(app_links.router)
 from routers import go_links
 api_router.include_router(go_links.router)
+from routers import platform_stats
+api_router.include_router(platform_stats.router)
 from routers import workflows as tag_workflows_router
 api_router.include_router(tag_workflows_router.router)
 from routers import lead_flows as lead_flows_router

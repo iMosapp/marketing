@@ -35,8 +35,11 @@
   h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.02em; margin: 0; }
   h1 { font-size: clamp(40px, 6.6vw, 92px); line-height: .98; }
   h2 { font-size: clamp(30px, 4.6vw, 64px); line-height: 1.02; }
+  h2.sm { font-size: clamp(26px, 3.6vw, 50px); }
+  h2.xs { font-size: clamp(24px, 3vw, 42px); line-height: 1.08; max-width: 1100px; }
   .lead { font-size: clamp(16px, 1.45vw, 21px); line-height: 1.5; color: var(--muted); max-width: 820px; margin: 22px 0 0; }
   .lead b { color: var(--text); font-weight: 600; }
+  .lead.wide { max-width: 980px; }
   .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
   .slide.on .reveal { opacity: 1; transform: none; }
   .slide.on .reveal:nth-child(2) { transition-delay: .08s } .slide.on .reveal:nth-child(3) { transition-delay: .16s } .slide.on .reveal:nth-child(4) { transition-delay: .24s } .slide.on .reveal:nth-child(5) { transition-delay: .32s }
@@ -49,29 +52,34 @@
   .cover-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 48px; align-items: end; }
   .cover-right { border-left: 1px solid var(--line); padding-left: 32px; color: var(--muted); font-size: 15px; line-height: 1.6; }
   .cover-right b { display: block; color: var(--text); font-size: 13px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 10px; }
-   }
+  .cover-right i { display: block; font-style: normal; color: var(--gold2); font-weight: 700; margin-top: 12px; }
 
   /* metrics */
-  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 44px; }
-  .metric { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 26px 24px 22px; position: relative; overflow: hidden; }
+  .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 40px; }
+  .metrics.live { grid-template-columns: repeat(3, 1fr); }
+  .metric { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px 22px 20px; position: relative; overflow: hidden; }
   .metric::after { content: ""; position: absolute; right: -40px; top: -40px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgba(201,169,98,.22), transparent 70%); }
-  .metric .n { font-family: var(--serif); font-size: clamp(38px, 4.2vw, 62px); line-height: 1; color: var(--gold2); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .metric .n { font-family: var(--serif); font-size: clamp(36px, 3.6vw, 56px); line-height: 1; color: var(--gold2); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .metrics.live .n { font-size: clamp(42px, 4.6vw, 72px); }
   .metric .l { margin-top: 10px; color: var(--muted); font-size: 14px; font-weight: 600; letter-spacing: .02em; }
-  .metric.wide { grid-column: span 2; display: flex; align-items: center; justify-content: space-between; gap: 24px; background: linear-gradient(135deg, rgba(201,169,98,.16), rgba(201,169,98,.04)); }
-  .metric.wide .n { font-size: clamp(44px, 5vw, 76px); }
-  .metric.wide .l { max-width: 260px; color: var(--text); }
+  .metrics.live .l { color: var(--text); }
+  .metric .s { margin-top: 4px; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
   .footnote { margin-top: 18px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  .appendix { display: none; }
+  .steps { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 26px; font: 800 13px/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; }
+  .steps span { color: var(--text); } .steps em { color: var(--gold); font-style: normal; }
+  .steps span.hot { color: var(--gold2); }
 
   /* layers */
-  .layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
-  .layer { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; min-height: 190px; display: flex; flex-direction: column; gap: 12px; transition: transform .25s ease, border-color .25s ease; }
+  .layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
+  .layer { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; min-height: 180px; display: flex; flex-direction: column; gap: 12px; transition: transform .25s ease, border-color .25s ease; }
   .layer:hover { transform: translateY(-3px); border-color: rgba(201,169,98,.55); }
   .layer .ic { width: 42px; height: 42px; border-radius: 12px; background: rgba(201,169,98,.14); display: grid; place-items: center; color: var(--gold2); }
   .layer .ic svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .layer h3 { margin: 0; font: 800 13px/1.2 var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text); }
   .layer p { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.55; }
 
-  /* moat */
+  /* engine */
   .moat { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; margin-top: 24px; }
   .ring { position: relative; width: min(100%, 500px); aspect-ratio: 1; margin: 0 auto; container-type: inline-size; }
   .ring .loop { position: absolute; inset: 11%; border: 1.5px dashed rgba(201,169,98,.45); border-radius: 50%; animation: spin 80s linear infinite; }
@@ -83,12 +91,10 @@
   .node i { display: block; font-style: normal; font-weight: 600; font-size: 10px; letter-spacing: .12em; color: var(--gold); margin-bottom: 2px; }
   .chain { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
   .chain span { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; font-size: 13.5px; font-weight: 600; }
-  .chain span:nth-child(odd) { }
   .chain em { color: var(--gold); font-style: normal; align-self: center; }
-  .goal { margin-top: 26px; font-family: var(--serif); font-size: clamp(22px, 2.4vw, 34px); line-height: 1.2; }
-  .goal span { display: block; color: var(--gold2); }
-  .bar { margin-top: 40px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 18px 4px; }
-  .bar div { font: 800 13px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .flywheel { margin-top: 26px; font-family: var(--serif); font-size: clamp(22px, 2.4vw, 34px); line-height: 1.2; color: var(--gold2); }
+  .bar { margin-top: 36px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 18px 4px; }
+  .bar div { font: 800 13px/1.4 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
   .bar div b { color: var(--gold2); font-family: var(--serif); font-weight: 600; font-size: 22px; letter-spacing: 0; margin-right: 8px; }
 
   /* build today */
@@ -109,17 +115,21 @@
   .versus .side.live span { color: var(--gold2); }
   .versus .vs { font: 800 12px/1 var(--sans); letter-spacing: .2em; color: var(--muted); }
 
-  /* capital */
+  /* go to market / ask */
   .uses { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 36px; counter-reset: u; }
+  .uses.four { grid-template-columns: repeat(4, 1fr); margin-top: 30px; }
+  .uses.four .use { min-height: 0; }
   .use { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px 20px; min-height: 200px; display: flex; flex-direction: column; gap: 10px; }
   .use::before { counter-increment: u; content: "0" counter(u); font-family: var(--serif); color: var(--gold); font-size: 22px; }
   .use h3 { margin: 0; font: 800 13px/1.25 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
   .use p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
   .risk { display: inline-flex; align-items: center; gap: 10px; margin-top: 24px; padding: 12px 16px; border-radius: 999px; border: 1px solid rgba(201,169,98,.5); color: var(--gold2); font-size: 13.5px; font-weight: 600; }
   .risk i { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 5px rgba(201,169,98,.18); }
+  .quote { margin-top: 28px; padding-left: 22px; border-left: 2px solid var(--gold); font-family: var(--serif); font-size: clamp(20px, 2.2vw, 30px); line-height: 1.25; max-width: 900px; }
+  .quote span { color: var(--gold2); }
 
   /* close */
-  #close { text-align: left; background: radial-gradient(900px 500px at 20% 110%, rgba(201,169,98,.16), transparent 60%), var(--bg); }
+  #close, #ask { text-align: left; background: radial-gradient(900px 500px at 20% 110%, rgba(201,169,98,.16), transparent 60%), var(--bg); }
   .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
   .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 999px; font-weight: 800; font-size: 14px; letter-spacing: .02em; text-decoration: none; border: 1px solid var(--line); color: var(--text); transition: transform .2s ease, background-color .2s ease; }
   .btn:hover { transform: translateY(-2px); }
@@ -166,24 +176,23 @@
   @media (max-width: 980px) {
     .cover-grid, .moat, .complex, .versus { grid-template-columns: 1fr; }
     .cover-right { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 20px; }
-    .metrics { grid-template-columns: repeat(2, 1fr); }
-    .metric.wide { grid-column: span 2; flex-direction: column; align-items: flex-start; gap: 6px; }
+    .metrics, .metrics.live { grid-template-columns: repeat(2, 1fr); }
     .layers { grid-template-columns: 1fr 1fr; }
     .cost { grid-template-columns: 1fr 1fr; }
-    .uses { grid-template-columns: 1fr 1fr; }
+    .uses, .uses.four { grid-template-columns: 1fr 1fr; }
     .use { min-height: 0; }
     .dots { display: none; }
     .versus .vs { text-align: center; }
     .node { width: 96px; margin-left: -48px; font-size: 11px; }
   }
   @media (max-width: 560px) {
-    .metrics, .layers, .cost, .uses { grid-template-columns: 1fr; }
-    .metric.wide { grid-column: span 1; }
+    .metrics, .metrics.live, .layers, .cost, .uses, .uses.four { grid-template-columns: 1fr; }
     .bar div { width: 100%; }
     .node { --r: 36cqw; }
   }
   @media print {
-    .topbar, .dots, .progress, .hint, .noise, .lead-overlay { display: none !important; }
+    .topbar, .dots, .progress, .noise, .lead-overlay { display: none !important; }
+    .appendix { display: block; }
     body { background: #fff; color: #111; scroll-snap-type: none; }
     :root { --bg: #fff; --bg2: #fff; --card: #f6f3ec; --line: #ddd6c6; --text: #111; --muted: #555; --gold: #8a6d2f; --gold2: #6f5520; --ink: #fff; }
     .slide { min-height: 100vh; height: auto; page-break-after: always; break-inside: avoid; border: 0; }
@@ -196,7 +205,7 @@
 <div class="noise"></div>
 <div class="progress" id="progress"></div>
 <div class="topbar">
-  <div class="counter" id="counter">01 / 07</div>
+  <div class="counter" id="counter">01 / 09</div>
   <div class="tools">
     <a href="#" id="printBtn">Save as PDF</a>
     <a href="https://imonsocial.com">imonsocial.com</a>
@@ -204,7 +213,7 @@
 </div>
 <nav class="dots" id="dots" aria-label="Slides"></nav>
 
-<!-- 1. COVER -->
+<!-- 1. COVER: the problem -->
 <section class="slide" id="cover">
   <div class="inner">
     <div class="brand reveal"><img src="logo.png" alt="i'M On Social" /><span>i'M On Social</span></div>
@@ -212,63 +221,29 @@
       <div>
         <p class="kicker reveal">My Platform Overview · 2026</p>
         <h1 class="reveal">The AI Relationship<br/>Operating System.</h1>
-        <p class="lead reveal">A production-grade platform that remembers every customer, understands every relationship and never misses what should happen next. <b>Already built. Already live. Already in the hands of sales teams.</b></p>
+        <p class="lead reveal">Salespeople don't lose relationships because they don't care. They lose them because no human can remember hundreds of customers, every conversation, every milestone and exactly when to reconnect. <b>We built the system that can.</b></p>
       </div>
       <div class="cover-right reveal">
         <b>At a glance</b>
-        295K+ lines of application code · 1,495 API endpoints · 346 screens · 50 automated jobs · 14 live external integrations · iOS, web and embeddable website widget · multi-tenant telephony with carrier compliance.
+        295K+ lines of application code · 1,495 API endpoints · 346 screens · 50 automated jobs · 14 live integrations · iOS, web and an embeddable website widget.
+        <i>Already built. Already live. Already in use.</i>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 2. BUILT -->
-<section class="slide" id="built">
+<!-- 2. ENGINE: what it actually does -->
+<section class="slide" id="engine">
   <div class="inner">
-    <p class="kicker reveal">Built, not just conceptualized</p>
-    <h2 class="reveal">A production-grade AI Relationship Operating System,<br/>already built at significant scale.</h2>
-    <div class="metrics reveal">
-      <div class="metric wide"><div class="n" data-count="295" data-suffix="K+">0</div><div class="l">Lines of application code (backend + mobile/web app, excluding tests)</div></div>
-      <div class="metric"><div class="n" data-count="1495">0</div><div class="l">API endpoints</div></div>
-      <div class="metric"><div class="n" data-count="346">0</div><div class="l">Application screens</div></div>
-      <div class="metric"><div class="n" data-count="252">0</div><div class="l">Reusable UI components</div></div>
-      <div class="metric"><div class="n" data-count="194">0</div><div class="l">Data collections</div></div>
-      <div class="metric"><div class="n" data-count="50">0</div><div class="l">Automated background jobs</div></div>
-      <div class="metric"><div class="n" data-count="14">0</div><div class="l">Live external integrations</div></div>
-    </div>
-    <p class="footnote reveal">Measured from the production repository, September 2026. Tests, build tooling and documentation add another 100K+ lines.</p>
-  </div>
-</section>
-
-<!-- 3. LAYERS -->
-<section class="slide" id="layers">
-  <div class="inner">
-    <p class="kicker reveal">One platform. Multiple technology layers.</p>
-    <h2 class="reveal">Six systems that most companies<br/>buy from six vendors.</h2>
-    <div class="layers reveal">
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1"/><path d="M12 3a4 4 0 0 1 4 4v1a4 4 0 0 1 3 3.9A4 4 0 0 1 17 19h-1"/><path d="M12 3v18"/><path d="M8 12h-1M17 12h-1M9 16h-1M16 16h-1"/></svg></div><h3>Relationship intelligence</h3><p>Persistent customer memory that turns conversations, activities, preferences, milestones and engagement history into a continuously evolving relationship profile.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></div><h3>AI communication</h3><p>Real-time conversational voice, intelligent texting, email, transcription, voice generation and automated customer interaction.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></div><h3>Automation engine</h3><p>Long-term campaigns, event-driven workflows, scheduled engagement, follow-up automation and salesperson task generation.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/><path d="M12 3v4M21 12h-4"/></svg></div><h3>Sales execution</h3><p>Lead response, customer engagement, landing pages, digital experiences, reviews, referrals, communication tools and actionable next steps.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 9v6"/></svg></div><h3>Training &amp; coaching</h3><p>AI practice calls, role-play scenarios, scoring, scripts, coaching, progress tracking and certification.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5M9 10h2M13 10h2M9 14h2M13 14h2"/></svg></div><h3>Enterprise infrastructure</h3><p>Multi-user organizations, permissions, multi-location deployments, billing, partner programs, integrations, reporting and APIs.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- 4. MOAT -->
-<section class="slide" id="moat">
-  <div class="inner">
-    <p class="kicker reveal">The moat is the system</p>
+    <p class="kicker reveal">What it actually does</p>
     <div class="moat">
       <div class="reveal">
-        <h2>This isn't a collection of disconnected AI features.</h2>
-        <p class="lead">Every conversation, interaction and customer signal strengthens the relationship record, giving the platform more context to determine:</p>
+        <h2>A CRM stores what happened.<br/>IMOS understands what changed.</h2>
+        <p class="lead">Something happens. The relationship changes. The system understands the change, and the next action changes with it. Every conversation, call and customer signal strengthens the record, so the platform can determine:</p>
         <div class="chain" aria-label="Decision chain">
           <span>Who needs attention</span><em>→</em><span>Why</span><em>→</em><span>What should happen next</span><em>→</em><span>When</span><em>→</em><span>How to execute it</span>
         </div>
-        <p class="goal">The goal:<span>Remember everyone.</span><span>Understand every relationship.</span><span>Never miss what should happen next.</span></p>
-        <p class="footnote">From contact → relationship intelligence → action.</p>
+        <p class="flywheel">Every interaction makes the next interaction smarter.</p>
       </div>
       <div class="ring reveal" aria-label="Relationship Intelligence Engine with five connected systems">
         <div class="loop"></div>
@@ -280,46 +255,109 @@
         <div class="node" style="--a: 288deg"><i>05</i>Act</div>
       </div>
     </div>
-    <div class="bar reveal">
-      <div><b>295K+</b>Code</div><div><b>1,495</b>APIs</div><div><b>346</b>Screens</div><div><b>50</b>Automations</div><div><b>14</b>Live integrations</div>
+  </div>
+</section>
+
+<!-- 3. LAYERS: six systems, one shared context -->
+<section class="slide" id="layers">
+  <div class="inner">
+    <p class="kicker reveal">One platform. One shared context.</p>
+    <h2 class="sm reveal">Six systems most companies buy from six vendors.<br/>One relationship layer connecting all of them.</h2>
+    <p class="lead wide reveal">The texting system knows what the relationship engine knows. So does voice. So does automation, training and tasks. <b>Not six features under one login: six systems sharing one memory.</b></p>
+    <div class="layers reveal">
+      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1"/><path d="M12 3a4 4 0 0 1 4 4v1a4 4 0 0 1 3 3.9A4 4 0 0 1 17 19h-1"/><path d="M12 3v18"/><path d="M8 12h-1M17 12h-1M9 16h-1M16 16h-1"/></svg></div><h3>Relationship intelligence</h3><p>Persistent customer memory that turns conversations, activities, preferences, milestones and engagement history into a continuously evolving relationship profile.</p></div>
+      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></div><h3>AI communication</h3><p>Real-time conversational voice, intelligent texting, email, transcription, voice generation and automated customer interaction.</p></div>
+      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></div><h3>Automation engine</h3><p>Long-term campaigns, event-driven workflows, scheduled engagement, follow-up automation and salesperson task generation.</p></div>
+      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/><path d="M12 3v4M21 12h-4"/></svg></div><h3>Sales execution</h3><p>Lead response, customer engagement, landing pages, digital experiences, reviews, referrals, communication tools and actionable next steps.</p></div>
+      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 9v6"/></svg></div><h3>Training &amp; coaching</h3><p>AI practice calls, role-play scenarios, scoring, scripts, coaching, progress tracking and certification.</p></div>
+      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5M9 10h2M13 10h2M9 14h2M13 14h2"/></svg></div><h3>Enterprise infrastructure</h3><p>Multi-user organizations, permissions, multi-location deployments, billing, partner programs, integrations, reporting and APIs.</p></div>
     </div>
   </div>
 </section>
 
-<!-- 5. BUILD TODAY -->
+<!-- 4. SCALE: proof it is real -->
+<section class="slide" id="built">
+  <div class="inner">
+    <p class="kicker reveal">Built, not just conceptualized</p>
+    <h2 class="reveal">Production-grade,<br/>already built at significant scale.</h2>
+    <div class="metrics reveal">
+      <div class="metric"><div class="n" data-count="295" data-suffix="K+">0</div><div class="l">Lines of application code</div></div>
+      <div class="metric"><div class="n" data-count="1495">0</div><div class="l">API endpoints</div></div>
+      <div class="metric"><div class="n" data-count="346">0</div><div class="l">Application screens</div></div>
+      <div class="metric"><div class="n" data-count="50">0</div><div class="l">Automated background jobs</div></div>
+      <div class="metric"><div class="n" data-count="14">0</div><div class="l">Live external integrations</div></div>
+    </div>
+    <p class="footnote reveal">Measured from the production repository, September 2026. Backend plus mobile/web app, excluding tests. Tests, build tooling and documentation add another 100K+ lines.</p>
+    <p class="footnote appendix">Technical appendix: 252 reusable UI components · 194 data collections · native iOS app, web app and a one-line embeddable website widget · multi-tenant telephony with carrier (10DLC) compliance.</p>
+  </div>
+</section>
+
+<!-- 5. BUILD TODAY: difficult to recreate -->
 <section class="slide" id="replace">
   <div class="inner">
     <p class="kicker reveal">What would it take to build this today?</p>
     <h2 class="reveal">The technical execution risk<br/>has already been absorbed.</h2>
     <div class="cost reveal">
-      <div class="c"><div class="v">12–15</div><div class="t">Engineers</div><p>Backend, mobile, web, AI/voice, telephony, DevOps and QA, plus product and design. Six disciplines that rarely sit in one early team.</p></div>
+      <div class="c"><div class="v">12–15</div><div class="t">Engineers</div><p>Recreating the current platform would require a multidisciplinary team spanning backend, mobile, web, AI/voice, telephony, DevOps, QA and product.</p></div>
       <div class="c"><div class="v">18–24 mo</div><div class="t">To feature parity</div><p>Estimated development time for a dedicated team to rebuild the current platform and reach the same depth.</p></div>
-      <div class="c"><div class="v">$5M–$8M</div><div class="t">Replacement cost</div><p>Fully loaded US engineering cost to recreate ≈295K lines of production code plus the integration and compliance work around it.</p></div>
-      <div class="c"><div class="v">Live now</div><div class="t">Time to market</div><p>A competitor starting today ships a first MVP in roughly 6 months and needs about two years to match. IMOS is deployed with real users.</p></div>
+      <div class="c"><div class="v">$5M–$8M</div><div class="t">Estimated equivalent build cost</div><p>Fully loaded US engineering cost to recreate ≈295K lines of production code plus the integration and compliance work around it.</p></div>
+      <div class="c"><div class="v">Live now</div><div class="t">Execution lead</div><p>While that team would be hiring and architecting, IMOS is already deployed, processing real conversations for real sales teams.</p></div>
     </div>
     <div class="complex reveal">
       <div><span><b>Real-time voice bridge</b> between carrier media streams and a live AI model, with interruptions, watchdogs and fallbacks.</span></div>
       <div><span><b>Multi-tenant telephony</b> with per-organization numbers, sub-accounts and carrier (10DLC) compliance.</span></div>
       <div><span><b>14 live integrations</b> across telephony, email, payments, AI, push, storage, identity and mapping.</span></div>
       <div><span><b>50 scheduled jobs</b> running campaigns, follow-ups, digests, lifecycle events and health checks around the clock.</span></div>
-      <div><span><b>194 data collections</b> behind one continuously evolving relationship profile per customer.</span></div>
+      <div><span><b>One living profile per customer</b>, continuously updated from every channel and every interaction.</span></div>
       <div><span><b>Three surfaces</b>: native iOS app, web app and a one-line embeddable website widget.</span></div>
     </div>
     <div class="versus reveal">
       <div class="side"><b>Build from scratch</b><span>12–15 people · 18–24 months · $5M–$8M</span></div>
       <div class="vs">VS</div>
-      <div class="side live"><b>i'M On Social today</b><span>Built, deployed, in market</span></div>
+      <div class="side live"><b>i'M On Social today</b><span>Built, deployed, in use</span></div>
     </div>
     <p class="footnote reveal">Estimates use industry productivity benchmarks of 12–18K production lines per engineer-year and fully loaded US cost of $200–250K per engineer-year, plus product, design, QA and infrastructure overhead. Formal models (COCOMO II) produce higher figures.</p>
   </div>
 </section>
 
-<!-- 6. GO TO MARKET -->
-<section class="slide" id="capital">
+<!-- 6. FOUNDER -->
+<section class="slide" id="founder">
+  <div class="inner">
+    <p class="kicker reveal">Founder-market fit</p>
+    <h2 class="reveal">Thirty years on the sales floor.<br/>One tool built for the people on it.</h2>
+    <p class="lead wide reveal">Most sales systems are built around managing the pipeline. This one is built around helping the salesperson manage the relationship. IMOS wasn't designed by a software team that discovered automotive sales in a market report. It was built by a high-tech redneck who spent three decades carrying a quota, then built the tool he always needed, for the lifeblood of every company: <b>the salesperson.</b></p>
+    <div class="bar reveal">
+      <div><b>30</b>years selling, not studying sales</div>
+      <div><b>1</b>problem lived every single day</div>
+      <div><b>295K+</b>lines of code written to end it</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. EVIDENCE: live usage -->
+<section class="slide" id="live">
+  <div class="inner">
+    <p class="kicker reveal">Live today</p>
+    <h2 class="reveal">Does anybody want it?<br/>Here are the numbers.</h2>
+    <div class="steps reveal"><span>Built</span><em>→</em><span>Deployed</span><em>→</em><span class="hot">Used</span></div>
+    <div class="metrics live reveal" id="liveStats">
+      <div class="metric"><div class="n" data-stat="users">—</div><div class="l">Salespeople on the platform</div><div class="s">Active user accounts</div></div>
+      <div class="metric"><div class="n" data-stat="organizations">—</div><div class="l">Organizations</div><div class="s">Dealerships and businesses running IMOS</div></div>
+      <div class="metric"><div class="n" data-stat="contacts">—</div><div class="l">Relationships managed</div><div class="s">Customer records with a living profile</div></div>
+      <div class="metric"><div class="n" data-stat="messages">—</div><div class="l">Conversations processed</div><div class="s">Inbound and outbound messages across every channel</div></div>
+      <div class="metric"><div class="n" data-stat="ai_calls">—</div><div class="l">Calls handled by AI</div><div class="s">Transcribed, graded or role-played by the platform</div></div>
+      <div class="metric"><div class="n" data-stat="automations">—</div><div class="l">Automations executed</div><div class="s">Campaign steps and date triggers fired without a human</div></div>
+    </div>
+    <p class="footnote reveal" id="liveNote">Live aggregate counts pulled from the production platform as you read this. Not projections, not vanity metrics: every number is a record in the database.</p>
+  </div>
+</section>
+
+<!-- 8. GO TO MARKET -->
+<section class="slide" id="gtm">
   <div class="inner">
     <p class="kicker reveal">Where we are now</p>
-    <h2 class="reveal">Thirty years on the sales floor.<br/>One tool built for the people on it.</h2>
-    <p class="lead reveal">Every CRM was designed for the manager. Not this one. IMOS was built by a high-tech redneck who has actually carried a quota, for the lifeblood of every company: <b>the salesperson.</b> The platform is live. Now it goes to market:</p>
+    <h2 class="reveal">The product is built. The infrastructure is live.<br/>Now it goes to market.</h2>
+    <p class="lead reveal">The focus shifts from building to distribution. <b>Here is the plan:</b></p>
     <div class="uses reveal">
       <div class="use"><h3>Dealers first</h3><p>Automotive and powersports dealerships, where the pain is sharpest: hundreds of past customers every salesperson has simply forgotten.</p></div>
       <div class="use"><h3>Land and expand</h3><p>One rep becomes the store, the store becomes the group. Team leaderboards, manager views and the referral engine already drive this inside the product.</p></div>
@@ -331,14 +369,35 @@
   </div>
 </section>
 
-<!-- 7. CLOSE -->
-<section class="slide" id="close">
+<!-- 9a. CLOSE (general audience) -->
+<section class="slide" id="close" data-mode="general">
   <div class="inner">
     <div class="brand reveal"><img src="logo.png" alt="i'M On Social" /><span>i'M On Social</span></div>
     <h1 class="reveal">Remember everyone.<br/>Understand every relationship.<br/><span style="color: var(--gold2)">Never miss what should happen next.</span></h1>
     <p class="lead reveal">From contact → relationship intelligence → action. One platform, already running.</p>
     <div class="cta reveal">
-      <a class="btn gold" href="#" id="leadBtn">Start a conversation</a>
+      <a class="btn gold lead-open" href="#">Start a conversation</a>
+      <a class="btn" href="https://imonsocial.com">See the product</a>
+      <a class="btn" href="https://app.imonsocial.com">Open the live app</a>
+    </div>
+  </div>
+</section>
+
+<!-- 9b. ASK (investor mode: ?investor=1) -->
+<section class="slide" id="ask" data-mode="investor">
+  <div class="inner">
+    <p class="kicker reveal">Now we scale it</p>
+    <h2 class="xs reveal">We aren't raising capital to find out whether this can be built. <span style="color: var(--gold2)">We're raising capital to determine how fast it can be distributed.</span></h2>
+    <p class="lead reveal">The product is built. The infrastructure is live. The market has been identified. <b>The next investment is distribution.</b></p>
+    <div class="uses four reveal">
+      <div class="use"><h3>Sales &amp; distribution</h3><p>A direct sales motion for dealer groups and multi-location operators, plus the partner and reseller channels already wired into the product.</p></div>
+      <div class="use"><h3>Strategic integrations</h3><p>Two-way sync with the CRMs and DMS platforms the market already runs, so IMOS becomes the relationship layer on top of existing systems.</p></div>
+      <div class="use"><h3>Enterprise deployment</h3><p>Onboarding, support, controls and reporting for groups rolling IMOS out across hundreds of reps at once.</p></div>
+      <div class="use"><h3>Product expansion</h3><p>Deeper AI across voice, texting and coaching, and the adjacent industries the platform already supports.</p></div>
+    </div>
+    <p class="quote reveal">I've built the machine. <span>Now I'm looking for the right capital and partners to put fuel in it.</span></p>
+    <div class="cta reveal">
+      <a class="btn gold lead-open" href="#">Start a conversation</a>
       <a class="btn" href="https://imonsocial.com">See the product</a>
       <a class="btn" href="https://app.imonsocial.com">Open the live app</a>
     </div>
@@ -375,6 +434,9 @@
 </div>
 
 <script>
+  const INVESTOR = new URLSearchParams(location.search).get('investor') === '1';
+  document.querySelectorAll('.slide[data-mode]').forEach(s => { if (s.dataset.mode !== (INVESTOR ? 'investor' : 'general')) s.remove(); });
+
   const slides = [...document.querySelectorAll('.slide')];
   const dots = document.getElementById('dots');
   const counter = document.getElementById('counter');
@@ -393,10 +455,16 @@
   document.getElementById('printBtn').addEventListener('click', e => { e.preventDefault(); slides.forEach(s => { s.classList.add('on'); s.querySelectorAll('[data-count]').forEach(el => { el.textContent = (+el.dataset.count).toLocaleString('en-US') + (el.dataset.suffix || ''); el.dataset.done = '1'; }); }); setTimeout(() => window.print(), 150); });
   setCurrent(0);
 
+  // live usage numbers (read-only public aggregate endpoint)
+  const liveSlide = document.getElementById('live');
+  fetch('https://app.imonsocial.com/api/public/platform-stats').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
+    document.querySelectorAll('[data-stat]').forEach(el => { const v = d[el.dataset.stat]; if (typeof v !== 'number') return; el.dataset.count = v; el.textContent = '0'; if (liveSlide.classList.contains('on')) countUp(el); });
+  }).catch(() => { document.getElementById('liveNote').textContent = 'Live counts are temporarily unavailable. The platform is in production use; numbers refresh automatically when the connection returns.'; });
+
   const leadOverlay = document.getElementById('leadOverlay');
   const openLead = e => { e.preventDefault(); leadOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; setTimeout(() => document.getElementById('lf-name').focus(), 50); };
   const closeLead = () => { leadOverlay.classList.remove('open'); document.body.style.overflow = ''; };
-  document.getElementById('leadBtn').addEventListener('click', openLead);
+  document.querySelectorAll('.lead-open').forEach(b => b.addEventListener('click', openLead));
   document.getElementById('leadClose').addEventListener('click', closeLead);
   leadOverlay.addEventListener('click', e => { if (e.target === leadOverlay) closeLead(); });
   document.getElementById('leadForm').addEventListener('submit', async e => {
@@ -408,7 +476,7 @@
     btn.disabled = true; btn.textContent = 'Sending…';
     try {
       const r = await fetch('https://app.imonsocial.com/api/demo-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: v('lf-name'), email: v('lf-email'), phone: v('lf-phone'), company: v('lf-company'), message: v('lf-msg'), source: 'platform_overview_cta', referrer: document.referrer }) });
+        body: JSON.stringify({ name: v('lf-name'), email: v('lf-email'), phone: v('lf-phone'), company: v('lf-company'), message: v('lf-msg'), source: INVESTOR ? 'platform_overview_investor_cta' : 'platform_overview_cta', referrer: document.referrer }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || j.status === 'error') throw new Error(j.message || 'failed');
       document.getElementById('leadFormWrap').style.display = 'none'; document.getElementById('leadDone').style.display = 'block';
