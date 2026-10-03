@@ -37,7 +37,7 @@ for y in range(0, H, 60):
 d.rounded_rectangle((0, 0, W, 8), fill=GOLD)
 
 # logo card (white rounded tile so the colorful mark stays crisp)
-logo = Image.open("/app/marketing/build/imos-logo.png").convert("RGBA")
+logo = Image.open("/app/marketing/build/logo.png").convert("RGBA")
 tile = 300
 pad = 26
 tile_box = (84, (H - tile) // 2 - 10, 84 + tile, (H - tile) // 2 - 10 + tile)
