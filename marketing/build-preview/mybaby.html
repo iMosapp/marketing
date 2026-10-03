@@ -49,10 +49,7 @@
   .cover-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 48px; align-items: end; }
   .cover-right { border-left: 1px solid var(--line); padding-left: 32px; color: var(--muted); font-size: 15px; line-height: 1.6; }
   .cover-right b { display: block; color: var(--text); font-size: 13px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 10px; }
-  .hint { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); color: var(--muted); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
-  .hint i { width: 18px; height: 28px; border: 1.5px solid var(--muted); border-radius: 10px; position: relative; display: inline-block; }
-  .hint i::after { content: ""; position: absolute; left: 50%; top: 5px; width: 3px; height: 6px; margin-left: -1.5px; background: var(--gold); border-radius: 2px; animation: wheel 1.6s infinite; }
-  @keyframes wheel { 0% { transform: translateY(0); opacity: 1 } 100% { transform: translateY(10px); opacity: 0 } }
+   }
 
   /* metrics */
   .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 44px; }
@@ -198,7 +195,6 @@
       </div>
     </div>
   </div>
-  <div class="hint"><i></i> Scroll or use arrow keys</div>
 </section>
 
 <!-- 2. BUILT -->
