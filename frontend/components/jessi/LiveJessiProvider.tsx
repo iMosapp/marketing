@@ -4,6 +4,7 @@ import { useLiveJessi, LiveOptions, OpenTarget } from '../../hooks/useLiveJessi'
 import { LiveJessiSheet } from './LiveJessiSheet';
 import { LiveJessiPill } from './LiveJessiPill';
 import { useDraftStore } from '../../store/draftStore';
+import { useMemorySearchStore } from '../../store/memorySearchStore';
 
 export type LiveLaunch = { options: LiveOptions; title?: string; who?: string; hint?: string; onClose?: () => void };
 type Ctx = { open: (launch: LiveLaunch) => void; active: boolean };
@@ -19,7 +20,7 @@ export const pathFor = (t: OpenTarget): string | null => {
   if (t.kind === 'home') return '/(tabs)/home';
   if (t.kind === 'inbox') return '/(tabs)/inbox';
   if (t.kind === 'duplicates') return '/contacts/duplicates';
-  if (t.kind === 'mentions') return `/memory-search?q=${encodeURIComponent(t.query || '')}`;
+  if (t.kind === 'mentions') return `/memory-search?q=${encodeURIComponent(t.query || '')}${t.days ? `&days=${t.days}` : ''}`;
   return null;
 };
 
@@ -37,6 +38,7 @@ export const LiveJessiProvider = ({ children }: { children: React.ReactNode }) =
 
   const onOpen = useCallback((t: OpenTarget) => {
     if (t.kind === 'thread' && t.id && t.draft) useDraftStore.getState().set(t.id, t.draft);
+    if (t.kind === 'mentions' && t.query && t.res) useMemorySearchStore.getState().set(t.query, t.res, t.days);
     const path = pathFor(t);
     if (!path) return;
     setTarget(t);

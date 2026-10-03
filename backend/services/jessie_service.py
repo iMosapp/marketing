@@ -571,12 +571,15 @@ async def _build_data_lookups(user_id: str, user_message: str, role: str = "user
             user = await db.users.find_one({"_id": ObjectId(user_id)}) if ObjectId.is_valid(user_id) else None
             if user:
                 res = await ms.search(db, user, user_message[:300])
+                all_rs = res.get("results") or []
                 rows = []
-                for r in (res.get("results") or [])[:6]:
+                for r in all_rs[:40]:
                     b = r["best"]
                     rows.append(f"- {r['name']} ({r['phone'] or 'no phone'}) | {ms.SOURCES[b['source']]}, {b['when_label'] or 'undated'} | {b['why'] or b['quote']} | quote: \"{b['quote'][:200]}\" | open: /contact/{r['contact_id']}")
-                sections.append(f"\n### WHO MENTIONED \"{res.get('topic') or user_message}\" (searched texts, call transcripts, voice memos, notes, tags and sold records; terms: {', '.join(res.get('terms') or [])})\n"
-                                + ("\n".join(rows) if rows else "Nobody on record. Say so plainly, and offer to widen the search (different words, longer time frame)."))
+                more = f"\n(+{len(all_rs) - 40} more not listed here)" if len(all_rs) > 40 else ""
+                sections.append(f"\n### WHO MENTIONED \"{res.get('topic') or user_message}\" ({len(all_rs)} people total; searched texts, call transcripts, voice memos, notes, tags and sold records; terms: {', '.join(res.get('terms') or [])})\n"
+                                + ("\n".join(rows) + more + "\nList EVERY person above with their one-line reason (name, source, when, what they said). Do not stop at a few and say 'and others'. If the list is long, keep each line short but include everyone." if rows
+                                   else "Nobody on record. Say so plainly, and offer to widen the search (different words, longer time frame)."))
         except Exception as e:
             logger.warning(f"[Jessie] mentions search failed: {e}")
 

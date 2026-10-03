@@ -12,7 +12,7 @@ from services.scripts import _llm_json
 
 logger = logging.getLogger(__name__)
 
-MAX_HITS = 40
+MAX_HITS = 150
 PER_CONTACT = 3
 WINDOW = 140
 SOURCES = {"text": "text", "call": "call transcript", "memo": "voice memo", "note": "note", "sale": "sold record", "tag": "tag"}
@@ -204,10 +204,15 @@ async def _tags(db, owners: list, rx: re.Pattern, mongo_rx: dict) -> list:
 
 
 async def verify(topic: str, query: str, hits: list) -> dict:
-    """One LLM read of the snippets: which ones show the person actually meant this (asked, wants, is shopping), and a one-line why."""
+    """One LLM read of the snippets: which ones show the person actually meant this (asked, wants, is shopping), and a one-line why.
+    Identical snippets (sixty people all 'Tagged: Harley riders') are judged once and the verdict applied to every one of them."""
     if not hits:
         return {}
-    listing = "\n".join(f"[{i}] ({SOURCES[h['source']]}, {'the customer' if h['who'] == 'them' else 'me' if h['who'] == 'me' else h['who']}, {_fmt(h['when'])}) {h['quote']}" for i, h in enumerate(hits))
+    groups: dict = {}
+    for i, h in enumerate(hits):
+        groups.setdefault((h["source"], h["who"], h["quote"].strip().lower()), []).append(i)
+    reps = [idx[0] for idx in groups.values()]
+    listing = "\n".join(f"[{k}] ({SOURCES[hits[i]['source']]}, {'the customer' if hits[i]['who'] == 'them' else 'me' if hits[i]['who'] == 'me' else hits[i]['who']}, {_fmt(hits[i]['when'])}) {hits[i]['quote']}" for k, i in enumerate(reps))
     try:
         data = await _llm_json(
             "You help a car sales rep find the customer they are thinking of. Given what the rep is looking for and numbered snippets from past texts, calls and memos, "
@@ -219,7 +224,15 @@ async def verify(topic: str, query: str, hits: list) -> dict:
             "(tag 'Harley riders' fits 'who rides a Harley', 'my Harley people', 'anyone into motorcycles'; tag 'VIP' fits 'who are my VIPs'). A tag that only shares a word by coincidence is not a match. "
             "Return ONLY JSON: {\"matches\": [{\"i\": <index>, \"why\": \"<one short sentence quoting or paraphrasing what they said>\", \"strength\": \"strong|maybe\"}]}",
             f"LOOKING FOR: {query}\nTOPIC: {topic}\n\nSNIPPETS:\n{listing}", timeout=25)
-        return {int(m["i"]): m for m in (data.get("matches") or []) if str(m.get("i", "")).isdigit() and int(m["i"]) < len(hits)}
+        out = {}
+        for m in data.get("matches") or []:
+            k = str(m.get("i", ""))
+            if not k.isdigit() or int(k) >= len(reps):
+                continue
+            rep = hits[reps[int(k)]]
+            for i in groups[(rep["source"], rep["who"], rep["quote"].strip().lower())]:
+                out[i] = m
+        return out
     except Exception as e:
         logger.warning(f"[Mentions] verify failed, keeping keyword hits: {e}")
         return {i: {"why": h["quote"][:140], "strength": "maybe"} for i, h in enumerate(hits)}
@@ -258,21 +271,38 @@ async def search(db, user: dict, query: str, days: Optional[int] = None) -> dict
     return {"query": query, "topic": t["topic"], "terms": t["terms"], "scanned": len(hits), "results": results}
 
 
-def spoken(res: dict) -> str:
-    """What Jessi says out loud."""
+def _line(r: dict) -> str:
+    b = r["best"]
+    if b["source"] == "tag":
+        return f"{r['name']}, {b['quote'].replace('Tagged:', 'tagged', 1)}".rstrip(". ")
+    src = {"text": "texted", "call": "on a call", "memo": "in your voice memo", "note": "in your notes", "sale": "in your sold records"}[b["source"]]
+    return f"{r['name']}, {src} {r['when_spoken']}: {b['why'] or b['quote']}".rstrip(". ")
+
+
+def _lines(rs: list) -> str:
+    return ". ".join(_line(r) for r in rs) + "."
+
+
+def spoken(res: dict, first: int = 3) -> str:
+    """What Jessi says out loud: the first few, the total, and how to hear the rest."""
     rs = res.get("results") or []
     topic = res.get("topic") or res.get("query")
     if not rs:
         return f"Nobody on record mentioned {topic}. I checked your texts, call transcripts, voice memos, notes, tags and sold records." + (" The closest keyword hits were not about that." if res.get("scanned") else "")
-    lines = []
-    for r in rs[:3]:
-        b = r["best"]
-        if b["source"] == "tag":
-            lines.append(f"{r['name']}, {b['quote'].replace('Tagged:', 'tagged', 1)}")
-            continue
-        src = {"text": "texted", "call": "on a call", "memo": "in your voice memo", "note": "in your notes", "sale": "in your sold records"}[b["source"]]
-        lines.append(f"{r['name']}, {src} {r['when_spoken']}: {b['why'] or b['quote']}")
-    more = f" And {len(rs) - 3} more on the screen." if len(rs) > 3 else ""
+    left = len(rs) - first
+    more = f" And {left} more on your screen. Say keep going and I will read the rest." if left > 0 else ""
     verb = "match" if any(r["best"]["source"] == "tag" for r in rs) else "mentioned"
     head = f"{len(rs)} {'person' if len(rs) == 1 else 'people'} {verb} {topic}. " if len(rs) > 1 else ""
-    return head + " ".join(lines) + more + f" Want me to pull up {rs[0]['first'] or 'the first one'} or text them?"
+    return head + _lines(rs[:first]) + more + f" Want me to pull up {rs[0]['first'] or 'the first one'} or text them?"
+
+
+def spoken_more(res: dict, start: int, count: int) -> tuple:
+    """The next batch of the same list ('keep going'). Returns (text, new_cursor)."""
+    rs = res.get("results") or []
+    if start >= len(rs):
+        return "That was everyone. They are all on your screen.", len(rs)
+    batch = rs[start:start + count]
+    end = start + len(batch)
+    left = len(rs) - end
+    tail = f" {left} more to go. Say keep going for the next ones." if left > 0 else " And that is everyone."
+    return _lines(batch) + tail, end

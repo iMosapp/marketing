@@ -64,7 +64,7 @@ ENERGY = {1: "calm and steady", 2: "relaxed and easy", 3: "warm and engaged", 4:
 PACING = {1: "slow and unhurried", 2: "measured", 3: "a natural pace", 4: "quick-moving, no dead air", 5: "fast and clipped"}
 PLAYFUL = {1: "all business", 2: "mostly serious", 3: "lightly playful when it fits", 4: "playful", 5: "very playful, quick with a one-liner"}
 BREVITY = {1: "take your time and explain fully", 2: "a few sentences", 3: "two or three short sentences", 4: "one or two short sentences, then let them talk", 5: "as few words as possible"}
-TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates", "next_stop", "find_mentions",
+TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates", "next_stop", "find_mentions", "more_mentions",
          "call_person", "add_note", "tag_person", "mark_sold", "finish_task", "update_contact", "book_appointment", "enroll_campaign", "send_card")
 PENDING_CANCEL = {"merge": "Nothing was merged.", "sold": "Nothing was marked sold.", "appointment": "Nothing was booked.", "enroll": "Nobody was enrolled.", "send_text": "Nothing was sent."}
 SCREENS = {"contact": ("contact", "record", "profile", "person", "page", "card"), "thread": ("thread", "conversation", "texts", "messages", "text", "chat"),
@@ -415,6 +415,7 @@ Tools:
 - merge_duplicates: the rep wants two or more records of ONE person combined: "merge them", "combine those", "make Tod one record", "clean up Tod Berry", or "merge them" right after Jessi mentioned she found two records for a name. args: {"name": "<the person as spoken, empty when they mean the records Jessi just mentioned>"}
 - next_stop: ONLY during a DAY WALKTHROUGH (shown below). The rep moves the walkthrough along: "next" / "what's next" / "move on" / "go on" / "okay next one" -> {"action": "next"}; "skip" / "skip him" / "not today" / "pass" -> {"action": "skip"}; "done" / "did that" / "already texted him" / "handled" / "mark it done" / "I called her" -> {"action": "done"}. args: {"action": "next|skip|done"}
 - find_mentions: the rep is hunting for a person by something that came up, not by name: "who asked about a Tesla", "someone mentioned a 20k Model 3 last month, who was it", "find anyone looking for a truck", "who talked about a trade-in", "did anybody bring up financing", by what they bought: "who did I sell a Tahoe to", "who bought a Silverado last year", "which customers have a Model 3", and by a tag the rep put on people: "who are my Harley riders", "everyone tagged VIP", "who do I have tagged as a first-time buyer", "pull up my golfers". The backend searches every text, call transcript, voice memo, note, tag and sold record. args: {"query": "<what they are looking for, as said, keep numbers and product names>", "days": <lookback in days if the rep said a time frame like last month = 45, this year = 365, else 0>}
+- more_mentions: right after a find_mentions result, the rep wants the REST of that list read out: "keep going", "who else", "read the rest", "next", "more", "give me the next five", "read them all", "all of them". args: {"count": <how many to read, default 5>, "all": <true when they want the whole rest of the list>}
 - call_person: the rep wants to CALL someone: "call Bud", "ring Sarah", "get Mike on the phone", "dial him". Their own cell rings first and they press 1, so it runs at once. args: {"name": "..."}
 - add_note: save a note / memo on a person: "add a note on Bud: he is shopping for a pontoon boat", "make a note that Sarah's lease is up in June", "remember that Mike wants a call after the 15th". args: {"name": "...", "text": "<the note itself in the rep's words, without the 'add a note on Bud' framing>"}
 - tag_person: add or remove a tag: "tag Bud as a Harley rider", "put Sarah under VIP", "take the hot lead tag off Mike", "untag him". args: {"name": "...", "tag": "<the tag as spoken, e.g. Harley riders>", "action": "add|remove"}
@@ -643,10 +644,17 @@ async def _resolve(db, user_id: str, name: str, focus: Optional[dict] = None, hi
     the records Jessi just listed; same-name duplicates collapse (same phone) or default to the most active one with a 'say the other one' note;
     a question is never asked twice in a row for the same name. The focus contact wins whenever the spoken name fits them."""
     hint = (hint or "").strip()
+    words = _name_words(name)
+    listed = [r["contact_id"] for r in (((live or {}).get("mentions") or {}).get("res") or {}).get("results") or []]
+    if live and listed and len(words) >= 2 and not hint:
+        # the rep named someone straight off the list Jessi just read out: that exact record beats any fuzzy focus match
+        rows = await db.contacts.find({"_id": {"$in": [ObjectId(x) for x in listed if ObjectId.is_valid(x)]}}).to_list(150)
+        ranked = sorted(rows, key=lambda r: -_score(words, r))
+        if ranked and _score(words, ranked[0]) >= 0.95 and (len(ranked) == 1 or _score(words, ranked[1]) < _score(words, ranked[0])):
+            return ranked[0], None
     if live and hint and live.get("last_choices"):
-        rows = await db.contacts.find({"_id": {"$in": [ObjectId(x) for x in live["last_choices"] if ObjectId.is_valid(x)]}}).to_list(10)
+        rows = await db.contacts.find({"_id": {"$in": [ObjectId(x) for x in live["last_choices"] if ObjectId.is_valid(x)]}}).to_list(60)
         rows.sort(key=lambda r: live["last_choices"].index(str(r["_id"])))
-        words = _name_words(name)
         if words and not any(_score(words, r) >= 0.8 for r in rows):
             rows = []  # the list Jessi read out was about someone else; do not pick from it
         picked = _apply_hint(hint, rows, live.get("last_pick"))
@@ -928,6 +936,18 @@ async def _advance(db, user: dict, live: dict, action: str, prefix: str = ""):
 
 
 # ── who mentioned ─────────────────────────────────────────────────────────────
+def _mentions_line(live: dict) -> str:
+    m = live.get("mentions") or {}
+    rs = (m.get("res") or {}).get("results") or []
+    if not rs:
+        return "MENTIONS LIST: none"
+    read = int(m.get("read") or 0)
+    names = "; ".join(f"{i + 1}. {r['name']}" for i, r in enumerate(rs[:50]))
+    return (f"MENTIONS LIST (Jessi's last find_mentions for '{m.get('query')}', {len(rs)} people, {min(read, len(rs))} read out so far): {names}. "
+            "If the rep says keep going / who else / next / more / read the rest here, that is more_mentions (not next_stop) unless a DAY WALKTHROUGH is active and they clearly mean a stop. "
+            "If the rep picks one of these people by name or position, args.name is that person's full name from this list.")
+
+
 async def _find_mentions(db, user: dict, args: dict, live: Optional[dict]):
     from services import memory_search as ms
     query = (args.get("query") or "").strip()
@@ -936,12 +956,36 @@ async def _find_mentions(db, user: dict, args: dict, live: Optional[dict]):
     days = int(args.get("days") or 0) or None
     res = await ms.search(db, user, query, days)
     rs = res.get("results") or []
-    if live is not None and rs:
-        live["last_choices"] = [r["contact_id"] for r in rs[:5]]
-        await db[COLL].update_one({"_id": live["_id"]}, {"$set": {"last_choices": live["last_choices"], "contact_id": rs[0]["contact_id"], "contact_name": rs[0]["name"]}})
-        live["contact_id"], live["contact_name"] = rs[0]["contact_id"], rs[0]["name"]
-    opened = {"kind": "mentions", "query": query, "id": rs[0]["contact_id"] if rs else None, "name": rs[0]["name"] if rs else "", "first": rs[0]["first"] if rs else ""} if rs else None
+    if live is not None:
+        # The whole list rides along so "keep going" reads the rest and the screen shows exactly what Jessi said, without a second search.
+        live["mentions"] = {"query": query, "days": days, "read": 3, "res": _trim_mentions(res)}
+        sets = {"mentions": live["mentions"]}
+        if rs:
+            live["last_choices"] = [r["contact_id"] for r in rs[:50]]
+            live["contact_id"], live["contact_name"] = rs[0]["contact_id"], rs[0]["name"]
+            sets.update(last_choices=live["last_choices"], contact_id=rs[0]["contact_id"], contact_name=rs[0]["name"])
+        await db[COLL].update_one({"_id": live["_id"]}, {"$set": sets})
+    opened = {"kind": "mentions", "query": query, "days": days, "id": rs[0]["contact_id"] if rs else None, "name": rs[0]["name"] if rs else "", "first": rs[0]["first"] if rs else "", "res": _trim_mentions(res)} if rs else None
     return ms.spoken(res), opened
+
+
+def _trim_mentions(res: dict) -> dict:
+    """Everything the screen renders, nothing more: results capped at 150, three hits each, quotes clipped."""
+    def hit(h):
+        return {k: (v[:400] if isinstance(v, str) and k in ("quote", "why") else v) for k, v in h.items() if k != "ref"}
+    return {**res, "results": [{**r, "hits": [hit(h) for h in (r.get("hits") or [])[:3]], "best": hit(r["best"])} for r in (res.get("results") or [])[:150]]}
+
+
+async def _more_mentions(db, live: Optional[dict], args: dict):
+    from services import memory_search as ms
+    m = (live or {}).get("mentions")
+    if not m or not (m.get("res") or {}).get("results"):
+        return "I have not looked anyone up yet. Tell me what to hunt for, like who are my Harley riders or who asked about a trade-in.", None
+    count = len(m["res"]["results"]) if args.get("all") else max(1, min(int(args.get("count") or 5), 20))
+    text, cursor = ms.spoken_more(m["res"], int(m.get("read") or 0), count)
+    live["mentions"]["read"] = cursor
+    await db[COLL].update_one({"_id": live["_id"]}, {"$set": {"mentions.read": cursor}})
+    return text, None
 
 
 async def _shopper_delegation(db, live: dict, transcript: list, delegation_id: Optional[str], t0: datetime) -> dict:
@@ -970,7 +1014,7 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
     tz_line = f"NOW (rep's local time, {getattr(tz, 'key', 'UTC')}): {_now().astimezone(tz).strftime('%A %Y-%m-%d %H:%M')}. Return when_iso in this local time without a Z suffix."
     plan = {}
     try:
-        plan = await _llm_json(BRAIN_SYSTEM, f"{tz_line}\n{focus_txt}\n{_walkthrough_line(live)}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
+        plan = await _llm_json(BRAIN_SYSTEM, f"{tz_line}\n{focus_txt}\n{_walkthrough_line(live)}\n{_mentions_line(live)}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
     except Exception as e:
         logger.warning(f"[Live] brain plan failed: {e}")
     tool = plan.get("tool") if plan.get("tool") in TOOLS else "answer"
@@ -1039,6 +1083,8 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             result, opened = await _find_duplicates(db, user, live)
         elif tool == "find_mentions":
             result, opened = await _find_mentions(db, user, args, live)
+        elif tool == "more_mentions":
+            result, opened = await _more_mentions(db, live, args)
         elif tool == "merge_duplicates":
             result, new_pending, opened = await _merge_duplicates(db, user, args, live)
             new_pending = new_pending or pending
@@ -1062,7 +1108,7 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
     if opened and opened.get("kind") in ("contact", "thread") and opened.get("id"):
         sets.update(contact_id=opened["id"], contact_name=opened.get("name") or "")
         live["contact_id"], live["contact_name"] = opened["id"], opened.get("name") or ""
-    await db[COLL].update_one({"_id": live["_id"]}, {"$push": {"delegations": {"id": delegation_id, "tool": tool, "args": args, "result": result, "open": opened, "ms": ms, "at": _now()}}, "$set": sets})
+    await db[COLL].update_one({"_id": live["_id"]}, {"$push": {"delegations": {"id": delegation_id, "tool": tool, "args": args, "result": result, "open": ({k: v for k, v in opened.items() if k != "res"} if opened else None), "ms": ms, "at": _now()}}, "$set": sets})
     logger.info(f"[Live] {live['live_id']} {tool} in {ms}ms" + (f" -> open {opened['kind']}" if opened else ""))
     return {"tool": tool, "content": result, "kind": kind, "pending": bool(new_pending), "open": opened, "ms": ms}
 
