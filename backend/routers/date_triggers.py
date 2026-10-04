@@ -175,7 +175,7 @@ async def process_date_triggers(user_id: str):
     if not configs:
         return {"message": "No active date triggers configured", "sent": 0}
     
-    base_filter = await get_data_filter(user_id)
+    base_filter = {"user_id": user_id}  # a rep's date triggers go to the rep's own contacts only
     sent_count = 0
     results = []
     

@@ -23,9 +23,9 @@ const KIND: Record<string, { icon: any; color: string; label: string }> = {
   hot: { icon: 'flame', color: '#FF6B35', label: 'Hot' },
 };
 
-type Stop = { contact_id: string | null; name: string; first: string; kind: string; label: string; why: string };
-type Rep = { user_id: string; name: string; first: string; role: string; photo?: string | null; total: number; counts: Record<string, number>; stops: Stop[] };
-type Digest = { reps: Rep[]; rep_count: number; total: number; waiting: number; spoken: string };
+type Stop = { contact_id: string | null; name: string; first: string; kind: string; label: string; why: string; foreign?: boolean; owner_name?: string };
+type Rep = { user_id: string; name: string; first: string; role: string; photo?: string | null; total: number; counts: Record<string, number>; foreign?: number; stops: Stop[] };
+type Digest = { reps: Rep[]; rep_count: number; total: number; waiting: number; foreign?: number; spoken: string };
 
 export default function TeamTodayScreen() {
   const { colors } = useThemeStore();
@@ -117,6 +117,13 @@ export default function TeamTodayScreen() {
                   </View>
                   <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textTertiary} />
                 </TouchableOpacity>
+                {!!rep.foreign && (
+                  <TouchableOpacity onPress={() => router.push(`/team-today-explain?rep=${rep.user_id}` as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF9F0A14', borderWidth: 1, borderColor: '#FF9F0A55', borderRadius: 10, padding: 8 }} {...tid(`team-today-explain-${rep.user_id}`)}>
+                    <Ionicons name="alert-circle" size={14} color="#FF9F0A" />
+                    <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', color: '#FF9F0A' }}>{rep.foreign} of these are other reps' customers. Where did they come from?</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#FF9F0A" />
+                  </TouchableOpacity>
+                )}
                 {shown.map((s, i) => {
                   const k = KIND[s.kind] || { icon: 'ellipse', color: colors.textSecondary, label: s.label };
                   const key = `${rep.user_id}:${s.contact_id}`;
@@ -126,6 +133,11 @@ export default function TeamTodayScreen() {
                       <TouchableOpacity style={{ flex: 1 }} onPress={() => s.contact_id && router.push(`/contact/${s.contact_id}` as any)} {...tid(`team-today-open-${s.contact_id}`)}>
                         <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{s.name} <Text style={{ fontSize: 11, fontWeight: '800', color: k.color }}>· {k.label}</Text></Text>
                         <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>{s.why}</Text>
+                        {s.foreign && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, alignSelf: 'flex-start', backgroundColor: '#FF9F0A22', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 }} {...tid(`team-today-foreign-${s.contact_id}`)}>
+                            <Ionicons name="alert-circle" size={11} color="#FF9F0A" /><Text style={{ fontSize: 11, fontWeight: '800', color: '#FF9F0A' }}>{s.owner_name ? `${s.owner_name}'s customer` : 'Another rep\'s customer'}</Text>
+                          </View>
+                        )}
                       </TouchableOpacity>
                       {!!s.contact_id && (
                         <TouchableOpacity onPress={() => nudge(rep, s)} disabled={nudging === key} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${GOLD}22`, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, opacity: nudging === key ? 0.5 : 1 }} {...tid(`team-today-nudge-${rep.user_id}-${s.contact_id}`)}>

@@ -409,16 +409,22 @@ async def _score_my3(user_id: str, db, top_n: int = 3) -> list:
         for c in bday_contacts:
             try:
                 bd = c.get("birthday")
-                if isinstance(bd, str) and len(bd) >= 5:
-                    parts = bd.replace("/", "-").split("-")
-                    if len(parts) >= 2:
-                        m, d = int(parts[-2]), int(parts[-1])
-                        for offset in range(0, 4):
-                            upcoming = now + timedelta(days=offset)
-                            if upcoming.month == m and upcoming.day == d:
-                                label = "Birthday today! 🎂" if offset == 0 else f"Birthday in {offset} day{'s' if offset > 1 else ''}"
-                                await add(c, "birthday", label, 9 - offset)
-                                break
+                m = d = None
+                if isinstance(bd, datetime):
+                    m, d = bd.month, bd.day
+                elif isinstance(bd, str) and len(bd) >= 5:
+                    parts = bd[:10].replace("/", "-").split("-")
+                    if len(parts) == 3 and len(parts[0]) == 4:
+                        m, d = int(parts[1]), int(parts[2])  # YYYY-MM-DD
+                    elif len(parts) >= 2:
+                        m, d = int(parts[0]), int(parts[1])  # MM-DD or MM/DD/YYYY
+                if m and d:
+                    for offset in range(0, 4):
+                        upcoming = now + timedelta(days=offset)
+                        if upcoming.month == m and upcoming.day == d:
+                            label = "Birthday today! 🎂" if offset == 0 else f"Birthday in {offset} day{'s' if offset > 1 else ''}"
+                            await add(c, "birthday", label, 9 - offset)
+                            break
             except Exception:
                 pass
 

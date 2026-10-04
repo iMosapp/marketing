@@ -135,8 +135,13 @@ async def build(db, user_id: str) -> list:
             continue
         seen.add(h.get("contact_id"))
         stops.append(h)
+    # Who owns each customer: a stop on somebody else's contact is flagged, never silently blended into this rep's day
+    ids = [ObjectId(s["contact_id"]) for s in stops if s.get("contact_id") and ObjectId.is_valid(s["contact_id"])]
+    owners = {str(c["_id"]): str(c.get("user_id") or "") for c in await db.contacts.find({"_id": {"$in": ids}}, {"user_id": 1}).to_list(len(ids))} if ids else {}
     for i, s in enumerate(stops):
         s["n"] = i + 1
+        s["owner_user_id"] = owners.get(s.get("contact_id") or "", "")
+        s["foreign"] = bool(s["owner_user_id"] and s["owner_user_id"] != uid)
     return stops
 
 

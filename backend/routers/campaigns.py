@@ -1450,8 +1450,8 @@ async def check_date_triggers(user_id: str):
     today_month = today.month
     today_day = today.day
     
-    # Get base filter for user's data
-    base_filter = await get_data_filter(user_id)
+    # The user's own campaigns and own contacts only: a manager's wide data view must never enroll other reps' customers under them
+    base_filter = {"user_id": user_id}
     
     # Find date-based campaigns using both legacy 'type' field and new 'date_type' field
     date_type_configs = [

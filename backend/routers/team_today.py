@@ -25,6 +25,27 @@ async def team_today(request: Request):
     return {**digest, "spoken": tt.spoken(digest)}
 
 
+@router.get("/explain")
+async def explain(rep_user_id: str, request: Request):
+    """Provenance for one rep's day: who owns each customer, the task/conversation/message behind each stop, and any automations running on other reps' customers."""
+    me = _manager(request)
+    db = get_db()
+    if rep_user_id != str(me["_id"]) and rep_user_id not in {r["user_id"] for r in await tt.reps_for(db, me)}:
+        raise HTTPException(status_code=403, detail="That rep is not on your team")
+    return await tt.explain(db, me, rep_user_id)
+
+
+@router.post("/cancel-foreign")
+async def cancel_foreign(body: dict, request: Request):
+    """Stop a rep's campaign enrollments and queued sends that target customers owned by someone else."""
+    me = _manager(request)
+    db = get_db()
+    rep_user_id = str(body.get("rep_user_id") or "")
+    if rep_user_id != str(me["_id"]) and rep_user_id not in {r["user_id"] for r in await tt.reps_for(db, me)}:
+        raise HTTPException(status_code=403, detail="That rep is not on your team")
+    return await tt.cancel_foreign_automations(db, rep_user_id)
+
+
 class NudgeBody(BaseModel):
     rep_user_id: str
     contact_id: str

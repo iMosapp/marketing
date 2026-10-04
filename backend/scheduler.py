@@ -389,7 +389,6 @@ async def _enroll_date_campaigns_for_user(db, user_id: str) -> int:
     date, ONLY for contacts carrying the manual opt-in tag, max one campaign per
     contact per occasion per day (same-day guard kills doubles)."""
     import pytz
-    from routers.database import get_data_filter
 
     user = await db.users.find_one({"_id": __import__("bson").ObjectId(user_id)}, {"timezone": 1})
     if not user:
@@ -401,7 +400,7 @@ async def _enroll_date_campaigns_for_user(db, user_id: str) -> int:
     today_month, today_day = local_now.month, local_now.day
     today_str = local_now.strftime("%Y-%m-%d")
 
-    base_filter = await get_data_filter(user_id)
+    base_filter = {"user_id": user_id}  # automations run on the rep's own book, never the manager-wide view
     now = datetime.utcnow()
     enrolled = 0
 
@@ -512,7 +511,6 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
     """Process all date triggers for a single user. Returns count of messages sent."""
     import os
     import pytz
-    from routers.database import get_data_filter
     from routers.date_triggers import AVAILABLE_HOLIDAYS
 
     user = await db.users.find_one({"_id": __import__("bson").ObjectId(user_id)})
@@ -536,7 +534,7 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
     if not configs:
         return 0
 
-    base_filter = await get_data_filter(user_id)
+    base_filter = {"user_id": user_id}  # automations run on the rep's own book, never the manager-wide view
     sent_count = 0
 
     for config in configs:
@@ -739,7 +737,7 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
 async def send_date_preview_digests():
     """Hourly: at 8 AM local, text each rep the list of contacts getting
     birthday/anniversary sends today — an hour before the 9 AM sends go out."""
-    from routers.database import get_db, get_data_filter
+    from routers.database import get_db
     import pytz
 
     db = get_db()
@@ -774,7 +772,7 @@ async def send_date_preview_digests():
             if guard is not None:
                 continue  # already sent today
 
-            base_filter = await get_data_filter(user_id)
+            base_filter = {"user_id": user_id}  # automations run on the rep's own book, never the manager-wide view
             contacts = await db.contacts.find(
                 {**base_filter, "$or": [
                     {"birthday": {"$exists": True, "$ne": None}},
