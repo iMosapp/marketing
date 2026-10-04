@@ -21,6 +21,7 @@ export const pathFor = (t: OpenTarget): string | null => {
   if (t.kind === 'inbox') return '/(tabs)/inbox';
   if (t.kind === 'duplicates') return '/contacts/duplicates';
   if (t.kind === 'mentions') return `/memory-search?q=${encodeURIComponent(t.query || '')}${t.days ? `&days=${t.days}` : ''}`;
+  if (t.kind === 'team_today') return `/team-today${t.rep ? `?rep=${encodeURIComponent(t.rep)}` : ''}`;
   return null;
 };
 

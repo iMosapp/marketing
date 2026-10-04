@@ -424,6 +424,7 @@ export default function MoreScreen() {
         { icon: 'chatbubbles' as any, title: 'Inboxes', subtitle: 'Shared department numbers: who works them, routing, Jessi', onPress: () => router.push('/inboxes' as any), color: '#C9A962' },
         { icon: 'clipboard' as any, title: 'Scorecards', subtitle: 'What every recorded call gets graded on, per department', onPress: () => router.push('/scorecards' as any), color: '#C9A962' },
         { icon: 'podium-outline' as any, title: 'Team Call Scores', subtitle: 'Leaderboard, who misses what, critical-miss alerts', onPress: () => router.push('/scorecards/team' as any), color: '#FF9500' },
+        { icon: 'sunny' as any, title: 'Team Today', subtitle: 'Who each rep should be working today. Hear it from Jessi on the drive in', onPress: () => router.push('/team-today' as any), color: '#C9A962' },
         { icon: 'checkbox' as any, title: 'Team Tasks', subtitle: 'Every open customer task per rep, overdue first', onPress: () => router.push('/team-tasks' as any), color: '#FF453A' },
         { icon: 'sparkles' as any, title: 'Ask Jessi About The Team', subtitle: 'Ask across every rep: who is waiting, trades, missed calls', onPress: () => router.push('/ask-team' as any), color: '#C9A962' },
         { icon: 'mic-circle' as any, title: 'Assign Practice Calls', subtitle: 'Mystery shop your team: pick a script, reps, curveballs', onPress: () => router.push('/scripts/assign' as any), color: '#C9A962' },

@@ -64,7 +64,7 @@ ENERGY = {1: "calm and steady", 2: "relaxed and easy", 3: "warm and engaged", 4:
 PACING = {1: "slow and unhurried", 2: "measured", 3: "a natural pace", 4: "quick-moving, no dead air", 5: "fast and clipped"}
 PLAYFUL = {1: "all business", 2: "mostly serious", 3: "lightly playful when it fits", 4: "playful", 5: "very playful, quick with a one-liner"}
 BREVITY = {1: "take your time and explain fully", 2: "a few sentences", 3: "two or three short sentences", 4: "one or two short sentences, then let them talk", 5: "as few words as possible"}
-TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates", "next_stop", "find_mentions", "more_mentions",
+TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates", "next_stop", "find_mentions", "more_mentions", "team_today", "nudge_rep",
          "call_person", "add_note", "tag_person", "mark_sold", "finish_task", "update_contact", "book_appointment", "enroll_campaign", "send_card")
 PENDING_CANCEL = {"merge": "Nothing was merged.", "sold": "Nothing was marked sold.", "appointment": "Nothing was booked.", "enroll": "Nobody was enrolled.", "send_text": "Nothing was sent."}
 SCREENS = {"contact": ("contact", "record", "profile", "person", "page", "card"), "thread": ("thread", "conversation", "texts", "messages", "text", "chat"),
@@ -305,6 +305,11 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         agenda = await day_agenda.build(db, uid)
         if agenda and agenda[0].get("contact_id"):
             contact = await focus_contact(db, user, agenda[0]["contact_id"]) or contact
+    team = None
+    if mode == "assistant" and (overrides or {}).get("team_today"):
+        from services import team_today as tt
+        if tt.is_manager(user):
+            team = await tt.build(db, user)
     if mode == "shopper":
         from services import live_shops
         shop = await live_shops.audition(db, user, overrides or {})
@@ -317,6 +322,8 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
     now_local = _now().astimezone(tz).strftime("%A %B %d, %Y, %-I:%M %p")
     where = f"Their app is open on {_first_last(contact)}'s conversation. {await focus_brief(db, contact)}" if contact else "Their app is open on the Home screen."
     context = f"Right now it is {now_local}." if shop else f"Right now it is {now_local} for the rep. {where}"
+    if team is not None:
+        context += " TEAM DIGEST already pulled; the rep is a manager and asked for it. They can say a rep's name for that rep's full list or ask to nudge a rep about a customer."
     if agenda is not None:
         context += " DAY WALKTHROUGH, the stops in order: " + ("; ".join(f"{s['n']}. {s['name']} ({s['kind']}: {s['why']})" for s in agenda) if agenda else "none, the rep is caught up") + "."
     session = {"model": MODEL, "instructions": instructions, "audio": {"output": {"voice": voice}}, "delegation": {"type": "client"},
@@ -339,7 +346,7 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
     live_id = uuid.uuid4().hex[:12]
     doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "mode": mode, "openai_session_id": (data.get("session") or {}).get("id"), "voice": voice,
            "contact_id": str(contact["_id"]) if contact else None, "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None,
-           "agenda": agenda, "agenda_pos": 0 if agenda is not None else None, "agenda_done": [], "agenda_skipped": [],
+           "agenda": agenda, "agenda_pos": 0 if agenda is not None else None, "agenda_done": [], "agenda_skipped": [], "team": {"digest": team} if team is not None else None,
            "config": {k: cfg[k] for k in DEFAULTS}, "status": "open", "started_at": _now(), "ended_at": None, "seconds": 0, "cost_usd": 0.0, "close_reason": None,
            "transcript": [], "delegations": [], "pending": None, "created_at": _now(), "updated_at": _now()}
     await db[COLL].insert_one(doc)
@@ -350,6 +357,10 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         from services import day_agenda
         greet = f'Open with this, in your own words but keep every name and detail: "{day_agenda.intro(user, agenda)}" Then stop and wait for the rep.'
         opened = day_agenda.open_target(agenda[0]) if agenda else None
+    if team is not None:
+        from services import team_today as tt
+        greet = f'Open with this, in your own words but keep every name and number: "{tt.spoken(team)}" Then stop and wait for the manager.'
+        opened = {"kind": "team_today"}
     return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": (data.get("transport") or {}).get("sdp"), "greeting": greeting_text(cfg, user, contact), "greet_instruction": greet,
             "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None, "open": opened,
             "agenda": [{k: s.get(k) for k in ("n", "kind", "name", "first", "why", "contact_id")} for s in agenda] if agenda is not None else None,
@@ -416,6 +427,8 @@ Tools:
 - next_stop: ONLY during a DAY WALKTHROUGH (shown below). The rep moves the walkthrough along: "next" / "what's next" / "move on" / "go on" / "okay next one" -> {"action": "next"}; "skip" / "skip him" / "not today" / "pass" -> {"action": "skip"}; "done" / "did that" / "already texted him" / "handled" / "mark it done" / "I called her" -> {"action": "done"}. args: {"action": "next|skip|done"}
 - find_mentions: the rep is hunting for a person by something that came up, not by name: "who asked about a Tesla", "someone mentioned a 20k Model 3 last month, who was it", "find anyone looking for a truck", "who talked about a trade-in", "did anybody bring up financing", by what they bought: "who did I sell a Tahoe to", "who bought a Silverado last year", "which customers have a Model 3", and by a tag the rep put on people: "who are my Harley riders", "everyone tagged VIP", "who do I have tagged as a first-time buyer", "pull up my golfers". The backend searches every text, call transcript, voice memo, note, tag and sold record. args: {"query": "<what they are looking for, as said, keep numbers and product names>", "days": <lookback in days if the rep said a time frame like last month = 45, this year = 365, else 0>}
 - more_mentions: right after a find_mentions result, the rep wants the REST of that list read out: "keep going", "who else", "read the rest", "next", "more", "give me the next five", "read them all", "all of them". args: {"count": <how many to read, default 5>, "all": <true when they want the whole rest of the list>}
+- team_today: ONLY when the rep is a MANAGER (role store_manager, manager, org_admin, admin or super_admin, see the TEAM line). They ask about their TEAM's day: "who has my team been working with", "what should my guys follow up on today", "walk me through my team", "give me the team digest", "who should Bud be calling today", "what does Sarah have today", "is anyone caught up". args: {"rep": "<one rep's first or full name when they ask about a single salesperson, else empty>"}
+- nudge_rep: a MANAGER tells a rep on their team to work a specific customer: "tell Bud to call Sarah Kincaid", "nudge Mike about the Tahoe guy", "have Tanya follow up with Earl today", "ping Sarah on that lead". args: {"rep": "<the salesperson's name>", "customer": "<the customer's name as said>", "note": "<anything extra the manager wants the rep to know, else empty>"}
 - call_person: the rep wants to CALL someone: "call Bud", "ring Sarah", "get Mike on the phone", "dial him". Their own cell rings first and they press 1, so it runs at once. args: {"name": "..."}
 - add_note: save a note / memo on a person: "add a note on Bud: he is shopping for a pontoon boat", "make a note that Sarah's lease is up in June", "remember that Mike wants a call after the 15th". args: {"name": "...", "text": "<the note itself in the rep's words, without the 'add a note on Bud' framing>"}
 - tag_person: add or remove a tag: "tag Bud as a Harley rider", "put Sarah under VIP", "take the hot lead tag off Mike", "untag him". args: {"name": "...", "tag": "<the tag as spoken, e.g. Harley riders>", "action": "add|remove"}
@@ -936,6 +949,58 @@ async def _advance(db, user: dict, live: dict, action: str, prefix: str = ""):
 
 
 # ── who mentioned ─────────────────────────────────────────────────────────────
+def _team_line(user: dict, live: dict) -> str:
+    from services import team_today as tt
+    if not tt.is_manager(user):
+        return "TEAM: the rep is not a manager (team_today / nudge_rep are not available)."
+    reps = ((live.get("team") or {}).get("digest") or {}).get("reps") or []
+    names = "; ".join(f"{r['name']} ({r['total']} today)" for r in reps[:30]) if reps else "not pulled yet"
+    return f"TEAM: the rep is a MANAGER ({user.get('role')}). Their reps: {names}. For nudge_rep, args.rep is one of these names."
+
+
+async def _team_today(db, user: dict, args: dict, live: Optional[dict]):
+    from services import team_today as tt
+    if not tt.is_manager(user):
+        return "The team digest is for store managers. I can walk you through your own day instead: just ask who you should talk to today.", None
+    digest = await tt.build(db, user)
+    if live is not None:
+        live["team"] = {"digest": digest}
+        await db[COLL].update_one({"_id": live["_id"]}, {"$set": {"team": live["team"]}})
+    rep = (args.get("rep") or "").strip()
+    return tt.spoken(digest, rep), {"kind": "team_today", "rep": rep}
+
+
+async def _nudge_rep(db, user: dict, args: dict, live: Optional[dict]):
+    from services import team_today as tt
+    if not tt.is_manager(user):
+        return "Nudging a rep is for store managers.", None
+    digest = ((live or {}).get("team") or {}).get("digest") or await tt.build(db, user)
+    rep_name = (args.get("rep") or "").strip().lower()
+    reps = digest.get("reps") or []
+    rep = next((r for r in reps if r["first"].lower() == rep_name or r["name"].lower() == rep_name), None) or next((r for r in reps if rep_name and rep_name in r["name"].lower()), None)
+    if not rep:
+        return f"Which rep? Your team is {', '.join(r['first'] for r in reps[:10]) or 'empty right now'}.", None
+    customer = (args.get("customer") or "").strip()
+    words = _name_words(customer)
+    pick = None
+    if words:
+        ranked = sorted((s for s in rep["stops"] if s.get("contact_id")), key=lambda s: -_score(words, {"first_name": (s.get("first") or ""), "last_name": " ".join((s.get("name") or "").split(" ")[1:])}))
+        if ranked and _score(words, {"first_name": ranked[0].get("first") or "", "last_name": " ".join((ranked[0].get("name") or "").split(" ")[1:])}) >= 0.8:
+            pick = ranked[0]
+    contact_id = pick["contact_id"] if pick else None
+    if not contact_id and customer:
+        rows = await _find(db, rep["user_id"], customer)
+        contact_id = str(rows[0]["_id"]) if rows else None
+        if rows:
+            pick = {"name": _first_last(rows[0])}
+    if not contact_id:
+        return f"I could not find {customer or 'that customer'} in {rep['first']}'s book. Who do you want {rep['first']} to follow up with?", None
+    out = await tt.nudge(db, user, rep["user_id"], contact_id, (args.get("note") or "").strip())
+    if not out.get("ok"):
+        return "I could not send that nudge. Try again in a second.", None
+    return f"Done. {rep['first']} has {pick['name']} at the top of their list for today, with a push on their phone.", {"kind": "team_today", "rep": rep["first"]}
+
+
 def _mentions_line(live: dict) -> str:
     m = live.get("mentions") or {}
     rs = (m.get("res") or {}).get("results") or []
@@ -1014,7 +1079,7 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
     tz_line = f"NOW (rep's local time, {getattr(tz, 'key', 'UTC')}): {_now().astimezone(tz).strftime('%A %Y-%m-%d %H:%M')}. Return when_iso in this local time without a Z suffix."
     plan = {}
     try:
-        plan = await _llm_json(BRAIN_SYSTEM, f"{tz_line}\n{focus_txt}\n{_walkthrough_line(live)}\n{_mentions_line(live)}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
+        plan = await _llm_json(BRAIN_SYSTEM, f"{tz_line}\n{focus_txt}\n{_walkthrough_line(live)}\n{_mentions_line(live)}\n{_team_line(user, live)}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
     except Exception as e:
         logger.warning(f"[Live] brain plan failed: {e}")
     tool = plan.get("tool") if plan.get("tool") in TOOLS else "answer"
@@ -1085,6 +1150,10 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             result, opened = await _find_mentions(db, user, args, live)
         elif tool == "more_mentions":
             result, opened = await _more_mentions(db, live, args)
+        elif tool == "team_today":
+            result, opened = await _team_today(db, user, args, live)
+        elif tool == "nudge_rep":
+            result, opened = await _nudge_rep(db, user, args, live)
         elif tool == "merge_duplicates":
             result, new_pending, opened = await _merge_duplicates(db, user, args, live)
             new_pending = new_pending or pending
