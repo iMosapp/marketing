@@ -142,6 +142,14 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 28 · Oct 5 — DONE / DEPLOY ONLY
+> This is still happening on mobile or it's jumping the conversation to the bottom when it tries to set an appointment I have to scroll up to read what was actually said with the widget
+> *(screen recording on imonsocial.com: reply shows, booking form appears, list jumps to the bottom)*
+
+Cause: the booking form redraws the thread a second time when its open times load (and again on polls and chip taps), and every redraw still forced the list to the bottom. Now only three things move the view: a new reply (anchored at its first line when it plus the form do not fit, bottom when short), the visitor's own message and the typing dots. Every other redraw keeps the view where it was. Verified on a phone-size screen: reply stays readable after the form and its times load and after a poll. Widget JS is backend-served: Deploy only.
+
+---
+
 ### 27 · Oct 5 — DONE / DEPLOY + EAS UPDATE
 > this new prd working log causes app to crash when i try to access it
 > *(screenshot: Company Docs → "PRD Working Log (Full Build History)" v2026.10.05)*

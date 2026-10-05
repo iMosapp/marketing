@@ -865,3 +865,8 @@ DELIVERY: backend deploy + eas update --branch production.
 - CAUSE: the doc is the raw `/app/memory/PRD.md` (573 KB, 860 long lines) and `components/docs/MarkdownRenderer.tsx` mounted every line as Text nodes inside a plain ScrollView.
 - FIX: `MarkdownRenderer` now paginates (`pageSize` default 150 blocks, "Keep reading · about N more lines" button `doc-keep-reading`, `buildBlocks()` stops at the limit); `routers/docs.py sync_repo_docs` stores the working-log doc newest-first via `_newest_first()` (title block kept, `## ` sections reversed, note added) so the latest work is on page one.
 - NOTE for future agents: PRD.md is past 700 lines; when convenient split into PRD.md / CHANGELOG.md / ROADMAP.md (the Company Docs sync reads `/app/memory/PRD.md` only, so keep the log there or update REPO_DOC_SOURCES).
+
+## Chat widget: booking form no longer yanks the thread to the bottom (Oct 5 2026) - FIXED, verified phone-size
+- USER (video): reply appears, booking form pops in, list jumps to the bottom so the reply must be scrolled back up to read.
+- CAUSE: `bookForm()` redraws when `/slots` resolves; polls and chip taps also redraw; every `draw()` ended with scrollTop = scrollHeight.
+- FIX `services/widget_js.py draw()`: captures `keep = list.scrollTop`, `hadMsgs = drawn`, `wasBusy = lastBusy` before re-render. Rules: new non-visitor message -> anchor at its top if it + what follows overflows, else bottom; visitor message / typing dots turning on / first draw -> bottom; any other redraw -> restore `keep`. Deploy only (backend-served JS).

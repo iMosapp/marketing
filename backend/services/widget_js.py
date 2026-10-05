@@ -295,7 +295,7 @@ function showCallStatus(r, n){
 }
 
 var chat = { sid: saved.chat_sid || null, msgs: [], busy: false, need: false, status: 'open', mode: 'jessi', agent: '', offer: false, booking: null, slots: null, showBook: false };
-var drawn = 0;
+var drawn = 0, lastBusy = false;
 var pollTimerChat = null; function stopPoll(){ if (pollTimerChat) { clearInterval(pollTimerChat); pollTimerChat = null; } }
 function previewReply(t){ if (/test.?drive|appointment|schedule|book|come in|stop by|visit|oil change/i.test(t)) { chat.offer = true; return 'I can set that up right here. Pick a day and time below and I\'ll get you booked.'; }
   if (C.chat_mode === 'business') {
@@ -375,7 +375,7 @@ function showChat(){
     box.appendChild(h('div', { 'class': 'imosw-fine', style: 'margin-top:4px' }, [fill(T.optin, ctx)]));
     return box;
   }
-  function draw(){ list.innerHTML = ''; var firstNew = null; if (chat.msgs.length < drawn) drawn = 0;
+  function draw(){ var keep = list.scrollTop, hadMsgs = drawn, wasBusy = lastBusy; list.innerHTML = ''; var firstNew = null; if (chat.msgs.length < drawn) drawn = 0;
     chat.msgs.forEach(function(m, i){
       if (m.role === 'system') { list.appendChild(h('div', { 'class': 'imosw-sys' }, [m.text])); return; }
       var el = h('div', { 'class': 'imosw-m ' + (m.role === 'visitor' ? 'v' : m.role === 'rep' ? 'r' : 'j') });
@@ -392,10 +392,13 @@ function showChat(){
     if (chat.busy && chat.mode !== 'human') list.appendChild(h('div', { 'class': 'imosw-typing', 'aria-label': NAME + ' is typing', html: '<i></i><i></i><i></i>' }));
     if (chat.status === 'closed') list.appendChild(h('div', { style: 'text-align:center;padding:6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', onclick: function(){ chat.sid = null; remember('chat_sid', null); chat.msgs = []; chat.status = 'open'; chat.mode = 'jessi'; chat.agent = ''; chat.booking = null; chat.offer = false; sub(); begin(); } }, ['Start a new chat']) ]));
     send.disabled = chat.busy || chat.status === 'closed'; input.disabled = chat.status === 'closed'; humanBtn.style.display = chat.status === 'closed' ? 'none' : ''; sep.style.display = bookBtn.style.display = (chat.status === 'closed' || chat.booking || chat.mode === 'human') ? 'none' : '';
-    drawn = chat.msgs.length;
-    // A long reply starts at the top of the window so it reads from its first line; short ones behave like any chat and sit at the bottom.
+    drawn = chat.msgs.length; lastBusy = chat.busy;
+    // Scroll rules: a new reply starts at the top of the window when it (plus whatever follows, like the booking form) does not fit, so it reads from its first line;
+    // short replies, the visitor's own message and the typing dots sit at the bottom like any chat; every other redraw (time slots loading, a chip tap, a poll) keeps the view where it was.
     var top = firstNew ? firstNew.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop - 6 : 0;
-    if (firstNew && list.scrollHeight - top > list.clientHeight) list.scrollTop = Math.max(0, top); else list.scrollTop = list.scrollHeight; }
+    if (firstNew) list.scrollTop = list.scrollHeight - top > list.clientHeight ? Math.max(0, top) : list.scrollHeight;
+    else if (chat.msgs.length > hadMsgs || (chat.busy && !wasBusy) || hadMsgs === 0) list.scrollTop = list.scrollHeight;
+    else list.scrollTop = keep; }
   function fail(e){ chat.busy = false; chat.msgs.push({ role: 'jessi', text: typeof e === 'string' ? e : 'Hmm, something hiccuped on my end. Try that once more.' }); draw(); }
   function paced(started, r, fn){ var reply = (r && r.reply) || ''; var wait = Math.min(4200, 1100 + reply.length * 22) - (Date.now() - started); setTimeout(fn, Math.max(0, wait)); }
   function submit(){ var t = input.value.trim(); if (!t || chat.busy || chat.status === 'closed') return; input.value = ''; chat.msgs.push({ role: 'visitor', text: t }); chat.busy = true; draw();
