@@ -27,6 +27,35 @@ export const Chips = ({ options, value, onPick, testID, fmt }: { options: number
 
 export const hourLabel = (h: number) => `${h % 12 || 12} ${h >= 12 && h < 24 ? 'PM' : 'AM'}`;
 
+type Recipient = { user_id: string; name: string; email: string; role: string; has_phone: boolean; opt_in: boolean; me: boolean };
+
+/** Who gets the morning text: every eligible admin with an on/off switch. Only you can see and flip these. */
+const Recipients = ({ onChanged }: { onChanged: () => void }) => {
+  const { colors } = useThemeStore();
+  const [rows, setRows] = useState<Recipient[] | null>(null);
+  const load = () => api.get('/admin/onboarding-jessi/digest/recipients').then(r => setRows(r.data.recipients)).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+  const flip = async (r: Recipient, v: boolean) => {
+    setRows(rs => (rs || []).map(x => (x.user_id === r.user_id ? { ...x, opt_in: v } : x)));
+    try { await api.put(`/admin/onboarding-jessi/digest/recipients/${r.user_id}`, { opt_in: v }); onChanged(); } catch { load(); }
+  };
+  const onCount = (rows || []).filter(r => r.opt_in).length;
+  return (
+    <View style={{ gap: 6 }} {...tid('onb-settings-digest-recipients')}>
+      <Text style={{ fontSize: TYPE.caption, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.6 }}>WHO GETS THE MORNING TEXT · {onCount} on</Text>
+      {!rows ? <ActivityIndicator size="small" color={GOLD} /> : rows.map((r, i) => (
+        <View key={r.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: i === rows.length - 1 ? 0 : 0.5, borderBottomColor: colors.border }} {...tid(`onb-digest-recipient-${r.user_id}`)}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={{ fontSize: TYPE.body, color: colors.text }} numberOfLines={1}>{r.name}{r.me ? ' (you)' : ''}</Text>
+            <Text style={{ fontSize: TYPE.caption, color: r.has_phone ? colors.textTertiary : '#FF9F0A' }} numberOfLines={1}>{r.has_phone ? r.email : 'No phone on file'}</Text>
+          </View>
+          <Switch value={r.opt_in} disabled={!r.has_phone} onValueChange={v => flip(r, v)} trackColor={{ true: GOLD }} {...tid(`onb-digest-recipient-switch-${r.user_id}`)} />
+        </View>
+      ))}
+    </View>
+  );
+};
+
 /** "Morning digest" block: what Jessi would text this manager right now, the per-manager opt-in, and a send-now button. */
 export const DigestCard = ({ isSuper, hour, stuckHours, enabled, onHour, onStuck, onEnabled }: { isSuper: boolean; hour: number; stuckHours: number; enabled: boolean; onHour: (v: number) => void; onStuck: (v: number) => void; onEnabled: (v: boolean) => void }) => {
   const { colors } = useThemeStore();
@@ -67,6 +96,7 @@ export const DigestCard = ({ isSuper, hour, stuckHours, enabled, onHour, onStuck
         <Text style={{ fontSize: TYPE.body, fontWeight: '600', color: colors.text }}>Text me the digest</Text>
         {pv ? <Switch value={pv.opt_in} onValueChange={toggleMe} trackColor={{ true: GOLD }} {...tid('onb-settings-digest-me')} /> : <ActivityIndicator size="small" color={GOLD} />}
       </View>
+      {isSuper && <Recipients onChanged={load} />}
       {pv && (
         <View style={{ backgroundColor: colors.surface, borderRadius: RADIUS.md, padding: SPACE.md, gap: 6 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

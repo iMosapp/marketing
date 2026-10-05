@@ -106,6 +106,33 @@ async def digest_me(body: DigestMeBody, request: Request):
     return {"opt_in": body.opt_in}
 
 
+@router.get("/digest/recipients")
+async def digest_recipients(request: Request):
+    """Who is eligible for the morning text (the configured roles) and whether each is switched on. Super admins only."""
+    me = await _admin(request)
+    if me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admins only")
+    db = get_db()
+    cfg = await jo.config(db)
+    roles = [r for r in (cfg.get("digest_roles") or jo.DEFAULT_CFG["digest_roles"]) if r in jo.MANAGER_ROLES] or list(jo.DEFAULT_CFG["digest_roles"])
+    rows = await db.users.find({"role": {"$in": roles}, "is_active": {"$ne": False}}, {"name": 1, "email": 1, "phone": 1, "role": 1, "jessi_digest_opt_out": 1, "jessi_digest_last": 1}).sort("name", 1).to_list(200)
+    return {"roles": roles, "recipients": [{"user_id": str(u["_id"]), "name": u.get("name") or u.get("email") or "", "email": u.get("email") or "", "role": u.get("role"), "has_phone": bool(u.get("phone")),
+                                           "opt_in": not u.get("jessi_digest_opt_out") and bool(u.get("phone")), "me": str(u["_id"]) == str(me["_id"]), "last": u.get("jessi_digest_last")} for u in rows]}
+
+
+@router.put("/digest/recipients/{user_id}")
+async def digest_recipient(user_id: str, body: DigestMeBody, request: Request):
+    """Switch another eligible admin's morning text on or off. Super admins only."""
+    me = await _admin(request)
+    if me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admins only")
+    r = await get_db().users.update_one({"_id": jo._oid(user_id)}, {"$set": {"jessi_digest_opt_out": not body.opt_in}})
+    if not r.matched_count:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"user_id": user_id, "opt_in": body.opt_in}
+
+
+
 @router.get("")
 async def list_onboarding(request: Request, state: Optional[str] = None, open_only: bool = False):
     me = await _admin(request)
