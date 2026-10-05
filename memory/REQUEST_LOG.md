@@ -142,6 +142,14 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 27 · Oct 5 — DONE / DEPLOY + EAS UPDATE
+> this new prd working log causes app to crash when i try to access it
+> *(screenshot: Company Docs → "PRD Working Log (Full Build History)" v2026.10.05)*
+
+Cause: that doc is the raw build log (over half a megabyte, 860 long lines) and the doc viewer mounted every line as its own text node at once, which the phone could not take. Fix: the markdown viewer now renders 150 blocks at a time with a "Keep reading · about N more lines" button, and the working log is stored newest-first (latest work at the top) with a note saying so. Verified on web: opens in 0.4 s, Keep reading pages through.
+
+---
+
 ### 26 · Oct 5 — DONE / DEPLOY ONLY
 > when a long response is in the chat widget it jumps to the bottom of what the response is instead of starting the message thread at the top of that message so currently i hvae to scroll back up to read the reply.  this needs fixed
 

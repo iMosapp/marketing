@@ -179,6 +179,16 @@ async def api_reference_ui():
     return get_swagger_ui_html(openapi_url="/api/public/openapi-v1.json", title="I'm On Social Public API v1", swagger_favicon_url="https://app.imonsocial.com/favicon.ico")
 
 
+def _newest_first(md: str) -> str:
+    """The build log is appended to forever, so the app shows the latest work first: keep the title block, reverse the '## ' sections."""
+    parts = re.split(r"\n(?=## )", md)
+    if len(parts) < 3:
+        return md
+    head, sections = parts[0], parts[1:]
+    note = "\n> Newest first. Each section is one piece of work, most recent at the top.\n"
+    return head.rstrip() + "\n" + note + "\n" + "\n\n".join(s.strip() for s in reversed(sections)) + "\n"
+
+
 async def sync_repo_docs() -> dict:
     """Upsert internal docs from repo markdown files into company_docs.
     Runs at startup — production docs refresh automatically on every deploy.
@@ -193,6 +203,8 @@ async def sync_repo_docs() -> dict:
                 content = f.read()
         except FileNotFoundError:
             continue
+        if meta["slug"] == "imos-prd-working-log":
+            content = _newest_first(content)
         h = hashlib.sha256(content.encode()).hexdigest()
         existing = await db.company_docs.find_one({"slug": meta["slug"]}, {"synced_hash": 1, "content": 1})
         if existing and existing.get("synced_hash") == h:

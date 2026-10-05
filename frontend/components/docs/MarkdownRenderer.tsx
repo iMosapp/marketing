@@ -31,13 +31,32 @@ export function renderInlineMarkdown(text: string, colors: any): React.ReactNode
 
 const splitRow = (line: string) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
 
-export function MarkdownRenderer({ content, colors }: { content: string; colors: any }) {
+const PAGE = 150;
+
+export function MarkdownRenderer({ content, colors, pageSize = PAGE }: { content: string; colors: any; pageSize?: number }) {
+  // Big docs (the build log is half a megabyte) are rendered a page of blocks at a time; mounting thousands of Text nodes at once crashes phones.
+  const [limit, setLimit] = React.useState(pageSize);
+  React.useEffect(() => { setLimit(pageSize); }, [content, pageSize]);
+  const { elements, hasMore, blocksLeft } = React.useMemo(() => buildBlocks(content, colors, limit), [content, colors, limit]);
+  return (
+    <>
+      {elements}
+      {hasMore ? (
+        <Text onPress={() => setLimit(l => l + pageSize)} style={{ alignSelf: 'flex-start', marginTop: 16, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#C9A96222', color: '#C9A962', fontWeight: '800', fontSize: 14, overflow: 'hidden' }} testID="doc-keep-reading" dataSet={{ testid: 'doc-keep-reading' } as any}>
+          Keep reading · about {blocksLeft} more {blocksLeft === 1 ? 'line' : 'lines'}
+        </Text>
+      ) : null}
+    </>
+  );
+}
+
+function buildBlocks(content: string, colors: any, limit: number): { elements: React.ReactNode[]; hasMore: boolean; blocksLeft: number } {
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
   const mono = Platform.OS === 'web' ? 'monospace' : 'Courier';
   let i = 0;
 
-  while (i < lines.length) {
+  while (i < lines.length && elements.length < limit) {
     const line = lines[i];
     const trimmed = line.trim();
 
@@ -138,5 +157,5 @@ export function MarkdownRenderer({ content, colors }: { content: string; colors:
     i++;
   }
 
-  return <>{elements}</>;
+  return { elements, hasMore: i < lines.length, blocksLeft: lines.length - i };
 }

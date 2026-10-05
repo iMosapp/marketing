@@ -859,3 +859,9 @@ DELIVERY: backend deploy + eas update --branch production.
 - USER: long Jessi replies jumped to the bottom of the message, had to scroll back up to read.
 - FIX `services/widget_js.py draw()`: tracks `drawn` (messages rendered last time); the first new non-visitor message is anchored at the top of `.imosw-msgs` when it does not fit (`scrollHeight - top > clientHeight`), otherwise scroll to bottom as before. `drawn` resets when the thread restarts; a restored session (drawn 0) scrolls to bottom.
 - Backend-served JS (2 min cache) -> Deploy only, no eas update.
+
+## Company Docs: PRD Working Log crashed the app (Oct 5 2026) - FIXED, verified web
+- USER: opening "PRD Working Log (Full Build History)" in Company Docs crashed the phone app.
+- CAUSE: the doc is the raw `/app/memory/PRD.md` (573 KB, 860 long lines) and `components/docs/MarkdownRenderer.tsx` mounted every line as Text nodes inside a plain ScrollView.
+- FIX: `MarkdownRenderer` now paginates (`pageSize` default 150 blocks, "Keep reading · about N more lines" button `doc-keep-reading`, `buildBlocks()` stops at the limit); `routers/docs.py sync_repo_docs` stores the working-log doc newest-first via `_newest_first()` (title block kept, `## ` sections reversed, note added) so the latest work is on page one.
+- NOTE for future agents: PRD.md is past 700 lines; when convenient split into PRD.md / CHANGELOG.md / ROADMAP.md (the Company Docs sync reads `/app/memory/PRD.md` only, so keep the log there or update REPO_DOC_SOURCES).
