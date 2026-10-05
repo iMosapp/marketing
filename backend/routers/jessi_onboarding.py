@@ -110,8 +110,9 @@ async def digest_me(body: DigestMeBody, request: Request):
 async def digest_recipients(request: Request):
     """Who is eligible for the morning text (the configured roles) and whether each is switched on. Super admins only."""
     me = await _admin(request)
-    if me.get("role") != "super_admin":
-        raise HTTPException(status_code=403, detail="Super admins only")
+    from routers.owner import can_see
+    if not await can_see(get_db(), me, "digest_recipients"):
+        raise HTTPException(status_code=403, detail="Not available")
     db = get_db()
     cfg = await jo.config(db)
     roles = [r for r in (cfg.get("digest_roles") or jo.DEFAULT_CFG["digest_roles"]) if r in jo.MANAGER_ROLES] or list(jo.DEFAULT_CFG["digest_roles"])
@@ -124,8 +125,9 @@ async def digest_recipients(request: Request):
 async def digest_recipient(user_id: str, body: DigestMeBody, request: Request):
     """Switch another eligible admin's morning text on or off. Super admins only."""
     me = await _admin(request)
-    if me.get("role") != "super_admin":
-        raise HTTPException(status_code=403, detail="Super admins only")
+    from routers.owner import can_see
+    if not await can_see(get_db(), me, "digest_recipients"):
+        raise HTTPException(status_code=403, detail="Not available")
     r = await get_db().users.update_one({"_id": jo._oid(user_id)}, {"$set": {"jessi_digest_opt_out": not body.opt_in}})
     if not r.matched_count:
         raise HTTPException(status_code=404, detail="User not found")

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { resolveUserPhotoUrl } from '../../utils/photoUrl';
 import { showSimpleAlert } from '../../services/alert';
 import { tid } from '../scripts/shared';
 import { useAccountSheet } from './accountSheetStore';
+import { useOwnerStore } from '../../store/ownerStore';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const GOLD = '#C9A962';
@@ -18,11 +19,12 @@ type Section = { title?: string; items: Item[] };
 const ROLE_LABEL: Record<string, string> = { super_admin: 'Super admin', org_admin: 'Owner', store_manager: 'Manager', user: 'Sales', partner: 'Partner', reseller: 'Partner' };
 
 /** Configuration lives here, daily work lives in the tabs. Sections grow with the role, nothing is duplicated. */
-export const buildAccountSections = (user: any): Section[] => {
+export const buildAccountSections = (user: any, ownerFlag = useOwnerStore.getState().isOwner): Section[] => {
   const role = user?.role || 'user';
   const isManager = ['store_manager', 'org_admin', 'super_admin'].includes(role);
   const isOwner = ['org_admin', 'super_admin'].includes(role);
   const isSuper = role === 'super_admin';
+  const platformOwner = isSuper && ownerFlag;
   const isPartner = !!user?.partner_id || role === 'partner' || role === 'reseller';
 
   const sections: Section[] = [{
@@ -75,6 +77,10 @@ export const buildAccountSections = (user: any): Section[] => {
         { key: 'pending', label: 'Pending Users', icon: 'hourglass-outline', route: '/admin/pending-users' },
         { key: 'shops', label: 'Mystery Shops', icon: 'headset-outline', route: '/admin/mystery-shops' },
         { key: 'testlab', label: 'Test Lab', icon: 'flask-outline', route: '/admin/test-lab' },
+        ...(platformOwner ? [
+          { key: 'requestlog', label: 'Request Log', icon: 'journal-outline', route: '/admin/request-log' },
+          { key: 'ownersettings', label: 'Owner Settings', icon: 'key-outline', route: '/admin/owner-settings' },
+        ] : []),
       ],
     });
   }
@@ -96,9 +102,12 @@ export const AccountSheet = () => {
   const { colors } = useThemeStore();
   const { visible, close } = useAccountSheet();
   const [exiting, setExiting] = React.useState(false);
+  const ownerLoaded = useOwnerStore(s => s.loaded);
+  const ownerFlag = useOwnerStore(s => s.isOwner);
+  useEffect(() => { if (user?.role === 'super_admin' && !ownerLoaded) useOwnerStore.getState().load(); }, [user?.role, ownerLoaded]);
   if (!visible || !user) return null;
   const impersonating = isImpersonating || (user as any)?.isImpersonating === true;
-  const sections = buildAccountSections(user);
+  const sections = buildAccountSections(user, ownerFlag);
   const uri = resolveUserPhotoUrl(user as any);
   const go = (item: Item) => {
     close();

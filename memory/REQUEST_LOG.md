@@ -124,6 +124,13 @@ This file.
 
 Switched the log to your verbatim words (this version). Earlier sessions can't be recovered word-for-word; they were summarized before this fork.
 
+### 22 · Oct 5 — DONE / DEPLOY
+> and I want this log to push into my super admin panel also but only visible to me not all super admins. tell me how I should structure the super admin settings since there are things I only want to see but not let other super admins see? Do I only user super admin setting for me? I don't know the best way to do this
+>
+> is_owner flag · That list is right · An "Owner" settings screen where you tick, per tool, whether other super admins can see it
+
+Owner layer: `is_owner` flag on your account (set from `OWNER_EMAIL`), **Request Log** screen in the admin panel (All tools → Internal Operations, and your profile dropdown), **Owner Settings** screen with a switch per internal tool for what other super admins can see (Request Log, Billing & Revenue, Revenue Forecast, Partner Agreements, White Label Partners, Discount Codes and the digest switches are hidden by default) plus an Owners list to promote someone you trust. Production needs `OWNER_EMAIL` set in the backend env.
+
 ---
 
 ## Still open (from earlier sessions, paraphrased — originals not recoverable)

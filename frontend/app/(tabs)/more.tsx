@@ -32,6 +32,7 @@ import { buildStamp, installedVersion } from '../../utils/buildStamp';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { AppHome } from '../../components/hub/AppHome';
 import { ToolsDirectory, ToolGroup, ToolRow } from '../../components/hub/ToolsDirectory';
+import { useOwnerStore } from '../../store/ownerStore';
 import { useWindowDimensions } from 'react-native';
 import { slug as hubSlug, HubApp, HubFolderDef } from '../../components/hub/layout';
 import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
@@ -77,6 +78,19 @@ export default function MoreScreen() {
   const [hubSearch, setHubSearch] = useState('');
   const [hubDragging, setHubDragging] = useState(false);
   const { width: winW } = useWindowDimensions();
+  const ownerLoaded = useOwnerStore(s => s.loaded);
+  const isOwner = useOwnerStore(s => s.isOwner);
+  const ownerVis = useOwnerStore(s => s.visibility);
+  useEffect(() => { if (user?.role === 'super_admin' && !ownerLoaded) useOwnerStore.getState().load(); }, [user?.role, ownerLoaded]);
+  const canSee = (key?: string) => !key || isOwner || (ownerLoaded && ownerVis[key] !== false);
+  // Owner-controlled tools (title -> key). Hidden for other super admins unless the owner shares them in Owner Settings.
+  const OWNER_KEY: Record<string, string> = {
+    'Request Log': 'request_log', 'Owner Settings': 'owner_settings', 'Billing & Revenue': 'billing_revenue', 'Revenue Forecast': 'revenue_forecast', 'Partner Agreements': 'partner_agreements',
+    'White Label Partners': 'white_label_partners', 'Discount Codes': 'discount_codes', 'Partner Portal': 'partner_portal', 'View Quotes': 'view_quotes', 'Create Quote': 'create_quote',
+    'Mystery Shops': 'mystery_shops', 'Test Lab': 'test_lab', 'Jessi Voice Lab': 'jessi_voice_lab', 'Texting Compliance': 'texting_compliance', 'Twilio Migration': 'twilio_migration',
+    'Shared Inboxes': 'shared_inboxes', 'Bulk Transfer': 'bulk_transfer', 'App Directory': 'app_directory', 'Company Docs': 'company_docs', 'Brand Assets': 'brand_assets',
+    'Error Reports': 'error_reports', 'Bug Reports': 'bug_reports', 'System Logs': 'system_logs', 'Fix Duplicate Campaigns': 'fix_duplicate_campaigns', 'Fix Sold Campaign Sequences': 'fix_sold_sequences',
+  };
   const VIEW_KEY = `hub_view_${user?._id || 'anon'}`;
   const [toolsView, setToolsView] = useState<'list' | 'tiles' | null>(null);
   useEffect(() => { AsyncStorage.getItem(VIEW_KEY).then(v => setToolsView(v === 'tiles' || v === 'list' ? v : (winW >= 900 ? 'list' : 'tiles'))); }, [VIEW_KEY]);
@@ -594,6 +608,9 @@ export default function MoreScreen() {
   // ============================================================
   if (isSuperAdmin) {
     const items: MenuItem[] = [
+      // Owner
+      { icon: 'journal', title: 'Request Log', subtitle: 'Everything you have asked for, in your words, with status', onPress: () => router.push('/admin/request-log' as any), color: '#C9A962' },
+      { icon: 'key', title: 'Owner Settings', subtitle: 'What other super admins can see, and who else is an owner', onPress: () => router.push('/admin/owner-settings' as any), color: '#C9A962' },
       // Partners
       { icon: 'people-circle', title: 'Partner Portal', subtitle: 'View as partner/reseller', onPress: () => router.push('/partner/dashboard' as any), color: '#007AFF' },
       { icon: 'document-text', title: 'Partner Agreements', subtitle: 'Contracts & commissions', onPress: () => router.push('/admin/partner-agreements'), color: '#AF52DE' },
@@ -682,7 +699,7 @@ export default function MoreScreen() {
   });
 
   // allSections is now just 'sections' since admin is inline
-  const allSections = sections;
+  const allSections = sections.map(sec => ({ ...sec, items: sec.items.filter((it: any) => canSee(OWNER_KEY[it.title])) })).filter(sec => sec.items.length || (sec as any)._brandItems?.length);
 
   // ── Hub simplification: split everyday vs admin, brand lives in My Profile ──
   const ADMIN_SECTION_IDS = ['setup_manage', 'account_mgmt', 'internal_ops'];

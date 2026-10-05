@@ -6,6 +6,7 @@ import { showSimpleAlert } from '../../services/alert';
 import { useThemeStore } from '../../store/themeStore';
 import { PrimaryButton } from '../ui/PrimaryButton';
 import { GOLD, RADIUS, SPACE, TYPE, tid, tint } from '../ui/tokens';
+import { useOwnerStore } from '../../store/ownerStore';
 
 type Preview = { count: number; rows: { user_id: string; first_name: string; hours: number; waiting_for: string }[]; text: string; opt_in: boolean; last?: { at: string; count: number; ok: boolean } | null; hour: number; stuck_hours: number; enabled: boolean };
 
@@ -59,6 +60,9 @@ const Recipients = ({ onChanged }: { onChanged: () => void }) => {
 /** "Morning digest" block: what Jessi would text this manager right now, the per-manager opt-in, and a send-now button. */
 export const DigestCard = ({ isSuper, hour, stuckHours, enabled, onHour, onStuck, onEnabled }: { isSuper: boolean; hour: number; stuckHours: number; enabled: boolean; onHour: (v: number) => void; onStuck: (v: number) => void; onEnabled: (v: boolean) => void }) => {
   const { colors } = useThemeStore();
+  const ownerLoaded = useOwnerStore(s => s.loaded);
+  const canSeeRecipients = useOwnerStore(s => s.canSee('digest_recipients'));
+  useEffect(() => { if (isSuper && !ownerLoaded) useOwnerStore.getState().load(); }, [isSuper, ownerLoaded]);
   const [pv, setPv] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const load = () => api.get('/admin/onboarding-jessi/digest/preview').then(r => setPv(r.data)).catch(() => {});
@@ -96,7 +100,7 @@ export const DigestCard = ({ isSuper, hour, stuckHours, enabled, onHour, onStuck
         <Text style={{ fontSize: TYPE.body, fontWeight: '600', color: colors.text }}>Text me the digest</Text>
         {pv ? <Switch value={pv.opt_in} onValueChange={toggleMe} trackColor={{ true: GOLD }} {...tid('onb-settings-digest-me')} /> : <ActivityIndicator size="small" color={GOLD} />}
       </View>
-      {isSuper && <Recipients onChanged={load} />}
+      {isSuper && canSeeRecipients && <Recipients onChanged={load} />}
       {pv && (
         <View style={{ backgroundColor: colors.surface, borderRadius: RADIUS.md, padding: SPACE.md, gap: 6 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

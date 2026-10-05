@@ -794,6 +794,8 @@ from routers import memory_search as memory_search_router
 api_router.include_router(memory_search_router.router)
 from routers import team_today as team_today_router
 api_router.include_router(team_today_router.router)
+from routers import owner as owner_router
+api_router.include_router(owner_router.router)
 from routers import scripts as scripts_router
 api_router.include_router(scripts_router.router)
 api_router.include_router(scripts_router.relay_router)
@@ -1608,6 +1610,11 @@ async def startup_event():
         await _loc.load_overrides(get_db())
     except Exception as _e:
         logger.warning(f"[Locales] voice overrides not loaded: {_e}")
+    try:
+        from routers.owner import ensure_owner_flag
+        await ensure_owner_flag(get_db())
+    except Exception as _e:
+        logger.warning(f"[Owner] owner flag not applied: {_e}")
 
     # ── Global asyncio exception handler ────────────────────────────────────
     # Catches ANY unhandled exception from asyncio.create_task() calls so they
