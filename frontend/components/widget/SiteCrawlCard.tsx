@@ -55,6 +55,9 @@ export const SiteCrawlCard = ({ widgetId, siteUrl, colors, canManage, showToast,
     finally { setApplying(false); }
   };
   const d = job?.draft;
+  const startedMs = job?.created_at ? Date.now() - new Date(job.created_at).getTime() : 0;
+  const stale = job?.status === 'running' && startedMs > 4 * 60 * 1000;
+  const running = job?.status === 'running' && !stale;
   const nPick = Object.values(pick.facts).filter(Boolean).length + Object.values(pick.specials).filter(Boolean).length + (pick.notes && d?.notes ? 1 : 0);
   return (
     <Section colors={colors} testId="widget-section-crawl">
@@ -92,18 +95,29 @@ export const SiteCrawlCard = ({ widgetId, siteUrl, colors, canManage, showToast,
       {canManage ? (
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TextInput value={url} onChangeText={setUrl} placeholder="www.yourdealership.com" placeholderTextColor={colors.textSecondary} autoCapitalize="none" autoCorrect={false} keyboardType="url" style={[inputStyle(colors), { flex: 1 }]} {...tid('widget-crawl-url')} />
-          <TouchableOpacity onPress={start} disabled={starting || job?.status === 'running' || !url.trim()} style={{ height: 46, paddingHorizontal: 14, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', opacity: starting || job?.status === 'running' || !url.trim() ? 0.5 : 1 }} {...tid('widget-crawl-start')}>
-            {starting ? <ActivityIndicator color="#111" /> : <Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>{job?.status === 'done' || site?.pages ? 'Read again' : 'Read my site'}</Text>}
+          <TouchableOpacity onPress={start} disabled={starting || running || !url.trim()} style={{ height: 46, paddingHorizontal: 14, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', opacity: starting || running || !url.trim() ? 0.5 : 1 }} {...tid('widget-crawl-start')}>
+            {starting ? <ActivityIndicator color="#111" /> : <Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>{job?.status === 'done' || site?.pages || stale ? 'Read again' : 'Read my site'}</Text>}
           </TouchableOpacity>
         </View>
       ) : null}
-      {job?.status === 'running' ? (
+      {running ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }} {...tid('widget-crawl-running')}>
           <ActivityIndicator color={GOLD} />
-          <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary }}>{job.pages?.length ? `Read ${job.pages.length} page${job.pages.length === 1 ? '' : 's'}, Jessi is writing the draft…` : `Reading ${job.url}…`} {business ? 'A whole site takes a minute or two.' : 'Usually under a minute.'}</Text>
+          <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary }}>{job.pages?.length ? `Read ${job.pages.length} page${job.pages.length === 1 ? '' : 's'}, Jessi is writing the draft…` : job.pages_read ? `Read ${job.pages_read} page${job.pages_read === 1 ? '' : 's'} so far…` : `Reading ${job.url}…`} {business ? 'A whole site takes a minute or two.' : 'Usually under a minute.'}</Text>
         </View>
       ) : null}
-      {job?.status === 'failed' ? <Text style={{ fontSize: 13, color: '#FF3B30', marginTop: 10 }} {...tid('widget-crawl-error')}>{job.error || 'That did not work.'}</Text> : null}
+      {stale ? (
+        <View style={{ marginTop: 10 }} {...tid('widget-crawl-stale')}>
+          <Text style={{ fontSize: 13, color: '#FF3B30' }}>That read did not finish (the server probably restarted while Jessi was reading).</Text>
+          {canManage ? <TouchableOpacity onPress={start} disabled={starting || !url.trim()} style={{ marginTop: 8, alignSelf: 'flex-start', paddingHorizontal: 14, height: 38, borderRadius: 10, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center' }} {...tid('widget-crawl-retry')}><Text style={{ fontSize: 13, fontWeight: '800', color: '#111' }}>Read again</Text></TouchableOpacity> : null}
+        </View>
+      ) : null}
+      {job?.status === 'failed' ? (
+        <View style={{ marginTop: 10 }}>
+          <Text style={{ fontSize: 13, color: '#FF3B30' }} {...tid('widget-crawl-error')}>{job.error || 'That did not work.'}</Text>
+          {canManage ? <TouchableOpacity onPress={start} disabled={starting || !url.trim()} style={{ marginTop: 8, alignSelf: 'flex-start', paddingHorizontal: 14, height: 38, borderRadius: 10, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center' }} {...tid('widget-crawl-retry')}><Text style={{ fontSize: 13, fontWeight: '800', color: '#111' }}>Read again</Text></TouchableOpacity> : null}
+        </View>
+      ) : null}
       {job?.status === 'done' && d ? (
         <View style={{ marginTop: 10 }} {...tid('widget-crawl-draft')}>
           <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 4 }}>From {job.pages?.length || 1} page{job.pages?.length === 1 ? '' : 's'} on {job.url}{job.applied_at ? ' · already added once' : ''}</Text>

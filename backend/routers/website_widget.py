@@ -389,7 +389,7 @@ async def crawl_start(wid: str, body: CrawlBody, request: Request, bg: Backgroun
         job = await WCR.start(db, w, body.url, request.state.user, mode=body.mode)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    if job["status"] == "running" and not job.get("pages"):
+    if job.pop("started", False):
         bg.add_task(WCR.run, job["id"])
     return job
 

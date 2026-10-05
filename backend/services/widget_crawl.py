@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 COLL = "widget_crawls"
 PAGES_COLL = "widget_site_pages"
+STALE_S = 240            # a running job with no progress for this long is dead (server restart mid-read)
+FETCH_TIMEOUT = 150
+DRAFT_TIMEOUT = 90
+INTERRUPTED = "That read was interrupted (the server restarted while Jessi was reading). Tap Read again."
 MAX_PAGES = 7
 SITE_MAX_PAGES = 60
 PAGE_CHARS = 6000
@@ -70,8 +74,9 @@ def _all_links(html: str, base: str) -> list:
     return out
 
 
-async def fetch_site(url: str, limit: int = SITE_MAX_PAGES, seeds: Optional[list] = None) -> list:
-    """Breadth-first read of the site: home (+ sitemap.xml + owner-added seed pages), everything they link to, then the next hop, up to `limit` pages."""
+async def fetch_site(url: str, limit: int = SITE_MAX_PAGES, seeds: Optional[list] = None, progress=None) -> list:
+    """Breadth-first read of the site: home (+ sitemap.xml + owner-added seed pages), everything they link to, then the next hop, up to `limit` pages.
+    `progress(n_pages)` is awaited after every batch so the job can show how far along she is."""
     from services.safe_fetch import safe_client
     headers = {"User-Agent": "Mozilla/5.0 (compatible; iMOS-JessiReader/1.0; +https://www.imonsocial.com)"}
     pages, seen, queue = [], set(), []
@@ -129,6 +134,8 @@ async def fetch_site(url: str, limit: int = SITE_MAX_PAGES, seeds: Optional[list
                     if link not in seen and len(seen) < limit * 4:
                         seen.add(link)
                         queue.append(link)
+            if progress:
+                await progress(len(pages))
     return pages[:limit]
 
 
@@ -327,22 +334,41 @@ async def _draft(store: dict, pages: list, business: bool = False) -> dict:
     body = "\n\n".join(f"=== {p['title'] or p['url']} ({p['url']}) ===\n{p['text'][:PAGE_CHARS]}" for p in pages)[:42000]
     chat = LlmChat(api_key=api_key, session_id=f"crawl_{secrets.token_hex(4)}", system_message="You write precise JSON for a business knowledge base.").with_model(*CUSTOMER_TEXT_MODEL)
     prompt = (PROMPT_BUSINESS if business else PROMPT).format(name=store.get("name") or "the store", pages=body)
-    out = await asyncio.wait_for(chat.send_message(UserMessage(text=prompt)), timeout=90)
+    out = await asyncio.wait_for(chat.send_message(UserMessage(text=prompt)), timeout=DRAFT_TIMEOUT)
     return _parse(out if isinstance(out, str) else str(out))
 
 
+def _stale(job: dict) -> bool:
+    last = (job.get("updated_at") or job.get("created_at"))
+    return job.get("status") == "running" and bool(last) and (_now() - last.replace(tzinfo=timezone.utc)).total_seconds() > STALE_S
+
+
+async def _fail(db, job: dict, error: str) -> dict:
+    await db[COLL].update_one({"_id": job["_id"], "status": "running"}, {"$set": {"status": "failed", "error": error, "updated_at": _now()}})
+    return {**job, "status": "failed", "error": error}
+
+
+async def fail_interrupted(db) -> int:
+    """Startup: every crawl still 'running' belonged to the process that just died, so nothing will ever finish it."""
+    r = await db[COLL].update_many({"status": "running"}, {"$set": {"status": "failed", "error": INTERRUPTED, "updated_at": _now()}})
+    return r.modified_count
+
+
 async def start(db, w: dict, url: str, user: dict, mode: Optional[str] = None) -> dict:
+    """Returns the job plus `started` = True when a new read was created (the caller schedules the background run)."""
     url = _norm_url(url)
     if not re.match(r"^https?://[^/\s]+\.[a-z]{2,}", url, re.I):
         raise ValueError("That does not look like a website address.")
     running = await db[COLL].find_one({"widget_id": str(w["_id"]), "status": "running"})
-    if running and (_now() - running["created_at"].replace(tzinfo=timezone.utc)).total_seconds() < 180:
-        return public(running)
-    doc = {"widget_id": str(w["_id"]), "store_id": w.get("store_id"), "url": url, "status": "running", "pages": [], "draft": None, "error": "",
+    if running and not _stale(running):
+        return {**public(running), "started": False}
+    if running:
+        await _fail(db, running, INTERRUPTED)
+    doc = {"widget_id": str(w["_id"]), "store_id": w.get("store_id"), "url": url, "status": "running", "pages": [], "pages_read": 0, "draft": None, "error": "",
            "mode": mode if mode in ("business", "dealership") else W.normalize_config(w)["kb"]["mode"], "created_by": str(user["_id"]), "created_at": _now(), "updated_at": _now()}
     res = await db[COLL].insert_one(doc)
     doc["_id"] = res.inserted_id
-    return public(doc)
+    return {**public(doc), "started": True}
 
 
 async def run(job_id: str):
@@ -351,16 +377,29 @@ async def run(job_id: str):
     job = await db[COLL].find_one({"_id": ObjectId(job_id)})
     if not job:
         return
+
+    async def progress(n: int):
+        await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"pages_read": n, "updated_at": _now()}})
+
     try:
         w = await db[W.COLL].find_one({"_id": ObjectId(job["widget_id"])})
         store = await W.store_of(db, w or {})
         business = (job.get("mode") or W.normalize_config(w or {})["kb"]["mode"]) == "business"
-        pages = await fetch_site(job["url"], seeds=W.normalize_config(w or {})["kb"].get("extra_urls") or []) if business else await _fetch_pages(job["url"])
-        await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"pages": [{"url": p["url"], "title": p["title"], "chars": len(p["text"])} for p in pages], "updated_at": _now()}})
+        try:
+            if business:
+                pages = await asyncio.wait_for(fetch_site(job["url"], seeds=W.normalize_config(w or {})["kb"].get("extra_urls") or [], progress=progress), timeout=FETCH_TIMEOUT)
+            else:
+                pages = await asyncio.wait_for(_fetch_pages(job["url"]), timeout=FETCH_TIMEOUT)
+        except asyncio.TimeoutError:
+            raise RuntimeError("That site was too slow to read in time. Try again, or add the key pages under Also read these pages.")
+        await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"pages": [{"url": p["url"], "title": p["title"], "chars": len(p["text"])} for p in pages], "pages_read": len(pages), "updated_at": _now()}})
         if not pages or sum(len(p["text"]) for p in pages) < 300:
             raise RuntimeError("That site did not give me any readable text (it may block robots or be all images).")
         saved = await save_site_pages(db, w, pages) if business else 0
-        draft = await _draft(store, pages, business)
+        try:
+            draft = await _draft(store, pages, business)
+        except asyncio.TimeoutError:
+            raise RuntimeError("Jessi read the site but ran out of time writing the draft. Tap Read again.")
         await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"status": "done", "draft": draft, "site_pages_saved": saved, "updated_at": _now()}})
         logger.info(f"[Crawl] {job['url']}: {len(pages)} pages -> {len(draft['facts'])} facts, {len(draft['specials'])} specials, {saved} pages kept for answers")
     except Exception as e:
@@ -370,12 +409,14 @@ async def run(job_id: str):
 
 async def latest(db, w: dict) -> Optional[dict]:
     job = await db[COLL].find_one({"widget_id": str(w["_id"])}, sort=[("created_at", -1)])
+    if job and _stale(job):
+        job = await _fail(db, job, INTERRUPTED)
     return public(job) if job else None
 
 
 def public(job: dict) -> dict:
     return {"id": str(job["_id"]), "url": job.get("url"), "status": job.get("status"), "error": job.get("error") or "", "pages": job.get("pages") or [],
-            "draft": job.get("draft"), "site_pages_saved": int(job.get("site_pages_saved") or 0),
+            "pages_read": int(job.get("pages_read") or 0), "draft": job.get("draft"), "site_pages_saved": int(job.get("site_pages_saved") or 0),
             "created_at": job["created_at"].isoformat() if job.get("created_at") else None, "applied_at": job["applied_at"].isoformat() if job.get("applied_at") else None}
 
 

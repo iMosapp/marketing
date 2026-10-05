@@ -1615,6 +1615,13 @@ async def startup_event():
         await ensure_owner_flag(get_db())
     except Exception as _e:
         logger.warning(f"[Owner] owner flag not applied: {_e}")
+    try:
+        from services import widget_crawl as _wcr
+        _n = await _wcr.fail_interrupted(get_db())
+        if _n:
+            logger.info(f"[Crawl] marked {_n} site read(s) interrupted by the restart")
+    except Exception as _e:
+        logger.warning(f"[Crawl] interrupted reads not cleared: {_e}")
 
     # ── Global asyncio exception handler ────────────────────────────────────
     # Catches ANY unhandled exception from asyncio.create_task() calls so they

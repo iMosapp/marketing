@@ -131,6 +131,12 @@ Switched the log to your verbatim words (this version). Earlier sessions can't b
 
 Owner layer: `is_owner` flag on your account (set from `OWNER_EMAIL`), **Request Log** screen in the admin panel (All tools → Internal Operations, and your profile dropdown), **Owner Settings** screen with a switch per internal tool for what other super admins can see (Request Log, Billing & Revenue, Revenue Forecast, Partner Agreements, White Label Partners, Discount Codes and the digest switches are hidden by default) plus an Owners list to promote someone you trust. Production needs `OWNER_EMAIL` set in the backend env.
 
+### 23 · Oct 5 — DONE / DEPLOY + EAS UPDATE
+> Jessi is stuck in widgets reading website
+> *(screenshot: Widgets → I'm On Social → "Reading https://imonsocial.com… A whole site takes a minute or two." spinner never ends)*
+
+Cause: a site read left as "running" forever when the server restarted mid-read (a deploy does that); nothing ever closed it and the Read button stayed locked. Fix: startup sweep marks interrupted reads failed, the status poll fails any read silent for 4 minutes, a hard timeout on the whole read (150 s pages + 90 s draft), live "Read 23 pages so far…" progress, Read again button on any failure. Verified in preview: imonsocial.com reads 60 pages in 12 s.
+
 ---
 
 ## Still open (from earlier sessions, paraphrased — originals not recoverable)
