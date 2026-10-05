@@ -142,6 +142,13 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 29 · Oct 5 — DONE (report only, no code)
+> is this app written and laid out in the best possible way currently?  do a quick assesment and let me know what we should change in architecture if anything.  just audit and report to me no coding
+
+Architecture audit delivered in chat (see summary below). Headline: solid foundations (JWT middleware that verifies X-User-ID, startup indexes, Twilio signature guard, locked campaign queue), but five structural debts: giant files (thread screen 5.4k lines, 4 routers near 3k), 18 copies of role-check helpers, two generations of inboxes/widgets/VA living side by side, in-process scheduler + 85 fire-and-forget tasks that die on deploy, and the Emergent LLM wrapper bypassed in 42 files. Recommended order: shared auth helpers → durable background jobs → kill legacy twins → split the big screens → finish Portability Step 2.
+
+---
+
 ### 28 · Oct 5 — DONE / DEPLOY ONLY
 > This is still happening on mobile or it's jumping the conversation to the bottom when it tries to set an appointment I have to scroll up to read what was actually said with the widget
 > *(screen recording on imonsocial.com: reply shows, booking form appears, list jumps to the bottom)*
