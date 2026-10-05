@@ -82,6 +82,7 @@ def serialize(inbox: dict) -> dict:
         "close_tag": inbox.get("close_tag") or DEFAULT_CLOSE_TAG,
         "bridge_text": inbox.get("bridge_text") or DEFAULT_BRIDGE_TEXT,
         "ai_mode": inbox.get("ai_mode") or "auto_reply",
+        "agent_id": inbox.get("agent_id") or None,
         "va_profile_id": inbox.get("va_profile_id") or None,
         "va_name": inbox.get("va_name") or "",
         "va_training": inbox.get("va_training") or "",
@@ -233,6 +234,8 @@ async def apply_inbox(db, source: Optional[dict]) -> Optional[dict]:
         merged["daily_cap"] = inbox.get("daily_cap") or 0
     if not merged.get("va_profile_id"):
         merged["va_profile_id"] = inbox.get("va_profile_id")
+    if not merged.get("agent_id"):
+        merged["agent_id"] = inbox.get("agent_id")
     if not merged.get("store_id") and inbox.get("store_id"):
         merged["store_id"] = inbox["store_id"]
     if source.get("va_enabled") is None and (inbox.get("ai_mode") or "auto_reply") == "off":
@@ -259,6 +262,7 @@ async def ensure_direct_source(db, inbox: dict) -> dict:
         "notify_all_on_intake": routing == "jump_ball",
         "va_enabled": (inbox.get("ai_mode") or "auto_reply") != "off",
         "va_profile_id": inbox.get("va_profile_id"),
+        "agent_id": inbox.get("agent_id"),
         "text_window_start": "00:00",
         "text_window_end": "00:00",
         "is_active": inbox.get("is_active", True),

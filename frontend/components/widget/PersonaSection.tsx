@@ -6,6 +6,7 @@ import { GOLD, tid } from '../inbox/ownership';
 import { Section, Label, Hint } from '../inbox/InboxEditorParts';
 import { Chips, Field, ToggleRow } from './parts';
 import { ImageField } from './ImageField';
+import { AgentPicker } from '../agents/AgentPicker';
 
 type Member = { id: string; name: string; first: string; title: string; photo: string };
 type Props = { persona: any; setPersona: (p: any) => void; widgetId: string; colors: any; showToast: (m: string, t?: any, d?: number) => void; canManage: boolean };
@@ -25,8 +26,13 @@ export const PersonaSection = ({ persona, setPersona, widgetId, colors, showToas
       {p.on ? (
         <>
           <Label colors={colors} top>Who is it?</Label>
-          <Chips options={[{ value: 'team', label: 'A team member', icon: 'people-outline' }, { value: 'custom', label: 'A custom assistant', icon: 'sparkles-outline' }]} value={p.source || 'custom'} onChange={v => setPersona({ source: v })} colors={colors} testId="widget-persona-source" />
-          {p.source === 'team' ? (
+          <Chips options={[{ value: 'agent', label: 'An Agent Hub agent', icon: 'people-circle-outline' }, { value: 'team', label: 'A team member', icon: 'people-outline' }, { value: 'custom', label: 'A custom assistant', icon: 'sparkles-outline' }]} value={p.source || 'custom'} onChange={v => setPersona({ source: v })} colors={colors} testId="widget-persona-source" />
+          {p.source === 'agent' ? (
+            <View style={{ marginTop: 8 }}>
+              <Hint colors={colors}>The agent's name, photo, personality, job, facts and hand-off topics all come from the Agent Hub, on top of this widget's own facts, scripted answers and website. Edit the agent once, every widget using it updates.</Hint>
+              <AgentPicker value={p.agent_id || ''} onChange={id => setPersona({ agent_id: id, on: !!id || p.on })} colors={colors} noneLabel="Pick an agent" noneSub="No agent picked yet, so visitors still get plain Jessi." testId="widget-persona-agent" disabled={!canManage} />
+            </View>
+          ) : p.source === 'team' ? (
             <>
               <Hint colors={colors}>Their profile photo, first name and title are used live, so a new headshot in the app updates the website too.</Hint>
               {team.length === 0 ? <Text style={{ fontSize: 13, color: colors.textSecondary }} {...tid('widget-persona-team-empty')}>No one at this store yet, or still loading.</Text> : (
@@ -55,8 +61,12 @@ export const PersonaSection = ({ persona, setPersona, widgetId, colors, showToas
               <ImageField label="Photo" hint="A friendly headshot, square, well lit. This is the face visitors see in the corner of your site." value={p.photo_url || ''} onChange={v => setPersona({ photo_url: v })} widgetId={widgetId} target="avatar" colors={colors} testId="widget-persona-photo" round showToast={showToast} canManage={canManage} />
             </>
           )}
-          <Field label="Personality" hint="How they talk. A few words is plenty." value={p.tone || ''} onChange={v => setPersona({ tone: v })} placeholder="Warm, quick, a little playful" colors={colors} testId="widget-persona-tone" maxLength={160} />
-          <Field label="One line about them (optional)" value={p.intro || ''} onChange={v => setPersona({ intro: v })} placeholder="Twelve years helping families pick the right truck." colors={colors} testId="widget-persona-intro" maxLength={240} />
+          {p.source !== 'agent' ? (
+            <>
+              <Field label="Personality" hint="How they talk. A few words is plenty." value={p.tone || ''} onChange={v => setPersona({ tone: v })} placeholder="Warm, quick, a little playful" colors={colors} testId="widget-persona-tone" maxLength={160} />
+              <Field label="One line about them (optional)" value={p.intro || ''} onChange={v => setPersona({ intro: v })} placeholder="Twelve years helping families pick the right truck." colors={colors} testId="widget-persona-intro" maxLength={240} />
+            </>
+          ) : null}
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 10 }}>
             <Ionicons name="shield-checkmark-outline" size={16} color={colors.textSecondary} />
             <Text style={{ flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 16 }}>A small "AI assistant" tag sits next to the name in the chat header. Bot-disclosure laws in several states require it; the launcher and teaser stay fully human-looking.</Text>

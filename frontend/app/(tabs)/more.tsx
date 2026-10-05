@@ -471,7 +471,7 @@ export default function MoreScreen() {
       { permKey: 'ask_jessi', icon: 'flash', title: 'AI Follow-ups', subtitle: 'Smart outreach suggestions', onPress: () => router.push('/(tabs)/ai-outreach' as any), color: '#AF52DE' },
       { permKey: 'team_chat', icon: 'chatbox-ellipses', title: 'Team Chat', subtitle: 'Internal team messaging', onPress: () => router.push('/(tabs)/team'), color: '#5856D6' },
     ]);
-    if (perm('insights', 'va_library')) items.push({ icon: 'people-circle-outline', title: 'VA Library', subtitle: 'Build and manage named Virtual Assistant personas', onPress: () => router.push('/admin/va-library'), color: '#C9A962' });
+    if (user?.role === 'super_admin' || perm('insights', 'va_library')) items.push({ icon: 'people-circle-outline', title: 'Agent Hub', subtitle: 'Build AI agents and put them on widgets, lead sources and inboxes', onPress: () => router.push('/admin/agents' as any), color: '#C9A962' });
     if (items.length > 0) sections.push({ id: 'my_tools', title: 'My Tools', icon: 'apps', color: '#007AFF', items });
   }
 
@@ -760,7 +760,7 @@ export default function MoreScreen() {
   };
   const GROUP_ORDER = ['daily', 'leads', 'brand', 'campaigns', 'performance', 'team', 'setup', 'learning', 'settings', 'partner', 'accounts', 'internal'];
   const GROUP_FOR_SECTION: Record<string, string> = { partner_portal: 'partner', my_brand: 'brand', leads: 'leads', manage: 'campaigns', team: 'team', my_tools: 'daily', campaigns: 'campaigns', performance: 'performance', setup_manage: 'setup', account_mgmt: 'accounts', internal_ops: 'internal', learning: 'learning', settings: 'settings' };
-  const GROUP_FOR_TITLE: Record<string, string> = { 'Review Center': 'team', 'Showcase': 'team', 'Inventory Feed': 'setup', 'Review Links': 'setup', 'Inventory': 'daily', 'My VA': 'settings', 'VA Library': 'settings', 'Team Chat': 'daily', 'Texting Compliance': 'setup' };
+  const GROUP_FOR_TITLE: Record<string, string> = { 'Review Center': 'team', 'Showcase': 'team', 'Inventory Feed': 'setup', 'Review Links': 'setup', 'Inventory': 'daily', 'My VA': 'settings', 'Agent Hub': 'settings', 'Team Chat': 'daily', 'Texting Compliance': 'setup' };
   const dirBuckets: Record<string, ToolRow[]> = {};
   const dirSeen = new Set<string>();
   const addRow = (gid: string, r: ToolRow) => { const k = `${gid}:${r.title}`; if (dirSeen.has(k)) return; dirSeen.add(k); (dirBuckets[gid] ||= []).push(r); };

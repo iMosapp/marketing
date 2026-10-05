@@ -39,6 +39,7 @@ class InboxBody(BaseModel):
     close_tag: Optional[str] = None
     bridge_text: Optional[str] = None
     ai_mode: Optional[str] = None
+    agent_id: Optional[str] = None
     va_profile_id: Optional[str] = None
     va_name: Optional[str] = None
     va_training: Optional[str] = None

@@ -167,7 +167,7 @@ def va_name(va: Optional[dict]) -> str:
 
 
 def persona_lines(va: Optional[dict], store_name: str) -> str:
-    """Who the assistant is when the store gave it a name and a face (Look tab). Always an AI, never a human."""
+    """Who the assistant is when the store gave it a name and a face (Look tab) or put an Agent Hub agent on the widget. Always an AI, never a human."""
     if not va or not va.get("on"):
         return ""
     nm = va_name(va)
@@ -177,7 +177,18 @@ def persona_lines(va: Optional[dict], store_name: str) -> str:
     if va.get("intro"):
         s += f"About you: {va['intro']} "
     s += f"You are {store_name}'s AI assistant with a name and a face. Speak in first person as {nm}; never claim to be a human being, and if asked say you are the AI assistant and a real person is one tap away.\n"
+    if va.get("agent"):
+        from services import agents as AG
+        brief = AG.job_lines(va["agent"])
+        if brief:
+            s += "YOUR BRIEF (the owner wrote this for you, it wins over the general style above):\n" + "\n".join(brief) + "\n"
     return s
+
+
+def agent_kb(kb: dict, va: Optional[dict]) -> dict:
+    """The agent's hand-to-a-person topics ride the same hand-off detection as the store's own 'never discuss' list."""
+    extra = ((va or {}).get("agent") or {}).get("hand_to_human") or []
+    return {**kb, "never": list(kb.get("never") or []) + [t for t in extra if t not in (kb.get("never") or [])]} if extra else kb
 
 
 def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False, coach: str = "", va: Optional[dict] = None) -> str:
@@ -443,7 +454,8 @@ async def reply(db, w: dict, session: dict, text: str, ip: str) -> dict:
     if session.get("turns", 0) >= MAX_TURNS:
         return {**public_state(session), "reply": "We've covered a lot. A team member can pick this up by text, tap Talk to a person and they'll reach out.", "handoff": False}
     cfg = W.normalize_config(w)
-    kb = cfg["kb"]
+    va = await W.resolve_persona(db, w)
+    kb = agent_kb(cfg["kb"], va)
     store = await W.store_of(db, w)
     first_turn = session.get("turns", 0) == 0
     msgs = list(session.get("messages") or []) + [_msg("visitor", text)]
@@ -501,7 +513,6 @@ async def reply(db, w: dict, session: dict, text: str, ip: str) -> dict:
     if answer is None:
         knowledge, _, _ = await _knowledge(db, w, store, kb, text)
         coach, next_q = coaching(cfg, pb_state, text, mode, booking, pitch)
-        va = await W.resolve_persona(db, w)
         system = system_prompt(store, kb, knowledge, mode, bool(session.get("phone")), booking=booking and not pitch, coach=coach, va=va)
         gen = _confident if kb.get("mode") == "business" else _llm
         answer = await gen(system, _transcript(session) + f"\n\nReply to the visitor's last line as {va_name(va)}.")
@@ -913,13 +924,13 @@ async def save_lead(db, w: dict, session: dict, user: dict, name: str, phone: st
 # ---------------------------------------------------------------- manager: "Test Jessi"
 async def ask(db, w: dict, question: str) -> dict:
     cfg = W.normalize_config(w)
-    kb = cfg["kb"]
+    va = await W.resolve_persona(db, w)
+    kb = agent_kb(cfg["kb"], va)
     store = await W.store_of(db, w)
     reason = _detect(kb, question)
     knowledge, inv_lines, inv_total = await _knowledge(db, w, store, kb, question)
     facts = await store_facts(db, store)
     coach, _ = coaching(cfg, {}, question, "handoff" if reason else "normal", False)
-    va = await W.resolve_persona(db, w)
     system = system_prompt(store, kb, knowledge, "handoff" if reason else "normal", False, coach=coach, va=va)
     gen = _confident if kb.get("mode") == "business" else _llm
     answer = await gen(system, f"Visitor: {question}\n\nReply to the visitor's last line as {va_name(va)}.") or (ASK_CONTACT if reason else FALLBACK)
@@ -927,4 +938,5 @@ async def ask(db, w: dict, question: str) -> dict:
     pages = await db[PAGES_COLL].count_documents({"widget_id": str(w["_id"])}) if kb.get("mode") == "business" else 0
     return {"reply": answer, "handoff": bool(reason), "reason": reason, "used": {"facts": len(facts), "specials": len(_active_specials(kb)), "inventory_matches": len([l for l in inv_lines if not l.startswith("...")]),
                                                                                     "inventory_total": inv_total, "hours": bool(hours_lines(store)), "site_pages": pages, "mode": kb.get("mode"),
-                                                                                    "scripts": len(_rank_scripts(kb.get("scripts") or [], question)), "playbook": W.playbook_for(cfg)["on"]}}
+                                                                                    "scripts": len(_rank_scripts(kb.get("scripts") or [], question)), "playbook": W.playbook_for(cfg)["on"],
+                                                                                    "agent": va_name(va) if va.get("agent") else ""}}

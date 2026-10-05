@@ -703,14 +703,29 @@ async def queue_ai_reply(
         # Shared-inbox thread: while nobody owns it, Jessi speaks as the department assistant
         # (Inbox VA); once a rep owns it she speaks as that rep. Either way the text leaves from the inbox number.
         from services.inboxes import inbox_context as _inbox_ctx, build_inbox_va_prompt
+        from services import agents as AG
         _conv_for_inbox = await db.conversations.find_one({"_id": ObjectId(conversation_id)},
-                                                          {"inbox_id": 1, "graduated_at": 1, "rep_phone": 1, "store_id": 1})
+                                                          {"inbox_id": 1, "graduated_at": 1, "rep_phone": 1, "store_id": 1, "lead_source_id": 1})
         inbox_ctx = await _inbox_ctx(db, _conv_for_inbox)
         voice_user_id = assigned_user_id
         if inbox_ctx and not voice_user_id:
             voice_user_id = next(iter(inbox_ctx["members"]), None)     # store-scoped lookups only (inventory, cleanup)
 
-        if inbox_ctx and not assigned_user_id:
+        # Agent Hub: the lead source's (or unclaimed inbox's) agent speaks instead of the rep's clone / generic Jessi
+        _agent = await AG.for_conversation(db, _conv_for_inbox, bool(assigned_user_id))
+        if _agent:
+            _sid = (_conv_for_inbox or {}).get("store_id") or ((inbox_ctx or {}).get("inbox") or {}).get("store_id")
+            _store = await db.stores.find_one({"_id": ObjectId(str(_sid))}, {"name": 1}) if _sid and ObjectId.is_valid(str(_sid)) else None
+            _rep = await db.users.find_one({"_id": ObjectId(assigned_user_id)}, {"name": 1, "first_name": 1, "store_id": 1}) if ObjectId.is_valid(str(assigned_user_id or "")) else None
+            _rep_first = ((_rep or {}).get("first_name") or ((_rep or {}).get("name") or "").split(" ")[0]) if _rep else ""
+            system_prompt = AG.sms_prompt(_agent, (_store or {}).get("name") or "the store", rep_first=_rep_first,
+                                          dept=(inbox_ctx["inbox"].get("name") or "") if inbox_ctx and not assigned_user_id else "")
+            system_prompt += "\n\nIMPORTANT: Keep it natural, short, and conversational, 1-3 sentences max. Never sound like a bot."
+            if _agent.get("language") == "auto":
+                from services import locales as loc
+                system_prompt += "\n\n" + loc.language_rule(await loc.user_locale(db, _rep))
+            logger.info(f"[AIReply] agent '{_agent['name']}' speaking on conversation {conversation_id}")
+        elif inbox_ctx and not assigned_user_id:
             _store = await db.stores.find_one({"_id": ObjectId(inbox_ctx["inbox"]["store_id"])}) if ObjectId.is_valid(str(inbox_ctx["inbox"].get("store_id") or "")) else None
             system_prompt = build_inbox_va_prompt(inbox_ctx["inbox"], inbox_ctx.get("va_profile"), _store)
             system_prompt += (
@@ -729,6 +744,10 @@ async def queue_ai_reply(
             _rep = await db.users.find_one({"_id": ObjectId(assigned_user_id)}, {"store_id": 1}) if ObjectId.is_valid(str(assigned_user_id or "")) else None
             system_prompt += "\n\n" + loc.language_rule(await loc.user_locale(db, _rep))
         system_prompt += inquiry_prompt_block(lead_inquiry)
+        if (_conv_for_inbox or {}).get("lead_source_id") and ObjectId.is_valid(str(_conv_for_inbox["lead_source_id"])):
+            _src = await db.lead_sources.find_one({"_id": ObjectId(str(_conv_for_inbox["lead_source_id"]))}, {"va_prompt_override": 1, "name": 1})
+            if (_src or {}).get("va_prompt_override"):
+                system_prompt += f"\n\nABOUT LEADS FROM {_src.get('name') or 'this source'}: {str(_src['va_prompt_override']).strip()[:1500]}"
 
         contact_context = await get_contact_context(
             voice_user_id, contact_id, include_vehicle=vehicle_ok,

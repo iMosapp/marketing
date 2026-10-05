@@ -83,7 +83,8 @@ class WorkflowConfig(BaseModel):
     intake_text: str = ""                       # Template with {{first_name}}, {{vehicle}}, etc.
     intake_delay_seconds: int = 0               # 0 = instant
     va_enabled: bool = True                     # Enable AI auto-reply
-    va_profile_id: Optional[str] = None         # VA Library profile to use
+    agent_id: Optional[str] = None              # Agent Hub agent that texts leads from this source
+    va_profile_id: Optional[str] = None         # (legacy) VA Library profile
     va_prompt_override: Optional[str] = None    # Custom VA prompt for this source
     workflow_user_ids: List[str] = []           # Reps to notify & call on new lead
     auto_call_on_claim: bool = False            # Auto-dial customer when rep claims
@@ -178,6 +179,7 @@ def serialize_lead_source(source: dict) -> dict:
             "no_answer_text":          source.get("no_answer_text", ""),
             "intake_delay_seconds":    source.get("intake_delay_seconds", 0),
             "va_enabled":              source.get("va_enabled", True),
+            "agent_id":                source.get("agent_id") or None,
             "va_profile_id":           source.get("va_profile_id"),
             "va_prompt_override":      source.get("va_prompt_override"),
             "workflow_user_ids":       source.get("workflow_user_ids", []),

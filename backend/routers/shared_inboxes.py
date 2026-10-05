@@ -216,6 +216,7 @@ async def update_shared_inbox(inbox_id: str, update: SharedInboxUpdate, user_id:
         update_dict['is_active'] = update.is_active
     if update.va_profile_id is not None:
         update_dict['va_profile_id'] = update.va_profile_id
+        update_dict['agent_id'] = update.va_profile_id or None   # the legacy screen's picker now lists Agent Hub agents
     if update.va_prompt_override is not None:
         update_dict['va_prompt_override'] = update.va_prompt_override
     if update.receives_demo_requests is not None:

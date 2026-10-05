@@ -88,10 +88,19 @@ SMART_TEASERS = {
 
 
 async def resolve_persona(db, w: dict) -> dict:
-    """The face and name the widget speaks as: a real team member (live photo/title) or a custom VA. Off = Jessi."""
+    """The face and name the widget speaks as: an Agent Hub agent, a real team member (live photo/title) or a custom VA. Off = Jessi."""
     p = normalize_config(w)["persona"]
     if not p["on"]:
         return {"on": False, "name": "Jessi"}
+    if p["source"] == "agent":
+        from services import agents as AG
+        agent = await AG.get(db, p["agent_id"])
+        if not agent:
+            return {"on": False, "name": "Jessi"}
+        out = AG.widget_persona(agent)
+        if out["photo"].startswith("/"):
+            out["photo"] = f"{app_url()}{out['photo']}"
+        return out
     out = {"on": True, "source": p["source"], "name": p["name"], "title": p["title"], "photo": p["photo_url"], "tone": p["tone"], "intro": p["intro"]}
     if p["source"] == "team" and ObjectId.is_valid(p["user_id"]):
         u = await db.users.find_one({"_id": ObjectId(p["user_id"])}, {"name": 1, "title": 1, "photo_url": 1, "photo_path": 1, "photo_avatar_path": 1})
@@ -114,7 +123,7 @@ DEFAULTS = {
         "avatar_url": "", "font": "inherit", "hide_mobile": False, "tuck_on": True, "page_rules": [],
         "launcher": "bubble", "smart_teasers_on": True, "smart_teasers": {},
     },
-    "persona": {"on": False, "source": "custom", "user_id": "", "name": "", "title": "", "photo_url": "", "tone": "", "intro": ""},
+    "persona": {"on": False, "source": "custom", "user_id": "", "agent_id": "", "name": "", "title": "", "photo_url": "", "tone": "", "intro": ""},
     "doors": {
         "text": {"on": True, "label": "Text us", "intro": "Text with a real person. We usually reply within a few minutes.", "button": "Send text",
                  "success": "Check your phone, we just texted you.", "ask_message": True},
@@ -181,8 +190,9 @@ def normalize_config(cfg: dict) -> dict:
     a["smart_teasers"] = {k: str(st.get(k) or "").strip()[:160] for k in SMART_TEASER_KEYS if str(st.get(k) or "").strip()}
     pz = c["persona"]
     pz["on"] = bool(pz.get("on"))
-    pz["source"] = "team" if pz.get("source") == "team" else "custom"
+    pz["source"] = pz.get("source") if pz.get("source") in ("team", "agent") else "custom"
     pz["user_id"] = str(pz.get("user_id") or "")[:40]
+    pz["agent_id"] = str(pz.get("agent_id") or "")[:40]
     for k, n in (("name", 40), ("title", 60), ("photo_url", 300), ("tone", 160), ("intro", 240)):
         pz[k] = str(pz.get(k) or "").strip()[:n]
     if pz["photo_url"] and not pz["photo_url"].lower().startswith(("http://", "https://", "/")):

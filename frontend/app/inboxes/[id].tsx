@@ -12,10 +12,11 @@ import { ScreenHeader, HeaderTextButton } from '../../components/common/ScreenHe
 import { GOLD, tid, errText, fmtPhone, RepCard } from '../../components/inbox/ownership';
 import { Section, Label, Hint, inputStyle, OptionRows, ColorPicker, MergeChips, MemberPicker, NumberPicker, ROUTING_OPTIONS, AI_MODE_OPTIONS, AFTER_CLOSE_OPTIONS } from '../../components/inbox/InboxEditorParts';
 import { InboxLeadsTab } from '../../components/inbox/InboxLeadsTab';
+import { AgentPicker } from '../../components/agents/AgentPicker';
 
 type Tab = 'setup' | 'team' | 'leads' | 'jessi' | 'closing';
 const BLANK = { name: '', description: '', phone_number: '', color: '#C9A962', members: [] as string[], member_weights: {} as Record<string, number>, routing: 'jump_ball', daily_cap: 0,
-  first_reply: "Thanks for texting {{lead_source}}, {{first_name}}! Someone will be right with you.", ai_mode: 'auto_reply', va_name: '', va_training: '', va_rules: '', va_handoff_rules: '',
+  first_reply: "Thanks for texting {{lead_source}}, {{first_name}}! Someone will be right with you.", ai_mode: 'auto_reply', agent_id: '', va_name: '', va_training: '', va_rules: '', va_handoff_rules: '',
   close_tag: 'Sold', after_close: 'move_to_rep', bridge_text: "Hi {first_name}, it's {rep_name}. This is my direct line, save it and text me here anytime." };
 
 export default function InboxEditor() {
@@ -45,7 +46,7 @@ export default function InboxEditor() {
       if (det) {
         const d = det.data; setDetail(d);
         setForm({ name: d.name, description: d.description, phone_number: d.phone_number, color: d.color, members: d.members, member_weights: d.member_weights || {}, routing: d.routing, daily_cap: d.daily_cap,
-          first_reply: d.first_reply, ai_mode: d.ai_mode, va_name: d.va_name, va_training: d.va_training, va_rules: d.va_rules, va_handoff_rules: d.va_handoff_rules,
+          first_reply: d.first_reply, ai_mode: d.ai_mode, agent_id: d.agent_id || '', va_name: d.va_name, va_training: d.va_training, va_rules: d.va_rules, va_handoff_rules: d.va_handoff_rules,
           close_tag: d.close_tag, after_close: d.after_close, bridge_text: d.bridge_text });
       }
     }).catch((e: any) => { showToast(errText(e, 'Could not load inbox'), 'error'); if (e?.response?.status === 404) router.back(); });
@@ -162,6 +163,13 @@ export default function InboxEditor() {
                 <OptionRows options={AI_MODE_OPTIONS} value={form.ai_mode} onChange={v => patch({ ai_mode: v })} colors={colors} testId="inbox-ai-mode" />
               </Section>
               {form.ai_mode !== 'off' && (
+                <Section colors={colors} testId="inbox-section-agent">
+                  <Label colors={colors}>Who answers while nobody has claimed it</Label>
+                  <Hint colors={colors}>An Agent Hub agent brings its own name, personality, job and guardrails. Pick none to train a plain department assistant below.</Hint>
+                  <AgentPicker value={form.agent_id || ''} onChange={id => patch({ agent_id: id })} colors={colors} noneLabel="No agent (train the department assistant below)" testId="inbox-agent" />
+                </Section>
+              )}
+              {form.ai_mode !== 'off' && !form.agent_id && (
                 <Section colors={colors} testId="inbox-section-va">
                   <Label colors={colors}>Train this inbox's assistant</Label>
                   <Hint colors={colors}>Jessi speaks as the {form.name || 'department'} team, not as one rep, until someone claims. Once a rep owns the thread their own VA takes over.</Hint>

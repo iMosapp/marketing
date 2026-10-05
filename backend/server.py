@@ -760,6 +760,8 @@ api_router.include_router(training_reports.router)
 api_router.include_router(seo.router)
 api_router.include_router(geo.router)
 api_router.include_router(va_profiles.router)
+from routers import agents as agents_router
+api_router.include_router(agents_router.router)
 api_router.include_router(user_schedule.router)
 api_router.include_router(chat_widget.router)
 api_router.include_router(website_widget.admin)
@@ -1622,6 +1624,13 @@ async def startup_event():
             logger.info(f"[Crawl] marked {_n} site read(s) interrupted by the restart")
     except Exception as _e:
         logger.warning(f"[Crawl] interrupted reads not cleared: {_e}")
+    try:
+        from services import agents as _ag
+        _r = await _ag.migrate_va_profiles(get_db())
+        if not _r.get("skipped"):
+            logger.info(f"[Agents] VA Library migrated: {_r}")
+    except Exception as _e:
+        logger.warning(f"[Agents] VA Library migration failed: {_e}")
 
     # ── Global asyncio exception handler ────────────────────────────────────
     # Catches ANY unhandled exception from asyncio.create_task() calls so they

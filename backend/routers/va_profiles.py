@@ -44,12 +44,11 @@ def _serialize(doc: dict) -> dict:
 
 @router.get("")
 async def list_va_profiles(x_user_id: str = Header(None, alias="X-User-ID")):
-    """List all VA profiles visible to this user."""
+    """Legacy shape for older screens: the Agent Hub library mapped to the old VA profile fields."""
     db = get_db()
-    profiles = await db.ai_va_profiles.find(
-        {"$or": [{"user_id": x_user_id}, {"scope": "global"}]}
-    ).sort("created_at", -1).to_list(200)
-    return {"profiles": [_serialize(p) for p in profiles]}
+    agents = await db.agents.find({"status": {"$ne": "archived"}}).sort("name", 1).to_list(300)
+    return {"profiles": [{"_id": str(a["_id"]), "name": a.get("name") or "", "tagline": a.get("tagline") or "", "bio": a.get("instructions") or "", "specialties": a.get("specialties") or "",
+                          "tone": a.get("tone") or "friendly", "avatar_color": a.get("avatar_color") or AVATAR_COLORS[0], "scope": "global"} for a in agents]}
 
 
 @router.post("")
