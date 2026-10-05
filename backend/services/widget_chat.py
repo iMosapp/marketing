@@ -186,9 +186,18 @@ def persona_lines(va: Optional[dict], store_name: str) -> str:
 
 
 def agent_kb(kb: dict, va: Optional[dict]) -> dict:
-    """The agent's hand-to-a-person topics ride the same hand-off detection as the store's own 'never discuss' list."""
+    """The agent's hand-to-a-person topics ride the same hand-off detection as the store's own 'never discuss' list.
+    'Price or payments' becomes two triggers so either word alone hands off."""
     extra = ((va or {}).get("agent") or {}).get("hand_to_human") or []
-    return {**kb, "never": list(kb.get("never") or []) + [t for t in extra if t not in (kb.get("never") or [])]} if extra else kb
+    if not extra:
+        return kb
+    never = list(kb.get("never") or [])
+    for t in extra:
+        for alt in re.split(r"\s+or\s+|\s*/\s*|,", t):
+            alt = alt.strip()
+            if alt and alt not in never:
+                never.append(alt)
+    return {**kb, "never": never}
 
 
 def system_prompt(store: dict, kb: dict, knowledge: str, mode: str, have_contact: bool, booking: bool = False, coach: str = "", va: Optional[dict] = None) -> str:

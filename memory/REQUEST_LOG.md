@@ -142,6 +142,13 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 25 · Oct 5 — DONE / DEPLOY + EAS UPDATE
+> I want an agent hub where I can build a library of ai agents this would be used in different areas in the tool.  I may want to deploy an agent based on a specific lead source for example.  I may use a different one for my chat widget etc
+>
+> Only super admins / you build them, stores just pick · (other choices skipped, defaults: widget + lead sources + shared inboxes; agents carry their own facts on top of store knowledge; text-only for now)
+
+Agent Hub (Tools → Agent Hub, `/admin/agents`): library of agents with name, title, color/photo, tone, length, emoji, language, job, instructions, specialties, agent facts, always-collect, hand-to-a-person topics, never-say, advanced owner prompt, status. Six starters (Internet Sales, Service Scheduler, Website Concierge, After-Hours, Spanish, Demo Setter). "Try it" practice chat (text or website chat). Deploy tab with switches for every widget / lead source / shared inbox plus "where it is working". Pickers inside the widget Look tab (persona → "An Agent Hub agent"), the lead source workflow ("Agent for this source") and the inbox Jessi tab. The agent actually answers: website chat (name, face, brief, hand-off topics), lead-source text replies (replaces the rep's clone, rep still owns the lead), unclaimed inbox texts. The old VA Library (never wired to replies) was migrated into it; `/admin/va-library` redirects.
+
 ---
 
 ## Still open (from earlier sessions, paraphrased — originals not recoverable)
