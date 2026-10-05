@@ -31,6 +31,8 @@ import { BRAND } from '../../config/brand';
 import { buildStamp, installedVersion } from '../../utils/buildStamp';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { AppHome } from '../../components/hub/AppHome';
+import { ToolsDirectory, ToolGroup, ToolRow } from '../../components/hub/ToolsDirectory';
+import { useWindowDimensions } from 'react-native';
 import { slug as hubSlug, HubApp, HubFolderDef } from '../../components/hub/layout';
 import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
 
@@ -74,6 +76,11 @@ export default function MoreScreen() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['leads']));
   const [hubSearch, setHubSearch] = useState('');
   const [hubDragging, setHubDragging] = useState(false);
+  const { width: winW } = useWindowDimensions();
+  const VIEW_KEY = `hub_view_${user?._id || 'anon'}`;
+  const [toolsView, setToolsView] = useState<'list' | 'tiles' | null>(null);
+  useEffect(() => { AsyncStorage.getItem(VIEW_KEY).then(v => setToolsView(v === 'tiles' || v === 'list' ? v : (winW >= 900 ? 'list' : 'tiles'))); }, [VIEW_KEY]);
+  const pickView = (v: 'list' | 'tiles') => { setToolsView(v); AsyncStorage.setItem(VIEW_KEY, v).catch(() => {}); };
   const [leadsWaiting, setLeadsWaiting] = useState(0);
   const [dialerOn, setDialerOn] = useState(false);
   const sectionRefs = useRef<Record<string, View | null>>({});
@@ -574,8 +581,8 @@ export default function MoreScreen() {
       { icon: 'podium', title: 'Leaderboard', subtitle: 'Performance across all accounts', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
       { icon: 'pulse', title: 'Activity Feed', subtitle: 'Team activity across accounts', onPress: () => router.push('/(tabs)/activity-feed' as any), color: '#5856D6' },
       ...(isSuperAdmin ? [
-        { icon: 'analytics', title: 'iMOS Website Leads', subtitle: 'Demo requests and referrals for iMOS itself, not dealership leads', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
-        { icon: 'flame', title: 'iMOS Hot Leads', subtitle: 'New demo requests from the iMOS website', onPress: () => router.push('/admin/hot-leads'), color: '#FF3B30' },
+        { icon: 'analytics', title: 'Website Leads', subtitle: "Demo requests and referrals for i'M On Social itself, not dealership leads", onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
+        { icon: 'flame', title: 'Hot Leads', subtitle: "New demo requests from the i'M On Social website", onPress: () => router.push('/admin/hot-leads'), color: '#FF3B30' },
         { icon: 'qr-code', title: 'Print QR Codes', subtitle: 'Tracked QR links for cards, flyers & signs', onPress: () => router.push('/admin/print-qr' as any), color: '#C9A962' },
       ] : []),
     ];
@@ -726,6 +733,42 @@ export default function MoreScreen() {
   }
   if (!seenFolder.has('my_tools')) hubFolderDefs.push({ id: 'my_tools', title: 'My Tools', icon: 'apps', color: '#007AFF' });
   let hubDefaultLoose = taskGrid.map(t => hubSlug(t.label));
+
+  // ── Directory view: the same gated items, bucketed the way the team talks about them ──
+  const GROUP_META: Record<string, { title: string; icon: string }> = {
+    daily: { title: 'Daily', icon: 'sunny' }, leads: { title: 'Leads', icon: 'globe' }, brand: { title: 'My Brand', icon: 'sparkles' },
+    campaigns: { title: 'Campaigns & Automation', icon: 'megaphone' }, performance: { title: 'My Performance', icon: 'stats-chart' }, team: { title: 'Team', icon: 'people' },
+    setup: { title: 'Store Setup', icon: 'business' }, learning: { title: 'Learning', icon: 'school' }, settings: { title: 'Settings', icon: 'settings' },
+    partner: { title: 'Partner', icon: 'briefcase' }, accounts: { title: 'Account Management', icon: 'earth' }, internal: { title: 'Internal Operations', icon: 'construct' },
+  };
+  const GROUP_ORDER = ['daily', 'leads', 'brand', 'campaigns', 'performance', 'team', 'setup', 'learning', 'settings', 'partner', 'accounts', 'internal'];
+  const GROUP_FOR_SECTION: Record<string, string> = { partner_portal: 'partner', my_brand: 'brand', leads: 'leads', manage: 'campaigns', team: 'team', my_tools: 'daily', campaigns: 'campaigns', performance: 'performance', setup_manage: 'setup', account_mgmt: 'accounts', internal_ops: 'internal', learning: 'learning', settings: 'settings' };
+  const GROUP_FOR_TITLE: Record<string, string> = { 'Review Center': 'team', 'Showcase': 'team', 'Inventory Feed': 'setup', 'Review Links': 'setup', 'Inventory': 'daily', 'My VA': 'settings', 'VA Library': 'settings', 'Team Chat': 'daily', 'Texting Compliance': 'setup' };
+  const dirBuckets: Record<string, ToolRow[]> = {};
+  const dirSeen = new Set<string>();
+  const addRow = (gid: string, r: ToolRow) => { const k = `${gid}:${r.title}`; if (dirSeen.has(k)) return; dirSeen.add(k); (dirBuckets[gid] ||= []).push(r); };
+  for (const t of taskGrid) {
+    if (t.label === 'My Numbers') continue; // lives in My Performance
+    addRow('daily', { title: t.label, subtitle: t.sub, icon: t.icon, color: t.color, onPress: () => router.push(t.route as any) });
+  }
+  for (const sec of allSections) {
+    const base = GROUP_FOR_SECTION[sec.id] || 'daily';
+    for (const b of ((sec as any)._brandItems || []) as any[]) addRow('brand', { title: b.title, subtitle: b.subtitle, icon: b.icon, color: b.color, onPress: () => b.editRoute && router.push(b.editRoute as any) });
+    for (const it of sec.items as any[]) {
+      const title = it.title === 'My Stats' ? 'My Numbers' : it.title === 'Showcase' ? 'Showcase Approvals' : it.title;
+      addRow(GROUP_FOR_TITLE[it.title] || base, { title, subtitle: it.subtitle, icon: it.icon, color: it.color, badge: it.badge, statusDot: it.statusDot, onPress: it.onPress });
+    }
+  }
+  const GROUP_PRIORITY: Record<string, string[]> = {
+    daily: ['Tasks', 'Ask Jessi', 'AI Follow-ups', 'Send a Blast', 'Share My Card', 'Get Reviews', 'Calendar', 'Inventory', 'Team Chat'],
+    team: ['Team Today', 'Team Tasks', 'Ask Jessi About The Team', 'Team Members', 'Invite Team', 'Team Availability', 'Inboxes'],
+    leads: ['Internet Leads', 'Power Dialer', 'Call Retries', 'Lead Flows', 'Lead Source Queue', 'Lead Source Config', 'Website Widget'],
+  };
+  const dirGroups: ToolGroup[] = GROUP_ORDER.filter(g => dirBuckets[g]?.length).map(g => {
+    const pri = GROUP_PRIORITY[g] || [];
+    const rank = (t: string) => { const i = pri.indexOf(t); return i === -1 ? 999 : i; };
+    return { id: g, ...GROUP_META[g], items: [...dirBuckets[g]].sort((a, b) => rank(a.title) - rank(b.title)) };
+  });
 
   // ── Rep-first Tools: salespeople (and "view as rep") get five items; managers/admins/partners keep the full hub ──
   const simpleTools = repPreview || (user?.role === 'user' && !(user as any)?.partner_id);
@@ -1158,18 +1201,30 @@ export default function MoreScreen() {
             <Ionicons name="close" size={16} color="#C9A962" />
           </TouchableOpacity>
         )}
-        {reallyAdmin && !repPreview && (
-          <TouchableOpacity
-            onPress={() => setRepPreview(true)}
-            style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4, marginRight: 16, marginTop: -2, marginBottom: 2, paddingVertical: 4, paddingHorizontal: 6 }}
-            data-testid="rep-preview-toggle"
-          >
-            <Ionicons name="eye-outline" size={12} color={colors.textTertiary} />
-            <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textTertiary }}>View as Rep</Text>
-          </TouchableOpacity>
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginTop: -2, marginBottom: 8 }}>
+          <View style={{ flexDirection: 'row', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 2 }} data-testid="tools-view-toggle">
+            {(['list', 'tiles'] as const).map(v => (
+              <TouchableOpacity key={v} onPress={() => pickView(v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 8, backgroundColor: toolsView === v ? '#C9A962' : 'transparent' }} {...({ testID: `tools-view-${v}`, dataSet: { testid: `tools-view-${v}` } } as any)}>
+                <Ionicons name={v === 'list' ? 'list' : 'grid'} size={13} color={toolsView === v ? '#000' : colors.textSecondary} />
+                <Text style={{ fontSize: 11.5, fontWeight: '700', color: toolsView === v ? '#000' : colors.textSecondary }}>{v === 'list' ? 'List' : 'Tiles'}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {reallyAdmin && !repPreview ? (
+            <TouchableOpacity
+              onPress={() => setRepPreview(true)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 6 }}
+              data-testid="rep-preview-toggle"
+            >
+              <Ionicons name="eye-outline" size={12} color={colors.textTertiary} />
+              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textTertiary }}>View as Rep</Text>
+            </TouchableOpacity>
+          ) : <View />}
+        </View>
 
-        {hubQ ? (
+        {toolsView === 'list' ? (
+          <ToolsDirectory groups={dirGroups} colors={colors} query={hubSearch} />
+        ) : hubQ ? (
           /* ── Search results ── */
           <View style={{ marginTop: 4 }} data-testid="hub-search-results">
             {searchResults.length === 0 ? (

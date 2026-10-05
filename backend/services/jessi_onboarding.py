@@ -37,6 +37,7 @@ DEFAULT_CFG = {
     "activation_ttl_hours": 72,
     "kickoff_gaps_s": [25, 40, 30],
     "digest_enabled": True, "digest_hour": 8, "digest_stuck_hours": 24,
+    "digest_roles": ["super_admin"],  # who gets the morning "stuck in onboarding" text; store/org managers see it in the app instead
 }
 
 MANAGER_ROLES = ("super_admin", "org_admin", "store_manager")
@@ -626,7 +627,8 @@ async def run_digests(db, cfg: dict) -> int:
         return 0
     today = local.strftime("%Y-%m-%d")
     sent = 0
-    async for me in db.users.find({"role": {"$in": list(MANAGER_ROLES)}, "is_active": {"$ne": False}, "phone": {"$nin": [None, ""]}, "jessi_digest_opt_out": {"$ne": True}, "jessi_digest_last_on": {"$ne": today}}):
+    roles = [r for r in (cfg.get("digest_roles") or DEFAULT_CFG["digest_roles"]) if r in MANAGER_ROLES] or list(DEFAULT_CFG["digest_roles"])
+    async for me in db.users.find({"role": {"$in": roles}, "is_active": {"$ne": False}, "phone": {"$nin": [None, ""]}, "jessi_digest_opt_out": {"$ne": True}, "jessi_digest_last_on": {"$ne": today}}):
         try:
             r = await send_digest(db, me, cfg)
             if r.get("sent"):
