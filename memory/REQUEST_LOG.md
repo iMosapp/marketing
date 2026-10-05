@@ -142,6 +142,13 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 26 · Oct 5 — DONE / DEPLOY ONLY
+> when a long response is in the chat widget it jumps to the bottom of what the response is instead of starting the message thread at the top of that message so currently i hvae to scroll back up to read the reply.  this needs fixed
+
+`services/widget_js.py draw()`: a new Jessi/rep reply that is taller than the chat window now scrolls so its first line sits at the top; short replies still sit at the bottom like any chat. Verified in the live widget with a 600 px reply (top of message at 6 px) and a short one (at bottom). Widget JS is served by the backend (2 minute cache), so a Deploy is all it needs.
+
+---
+
 ### 25 · Oct 5 — DONE / DEPLOY + EAS UPDATE
 > I want an agent hub where I can build a library of ai agents this would be used in different areas in the tool.  I may want to deploy an agent based on a specific lead source for example.  I may use a different one for my chat widget etc
 >

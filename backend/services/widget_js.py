@@ -295,6 +295,7 @@ function showCallStatus(r, n){
 }
 
 var chat = { sid: saved.chat_sid || null, msgs: [], busy: false, need: false, status: 'open', mode: 'jessi', agent: '', offer: false, booking: null, slots: null, showBook: false };
+var drawn = 0;
 var pollTimerChat = null; function stopPoll(){ if (pollTimerChat) { clearInterval(pollTimerChat); pollTimerChat = null; } }
 function previewReply(t){ if (/test.?drive|appointment|schedule|book|come in|stop by|visit|oil change/i.test(t)) { chat.offer = true; return 'I can set that up right here. Pick a day and time below and I\'ll get you booked.'; }
   if (C.chat_mode === 'business') {
@@ -374,12 +375,13 @@ function showChat(){
     box.appendChild(h('div', { 'class': 'imosw-fine', style: 'margin-top:4px' }, [fill(T.optin, ctx)]));
     return box;
   }
-  function draw(){ list.innerHTML = '';
-    chat.msgs.forEach(function(m){
+  function draw(){ list.innerHTML = ''; var firstNew = null; if (chat.msgs.length < drawn) drawn = 0;
+    chat.msgs.forEach(function(m, i){
       if (m.role === 'system') { list.appendChild(h('div', { 'class': 'imosw-sys' }, [m.text])); return; }
       var el = h('div', { 'class': 'imosw-m ' + (m.role === 'visitor' ? 'v' : m.role === 'rep' ? 'r' : 'j') });
       if (m.role === 'rep' && m.who) el.appendChild(h('div', { 'class': 'who' }, [m.who]));
-      el.appendChild(document.createTextNode(m.text)); list.appendChild(el); });
+      el.appendChild(document.createTextNode(m.text)); list.appendChild(el);
+      if (drawn > 0 && i >= drawn && m.role !== 'visitor' && !firstNew) firstNew = el; });
     if (chat.booking) list.appendChild(h('div', { 'class': 'imosw-booked' }, ['\u2713 ' + chat.booking.kind + ' \u00b7 ' + chat.booking.when]));
     if (chat.msgs.length === 1 && chat.msgs[0].role === 'jessi' && !chat.busy && !chat.need && !chat.showBook && chat.status !== 'closed' && chat.mode !== 'human' && (C.starters || []).length) {
       var st = h('div', { 'class': 'imosw-starters', role: 'group', 'aria-label': 'Suggested questions' });
@@ -390,7 +392,10 @@ function showChat(){
     if (chat.busy && chat.mode !== 'human') list.appendChild(h('div', { 'class': 'imosw-typing', 'aria-label': NAME + ' is typing', html: '<i></i><i></i><i></i>' }));
     if (chat.status === 'closed') list.appendChild(h('div', { style: 'text-align:center;padding:6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', onclick: function(){ chat.sid = null; remember('chat_sid', null); chat.msgs = []; chat.status = 'open'; chat.mode = 'jessi'; chat.agent = ''; chat.booking = null; chat.offer = false; sub(); begin(); } }, ['Start a new chat']) ]));
     send.disabled = chat.busy || chat.status === 'closed'; input.disabled = chat.status === 'closed'; humanBtn.style.display = chat.status === 'closed' ? 'none' : ''; sep.style.display = bookBtn.style.display = (chat.status === 'closed' || chat.booking || chat.mode === 'human') ? 'none' : '';
-    list.scrollTop = list.scrollHeight; }
+    drawn = chat.msgs.length;
+    // A long reply starts at the top of the window so it reads from its first line; short ones behave like any chat and sit at the bottom.
+    var top = firstNew ? firstNew.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop - 6 : 0;
+    if (firstNew && list.scrollHeight - top > list.clientHeight) list.scrollTop = Math.max(0, top); else list.scrollTop = list.scrollHeight; }
   function fail(e){ chat.busy = false; chat.msgs.push({ role: 'jessi', text: typeof e === 'string' ? e : 'Hmm, something hiccuped on my end. Try that once more.' }); draw(); }
   function paced(started, r, fn){ var reply = (r && r.reply) || ''; var wait = Math.min(4200, 1100 + reply.length * 22) - (Date.now() - started); setTimeout(fn, Math.max(0, wait)); }
   function submit(){ var t = input.value.trim(); if (!t || chat.busy || chat.status === 'closed') return; input.value = ''; chat.msgs.push({ role: 'visitor', text: t }); chat.busy = true; draw();

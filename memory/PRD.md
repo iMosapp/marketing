@@ -854,3 +854,8 @@ DELIVERY: backend deploy + eas update --branch production.
 - Preview data: agent "Max" (service_scheduler starter) exists, not deployed. Widget 6ab72996c248f5420bf0a14a persona is off.
 - SHIP: backend Deploy + `eas update`.
 - NEXT (not built): voice settings on agents (live Jessi / phone), per-rep "use an agent as my VA base", AI-drafted first text on lead sources (today the templated intake text still goes first), agent analytics (conversations handled / hand-offs per agent).
+
+## Chat widget: long replies start at the top (Oct 5 2026) - FIXED, verified in live widget
+- USER: long Jessi replies jumped to the bottom of the message, had to scroll back up to read.
+- FIX `services/widget_js.py draw()`: tracks `drawn` (messages rendered last time); the first new non-visitor message is anchored at the top of `.imosw-msgs` when it does not fit (`scrollHeight - top > clientHeight`), otherwise scroll to bottom as before. `drawn` resets when the thread restarts; a restored session (drawn 0) scrolls to bottom.
+- Backend-served JS (2 min cache) -> Deploy only, no eas update.
