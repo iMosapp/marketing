@@ -137,6 +137,11 @@ Owner layer: `is_owner` flag on your account (set from `OWNER_EMAIL`), **Request
 
 Cause: a site read left as "running" forever when the server restarted mid-read (a deploy does that); nothing ever closed it and the Read button stayed locked. Fix: startup sweep marks interrupted reads failed, the status poll fails any read silent for 4 minutes, a hard timeout on the whole read (150 s pages + 90 s draft), live "Read 23 pages so far…" progress, Read again button on any failure. Verified in preview: imonsocial.com reads 60 pages in 12 s.
 
+### 24 · Oct 5 — STANDING RULE
+> Give me the prompt for terminal EVERY time I new to run it
+
+Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
+
 ---
 
 ## Still open (from earlier sessions, paraphrased — originals not recoverable)
