@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
+import { useAuthStore } from '../../store/authStore';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { GOLD, GREEN, RED, tid } from '../../components/scripts/shared';
 import { VoicePicker, LevelRow, Voice } from '../../components/jessi/VoiceLabControls';
@@ -17,6 +18,7 @@ const LEVELS: { key: keyof Cfg; label: string }[] = [{ key: 'energy', label: 'En
 
 export default function VoiceLab() {
   const { colors } = useThemeStore();
+  const me = useAuthStore(st => st.user);
   const [cfg, setCfg] = useState<Cfg | null>(null);
   const [saved, setSaved] = useState<Cfg | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -134,7 +136,7 @@ export default function VoiceLab() {
 
           <View style={card}>
             <Text style={h}>RECENT CONVERSATIONS</Text>
-            <SessionsList refreshKey={refreshKey} />
+            <SessionsList refreshKey={refreshKey} myUserId={me?._id} />
           </View>
         </ScrollView>
       )}

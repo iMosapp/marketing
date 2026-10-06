@@ -5,22 +5,29 @@ import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
 import { GOLD, GREEN, RED, tid } from '../scripts/shared';
 
-type Row = { live_id: string; user_name?: string; mode: string; voice: string; status: string; started_at: string; seconds: number; cost_usd: number; close_reason?: string; turns: number; delegations: number; tools: string[] };
+type Row = { live_id: string; user_id?: string; user_name?: string; mode: string; voice: string; status: string; started_at: string; seconds: number; cost_usd: number; close_reason?: string; turns: number; delegations: number; tools: string[]; contact_name?: string | null; walkthrough?: any; team?: any };
 type Stats = Record<string, { sessions: number; minutes: number; cost_usd: number; reps: number }> & { open?: number };
 
 const when = (iso: string) => { const d = new Date(iso); return `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`; };
 const mins = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+const REASON: Record<string, string> = { idle: 'closed after a quiet spell', stale: 'never closed, cut off after 3 h', connection_lost: 'connection dropped', close_requested: 'ended', daily_cap: 'hit the daily cap', expired: 'session limit', unmounted: 'screen closed', no_start: 'did not pick up', content: 'safety filter' };
+const kindOf = (r: Row) => r.mode === 'lab' ? 'Voice Lab audition' : r.mode === 'shopper' ? 'Shopper audition' : r.walkthrough ? 'Walk my day' : r.team ? 'Team today' : r.contact_name ? `Live · ${r.contact_name}` : 'Live · Home';
+const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
 
 // Recent live conversations with minutes and cost, plus one detail sheet with the transcript and what the brain did.
-export const SessionsList = ({ refreshKey }: { refreshKey: number }) => {
+export const SessionsList = ({ refreshKey, myUserId }: { refreshKey: number; myUserId?: string }) => {
   const { colors } = useThemeStore();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [detail, setDetail] = useState<any | null>(null);
+  const [mineToday, setMineToday] = useState(false);
   useEffect(() => {
-    api.get('/live-voice/admin/sessions?limit=25').then(r => { setRows(r.data.sessions || []); setStats(r.data.stats || null); }).catch(() => setRows([]));
+    api.get('/live-voice/admin/sessions?limit=80').then(r => { setRows(r.data.sessions || []); setStats(r.data.stats || null); }).catch(() => setRows([]));
   }, [refreshKey]);
   const openDetail = async (id: string) => { try { setDetail({ loading: true }); const r = await api.get(`/live-voice/admin/sessions/${id}`); setDetail(r.data); } catch { setDetail(null); } };
+  const mine = (rows || []).filter(r => r.user_id === myUserId && isToday(r.started_at));
+  const mineSecs = mine.reduce((a, r) => a + (r.seconds || 0), 0);
+  const shown = mineToday ? mine : (rows || []);
   const Stat = ({ k, label }: { k: string; label: string }) => {
     const s = stats?.[k] as any;
     return (
@@ -34,18 +41,27 @@ export const SessionsList = ({ refreshKey }: { refreshKey: number }) => {
   return (
     <View {...tid('voice-sessions')}>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-        <Stat k="today" label="TODAY" /><Stat k="week" label="7 DAYS" /><Stat k="month" label="30 DAYS" />
+        <Stat k="today" label="TODAY · EVERYONE" /><Stat k="week" label="7 DAYS" /><Stat k="month" label="30 DAYS" />
       </View>
-      {rows === null ? <ActivityIndicator color={GOLD} /> : rows.length === 0 ? (
-        <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', paddingVertical: 12 }} {...tid('voice-sessions-empty')}>No conversations yet. Audition her above and it shows up here.</Text>
-      ) : rows.map(r => (
+      {rows !== null && (
+        <TouchableOpacity onPress={() => setMineToday(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: mineToday ? `${GOLD}1F` : colors.bg, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: mineToday ? GOLD : colors.border, marginBottom: 12 }} {...tid('voice-sessions-mine')}>
+          <Ionicons name={mineToday ? 'checkbox' : 'square-outline'} size={18} color={GOLD} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.text }}>Your minutes today: {mins(mineSecs)} across {mine.length} talk{mine.length === 1 ? '' : 's'}</Text>
+            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>Counted from your local midnight. Tap to show only these; every row says how it started and how it ended.</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+      {rows === null ? <ActivityIndicator color={GOLD} /> : shown.length === 0 ? (
+        <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', paddingVertical: 12 }} {...tid('voice-sessions-empty')}>{mineToday ? 'No live talks from you today.' : 'No conversations yet. Audition her above and it shows up here.'}</Text>
+      ) : shown.map(r => (
         <TouchableOpacity key={r.live_id} onPress={() => openDetail(r.live_id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border }} {...tid(`voice-session-${r.live_id}`)}>
           <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: r.mode === 'lab' ? `${GOLD}22` : `${GREEN}22`, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name={r.mode === 'lab' ? 'flask' : 'mic'} size={15} color={r.mode === 'lab' ? GOLD : GREEN} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 13.5, fontWeight: '700', color: colors.text }}>{r.user_name || 'Someone'} · {r.voice}{r.status === 'open' ? ' · live now' : ''}</Text>
-            <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }}>{when(r.started_at)} · {r.turns} turns · {r.delegations} tool{r.delegations === 1 ? '' : 's'}{r.tools.length ? ` (${Array.from(new Set(r.tools)).join(', ')})` : ''}</Text>
+            <Text style={{ fontSize: 13.5, fontWeight: '700', color: colors.text }}>{r.user_name || 'Someone'} · {kindOf(r)}{r.status === 'open' ? ' · live now' : ''}</Text>
+            <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }}>{when(r.started_at)} · {r.turns} turns · {r.delegations} tool{r.delegations === 1 ? '' : 's'}{r.tools.length ? ` (${Array.from(new Set(r.tools)).join(', ')})` : ''}{r.close_reason ? ` · ${REASON[r.close_reason] || r.close_reason}` : ''}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: colors.text }}>{mins(r.seconds)}</Text>

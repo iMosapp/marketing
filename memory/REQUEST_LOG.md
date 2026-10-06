@@ -142,6 +142,11 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 40 · Oct 6 — DONE / DEPLOY + EAS UPDATE
+> theres no way i used the full jessi gpt live today.. so that's why i didn't even think to check that.. how do i audit that to see how i hit my limit?
+
+Audit lives in Jessi Voice Lab → RECENT CONVERSATIONS: new "Your minutes today: M:SS across N talks" row (tap = only your talks since your local midnight); every row now says how it started (Live · Home, Live · Sarah, Walk my day, Team today, Voice Lab audition, Shopper audition) and how it ended (ended / closed after a quiet spell / connection dropped / never closed, cut off after 3 h / hit the daily cap); tap a row for the transcript and what the brain did. Likely explanation: the old cap counted the UTC day, which starts at 6 pm Mountain, so yesterday evening's talks were charged to "today"; production breakdown requested from the deployer.
+
 ### 39 · Oct 6 — DONE / DEPLOY + EAS UPDATE
 > go but gpt live jessi quit working on the home screen??? very bad!
 > it responds the old way that is not the live gpt live voice
