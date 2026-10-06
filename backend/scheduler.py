@@ -1994,6 +1994,20 @@ def start_scheduler():
         coalesce=True,
     )
 
+    # Every 20 min - 8 AM (rep's timezone) nudge for voice memos still not attached to a contact; once a day per rep
+    async def run_memo_reminder_job():
+        from routers.database import get_db
+        from services import memo_reminder
+        await memo_reminder.run(get_db())
+    scheduler.add_job(
+        safe_job(run_memo_reminder_job),
+        IntervalTrigger(minutes=20),
+        id="memo_reminder",
+        replace_existing=True,
+        misfire_grace_time=600,
+        coalesce=True,
+    )
+
     # Daily at 8 AM UTC  - process date triggers (birthdays, anniversaries, holidays)
     scheduler.add_job(
         safe_job(process_all_date_triggers),

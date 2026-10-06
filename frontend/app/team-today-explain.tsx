@@ -23,6 +23,7 @@ type Row = {
   task?: Record<string, any>; conversation?: Record<string, any>; recent_messages?: Record<string, any>[];
 };
 type Explain = { rep_user_id: string; rep_name: string; stops: Row[]; foreign_stops: number; foreign_enrollments: Record<string, any>[] };
+type Leaks = { scope: 'team' | 'everyone'; reps: { rep_user_id: string; rep_name: string; enrollments: number; cross_store: number }[]; total: number; cross_store: number; queued_sends: number };
 
 const KV = ({ k, v, colors }: { k: string; v: any; colors: any }) => (v === undefined || v === null || v === '' ? null : (
   <View style={{ flexDirection: 'row', gap: 8 }}><Text style={{ width: 96, fontSize: 11.5, color: colors.textTertiary, fontWeight: '700' }}>{k}</Text><Text style={{ flex: 1, fontSize: 12.5, color: colors.text }}>{String(v)}</Text></View>
@@ -34,14 +35,31 @@ export default function TeamTodayExplainScreen() {
   const { rep } = useLocalSearchParams<{ rep?: string }>();
   const { showToast } = useToast();
   const [data, setData] = useState<Explain | null>(null);
+  const [leaks, setLeaks] = useState<Leaks | null>(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try { setData((await api.get('/team-today/explain', { params: { rep_user_id: rep }, timeout: 45000 })).data); }
     catch (e: any) { setErr(e?.response?.data?.detail || 'Could not load the breakdown.'); }
+    api.get('/team-today/leaks', { timeout: 45000 }).then(r => setLeaks(r.data)).catch(() => setLeaks({ scope: 'team', reps: [], total: 0, cross_store: 0, queued_sends: 0 }));
   }, [rep]);
   useEffect(() => { if (rep) load(); }, [rep, load]);
+
+  const cancelLeaks = (crossOnly: boolean) => {
+    const n = crossOnly ? leaks!.cross_store : leaks!.total;
+    showAlert(crossOnly ? 'Stop every cross-store automation?' : 'Stop every automation on other reps\' customers?',
+      crossOnly ? `${n} enrollment${n === 1 ? '' : 's'} where the customer belongs to a different store will be cancelled, along with their queued texts. Those are the leaked ones.`
+        : `${n} enrollment${n === 1 ? '' : 's'} on customers owned by someone else will be cancelled, including ones in the same store that a manager may have set up on purpose.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Stop them', style: 'destructive', onPress: async () => {
+        setBusy(true);
+        try { const r = (await api.post('/team-today/cancel-leaks', { cross_store_only: crossOnly })).data; showToast(`Stopped ${r.enrollments_cancelled} enrollment${r.enrollments_cancelled === 1 ? '' : 's'} and ${r.sends_cancelled} queued send${r.sends_cancelled === 1 ? '' : 's'} across ${r.reps} rep${r.reps === 1 ? '' : 's'}.`, 'success', 4500); load(); }
+        catch (e: any) { showToast(e?.response?.data?.detail || 'Could not stop them.', 'error'); }
+        finally { setBusy(false); }
+      } },
+    ]);
+  };
 
   const cancelForeign = () => showAlert('Stop these automations?', `Every active campaign enrollment and queued send ${data?.rep_name || 'this rep'} has on other reps' customers will be cancelled.`, [
     { text: 'Cancel', style: 'cancel' },
@@ -117,6 +135,35 @@ export default function TeamTodayExplainScreen() {
                 <TouchableOpacity onPress={cancelForeign} disabled={busy} style={{ marginTop: 6, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF453A', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9, opacity: busy ? 0.5 : 1 }} {...tid('explain-cancel-foreign-btn')}>
                   <Ionicons name="stop-circle" size={15} color="#fff" /><Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>Stop all {data!.foreign_enrollments.length}</Text>
                 </TouchableOpacity>
+              </>
+            )}
+          </View>
+          <View style={{ backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: leaks?.cross_store ? '#FF453A88' : leaks?.total ? `${WARN}88` : colors.border, padding: 14, gap: 8 }} {...tid('explain-leaks')}>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 0.5 }}>{leaks?.scope === 'everyone' ? 'LEAKED AUTOMATIONS, EVERY STORE' : 'LEAKED AUTOMATIONS, WHOLE TEAM'}</Text>
+            {!leaks ? <ActivityIndicator color={GOLD} /> : !leaks.total ? <Text style={{ fontSize: 13, color: colors.textSecondary }} {...tid('explain-leaks-none')}>Nothing is running on anyone else's customers. Clean.</Text> : (
+              <>
+                <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }} {...tid('explain-leaks-summary')}>
+                  {leaks.total} enrollment{leaks.total === 1 ? '' : 's'} by {leaks.reps.length} rep{leaks.reps.length === 1 ? '' : 's'} on customers owned by someone else
+                  {leaks.cross_store ? <Text style={{ fontWeight: '800', color: '#FF453A' }}>, {leaks.cross_store} of them on customers from another store</Text> : null}
+                  {leaks.queued_sends ? `, ${leaks.queued_sends} text${leaks.queued_sends === 1 ? '' : 's'} still queued` : ''}.
+                </Text>
+                {leaks.reps.slice(0, 12).map(r => (
+                  <TouchableOpacity key={r.rep_user_id} onPress={() => router.setParams({ rep: r.rep_user_id })} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} {...tid(`explain-leak-rep-${r.rep_user_id}`)}>
+                    <Text style={{ flex: 1, fontSize: 12.5, color: colors.text }}>• {r.rep_name} <Text style={{ color: colors.textSecondary }}>· {r.enrollments} enrollment{r.enrollments === 1 ? '' : 's'}{r.cross_store ? `, ${r.cross_store} cross-store` : ''}</Text></Text>
+                    <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                ))}
+                {leaks.reps.length > 12 && <Text style={{ fontSize: 12, color: colors.textSecondary }}>+{leaks.reps.length - 12} more reps</Text>}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                  {leaks.cross_store ? (
+                    <TouchableOpacity onPress={() => cancelLeaks(true)} disabled={busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF453A', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9, opacity: busy ? 0.5 : 1 }} {...tid('explain-cancel-cross-store-btn')}>
+                      <Ionicons name="stop-circle" size={15} color="#fff" /><Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>Stop the {leaks.cross_store} cross-store</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                  <TouchableOpacity onPress={() => cancelLeaks(false)} disabled={busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#FF453A', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9, opacity: busy ? 0.5 : 1 }} {...tid('explain-cancel-all-leaks-btn')}>
+                    <Ionicons name="stop-circle-outline" size={15} color="#FF453A" /><Text style={{ fontSize: 13, fontWeight: '800', color: '#FF453A' }}>Stop all {leaks.total}</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
           </View>

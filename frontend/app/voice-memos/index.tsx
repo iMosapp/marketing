@@ -27,6 +27,7 @@ export default function VoiceMemosScreen() {
   const [memos, setMemos] = useState<any[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [attaching, setAttaching] = useState<any | null>(null);
+  const [preset, setPreset] = useState<any | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const soundRef = useRef<any>(null);
   const audioRef = useRef<any>(null);
@@ -110,11 +111,11 @@ export default function VoiceMemosScreen() {
         ) : (
           <>
             <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1 }}>NOT ATTACHED YET · {memos.length}</Text>
-            {memos.map(m => <MemoCard key={m.id} memo={m} colors={colors} playing={playingId === m.id} onPlay={() => play(m)} onAttach={() => setAttaching(m)} onDelete={() => remove(m)} onRename={t => rename(m, t)} />)}
+            {memos.map(m => <MemoCard key={m.id} memo={m} colors={colors} playing={playingId === m.id} onPlay={() => play(m)} onAttach={(s) => { setPreset(s || null); setAttaching(m); }} onDelete={() => remove(m)} onRename={t => rename(m, t)} />)}
           </>
         )}
       </ScrollView>
-      <AttachContactSheet visible={!!attaching} onClose={() => setAttaching(null)} userId={user?._id} memo={attaching} colors={colors} onAttached={attached} showToast={showToast} />
+      <AttachContactSheet visible={!!attaching} onClose={() => { setAttaching(null); setPreset(null); }} userId={user?._id} memo={attaching} colors={colors} onAttached={attached} showToast={showToast} preset={preset} />
     </SafeAreaView>
   );
 }

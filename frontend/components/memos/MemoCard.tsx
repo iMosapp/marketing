@@ -6,7 +6,7 @@ import { GOLD, tid } from '../inbox/ownership';
 export const fmtLen = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
 const when = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? '' : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
 
-type Props = { memo: any; colors: any; playing: boolean; onPlay: () => void; onAttach: () => void; onDelete: () => void; onRename: (title: string) => void };
+type Props = { memo: any; colors: any; playing: boolean; onPlay: () => void; onAttach: (suggested?: any) => void; onDelete: () => void; onRename: (title: string) => void };
 
 // One unattached memo: play, title (tap to rename), Jessi's summary, the transcript on demand, and the two actions that matter.
 export const MemoCard = ({ memo, colors, playing, onPlay, onAttach, onDelete, onRename }: Props) => {
@@ -42,7 +42,22 @@ export const MemoCard = ({ memo, colors, playing, onPlay, onAttach, onDelete, on
         </TouchableOpacity>
       ) : null}
       {open && memo.summary ? <Text style={{ fontSize: 13, lineHeight: 18, color: colors.textSecondary }} {...tid(`memo-transcript-${memo.id}`)}>{memo.transcript}</Text> : null}
-      <TouchableOpacity onPress={onAttach} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 42, borderRadius: 12, backgroundColor: GOLD }} {...tid(`memo-attach-${memo.id}`)}>
+      {memo.suggested_contacts?.length ? (
+        <View style={{ gap: 6 }} {...tid(`memo-suggestions-${memo.id}`)}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6 }}>JESSI THINKS THIS IS ABOUT</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {memo.suggested_contacts.map((s: any) => (
+              <TouchableOpacity key={s.contact_id} onPress={() => onAttach(s)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 8, paddingRight: 12, height: 34, borderRadius: 17, backgroundColor: GOLD + '1A', borderWidth: 1, borderColor: GOLD + '77' }} {...tid(`memo-suggest-${memo.id}-${s.contact_id}`)}>
+                <Ionicons name="sparkles" size={13} color={GOLD} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>{s.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      ) : memo.people?.length ? (
+        <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid(`memo-people-${memo.id}`)}>Jessi heard {memo.people.map((p: any) => p.name).slice(0, 3).join(', ')}, but nobody in your contacts matches yet.</Text>
+      ) : null}
+      <TouchableOpacity onPress={() => onAttach()} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 42, borderRadius: 12, backgroundColor: GOLD }} {...tid(`memo-attach-${memo.id}`)}>
         <Ionicons name="person-add" size={16} color="#111" />
         <Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>Attach to a contact</Text>
       </TouchableOpacity>

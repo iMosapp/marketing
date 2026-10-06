@@ -46,6 +46,24 @@ async def cancel_foreign(body: dict, request: Request):
     return await tt.cancel_foreign_automations(db, rep_user_id)
 
 
+@router.get("/leaks")
+async def leaks(request: Request):
+    """Store-wide (database-wide for super admins) count of automations running on customers that belong to someone else, per rep."""
+    me = _manager(request)
+    return await tt.leak_scan(get_db(), me)
+
+
+class CancelLeaksBody(BaseModel):
+    cross_store_only: bool = True
+
+
+@router.post("/cancel-leaks")
+async def cancel_leaks(body: CancelLeaksBody, request: Request):
+    """Stop every leaked enrollment in scope in one tap (default: only the ones that crossed a store line)."""
+    me = _manager(request)
+    return await tt.cancel_leaks(get_db(), me, body.cross_store_only)
+
+
 class NudgeBody(BaseModel):
     rep_user_id: str
     contact_id: str

@@ -5,12 +5,12 @@ import api, { contactsAPI } from '../../services/api';
 import { useContactSearch } from '../../hooks/useContactSearch';
 import { GOLD, tid, errText } from '../inbox/ownership';
 
-type Props = { visible: boolean; onClose: () => void; userId?: string; memo: any | null; colors: any; onAttached: (memoId: string, result: any) => void; showToast: (m: string, t?: any, d?: number) => void };
+type Props = { visible: boolean; onClose: () => void; userId?: string; memo: any | null; colors: any; onAttached: (memoId: string, result: any) => void; showToast: (m: string, t?: any, d?: number) => void; preset?: any | null };
 
 const nameOf = (c: any) => c?.name || [c?.first_name, c?.last_name].filter(Boolean).join(' ') || c?.phone || 'Contact';
 
-// Pick who the memo was about, then attach it as a quick memo or as a full recorded conversation (summary + tasks).
-export const AttachContactSheet = ({ visible, onClose, userId, memo, colors, onAttached, showToast }: Props) => {
+// Pick who the memo was about (Jessi's guesses first), then attach it as a quick memo or as a full recorded conversation (summary + tasks).
+export const AttachContactSheet = ({ visible, onClose, userId, memo, colors, onAttached, showToast, preset }: Props) => {
   const [q, setQ] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
   const [picked, setPicked] = useState<any | null>(null);
@@ -18,9 +18,9 @@ export const AttachContactSheet = ({ visible, onClose, userId, memo, colors, onA
   useContactSearch(userId, q, setContacts, visible);
   useEffect(() => {
     if (!visible || !userId) return;
-    setPicked(null); setQ('');
+    setPicked(preset ? { _id: preset.contact_id, name: preset.name, phone: preset.phone } : null); setQ('');
     contactsAPI.getAll(userId).then((d: any) => setContacts(Array.isArray(d) ? d : d?.contacts || [])).catch(() => {});
-  }, [visible, userId]);
+  }, [visible, userId, preset]);
 
   const attach = async (asKind: 'memo' | 'conversation') => {
     if (!picked || !memo || !userId) return;
@@ -44,9 +44,25 @@ export const AttachContactSheet = ({ visible, onClose, userId, memo, colors, onA
           </View>
           {!picked ? (
             <>
+              {memo?.suggested_contacts?.length ? (
+                <View style={{ marginBottom: 10, gap: 6 }} {...tid('attach-suggestions')}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6 }}>JESSI'S GUESS</Text>
+                  {memo.suggested_contacts.map((s: any) => (
+                    <TouchableOpacity key={s.contact_id} onPress={() => setPicked({ _id: s.contact_id, name: s.name, phone: s.phone })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, backgroundColor: GOLD + '14', borderWidth: 1, borderColor: GOLD + '66' }} {...tid(`attach-suggest-${s.contact_id}`)}>
+                      <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="sparkles" size={18} color="#111" /></View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>{s.name}{s.company ? <Text style={{ fontWeight: '500', color: colors.textSecondary }}> · {s.company}</Text> : null}</Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary }}>{s.reason}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={GOLD} />
+                    </TouchableOpacity>
+                  ))}
+                  <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>Not them? Search below.</Text>
+                </View>
+              ) : null}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12, height: 46, borderWidth: 1, borderColor: colors.border }}>
                 <Ionicons name="search" size={18} color={colors.textSecondary} />
-                <TextInput value={q} onChangeText={setQ} placeholder="Search by name or number" placeholderTextColor={colors.textSecondary} autoFocus style={{ flex: 1, color: textColor, fontSize: 15 }} {...tid('attach-search')} />
+                <TextInput value={q} onChangeText={setQ} placeholder="Search by name or number" placeholderTextColor={colors.textSecondary} autoFocus={!memo?.suggested_contacts?.length} style={{ flex: 1, color: textColor, fontSize: 15 }} {...tid('attach-search')} />
               </View>
               <FlatList data={contacts.slice(0, 60)} keyExtractor={(c: any) => String(c._id || c.id)} style={{ marginTop: 8, maxHeight: 420 }} keyboardShouldPersistTaps="handled"
                 ListEmptyComponent={<Text style={{ color: colors.textSecondary, padding: 14, textAlign: 'center' }}>{q.length >= 2 ? 'No one matches.' : 'Type a name to search your whole book.'}</Text>}

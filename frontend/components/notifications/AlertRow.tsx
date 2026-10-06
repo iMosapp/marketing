@@ -35,7 +35,7 @@ const TYPE_ICON: Record<string, string> = {
   new_lead: 'person-add', lead_assigned: 'person-add', lead_reassigned: 'swap-horizontal',
   keyword_alert: 'key', engagement_signal: 'flame', new_demo_request: 'person-add',
   appointment_extracted: 'calendar', task_reminder: 'alarm', manager_nudge: 'megaphone',
-  task_overdue: 'alert-circle', task_due_soon: 'time',
+  task_overdue: 'alert-circle', task_due_soon: 'time', memo_reminder: 'mic',
 };
 
 export function formatAlertTime(iso: string) {

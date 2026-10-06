@@ -172,6 +172,61 @@ async def cancel_foreign_automations(db, rep_user_id: str) -> dict:
     return {"enrollments_cancelled": r1.modified_count if r1 else 0, "sends_cancelled": r2.modified_count if r2 else 0}
 
 
+async def _leak_rows(db, manager: dict) -> dict:
+    """Every active/paused enrollment in this manager's scope whose contact belongs to somebody else, tagged cross-store or not.
+    Super admins see the whole database (the original leak crossed tenants); store managers see their team."""
+    everyone = (manager.get("role") or "") == "super_admin"
+    scope = None if everyone else [str(manager["_id"])] + [r["user_id"] for r in await reps_for(db, manager)]
+    q = {"status": {"$in": ["active", "paused"]}}
+    if scope is not None:
+        q["user_id"] = {"$in": scope}
+    enr = await db.campaign_enrollments.find(q, {"user_id": 1, "contact_id": 1, "campaign_id": 1}).to_list(50000)
+    cids = list({ObjectId(e["contact_id"]) for e in enr if ObjectId.is_valid(str(e.get("contact_id") or ""))})
+    contacts = {str(c["_id"]): c for c in await db.contacts.find({"_id": {"$in": cids}}, {"user_id": 1, "store_id": 1}).to_list(len(cids))} if cids else {}
+    uids = list({ObjectId(e["user_id"]) for e in enr if ObjectId.is_valid(str(e.get("user_id") or ""))})
+    users = {str(u["_id"]): u for u in await db.users.find({"_id": {"$in": uids}}, {"name": 1, "store_id": 1}).to_list(len(uids))} if uids else {}
+    rows = []
+    for e in enr:
+        c = contacts.get(str(e.get("contact_id")))
+        if not c:
+            continue
+        owner = str(c.get("user_id") or "")
+        if owner in ("", str(e.get("user_id")), None):
+            continue
+        rep = users.get(str(e.get("user_id"))) or {}
+        cross = bool(c.get("store_id")) and bool(rep.get("store_id")) and str(c.get("store_id")) != str(rep.get("store_id"))
+        rows.append({"enrollment_id": e["_id"], "rep_user_id": str(e.get("user_id")), "rep_name": rep.get("name") or "Unknown", "cross_store": cross})
+    return {"rows": rows, "scope": "everyone" if everyone else "team"}
+
+
+async def leak_scan(db, manager: dict) -> dict:
+    data = await _leak_rows(db, manager)
+    per: dict = {}
+    for r in data["rows"]:
+        row = per.setdefault(r["rep_user_id"], {"rep_user_id": r["rep_user_id"], "rep_name": r["rep_name"], "enrollments": 0, "cross_store": 0})
+        row["enrollments"] += 1
+        row["cross_store"] += 1 if r["cross_store"] else 0
+    ids = [str(r["enrollment_id"]) for r in data["rows"]]
+    sends = await db.campaign_pending_sends.count_documents({"enrollment_id": {"$in": ids}, "status": {"$in": ["pending", "pending_user"]}}) if ids else 0
+    reps = sorted(per.values(), key=lambda r: (-r["cross_store"], -r["enrollments"]))
+    return {"scope": data["scope"], "reps": reps, "total": len(ids), "cross_store": sum(1 for r in data["rows"] if r["cross_store"]), "queued_sends": sends}
+
+
+async def cancel_leaks(db, manager: dict, cross_store_only: bool) -> dict:
+    """One tap for the whole scope: stop every leaked enrollment (optionally only the ones that crossed a store line) and its queued sends."""
+    data = await _leak_rows(db, manager)
+    bad = [r["enrollment_id"] for r in data["rows"] if r["cross_store"] or not cross_store_only]
+    if not bad:
+        return {"enrollments_cancelled": 0, "sends_cancelled": 0, "reps": 0}
+    now = datetime.now(timezone.utc)
+    reason = "contact belongs to another store" if cross_store_only else "contact belongs to another rep"
+    r1 = await db.campaign_enrollments.update_many({"_id": {"$in": bad}}, {"$set": {"status": "cancelled", "cancelled_at": now, "cancel_reason": reason, "cancelled_by": str(manager["_id"])}})
+    r2 = await db.campaign_pending_sends.update_many({"enrollment_id": {"$in": [str(b) for b in bad]}, "status": {"$in": ["pending", "pending_user"]}}, {"$set": {"status": "cancelled", "cancelled_at": now}})
+    reps = len({r["rep_user_id"] for r in data["rows"] if r["cross_store"] or not cross_store_only})
+    logger.info(f"[TeamToday] {manager.get('name')} stopped {r1.modified_count} leaked enrollments ({'cross-store' if cross_store_only else 'all'}), {r2.modified_count} sends")
+    return {"enrollments_cancelled": r1.modified_count, "sends_cancelled": r2.modified_count, "reps": reps}
+
+
 async def nudge(db, manager: dict, rep_user_id: str, contact_id: str, note: str = "") -> dict:
     """A manager points a rep at one customer: a high-priority task on the rep's list today, an in-app notification and a push."""
     from routers.tasks import create_task
