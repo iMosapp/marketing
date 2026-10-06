@@ -142,6 +142,13 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 33 · Oct 6 — DONE / DEPLOY + EAS UPDATE
+> in the + menu I want generic voice memo's that I can later attach to a contact.  example I might want to record a presentation and then after meeting the speaker attach it to them.  make sense?
+
+"Voice memo" in the + menu (Home and every tab) opens Voice Memos and starts recording (up to 45 min, screen stays awake). Jessi transcribes, titles and summarizes each one. The list holds everything not attached yet: play, rename, delete, "Attach to a contact" → search the whole book → file it as a voice memo or as a recorded conversation (summary, tasks, Jessi can cite it) → lands on that contact. Also a Voice Memos tile in More. Tested: 11 backend tests + full web flow incl. recording with a fake mic.
+
+---
+
 ### 32 · Oct 6 — DONE / DEPLOY + EAS UPDATE
 > ERROR REPORTS (100 total, filter: all) … *(pasted the production error report list)*
 
