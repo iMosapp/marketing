@@ -48,10 +48,25 @@ def _public(n: dict) -> dict:
     heard = {s.get("heard") for s in suggested}
     return {"id": str(n["_id"]), "audio_url": n.get("audio_url"), "transcript": n.get("transcript") or "", "summary": n.get("summary") or "",
             "title": n.get("title") or "", "duration": n.get("duration") or 0, "created_at": n["created_at"].isoformat() if n.get("created_at") else "",
-            "contact_id": n.get("contact_id"), "contact_name": n.get("contact_name") or "",
+            "contact_id": n.get("contact_id"), "contact_name": n.get("contact_name") or "", "kind": n.get("kind") or "memo",
+            "attached_at": n["attached_at"].isoformat() if n.get("attached_at") else "", "tags": n.get("tags") or [],
             "people": people, "suggested_contacts": suggested,
             # Names Jessi heard that match nobody in the book: the app offers to create them as new contacts.
             "new_people": [p for p in people if p.get("name") not in heard]}
+
+
+def _clean_tags(raw) -> list:
+    out: list = []
+    for t in (raw or []) if isinstance(raw, list) else []:
+        s = " ".join(str(t).split())[:40]
+        if s and s.lower() not in {x.lower() for x in out}:
+            out.append(s)
+    return out[:20]
+
+
+MEMO_PROJECTION = {"audio_url": 1, "transcript": 1, "summary": 1, "title": 1, "duration": 1, "created_at": 1, "contact_id": 1, "contact_name": 1,
+                   "people": 1, "suggested_contacts": 1, "tags": 1, "kind": 1, "attached_at": 1, "unattached": 1}
+MEMO_OWN = {"$or": [{"unattached": True}, {"attached_at": {"$exists": True}}]}  # notes that came through the memo flow (not notes recorded on a contact directly)
 
 
 async def _title_and_summary(transcript: str) -> dict:
@@ -169,37 +184,71 @@ async def upload_memo_chunk(user_id: str, chunk: AudioChunk, request: Request):
     now = datetime.now(timezone.utc)
     doc = {"contact_id": None, "unattached": True, "user_id": user_id, "audio_url": f"/api/images/{stored_path}", "audio_path": stored_path,
            "transcript": transcript, "summary": meta["summary"], "title": meta["title"], "people": meta["people"], "suggested_contacts": suggested,
-           "kind": "memo", "duration": round(chunk.duration, 1), "created_at": now, "source": "app"}
+           "kind": "memo", "duration": round(chunk.duration, 1), "created_at": now, "source": "app", "tags": []}
     res = await db.voice_notes.insert_one(doc)
     return {**_public({**doc, "_id": res.inserted_id}), "success": True, "received": chunk.total, "total": chunk.total}
 
 
 @router.get("/{user_id}")
-async def list_memos(user_id: str, request: Request, include_attached: bool = False):
+async def list_memos(user_id: str, request: Request, view: str = "unattached"):
+    """view=unattached (default): the to-file pile. view=attached: memos already filed on a contact, newest filing first.
+    Also returns the user's day labels ("NADA show day 2") and both counts for the segmented control."""
     _me(request, user_id)
     db = get_db()
-    q = {"user_id": user_id, "unattached": True} if not include_attached else {"user_id": user_id, "$or": [{"unattached": True}, {"attached_at": {"$exists": True}}]}
-    rows = await db.voice_notes.find(q, {"audio_url": 1, "transcript": 1, "summary": 1, "title": 1, "duration": 1, "created_at": 1, "contact_id": 1, "contact_name": 1, "people": 1, "suggested_contacts": 1}).sort("created_at", -1).to_list(200)
+    attached = view == "attached"
+    q = {"user_id": user_id, "attached_at": {"$exists": True}} if attached else {"user_id": user_id, "unattached": True}
+    rows = await db.voice_notes.find(q, MEMO_PROJECTION).sort("attached_at" if attached else "created_at", -1).to_list(300)
     # Jessi re-checks her guesses on every open: a contact added after the memo (e.g. "They are not in my contacts yet") shows up next time.
     for n in rows:
-        if n.get("unattached") is not False and n.get("people") and not n.get("contact_id"):
+        if not attached and n.get("people") and not n.get("contact_id"):
             fresh = await match_people(db, user_id, n["people"])
             if fresh != (n.get("suggested_contacts") or []):
                 n["suggested_contacts"] = fresh
                 await db.voice_notes.update_one({"_id": n["_id"]}, {"$set": {"suggested_contacts": fresh}})
-    return {"memos": [_public(n) for n in rows]}
+    counts = {"unattached": await db.voice_notes.count_documents({"user_id": user_id, "unattached": True}),
+              "attached": await db.voice_notes.count_documents({"user_id": user_id, "attached_at": {"$exists": True}})}
+    labels = await db.voice_memo_days.find({"user_id": user_id}, {"_id": 0, "day": 1, "label": 1}).to_list(500)
+    return {"memos": [_public(n) for n in rows], "counts": counts, "day_labels": {d["day"]: d["label"] for d in labels}}
+
+
+class DayLabelBody(BaseModel):
+    day: str        # YYYY-MM-DD in the rep's local time (the app groups by local day)
+    label: str = ""
+
+
+@router.put("/{user_id}/day-label")
+async def set_day_label(user_id: str, body: DayLabelBody, request: Request):
+    """Name a recording day ("NADA show day 2"); an empty label removes the name."""
+    _me(request, user_id)
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", body.day):
+        raise HTTPException(status_code=400, detail="Bad day")
+    label = no_em_dash(" ".join(body.label.split()))[:60]
+    db = get_db()
+    if label:
+        await db.voice_memo_days.update_one({"user_id": user_id, "day": body.day}, {"$set": {"label": label, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    else:
+        await db.voice_memo_days.delete_one({"user_id": user_id, "day": body.day})
+    return {"ok": True, "day": body.day, "label": label}
 
 
 @router.patch("/{user_id}/{note_id}")
 async def rename_memo(user_id: str, note_id: str, data: dict, request: Request):
+    """Title and/or tags. Works on the to-file pile and on memos already filed on a contact."""
     _me(request, user_id)
-    title = no_em_dash(str((data or {}).get("title") or "")).strip()[:60]
     if not ObjectId.is_valid(note_id):
         raise HTTPException(status_code=404, detail="Memo not found")
-    r = await get_db().voice_notes.update_one({"_id": ObjectId(note_id), "user_id": user_id, "unattached": True}, {"$set": {"title": title}})
+    data = data or {}
+    upd: dict = {}
+    if "title" in data:
+        upd["title"] = no_em_dash(str(data.get("title") or "")).strip()[:60]
+    if "tags" in data:
+        upd["tags"] = _clean_tags(data.get("tags"))
+    if not upd:
+        raise HTTPException(status_code=400, detail="Nothing to change")
+    r = await get_db().voice_notes.update_one({"_id": ObjectId(note_id), "user_id": user_id, **MEMO_OWN}, {"$set": upd})
     if r.matched_count == 0:
         raise HTTPException(status_code=404, detail="Memo not found")
-    return {"ok": True, "title": title}
+    return {"ok": True, **upd}
 
 
 @router.delete("/{user_id}/{note_id}")
