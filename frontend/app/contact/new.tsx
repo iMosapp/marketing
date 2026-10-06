@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as DeviceContacts from 'expo-contacts';
@@ -33,11 +33,12 @@ import { getS } from '../../components/contact/contactStyles';
 import { PrimaryButton } from '../../components/ui/PrimaryButton';
 import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint } from '../../components/ui/tokens';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
+import { MemoKindPicker, MemoKind } from '../../components/memos/MemoKindPicker';
 
 const IS_WEB = Platform.OS === 'web';
 
 const EMPTY_CONTACT = {
-  first_name: '', last_name: '', phone: '', email: '',
+  first_name: '', last_name: '', phone: '', email: '', employer: '',
   photo: null as string | null,
   notes: '', vehicle: '',
   tags: [] as string[],
@@ -55,9 +56,14 @@ export default function NewContactScreen() {
   const router = useRouter();
   const user = useAuthStore(st => st.user);
   const { showToast } = useToast();
+  // Opened from a voice memo: name + company Jessi heard are prefilled and the memo attaches to the new contact after Save.
+  const params = useLocalSearchParams<{ memo_id?: string; first_name?: string; last_name?: string; employer?: string }>();
+  const memoId = typeof params.memo_id === 'string' ? params.memo_id : '';
+  const [attachTo, setAttachTo] = useState<{ id: string; name: string } | null>(null);
+  const [attachBusy, setAttachBusy] = useState<MemoKind | null>(null);
 
   // ── Contact form state ────────────────────────────────────────────────────
-  const [contact, setContact] = useState({ ...EMPTY_CONTACT });
+  const [contact, setContact] = useState({ ...EMPTY_CONTACT, first_name: String(params.first_name || ''), last_name: String(params.last_name || ''), employer: String(params.employer || '') });
   const [saving, setSaving] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [duplicateMatches, setDuplicateMatches] = useState<any[]>([]);
@@ -372,6 +378,7 @@ export default function NewContactScreen() {
         } catch {}
       }
 
+      if (newId && memoId) { setAttachTo({ id: newId, name: contact.first_name }); return; }
       if (newId) router.replace(`/contact/${newId}` as any);
       else router.back();
     } catch (e: any) {
@@ -380,6 +387,21 @@ export default function NewContactScreen() {
       setSaving(false);
     }
   };
+
+  // The memo this screen was opened from lands on the new (or duplicate) contact as a memo or a recorded conversation.
+  const attachMemo = async (asKind: MemoKind) => {
+    if (!attachTo || !user) return;
+    setAttachBusy(asKind);
+    try {
+      const r = await api.post(`/voice-memos/${user._id}/${memoId}/attach`, { contact_id: attachTo.id, as_kind: asKind });
+      const n = r.data?.tasks?.length || 0;
+      showToast(`Attached to ${r.data?.contact_name || attachTo.name}${n ? ` · ${n} task${n === 1 ? '' : 's'} added` : ''}`, 'success', 4000);
+      router.replace(`/contact/${attachTo.id}` as any);
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Could not attach the memo', 'error', 3500);
+    } finally { setAttachBusy(null); }
+  };
+  const skipAttach = () => { if (attachTo) router.replace(`/contact/${attachTo.id}` as any); };
 
   // ── Inline card styles (shared across all ncs.* usage) ────────────────────
   const canSave = !!contact.first_name && !!(contact.phone || contact.email) && !saving;
@@ -407,15 +429,33 @@ export default function NewContactScreen() {
 
         <ScrollView ref={ncScrollRef} contentContainerStyle={{ paddingBottom: 80, paddingTop: SPACE.lg }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
+          {/* From a voice memo: what Jessi heard */}
+          {!!memoId && (
+            <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 12, backgroundColor: tint(GOLD, 0.1), borderWidth: 1, borderColor: tint(GOLD, 0.4), padding: 12, flexDirection: 'row', gap: 10, alignItems: 'flex-start' }} data-testid="new-contact-memo-banner">
+              <Ionicons name="mic" size={18} color={GOLD} style={{ marginTop: 1 }} />
+              <Text style={{ flex: 1, fontSize: TYPE.sub, color: colors.text, lineHeight: 18 }}>
+                From your voice memo. Jessi filled in what she heard; add a mobile or email and tap Save, then the memo attaches to them.
+              </Text>
+            </View>
+          )}
+
           {/* Name */}
           <View style={ncs.card}>
             <TextInput style={ncs.cardInput} placeholder="First name" placeholderTextColor={colors.textTertiary}
               value={contact.first_name} onChangeText={t => setContact(p => ({ ...p, first_name: t }))}
-              autoFocus returnKeyType="next" data-testid="input-first-name" />
+              autoFocus={!memoId} returnKeyType="next" data-testid="input-first-name" />
             <View style={ncs.cardDivider} />
             <TextInput style={ncs.cardInput} placeholder="Last name" placeholderTextColor={colors.textTertiary}
               value={contact.last_name} onChangeText={t => setContact(p => ({ ...p, last_name: t }))}
               returnKeyType="next" data-testid="input-last-name" />
+            {!!memoId && (
+              <>
+                <View style={ncs.cardDivider} />
+                <TextInput style={ncs.cardInput} placeholder="Company" placeholderTextColor={colors.textTertiary}
+                  value={contact.employer} onChangeText={t => setContact(p => ({ ...p, employer: t }))}
+                  returnKeyType="next" data-testid="input-employer" />
+              </>
+            )}
           </View>
 
           {/* Mobile */}
@@ -424,7 +464,7 @@ export default function NewContactScreen() {
               <Ionicons name="call-outline" size={20} color={GREEN} style={ncs.cardRowIcon} />
               <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Mobile" placeholderTextColor={colors.textTertiary}
                 value={contact.phone} onChangeText={t => onPhoneOrEmailChange('phone', t)}
-                keyboardType="phone-pad" returnKeyType="done" data-testid="input-phone" />
+                keyboardType="phone-pad" returnKeyType="done" autoFocus={!!memoId} data-testid="input-phone" />
             </View>
           </View>
 
@@ -445,7 +485,7 @@ export default function NewContactScreen() {
                 {duplicateMatches.map((m: any) => (
                   <TouchableOpacity key={m.id}
                     style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#FF950030' }}
-                    onPress={() => router.replace(`/contact/${m.id}` as any)} data-testid={`duplicate-match-${m.id}`}
+                    onPress={() => memoId ? setAttachTo({ id: m.id, name: m.first_name || m.last_name || 'this contact' }) : router.replace(`/contact/${m.id}` as any)} data-testid={`duplicate-match-${m.id}`}
                   >
                     <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
                       <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{(m.first_name || '?')[0]}</Text>
@@ -625,6 +665,16 @@ export default function NewContactScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ── Memo filing choice (only when opened from a voice memo) ── */}
+      <Modal visible={!!attachTo} animationType="slide" transparent onRequestClose={skipAttach}>
+        <View style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18, paddingBottom: Platform.OS === 'ios' ? 34 : 18 }} data-testid="new-contact-attach-sheet">
+            <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text, marginBottom: 10 }}>{attachTo?.name ? `${attachTo.name} is saved. Now the memo.` : 'Now the memo.'}</Text>
+            <MemoKindPicker firstName={attachTo?.name || 'this contact'} busy={attachBusy} onPick={attachMemo} colors={colors} secondaryLabel="Skip, keep it unattached" onSecondary={skipAttach} />
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Tag Picker Modal ── */}
       <Modal visible={showTagPicker} animationType="slide" transparent>

@@ -44,10 +44,14 @@ def _me(request: Request, user_id: str):
 
 
 def _public(n: dict) -> dict:
+    people, suggested = n.get("people") or [], n.get("suggested_contacts") or []
+    heard = {s.get("heard") for s in suggested}
     return {"id": str(n["_id"]), "audio_url": n.get("audio_url"), "transcript": n.get("transcript") or "", "summary": n.get("summary") or "",
             "title": n.get("title") or "", "duration": n.get("duration") or 0, "created_at": n["created_at"].isoformat() if n.get("created_at") else "",
             "contact_id": n.get("contact_id"), "contact_name": n.get("contact_name") or "",
-            "people": n.get("people") or [], "suggested_contacts": n.get("suggested_contacts") or []}
+            "people": people, "suggested_contacts": suggested,
+            # Names Jessi heard that match nobody in the book: the app offers to create them as new contacts.
+            "new_people": [p for p in people if p.get("name") not in heard]}
 
 
 async def _title_and_summary(transcript: str) -> dict:
@@ -95,20 +99,22 @@ async def match_people(db, user_id: str, people: list) -> list:
         if last:
             ors += [{"last_name": rx(last)}, {"name": {"$regex": re.escape(last), "$options": "i"}}]
         if p.get("company"):
-            ors.append({"company": {"$regex": re.escape(p["company"].split(" ")[0]), "$options": "i"}})
-        rows = await db.contacts.find({**scope, "$or": ors}, {"first_name": 1, "last_name": 1, "name": 1, "company": 1, "phone": 1}).limit(40).to_list(40)
+            co_rx = {"$regex": re.escape(p["company"].split(" ")[0]), "$options": "i"}
+            ors += [{"employer": co_rx}, {"organization_name": co_rx}, {"company": co_rx}]
+        rows = await db.contacts.find({**scope, "$or": ors}, {"first_name": 1, "last_name": 1, "name": 1, "company": 1, "employer": 1, "organization_name": 1, "phone": 1}).limit(40).to_list(40)
         for c in rows:
             nm = _cname(c).lower()
+            c_company = c.get("employer") or c.get("organization_name") or c.get("company") or ""
             f_ok = nm.startswith(first.lower()) or (c.get("first_name") or "").lower().startswith(first.lower())
             l_ok = bool(last) and ((c.get("last_name") or "").lower().startswith(last.lower()) or last.lower() in nm)
-            co_ok = bool(p.get("company")) and p["company"].split(" ")[0].lower() in (c.get("company") or "").lower()
+            co_ok = bool(p.get("company")) and p["company"].split(" ")[0].lower() in c_company.lower()
             score = (3 if f_ok and l_ok else 0) + (2 if l_ok and not f_ok else 0) + (1 if f_ok and not l_ok else 0) + (1 if co_ok else 0)
             if score == 0 or (score == 1 and f_ok and len(rows) > 3):
                 continue
             cid = str(c["_id"])
             why = f"Jessi heard \"{p['name']}\"" + (f" from {p['company']}" if p.get("company") and co_ok else "")
             if cid not in found or found[cid]["score"] < score:
-                found[cid] = {"contact_id": cid, "name": _cname(c), "phone": c.get("phone") or "", "company": c.get("company") or "", "reason": why, "score": score}
+                found[cid] = {"contact_id": cid, "name": _cname(c), "phone": c.get("phone") or "", "company": c_company, "reason": why, "heard": p["name"], "score": score}
     out = sorted(found.values(), key=lambda r: -r["score"])[:3]
     for r in out:
         r.pop("score", None)

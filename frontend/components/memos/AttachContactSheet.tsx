@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, FlatList, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, FlatList, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import api, { contactsAPI } from '../../services/api';
 import { useContactSearch } from '../../hooks/useContactSearch';
 import { GOLD, tid, errText } from '../inbox/ownership';
+import { MemoKindPicker, MemoKind } from './MemoKindPicker';
+import { newContactFromMemoHref } from './memoLinks';
 
 type Props = { visible: boolean; onClose: () => void; userId?: string; memo: any | null; colors: any; onAttached: (memoId: string, result: any) => void; showToast: (m: string, t?: any, d?: number) => void; preset?: any | null };
 
@@ -14,7 +17,7 @@ export const AttachContactSheet = ({ visible, onClose, userId, memo, colors, onA
   const [q, setQ] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
   const [picked, setPicked] = useState<any | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState<MemoKind | null>(null);
   useContactSearch(userId, q, setContacts, visible);
   useEffect(() => {
     if (!visible || !userId) return;
@@ -22,7 +25,8 @@ export const AttachContactSheet = ({ visible, onClose, userId, memo, colors, onA
     contactsAPI.getAll(userId).then((d: any) => setContacts(Array.isArray(d) ? d : d?.contacts || [])).catch(() => {});
   }, [visible, userId, preset]);
 
-  const attach = async (asKind: 'memo' | 'conversation') => {
+  const goCreate = (person: any | null) => { if (!memo) return; onClose(); router.push(newContactFromMemoHref(memo.id, person) as any); };
+  const attach = async (asKind: MemoKind) => {
     if (!picked || !memo || !userId) return;
     setBusy(asKind);
     try {
@@ -76,30 +80,28 @@ export const AttachContactSheet = ({ visible, onClose, userId, memo, colors, onA
                     <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
                   </TouchableOpacity>
                 )} />
-              <TouchableOpacity onPress={() => { onClose(); require('expo-router').router.push('/contact/new'); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }} {...tid('attach-new-contact')}>
+              <TouchableOpacity onPress={() => goCreate(null)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 }} {...tid('attach-new-contact')}>
                 <Ionicons name="person-add-outline" size={18} color={GOLD} />
-                <Text style={{ color: GOLD, fontWeight: '700' }}>They are not in my contacts yet</Text>
+                <Text style={{ color: GOLD, fontWeight: '700' }}>{memo?.new_people?.length ? 'Someone else who is not in my contacts yet' : 'They are not in my contacts yet'}</Text>
               </TouchableOpacity>
+              {memo?.new_people?.length ? (
+                <View style={{ gap: 6, paddingBottom: 6 }} {...tid('attach-new-people')}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6 }}>JESSI HEARD · NOT IN YOUR CONTACTS YET</Text>
+                  {memo.new_people.map((p: any, i: number) => (
+                    <TouchableOpacity key={`${p.name}-${i}`} onPress={() => goCreate(p)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: GOLD + '66' }} {...tid(`attach-create-${i}`)}>
+                      <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="person-add" size={17} color={GOLD} /></View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>Add {p.name} as a new contact</Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary }}>{p.company ? `${p.company} · name and company prefilled` : 'Name prefilled, you add the number'}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={GOLD} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null}
             </>
           ) : (
-            <View style={{ gap: 10 }}>
-              <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>How should Jessi file it on {nameOf(picked).split(' ')[0]}'s record?</Text>
-              <TouchableOpacity onPress={() => attach('memo')} disabled={!!busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }} {...tid('attach-as-memo')}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#34C75922', alignItems: 'center', justifyContent: 'center' }}>{busy === 'memo' ? <ActivityIndicator color="#34C759" /> : <Ionicons name="mic" size={20} color="#34C759" />}</View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>As a voice memo</Text>
-                  <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17, marginTop: 2 }}>A note about them. Transcript goes into their profile; Jessi picks up personal details.</Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => attach('conversation')} disabled={!!busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: GOLD + '14', borderWidth: 1, borderColor: GOLD + '66' }} {...tid('attach-as-conversation')}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center' }}>{busy === 'conversation' ? <ActivityIndicator color="#111" /> : <Ionicons name="people" size={20} color="#111" />}</View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>As a recorded conversation</Text>
-                  <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17, marginTop: 2 }}>A talk with them. Jessi writes a summary, turns every commitment into a task, and can cite it later.</Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setPicked(null)} style={{ alignItems: 'center', padding: 8 }} {...tid('attach-back')}><Text style={{ color: colors.textSecondary, fontWeight: '700' }}>Pick someone else</Text></TouchableOpacity>
-            </View>
+            <MemoKindPicker firstName={nameOf(picked).split(' ')[0]} busy={busy} onPick={attach} colors={colors} secondaryLabel="Pick someone else" onSecondary={() => setPicked(null)} />
           )}
         </View>
       </View>

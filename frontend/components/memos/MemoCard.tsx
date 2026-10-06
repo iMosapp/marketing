@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { GOLD, tid } from '../inbox/ownership';
+import { newContactFromMemoHref } from './memoLinks';
 
 export const fmtLen = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
 const when = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? '' : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
@@ -54,8 +56,19 @@ export const MemoCard = ({ memo, colors, playing, onPlay, onAttach, onDelete, on
             ))}
           </View>
         </View>
-      ) : memo.people?.length ? (
-        <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid(`memo-people-${memo.id}`)}>Jessi heard {memo.people.map((p: any) => p.name).slice(0, 3).join(', ')}, but nobody in your contacts matches yet.</Text>
+      ) : null}
+      {memo.new_people?.length ? (
+        <View style={{ gap: 6 }} {...tid(`memo-people-${memo.id}`)}>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Jessi heard {memo.new_people.map((p: any) => p.name).slice(0, 3).join(', ')}, but nobody in your contacts matches yet.</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {memo.new_people.map((p: any, i: number) => (
+              <TouchableOpacity key={`${p.name}-${i}`} onPress={() => router.push(newContactFromMemoHref(memo.id, p) as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 12, height: 34, borderRadius: 17, borderWidth: 1, borderColor: GOLD + '99', backgroundColor: colors.bg }} {...tid(`memo-create-${memo.id}-${i}`)}>
+                <Ionicons name="person-add" size={13} color={GOLD} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>Add {p.name}{p.company ? <Text style={{ fontWeight: '500', color: colors.textSecondary }}> · {p.company}</Text> : null}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
       ) : null}
       <TouchableOpacity onPress={() => onAttach()} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 42, borderRadius: 12, backgroundColor: GOLD }} {...tid(`memo-attach-${memo.id}`)}>
         <Ionicons name="person-add" size={16} color="#111" />
