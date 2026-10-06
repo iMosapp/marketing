@@ -142,6 +142,15 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 34 · Oct 6 — DONE / DEPLOY + EAS UPDATE
+> Memo Reminder: Give you a nudge the next morning for any memo still unattached so speakers don't slip through
+> Jessi Match: Let Jessi suggest which contact a memo belongs to from names she hears in the recording
+> Stop Leaked Automations: Make the "Where did they come from?" screen stop legacy campaign enrollments that leaked across stores
+
+Memo Reminder: at 8 AM in the rep's own timezone, one in-app alert + push a day for memos older than 10 hours still not attached, tapping opens Voice Memos. Jessi Match: when a memo is saved Jessi lists the people it names and looks them up in your book; matches show as "Jessi thinks this is about" pills on the memo and as "Jessi's guess" at the top of the attach sheet, one tap pre-picks them; guesses refresh every time the list opens so a contact added later shows up. Stop Leaked Automations: the "Where did these come from?" screen now ends with a whole-team (every store for super admins) leak card, per rep, with "Stop the N cross-store" and "Stop all N" buttons. Tested: 7 backend tests + web flows.
+
+---
+
 ### 33 · Oct 6 — DONE / DEPLOY + EAS UPDATE
 > in the + menu I want generic voice memo's that I can later attach to a contact.  example I might want to record a presentation and then after meeting the speaker attach it to them.  make sense?
 
