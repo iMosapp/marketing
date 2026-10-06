@@ -142,6 +142,12 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 36 · Oct 6 — DONE / DEPLOY + EAS UPDATE
+> where did all tools go?
+> it was under everything else section i don't see on the webapp
+
+Nothing was removed: "All tools" was the last row of the avatar menu, under EVERYTHING ELSE. On the web the menu is taller than the browser window for a super admin (30+ rows) and it hid its scrollbar, so that section sat about a thousand pixels below the fold with no hint it was there. Fix: "All tools" is now a pinned gold row right under your name at the top of the menu (always visible, every role), the web menu shows its scrollbar, and EVERYTHING ELSE keeps Help & Support and Terms & Privacy. Verified on web at 1400x800: row at the top, tap opens Tools.
+
 ### 35 · Oct 6 — DONE / DEPLOY + EAS UPDATE
 > Memo To Contact Card: Let you create the new contact right from a memo, with the name and company Jessi heard already filled in
 >

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
@@ -88,13 +88,15 @@ export const buildAccountSections = (user: any, ownerFlag = useOwnerStore.getSta
   sections.push({
     title: isManager ? 'EVERYTHING ELSE' : undefined,
     items: [
-      { key: 'tools', label: isManager ? 'All tools' : 'More tools', icon: 'grid-outline', route: '/(tabs)/more' },
       { key: 'help', label: 'Help & Support', icon: 'help-circle-outline', route: '/help' },
       { key: 'legal', label: 'Terms & Privacy', icon: 'document-lock-outline', route: '/terms' },
     ],
   });
   return sections;
 };
+
+// "All tools" used to sit at the very bottom of the sheet; on the web the sheet is taller than the window, so it was out of sight.
+export const ALL_TOOLS_ITEM = (user: any): Item => ({ key: 'tools', label: ['store_manager', 'org_admin', 'super_admin'].includes(user?.role || 'user') ? 'All tools' : 'More tools', icon: 'grid-outline', route: '/(tabs)/more' });
 
 export const AccountSheet = () => {
   const router = useRouter();
@@ -165,8 +167,18 @@ export const AccountSheet = () => {
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
+          {(() => { const tools = ALL_TOOLS_ITEM(user); return (
+            <TouchableOpacity onPress={() => go(tools)} activeOpacity={0.8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 20, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, backgroundColor: 'rgba(201,169,98,0.12)', borderWidth: 1, borderColor: 'rgba(201,169,98,0.45)' }}
+              {...tid('account-item-tools')}>
+              <Ionicons name="grid" size={20} color={GOLD} />
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: '700', color: colors.text }}>{tools.label}</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>Every screen, by group</Text>
+              <Ionicons name="chevron-forward" size={15} color={GOLD} />
+            </TouchableOpacity>
+          ); })()}
 
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 28 }} showsVerticalScrollIndicator={Platform.OS === 'web'}>
             {sections.map((sec, si) => (
               <View key={si} style={{ marginTop: si === 0 ? 0 : 18 }}>
                 {!!sec.title && <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 1.4, color: GOLD, marginBottom: 6 }}>{sec.title}</Text>}
