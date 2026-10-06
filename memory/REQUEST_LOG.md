@@ -142,6 +142,12 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 37 · Oct 6 — DONE / DEPLOY + EAS UPDATE
+> where can I go see my voice memos and assign them to contacts later on?  are they all in one place like voice memo on iphone or something?  can I label them to organize and find them easier?  apply tags to them? things like that?
+> do all 4
+
+Voice Memos (Tools → Daily → Voice Memos, or + → Voice memo) now works like the iPhone app: (1) Tags: every memo takes your existing contact tags (dashed "Add tag" chip → pick or create), and a tag row at the top filters the list. (2) Search: one box searches titles, Jessi's summaries, full transcripts, the names and companies Jessi heard, tags and the contact it was filed on. (3) "To file / Attached" switch: Attached lists every memo you have filed with who it went to ("Sarah Tester · filed as a voice memo · Oct 4"), tap → their card; tags still editable there. (4) Day folders: memos grouped under Today / Yesterday / Sat, Oct 3 with a pencil to name the day ("NADA show day 2"); the name sticks across both tabs. Tested: 13 backend tests + full web flows (iteration_358).
+
 ### 36 · Oct 6 — DONE / DEPLOY + EAS UPDATE
 > where did all tools go?
 > it was under everything else section i don't see on the webapp
