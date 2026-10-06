@@ -8,16 +8,18 @@ import { Ionicons } from '@expo/vector-icons';
 import FeedTab from './FeedTab';
 import CallsTab from './CallsTab';
 import MemosSection from './MemosSection';
+import FilesSection from './FilesSection';
 
 const GOLD = '#C9A962';
 
-export type HistoryFilter = 'all' | 'texts' | 'calls' | 'memos' | 'tasks';
+export type HistoryFilter = 'all' | 'texts' | 'calls' | 'memos' | 'files' | 'tasks';
 
 export const HISTORY_FILTERS: { key: HistoryFilter; label: string; icon: string }[] = [
   { key: 'all', label: 'All', icon: 'time' },
   { key: 'texts', label: 'Texts', icon: 'chatbubble' },
   { key: 'calls', label: 'Calls', icon: 'call' },
   { key: 'memos', label: 'Memos', icon: 'mic' },
+  { key: 'files', label: 'Files', icon: 'folder' },
   { key: 'tasks', label: 'Tasks', icon: 'checkbox' },
 ];
 
@@ -32,6 +34,8 @@ export function matchesHistoryFilter(e: any, f: HistoryFilter): boolean {
       return c === 'call' || t.startsWith('call') || t.includes('voicemail');
     case 'memos':
       return c === 'voice_note' || t.includes('voice_note');
+    case 'files':
+      return c === 'file' || t.startsWith('file');
     case 'tasks':
       return c === 'task' || t.startsWith('task') || t.includes('appointment');
     default:
@@ -39,12 +43,13 @@ export function matchesHistoryFilter(e: any, f: HistoryFilter): boolean {
   }
 }
 
-export default function HistoryTab({ colors, filter, setFilter, feedProps, callsProps, memosProps }: any) {
+export default function HistoryTab({ colors, filter, setFilter, feedProps, callsProps, memosProps, filesProps, counts }: any) {
   return (
     <View testID="history-tab" dataSet={{ testid: 'history-tab' } as any}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 6, paddingTop: 12, paddingBottom: 12 }}>
         {HISTORY_FILTERS.map(f => {
           const on = filter === f.key;
+          const n = counts?.[f.key];
           return (
             <TouchableOpacity
               key={f.key}
@@ -54,12 +59,12 @@ export default function HistoryTab({ colors, filter, setFilter, feedProps, calls
               testID={`history-filter-${f.key}`} dataSet={{ testid: `history-filter-${f.key}` } as any}
             >
               <Ionicons name={f.icon as any} size={12} color={on ? GOLD : colors.textSecondary} />
-              <Text style={{ fontSize: 12.5, fontWeight: '700', color: on ? GOLD : colors.textSecondary }}>{f.label}</Text>
+              <Text style={{ fontSize: 12.5, fontWeight: '700', color: on ? GOLD : colors.textSecondary }}>{f.label}{typeof n === 'number' && n > 0 ? ` · ${n}` : ''}</Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
-      {filter === 'calls' ? <CallsTab {...callsProps} /> : filter === 'memos' ? <MemosSection {...memosProps} /> : <FeedTab {...feedProps} filter={filter} />}
+      {filter === 'calls' ? <CallsTab {...callsProps} /> : filter === 'memos' ? <MemosSection {...memosProps} /> : filter === 'files' ? <FilesSection {...filesProps} /> : <FeedTab {...feedProps} filter={filter} />}
     </View>
   );
 }

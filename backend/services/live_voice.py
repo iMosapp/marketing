@@ -270,13 +270,22 @@ async def seconds_today(db, user_id: str, start: Optional[datetime] = None) -> i
     return total
 
 
+UNCAPPED_S = 24 * 3600
+
+
+def uncapped(user: dict) -> bool:
+    """The owner and super admins never hit the daily cap; reps do."""
+    return user.get("role") == "super_admin" or bool(user.get("is_owner"))
+
+
 async def usage_summary(db, user: dict, cfg: dict) -> dict:
     """The cap window is the rep's own calendar day, so it resets at their midnight, not UTC's."""
     tz = await _tz(user)
     local_midnight = _now().astimezone(tz).replace(hour=0, minute=0, second=0, microsecond=0)
     used = await seconds_today(db, str(user["_id"]), local_midnight.astimezone(timezone.utc))
-    cap = int(cfg["daily_cap_min"]) * 60
-    return {"used_s": used, "cap_s": cap, "left_s": max(0, cap - used), "reset_at": (local_midnight + timedelta(days=1)).isoformat()}
+    free = uncapped(user)
+    cap = UNCAPPED_S if free else int(cfg["daily_cap_min"]) * 60
+    return {"used_s": used, "cap_s": cap, "left_s": UNCAPPED_S if free else max(0, cap - used), "unlimited": free, "reset_at": (local_midnight + timedelta(days=1)).isoformat()}
 
 
 # ── session creation ──────────────────────────────────────────────────────────

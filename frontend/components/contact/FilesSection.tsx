@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../common/Toast';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
-import { GOLD, tid, errText } from '../inbox/ownership';
+import { GOLD, tid } from '../inbox/ownership';
 import { useContactFileUpload, ScanHint } from '../../hooks/useContactFileUpload';
+import type { ContactFilesStore } from '../../hooks/useContactFiles';
 import { FileDetailSheet } from './FileDetailSheet';
 
 const RED = '#FF3B30';
@@ -16,23 +16,15 @@ const SCANS: { hint: ScanHint; label: string; icon: any }[] = [
   { hint: 'trade_in', label: 'Trade-in', icon: 'car-sport-outline' },
 ];
 
-type Props = { contactId: string; colors: any; onContactChanged?: () => void };
+type Props = { contactId: string; colors: any; store: ContactFilesStore; onContactChanged?: () => void };
 
 // History › Files: everything filed on this contact (photos, PDFs, business cards, texted pictures). Jessi reads each one.
-export default function FilesSection({ contactId, colors, onContactChanged }: Props) {
+export default function FilesSection({ contactId, colors, store, onContactChanged }: Props) {
   const { user } = useAuthStore();
   const { showToast } = useToast();
   const { width } = useWindowDimensions();
-  const [files, setFiles] = useState<any[] | null>(null);
-  const [meta, setMeta] = useState<{ scan_types: Record<string, string>; sensitive_types: string[]; ttl_days: number }>({ scan_types: {}, sensitive_types: [], ttl_days: 30 });
+  const { files, setFiles, meta } = store;
   const [openId, setOpenId] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    if (!user?._id || !contactId) return;
-    try { const d = (await api.get(`/contact-files/${user._id}/contact/${contactId}`)).data; setFiles(d.files || []); setMeta({ scan_types: d.scan_types || {}, sensitive_types: d.sensitive_types || [], ttl_days: d.ttl_days || 30 }); }
-    catch (e) { showToast(errText(e, 'Could not load files'), 'error'); setFiles([]); }
-  }, [user?._id, contactId]);
-  useEffect(() => { load(); }, [load]);
 
   const up = useContactFileUpload({ userId: user?._id, contactId, onSaved: (f) => { setFiles(prev => [f, ...(prev || [])]); showToast(f.title ? `Filed: ${f.title}` : 'Filed', 'success'); }, onError: (m) => showToast(m, 'error', 3500) });
   const cols = width >= 900 ? 5 : width >= 600 ? 4 : 3;

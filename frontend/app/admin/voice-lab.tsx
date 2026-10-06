@@ -116,7 +116,7 @@ export default function VoiceLab() {
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
               <NumPill label="Hang up after quiet seconds" value={cfg.idle_close_s} opts={[15, 25, 40, 60, 90]} onPick={n => set({ idle_close_s: n })} testID="voice-idle" />
             </View>
-            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 8 }}>Cap: {cfg.daily_cap_min} min is about ${(cfg.daily_cap_min * meta.price_per_min).toFixed(2)} a day per rep at most.</Text>
+            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 8 }}>Cap: {cfg.daily_cap_min} min is about ${(cfg.daily_cap_min * meta.price_per_min).toFixed(2)} a day per rep at most. The cap resets at each rep's local midnight. You and other super admins are never capped.</Text>
           </View>
 
           {!!error && <Text style={{ color: RED, marginBottom: 10 }} {...tid('voice-lab-error')}>{error}</Text>}

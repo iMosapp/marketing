@@ -56,6 +56,7 @@ import EditFormTop from '../../components/contact/EditFormTop';
 import EditFormBottom from '../../components/contact/EditFormBottom';
 import DetailsTab from '../../components/contact/DetailsTab';
 import HistoryTab, { matchesHistoryFilter, type HistoryFilter } from '../../components/contact/HistoryTab';
+import { useContactFiles } from '../../hooks/useContactFiles';
 import { AskJessiSheet } from '../../components/ask/AskJessiSheet';
 import ComposerBar from '../../components/contact/ComposerBar';
 import ComposerCollapsed from '../../components/contact/ComposerCollapsed';
@@ -228,6 +229,7 @@ function ContactDetailScreen() {
   // Tabs: Profile (the record) vs History (everything that happened), with History filter chips
   const [contactTab, setContactTab] = useState<'profile' | 'history'>('profile');
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all');
+  const contactFiles = useContactFiles(user?._id, isNewContact ? undefined : (id as string), contactTab === 'history', (m) => showToast(m, 'error'));
   const [composerOpen, setComposerOpen] = useState(false);
   const [callLogs, setCallLogs] = useState<any[]>([]);
   const [callLogsLoading, setCallLogsLoading] = useState(false);
@@ -278,7 +280,7 @@ function ContactDetailScreen() {
   // Computed: filtered events for search + the History chip (must come after state declarations)
   const feedQuery = feedSearch.toLowerCase().trim();
   const filteredEvents = events.filter(e =>
-    (historyFilter === 'all' || historyFilter === 'calls' || historyFilter === 'memos' || matchesHistoryFilter(e, historyFilter)) &&
+    (historyFilter === 'all' || historyFilter === 'calls' || historyFilter === 'memos' || historyFilter === 'files' || matchesHistoryFilter(e, historyFilter)) &&
     (!feedQuery ||
       (e.title || '').toLowerCase().includes(feedQuery) ||
       (e.description || '').toLowerCase().includes(feedQuery) ||
@@ -2772,6 +2774,8 @@ function ContactDetailScreen() {
                 startRecording, stopRecording, playVoiceNote, deleteVoiceNote, formatRecordingTime, maxRecordingSeconds: MAX_RECORDING_SECONDS,
                 promptsMode: capturePromptsOn, contactFirst: (contact.first_name || fullName || 'them').split(' ')[0],
               }}
+              filesProps={{ contactId: id as string, colors, store: contactFiles, onContactChanged: () => loadContact() }}
+              counts={{ files: contactFiles.files?.length }}
             />
           )}
           <CaptureStorySheet
