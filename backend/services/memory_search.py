@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 MAX_HITS = 150
 PER_CONTACT = 3
 WINDOW = 140
-SOURCES = {"text": "text", "call": "call transcript", "memo": "voice memo", "note": "note", "sale": "sold record", "tag": "tag"}
+SOURCES = {"text": "text", "call": "call transcript", "memo": "voice memo", "note": "note", "sale": "sold record", "tag": "tag", "file": "file or photo"}
 
 
 def _now():
@@ -148,6 +148,17 @@ async def scan(db, user: dict, terms: list, days: Optional[int] = None) -> list:
         if snip:
             hits.append({"source": "note", "contact_id": str(c["_id"]), "who": "note", "when": _when(c.get("updated_at")), "quote": snip, "ref": str(c["_id"])})
 
+    # files and photos Jessi read (business cards, VIN plates, PDFs); sensitive ones only when the searcher filed them
+    q = {"user_id": {"$in": owners}, "deleted": {"$ne": True}, "$or": [{"text": mongo_rx}, {"summary": mongo_rx}, {"name": mongo_rx}, {"title": mongo_rx}]}
+    if since:
+        q["created_at"] = {"$gte": since}
+    async for f in db.contact_files.find(q, {"text": 1, "summary": 1, "name": 1, "title": 1, "contact_id": 1, "created_at": 1, "sensitive": 1, "user_id": 1}).sort("created_at", -1).limit(120):
+        if f.get("sensitive") and str(f.get("user_id")) != str(user["_id"]):
+            continue
+        snip = _snippet(f.get("summary") or "", rx) or _snippet(f.get("text") or "", rx) or _snippet(f"{f.get('title') or ''} {f.get('name') or ''}", rx)
+        if snip:
+            hits.append({"source": "file", "contact_id": f.get("contact_id"), "who": "file", "when": _when(f.get("created_at")), "quote": snip, "ref": str(f["_id"])})
+
     hits.extend(await _sales(db, owners, rx, mongo_rx, since))
     hits.extend(await _tags(db, owners, rx, mongo_rx))
 
@@ -275,7 +286,7 @@ def _line(r: dict) -> str:
     b = r["best"]
     if b["source"] == "tag":
         return f"{r['name']}, {b['quote'].replace('Tagged:', 'tagged', 1)}".rstrip(". ")
-    src = {"text": "texted", "call": "on a call", "memo": "in your voice memo", "note": "in your notes", "sale": "in your sold records"}[b["source"]]
+    src = {"text": "texted", "call": "on a call", "memo": "in your voice memo", "note": "in your notes", "sale": "in your sold records", "file": "in a file on their record"}.get(b["source"], "on their record")
     return f"{r['name']}, {src} {r['when_spoken']}: {b['why'] or b['quote']}".rstrip(". ")
 
 

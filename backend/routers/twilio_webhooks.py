@@ -538,6 +538,14 @@ async def incoming_message(
         except Exception as kt_err:
             logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
 
+        # ── Photos / PDFs the customer texted land in the contact's Files (fire-and-forget) ──
+        if media_urls and contact_id:
+            try:
+                from services.contact_files import file_inbound_media
+                asyncio.create_task(file_inbound_media(db, str(user_id), str(contact_id), str(msg_insert.inserted_id), media_urls, media_types))
+            except Exception as cf_err:
+                logger.warning(f"[ContactFiles] schedule failed: {cf_err}")
+
         # ── "call me Thursday" -> task on the contact; "can we do 3 instead" -> reschedule request (fire-and-forget) ──
         try:
             from routers.tasks import extract_task_from_text, text_has_schedule_hint

@@ -3,7 +3,7 @@ import api from '../../services/api';
 
 export type LiveConfig = {
   available: boolean; is_super_admin: boolean; configured: boolean; reason?: string | null;
-  voice: string; greeting: string; idle_close_s: number; usage: { used_s: number; cap_s: number; left_s: number };
+  voice: string; greeting: string; idle_close_s: number; usage: { used_s: number; cap_s: number; left_s: number; reset_at?: string };
 };
 
 export const useLiveConfig = () => {

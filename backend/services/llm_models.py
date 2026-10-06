@@ -4,4 +4,5 @@ back to you" to a customer who just named a budget and a Saturday) and took 3-5 
 into canned fallbacks. gpt-5.2 uses the specifics and answers in about a second."""
 
 CUSTOMER_TEXT_MODEL = ("openai", "gpt-5.2")
+VISION_MODEL = ("openai", "gpt-5.4")  # reads photos and scanned pages filed on a contact (business cards, VIN plates, documents)
 JESSI_CHAT_MODEL = CUSTOMER_TEXT_MODEL  # the typed Ask Jessi window: same brain as her texts

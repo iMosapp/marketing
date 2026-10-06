@@ -764,6 +764,9 @@ from routers import agents as agents_router
 api_router.include_router(agents_router.router)
 from routers import voice_memos as voice_memos_router
 api_router.include_router(voice_memos_router.router)
+from routers import contact_files as contact_files_router
+api_router.include_router(contact_files_router.open_router)
+api_router.include_router(contact_files_router.router)
 api_router.include_router(user_schedule.router)
 api_router.include_router(chat_widget.router)
 api_router.include_router(website_widget.admin)

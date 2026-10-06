@@ -62,6 +62,10 @@ async def _gather_contact_context(db, user_id: str, contact_id: str) -> dict:
         {"contact_id": contact_id},
         {"_id": 0, "title": 1, "type": 1, "status": 1, "due_date": 1}
     ).sort("created_at", -1).limit(10).to_list(10)
+
+    # Files and photos Jessi has read (business cards, VIN plates, PDFs, pictures they texted); sensitive ones only for the rep who filed them
+    from services.contact_files import for_context as _files_for
+    files = await _files_for(db, contact_id, user_id, limit=15)
     
     return {
         "contact": contact,
@@ -70,6 +74,7 @@ async def _gather_contact_context(db, user_id: str, contact_id: str) -> dict:
         "voice_notes": voice_notes,
         "calls": calls,
         "tasks": tasks,
+        "files": files,
     }
 
 
@@ -206,6 +211,21 @@ def _build_prompt(ctx: dict) -> str:
         sections.append("\nTASKS:")
         for t in ctx["tasks"]:
             sections.append(f"  {t.get('title', '')}  - {t.get('status', '')} (due: {t.get('due_date', 'N/A')})")
+
+    # Files and photos
+    if ctx.get("files"):
+        from services.contact_files import SCAN_TYPES as _SCAN
+        sections.append("\nFILES AND PHOTOS ON THE RECORD (what Jessi read in them):")
+        for f in ctx["files"]:
+            date = f.get("created_at", "")
+            if isinstance(date, datetime):
+                date = date.strftime("%b %d, %Y")
+            line = f"  [{date}] {_SCAN.get(f.get('scan_type') or '', 'File')}: {f.get('name', '')}" + (" (texted by the customer)" if f.get("source") == "mms" else "")
+            if f.get("summary"):
+                line += f". {f['summary'][:300]}"
+            if f.get("fields"):
+                line += " Read: " + "; ".join(f"{k} {v}" for k, v in f["fields"].items())[:200]
+            sections.append(line)
     
     return "\n".join(sections)
 
@@ -303,6 +323,7 @@ RULES:
         "voice_notes": len(ctx["voice_notes"]),
         "calls": len(ctx.get("calls") or []),
         "tasks": len(ctx["tasks"]),
+        "files": len(ctx.get("files") or []),
     }
     await db.contact_intel.update_one(
         {"contact_id": contact_id, "user_id": user_id},

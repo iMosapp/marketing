@@ -142,6 +142,17 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 39 · Oct 6 — DONE / DEPLOY + EAS UPDATE
+> go but gpt live jessi quit working on the home screen??? very bad!
+> it responds the old way that is not the live gpt live voice
+> getting this not the live interactive gpt live version *(screenshot: old Jessi screen, "Jessi is speaking")*
+
+Not broken: the production check showed the 30-minute daily live cap (Voice Lab → Minutes per rep per day) was used up today (16 sessions, 30m14s), so `/live-voice/session` returned 429 and the Home card fell back to the old Jessi screen with only a small grey line saying why. Fixes: the cap window now resets at YOUR local midnight (was UTC midnight = 6 pm Mountain); the Home card now turns orange, says "Live Jessi is resting · all 30 live minutes for today are used · back at midnight" and (for you) taps straight into the Voice Lab; the Voice Lab cap picker gained 120 and 240 minutes. To get her back right now: Voice Lab → Minutes per rep per day → 120 (or 240), Save.
+
+### 38 · Oct 6 — IN PROGRESS
+> go *(Contact Files UI: Files chip in the contact's History tab, defaults accepted)*
+
+
 ### 37 · Oct 6 — DONE / DEPLOY + EAS UPDATE
 > where can I go see my voice memos and assign them to contacts later on?  are they all in one place like voice memo on iphone or something?  can I label them to organize and find them easier?  apply tags to them? things like that?
 > do all 4

@@ -2008,6 +2008,20 @@ def start_scheduler():
         coalesce=True,
     )
 
+    # Daily 3:30 AM UTC - destroy sensitive contact files (IDs, insurance cards, credit apps) past their 30 days
+    async def run_contact_files_purge():
+        from routers.database import get_db
+        from services import contact_files
+        await contact_files.purge_expired(get_db())
+    scheduler.add_job(
+        safe_job(run_contact_files_purge),
+        CronTrigger(hour=3, minute=30),
+        id="contact_files_purge",
+        replace_existing=True,
+        misfire_grace_time=3600,
+        coalesce=True,
+    )
+
     # Daily at 8 AM UTC  - process date triggers (birthdays, anniversaries, holidays)
     scheduler.add_job(
         safe_job(process_all_date_triggers),

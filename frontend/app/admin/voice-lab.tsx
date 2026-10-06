@@ -111,7 +111,7 @@ export default function VoiceLab() {
           <View style={card}>
             <Text style={h}>LIMITS</Text>
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <NumPill label="Minutes per rep per day" value={cfg.daily_cap_min} opts={[5, 10, 15, 30, 60]} onPick={n => set({ daily_cap_min: n })} testID="voice-cap" />
+              <NumPill label="Minutes per rep per day" value={cfg.daily_cap_min} opts={[5, 10, 15, 30, 60, 120, 240]} onPick={n => set({ daily_cap_min: n })} testID="voice-cap" />
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
               <NumPill label="Hang up after quiet seconds" value={cfg.idle_close_s} opts={[15, 25, 40, 60, 90]} onPick={n => set({ idle_close_s: n })} testID="voice-idle" />

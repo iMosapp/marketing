@@ -21,7 +21,7 @@ from services.llm_models import CUSTOMER_TEXT_MODEL
 
 MODEL = ("openai", "gpt-5.2")  # rep-facing Q&A; the draft the customer reads uses CUSTOMER_TEXT_MODEL
 CHAR_BUDGET = 70000
-CITE_RE = re.compile(r"\[([TCVEK])(\d+)(?:@(\d+(?::\d{2})?))?\]")
+CITE_RE = re.compile(r"\[([TCVEKF])(\d+)(?:@(\d+(?::\d{2})?))?\]")
 
 NOISY_EVENTS = {"sms_sent", "customer_reply", "ai_reply_sent", "auto_text_sent", "personal_sms", "creation", "setup", "test",
                 "intelligence_extracted", "name_updated", "call_placed", "call_outbound", "outbound_call", "inbound_call",
@@ -66,8 +66,8 @@ def _oid(v):
 
 
 # ---------------------------------------------------------------- record
-async def build_record(db, contact: dict, tz: Optional[str] = None) -> dict:
-    """Everything we know about this customer as numbered, citable lines + a citation index."""
+async def build_record(db, contact: dict, tz: Optional[str] = None, caller_id: Optional[str] = None) -> dict:
+    """Everything we know about this customer as numbered, citable lines + a citation index. Sensitive files only when caller_id is the rep who filed them."""
     cid = str(contact["_id"])
     first = contact.get("first_name") or (contact.get("name") or "the customer").split(" ")[0]
     convs = await db.conversations.find({"contact_id": cid}, {"_id": 1, "inbox_id": 1, "user_id": 1, "lead_source_name": 1, "created_at": 1}).to_list(50)
@@ -163,6 +163,21 @@ async def build_record(db, contact: dict, tz: Optional[str] = None) -> dict:
         items.append((_dt(k.get("due_date") or k.get("created_at")) or _now(), line, "K"))
         cites[key] = {"id": key, "kind": "task", "label": f"Task · {k.get('title')}", "task_id": str(k["_id"]), "completed": status == "done", "snippet": (k.get("description") or "")[:140]}
 
+    # files and photos (business cards, VIN plates, PDFs, pictures they texted); sensitive ones only for the rep who filed them
+    from services.contact_files import for_context as _files_for, SCAN_TYPES as _SCAN
+    for i, f in enumerate(reversed(await _files_for(db, cid, caller_id)), 1):
+        key = f"F{i}"
+        label = _SCAN.get(f.get("scan_type") or "", "File")
+        line = f"[{key}] FILE {_fmt(f.get('created_at'), tz)} {label} '{f.get('name')}'" + (" (texted by the customer)" if f.get("source") == "mms" else "")
+        if f.get("summary"):
+            line += f"\n  summary: {f['summary'][:600]}"
+        if f.get("fields"):
+            line += "\n  read: " + "; ".join(f"{k} {v}" for k, v in f["fields"].items())[:400]
+        if f.get("text"):
+            line += f"\n  text: {f['text'][:2500]}"
+        items.append((_dt(f.get("created_at")) or _now(), line, "F"))
+        cites[key] = {"id": key, "kind": "file", "label": f"{label} · {_fmt(f.get('created_at'), tz)}", "file_id": str(f["_id"]), "snippet": (f.get("summary") or f.get("name") or "")[:140]}
+
     items.sort(key=lambda x: x[0])
 
     # profile block
@@ -195,6 +210,7 @@ async def build_record(db, contact: dict, tz: Optional[str] = None) -> dict:
 
     stats = {"texts": n, "calls": len(calls), "voice_notes": len([v for v in voice if v.get("transcript") and v.get("kind") != "conversation"]),
              "conversations": len([v for v in voice if v.get("transcript") and v.get("kind") == "conversation"]), "events": len(events), "tasks": len(tasks),
+             "files": len([c for c in cites.values() if c.get("kind") == "file"]),
              "first_touch": _fmt(items[0][0], tz) if items else None, "last_touch": _fmt(items[-1][0], tz) if items else None}
     return {"profile": "\n".join(profile), "timeline": "\n".join(lines), "cites": cites, "stats": stats, "first_name": first}
 
@@ -204,10 +220,10 @@ def _system_prompt(record: dict, rep_first: str) -> str:
     return (
         f"You are Jessi, the relationship assistant inside i'M On Social, helping the rep {rep_first} with one customer, {record['first_name']}. "
         "You have the customer's COMPLETE touchpoint record below: profile, then a chronological timeline of texts, calls (with transcripts and timestamps), "
-        "voice notes, events and tasks. Answer ONLY from this record.\n\n"
+        "voice notes, events, tasks and files (business cards, VIN plates, PDFs and photos the rep filed or the customer texted, with what Jessi read in them). Answer ONLY from this record.\n\n"
         "RULES:\n"
         "- Every factual claim must cite its source id in square brackets exactly as written in the record: [T12] for a text, [C3] for a call, "
-        "[C3@4:12] for a specific moment in a call, [V2] voice note, [E5] event, [K1] task. Put the citation right after the sentence it supports.\n"
+        "[C3@4:12] for a specific moment in a call, [V2] voice note, [E5] event, [K1] task, [F2] file. Put the citation right after the sentence it supports.\n"
         "- If the record does not contain the answer, say so plainly in one sentence and suggest what to ask the customer. Never invent details.\n"
         "- Be concise and useful: short paragraphs or a tight bullet list, plain dealership language, no fluff. Quote the customer's exact words when it helps.\n"
         "- Dates: say them naturally (e.g. 'Tuesday Sep 9'). Refer to the rep as 'you'.\n"
@@ -261,7 +277,7 @@ async def ask(db, user: dict, contact: dict, question: str, session: Optional[di
     if not api_key:
         raise RuntimeError("EMERGENT_LLM_KEY not set")
     from emergentintegrations.llm.chat import LlmChat, UserMessage
-    record = await build_record(db, contact, tz=user.get("timezone"))
+    record = await build_record(db, contact, tz=user.get("timezone"), caller_id=str(user.get("_id") or ""))
     rep_first = user.get("first_name") or (user.get("name") or "there").split(" ")[0]
     history = ""
     if session and session.get("messages"):
@@ -288,6 +304,8 @@ def starters(stats: dict, first: str) -> list:
         out.insert(0, "What did we agree on in the recorded conversation?")
     if stats.get("voice_notes"):
         out.append("What personal details have I captured?")
+    if stats.get("files"):
+        out.insert(1, "What's in the files and photos on " + first + "'s record?")
     out.append("Draft a text that picks up where we left off")
     return out[:6]
 

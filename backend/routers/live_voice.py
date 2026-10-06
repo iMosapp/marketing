@@ -73,7 +73,7 @@ async def config(request: Request):
     cfg = await lv.get_config(db)
     reason = lv.configured()
     return {"available": await _available(db, me), "is_super_admin": _is_super(me), "configured": reason is None, "reason": reason,
-            "voice": cfg["voice"], "greeting": lv.greeting_text(cfg, me), "idle_close_s": cfg["idle_close_s"], "usage": await lv.usage_summary(db, str(me["_id"]), cfg)}
+            "voice": cfg["voice"], "greeting": lv.greeting_text(cfg, me), "idle_close_s": cfg["idle_close_s"], "usage": await lv.usage_summary(db, me, cfg)}
 
 
 @router.post("/session")
