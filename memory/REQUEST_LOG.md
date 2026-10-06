@@ -142,6 +142,13 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 32 · Oct 6 — DONE / DEPLOY + EAS UPDATE
+> ERROR REPORTS (100 total, filter: all) … *(pasted the production error report list)*
+
+Triage: 45 of 100 were `GET/PATCH /users/{id}` 500 UnicodeDecodeError, every day since Sep 19, still firing Oct 5: the Voice ID enrollment stores a binary Eagle profile on the user doc and those two endpoints returned the raw doc (login and /auth/me were already fixed, these two were missed). Fixed by stripping the binary the same way. ~30 were Cloudflare 502/520/503 from pollers during deploy restarts (clusters match deploy times; expected, nothing in code). Web `S.Audio is not a constructor` on voice-note playback fixed (expo-av import shadowed the browser Audio). `'Pause AI' is not a function` (iOS, Sep 26) and SearchScreen `query` (Android reviewer, Sep 27) are from older bundles; current code is correct. 401 login errors are wrong passwords.
+
+---
+
 ### 31 · Oct 5 — HELD
 > Ok hold all this for future reference
 

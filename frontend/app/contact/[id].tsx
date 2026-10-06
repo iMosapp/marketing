@@ -2261,8 +2261,8 @@ function ContactDetailScreen() {
       return;
     }
 
-    // Web: use HTML5 Audio
-    const audio = new Audio(resolvedUrl);
+    // Web: use HTML5 Audio (window.Audio; the expo-av `Audio` import shadows the browser constructor)
+    const audio = new (globalThis as any).Audio(resolvedUrl);
     audio.onended = () => setPlayingNoteId(null);
     audio.onerror = () => { setPlayingNoteId(null); showSimpleAlert('Error', 'Failed to play audio'); };
     audio.play();

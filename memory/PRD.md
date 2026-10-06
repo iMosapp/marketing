@@ -870,3 +870,9 @@ DELIVERY: backend deploy + eas update --branch production.
 - USER (video): reply appears, booking form pops in, list jumps to the bottom so the reply must be scrolled back up to read.
 - CAUSE: `bookForm()` redraws when `/slots` resolves; polls and chip taps also redraw; every `draw()` ended with scrollTop = scrollHeight.
 - FIX `services/widget_js.py draw()`: captures `keep = list.scrollTop`, `hadMsgs = drawn`, `wasBusy = lastBusy` before re-render. Rules: new non-visitor message -> anchor at its top if it + what follows overflows, else bottom; visitor message / typing dots turning on / first draw -> bottom; any other redraw -> restore `keep`. Deploy only (backend-served JS).
+
+## Production error-report triage (Oct 6 2026) - 2 fixes, verified preview
+- 45/100: `GET/PATCH /api/users/{id}` 500 UnicodeDecodeError (Sep 19 -> Oct 5). CAUSE: `services/voice_id.py` stores the Picovoice Eagle profile as `Binary` at `users.voice_id.profile`; `server.py get_user_profile/patch_user_profile` returned the raw doc and FastAPI's encoder tried to UTF-8 decode it. `/auth/login` and `/auth/me` had been fixed earlier with `routers/auth._strip_binary`; both server.py handlers now call it too. Reproduced + verified by planting invalid-UTF-8 bytes on the preview user.
+- Web `S.Audio is not a constructor` in `app/contact/[id].tsx playVoiceNote`: `Audio` from expo-av shadowed the browser constructor; now `new (globalThis as any).Audio(url)`.
+- ~30 Cloudflare 502/520 + one 503 "database did not answer": polling endpoints during deploy restarts; clusters match deploy times. No code change. Idea (not built): have the error reporter ignore 5xx from background pollers unless they persist > 2 min.
+- Already fixed in current code (old bundles): iOS `'Pause AI' is not a function` (home.tsx showConfirm arg order, fixed after Aug 31), Android SearchScreen `query` (App Reviewer on Sep 27 store build).

@@ -1214,6 +1214,8 @@ async def get_user_profile(user_id: str):
         raise HTTPException(status_code=404, detail="User not found")
     user["_id"] = str(user["_id"])
     user.pop("password", None)
+    from routers.auth import _strip_binary
+    _strip_binary(user)   # Voice ID profile is raw bytes; it would 500 the JSON encoder
     # Convert any ObjectId fields to strings
     for key in ["organization_id", "org_id", "store_id", "partner_id"]:
         if user.get(key):
@@ -1272,6 +1274,8 @@ async def patch_user_profile(user_id: str, data: dict):
     updated_user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
     if updated_user:
         updated_user["_id"] = str(updated_user["_id"])
+        from routers.auth import _strip_binary
+        _strip_binary(updated_user)
         for key in ["organization_id", "org_id", "store_id", "partner_id"]:
             if updated_user.get(key):
                 updated_user[key] = str(updated_user[key])
