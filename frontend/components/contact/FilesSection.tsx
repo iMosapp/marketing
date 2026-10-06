@@ -16,10 +16,10 @@ const SCANS: { hint: ScanHint; label: string; icon: any }[] = [
   { hint: 'trade_in', label: 'Trade-in', icon: 'car-sport-outline' },
 ];
 
-type Props = { contactId: string; colors: any; store: ContactFilesStore; onContactChanged?: () => void };
+type Props = { contactId: string; colors: any; store: ContactFilesStore; contact?: any; onContactChanged?: () => void };
 
 // History › Files: everything filed on this contact (photos, PDFs, business cards, texted pictures). Jessi reads each one.
-export default function FilesSection({ contactId, colors, store, onContactChanged }: Props) {
+export default function FilesSection({ contactId, colors, store, contact, onContactChanged }: Props) {
   const { user } = useAuthStore();
   const { showToast } = useToast();
   const { width } = useWindowDimensions();
@@ -80,7 +80,7 @@ export default function FilesSection({ contactId, colors, store, onContactChange
           ))}
         </View>
       )}
-      <FileDetailSheet visible={!!open} file={open} userId={user?._id} colors={colors} scanTypes={meta.scan_types} sensitiveTypes={meta.sensitive_types} ttlDays={meta.ttl_days}
+      <FileDetailSheet visible={!!open} file={open} userId={user?._id} colors={colors} scanTypes={meta.scan_types} sensitiveTypes={meta.sensitive_types} ttlDays={meta.ttl_days} contact={contact}
         onClose={() => setOpenId(null)} onChanged={(nf) => setFiles(prev => (prev || []).map(x => x.id === nf.id ? { ...x, ...nf } : x))} onDeleted={(id) => setFiles(prev => (prev || []).filter(x => x.id !== id))}
         onApplied={() => onContactChanged?.()} showToast={showToast} />
     </View>

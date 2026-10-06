@@ -149,8 +149,12 @@ Every reply that touches `/app/frontend` ends with the `eas update` terminal com
 
 Not broken: the production check showed the 30-minute daily live cap (Voice Lab → Minutes per rep per day) was used up today (16 sessions, 30m14s), so `/live-voice/session` returned 429 and the Home card fell back to the old Jessi screen with only a small grey line saying why. Fixes: the cap window now resets at YOUR local midnight (was UTC midnight = 6 pm Mountain); the Home card now turns orange, says "Live Jessi is resting · all 30 live minutes for today are used · back at midnight" and (for you) taps straight into the Voice Lab; the Voice Lab cap picker gained 120 and 240 minutes. To get her back right now: Voice Lab → Minutes per rep per day → 120 (or 240), Save.
 
-### 38 · Oct 6 — IN PROGRESS
+### 38 · Oct 6 — DONE / DEPLOY + EAS UPDATE
 > go *(Contact Files UI: Files chip in the contact's History tab, defaults accepted)*
+> how do I change my daily limits up and is there a better way to respond as jessi outside of gpt live?  the current version isn't even usable
+> *(options: owner no cap = yes · Jessi Classic on the live brain = you decide · both = ok)*
+
+Contact page → History → new **Files · N** chip: Photos / Files-PDF buttons (Camera too on phones), SCAN chips (Business card, VIN / odometer, Trade-in), grid of filed items (PDF badge, red lock for sensitive, "Texted" for customer MMS), detail sheet with Jessi's summary, "Show everything Jessi read", tick-box details → "Add N to the contact" (first/last name are never pre-ticked once the contact has a name and show `replaces "Sarah"`), type chips, Sensitive switch (30-day auto-destroy), Open full size, Delete. Tested end to end on web (iteration_359: PDF + business-card uploads, Jessi read in ~15 s, apply, type, sensitive, rename, delete, chip counts). Owner/super admins are now never capped on live Jessi (reps keep the Voice Lab cap). Jessi Classic (push-to-talk on the live brain as the fallback) is the next build.
 
 
 ### 37 · Oct 6 — DONE / DEPLOY + EAS UPDATE

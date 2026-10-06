@@ -2774,7 +2774,7 @@ function ContactDetailScreen() {
                 startRecording, stopRecording, playVoiceNote, deleteVoiceNote, formatRecordingTime, maxRecordingSeconds: MAX_RECORDING_SECONDS,
                 promptsMode: capturePromptsOn, contactFirst: (contact.first_name || fullName || 'them').split(' ')[0],
               }}
-              filesProps={{ contactId: id as string, colors, store: contactFiles, onContactChanged: () => loadContact() }}
+              filesProps={{ contactId: id as string, colors, store: contactFiles, contact, onContactChanged: () => loadContact() }}
               counts={{ files: contactFiles.files?.length }}
             />
           )}

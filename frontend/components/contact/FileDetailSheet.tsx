@@ -6,19 +6,23 @@ import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { showConfirm } from '../../services/alert';
 import { GOLD, tid, errText } from '../inbox/ownership';
 
-type Props = { visible: boolean; file: any | null; userId?: string; colors: any; scanTypes: Record<string, string>; sensitiveTypes: string[]; ttlDays: number;
+type Props = { visible: boolean; file: any | null; userId?: string; colors: any; scanTypes: Record<string, string>; sensitiveTypes: string[]; ttlDays: number; contact?: any;
   onClose: () => void; onChanged: (f: any) => void; onDeleted: (id: string) => void; onApplied: () => void; showToast: (m: string, t?: any, d?: number) => void };
 
 const RED = '#FF3B30';
 const when = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); };
 
 // One file: preview, what Jessi read, the details she can add to the contact, type, sensitive lock, delete.
-export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sensitiveTypes, ttlDays, onClose, onChanged, onDeleted, onApplied, showToast }: Props) => {
+// Name fields replace the contact's own name, so they are never pre-ticked once the contact has one (a referral's card must not rename Sarah).
+const CURRENT: Record<string, (c: any) => string> = { first_name: c => c?.first_name || '', last_name: c => c?.last_name || '', company: c => c?.employer || '', title: c => c?.occupation || '' };
+
+export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sensitiveTypes, ttlDays, contact, onClose, onChanged, onDeleted, onApplied, showToast }: Props) => {
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [showText, setShowText] = useState(false);
   const [name, setName] = useState('');
-  useEffect(() => { if (file) { setPicked(Object.keys(file.fields || {}).filter(k => !(file.applied || []).includes(k))); setShowText(false); setName(file.name || ''); } }, [file?.id]);
+  const hasName = !!(contact?.first_name || contact?.last_name);
+  useEffect(() => { if (file) { setPicked(Object.keys(file.fields || {}).filter(k => !(file.applied || []).includes(k) && !(hasName && (k === 'first_name' || k === 'last_name')))); setShowText(false); setName(file.title || file.name || ''); } }, [file?.id]);
   const url = useMemo(() => resolvePhotoUrl(file?.url) || '', [file?.url]);
   if (!file) return null;
 
@@ -52,7 +56,7 @@ export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sens
       <View style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}>
         <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', paddingBottom: Platform.OS === 'ios' ? 28 : 12 }} {...tid('file-detail-sheet')}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8, gap: 10 }}>
-            <TextInput value={name} onChangeText={setName} onBlur={() => { if (name.trim() && name.trim() !== file.name) patch({ name: name.trim() }); }} style={{ flex: 1, fontSize: 17, fontWeight: '800', color: colors.text }} {...tid('file-name-input')} />
+            <TextInput value={name} onChangeText={setName} onBlur={() => { if (name.trim() && name.trim() !== (file.title || file.name)) patch({ title: name.trim() }); }} style={{ flex: 1, fontSize: 17, fontWeight: '800', color: colors.text }} {...tid('file-name-input')} />
             <TouchableOpacity onPress={onClose} {...tid('file-detail-close')}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 12 }}>
@@ -70,11 +74,14 @@ export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sens
             {fields.length ? (
               <View style={{ gap: 6, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: GOLD + '55', padding: 12 }} {...tid('file-fields')}>
                 <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.8 }}>JESSI READ THESE DETAILS</Text>
-                {fields.map(([k, v]) => { const done = (file.applied || []).includes(k); const on = picked.includes(k); return (
+                {fields.map(([k, v]) => { const done = (file.applied || []).includes(k); const on = picked.includes(k); const cur = CURRENT[k]?.(contact); const replaces = !done && cur && cur !== v; return (
                   <TouchableOpacity key={k} disabled={done} onPress={() => setPicked(p => on ? p.filter(x => x !== k) : [...p, k])} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} {...tid(`file-field-${k}`)}>
                     <Ionicons name={done ? 'checkmark-done-circle' : on ? 'checkbox' : 'square-outline'} size={20} color={done ? '#34C759' : on ? GOLD : colors.border} />
                     <Text style={{ fontSize: 12, color: colors.textSecondary, width: 82 }}>{file.field_labels?.[k] || k}</Text>
-                    <Text style={{ flex: 1, fontSize: 14, color: done ? colors.textSecondary : colors.text }} numberOfLines={1}>{v}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, color: done ? colors.textSecondary : colors.text }} numberOfLines={1}>{v}</Text>
+                      {replaces ? <Text style={{ fontSize: 11, color: '#FF9500' }} numberOfLines={1} {...tid(`file-field-replaces-${k}`)}>replaces "{cur}"</Text> : null}
+                    </View>
                   </TouchableOpacity>
                 ); })}
                 <TouchableOpacity onPress={apply} disabled={!picked.length || !!busy} style={{ marginTop: 4, height: 42, borderRadius: 12, backgroundColor: picked.length ? GOLD : colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid('file-apply')}>
