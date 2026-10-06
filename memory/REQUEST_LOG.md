@@ -142,6 +142,20 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 31 · Oct 5 — HELD
+> Ok hold all this for future reference
+
+Architecture plan parked in `/app/memory/ARCH_PLAN.md`. Do not start any phase until the user asks. Keep shipping features.
+
+---
+
+### 30 · Oct 5 — DONE (plan only, no code)
+> plan it out please
+
+Wrote `/app/memory/ARCH_PLAN.md`: six phases, each step with target files, effort and a pass/fail gate. Phase 1 safety rails (one auth module, scoping sweep, rate limits, prod config), Phase 2 durable background work (job_runs + re-queueable tasks), Phase 3 one brain (LLM/payments choke points, prompt module, then Portability Step 2 on approval), Phase 4 kill the twins, Phase 5 split the big files as touched, Phase 6 hygiene (CI, request ids, PRD split). Awaiting go on Phase 1.
+
+---
+
 ### 29 · Oct 5 — DONE (report only, no code)
 > is this app written and laid out in the best possible way currently?  do a quick assesment and let me know what we should change in architecture if anything.  just audit and report to me no coding
 
