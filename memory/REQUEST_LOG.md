@@ -142,6 +142,13 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 35 · Oct 6 — DONE / DEPLOY + EAS UPDATE
+> Memo To Contact Card: Let you create the new contact right from a memo, with the name and company Jessi heard already filled in
+>
+> Choices: chips on the memo card AND the "not in my contacts yet" rows in the Attach sheet · full New Contact screen, prefilled · ask "voice memo vs recorded conversation" after Save
+
+Anyone Jessi hears who matches nobody in your book becomes an "Add Marcus Delgado · Rocky Mountain Kubota" chip on the memo card, and the Attach sheet lists them as "Add ... as a new contact" rows (plus "Someone else"). Tap → New Contact opens with first name, last name and Company already filled (gold "From your voice memo" banner, Company row only in this mode), cursor in Mobile. Save → "Marcus is saved. Now the memo." → voice memo / recorded conversation / skip → the memo attaches and you land on their card. If the duplicate check finds they already exist, tapping that match attaches the memo to the existing record instead. Also fixed: Jessi Match now reads the contact's Company (employer) field, so "Sarah from Tester Motors" ranks the right Sarah. Tested: backend API + full web flows (iteration_357).
+
 ### 34 · Oct 6 — DONE / DEPLOY + EAS UPDATE
 > Memo Reminder: Give you a nudge the next morning for any memo still unattached so speakers don't slip through
 > Jessi Match: Let Jessi suggest which contact a memo belongs to from names she hears in the recording
