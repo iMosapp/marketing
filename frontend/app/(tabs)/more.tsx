@@ -760,7 +760,7 @@ export default function MoreScreen() {
   };
   const GROUP_ORDER = ['daily', 'leads', 'brand', 'campaigns', 'performance', 'team', 'setup', 'learning', 'settings', 'partner', 'accounts', 'internal'];
   const GROUP_FOR_SECTION: Record<string, string> = { partner_portal: 'partner', my_brand: 'brand', leads: 'leads', manage: 'campaigns', team: 'team', my_tools: 'daily', campaigns: 'campaigns', performance: 'performance', setup_manage: 'setup', account_mgmt: 'accounts', internal_ops: 'internal', learning: 'learning', settings: 'settings' };
-  const GROUP_FOR_TITLE: Record<string, string> = { 'Review Center': 'team', 'Showcase': 'team', 'Inventory Feed': 'setup', 'Review Links': 'setup', 'Inventory': 'daily', 'My VA': 'settings', 'Agent Hub': 'settings', 'Team Chat': 'daily', 'Texting Compliance': 'setup' };
+  const GROUP_FOR_TITLE: Record<string, string> = { 'Review Center': 'team', 'Showcase': 'team', 'Inventory Feed': 'setup', 'Review Links': 'setup', 'Inventory': 'daily', 'My VA': 'settings', 'Agent Hub': 'settings', 'Voice Memos': 'daily', 'Team Chat': 'daily', 'Texting Compliance': 'setup' };
   const dirBuckets: Record<string, ToolRow[]> = {};
   const dirSeen = new Set<string>();
   const addRow = (gid: string, r: ToolRow) => { const k = `${gid}:${r.title}`; if (dirSeen.has(k)) return; dirSeen.add(k); (dirBuckets[gid] ||= []).push(r); };
@@ -808,6 +808,7 @@ export default function MoreScreen() {
       ...(perm('my_tools', 'internet_leads') ? [mk('loose', 'Internet Leads', 'Incoming lead queue', 'flame', '#FF3B30', '/leads', leadsWaiting || undefined)] : []),
       ...(perm('my_tools', 'inventory') ? [mk('loose', 'Inventory', "What's on the lot", 'car-sport', '#32ADE6', '/inventory')] : []),
       ...(perm('my_tools', 'keyword_search') ? [mk('loose', 'Keyword Search', 'Find any word in texts and calls', 'search-circle', '#32ADE6', '/keyword-search')] : []),
+      mk('loose', 'Voice Memos', 'Record now, attach to a contact later', 'mic', '#34C759', '/voice-memos'),
       ...(perm('my_tools', 'training_hub') ? [mk('loose', 'Training Hub', 'Learn the app in short lessons', 'school', '#FF9500', '/training-hub')] : []),
       ...(perm('my_tools', 'team_chat') ? [mk('loose', 'Team Chat', 'Internal team messaging', 'chatbox-ellipses', '#5856D6', '/(tabs)/team')] : []),
       ...(perm('campaigns', 'broadcast') ? [mk('loose', 'Send a Blast', 'Mass text from your number', 'megaphone', '#FF9500', '/broadcast/new')] : []),

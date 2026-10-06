@@ -1093,6 +1093,7 @@ function HomeScreen() {
           { key: 'review', icon: 'star', label: 'Review', color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
           { key: 'card', icon: 'card', label: 'Card', color: '#007AFF', onPress: () => setShowSharePicker(true) },
           { key: 'new-contact', icon: 'person-add', label: 'Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
+          { key: 'voice-memo', icon: 'mic', label: 'Voice memo', color: '#34C759', onPress: () => router.push('/voice-memos?record=1' as any) },
           { key: 'sold', icon: 'trophy', label: 'SOLD!', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
         ]}
       />
