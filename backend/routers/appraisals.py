@@ -22,6 +22,7 @@ from services.appraisals import market_providers as mp
 from services.appraisals.providers import ProviderUnavailable, identity_options, IDENTITY
 from services.appraisals import providers as identity
 from services.appraisals import readers
+from services.appraisals import voice
 from services.appraisals import relationship
 from services.appraisals import reporting
 from services.appraisals import rules as rulesvc
@@ -101,6 +102,35 @@ class MediaChunk(BaseModel):
     content_type: str = "application/octet-stream"
     role: str
     source: str
+
+
+class VoiceChunk(BaseModel):
+    upload_id: str
+    index: int
+    total: int
+    data: str
+    content_type: str = "audio/mp4"
+    duration: float = 0
+
+
+async def _collect_chunks(db, me: dict, prefix: str, chunk) -> tuple:
+    """Buffer one base64 piece under (user, upload id); on the last piece return the assembled bytes, otherwise None and how many arrived."""
+    if chunk.total < 1 or chunk.total > 400 or not (0 <= chunk.index < chunk.total) or len(chunk.data) > 900_000:
+        raise HTTPException(status_code=400, detail="Bad chunk")
+    upload_id = re.sub(r"[^A-Za-z0-9_-]", "", chunk.upload_id)[:64]
+    if not upload_id:
+        raise HTTPException(status_code=400, detail="Bad upload id")
+    key = {"user_id": str(me["_id"]), "upload_id": f"{prefix}_{upload_id}"}
+    await db.voice_upload_chunks.update_one({**key, "index": chunk.index}, {"$set": {"data": chunk.data, "created_at": datetime.now(timezone.utc)}}, upsert=True)
+    have = await db.voice_upload_chunks.count_documents(key)
+    if have < chunk.total:
+        return None, have
+    parts = await db.voice_upload_chunks.find(key).sort("index", 1).to_list(chunk.total)
+    await db.voice_upload_chunks.delete_many(key)
+    try:
+        return base64.b64decode("".join(p["data"] for p in parts)), have
+    except Exception:
+        raise HTTPException(status_code=400, detail="That file came through damaged. Please try again.")
 
 
 class FindingBody(BaseModel):
@@ -640,24 +670,11 @@ async def media_chunk(appraisal_id: str, chunk: MediaChunk, request: Request):
     db = get_db()
     a = await _appr(db, me, appraisal_id)
     _editable(a)
-    if chunk.total < 1 or chunk.total > 400 or not (0 <= chunk.index < chunk.total) or len(chunk.data) > 900_000:
-        raise HTTPException(status_code=400, detail="Bad chunk")
-    upload_id = re.sub(r"[^A-Za-z0-9_-]", "", chunk.upload_id)[:64]
-    if not upload_id:
-        raise HTTPException(status_code=400, detail="Bad upload id")
     if chunk.role not in core.ROLES or chunk.source not in core.SOURCES:
         raise HTTPException(status_code=400, detail="Bad media role or source")
-    key = {"user_id": str(me["_id"]), "upload_id": f"appr_{upload_id}"}
-    await db.voice_upload_chunks.update_one({**key, "index": chunk.index}, {"$set": {"data": chunk.data, "created_at": datetime.now(timezone.utc)}}, upsert=True)
-    have = await db.voice_upload_chunks.count_documents(key)
-    if have < chunk.total:
+    data, have = await _collect_chunks(db, me, "appr", chunk)
+    if data is None:
         return {"success": True, "received": have, "total": chunk.total}
-    parts = await db.voice_upload_chunks.find(key).sort("index", 1).to_list(chunk.total)
-    await db.voice_upload_chunks.delete_many(key)
-    try:
-        data = base64.b64decode("".join(p["data"] for p in parts))
-    except Exception:
-        raise HTTPException(status_code=400, detail="That file came through damaged. Please try again.")
     try:
         doc = await core.save_media(db, a, me, role=chunk.role, source=chunk.source, data=data, content_type=chunk.content_type, name=chunk.name)
     except ValueError as e:
@@ -666,6 +683,46 @@ async def media_chunk(appraisal_id: str, chunk: MediaChunk, request: Request):
         logger.error(f"[Appraisal] media save failed: {e}")
         raise HTTPException(status_code=500, detail="Could not store that file")
     return {"success": True, "received": chunk.total, "total": chunk.total, "media": core.public_media(doc)}
+
+
+@router.post("/{appraisal_id}/voice-note/chunk")
+async def voice_note_chunk(appraisal_id: str, chunk: VoiceChunk, request: Request):
+    """The rep talks about the car. Same base64-piece protocol; on the last piece the clip is stored, Whisper types it and the words are appended to
+    the appraisal notes. Allowed at any point before the appraisal is closed (notes are never an input to the number)."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    if a.get("status") == "closed":
+        raise HTTPException(status_code=409, detail="This appraisal is closed")
+    data, have = await _collect_chunks(db, me, "aprv", chunk)
+    if data is None:
+        return {"success": True, "received": have, "total": chunk.total}
+    try:
+        vn = await voice.add_voice_note(db, a, me, by="rep", data=data, content_type=chunk.content_type, duration=chunk.duration)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[Appraisal] voice note save failed: {e}")
+        raise HTTPException(status_code=500, detail="Could not save that recording")
+    fresh = await db[core.A].find_one({"_id": a["_id"]})
+    return {"success": True, "received": chunk.total, "total": chunk.total, "voice_note": vn, "appraisal": core.public_appraisal(fresh)}
+
+
+@router.delete("/{appraisal_id}/voice-note/{note_id}")
+async def voice_note_delete(appraisal_id: str, note_id: str, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    if a.get("status") == "closed":
+        raise HTTPException(status_code=409, detail="This appraisal is closed")
+    try:
+        await voice.delete_voice_note(db, a, me, note_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    fresh = await db[core.A].find_one({"_id": a["_id"]})
+    return {"success": True, "appraisal": core.public_appraisal(fresh)}
 
 
 @router.get("/{appraisal_id}/media")

@@ -8,7 +8,7 @@ import secrets
 from datetime import timedelta
 from typing import Optional
 
-from services.appraisals import core, workflow
+from services.appraisals import core, voice, workflow
 from services.appraisals.core import A, _now, _oid, _name, audit
 from services.appraisals.providers import ProviderUnavailable
 
@@ -129,6 +129,7 @@ async def context(db, appr: dict, *, mark_opened: bool = False) -> dict:
             "vehicle": core.vehicle_label(appr.get("vehicle")) if appr.get("vehicle") else None, "have_vin": bool(appr.get("vin")), "have_mileage": appr.get("mileage_confirmed") is not None,
             "photos": [{"id": str(m["_id"]), "role": m.get("role"), "thumb": f"/api/images/{m['thumb_path']}" if m.get("thumb_path") else None} for m in media],
             "answers": ci.get("condition") or {}, "notes": ci.get("notes"), "vin": ci.get("vin") or appr.get("vin"), "mileage": ci.get("mileage"), "zip": ci.get("zip"),
+            "voice_notes": [_public_voice(v) for v in (appr.get("voice_notes") or []) if v.get("by") == "customer"], "max_voice_notes": voice.MAX_CUSTOMER,
             "submitted": bool(ci.get("submitted_at")), "roles": PHOTO_ROLES, "questions": [{"key": q["key"], "label": q["label"], "options": [{"value": v, "label": l} for v, l in q["options"]]} for q in CONDITION_QUESTIONS],
             "max_photos": MAX_PHOTOS}
 
@@ -147,6 +148,18 @@ async def add_photo(db, appr: dict, *, role: str, data: bytes, content_type: str
     await db[A].update_one({"_id": appr["_id"]}, {"$inc": {"intake.photo_count": 1}, "$set": {"updated_at": _now()}})
     pm = core.public_media(doc)
     return {"id": pm["id"], "role": pm["role"], "thumb": pm.get("thumb_url"), "reading": pm.get("reading")}
+
+
+def _public_voice(v: dict) -> dict:
+    return {"id": v.get("id"), "transcript": v.get("transcript") or "", "duration": v.get("duration"), "transcribed": bool(v.get("transcript"))}
+
+
+async def add_voice(db, appr: dict, *, data: bytes, content_type: str, duration: float, name: str = "") -> dict:
+    """The customer talks about the car from the link page. Same voice-note path as the rep's, author customer, words appended to the appraisal notes."""
+    if link_state(appr) != "open":
+        raise ValueError("This link is no longer active.")
+    vn = await voice.add_voice_note(db, appr, _customer_actor(appr), by="customer", data=data, content_type=content_type, duration=duration, name=name)
+    return _public_voice(vn)
 
 
 async def submit(db, appr: dict, body: dict) -> dict:

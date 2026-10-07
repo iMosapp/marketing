@@ -7,6 +7,7 @@ import { Chip, GRADE_COLORS, SEVERITY_COLORS, money, miles } from '../shared';
 import { MarketSnapshotCard } from '../MarketSnapshotCard';
 import { ComparablesList } from '../ComparablesList';
 import { answerChips } from '../TradeLinkCard';
+import { VoiceNoteList } from '../VoiceNotes';
 
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 const whenDay = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
@@ -109,6 +110,7 @@ export const CustomerIntakeCard = ({ colors, a }: { colors: any; a: any }) => {
 export const RepCard = ({ colors, a }: { colors: any; a: any }) => (
   <Card colors={colors} title={`FROM ${(a.user_name || 'THE SALESPERSON').toUpperCase()}`} testId="desk-rep">
     <Text style={{ fontSize: 13.5, color: a.notes ? colors.text : colors.textSecondary, lineHeight: 19 }} {...tid('desk-notes')}>{a.notes || 'No notes.'}</Text>
+    <VoiceNoteList colors={colors} appraisal={a} readOnly />
     <Text style={{ fontSize: 12, color: colors.textSecondary }}>{a.mode_label}{a.vin ? ` · VIN ${a.vin}` : ' · no VIN'}{a.stock_number ? ` · stock ${a.stock_number}` : ''}{a.mileage_confirmed != null ? ` · ${miles(a.mileage_confirmed)}` : ''}{a.mileage_detected != null && a.mileage_detected !== a.mileage_confirmed ? ` (Jessi read ${miles(a.mileage_detected)})` : ''}</Text>
     {a.media?.length ? (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>

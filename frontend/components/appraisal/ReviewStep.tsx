@@ -6,6 +6,7 @@ import { GOLD, tid } from '../inbox/ownership';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { StepTitle, SourceTag, money, miles } from './shared';
 import { SubmitPanel } from './SubmitPanel';
+import { VoiceNotes } from './VoiceNotes';
 
 type Props = { colors: any; appraisal: any; onEdit: (step: string) => void; onSaved?: (appraisal: any) => void; showToast?: (m: string, t?: any, d?: number) => void; readOnly?: boolean };
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
@@ -45,8 +46,10 @@ export const ReviewStep = ({ colors, appraisal, onEdit, onSaved, showToast, read
         <Row icon="stats-chart" label="Market" value={market} step="market" testId="review-market" />
         <Row icon={appraisal.mode === 'customer_sent' ? 'cloud-upload-outline' : 'location-outline'} label="Captured" value={appraisal.mode_label} step={appraisal.vehicle_id ? undefined : 'mode'} testId="review-mode" />
         <Row icon="person-outline" label="Customer" value={appraisal.contact_name} testId="review-customer" />
+        {appraisal.notes ? <Row icon="document-text-outline" label="Notes" value={appraisal.notes} testId="review-notes" /> : null}
         {appraisal.is_reappraisal ? <Row icon="refresh" label="Reappraisal" value={`Vehicle first appraised ${when(appraisal.history?.[appraisal.history.length - 1]?.created_at)}`} testId="review-reappraisal" /> : null}
       </View>
+      <VoiceNotes colors={colors} appraisal={appraisal} onSaved={onSaved} showToast={showToast} readOnly={readOnly} />
       {appraisal.media?.length ? (
         <View style={{ gap: 8 }}>
           <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6 }}>MEDIA · {appraisal.media.length}</Text>

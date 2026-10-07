@@ -12,6 +12,7 @@ import { FindingCard } from './FindingCard';
 import { FindingEditor } from './FindingEditor';
 import { ConditionReport } from './ConditionReport';
 import { EvidenceViewer } from './EvidenceViewer';
+import { VoiceNotes } from './VoiceNotes';
 import type { useAppraisalMedia, MediaSource } from '../../hooks/useAppraisalMedia';
 
 type Props = { colors: any; appraisal: any; media: ReturnType<typeof useAppraisalMedia>; onSaved: (appraisal: any) => void; showToast: (m: string, t?: any, d?: number) => void };
@@ -74,6 +75,7 @@ export const InspectionStep = ({ colors, appraisal, media, onSaved, showToast }:
       <InspectionCapture colors={colors} mode={appraisal.mode} media={media} source={source} onSource={setSource} onDone={load} disabled={busy} />
       <BusyBar text={media.busy} colors={colors} />
       <InspectionMedia colors={colors} media={mediaList} processed={insp?.processed_media_ids || []} onDelete={remove} busy={busy} />
+      <VoiceNotes colors={colors} appraisal={appraisal} onSaved={onSaved} showToast={showToast} />
       {running ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: GOLD }} {...tid('inspect-running')}>
           <ActivityIndicator color={GOLD} />

@@ -41,6 +41,9 @@ input:focus,textarea:focus{{outline:none;border-color:var(--gold)}}textarea{{fon
 .read{{font-size:12px;color:var(--ok);margin-top:6px;font-weight:700}}.err{{color:var(--bad);font-size:13px;margin-top:8px;font-weight:700}}
 .foot{{margin-top:22px;font-size:12.5px;color:var(--muted)}}.done-wrap{{text-align:center;padding:40px 0}}.done-wrap .big{{font-size:52px}}
 .hide{{display:none}}
+.btn.rec{{border-color:var(--bad);color:var(--bad)}}.btn svg{{width:18px;height:18px;margin-right:8px;fill:currentColor}}
+.clip{{display:flex;gap:10px;margin-top:10px;font-size:14px;line-height:1.4;color:var(--text);background:#0F1013;border:1px solid var(--line);border-radius:12px;padding:10px 12px}}
+.clip .dur{{color:var(--gold);font-weight:800;white-space:nowrap}}.clip.quiet span:last-child{{color:var(--muted);font-style:italic}}
 </style></head><body><div class="wrap" id="app">
 <p class="eyebrow">{store}</p>
 <h1 id="h1">{heading}</h1>
@@ -63,6 +66,11 @@ input:focus,textarea:focus{{outline:none;border-color:var(--gold)}}textarea{{fon
  <div class="card"><h2>3 · Quick questions</h2><div id="questions"></div></div>
  <div class="card"><h2>4 · Anything else?</h2>
   <textarea id="notes" placeholder="Recent work, known issues, extras, anything the appraiser should know.">{notes}</textarea>
+  <div id="voice" class="hide">
+   <button type="button" class="btn ghost" id="rec" style="margin-top:10px"></button>
+   <p class="hint" id="rec-hint">Tap, talk about the car, tap again to stop. We type it up for {rep}.</p>
+   <div id="clips"></div>
+  </div>
   <label for="wants">Do you have a number in mind? (optional)</label>
   <input type="tel" id="wants" inputmode="numeric" placeholder="$">
  </div>
@@ -100,6 +108,26 @@ document.getElementById("submit").onclick=function(){{var btn=this;btn.disabled=
  fetch(API+"/submit",{{method:"POST",headers:{{"Content-Type":"application/json"}},body:JSON.stringify(body)}}).then(function(r){{return r.json().then(function(j){{if(!r.ok)throw new Error(j.detail||"Could not send");return j}})}})
  .then(function(){{document.getElementById("form").classList.add("hide");document.getElementById("done").classList.remove("hide");window.scrollTo(0,0)}}).catch(function(e){{btn.disabled=false;showErr(e.message)}})}};
 document.getElementById("again").onclick=function(){{document.getElementById("done").classList.add("hide");document.getElementById("form").classList.remove("hide");document.getElementById("slots").scrollIntoView({{behavior:"smooth"}})}};
+var MIC='<svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V6a4 4 0 1 0-8 0v5a4 4 0 0 0 4 4zm6-4h-2a4 4 0 0 1-8 0H6a6 6 0 0 0 5 5.9V20H8v2h8v-2h-3v-3.1A6 6 0 0 0 18 11z"/></svg>';
+var REC_LABEL=MIC+"Or just tell us about it",REC_MAX=180,rec=null,recChunks=[],recT=null,recS=0,recMime="";
+function esc(s){{return String(s==null?"":s).replace(/[&<>"]/g,function(c){{return{{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}}[c]}})}}
+function fmt(s){{s=Math.round(s||0);return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}}
+function pickMime(){{var c=["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"];for(var i=0;i<c.length;i++){{if(window.MediaRecorder&&MediaRecorder.isTypeSupported(c[i]))return c[i]}}return""}}
+function renderClips(){{var w=document.getElementById("clips");w.innerHTML="";(CTX.voice_notes||[]).forEach(function(v){{w.appendChild(el('<div class="clip'+(v.transcript?"":" quiet")+'" data-testid="voice-clip"><span class="dur">'+fmt(v.duration)+'</span><span>'+(v.transcript?esc(v.transcript):"Saved. "+esc(CTX.rep)+" will listen to it.")+'</span></div>'))}});
+ var full=(CTX.voice_notes||[]).length>=(CTX.max_voice_notes||5);document.getElementById("rec").classList.toggle("hide",full);document.getElementById("rec-hint").textContent=full?"That is plenty of recordings. Type anything else above.":"Tap, talk about the car, tap again to stop. We type it up for "+CTX.rep+"."}}
+function setRec(){{var b=document.getElementById("rec");b.innerHTML=REC_LABEL;b.classList.remove("rec");b.disabled=false}}
+if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&pickMime()){{document.getElementById("voice").classList.remove("hide");setRec();renderClips()}}
+document.getElementById("rec").onclick=function(){{var btn=this;if(rec){{rec.stop();return}}
+ navigator.mediaDevices.getUserMedia({{audio:true}}).then(function(stream){{recMime=pickMime();rec=new MediaRecorder(stream,{{mimeType:recMime}});recChunks=[];recS=0;
+  rec.ondataavailable=function(e){{if(e.data&&e.data.size)recChunks.push(e.data)}};
+  rec.onstop=function(){{clearInterval(recT);stream.getTracks().forEach(function(t){{t.stop()}});var dur=recS,base=recMime.split(";")[0],blob=new Blob(recChunks,{{type:base}});rec=null;setRec();
+   if(dur<2){{showErr("Too short. Tap, talk, then tap again.");return}}
+   btn.disabled=true;btn.innerHTML=MIC+"Typing it up\u2026";var fd=new FormData();fd.append("duration",dur);fd.append("file",blob,"note."+(base.indexOf("mp4")>=0?"m4a":base.indexOf("ogg")>=0?"ogg":"webm"));
+   fetch(API+"/voice",{{method:"POST",body:fd}}).then(function(r){{return r.json().then(function(j){{if(!r.ok)throw new Error(j.detail||"Could not save that");return j}})}})
+   .then(function(j){{CTX.voice_notes=(CTX.voice_notes||[]).concat([j]);renderClips()}}).catch(function(e){{showErr(e.message)}}).then(setRec)}};
+  rec.start(1000);btn.classList.add("rec");btn.innerHTML=MIC+"Recording 0:00 \u00b7 tap to stop";
+  recT=setInterval(function(){{recS++;btn.innerHTML=MIC+"Recording "+fmt(recS)+" \u00b7 tap to stop";if(recS>=REC_MAX&&rec)rec.stop()}},1000)}})
+ .catch(function(){{showErr("Microphone access was blocked. Type your notes in the box instead.")}})}};
 renderSlots();renderQuestions();
 </script></body></html>"""
 
@@ -152,6 +180,23 @@ async def trade_photo(token: str, request: Request, role: str = Form("photo"), f
         return await intake.add_photo(db, a, role=role, data=data, content_type=file.content_type or "image/jpeg", name=file.filename or "photo.jpg")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{token}/voice")
+async def trade_voice(token: str, file: UploadFile = File(...), duration: float = Form(0)):
+    """The customer's spoken note (browser MediaRecorder). Stored on the appraisal as a customer voice note, typed by Whisper, words appended to the notes."""
+    db = get_db()
+    a = await _appr(token)
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="That recording came through empty. Try again.")
+    try:
+        return await intake.add_voice(db, a, data=data, content_type=file.content_type or "audio/webm", duration=duration, name=file.filename or "")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"[Intake] voice note failed: {e}")
+        raise HTTPException(status_code=500, detail="Could not save that recording. Type it in the box instead.")
 
 
 @router.post("/{token}/submit")

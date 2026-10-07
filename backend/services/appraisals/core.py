@@ -69,6 +69,15 @@ async def org_id_for(db, me: dict) -> Optional[str]:
     return str(st["organization_id"]) if st and st.get("organization_id") else None
 
 
+VOICE_BY = {"rep": "Rep voice note", "customer": "Customer voice note"}
+MAX_NOTES = 8000
+
+
+def public_voice_note(v: dict) -> dict:
+    return {"id": v.get("id"), "by": v.get("by"), "by_label": VOICE_BY.get(v.get("by") or "", "Voice note"), "by_name": v.get("by_name"), "audio_url": v.get("audio_url"),
+            "duration": v.get("duration"), "transcript": v.get("transcript") or "", "transcribed": bool(v.get("transcript")), "created_at": v.get("created_at")}
+
+
 # ---------- serializers ----------
 def public_vehicle(v: dict) -> dict:
     out = {k: v.get(k) for k in VEHICLE_FIELDS}
@@ -88,6 +97,7 @@ def public_appraisal(a: dict) -> dict:
     out["id"] = str(a["_id"])
     out["intake"] = {k: (a.get("intake") or {}).get(k) for k in ("url", "short_url", "created_at", "expires_at", "sent_at", "sent_via", "sent_to", "opened_at", "submitted_at", "photo_count", "revoked_at")} if a.get("intake") else None
     out["book_values_count"] = len(a.get("book_values") or [])
+    out["voice_notes"] = [public_voice_note(v) for v in (a.get("voice_notes") or [])]
     out["vehicle_label"] = vehicle_label(a.get("vehicle") or {"vin": a.get("vin")}) if (a.get("vehicle") or a.get("vin")) else None
     out["mode_label"] = MODES.get(a.get("mode") or "", "")
     return out
@@ -271,7 +281,7 @@ async def set_expectation(db, appr: dict, me: dict, asked: bool, value: Optional
 async def patch(db, appr: dict, me: dict, data: dict) -> dict:
     upd = {}
     if "notes" in data:
-        upd["notes"] = str(data["notes"] or "")[:4000]
+        upd["notes"] = str(data["notes"] or "")[:MAX_NOTES]
     if "stock_number" in data:
         upd["stock_number"] = (str(data["stock_number"] or "").strip()[:40] or None)
     if "step" in data and data["step"] in STEPS:

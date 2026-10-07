@@ -12,10 +12,11 @@ const options = (Audio: any) => ({
   web: { mimeType: 'audio/webm', bitsPerSecond: 32000 },
 });
 
-type Opts = { userId?: string; onSaved: (memo: any) => void; onError: (msg: string) => void };
+type Opts = { userId?: string; path?: string; maxSeconds?: number; onSaved: (memo: any) => void; onError: (msg: string) => void };
 
-// Records a stand-alone voice memo (web + native via expo-av) and uploads it in base64 pieces to /voice-memos.
-export function useMemoRecorder({ userId, onSaved, onError }: Opts) {
+// Records a stand-alone voice memo (web + native via expo-av) and uploads it in base64 pieces to /voice-memos, or to `path` (same chunk protocol).
+export function useMemoRecorder({ userId, path, maxSeconds = MEMO_MAX_SECONDS, onSaved, onError }: Opts) {
+  const target = path || (userId ? `/voice-memos/${userId}/chunk` : undefined);
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [saving, setSaving] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export function useMemoRecorder({ userId, onSaved, onError }: Opts) {
       secondsRef.current = 0; setSeconds(0); setRecording(true);
       timerRef.current = setInterval(() => {
         secondsRef.current += 1; setSeconds(secondsRef.current);
-        if (secondsRef.current >= MEMO_MAX_SECONDS) stop();
+        if (secondsRef.current >= maxSeconds) stop();
       }, 1000);
     } catch (e) { onError('Could not start recording.'); }
   };
@@ -54,7 +55,7 @@ export function useMemoRecorder({ userId, onSaved, onError }: Opts) {
     const rec = recRef.current;
     recRef.current = null;
     setRecording(false);
-    if (!rec || !userId) return;
+    if (!rec || !target) return;
     const duration = secondsRef.current;
     try {
       await rec.stopAndUnloadAsync();
@@ -79,7 +80,7 @@ export function useMemoRecorder({ userId, onSaved, onError }: Opts) {
       let last: any = null;
       for (let i = 0; i < total; i++) {
         setSaving(i === total - 1 ? 'Jessi is listening…' : `Uploading ${Math.round(((i + 1) / total) * 100)}%`);
-        const res = await api.post(`/voice-memos/${userId}/chunk`, { upload_id: uploadId, index: i, total, data: b64.slice(i * PIECE, (i + 1) * PIECE), content_type: contentType, duration }, { timeout: 180000 });
+        const res = await api.post(target, { upload_id: uploadId, index: i, total, data: b64.slice(i * PIECE, (i + 1) * PIECE), content_type: contentType, duration }, { timeout: 180000 });
         last = res.data;
       }
       onSaved(last);
