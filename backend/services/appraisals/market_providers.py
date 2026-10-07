@@ -1,7 +1,8 @@
-"""Market data providers (MVP3). The appraisal workflow only ever sees normalized dicts and `active()`:
-  MarketDataProvider -> MarketCheckProvider (live; needs MARKETCHECK_API_KEY, verified against developers.marketcheck.com docs)
+"""Market data providers (MVP3, provider validation phase). The appraisal workflow only ever sees normalized dicts:
+  MarketDataProvider -> MarketCheckProvider (live; needs MARKETCHECK_API_KEY, verified against docs.marketcheck.com)
+                     -> VinAuditProvider (live; needs VINAUDIT_API_KEY, verified against data.vinaudit.com/docs/api/market/values)
                      -> MockMarketProvider (deterministic development data, always badged DEVELOPMENT DATA — NOT LIVE)
-Nothing outside this file knows MarketCheck's URL shapes or response fields."""
+Nothing outside this file knows a provider's URL shapes or response fields. Providers are never averaged together: each fetch is one observation."""
 import asyncio
 import hashlib
 import logging
@@ -57,14 +58,17 @@ class MarketDataProvider:
     label = ""
     live = False
     badge = ""
+    retail_source = "base"          # what `result.retail_source` says when the provider's own estimate is used (the engine whitelists these)
+    calls_per_fetch = 1             # typical paid calls per fetch, for budgeting before a pull
+    comps_kind = "active listings"  # what `comps_count` means for this provider
 
     def configured(self) -> bool:
         return False
 
     async def fetch(self, *, vin: Optional[str], year: int, make: str, model: str, trim: Optional[str], mileage: Optional[int], zip_code: str,
-                    radius: int, dealer_type: str) -> dict:
-        """-> {prediction: {predicted_retail, msrp, estimated_wholesale?, model} | None, listings: [normalized], stats: {price, miles, dom} | None,
-        num_found, quota: {...}, raw: {...}, calls: int, notes: [str]}"""
+                    radius: int, dealer_type: str, **opts) -> dict:
+        """-> {prediction: {predicted_retail, msrp, estimated_wholesale?, estimated_trade_in?, model, ...} | None, listings: [normalized], stats: {price, miles, dom} | None,
+        num_found, quota: {...}, raw: {...}, calls: int, notes: [str]}. `opts` are provider-specific (VinAudit: value_types, send_zip) and ignored by the others."""
         raise NotImplementedError
 
 
@@ -81,6 +85,8 @@ class MarketCheckProvider(MarketDataProvider):
     label = "MarketCheck"
     live = True
     badge = "Source: MarketCheck"
+    retail_source = "marketcheck_price"
+    calls_per_fetch = 2
 
     def __init__(self, transport=None):
         self._transport = transport
@@ -127,7 +133,7 @@ class MarketCheckProvider(MarketDataProvider):
             return r.json(), quota
         raise MarketUnavailable("MarketCheck did not answer.")
 
-    async def fetch(self, *, vin, year, make, model, trim, mileage, zip_code, radius, dealer_type) -> dict:
+    async def fetch(self, *, vin, year, make, model, trim, mileage, zip_code, radius, dealer_type, **opts) -> dict:
         notes, raw, calls, quota, prediction = [], {}, 0, {}, None
         async with httpx.AsyncClient(timeout=30, transport=self._transport) as cx:
             if vin and len(vin) == 17 and mileage is not None:
@@ -185,6 +191,134 @@ class MarketCheckProvider(MarketDataProvider):
         return out or None
 
 
+# ---------- VinAudit Market Values ----------
+VA_URL = "https://marketvalue.vinaudit.com/v2/marketvalue"
+VA_PERIOD_DAYS = 90
+VA_VALUE_TYPES = ("retail", "tradein")
+VA_SOFT_ERRORS = {"invalid_vin": "VinAudit could not decode that VIN.", "no_data": "VinAudit has too few sales records for a reliable value.",
+                  "invalid_zip": "VinAudit rejected the ZIP.", "invalid_state_or_province": "VinAudit rejected the state."}
+VA_FATAL_ERRORS = {"invalid_key": "VinAudit rejected the API key. Check VINAUDIT_API_KEY.", "missing_key": "VinAudit got no API key. Check VINAUDIT_API_KEY.",
+                   "api_not_enabled": "This VinAudit account does not include the Market Values API.", "failed_request": "VinAudit could not process the request."}
+
+
+class VinAuditProvider(MarketDataProvider):
+    """VinAudit Market Values API: one statistical value per call (`type` = retail | tradein) from sales records over `period` days, by 17-character VIN.
+    No listings and no documented ZIP parameter. `mean` is the typed value; `prices.*` stay the retail distribution, so trade-in is read from `mean` only."""
+    name = "vinaudit"
+    label = "VinAudit"
+    live = True
+    badge = "Source: VinAudit"
+    retail_source = "vinaudit_retail"
+    calls_per_fetch = 1
+    comps_kind = "sales records"
+
+    def __init__(self, transport=None):
+        self._transport = transport
+
+    @staticmethod
+    def key() -> str:
+        return (os.environ.get("VINAUDIT_API_KEY") or "").strip()
+
+    def configured(self) -> bool:
+        return bool(self.key())
+
+    async def _get(self, cx: httpx.AsyncClient, params: dict) -> tuple:
+        """One GET; the key is ALWAYS the `key` query param. VinAudit reports most failures as HTTP 200 + success:false + a code, so both paths are mapped."""
+        params = {k: v for k, v in params.items() if v not in (None, "")}
+        params["key"] = self.key()
+        for attempt in (0, 1):
+            try:
+                r = await cx.get(VA_URL, params=params)
+            except httpx.HTTPError as e:
+                if attempt == 0:
+                    await asyncio.sleep(0.8)
+                    continue
+                raise MarketUnavailable(f"VinAudit did not answer ({type(e).__name__}).")
+            quota = parse_quota(r.headers)
+            if r.status_code >= 500:
+                if attempt == 0:
+                    await asyncio.sleep(1.2)
+                    continue
+                raise MarketUnavailable(f"VinAudit is having trouble ({r.status_code}).")
+            if r.status_code in (401, 403):
+                raise MarketUnavailable("VinAudit rejected the API key. Check VINAUDIT_API_KEY.")
+            if r.status_code == 429:
+                raise MarketQuotaExceeded("VinAudit rate limit reached.", quota.get("retry_after"), False)
+            try:
+                data = r.json()
+            except ValueError:
+                raise MarketUnavailable("VinAudit returned something that is not JSON.")
+            if r.status_code < 400 and isinstance(data, dict) and data.get("success"):
+                return data, quota
+            code = self._error_code(data if isinstance(data, dict) else {})
+            if code == "rate_limit_exceeded":
+                raise MarketQuotaExceeded("VinAudit rate limit reached.", quota.get("retry_after"), False)
+            if code == "billing_limit_exceeded":
+                raise MarketQuotaExceeded("The VinAudit prepaid balance or billing limit is used up.", None, True)
+            if code in VA_FATAL_ERRORS:
+                raise MarketUnavailable(VA_FATAL_ERRORS[code])
+            if code in VA_SOFT_ERRORS:
+                return {"_error": code, "_message": VA_SOFT_ERRORS[code]}, quota
+            msg = str((data or {}).get("error") or (data or {}).get("message") or f"HTTP {r.status_code}")[:160]
+            return {"_error": code or str(r.status_code), "_message": f"VinAudit: {msg}"}, quota
+        raise MarketUnavailable("VinAudit did not answer.")
+
+    @staticmethod
+    def _error_code(data: dict) -> Optional[str]:
+        known = set(VA_SOFT_ERRORS) | set(VA_FATAL_ERRORS) | {"rate_limit_exceeded", "billing_limit_exceeded"}
+        for k in ("data", "error_code", "code", "error"):
+            v = data.get(k)
+            if isinstance(v, str) and v.strip().lower() in known:
+                return v.strip().lower()
+        return None
+
+    async def fetch(self, *, vin, year, make, model, trim, mileage, zip_code, radius, dealer_type, value_types=None, send_zip=False, **opts) -> dict:
+        if not vin or len(str(vin)) != 17:
+            raise MarketUnavailable("VinAudit values by VIN only, and this vehicle has no 17-character VIN.")
+        types = tuple(t for t in (value_types or ("retail",)) if t in VA_VALUE_TYPES) or ("retail",)
+        notes, raw, calls, quota, got = [], {}, 0, {}, {}
+        if mileage is None:
+            notes.append("No confirmed mileage, so VinAudit priced at its average mileage for this vehicle.")
+        base = {"vin": vin, "format": "json", "period": VA_PERIOD_DAYS, "mileage": int(mileage) if mileage is not None else None}
+        if send_zip and zip_code:
+            base["zip"] = zip_code
+            notes.append("ZIP was sent as a probe; VinAudit does not document a ZIP parameter.")
+        async with httpx.AsyncClient(timeout=30, transport=self._transport) as cx:
+            for t in types:
+                data, q = await self._get(cx, {**base, "type": t})
+                calls += 1
+                raw[t] = data
+                quota = {**quota, **{k: v for k, v in q.items() if v is not None}}
+                if "_error" in data:
+                    notes.append(f"VinAudit {t}: {data['_message']}")
+                else:
+                    got[t] = data
+        retail = got.get("retail")
+        if not retail or _i(retail.get("mean")) is None:
+            raise MarketUnavailable(next((n for n in notes if n.startswith("VinAudit retail")), "VinAudit returned no retail value for this VIN."))
+        prices = retail.get("prices") or {}
+        groups = [(g.get("group") if isinstance(g.get("group"), dict) else g) for g in (prices.get("distribution") or []) if isinstance(g, dict)]
+        mins = [_i(g.get("min")) for g in groups if _i(g.get("min")) is not None]
+        maxs = [_i(g.get("max")) for g in groups if _i(g.get("max")) is not None]
+        adj = retail.get("adjustments") or {}
+        prediction = {"predicted_retail": _i(retail.get("mean")), "msrp": None, "model": "VinAudit Market Value (retail)", "certainty": _i(retail.get("certainty")),
+                      "sample_count": _i(retail.get("count")), "period": retail.get("period"), "mileage_used": _i(retail.get("mileage")), "lookup_id": retail.get("id"),
+                      "vehicle": retail.get("vehicle"), "price_band": {"below": _i(prices.get("below")), "average": _i(prices.get("average")), "above": _i(prices.get("above"))},
+                      "adjustments": {k: adj.get(k) for k in ("mileage", "condition", "known_damage") if isinstance(adj.get(k), dict)}}
+        ti = got.get("tradein")
+        if ti and _i(ti.get("mean")) is not None:
+            prediction["estimated_trade_in"], prediction["trade_in_source"] = _i(ti["mean"]), "vinaudit_tradein"
+        stats = {"price": {"mean": _i(prices.get("average")), "median": None, "min": min(mins) if mins else None, "max": max(maxs) if maxs else None,
+                           "count": _i(retail.get("count")), "stddev": _i(retail.get("stdev")), "p25": None, "p75": None}}
+        avg_miles = _i((adj.get("mileage") or {}).get("average"))
+        if avg_miles:
+            stats["miles"] = {"mean": avg_miles, "median": None, "min": None, "max": None, "count": None, "stddev": None, "p25": None, "p75": None}
+        period = retail.get("period")
+        notes.append(f"VinAudit used {prediction['sample_count'] or 0} sales records" + (f" from {period[0]} to {period[1]}" if isinstance(period, list) and len(period) == 2 else "")
+                     + "; it returns no individual listings, so comparables and match quality are not available from this provider.")
+        return {"prediction": prediction, "listings": [], "stats": stats, "num_found": prediction["sample_count"] or 0, "quota": quota, "raw": raw, "calls": calls, "notes": notes}
+
+
 # ---------- Mock ----------
 _LUXURY = {"bmw", "mercedes-benz", "mercedes", "audi", "lexus", "porsche", "tesla", "cadillac", "lincoln", "acura", "infiniti", "volvo", "land rover", "jaguar", "genesis", "rivian"}
 _TRUCKY = ("f-150", "f150", "f-250", "silverado", "sierra", "ram", "tundra", "tacoma", "tahoe", "suburban", "expedition", "4runner", "wrangler", "yukon", "sequoia", "frontier", "ranger", "colorado", "gladiator")
@@ -214,11 +348,13 @@ class MockMarketProvider(MarketDataProvider):
     label = "Development data"
     live = False
     badge = "DEVELOPMENT DATA — NOT LIVE"
+    retail_source = "mock_model"
+    calls_per_fetch = 0
 
     def configured(self) -> bool:
         return True
 
-    async def fetch(self, *, vin, year, make, model, trim, mileage, zip_code, radius, dealer_type) -> dict:
+    async def fetch(self, *, vin, year, make, model, trim, mileage, zip_code, radius, dealer_type, **opts) -> dict:
         seed = hashlib.sha1(f"{vin or ''}|{year}|{make}|{model}|{trim}|{mileage}|{zip_code}|{radius}".encode()).hexdigest()
         rng = random.Random(seed)
         retail = mock_retail(year, make, model, mileage)
@@ -252,21 +388,47 @@ class MockMarketProvider(MarketDataProvider):
 
 
 # ---------- registry ----------
-PROVIDERS = {p.name: p for p in (MarketCheckProvider(), MockMarketProvider())}
+PROVIDERS = {p.name: p for p in (MarketCheckProvider(), VinAuditProvider(), MockMarketProvider())}
+LIVE_PROVIDERS = ("marketcheck", "vinaudit")
+
+
+def get(name: Optional[str]) -> Optional[MarketDataProvider]:
+    return PROVIDERS.get((name or "").strip().lower())
+
+
+def forced() -> Optional[MarketDataProvider]:
+    """MARKET_DATA_PROVIDER forces a provider on purpose (dev / preview). Only honoured when that provider is configured; never silent (badges)."""
+    f = get(os.environ.get("MARKET_DATA_PROVIDER"))
+    return f if f and f.configured() else None
 
 
 def active() -> MarketDataProvider:
-    """MarketCheck when the key is present; otherwise the mock. MARKET_DATA_PROVIDER=mock forces development data on purpose (never silently)."""
-    forced = (os.environ.get("MARKET_DATA_PROVIDER") or "").strip().lower()
-    if forced in PROVIDERS and PROVIDERS[forced].configured():
-        return PROVIDERS[forced]
+    """Platform default when no dealership rule says otherwise: the forced provider, else MarketCheck when the key is present, else the mock."""
+    f = forced()
+    if f:
+        return f
     mc = PROVIDERS["marketcheck"]
     return mc if mc.configured() else PROVIDERS["mock"]
 
 
+def for_rules(market_rules: Optional[dict]) -> tuple:
+    """(primary, fallback | None) from dealership rules. A configured primary wins; an unconfigured one degrades to development data (badged), never to
+    the other live provider. The fallback is only returned when the rules name it AND it is configured AND it differs from the primary."""
+    f = forced()
+    if f:
+        return f, None
+    mr = market_rules or {}
+    primary = get(mr.get("primary")) or PROVIDERS["marketcheck"]
+    prov = primary if primary.configured() else PROVIDERS["mock"]
+    fb = get(mr.get("fallback")) if (mr.get("fallback") or "none") != "none" else None
+    fb = fb if (fb and fb.live and fb.configured() and fb.name != prov.name and prov.live) else None
+    return prov, fb
+
+
 def provider_options() -> list:
     act = active().name
-    return [{"name": p.name, "label": p.label, "live": p.live, "badge": p.badge, "configured": p.configured(), "active": p.name == act} for p in PROVIDERS.values()]
+    return [{"name": p.name, "label": p.label, "live": p.live, "badge": p.badge, "configured": p.configured(), "active": p.name == act,
+             "calls_per_fetch": p.calls_per_fetch, "comps_kind": p.comps_kind} for p in PROVIDERS.values()]
 
 
 # ---------- in-process token buckets (per user / per store) ----------

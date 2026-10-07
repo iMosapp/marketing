@@ -7,6 +7,7 @@ import { BigButton, StepTitle, BusyBar } from './shared';
 import { MarketSnapshotCard, ProviderBadge } from './MarketSnapshotCard';
 import { ComparablesList } from './ComparablesList';
 import { BookValuesEditor } from './BookValuesEditor';
+import { ProviderCompare } from './ProviderCompare';
 
 type Props = { colors: any; appraisal: any; onSaved: (appraisal: any) => void; showToast: (m: string, t?: any, d?: number) => void };
 const RADII = [25, 50, 100, 200];
@@ -43,6 +44,16 @@ export const MarketStep = ({ colors, appraisal, onSaved, showToast }: Props) => 
   const next = async () => {
     try { const r = (await api.patch(`/appraisals/${appraisal.id}`, { step: 'expectation' })).data; onSaved(r.appraisal); }
     catch (e) { showToast(errText(e, 'Could not continue'), 'error'); }
+  };
+  const compare = async (force = false) => {
+    if (!/^\d{5}$/.test(zip)) { showToast('Enter the 5-digit ZIP first', 'error'); return; }
+    setBusy('Pulling both providers…');
+    try {
+      const c = (await api.post(`/appraisals/${appraisal.id}/market/compare`, { zip, radius, force })).data;
+      setData((d: any) => ({ ...d, comparison: { ...(d.comparison || {}), latest: c } }));
+      showToast(`Comparison done · ${c.calls_total} paid call${c.calls_total === 1 ? '' : 's'}`, 'success');
+    } catch (e: any) { showToast(errText(e, e?.response?.status === 429 ? 'Rate limit or quota reached' : 'Comparison failed'), 'error', 6000); }
+    finally { setBusy(null); }
   };
 
   if (!data) return <ActivityIndicator color={GOLD} style={{ marginTop: 30 }} />;
@@ -82,7 +93,18 @@ export const MarketStep = ({ colors, appraisal, onSaved, showToast }: Props) => 
         {err ? <Text style={{ fontSize: 12.5, color: '#FF3B30' }} {...tid('market-error')}>{err}</Text> : null}
       </View>
       {snap ? <MarketSnapshotCard colors={colors} snapshot={snap} mileage={data.mileage} historyCount={(data.history || []).length} /> : null}
+      {snap?.fallback_from ? <Text style={{ fontSize: 12, fontWeight: '700', color: '#FF9500' }} {...tid('market-fallback-note')}>Pulled from {snap.provider_label} because the primary provider failed and the dealership rules allow this fallback.</Text> : null}
       {snap ? <ComparablesList colors={colors} comps={data.comparables || []} live={!!snap.live} /> : null}
+      {data.comparison?.allowed ? (
+        <View style={{ borderRadius: 16, padding: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, gap: 10 }} {...tid('market-compare-card')}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.8 }}>PROVIDER COMPARISON · ADMIN</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Pulls MarketCheck and VinAudit for this vehicle and shows them side by side. Costs paid calls; the result never changes this appraisal's number.</Text>
+          <TouchableOpacity onPress={() => compare(false)} disabled={!!busy} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 12, borderWidth: 1, borderColor: GOLD, opacity: busy ? 0.5 : 1 }} {...tid('market-compare')}>
+            <Ionicons name="git-compare" size={16} color={GOLD} /><Text style={{ fontSize: 14, fontWeight: '800', color: GOLD }}>{data.comparison.latest ? 'Compare again' : 'Compare providers'}</Text>
+          </TouchableOpacity>
+          {data.comparison.latest ? <ProviderCompare colors={colors} comparison={data.comparison.latest} /> : null}
+        </View>
+      ) : null}
       <BookValuesEditor colors={colors} appraisalId={appraisal.id} bookValues={data.book_values || []} sources={data.book_sources || {}} types={data.value_types || {}} onChanged={bv => setData((d: any) => ({ ...d, book_values: bv }))} showToast={showToast} />
       <BigButton colors={colors} icon="checkmark" label="Continue" sub={snap ? undefined : 'You can come back for market data any time'} onPress={next} primary={!!snap} testId="market-continue" />
     </View>

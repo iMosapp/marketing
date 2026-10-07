@@ -19,6 +19,7 @@ from services.appraisals import inspection
 from services.appraisals import market
 from services.appraisals import market_providers as mp
 from services.appraisals.providers import ProviderUnavailable, identity_options, IDENTITY
+from services.appraisals import providers as identity
 from services.appraisals import readers
 from services.appraisals import relationship
 from services.appraisals import reporting
@@ -126,6 +127,19 @@ class MarketRefreshBody(BaseModel):
     force: bool = False
 
 
+class CompareBody(MarketRefreshBody):
+    probe_zip: bool = False
+
+
+class AdhocCompareBody(CompareBody):
+    vin: Optional[str] = None
+    mileage: Optional[int] = None
+    year: Optional[int] = None
+    make: Optional[str] = None
+    model: Optional[str] = None
+    trim: Optional[str] = None
+
+
 class BookValueBody(BaseModel):
     source: Optional[str] = None
     source_label: Optional[str] = None
@@ -195,21 +209,59 @@ def _dt(s: Optional[str]) -> Optional[datetime]:
 async def meta(request: Request):
     me = _me(request)
     _allowed(me)
+    act = await market.active_for(get_db(), me)
     return {"modes": core.MODES, "sources": core.SOURCES, "roles": core.ROLES, "identity": identity_options(), "steps": core.STEPS,
             "statuses": workflow.STATUS_LABELS, "outcomes": workflow.OUTCOMES, "decisions": list(workflow.DECISIONS),
-            "abilities": {"manager": workflow.can_approve(me), "edit_rules": workflow.can_edit_rules(me)},
-            "market_provider": {"name": mp.active().name, "label": mp.active().label, "live": mp.active().live, "badge": mp.active().badge}}
+            "abilities": {"manager": workflow.can_approve(me), "edit_rules": workflow.can_edit_rules(me), "provider_admin": me.get("role") in market.ADMIN_ROLES},
+            "market_provider": {"name": act.name, "label": act.label, "live": act.live, "badge": act.badge}}
 
 
 @router.get("/providers")
 async def providers(request: Request):
-    """Which market data provider is live vs mock, plus this month's usage. Managers and admins only; keys are never returned."""
+    """Which market data providers are live vs mock, this month's usage per provider, calls per purpose, and the caller's dealership market rules.
+    Managers and admins only; keys are never returned."""
     me = _me(request)
     if me.get("role") not in ("super_admin", "org_admin", "store_manager"):
         raise HTTPException(status_code=403, detail="Managers and admins only")
     db = get_db()
-    return {"market": mp.provider_options(), "usage": await market.usage(db, mp.active()), "identity": identity_options(),
-            "monthly_cap": market.MONTHLY_CAP_DEFAULT, "cache_hours": market.CACHE_HOURS}
+    act = await market.active_for(db, me)
+    sid = me.get("store_id") or ((me.get("store_ids") or [None])[0])
+    return {"market": mp.provider_options(), "active": {"name": act.name, "label": act.label, "live": act.live, "badge": act.badge}, "usage": await market.usage(db, act),
+            "usage_all": await market.usage_all(db), "cost": await market.cost_summary(db, me), "identity": identity_options(), "monthly_cap": market.MONTHLY_CAP_DEFAULT,
+            "cache_hours": market.CACHE_HOURS, "market_rules": await market.market_rules_for(db, me.get("organization_id"), str(sid) if sid else None),
+            "comparison_admin": me.get("role") in market.ADMIN_ROLES, "dev_market_allowed": workflow.development_basis_allowed()}
+
+
+def _admin(me: dict):
+    if me.get("role") not in market.ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Provider comparison is for admins only")
+
+
+@router.post("/providers/compare")
+async def compare_providers_adhoc(body: AdhocCompareBody, request: Request):
+    """Admin, deliberate: run BOTH live providers for one vehicle (VIN or year/make/model) and lay the numbers side by side. Costs paid calls every time
+    unless the same request was run in the last 24h. Nothing here touches any appraisal or the engine."""
+    me = _me(request)
+    _admin(me)
+    db = get_db()
+    vehicle = {"vin": (body.vin or "").strip().upper() or None, "year": body.year, "make": body.make, "model": body.model, "trim": body.trim}
+    if vehicle["vin"] and not (vehicle["year"] and vehicle["make"] and vehicle["model"]):
+        try:
+            dec = await identity.decode_vin(db, vehicle["vin"])
+            vehicle = {**vehicle, **{k: dec.get(k) for k in ("year", "make", "model", "trim") if dec.get(k)}}
+        except ProviderUnavailable as e:
+            raise HTTPException(status_code=503, detail=f"VIN decoder unavailable ({e}). Give year, make and model by hand.")
+    try:
+        return await market.compare(db, me, vehicle=vehicle, mileage=body.mileage, zip_code=body.zip, radius=body.radius, force=body.force, probe_zip=body.probe_zip)
+    except (ValueError, mp.MarketRateLimited, mp.MarketUnavailable) as e:
+        raise _market_error(e)
+
+
+@router.get("/providers/comparisons")
+async def list_provider_comparisons(request: Request, limit: int = 50):
+    me = _me(request)
+    _admin(me)
+    return {"comparisons": await market.list_comparisons(get_db(), me, limit)}
 
 
 @router.get("")
@@ -237,7 +289,8 @@ async def _rules_payload(db, me: dict, store_id: Optional[str], organization_id:
     return {"organization_id": org_id, "store_id": store_id, "org_editable": r["org_editable"] and bool(org_id), "stores": r["stores"], "effective": eff,
             "org": rulesvc.public_rules_doc(docs["org"]), "store": rulesvc.public_rules_doc(docs["store"]), "warnings": rulesvc.double_count_warnings(eff["rules"]),
             "options": {"basis": rulesvc.BASIS_OPTIONS, "conditions": rulesvc.CONDITION_LABELS, "defaults": rulesvc.DEFAULT_RULES, "outcomes": workflow.OUTCOMES,
-                        "roundings": [1, 5, 10, 25, 50, 100], "task_kinds": list(rulesvc.TASK_KINDS), "triggers": followup.TRIGGER_EVENTS, "merge_fields": followup.MERGE_FIELD_HELP},
+                        "roundings": [1, 5, 10, 25, 50, 100], "task_kinds": list(rulesvc.TASK_KINDS), "triggers": followup.TRIGGER_EVENTS, "merge_fields": followup.MERGE_FIELD_HELP,
+                        "market_providers": {k: {**v, "configured": mp.PROVIDERS[k].configured()} for k, v in rulesvc.MARKET_PROVIDER_OPTIONS.items()}},
             "org_settings": {"allow_trade_values_in_automated_messages": await followup.org_allows_trade_values(db, org_id), "editable": me.get("role") in ("org_admin", "super_admin") and bool(org_id)},
             "can_edit": workflow.can_edit_rules(me)}
 
@@ -743,6 +796,23 @@ async def refresh_market(appraisal_id: str, body: MarketRefreshBody, request: Re
     out = await market.read(db, await _appr(db, me, appraisal_id), me)
     out["cached"] = res["cached"]
     return out
+
+
+@router.post("/{appraisal_id}/market/compare")
+async def compare_market_providers(appraisal_id: str, body: CompareBody, request: Request):
+    """Admin, deliberate: both live providers for THIS appraisal's vehicle, side by side. Allowed only when the dealership rules switch comparison on.
+    Comparison snapshots never become the appraisal's market snapshot and never reach the engine."""
+    me = _me(request)
+    _admin(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    mr = await market.market_rules_for(db, a.get("organization_id"), a.get("store_id"))
+    if not mr.get("comparison"):
+        raise HTTPException(status_code=403, detail="Provider comparison is switched off in this dealership's appraisal rules.")
+    try:
+        return await market.compare(db, me, appr=a, zip_code=body.zip, radius=body.radius, force=body.force, probe_zip=body.probe_zip)
+    except (ValueError, mp.MarketRateLimited, mp.MarketUnavailable) as e:
+        raise _market_error(e)
 
 
 @router.post("/{appraisal_id}/book-values")

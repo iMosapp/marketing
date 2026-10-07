@@ -440,6 +440,9 @@ export default function MoreScreen() {
     if (canEditRules) {
       manageItems.push({ icon: 'calculator', title: 'Appraisal Rules', subtitle: 'Target gross, recon, mileage, age: how the suggested ACV is built', onPress: () => router.push('/admin/appraisal-rules' as any), color: '#C9A962' });
     }
+    if (isAdmin) {
+      manageItems.push({ icon: 'git-compare', title: 'Provider Lab', subtitle: 'MarketCheck vs VinAudit on one vehicle, call usage, validation runs', onPress: () => router.push('/admin/provider-lab' as any), color: '#C9A962' });
+    }
     sections.push({ id: 'manage', title: 'Manage', icon: 'settings-outline', color: '#8E8E93', items: manageItems });
 
     // TEAM: everything about running people, in one folder (managers and up)

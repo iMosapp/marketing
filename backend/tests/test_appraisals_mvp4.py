@@ -73,10 +73,10 @@ def cleanup(manager):
 # ---------- permissions + meta ----------
 def test_meta_abilities(rep, manager):
     st, b = call("GET", "/api/appraisals/meta", None, rep)
-    assert st == 200 and b["abilities"] == {"manager": False, "edit_rules": False}
+    assert st == 200 and b["abilities"] == {"manager": False, "edit_rules": False, "provider_admin": False}
     assert "resubmitted" in b["statuses"] and "wants_more" in b["outcomes"]
     st, b = call("GET", "/api/appraisals/meta", None, manager)
-    assert st == 200 and b["abilities"] == {"manager": True, "edit_rules": True}
+    assert st == 200 and b["abilities"] == {"manager": True, "edit_rules": True, "provider_admin": False}
 
 
 def test_rules_gates_and_versioning(rep, manager):

@@ -11,7 +11,7 @@ RULES_SCHEMA_VERSION = 1
 CONDITIONS = ("very_good", "good", "fair", "poor")
 CONDITION_LABELS = {"very_good": "Excellent", "good": "Good", "fair": "Fair", "poor": "Poor"}
 BASIS_OPTIONS = {
-    "provider_retail": {"label": "Market estimated retail", "source": "MARKET DATA", "kind": "retail", "hint": "MarketCheck Price prediction when live; the provider's retail estimate otherwise"},
+    "provider_retail": {"label": "Market estimated retail", "source": "MARKET DATA", "kind": "retail", "hint": "The live provider's own retail estimate (MarketCheck Price prediction, or VinAudit market value when that provider is in use)"},
     "comps_median": {"label": "Comparable median", "source": "MARKET DATA", "kind": "retail", "hint": "Median asking price of the comparables pulled"},
     "comps_average": {"label": "Comparable average", "source": "MARKET DATA", "kind": "retail", "hint": "Average asking price of the comparables pulled"},
     "book:mmr": {"label": "Manheim MMR (manual)", "source": "BOOK VALUE", "kind": "book", "hint": "Entered by hand on the Market step"},
@@ -21,9 +21,15 @@ BASIS_OPTIONS = {
     "book:galves": {"label": "Galves (manual)", "source": "BOOK VALUE", "kind": "book", "hint": "Entered by hand on the Market step"},
     "manual": {"label": "Manager-entered basis", "source": "MANUAL", "kind": "manual", "hint": "A manager types the starting value"},
 }
+MARKET_PROVIDER_OPTIONS = {
+    "marketcheck": {"label": "MarketCheck", "hint": "ML retail prediction by VIN + active listings around the ZIP. 2 calls per pull.", "comps": "active listings"},
+    "vinaudit": {"label": "VinAudit", "hint": "Statistical retail value from recent sales records, by VIN only. No listings. 1 call per pull.", "comps": "sales records"},
+}
 
 DEFAULT_RULES = {
     "schema_version": RULES_SCHEMA_VERSION,
+    "market": {"primary": "marketcheck", "fallback": "none", "comparison": False,
+               "reason": "Which market data provider the Market step pulls from. A fallback is used only when the primary fails and only if one is named here. Comparison lets admins pull both providers side by side on an appraisal (costs calls)."},
     "basis": {"order": ["provider_retail", "comps_median"], "min_comps": 3, "reason": "Start from what the market says the car retails for; fall back to the comparable median."},
     "target_gross": {"enabled": True, "method": "fixed", "amount": 3000, "percent": 0, "apply_to_wholesale": False, "reason": "Target front-end gross on the retail."},
     "recon": {"enabled": True, "by_condition": {"very_good": 500, "good": 1000, "fair": 2000, "poor": None}, "poor_requires_review": True,
@@ -79,6 +85,16 @@ def validate(raw: dict) -> dict:
     if not order:
         raise ValueError("Pick at least one valuation basis")
     d["basis"].update({"order": list(dict.fromkeys(order)), "min_comps": max(1, _num(b.get("min_comps"), 3)), "reason": str(b.get("reason") or d["basis"]["reason"])[:300]})
+    mk = raw.get("market") or {}
+    primary = str(mk.get("primary") or d["market"]["primary"]).strip().lower()
+    if primary not in MARKET_PROVIDER_OPTIONS:
+        raise ValueError("Unknown market data provider")
+    fallback = str(mk.get("fallback") or "none").strip().lower()
+    if fallback not in ("none", *MARKET_PROVIDER_OPTIONS):
+        raise ValueError("Unknown fallback provider")
+    if fallback == primary:
+        raise ValueError("The fallback provider must be different from the primary")
+    d["market"].update({"primary": primary, "fallback": fallback, "comparison": _bool(mk.get("comparison", False)), "reason": str(mk.get("reason") or d["market"]["reason"])[:300]})
     tg = raw.get("target_gross") or {}
     method = tg.get("method") or "fixed"
     if method not in ("fixed", "percent"):
@@ -171,6 +187,7 @@ async def effective(db, organization_id: Optional[str], store_id: Optional[str])
     else:
         return {"rules": copy.deepcopy(DEFAULT_RULES), "source": "default", "version": 0, "rules_id": None, "scope_label": "I'm On Social defaults"}
     rules = copy.deepcopy(doc["rules"])
+    rules.setdefault("market", copy.deepcopy(DEFAULT_RULES["market"]))
     fu = rules.setdefault("follow_up", copy.deepcopy(DEFAULT_RULES["follow_up"]))
     fu.setdefault("tasks", copy.deepcopy(DEFAULT_RULES["follow_up"]["tasks"]))
     return {"rules": rules, "source": src, "version": doc.get("version") or 1, "rules_id": str(doc["_id"]),

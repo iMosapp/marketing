@@ -48,7 +48,7 @@ export const MarketSnapshotCard = ({ colors, snapshot, mileage, historyCount }: 
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Tile colors={colors} testId="market-range" label="ASKING RANGE" value={range ? `${money(range.low)}–${money(range.high)}` : '—'} sub={r.price_range_basis ? `Middle half of ${r.price_range_basis}` : undefined} />
-        <Tile colors={colors} testId="market-listings" label="LISTINGS" value={r.listing_count != null ? String(r.listing_count) : '—'} sub={`${r.comps_used || 0} priced comps · ${snapshot.requested?.radius || 100} mi of ${snapshot.requested?.zip}`} />
+        <Tile colors={colors} testId="market-listings" label={r.comps_kind === 'sales records' ? 'SALES RECORDS' : 'LISTINGS'} value={r.listing_count != null ? String(r.listing_count) : '—'} sub={r.comps_kind === 'sales records' ? `${snapshot.provider_label} national by VIN · no listings` : `${r.comps_used || 0} priced comps · ${snapshot.requested?.radius || 100} mi of ${snapshot.requested?.zip}`} />
         <Tile colors={colors} testId="market-dom" label="DAYS ON MARKET" value={r.avg_dom != null ? `${r.avg_dom} avg` : '—'} sub={r.median_dom != null ? `${r.median_dom} median` : undefined} />
       </View>
       <View style={{ gap: 4 }}>
@@ -56,6 +56,11 @@ export const MarketSnapshotCard = ({ colors, snapshot, mileage, historyCount }: 
           <Text style={{ fontWeight: '800' }}>Wholesale: </Text>
           {r.estimated_wholesale ? `${money(r.estimated_wholesale)} (${snapshot.live ? snapshot.provider_label : 'development data'})` : `not provided by ${snapshot.provider_label}. Add MMR or Black Book below.`}
         </Text>
+        {r.estimated_trade_in ? (
+          <Text style={{ fontSize: 12.5, color: colors.text }} {...tid('market-trade-in')}>
+            <Text style={{ fontWeight: '800' }}>Trade-in ({snapshot.provider_label}): </Text>{money(r.estimated_trade_in)} · reference only, not the dealership's number
+          </Text>
+        ) : null}
         {r.avg_miles != null ? (
           <Text style={{ fontSize: 12.5, color: colors.text }} {...tid('market-mileage')}>
             <Text style={{ fontWeight: '800' }}>Mileage: </Text>{mileage != null ? `your trade ${miles(mileage)} · ` : ''}market avg {miles(r.avg_miles)}

@@ -10,7 +10,7 @@ import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { GOLD, tid, errText } from '../../components/inbox/ownership';
 import { showConfirm } from '../../services/alert';
 import { BasisEditor } from '../../components/appraisal/rules/BasisEditor';
-import { TargetGrossSection, ReconSection, MileageSection, AgeSection, ReserveSection, ReviewSection, RangeSection, FollowUpSection } from '../../components/appraisal/rules/RulesSections';
+import { TargetGrossSection, ReconSection, MileageSection, AgeSection, ReserveSection, ReviewSection, RangeSection, FollowUpSection, MarketProviderSection } from '../../components/appraisal/rules/RulesSections';
 import { FollowUpTasksSection, MoneyInMessagesCard } from '../../components/appraisal/rules/FollowUpTasks';
 
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
@@ -101,6 +101,7 @@ export default function AppraisalRulesScreen() {
               {data.warnings.map((w: string, i: number) => <Text key={i} style={{ fontSize: 12.5, color: colors.text, lineHeight: 17 }}>⚠︎ {w}</Text>)}
             </View>
           ) : null}
+          <MarketProviderSection {...p} />
           <BasisEditor colors={colors} basis={rules.basis} options={data.options.basis} onChange={b => set({ basis: b })} />
           <TargetGrossSection {...p} />
           <ReconSection {...p} />

@@ -122,6 +122,24 @@ export const RangeSection = ({ colors, rules, set, options }: P) => {
   );
 };
 
+export const MarketProviderSection = ({ colors, rules, set, options }: P) => {
+  const mk = rules.market || { primary: 'marketcheck', fallback: 'none', comparison: false };
+  const up = (p: any) => set({ market: { ...mk, ...p } });
+  const provs: Record<string, any> = options.market_providers || {};
+  const name = (k: string) => provs[k]?.label || k;
+  return (
+    <SectionCard colors={colors} title="Market data provider" hint="Where the Market step pulls from. The engine is the same either way; the provider only supplies market numbers. Each pull costs calls." testId="rules-market">
+      <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.4 }}>PRIMARY</Text>
+      <ChipRow colors={colors} options={Object.keys(provs).map(k => ({ key: k, label: `${name(k)}${provs[k]?.configured ? '' : ' (no key)'}` }))} value={mk.primary} onChange={k => up({ primary: k, fallback: mk.fallback === k ? 'none' : mk.fallback })} testId="market-primary" />
+      {provs[mk.primary]?.hint ? <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>{provs[mk.primary].hint}</Text> : null}
+      <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.4 }}>IF THE PRIMARY FAILS</Text>
+      <ChipRow colors={colors} options={[{ key: 'none', label: 'No fallback (manager or book value)' }, ...Object.keys(provs).filter(k => k !== mk.primary).map(k => ({ key: k, label: `Use ${name(k)}` }))]} value={mk.fallback || 'none'} onChange={k => up({ fallback: k })} testId="market-fallback" />
+      <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>{mk.fallback && mk.fallback !== 'none' ? `${name(mk.fallback)} may start the suggested ACV only when ${name(mk.primary)} fails. The snapshot says so.` : 'Without a fallback a failed pull never invents a value: the number comes from a book value or the manager.'}</Text>
+      <SwitchRow colors={colors} label="Let admins compare both providers on an appraisal" hint="Deliberate, admin-only, costs extra calls. Comparison numbers never feed the engine." value={!!mk.comparison} onChange={v => up({ comparison: v })} testId="market-comparison" />
+    </SectionCard>
+  );
+};
+
 export const FollowUpSection = ({ colors, rules, set, options }: P) => {
   const fu = rules.follow_up;
   const up = (p: any) => set({ follow_up: { ...fu, ...p } });

@@ -6,6 +6,9 @@ from services.appraisals.rules import BASIS_OPTIONS, CONDITION_LABELS
 
 ENGINE_VERSION = 1
 SRC_MARKET, SRC_BOOK, SRC_CALC, SRC_MANUAL = "MARKET DATA", "BOOK VALUE", "I'M ON SOCIAL CALCULATION", "MANUAL"
+# A provider's OWN retail estimate may start the number (comparable statistics are separate basis keys). VinAudit only reaches here when a dealership rule
+# names it as primary or fallback; defaults keep MarketCheck primary with no fallback.
+PROVIDER_RETAIL_SOURCES = ("marketcheck_price", "vinaudit_retail", "mock_model")
 BOOK_LABELS = {"black_book": "Black Book", "mmr": "Manheim MMR", "jd_power": "J.D. Power (NADA)", "kbb": "Kelley Blue Book", "galves": "Galves", "other": "Other"}
 
 
@@ -55,7 +58,7 @@ def resolve_basis(rules: dict, market: Optional[dict], book_values: list, manual
         opt = BASIS_OPTIONS.get(key)
         if not opt:
             continue
-        if key == "provider_retail" and mkt and mkt.get("estimated_retail") and mkt.get("retail_source") in ("marketcheck_price", "mock_model"):
+        if key == "provider_retail" and mkt and mkt.get("estimated_retail") and mkt.get("retail_source") in PROVIDER_RETAIL_SOURCES:
             return {"key": key, "label": opt["label"], "amount": int(mkt["estimated_retail"]), "source": SRC_MARKET, "kind": "retail",
                     "reason": f"{mkt.get('retail_label') or 'Provider retail estimate'} ({mkt.get('provider_label')})" + ("" if mkt.get("live") else " — DEVELOPMENT DATA — NOT LIVE")}
         if key == "comps_median" and mkt and mkt.get("median_market_price") and (mkt.get("comps_used") or 0) >= min_comps:
