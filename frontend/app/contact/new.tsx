@@ -57,7 +57,7 @@ export default function NewContactScreen() {
   const user = useAuthStore(st => st.user);
   const { showToast } = useToast();
   // Opened from a voice memo: name + company Jessi heard are prefilled and the memo attaches to the new contact after Save.
-  const params = useLocalSearchParams<{ memo_id?: string; first_name?: string; last_name?: string; employer?: string }>();
+  const params = useLocalSearchParams<{ memo_id?: string; first_name?: string; last_name?: string; employer?: string; returnTo?: string }>();
   const memoId = typeof params.memo_id === 'string' ? params.memo_id : '';
   const [attachTo, setAttachTo] = useState<{ id: string; name: string } | null>(null);
   const [attachBusy, setAttachBusy] = useState<MemoKind | null>(null);
@@ -379,6 +379,7 @@ export default function NewContactScreen() {
       }
 
       if (newId && memoId) { setAttachTo({ id: newId, name: contact.first_name }); return; }
+      if (newId && params.returnTo === 'appraisal') { router.replace(`/appraisals/new?contact_id=${newId}` as any); return; }
       if (newId) router.replace(`/contact/${newId}` as any);
       else router.back();
     } catch (e: any) {

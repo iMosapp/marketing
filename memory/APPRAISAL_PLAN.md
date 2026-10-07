@@ -1,6 +1,21 @@
 # AI Trade-In Appraisal — read-only implementation assessment (Oct 7 2026)
 
-Status: ASSESSMENT ONLY. No code written. Awaiting the owner's architecture approval. Build order fixed by the owner: MVP1 → MVP5, STOP AND TEST after each.
+Status: ARCHITECTURE APPROVED Oct 7 2026 with the 10 changes below. MVP1 in build; MVP2-5 blocked until the owner reviews MVP1.
+
+## 0. Owner's approved changes (Oct 7 2026) — binding
+1. **Naming**: product is I'm On Social, assistant is Jessi. No Tok/TracTok anywhere in this feature. Inspection UI wording: "AI Vehicle Inspection"; Jessi may give voice/text guidance.
+2. **Vehicle identity provider architecture**: `VehicleIdentityProvider` (normalized) → `VINIdentityProvider` (decoder: `NHTSAProvider`) and `PlateIdentityProvider` (architected, not activated; a paid plate-to-VIN provider can be dropped in without touching the appraisal workflow). Identity screen: SCAN VIN · UPLOAD VIN PHOTO · ENTER VIN MANUALLY · (future) SCAN LICENSE PLATE.
+3. **Capture modes**: `vehicle_here` (rep captures on the phone) and `customer_sent` (rep imports VIN photo, odometer photo, exterior/interior photos, walkaround video from library/files). ONE pipeline; every media doc records `source` ∈ captured_by_rep | uploaded_by_rep | customer_supplied, `uploaded_by`, `uploaded_at`.
+4. **Customer self-upload (future)**: SEND APPRAISAL LINK → secure no-login landing page (VIN photo, odometer photo, walkaround video, interior photos, submit) attaching to Contact → Vehicle → Appraisal. Not built in MVP1; the media model (`source: customer_supplied`, `uploaded_by: null`, `upload_token`) and appraisal-scoped media paths already allow it.
+5. **Video retention**: video → upload/process → best evidence frames → AI inspection → keep frames; original retention is an org setting `retain_original_inspection_video` (ON/OFF); when OFF the original is deleted after successful processing + retry window. Evidence frames tied to findings are always retained.
+6. **External book values**: `appraisal.book_values` [{source: black_book | mmr | jd_power | other, value, entered_by, entered_at, note}], manual first, provider-populated later; always labelled by source next to MarketCheck retail, comp average, I'm On Social suggested ACV and manager-approved value.
+7. **Customer expected value early**: "Has the customer told you what they expect for their trade?" NO / YES → amount, captured before submission, shown prominently on Manager Review ("Customer Wants: $32,000"), and part of relationship intelligence.
+8. **Follow-up = existing campaign engine**: outcomes enroll the contact into existing campaigns (Trade - Thinking About It / Wants More / Declined / Reappraisal) via vehicle/appraisal merge variables; no hard-coded 90-day task as the primary mechanism (campaigns may create tasks).
+9. **REAPPRAISE first-class**: a reappraisal creates a new `vehicle_appraisals` doc on the SAME `vehicles` doc (no duplicate vehicle), reuses VIN/year/make/model/trim + previous appraisal + condition history, asks only for updated mileage, condition/media, market data; history (date, mileage, dealer offer, customer wanted) is relationship intelligence for Jessi and Ask.
+10. **Permissions**: `my_tools.trade_appraisal` default OFF for reps, manager-enabled per user/store through the existing feature-permission templates; managers/admins have it on.
+
+MVP1 scope (approved): navigation, feature permission, select/create customer, create/select vehicle, VIN photo scan, VIN photo upload, manual VIN, NHTSA decoding, mileage photo capture/upload/manual, basic vehicle record, appraisal draft, customer expected value, captured vs uploaded/customer-supplied media, REAPPRAISE data relationship. NOT MarketCheck, NOT AI damage inspection, NOT manager approval.
+
 
 ## 1. What we reuse (audited)
 | Need | Existing piece | Where |

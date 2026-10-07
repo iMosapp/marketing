@@ -468,6 +468,7 @@ export default function MoreScreen() {
       { icon: 'calendar', title: 'Calendar', subtitle: 'Appointments, tasks, birthdays and sold dates', onPress: () => router.push('/dates-calendar' as any), color: '#AF52DE' },
       { permKey: 'ask_jessi', icon: 'sparkles', title: 'Ask Jessi', subtitle: 'Your AI assistant', onPress: () => router.push('/jessie'), color: '#C9A962' },
       { icon: 'search-circle', title: 'Who Mentioned', subtitle: "Type it: who's looking at Harleys, who asked about a Tahoe", onPress: () => router.push('/memory-search' as any), color: '#C9A962' },
+      { permKey: 'trade_appraisal', icon: 'car-sport', title: 'Trade Appraisal', subtitle: 'Scan the VIN, capture mileage, get a value approved', onPress: () => router.push('/appraisals' as any), color: '#C9A962' },
       { permKey: 'ask_jessi', icon: 'person-circle', title: 'My VA', subtitle: 'Your AI clone, see how it sounds', onPress: () => router.push('/settings/virtual-assistant'), color: '#C9A962' },
       { permKey: 'ask_jessi', icon: 'flash', title: 'AI Follow-ups', subtitle: 'Smart outreach suggestions', onPress: () => router.push('/(tabs)/ai-outreach' as any), color: '#AF52DE' },
       { permKey: 'team_chat', icon: 'chatbox-ellipses', title: 'Team Chat', subtitle: 'Internal team messaging', onPress: () => router.push('/(tabs)/team'), color: '#5856D6' },
@@ -778,7 +779,7 @@ export default function MoreScreen() {
     }
   }
   const GROUP_PRIORITY: Record<string, string[]> = {
-    daily: ['Tasks', 'Ask Jessi', 'Who Mentioned', 'AI Follow-ups', 'Send a Blast', 'Share My Card', 'Get Reviews', 'Calendar', 'Inventory', 'Team Chat'],
+    daily: ['Tasks', 'Ask Jessi', 'Who Mentioned', 'Trade Appraisal', 'AI Follow-ups', 'Send a Blast', 'Share My Card', 'Get Reviews', 'Calendar', 'Inventory', 'Team Chat'],
     team: ['Team Today', 'Team Tasks', 'Ask Jessi About The Team', 'Team Members', 'Invite Team', 'Team Availability', 'Inboxes'],
     leads: ['Internet Leads', 'Power Dialer', 'Call Retries', 'Lead Flows', 'Lead Source Queue', 'Lead Source Config', 'Website Widget'],
   };
@@ -810,6 +811,7 @@ export default function MoreScreen() {
       ...(perm('my_tools', 'inventory') ? [mk('loose', 'Inventory', "What's on the lot", 'car-sport', '#32ADE6', '/inventory')] : []),
       ...(perm('my_tools', 'keyword_search') ? [mk('loose', 'Keyword Search', 'Find any word in texts and calls', 'search-circle', '#32ADE6', '/keyword-search')] : []),
       mk('loose', 'Who Mentioned', "Type it: who's looking at Harleys", 'search-circle', '#C9A962', '/memory-search'),
+      ...(perm('my_tools', 'trade_appraisal') ? [mk('loose', 'Trade Appraisal', 'Scan the VIN, capture mileage, get a value approved', 'car-sport', '#C9A962', '/appraisals')] : []),
       mk('loose', 'Voice Memos', 'Record now, attach to a contact later', 'mic', '#34C759', '/voice-memos'),
       ...(perm('my_tools', 'training_hub') ? [mk('loose', 'Training Hub', 'Learn the app in short lessons', 'school', '#FF9500', '/training-hub')] : []),
       ...(perm('my_tools', 'team_chat') ? [mk('loose', 'Team Chat', 'Internal team messaging', 'chatbox-ellipses', '#5856D6', '/(tabs)/team')] : []),

@@ -36,6 +36,7 @@ const PERMISSION_SECTIONS = [
     items: [
       { key: 'touchpoints', label: 'Touchpoints' },
       { key: 'ask_jessi', label: 'Ask Jessi AI' },
+      { key: 'trade_appraisal', label: 'Trade Appraisal' },
       { key: 'training_hub', label: 'Training Hub' },
       { key: 'team_chat', label: 'Team Chat' },
     ],

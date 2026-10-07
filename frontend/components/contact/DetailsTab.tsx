@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { contactsAPI } from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
 import PurchaseHistorySection from './PurchaseHistorySection';
+import VehiclesSection from './VehiclesSection';
 import CrmPushSection from './CrmPushSection';
 import ShareProfileSection from './ShareProfileSection';
 
@@ -222,6 +223,9 @@ export default function DetailsTab(props: any) {
           </>
         )}
       </View>
+
+      {/* Vehicles they own + trade appraisals */}
+      {!isNewContact && <VehiclesSection contactId={contactId} colors={colors} />}
 
       {/* Purchases */}
       {!isNewContact && (

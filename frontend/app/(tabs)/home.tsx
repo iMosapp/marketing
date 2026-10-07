@@ -381,6 +381,7 @@ function HomeScreen() {
   const router = useRouter();
   const { wins: winsParam } = useLocalSearchParams<{ wins?: string }>();
   const { user } = useAuthStore();
+  const canAppraise = ['super_admin', 'org_admin', 'store_manager'].includes(user?.role || '') || !!(user?.feature_permissions?.my_tools?._enabled && user?.feature_permissions?.my_tools?.trade_appraisal);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [pendingTasks, setPendingTasks] = useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
@@ -1097,6 +1098,7 @@ function HomeScreen() {
           { key: 'new-contact', icon: 'person-add', label: 'Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
           { key: 'voice-memo', icon: 'mic', label: 'Voice memo', color: '#34C759', onPress: () => router.push('/voice-memos?record=1' as any) },
           { key: 'sold', icon: 'trophy', label: 'SOLD!', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
+          ...(canAppraise ? [{ key: 'appraisal', icon: 'car-sport', label: 'Appraise trade', color: '#C9A962', onPress: () => router.push('/appraisals/new' as any) }] : []),
         ]}
       />
 

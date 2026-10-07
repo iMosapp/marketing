@@ -178,6 +178,13 @@ async def build_record(db, contact: dict, tz: Optional[str] = None, caller_id: O
         items.append((_dt(f.get("created_at")) or _now(), line, "F"))
         cites[key] = {"id": key, "kind": "file", "label": f"{label} · {_fmt(f.get('created_at'), tz)}", "file_id": str(f["_id"]), "snippet": (f.get("summary") or f.get("name") or "")[:140]}
 
+    # vehicles the customer owns and every trade appraisal on them (offer, what they wanted, outcome)
+    from services.appraisals.core import for_context as _vehicles_for
+    for i, v in enumerate(await _vehicles_for(db, cid), 1):
+        key = f"A{i}"
+        items.append((_dt(v.get("created_at")) or _now(), f"[{key}] {v['line']}", "A"))
+        cites[key] = {"id": key, "kind": "vehicle", "label": v["line"].split("\n")[0][:80], "vehicle_id": v["vehicle_id"], "snippet": v["line"][:140]}
+
     items.sort(key=lambda x: x[0])
 
     # profile block
@@ -220,10 +227,11 @@ def _system_prompt(record: dict, rep_first: str) -> str:
     return (
         f"You are Jessi, the relationship assistant inside i'M On Social, helping the rep {rep_first} with one customer, {record['first_name']}. "
         "You have the customer's COMPLETE touchpoint record below: profile, then a chronological timeline of texts, calls (with transcripts and timestamps), "
-        "voice notes, events, tasks and files (business cards, VIN plates, PDFs and photos the rep filed or the customer texted, with what Jessi read in them). Answer ONLY from this record.\n\n"
+        "voice notes, events, tasks, files (business cards, VIN plates, PDFs and photos the rep filed or the customer texted, with what Jessi read in them) "
+        "and VEHICLES with their trade appraisal history (mileage, dealer offer, what the customer wanted, outcome). Answer ONLY from this record.\n\n"
         "RULES:\n"
         "- Every factual claim must cite its source id in square brackets exactly as written in the record: [T12] for a text, [C3] for a call, "
-        "[C3@4:12] for a specific moment in a call, [V2] voice note, [E5] event, [K1] task, [F2] file. Put the citation right after the sentence it supports.\n"
+        "[C3@4:12] for a specific moment in a call, [V2] voice note, [E5] event, [K1] task, [F2] file, [A1] vehicle and its appraisals. Put the citation right after the sentence it supports.\n"
         "- If the record does not contain the answer, say so plainly in one sentence and suggest what to ask the customer. Never invent details.\n"
         "- Be concise and useful: short paragraphs or a tight bullet list, plain dealership language, no fluff. Quote the customer's exact words when it helps.\n"
         "- Dates: say them naturally (e.g. 'Tuesday Sep 9'). Refer to the rep as 'you'.\n"

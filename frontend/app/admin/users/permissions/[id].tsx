@@ -15,6 +15,7 @@ const SECTIONS = [
     items: [
       { key: 'touchpoints', label: "Today's Touchpoints", icon: 'checkbox-outline' },
       { key: 'ask_jessi', label: 'Ask Jessi', icon: 'sparkles' },
+      { key: 'trade_appraisal', label: 'Trade Appraisal', icon: 'car-sport' },
       { key: 'ai_followups', label: 'AI Follow-ups', icon: 'flash' },
       { key: 'internet_leads', label: 'Internet Leads', icon: 'flame' },
       { key: 'inventory', label: 'Inventory', icon: 'car-sport' },

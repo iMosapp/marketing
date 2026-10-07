@@ -131,6 +131,9 @@ EVENT_META = {
     "thank_you_text_sent": ("heart",               "#0A84FF", "share"),
     "thankyou_card_sent":  ("heart",               "#34C759", "share"),
     "thank_you_card_sent": ("heart",               "#34C759", "share"),
+    "appraisal_started":   ("car-sport",           "#C9A962", "appraisal"),
+    "vehicle_added":       ("car",                 "#C9A962", "appraisal"),
+    "trade_expectation":   ("cash",                "#C9A962", "appraisal"),
 }
 
 # ===== card_type field → event_type and display info =====

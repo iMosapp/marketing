@@ -18,6 +18,7 @@ _USER_PERMISSIONS = {
         "inventory": False,
         "internet_leads": False,
         "keyword_search": False,
+        "trade_appraisal": False,
     },
     "campaigns": {
         "_enabled": True,
@@ -52,6 +53,7 @@ _USER_PERMISSIONS = {
 _STORE_MANAGER_PERMISSIONS = {
     "my_tools": {
         "_enabled": True,
+        "trade_appraisal": True,
         "touchpoints": True,
         "ask_jessi": True,
         "training_hub": True,
@@ -105,6 +107,7 @@ _STORE_MANAGER_PERMISSIONS = {
 _ORG_ADMIN_PERMISSIONS = {
     "my_tools": {
         "_enabled": True,
+        "trade_appraisal": True,
         "touchpoints": True,
         "ask_jessi": True,
         "training_hub": True,
@@ -158,6 +161,7 @@ _ORG_ADMIN_PERMISSIONS = {
 _SUPER_ADMIN_PERMISSIONS = {
     "my_tools": {
         "_enabled": True,
+        "trade_appraisal": True,
         "touchpoints": True,
         "ask_jessi": True,
         "training_hub": True,
