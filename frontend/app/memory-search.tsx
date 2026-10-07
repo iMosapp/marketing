@@ -72,10 +72,12 @@ export default function MemorySearchScreen() {
       <TouchableOpacity onPress={() => router.push(`/contact/${r.contact_id}` as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid(`mention-open-${r.contact_id}`)}>
         <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 15, fontWeight: '800', color: GOLD }}>{(r.first || r.name || '?')[0]}</Text></View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 15.5, fontWeight: '800', color: colors.text }}><Text style={{ color: colors.textTertiary, fontWeight: '700' }}>{index + 1}. </Text>{r.name}</Text>
-          <Text style={{ fontSize: 12, color: colors.textSecondary }}>{[r.vehicle, r.phone].filter(Boolean).join(' · ')}</Text>
+          <Text style={{ fontSize: 15.5, fontWeight: '800', color: colors.text }} numberOfLines={1}><Text style={{ color: colors.textTertiary, fontWeight: '700' }}>{index + 1}. </Text>{r.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+            {r.strength === 'strong' && <View style={{ backgroundColor: GOLD + '22', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1 }} {...tid(`mention-strong-${r.contact_id}`)}><Text style={{ fontSize: 10, fontWeight: '800', color: GOLD, letterSpacing: 0.4 }}>STRONG MATCH</Text></View>}
+            <Text style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 1 }} numberOfLines={1}>{[r.vehicle, r.phone].filter(Boolean).join(' · ')}</Text>
+          </View>
         </View>
-        {r.strength === 'strong' && <View style={{ backgroundColor: GOLD + '22', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}><Text style={{ fontSize: 11, fontWeight: '800', color: GOLD }}>Strong match</Text></View>}
         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
       </TouchableOpacity>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

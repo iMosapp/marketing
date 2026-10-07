@@ -142,6 +142,11 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 44 · Oct 7 — DONE / DEPLOY + EAS UPDATE
+> Strong match is causing names to wrap let's change placement so it doesn't do this *(screenshot: "1. Tami Ice Queeen" wrapping beside the badge)*
+
+Who mentioned… results: the "Strong match" pill left the name row; the name now has the full width (one line, ellipsised), and a small gold STRONG MATCH tag sits on the second line in front of the phone number.
+
 ### 43 · Oct 7 — DONE / DEPLOY + EAS UPDATE
 > How would I do a manual search for something like "who do I know looking at Harley's" same as voice search but typing it?
 > Yes do 1
