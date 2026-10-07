@@ -46,6 +46,12 @@ _USER_PERMISSIONS = {
     "admin": {
         "_enabled": False,
     },
+    # Desk-level powers a manager can hand to a senior rep (closer / assistant manager) one switch at a time.
+    "manage": {
+        "_enabled": True,
+        "appraisal_approvals": False,
+        "appraisal_rules": False,
+    },
 }
 
 # Store Manager: user permissions + broadcast, card templates, leaderboard, and admin basics
@@ -101,6 +107,11 @@ _STORE_MANAGER_PERMISSIONS = {
         "integrations": False,
         "accounts": False,
     },
+    "manage": {
+        "_enabled": True,
+        "appraisal_approvals": True,
+        "appraisal_rules": True,
+    },
 }
 
 # Org Admin: manager permissions + lead attribution, admin dashboard, review links, lead sources, integrations, accounts
@@ -155,6 +166,11 @@ _ORG_ADMIN_PERMISSIONS = {
         "integrations": True,
         "accounts": True,
     },
+    "manage": {
+        "_enabled": True,
+        "appraisal_approvals": True,
+        "appraisal_rules": True,
+    },
 }
 
 # Super Admin: everything enabled (admin section handled by frontend role checks)
@@ -208,6 +224,11 @@ _SUPER_ADMIN_PERMISSIONS = {
         "lead_sources": True,
         "integrations": True,
         "accounts": True,
+    },
+    "manage": {
+        "_enabled": True,
+        "appraisal_approvals": True,
+        "appraisal_rules": True,
     },
 }
 

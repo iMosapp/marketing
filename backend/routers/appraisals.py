@@ -19,9 +19,30 @@ from services.appraisals import market
 from services.appraisals import market_providers as mp
 from services.appraisals.providers import ProviderUnavailable, identity_options, IDENTITY
 from services.appraisals import readers
+from services.appraisals import rules as rulesvc
+from services.appraisals import workflow
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/appraisals", tags=["appraisals"], dependencies=[Depends(require_user)])
+
+
+class RulesBody(BaseModel):
+    scope: str = "org"
+    store_id: Optional[str] = None
+    organization_id: Optional[str] = None
+    rules: dict
+
+
+class DecideBody(BaseModel):
+    action: str
+    value: Optional[int] = None
+    reason: str = ""
+
+
+class OutcomeBody(BaseModel):
+    outcome: str
+    expected_value: Optional[int] = None
+    note: str = ""
 
 
 class CreateBody(BaseModel):
@@ -122,6 +143,24 @@ async def _appr(db, me: dict, appraisal_id: str) -> dict:
     return a
 
 
+def _editable(a: dict):
+    """Once submitted, the inputs are frozen until a manager sends it back (needs_info). 409 so the UI can explain instead of failing."""
+    try:
+        workflow.assert_editable(a)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
+def _manager(me: dict):
+    if not workflow.can_approve(me):
+        raise HTTPException(status_code=403, detail="Appraisal approvals are not switched on for you.")
+
+
+def _rules_admin(me: dict):
+    if not workflow.can_edit_rules(me):
+        raise HTTPException(status_code=403, detail="Only managers with the appraisal rules permission can change dealership rules.")
+
+
 async def _contact(db, me: dict, contact_id: str) -> dict:
     if not ObjectId.is_valid(contact_id):
         raise HTTPException(status_code=404, detail="Contact not found")
@@ -143,6 +182,8 @@ async def meta(request: Request):
     me = _me(request)
     _allowed(me)
     return {"modes": core.MODES, "sources": core.SOURCES, "roles": core.ROLES, "identity": identity_options(), "steps": core.STEPS,
+            "statuses": workflow.STATUS_LABELS, "outcomes": workflow.OUTCOMES, "decisions": list(workflow.DECISIONS),
+            "abilities": {"manager": workflow.can_approve(me), "edit_rules": workflow.can_edit_rules(me)},
             "market_provider": {"name": mp.active().name, "label": mp.active().label, "live": mp.active().live, "badge": mp.active().badge}}
 
 
@@ -161,7 +202,98 @@ async def providers(request: Request):
 async def list_appraisals(request: Request, group: Optional[str] = None, q: str = "", date_from: Optional[str] = None, date_to: Optional[str] = None):
     me = _me(request)
     _allowed(me)
-    return await core.list_appraisals(get_db(), me, group, q, _dt(date_from), _dt(date_to))
+    db = get_db()
+    out = await core.list_appraisals(db, me, group, q, _dt(date_from), _dt(date_to))
+    out["status_labels"] = workflow.STATUS_LABELS
+    if workflow.can_approve(me):
+        out["desk"] = await workflow.desk_counts(db, me)
+    return out
+
+
+# ---------- dealership rules (MVP4) ----------
+async def _rules_payload(db, me: dict, store_id: Optional[str], organization_id: Optional[str] = None) -> dict:
+    r = await rulesvc.reach(db, me)
+    stores = {s["id"]: s for s in r["stores"]}
+    store_id = store_id or None
+    if store_id and store_id not in stores:
+        raise HTTPException(status_code=403, detail="That store is outside your reach")
+    org_id = (stores[store_id]["organization_id"] if store_id else None) or (organization_id if me.get("role") == "super_admin" else None) or r["organization_id"]
+    docs = await rulesvc.get_docs(db, org_id, store_id)
+    eff = await rulesvc.effective(db, org_id, store_id)
+    return {"organization_id": org_id, "store_id": store_id, "org_editable": r["org_editable"] and bool(org_id), "stores": r["stores"], "effective": eff,
+            "org": rulesvc.public_rules_doc(docs["org"]), "store": rulesvc.public_rules_doc(docs["store"]), "warnings": rulesvc.double_count_warnings(eff["rules"]),
+            "options": {"basis": rulesvc.BASIS_OPTIONS, "conditions": rulesvc.CONDITION_LABELS, "defaults": rulesvc.DEFAULT_RULES, "outcomes": workflow.OUTCOMES,
+                        "roundings": [1, 5, 10, 25, 50, 100]}, "can_edit": workflow.can_edit_rules(me)}
+
+
+@router.get("/rules")
+async def get_rules(request: Request, store_id: Optional[str] = None, organization_id: Optional[str] = None):
+    """Effective rules (store override > org default > platform defaults) plus both documents and the editor options. Managers and admins."""
+    me = _me(request)
+    _manager(me) if not workflow.can_edit_rules(me) else None
+    return await _rules_payload(get_db(), me, store_id, organization_id)
+
+
+@router.put("/rules")
+async def put_rules(body: RulesBody, request: Request):
+    """Save the org default (org admins / super admins) or one store's override (store managers and up). Every save is a new version; the old one
+    goes to history so submitted appraisals keep pointing at the rules they used."""
+    me = _me(request)
+    _rules_admin(me)
+    db = get_db()
+    r = await rulesvc.reach(db, me)
+    stores = {s["id"]: s for s in r["stores"]}
+    if body.scope == "store":
+        if not body.store_id or body.store_id not in stores:
+            raise HTTPException(status_code=403, detail="Pick one of your stores")
+        org_id = stores[body.store_id]["organization_id"] or r["organization_id"]
+        try:
+            await rulesvc.save(db, me, organization_id=org_id, store_id=body.store_id, rules=body.rules)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return await _rules_payload(db, me, body.store_id)
+    if body.scope != "org":
+        raise HTTPException(status_code=400, detail="scope must be org or store")
+    org_id = (body.organization_id if me.get("role") == "super_admin" else None) or r["organization_id"]
+    if not r["org_editable"] or not org_id:
+        raise HTTPException(status_code=403, detail="Only organization admins change the organization default. You can set a store override.")
+    try:
+        await rulesvc.save(db, me, organization_id=org_id, store_id=None, rules=body.rules)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return await _rules_payload(db, me, None, org_id)
+
+
+@router.delete("/rules/store/{store_id}")
+async def delete_store_rules(store_id: str, request: Request):
+    me = _me(request)
+    _rules_admin(me)
+    db = get_db()
+    r = await rulesvc.reach(db, me)
+    if store_id not in {s["id"] for s in r["stores"]}:
+        raise HTTPException(status_code=403, detail="That store is outside your reach")
+    removed = await rulesvc.remove_store_override(db, store_id)
+    out = await _rules_payload(db, me, store_id)
+    out["removed"] = removed
+    return out
+
+
+# ---------- manager desk (MVP4) ----------
+@router.get("/desk")
+async def desk(request: Request, group: str = "waiting", q: str = ""):
+    """Waiting (oldest first), sent back, decided. Only people with the approvals permission; scoped like everything else."""
+    me = _me(request)
+    _manager(me)
+    return await workflow.desk_list(get_db(), me, group, q)
+
+
+@router.get("/desk/{appraisal_id}")
+async def desk_detail(appraisal_id: str, request: Request):
+    me = _me(request)
+    _manager(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    return await workflow.desk_detail(db, a, me)
 
 
 @router.post("")
@@ -212,6 +344,11 @@ async def detail(appraisal_id: str, request: Request):
     out["inspection"] = await inspection.summary(db, a)
     out["market"] = await market.summary(db, a)
     out["book_values"] = market.public_book_values(a)
+    out["workflow"] = workflow.public_workflow(a)
+    out["abilities"] = workflow.abilities(me, a)
+    out["decisions"] = await workflow.decisions(db, a)
+    calc = await workflow.latest_calculation(db, a)
+    out["calculation"] = workflow.public_calc(calc) if calc else None
     if a.get("vehicle_id"):
         veh = await core.get_vehicle(db, me, a["vehicle_id"])
         out["vehicle_record"] = core.public_vehicle(veh) if veh else None
@@ -247,6 +384,7 @@ async def set_mode(appraisal_id: str, body: ModeBody, request: Request):
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         return {"appraisal": core.public_appraisal(await core.set_mode(db, a, me, body.mode))}
     except ValueError as e:
@@ -260,6 +398,7 @@ async def set_vehicle(appraisal_id: str, body: VehicleBody, request: Request):
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         doc = await core.set_vehicle(db, a, me, vin=body.vin, manual=body.manual, method=body.method)
     except ValueError as e:
@@ -278,6 +417,7 @@ async def set_mileage(appraisal_id: str, body: MileageBody, request: Request):
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         return {"appraisal": core.public_appraisal(await core.set_mileage(db, a, me, body.confirmed, body.detected, body.source))}
     except ValueError as e:
@@ -290,6 +430,7 @@ async def set_expectation(appraisal_id: str, body: ExpectationBody, request: Req
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         return {"appraisal": core.public_appraisal(await core.set_expectation(db, a, me, body.asked, body.value))}
     except ValueError as e:
@@ -304,6 +445,7 @@ async def media_chunk(appraisal_id: str, chunk: MediaChunk, request: Request):
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     if chunk.total < 1 or chunk.total > 400 or not (0 <= chunk.index < chunk.total) or len(chunk.data) > 900_000:
         raise HTTPException(status_code=400, detail="Bad chunk")
     upload_id = re.sub(r"[^A-Za-z0-9_-]", "", chunk.upload_id)[:64]
@@ -347,6 +489,7 @@ async def delete_media(appraisal_id: str, media_id: str, request: Request):
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         await core.delete_media(db, a, me, media_id)
     except ValueError as e:
@@ -383,6 +526,7 @@ async def run_inspection(appraisal_id: str, request: Request):
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         ins = await inspection.start_run(db, a, me)
     except ValueError as e:
@@ -396,6 +540,7 @@ async def add_finding(appraisal_id: str, body: FindingBody, request: Request):
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     ins = await inspection.get_or_create(db, a)
     try:
         d = await inspection.add_finding(db, ins, a, me, body.model_dump(exclude_none=True))
@@ -411,6 +556,7 @@ async def edit_finding(appraisal_id: str, finding_id: str, body: FindingBody, re
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     ins = await inspection.get_or_create(db, a)
     try:
         d = await inspection.edit_finding(db, ins, a, me, finding_id, body.model_dump(exclude_none=True))
@@ -426,6 +572,7 @@ async def decide_finding(appraisal_id: str, finding_id: str, body: DecisionBody,
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     ins = await inspection.get_or_create(db, a)
     try:
         d = await inspection.decide(db, ins, a, me, finding_id, body.decision)
@@ -442,6 +589,7 @@ async def override_condition(appraisal_id: str, body: OverrideBody, request: Req
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     ins = await inspection.get_or_create(db, a)
     try:
         await inspection.override(db, ins, a, me, body.overall, body.reason)
@@ -478,6 +626,7 @@ async def refresh_market(appraisal_id: str, body: MarketRefreshBody, request: Re
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         res = await market.refresh(db, a, me, zip_code=body.zip, radius=body.radius, force=body.force)
     except (ValueError, mp.MarketUnavailable, mp.MarketRateLimited) as e:
@@ -493,6 +642,7 @@ async def add_book_value(appraisal_id: str, body: BookValueBody, request: Reques
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         doc = await market.add_book_value(db, a, me, body.model_dump(exclude_none=True))
     except ValueError as e:
@@ -506,6 +656,7 @@ async def edit_book_value(appraisal_id: str, book_id: str, body: BookValueBody, 
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         doc = await market.edit_book_value(db, a, me, book_id, body.model_dump(exclude_none=True))
     except ValueError as e:
@@ -519,8 +670,103 @@ async def remove_book_value(appraisal_id: str, book_id: str, request: Request):
     _allowed(me)
     db = get_db()
     a = await _appr(db, me, appraisal_id)
+    _editable(a)
     try:
         doc = await market.remove_book_value(db, a, me, book_id)
     except ValueError as e:
         raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
     return {"book_values": market.public_book_values(doc), "appraisal": core.public_appraisal(doc)}
+
+
+# ---------- value, submission, decision, presentation, outcome (MVP4) ----------
+def _wf_error(e: Exception) -> HTTPException:
+    if isinstance(e, PermissionError):
+        return HTTPException(status_code=403, detail=str(e))
+    if isinstance(e, workflow.TransitionError):
+        return HTTPException(status_code=409, detail=str(e))
+    return HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{appraisal_id}/calculate")
+async def calculate(appraisal_id: str, request: Request):
+    """Live preview with today's data and the effective rules. Nothing is stored; the number is frozen only on submit."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    out = await workflow.preview(db, a)
+    out["abilities"] = workflow.abilities(me, a)
+    return out
+
+
+@router.get("/{appraisal_id}/calculations")
+async def calculations(appraisal_id: str, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    return {"calculations": await workflow.calculations(db, a)}
+
+
+@router.get("/{appraisal_id}/decisions")
+async def list_decisions(appraisal_id: str, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    return {"decisions": await workflow.decisions(db, a)}
+
+
+@router.post("/{appraisal_id}/submit")
+async def submit(appraisal_id: str, request: Request):
+    """Freeze the calculation (rules version, market snapshot, inspection, book values) and notify the store's managers."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        doc = await workflow.submit(db, a, me)
+    except (ValueError, PermissionError) as e:
+        raise _wf_error(e)
+    return {"appraisal": core.public_appraisal(doc), "workflow": workflow.public_workflow(doc), "abilities": workflow.abilities(me, doc), "notified": len(doc.get("notified_manager_ids") or [])}
+
+
+@router.post("/{appraisal_id}/decide")
+async def decide(appraisal_id: str, body: DecideBody, request: Request):
+    """Manager: approve | change (value + reason) | request_info (reason) | decline (reason). Records the decision, moves the status, tells the rep."""
+    me = _me(request)
+    _manager(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        doc = await workflow.decide(db, a, me, body.action, body.value, body.reason)
+    except (ValueError, PermissionError) as e:
+        raise _wf_error(e)
+    return await workflow.desk_detail(db, doc, me)
+
+
+@router.post("/{appraisal_id}/present")
+async def present(appraisal_id: str, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        doc = await workflow.present(db, a, me)
+    except (ValueError, PermissionError) as e:
+        raise _wf_error(e)
+    return {"appraisal": core.public_appraisal(doc), "workflow": workflow.public_workflow(doc), "abilities": workflow.abilities(me, doc)}
+
+
+@router.post("/{appraisal_id}/outcome")
+async def outcome(appraisal_id: str, body: OutcomeBody, request: Request):
+    """What the customer said: accepted | wants_more (+ amount) | thinking | not_trading | other. Closes the appraisal and updates the relationship record."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        doc = await workflow.record_outcome(db, a, me, body.outcome, body.expected_value, body.note)
+    except (ValueError, PermissionError) as e:
+        raise _wf_error(e)
+    return {"appraisal": core.public_appraisal(doc), "workflow": workflow.public_workflow(doc), "abilities": workflow.abilities(me, doc)}

@@ -421,6 +421,8 @@ export default function MoreScreen() {
   {
     const canManageCampaigns = !repPreview && (user?.role === 'super_admin' || user?.role === 'org_admin');
     const isTeamLead = isAdmin || (!repPreview && ['manager', 'admin', 'store_manager', 'org_admin'].includes(user?.role || ''));
+    const canApprove = isTeamLead || perm('manage', 'appraisal_approvals');
+    const canEditRules = isTeamLead || perm('manage', 'appraisal_rules');
     const manageItems: (MenuItem & { permKey?: string })[] = [
       { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags: personal, account and org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
       { icon: 'pricetags-outline', title: 'Keyword Auto-Tags', subtitle: 'Auto-tag calls and texts by keywords', onPress: () => router.push('/settings/keyword-rules' as any), color: '#5856D6' },
@@ -435,11 +437,15 @@ export default function MoreScreen() {
         { icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook and Yelp links', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
       );
     }
+    if (canEditRules) {
+      manageItems.push({ icon: 'calculator', title: 'Appraisal Rules', subtitle: 'Target gross, recon, mileage, age: how the suggested ACV is built', onPress: () => router.push('/admin/appraisal-rules' as any), color: '#C9A962' });
+    }
     sections.push({ id: 'manage', title: 'Manage', icon: 'settings-outline', color: '#8E8E93', items: manageItems });
 
     // TEAM: everything about running people, in one folder (managers and up)
-    if (isTeamLead) {
+    if (isTeamLead || canApprove) {
       const teamItems: MenuItem[] = [
+        ...(canApprove ? [{ icon: 'car-sport' as any, title: 'Appraisal Desk', subtitle: 'Trades waiting for your decision: approve, change the value, ask for more, decline', onPress: () => router.push('/appraisal/desk' as any), color: '#C9A962' }] : []),
         ...(perm('admin', 'users') || isAdmin ? [{ icon: 'people' as any, title: 'Team Members', subtitle: 'Manage users & permissions', onPress: () => router.push('/admin/users'), color: '#007AFF' }] : []),
         ...(perm('admin', 'invite_team') || isAdmin ? [{ icon: 'person-add' as any, title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' }] : []),
         { icon: 'chatbubbles' as any, title: 'Inboxes', subtitle: 'Shared department numbers: who works them, routing, Jessi', onPress: () => router.push('/inboxes' as any), color: '#C9A962' },
@@ -762,7 +768,7 @@ export default function MoreScreen() {
   };
   const GROUP_ORDER = ['daily', 'leads', 'brand', 'campaigns', 'performance', 'team', 'setup', 'learning', 'settings', 'partner', 'accounts', 'internal'];
   const GROUP_FOR_SECTION: Record<string, string> = { partner_portal: 'partner', my_brand: 'brand', leads: 'leads', manage: 'campaigns', team: 'team', my_tools: 'daily', campaigns: 'campaigns', performance: 'performance', setup_manage: 'setup', account_mgmt: 'accounts', internal_ops: 'internal', learning: 'learning', settings: 'settings' };
-  const GROUP_FOR_TITLE: Record<string, string> = { 'Review Center': 'team', 'Showcase': 'team', 'Inventory Feed': 'setup', 'Review Links': 'setup', 'Inventory': 'daily', 'My VA': 'settings', 'Agent Hub': 'settings', 'Voice Memos': 'daily', 'Team Chat': 'daily', 'Texting Compliance': 'setup' };
+  const GROUP_FOR_TITLE: Record<string, string> = { 'Review Center': 'team', 'Showcase': 'team', 'Inventory Feed': 'setup', 'Review Links': 'setup', 'Inventory': 'daily', 'My VA': 'settings', 'Agent Hub': 'settings', 'Voice Memos': 'daily', 'Team Chat': 'daily', 'Texting Compliance': 'setup', 'Appraisal Rules': 'setup', 'Appraisal Desk': 'team' };
   const dirBuckets: Record<string, ToolRow[]> = {};
   const dirSeen = new Set<string>();
   const addRow = (gid: string, r: ToolRow) => { const k = `${gid}:${r.title}`; if (dirSeen.has(k)) return; dirSeen.add(k); (dirBuckets[gid] ||= []).push(r); };

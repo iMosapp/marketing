@@ -53,6 +53,13 @@ const SECTIONS = [
       { key: 'lead_attribution', label: 'Lead Attribution', icon: 'analytics' },
     ],
   },
+  {
+    key: 'manage', title: 'Desk Powers', icon: 'briefcase', color: '#C9A962',
+    items: [
+      { key: 'appraisal_approvals', label: 'Appraisal Desk: approve, change, decline trade values', icon: 'car-sport' },
+      { key: 'appraisal_rules', label: 'Appraisal Rules: edit how the suggested ACV is built', icon: 'calculator' },
+    ],
+  },
 ];
 
 export default function UserPermissionsScreen() {

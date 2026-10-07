@@ -50,7 +50,7 @@ export const MarketStep = ({ colors, appraisal, onSaved, showToast }: Props) => 
   const prov = data.provider || {};
   return (
     <View style={{ gap: 14 }} {...tid('market-step')}>
-      <StepTitle colors={colors} title="Market analysis" sub="What this vehicle is listed for near you, the closest comparables, and any book values you have. Market data only; the dealership's number comes in the next step of the rollout." />
+      <StepTitle colors={colors} title="Market analysis" sub="What this vehicle is listed for near you, the closest comparables, and any book values you have. Market data only; the dealership's number is calculated on the Value step." />
       <View style={{ borderRadius: 16, padding: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, gap: 10 }} {...tid('market-search')}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.8 }}>SEARCH AROUND</Text>

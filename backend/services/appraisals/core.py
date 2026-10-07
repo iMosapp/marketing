@@ -23,8 +23,8 @@ MODES = {"vehicle_here": "Vehicle is here", "customer_sent": "Customer sent medi
 SOURCES = {"captured_by_rep": "Captured by rep", "uploaded_by_rep": "Uploaded by rep", "customer_supplied": "Customer supplied"}
 ROLES = {"vin_photo": "VIN photo", "odometer_photo": "Odometer photo", "exterior": "Exterior photo", "interior": "Interior photo", "photo": "Photo",
          "walkaround_video": "Walkaround video", "other": "Other"}
-# Status machine; MVP1 only moves within draft. Later MVPs add analyzing/ready/submitted/approved/changed/needs_info/declined/presented/closed.
-STATUSES = ["draft", "analyzing", "ready", "submitted", "approved", "changed", "needs_info", "declined", "presented", "closed"]
+# Status machine (MVP4): draft → capturing → analyzing → ready → submitted → needs_info → resubmitted → approved | changed | declined → presented → closed.
+STATUSES = ["draft", "capturing", "analyzing", "ready", "submitted", "needs_info", "resubmitted", "approved", "changed", "declined", "presented", "closed"]
 STEPS = ["customer", "mode", "identity", "mileage", "inspection", "market", "expectation", "review"]
 MAX_IMAGE = 25 * 1024 * 1024
 MAX_VIDEO = 150 * 1024 * 1024
@@ -80,7 +80,8 @@ def public_vehicle(v: dict) -> dict:
 def public_appraisal(a: dict) -> dict:
     keep = ("contact_id", "contact_name", "vehicle_id", "vin", "vehicle", "status", "step", "mode", "mileage_detected", "mileage_confirmed", "mileage_source",
             "expectation_asked", "customer_expected_value", "notes", "stock_number", "user_id", "user_name", "store_id", "previous_appraisal_id", "is_reappraisal",
-            "identity_method", "created_at", "updated_at", "submitted_at", "approved_value", "suggested_acv", "outcome",
+            "identity_method", "created_at", "updated_at", "submitted_at", "approved_value", "suggested_acv", "suggested_low", "suggested_high", "outcome", "outcome_label",
+            "manager_review_required", "approved_by_name", "approved_at", "declined_reason", "needs_info_request", "presented_at", "closed_at", "rules_version", "calculation_version",
             "market_snapshot_id", "market_zip", "market_radius", "market_summary")
     out = {k: a.get(k) for k in keep}
     out["id"] = str(a["_id"])
@@ -383,7 +384,7 @@ async def delete_media(db, appr: dict, me: dict, media_id: str) -> dict:
 
 
 # ---------- lists / search ----------
-_STATUS_GROUPS = {"drafts": ["draft", "analyzing", "ready"], "waiting": ["submitted", "needs_info"], "approved": ["approved", "changed"], "completed": ["presented", "closed", "declined"]}
+_STATUS_GROUPS = {"drafts": ["draft", "capturing", "analyzing", "ready"], "waiting": ["submitted", "resubmitted", "needs_info"], "approved": ["approved", "changed"], "completed": ["presented", "closed", "declined"]}
 
 
 async def list_appraisals(db, me: dict, group: Optional[str] = None, q: str = "", date_from: Optional[datetime] = None, date_to: Optional[datetime] = None, limit: int = 60) -> dict:

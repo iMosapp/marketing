@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../services/api';
@@ -17,6 +18,7 @@ import { InspectionStep } from '../../components/appraisal/InspectionStep';
 import { MarketStep } from '../../components/appraisal/MarketStep';
 import { ExpectationStep } from '../../components/appraisal/ExpectationStep';
 import { ReviewStep } from '../../components/appraisal/ReviewStep';
+import { StatusPanel } from '../../components/appraisal/StatusPanel';
 
 // One appraisal, one step at a time. The server keeps `step`, so a rep can close the app on the lot and pick up where they were.
 export default function AppraisalScreen() {
@@ -45,23 +47,38 @@ export default function AppraisalScreen() {
 
   if (!appraisal) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}><ScreenHeader title="Trade Appraisal" /><ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /></SafeAreaView>;
   const sub = `${appraisal.contact_name}${appraisal.vehicle_label ? ` · ${appraisal.vehicle_label}` : ''}`;
+  const locked = !!appraisal.abilities?.locked;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} {...tid('appraisal-screen')}>
       <ScreenHeader title={appraisal.is_reappraisal ? 'Reappraisal' : 'Trade Appraisal'} subtitle={sub} onBack={() => router.replace('/appraisals' as any)}
         right={['draft', 'ready'].includes(appraisal.status) ? <HeaderTextButton label="Discard" onPress={discard} testID="appraisal-discard" color="#FF3B30" /> : undefined} />
-      <StepDots step={step} colors={colors} />
+      {locked ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 }} {...tid('status-strip')}>
+          <Ionicons name="lock-closed" size={13} color={colors.textSecondary} />
+          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>{appraisal.abilities?.status_label}</Text>
+        </View>
+      ) : <StepDots step={step} colors={colors} />}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
-          {step === 'mode' && <ModeStep colors={colors} mode={appraisal.mode} onPick={setMode} />}
-          {step === 'identity' && <IdentityStep colors={colors} appraisal={appraisal} media={media} onConfirmed={merge} showToast={showToast} />}
-          {step === 'mileage' && <MileageStep colors={colors} appraisal={appraisal} media={media} onSaved={merge} showToast={showToast} />}
-          {step === 'inspection' && <InspectionStep colors={colors} appraisal={appraisal} media={media} onSaved={merge} showToast={showToast} />}
-          {step === 'market' && <MarketStep colors={colors} appraisal={appraisal} onSaved={merge} showToast={showToast} />}
-          {step === 'expectation' && <ExpectationStep colors={colors} appraisal={appraisal} onSaved={merge} showToast={showToast} />}
-          {step === 'review' && <ReviewStep colors={colors} appraisal={appraisal} onEdit={(s) => setStep(s)} />}
-          {step !== 'review' && appraisal.step === 'review' ? (
-            <Text onPress={() => setStep('review')} style={{ marginTop: 18, textAlign: 'center', fontSize: 13, fontWeight: '700', color: GOLD }} {...tid('back-to-review')}>Back to the summary</Text>
-          ) : null}
+          {locked ? (
+            <View style={{ gap: 16 }}>
+              <StatusPanel colors={colors} appraisal={appraisal} onSaved={merge} showToast={showToast} />
+              <ReviewStep colors={colors} appraisal={appraisal} onEdit={() => undefined} readOnly />
+            </View>
+          ) : (
+            <>
+              {step === 'mode' && <ModeStep colors={colors} mode={appraisal.mode} onPick={setMode} />}
+              {step === 'identity' && <IdentityStep colors={colors} appraisal={appraisal} media={media} onConfirmed={merge} showToast={showToast} />}
+              {step === 'mileage' && <MileageStep colors={colors} appraisal={appraisal} media={media} onSaved={merge} showToast={showToast} />}
+              {step === 'inspection' && <InspectionStep colors={colors} appraisal={appraisal} media={media} onSaved={merge} showToast={showToast} />}
+              {step === 'market' && <MarketStep colors={colors} appraisal={appraisal} onSaved={merge} showToast={showToast} />}
+              {step === 'expectation' && <ExpectationStep colors={colors} appraisal={appraisal} onSaved={merge} showToast={showToast} />}
+              {step === 'review' && <ReviewStep colors={colors} appraisal={appraisal} onEdit={(s) => setStep(s)} onSaved={merge} showToast={showToast} />}
+              {step !== 'review' && appraisal.step === 'review' ? (
+                <Text onPress={() => setStep('review')} style={{ marginTop: 18, textAlign: 'center', fontSize: 13, fontWeight: '700', color: GOLD }} {...tid('back-to-review')}>Back to the value and summary</Text>
+              ) : null}
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

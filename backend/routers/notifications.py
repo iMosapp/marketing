@@ -52,7 +52,8 @@ async def create_notification(
     contact_email: Optional[str] = None,
     lead_source_name: Optional[str] = None,
     action_required: bool = True,
-    priority: str = "high"
+    priority: str = "high",
+    link: Optional[str] = None,
 ) -> str:
     """Create a notification in the database"""
     db = get_db()
@@ -71,6 +72,7 @@ async def create_notification(
         "lead_source_name": lead_source_name,
         "action_required": action_required,
         "priority": priority,
+        "link": link,
         "read": False,
         "dismissed": False,
         "action_taken": None,

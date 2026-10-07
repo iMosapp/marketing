@@ -5,12 +5,13 @@ import { useRouter } from 'expo-router';
 import { GOLD, tid } from '../inbox/ownership';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { StepTitle, SourceTag, money, miles } from './shared';
+import { SubmitPanel } from './SubmitPanel';
 
-type Props = { colors: any; appraisal: any; onEdit: (step: string) => void };
+type Props = { colors: any; appraisal: any; onEdit: (step: string) => void; onSaved?: (appraisal: any) => void; showToast?: (m: string, t?: any, d?: number) => void; readOnly?: boolean };
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
-// Draft summary. Inspection, market data and manager approval arrive in the next releases; the record is already on the customer.
-export const ReviewStep = ({ colors, appraisal, onEdit }: Props) => {
+// Value + summary. Editable: live suggested ACV and the Submit button on top of the rows. Read-only (after submission): just the frozen record.
+export const ReviewStep = ({ colors, appraisal, onEdit, onSaved, showToast, readOnly }: Props) => {
   const router = useRouter();
   const v = appraisal.vehicle || {};
   const i = appraisal.inspection;
@@ -19,16 +20,22 @@ export const ReviewStep = ({ colors, appraisal, onEdit }: Props) => {
   const insp = !i ? 'Not started' : ['queued', 'processing'].includes(i.status) ? 'Jessi is inspecting…' : i.status === 'failed' ? 'Last run failed — tap to retry'
     : i.final_overall_label ? `${i.final_overall_label}${i.overridden ? ' (overridden)' : ''} · ${i.confirmed} confirmed${i.pending ? `, ${i.pending} to review` : ''}${i.possible ? `, ${i.possible} possible` : ''}` : 'Media added, not analyzed';
   const Row = ({ icon, label, value, step, testId }: { icon: any; label: string; value: string; step?: string; testId: string }) => (
-    <TouchableOpacity disabled={!step} onPress={() => step && onEdit(step)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.border }} {...tid(testId)}>
+    <TouchableOpacity disabled={!step || readOnly} onPress={() => step && onEdit(step)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.border }} {...tid(testId)}>
       <Ionicons name={icon} size={18} color={GOLD} />
       <Text style={{ width: 92, fontSize: 12, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.4 }}>{label.toUpperCase()}</Text>
       <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.text }} numberOfLines={2}>{value || '—'}</Text>
-      {step ? <Ionicons name="create-outline" size={16} color={colors.textSecondary} /> : null}
+      {step && !readOnly ? <Ionicons name="create-outline" size={16} color={colors.textSecondary} /> : null}
     </TouchableOpacity>
   );
   return (
     <View style={{ gap: 12 }}>
-      <StepTitle colors={colors} title="Draft saved" sub="Everything is on the customer's record, market data included. The next release adds the dealership's number and manager approval right here." />
+      {readOnly ? <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6, marginTop: 4 }}>WHAT WAS SUBMITTED</Text> : (
+        <>
+          <StepTitle colors={colors} title={appraisal.status === 'needs_info' ? 'Fix it and resubmit' : 'The dealership\u2019s number'} sub="Market data, book values and the customer's expectation stay side by side. The suggested ACV comes from your dealership's rules; a manager approves the real number." />
+          {onSaved && showToast ? <SubmitPanel colors={colors} appraisal={appraisal} onSaved={onSaved} showToast={showToast} /> : null}
+          <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6, marginTop: 4 }}>EVERYTHING ON THIS APPRAISAL</Text>
+        </>
+      )}
       <View style={{ borderRadius: 16, paddingHorizontal: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }} {...tid('review-card')}>
         <Row icon="car-sport" label="Vehicle" value={appraisal.vehicle_label || ''} step={appraisal.is_reappraisal ? undefined : 'identity'} testId="review-vehicle" />
         <Row icon="barcode-outline" label="VIN" value={appraisal.vin || 'No VIN on file'} testId="review-vin" />
@@ -71,8 +78,8 @@ export const ReviewStep = ({ colors, appraisal, onEdit }: Props) => {
         <TouchableOpacity onPress={() => router.push(`/contact/${appraisal.contact_id}` as any)} style={{ flex: 1, height: 50, borderRadius: 14, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('review-open-contact')}>
           <Ionicons name="person" size={16} color={GOLD} /><Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>Open {appraisal.contact_name?.split(' ')[0] || 'contact'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.replace('/appraisals' as any)} style={{ flex: 1, height: 50, borderRadius: 14, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('review-done')}>
-          <Ionicons name="checkmark" size={18} color="#0B0B0D" /><Text style={{ fontSize: 14, fontWeight: '800', color: '#0B0B0D' }}>Done for now</Text>
+        <TouchableOpacity onPress={() => router.replace('/appraisals' as any)} style={{ flex: 1, height: 50, borderRadius: 14, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('review-done')}>
+          <Ionicons name="list" size={18} color={GOLD} /><Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>{readOnly ? 'All appraisals' : 'Finish later'}</Text>
         </TouchableOpacity>
       </View>
     </View>

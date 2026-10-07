@@ -135,6 +135,12 @@ EVENT_META = {
     "vehicle_added":       ("car",                 "#C9A962", "appraisal"),
     "trade_expectation":   ("cash",                "#C9A962", "appraisal"),
     "inspection_completed": ("scan",               "#C9A962", "appraisal"),
+    "appraisal_submitted": ("paper-plane",         "#C9A962", "appraisal"),
+    "appraisal_approved":  ("checkmark-circle",    "#34C759", "appraisal"),
+    "appraisal_needs_info": ("help-circle",        "#FF9500", "appraisal"),
+    "appraisal_declined":  ("close-circle",        "#FF3B30", "appraisal"),
+    "appraisal_presented": ("hand-left",           "#C9A962", "appraisal"),
+    "appraisal_outcome":   ("flag",                "#C9A962", "appraisal"),
 }
 
 # ===== card_type field → event_type and display info =====

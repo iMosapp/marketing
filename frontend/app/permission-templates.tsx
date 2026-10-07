@@ -75,6 +75,15 @@ const PERMISSION_SECTIONS = [
       { key: 'lead_attribution', label: 'Lead Attribution' },
     ],
   },
+  {
+    key: 'manage',
+    label: 'Desk Powers',
+    icon: 'briefcase',
+    items: [
+      { key: 'appraisal_approvals', label: 'Appraisal Desk (approve trade values)' },
+      { key: 'appraisal_rules', label: 'Appraisal Rules' },
+    ],
+  },
 ];
 
 const DEFAULT_PERMISSIONS: Record<string, Record<string, boolean>> = {
@@ -82,6 +91,7 @@ const DEFAULT_PERMISSIONS: Record<string, Record<string, boolean>> = {
   campaigns: { _enabled: true, campaign_builder: true, campaign_dashboard: true, broadcast: false, date_triggers: false },
   content: { _enabled: true, sms_templates: true, email_templates: true, card_templates: false, manage_showcase: false },
   insights: { _enabled: true, my_performance: true, activity_reports: false, email_analytics: false, leaderboard: false, lead_attribution: false },
+  manage: { _enabled: true, appraisal_approvals: false, appraisal_rules: false },
 };
 
 type Template = {

@@ -456,7 +456,8 @@ async def run(db, ins_id: str, actor: dict):
                                                               "ai_reason": ai["reason"], "ai_impression": " ".join(impressions)[:600], "poor_quality_media": poor, "last_run": stats,
                                                               "finished_at": now, "report_generated_at": now, "last_error": None, "updated_at": now}})
         ins = await recompute(db, await db[INS].find_one({"_id": ins["_id"]}))
-        await db[A].update_one({"_id": appr["_id"]}, {"$set": {"status": "ready", "updated_at": now}})
+        prev_status = ins.get("prev_status") or "draft"
+        await db[A].update_one({"_id": appr["_id"]}, {"$set": {"status": "ready" if prev_status in ("draft", "ready", "analyzing", "capturing") else prev_status, "updated_at": now}})
         await _audit(db, appr, actor, "inspection_completed", f"{len(frames)} frames · {stats['created']} new, {stats['updated']} updated findings · AI {GRADES[ai['overall']]}",
                      {"run_id": run_id, "coverage": {g: v["status"] for g, v in cov["groups"].items()}})
         try:
