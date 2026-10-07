@@ -142,6 +142,16 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 42 · Oct 6 — DONE / EAS UPDATE
+> When I talk to Jessi with AirPods in it doesn't play through my headphones?  It played though my phone speaker
+
+Root cause: `hooks/liveRtc.native.ts` forced the loudspeaker (`InCallManager.setForceSpeakerphoneOn(true)`) for every live talk, which overrides AirPods/CarPlay/wired. Now the route is decided from the audio session's available inputs (expo-av `getAvailableInputs`, types BluetoothHFP/LE/A2DP, Headphones, HeadsetMic, CarAudio, USBAudio): something worn or a car = system route (AirPods), nothing = loudspeaker; re-checked every 3 s so putting AirPods in mid-talk follows along. Phones only (web unchanged).
+
+### 41 · Oct 6 — DONE / DEPLOY + EAS UPDATE
+> This never actually talks to me just loads entail it ends and the buttons are up in the apple bar so it's not laid out right anymore *(screenshot: "Connecting to Jessi · gleam", header under the status bar)*
+
+Layout: LiveJessiSheet now pads the header by the safe-area top inset and the End button by the bottom inset. Connecting-forever: production RCA (deployer) showed sessions created fine (HTTP 200 + SDP, OpenAI key valid, a working session at 23:03Z with byte-identical code) but the phone never completed the WebRTC link (0 s, connection_lost); OpenAI status green; i.e. the phone-to-OpenAI media path (that Wi-Fi) blocked UDP. Client now reports the ICE/data-channel state back as a session `last_error` when it times out or fails before `session.started`, the sheet explains "could not open on this network, switch to cellular", and Voice Lab session detail shows "Last error from the phone". User asked to test on cellular.
+
 ### 40 · Oct 6 — DONE / DEPLOY + EAS UPDATE
 > theres no way i used the full jessi gpt live today.. so that's why i didn't even think to check that.. how do i audit that to see how i hit my limit?
 

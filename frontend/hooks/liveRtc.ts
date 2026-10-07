@@ -25,5 +25,6 @@ export const attachRemoteAudio = (connection: any): (() => void) => {
 
 export const startAudioSession = () => {};
 export const stopAudioSession = () => {};
+export const applyAudioRoute = async () => {};
 export const nativeRtcMissing = false;
 export const nativeRtcReason = '';

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Application from 'expo-application';
 import api from '../services/api';
-import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, nativeRtcMissing, nativeRtcReason } from './liveRtc';
+import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, applyAudioRoute, nativeRtcMissing, nativeRtcReason } from './liveRtc';
 
 export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
@@ -183,6 +183,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
         if (startTimer.current) { clearTimeout(startTimer.current); startTimer.current = null; }
         setState('live');
         startedAt.current = Date.now();
+        applyAudioRoute();
         send({ type: 'session.instructions.append', event_id: 'greet_1', delegation_id: null,
           content: greetInstruction.current || `Greet the rep immediately in English without waiting for them to speak. Say, in your own words: "${greeting.current}". Then pause and listen.` });
         if (openAtStart.current) {
