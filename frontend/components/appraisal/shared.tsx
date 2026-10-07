@@ -5,7 +5,7 @@ import { GOLD, tid } from '../inbox/ownership';
 
 export const money = (n?: number | null) => (n == null ? '' : `$${Math.round(n).toLocaleString()}`);
 export const miles = (n?: number | null) => (n == null ? '' : `${Math.round(n).toLocaleString()} mi`);
-export const marketLabel = (mk?: any) => (!mk ? null : mk.live ? mk.provider_label : 'Development data · not live');
+export const marketLabel = (mk?: any) => (!mk ? null : mk.live ? mk.provider_label : 'DEVELOPMENT DATA — NOT LIVE');
 export const STEP_LABELS: Record<string, string> = { mode: 'How', identity: 'Vehicle', mileage: 'Mileage', inspection: 'Inspect', market: 'Market', expectation: 'Expects', review: 'Value' };
 export const STEP_ORDER = ['mode', 'identity', 'mileage', 'inspection', 'market', 'expectation', 'review'];
 export const GRADE_COLORS: Record<string, string> = { very_good: '#34C759', good: '#30B0C7', fair: '#FF9500', poor: '#FF3B30' };

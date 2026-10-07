@@ -25,6 +25,7 @@ ROLES = {"vin_photo": "VIN photo", "odometer_photo": "Odometer photo", "exterior
          "walkaround_video": "Walkaround video", "other": "Other"}
 # Status machine (MVP4): draft → capturing → analyzing → ready → submitted → needs_info → resubmitted → approved | changed | declined → presented → closed.
 STATUSES = ["draft", "capturing", "analyzing", "ready", "submitted", "needs_info", "resubmitted", "approved", "changed", "declined", "presented", "closed"]
+STATUS_LABELS_CTX = {"draft": "draft", "capturing": "capturing", "analyzing": "inspecting", "ready": "ready to submit", "submitted": "waiting for manager", "needs_info": "manager asked for more", "resubmitted": "resubmitted", "approved": "approved", "changed": "approved with a changed value", "declined": "declined by the desk", "presented": "presented to the customer", "closed": "closed"}
 STEPS = ["customer", "mode", "identity", "mileage", "inspection", "market", "expectation", "review"]
 MAX_IMAGE = 25 * 1024 * 1024
 MAX_VIDEO = 150 * 1024 * 1024
@@ -81,7 +82,7 @@ def public_appraisal(a: dict) -> dict:
     keep = ("contact_id", "contact_name", "vehicle_id", "vin", "vehicle", "status", "step", "mode", "mileage_detected", "mileage_confirmed", "mileage_source",
             "expectation_asked", "customer_expected_value", "notes", "stock_number", "user_id", "user_name", "store_id", "previous_appraisal_id", "is_reappraisal",
             "identity_method", "created_at", "updated_at", "submitted_at", "approved_value", "suggested_acv", "suggested_low", "suggested_high", "outcome", "outcome_label",
-            "manager_review_required", "approved_by_name", "approved_at", "declined_reason", "needs_info_request", "presented_at", "closed_at", "rules_version", "calculation_version",
+            "manager_review_required", "approved_by_name", "approved_at", "declined_reason", "needs_info_request", "presented_at", "closed_at", "rules_version", "calculation_version", "customer_expected_value_before_outcome",
             "market_snapshot_id", "market_zip", "market_radius", "market_summary")
     out = {k: a.get(k) for k in keep}
     out["id"] = str(a["_id"])
@@ -414,18 +415,19 @@ async def for_context(db, contact_id: str) -> list:
         line = f"VEHICLE {vehicle_label(v)}" + (f" VIN {v['vin']}" if v.get("vin") else "") + (f", {v['current_mileage']:,} mi" if v.get("current_mileage") else "") + f", status {v.get('ownership_status') or 'owns'}"
         hist = []
         async for a in db[A].find({"vehicle_id": str(v["_id"]), "deleted": {"$ne": True}}).sort("created_at", 1):
-            bits = [a["created_at"].strftime("%b %d, %Y"), a.get("status") or "draft"]
+            bits = [a["created_at"].strftime("%b %d, %Y"), STATUS_LABELS_CTX.get(a.get("status") or "draft", a.get("status") or "draft")]
             if a.get("mileage_confirmed") is not None:
                 bits.append(f"{a['mileage_confirmed']:,} mi")
+            if a.get("suggested_acv"):
+                bits.append(f"suggested ACV ${a['suggested_acv']:,}")
             if a.get("approved_value"):
-                bits.append(f"dealer offer ${a['approved_value']:,}")
-            elif a.get("suggested_acv"):
-                bits.append(f"suggested ${a['suggested_acv']:,}")
+                adj = a.get("manager_adjustment") or {}
+                bits.append(f"dealer approved ${a['approved_value']:,}" + (f" ({'+' if adj['delta'] > 0 else '-'}${abs(adj['delta']):,} vs suggested, {adj.get('manager_name')})" if adj.get("delta") else (f" ({a.get('approved_by_name')})" if a.get("approved_by_name") else "")))
             if a.get("customer_expected_value"):
                 bits.append(f"customer wanted ${a['customer_expected_value']:,}")
             ms = a.get("market_summary") or {}
             if ms.get("estimated_retail"):
-                bits.append(f"market retail est ${ms['estimated_retail']:,} ({ms.get('provider_label')}{', development data' if not ms.get('live') else ''}, {ms.get('comps_used') or 0} comps)")
+                bits.append(f"market retail est ${ms['estimated_retail']:,} ({ms.get('provider_label')}, {ms.get('comps_used') or 0} comps{'' if ms.get('live') else ' — DEVELOPMENT DATA, NOT LIVE'})")
             for b in a.get("book_values") or []:
                 bits.append(f"{b.get('source_label')} {str(b.get('value_type') or '').replace('_', '-')} ${int(b.get('value') or 0):,}")
             ins = await db["appraisal_inspections"].find_one({"appraisal_id": str(a["_id"])}, {"final_overall": 1, "override": 1})
@@ -434,7 +436,7 @@ async def for_context(db, contact_id: str) -> list:
                           db["appraisal_findings"].find({"appraisal_id": str(a["_id"]), "decision": "confirmed", "deleted": {"$ne": True}}, {"location_label": 1, "subtype": 1}).limit(8)]
                 bits.append(f"condition {str(ins['final_overall']).replace('_', ' ')}" + (" (manager override)" if ins.get("override") else "") + (f" with {', '.join(issues)}" if issues else ""))
             if a.get("outcome"):
-                bits.append(f"outcome {a['outcome']}")
+                bits.append(f"outcome: {a.get('outcome_label') or a['outcome']}" + (f" ({a['outcome_note'][:80]})" if a.get("outcome_note") else ""))
             hist.append(" · ".join(bits))
         if hist:
             line += "\n  appraisals: " + " | ".join(hist)

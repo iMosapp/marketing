@@ -2,6 +2,7 @@
 notifications, relationship intelligence and campaign hooks. Three numbers stay separate forever: market value, I'm On Social suggested ACV,
 manager-approved value."""
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -107,12 +108,20 @@ async def gather_inputs(db, appr: dict) -> dict:
     return {"vehicle": appr.get("vehicle") or {}, "mileage": appr.get("mileage_confirmed"), "condition": cond, "market": mkt, "book_values": appr.get("book_values") or [],
             "customer_expected_value": appr.get("customer_expected_value"), "market_snapshot_id": str(snap["_id"]) if snap else None,
             "inspection_id": str(ins_doc["_id"]) if ins_doc else None, "inspection_run_count": (ins_doc or {}).get("run_count"), "rules_version": eff["version"],
-            "rules_source": eff["source"], "rules_id": eff["rules_id"], "rules_snapshot": eff["rules"], "now_year": _now().year}
+            "rules_source": eff["source"], "rules_id": eff["rules_id"], "rules_snapshot": eff["rules"], "now_year": _now().year,
+            "allow_development_basis": development_basis_allowed()}
+
+
+def development_basis_allowed() -> bool:
+    """Mock market data may start a Suggested ACV only where APPRAISAL_ALLOW_DEV_MARKET=1 (preview/dev). Production never sets it, so without a live
+    provider the number has to come from a book value or the manager."""
+    return (os.environ.get("APPRAISAL_ALLOW_DEV_MARKET") or "").strip() == "1"
 
 
 def run_engine(inputs: dict) -> dict:
     out = engine.calculate(vehicle=inputs["vehicle"], mileage=inputs["mileage"], condition=inputs["condition"], market=inputs["market"], book_values=inputs["book_values"],
-                           customer_expected_value=inputs["customer_expected_value"], rules=inputs["rules_snapshot"], now_year=inputs["now_year"])
+                           customer_expected_value=inputs["customer_expected_value"], rules=inputs["rules_snapshot"], now_year=inputs["now_year"],
+                           allow_development_basis=bool(inputs.get("allow_development_basis")))
     out["warnings"] = list(dict.fromkeys(out["warnings"] + rulesvc.double_count_warnings(inputs["rules_snapshot"])))
     return out
 
@@ -323,7 +332,7 @@ async def record_outcome(db, appr: dict, me: dict, outcome: str, expected_value:
     if outcome == "wants_more" and expected_value:
         if not (0 < int(expected_value) < 5_000_000):
             raise ValueError("That amount does not look right")
-        extra.update({"customer_expected_value": int(expected_value), "expectation_asked": True})
+        extra.update({"customer_expected_value": int(expected_value), "expectation_asked": True, "customer_expected_value_before_outcome": appr.get("customer_expected_value")})
     cev = extra.get("customer_expected_value", appr.get("customer_expected_value"))
     if cev and appr.get("approved_value"):
         extra["expectation_gap_final"] = int(cev) - int(appr["approved_value"])

@@ -28,7 +28,7 @@ def rules(**over):
 
 
 def calc(**kw):
-    base = dict(vehicle=VEHICLE, mileage=61200, condition=GOOD, market=MARKET, book_values=BOOKS, customer_expected_value=None, rules=rules(), now_year=2026)
+    base = dict(vehicle=VEHICLE, mileage=61200, condition=GOOD, market=MARKET, book_values=BOOKS, customer_expected_value=None, rules=rules(), now_year=2026, allow_development_basis=True)
     base.update(kw)
     return engine.calculate(**base)
 
@@ -230,3 +230,30 @@ def test_double_count_warnings():
     w = double_count_warnings(validate({"mileage": {"enabled": True}, "age": {"enabled": True}}))
     assert len(w) == 2
     assert double_count_warnings(validate({"mileage": {"enabled": True}, "basis": {"order": ["book:mmr"]}})) == []
+
+
+# ---------- development (mock) market data is never a production basis ----------
+def test_dev_market_data_refused_as_basis_by_default():
+    out = calc(allow_development_basis=False)
+    assert out["suggested_acv"] is None and out["manager_review_required"] is True
+    assert any("DEVELOPMENT DATA" in w for w in out["warnings"])
+    # still visible as references, every market row badged
+    for s in out["valuation_sources"]:
+        if s["source"] == "MARKET DATA":
+            assert "DEVELOPMENT DATA — NOT LIVE" in (s["note"] or "")
+
+
+def test_dev_market_refused_falls_through_to_book_value():
+    out = calc(allow_development_basis=False, rules=rules(basis={"order": ["provider_retail", "comps_median", "book:mmr"]}))
+    assert out["basis"]["key"] == "book:mmr" and out["basis"]["source"] == "BOOK VALUE" and out["suggested_acv"] == 24000 - 1000
+    assert any("DEVELOPMENT DATA" in w for w in out["warnings"])
+
+
+def test_live_market_data_unaffected_by_flag():
+    live = {**MARKET, "live": True, "provider": "marketcheck", "provider_label": "MarketCheck", "retail_source": "marketcheck_price", "retail_label": "MarketCheck price prediction"}
+    out = calc(market=live, allow_development_basis=False)
+    assert out["basis"]["key"] == "provider_retail" and out["suggested_acv"] == 26000
+    assert not any("DEVELOPMENT DATA" in w for w in out["warnings"])
+    assert "DEVELOPMENT" not in out["basis"]["reason"]
+    dev = calc(allow_development_basis=True)
+    assert "DEVELOPMENT DATA — NOT LIVE" in dev["basis"]["reason"]

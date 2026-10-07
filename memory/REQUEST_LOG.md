@@ -5,6 +5,13 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 
 ---
 
+### 51 · Oct 7 — DONE (MVP4 verification report, awaiting approval before MVP5)
+> MVP4 sounds good, but DO NOT proceed to MVP5 yet. Before I approve MVP4, give me the same detailed technical completion report … 20 numbered points (files, DB changes, rule model, engine example $34,850 / $35,100 / MMR $29,100 / Black Book $28,750 / GOOD / wants $32,000, double-adjustment protection, basis fallback, rule versioning proof, status machine, manager desk + screenshots, override audit, request-info flow, notifications, permissions, present before outcome, outcomes, relationship intelligence, campaign events, analytics data, test breakdown, real market data status) … If the environment is production and MarketCheck is not configured, the system should require a legitimate manual valuation basis rather than using MockMarketProvider … STOP.
+
+Delivered the report. Defect found while verifying point 20 and fixed: development (mock) market data can no longer start a Suggested ACV unless `APPRAISAL_ALLOW_DEV_MARKET=1` (preview only). Small additions: `customer_expected_value_before_outcome`, richer Jessi context line, 5 more tests (37 engine + 7 e2e), mobile screenshots at `/qa/mvp4/*.jpeg` on the preview URL. MVP5 still blocked on approval.
+
+---
+
 ### 50 · Oct 7 — DONE (MVP4, awaiting review before MVP5)
 > MVP3 APPROVED … START MVP4 — DEALERSHIP APPRAISAL ENGINE + MANAGER APPROVAL. Three distinct values stored and never blurred: MARKET VALUE, SUGGESTED ACV (dealership rules), MANAGER APPROVED VALUE. Configurable dealership rules (target front-end gross, recon allowance, mileage/age adjustments, risk reserve, market/condition rules, ACV range, base value selection). Pure calculation engine (`services/appraisals/engine.py`, no DB, unit-tested, clear breakdown). Manager review workflow: submit, desk-manager review screen, approve / change value / request more info / decline. Strict status machine draft → capturing → analyzing → ready → submitted → needs_info → resubmitted → approved → changed → declined → presented → closed. Customer outcome (ACCEPTED, WANTS MORE…) + relationship intelligence on close. Event triggers (`trade_appraisal.approved` …) for campaigns/notifications. RBAC `manage.appraisal_approvals` / `manage.appraisal_rules`. DO NOT START MVP5.
 

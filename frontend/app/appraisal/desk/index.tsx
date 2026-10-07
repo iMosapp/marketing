@@ -72,7 +72,7 @@ export default function AppraisalDesk() {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Num colors={colors} label="SUGGESTED" value={a.suggested_acv != null ? money(a.suggested_acv) : 'Manager sets'} color={GOLD} />
               <Num colors={colors} label="CUSTOMER WANTS" value={a.customer_expected_value ? money(a.customer_expected_value) : 'No number'} sub={a.expectation_gap != null ? `${a.expectation_gap >= 0 ? '+' : '-'}${money(Math.abs(a.expectation_gap))} vs suggested` : undefined} color="#FF9500" />
-              {a.approved_value != null ? <Num colors={colors} label="APPROVED" value={money(a.approved_value)} color="#34C759" /> : <Num colors={colors} label="MARKET" value={a.market_retail ? money(a.market_retail) : '—'} sub={a.market_retail && !a.market_live ? 'dev data' : undefined} color="#30B0C7" />}
+              {a.approved_value != null ? <Num colors={colors} label="APPROVED" value={money(a.approved_value)} color="#34C759" /> : <Num colors={colors} label="MARKET" value={a.market_retail ? money(a.market_retail) : '—'} sub={a.market_retail && !a.market_live ? 'DEV DATA — NOT LIVE' : undefined} color="#30B0C7" />}
             </View>
             {a.manager_review_required && group === 'waiting' ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} {...tid(`desk-flag-${a.id}`)}>

@@ -23,18 +23,20 @@ def _latest_book(book_values: list, source: str) -> Optional[dict]:
 
 
 def valuation_sources(market: Optional[dict], book_values: list, customer_expected_value: Optional[int]) -> list:
-    """Every reference the desk should see side by side. Decision inputs, never averaged."""
+    """Every reference the desk should see side by side. Decision inputs, never averaged. Development data is always badged."""
     out = []
     if market:
+        dev = market.get("live") is False
+        badge = "DEVELOPMENT DATA — NOT LIVE"
         if market.get("estimated_retail"):
             out.append({"key": "provider_retail", "label": f"{market.get('provider_label') or 'Market'} retail", "amount": market["estimated_retail"], "source": SRC_MARKET,
-                        "note": market.get("retail_label"), "live": market.get("live")})
+                        "note": badge if dev else market.get("retail_label"), "live": market.get("live")})
         if market.get("median_market_price"):
-            out.append({"key": "comps_median", "label": "Comparable median", "amount": market["median_market_price"], "source": SRC_MARKET, "note": f"{market.get('comps_used') or 0} comps", "live": market.get("live")})
+            out.append({"key": "comps_median", "label": "Comparable median", "amount": market["median_market_price"], "source": SRC_MARKET, "note": f"{market.get('comps_used') or 0} comps{' · ' + badge if dev else ''}", "live": market.get("live")})
         if market.get("avg_market_price"):
-            out.append({"key": "comps_average", "label": "Comparable average", "amount": market["avg_market_price"], "source": SRC_MARKET, "note": f"{market.get('comps_used') or 0} comps", "live": market.get("live")})
+            out.append({"key": "comps_average", "label": "Comparable average", "amount": market["avg_market_price"], "source": SRC_MARKET, "note": f"{market.get('comps_used') or 0} comps{' · ' + badge if dev else ''}", "live": market.get("live")})
         if market.get("estimated_wholesale"):
-            out.append({"key": "provider_wholesale", "label": f"{market.get('provider_label') or 'Market'} wholesale", "amount": market["estimated_wholesale"], "source": SRC_MARKET, "live": market.get("live")})
+            out.append({"key": "provider_wholesale", "label": f"{market.get('provider_label') or 'Market'} wholesale", "amount": market["estimated_wholesale"], "source": SRC_MARKET, "note": badge if dev else None, "live": market.get("live")})
     for b in book_values or []:
         if b.get("value"):
             out.append({"key": f"book:{b.get('source')}", "label": b.get("source_label") or BOOK_LABELS.get(b.get("source"), "Book"), "amount": b["value"], "source": SRC_BOOK,
@@ -44,22 +46,24 @@ def valuation_sources(market: Optional[dict], book_values: list, customer_expect
     return out
 
 
-def resolve_basis(rules: dict, market: Optional[dict], book_values: list, manual_basis: Optional[int] = None) -> Optional[dict]:
-    """Walk the dealership's preferred order and take the first reference that exists."""
+def resolve_basis(rules: dict, market: Optional[dict], book_values: list, manual_basis: Optional[int] = None, allow_development_basis: bool = False) -> Optional[dict]:
+    """Walk the dealership's preferred order and take the first reference that exists. Market data that is not live (MockMarketProvider) can only be a
+    starting value when allow_development_basis is set (preview/dev); in production it is reference-only and the book values / manager take over."""
     min_comps = int((rules.get("basis") or {}).get("min_comps") or 3)
+    mkt = market if (market and (market.get("live") is not False or allow_development_basis)) else None
     for key in (rules.get("basis") or {}).get("order") or []:
         opt = BASIS_OPTIONS.get(key)
         if not opt:
             continue
-        if key == "provider_retail" and market and market.get("estimated_retail") and market.get("retail_source") in ("marketcheck_price", "mock_model"):
-            return {"key": key, "label": opt["label"], "amount": int(market["estimated_retail"]), "source": SRC_MARKET, "kind": "retail",
-                    "reason": f"{market.get('retail_label') or 'Provider retail estimate'} ({market.get('provider_label')}{'' if market.get('live') else ', development data'})"}
-        if key == "comps_median" and market and market.get("median_market_price") and (market.get("comps_used") or 0) >= min_comps:
-            return {"key": key, "label": opt["label"], "amount": int(market["median_market_price"]), "source": SRC_MARKET, "kind": "retail",
-                    "reason": f"Median asking price of {market.get('comps_used')} comparables ({market.get('provider_label')})"}
-        if key == "comps_average" and market and market.get("avg_market_price") and (market.get("comps_used") or 0) >= min_comps:
-            return {"key": key, "label": opt["label"], "amount": int(market["avg_market_price"]), "source": SRC_MARKET, "kind": "retail",
-                    "reason": f"Average asking price of {market.get('comps_used')} comparables ({market.get('provider_label')})"}
+        if key == "provider_retail" and mkt and mkt.get("estimated_retail") and mkt.get("retail_source") in ("marketcheck_price", "mock_model"):
+            return {"key": key, "label": opt["label"], "amount": int(mkt["estimated_retail"]), "source": SRC_MARKET, "kind": "retail",
+                    "reason": f"{mkt.get('retail_label') or 'Provider retail estimate'} ({mkt.get('provider_label')})" + ("" if mkt.get("live") else " — DEVELOPMENT DATA — NOT LIVE")}
+        if key == "comps_median" and mkt and mkt.get("median_market_price") and (mkt.get("comps_used") or 0) >= min_comps:
+            return {"key": key, "label": opt["label"], "amount": int(mkt["median_market_price"]), "source": SRC_MARKET, "kind": "retail",
+                    "reason": f"Median asking price of {mkt.get('comps_used')} comparables ({mkt.get('provider_label')})" + ("" if mkt.get("live") else " — DEVELOPMENT DATA — NOT LIVE")}
+        if key == "comps_average" and mkt and mkt.get("avg_market_price") and (mkt.get("comps_used") or 0) >= min_comps:
+            return {"key": key, "label": opt["label"], "amount": int(mkt["avg_market_price"]), "source": SRC_MARKET, "kind": "retail",
+                    "reason": f"Average asking price of {mkt.get('comps_used')} comparables ({mkt.get('provider_label')})" + ("" if mkt.get("live") else " — DEVELOPMENT DATA — NOT LIVE")}
         if key.startswith("book:"):
             b = _latest_book(book_values, key.split(":", 1)[1])
             if b:
@@ -77,14 +81,16 @@ def _age_years(vehicle: dict, now_year: int) -> Optional[int]:
 
 
 def calculate(*, vehicle: dict, mileage: Optional[int], condition: Optional[dict], market: Optional[dict], book_values: list,
-              customer_expected_value: Optional[int], rules: dict, now_year: int, manual_basis: Optional[int] = None) -> dict:
+              customer_expected_value: Optional[int], rules: dict, now_year: int, manual_basis: Optional[int] = None, allow_development_basis: bool = False) -> dict:
     """-> {suggested_acv, suggested_low, suggested_high, basis, breakdown, warnings, confidence, manager_review_required, review_reasons,
     customer_expected_value, expectation_gap, valuation_sources, engine_version}. Disabled or not-applied rules produce no breakdown line."""
     rounding = int(rules.get("rounding") or 50)
     warnings, review, lines = [], [], []
     cond_key = (condition or {}).get("overall")
     cond_label = CONDITION_LABELS.get(cond_key or "", "Not graded")
-    basis = resolve_basis(rules, market, book_values, manual_basis)
+    if market and market.get("live") is False and not allow_development_basis:
+        warnings.append("Market data on this appraisal is DEVELOPMENT DATA — NOT LIVE. It is shown for reference only and cannot start a customer-facing value: enter a book value (MMR, Black Book, J.D. Power) or let the manager set the number.")
+    basis = resolve_basis(rules, market, book_values, manual_basis, allow_development_basis)
     sources = valuation_sources(market, book_values, customer_expected_value)
     conf = (market or {}).get("confidence")
     conf = conf.get("level") if isinstance(conf, dict) else conf

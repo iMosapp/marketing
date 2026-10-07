@@ -126,7 +126,8 @@ def test_full_workflow(rep, manager, stranger):
     assert b["workflow"]["suggested_acv"] == out["suggested_acv"] and b["notified"] >= 1
     assert b["appraisal"]["approved_value"] is None
     suggested = b["workflow"]["suggested_acv"]
-    # frozen: inputs locked, rep cannot decide, stranger cannot see
+    # presentation requires a decision first; frozen inputs; rep cannot decide; stranger cannot see
+    assert call("POST", f"/api/appraisals/{aid}/present", None, rep)[0] == 409
     assert call("POST", f"/api/appraisals/{aid}/mileage", {"confirmed": 70000}, rep)[0] == 409
     assert call("POST", f"/api/appraisals/{aid}/book-values", {"source": "mmr", "value_type": "wholesale", "value": 20000}, rep)[0] == 409
     assert call("POST", f"/api/appraisals/{aid}/decide", {"action": "approve"}, rep)[0] == 403
@@ -187,6 +188,10 @@ def test_full_workflow(rep, manager, stranger):
     assert st == 200, b
     assert b["appraisal"]["status"] == "closed" and b["appraisal"]["outcome"] == "wants_more" and b["appraisal"]["outcome_label"] == "Wants more"
     assert b["workflow"]["expectation_gap_final"] == 2300 and b["appraisal"]["customer_expected_value"] == suggested2 + 3000
+    # outcome preservation: the historical approved value and the suggested ACV are untouched by the new expectation
+    assert b["workflow"]["approved_value"] == suggested2 + 700 and b["workflow"]["suggested_acv"] == suggested2 and b["workflow"]["manager_adjustment"]["delta"] == 700
+    assert b["appraisal"]["customer_expected_value_before_outcome"] == retail + 5000   # what they said at the start is kept next to what they want now
+    assert call("POST", f"/api/appraisals/{aid}/outcome", {"outcome": "accepted"}, rep)[0] == 409   # closed is final
     st, d = call("GET", f"/api/appraisals/{aid}", None, rep)
     assert d["workflow"]["status_history"][-1]["to"] == "closed" and [h["to"] for h in d["workflow"]["status_history"]][-5:] == ["needs_info", "resubmitted", "changed", "presented", "closed"]
 
@@ -245,3 +250,61 @@ def test_submit_requires_vehicle_and_mileage(rep):
     st, b = call("POST", f"/api/appraisals/{aid}/submit", None, rep)
     assert st == 400 and "vehicle" in b.lower()
     call("DELETE", f"/api/appraisals/{aid}", None, rep)
+
+
+# ---------- self-approval + cross-store + cross-org ----------
+def test_manager_cannot_approve_own_appraisal_unless_explicitly_granted(manager):
+    db = _db()
+    mgr = db.users.find_one({"email": MANAGER[0]}, {"feature_permissions": 1})
+    before = (mgr.get("feature_permissions") or {}).get("manage")
+    aid = _new_appraisal(manager, market=False)
+    db.vehicle_appraisals.update_one({"_id": ObjectId(aid)}, {"$push": {"book_values": {"id": "t1", "source": "mmr", "source_label": "Manheim MMR", "value_type": "wholesale", "value": 21000, "entered_by_name": "QA", "entered_at": "2026-10-07T00:00:00"}}})
+    st, rb = call("GET", f"/api/appraisals/rules?store_id={QA_STORE}", None, manager)
+    rules = rb["effective"]["rules"] | {"basis": {"order": ["provider_retail", "book:mmr"], "min_comps": 3}}
+    assert call("PUT", "/api/appraisals/rules", {"scope": "store", "store_id": QA_STORE, "rules": rules}, manager)[0] == 200
+    st, b = call("POST", f"/api/appraisals/{aid}/submit", None, manager)
+    assert st == 200 and b["workflow"]["suggested_acv"] == 21000 - 1000 and b["abilities"]["decide"] is False
+    assert "own appraisal" in b["abilities"]["decide_blocked_reason"]
+    st, d = call("POST", f"/api/appraisals/{aid}/decide", {"action": "approve"}, manager)
+    assert st == 403 and "own appraisal" in d
+    try:
+        db.users.update_one({"email": MANAGER[0]}, {"$set": {"feature_permissions.manage": {"_enabled": True, "appraisal_approvals": True, "appraisal_rules": True}}})
+        st, dd = call("POST", f"/api/appraisals/{aid}/decide", {"action": "approve"}, manager)
+        assert st == 200 and dd["status"] == "approved" and dd["approved_by_name"]
+    finally:
+        if before is None:
+            db.users.update_one({"email": MANAGER[0]}, {"$unset": {"feature_permissions.manage": ""}})
+        else:
+            db.users.update_one({"email": MANAGER[0]}, {"$set": {"feature_permissions.manage": before}})
+        call("DELETE", f"/api/appraisals/rules/store/{QA_STORE}", None, manager)
+
+
+def test_cross_store_manager_and_cross_org_admin_are_blocked(rep, stranger):
+    import sys as _s
+    _s.path.insert(0, "/app/backend")
+    from routers.auth import hash_password
+    db = _db()
+    aid = _new_appraisal(rep, market=False)
+    assert call("POST", f"/api/appraisals/{aid}/submit", None, rep)[0] == 200
+    store = db.stores.insert_one({"name": "QA Cross Store (temp)", "organization_id": "org_001", "created_at": "2026-10-07"}).inserted_id
+    email = "qa-crossmgr@invalid.imonsocial.test"
+    db.users.delete_many({"email": email})
+    uid = db.users.insert_one({"email": email, "password": hash_password("Cross123!"), "name": "QA Cross Manager", "role": "store_manager", "store_id": str(store), "store_ids": [str(store)],
+                               "organization_id": "org_001", "status": "active", "created_at": "2026-10-07"}).inserted_id
+    try:
+        cross = auth(*login(email, "Cross123!"))
+        st, q = call("GET", "/api/appraisals/desk?group=waiting", None, cross)
+        assert st == 200 and aid not in {r["id"] for r in q["appraisals"]}            # same org, other store: invisible
+        assert call("GET", f"/api/appraisals/desk/{aid}", None, cross)[0] == 404
+        assert call("POST", f"/api/appraisals/{aid}/decide", {"action": "approve"}, cross)[0] == 404
+        assert call("GET", f"/api/appraisals/rules?store_id={QA_STORE}", None, cross)[0] == 403   # rules of another store
+        assert call("PUT", "/api/appraisals/rules", {"scope": "store", "store_id": QA_STORE, "rules": {}}, cross)[0] == 403
+        # other organization's admin
+        assert call("GET", f"/api/appraisals/desk/{aid}", None, stranger)[0] == 404
+        assert call("POST", f"/api/appraisals/{aid}/decide", {"action": "decline", "reason": "nope"}, stranger)[0] == 404
+        assert call("PUT", "/api/appraisals/rules", {"scope": "store", "store_id": QA_STORE, "rules": {}}, stranger)[0] == 403
+        st, q = call("GET", "/api/appraisals/desk?group=waiting", None, stranger)
+        assert st == 200 and aid not in {r["id"] for r in q["appraisals"]}
+    finally:
+        db.users.delete_one({"_id": uid})
+        db.stores.delete_one({"_id": store})
