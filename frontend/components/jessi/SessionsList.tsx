@@ -77,7 +77,8 @@ export const SessionsList = ({ refreshKey, myUserId }: { refreshKey: number; myU
           </View>
           {detail?.loading ? <ActivityIndicator color={GOLD} style={{ marginTop: 30 }} /> : (
             <ScrollView contentContainerStyle={{ padding: 16, gap: 8, paddingBottom: 50 }}>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>{detail?.started_at ? when(detail.started_at) : ''} · {mins(detail?.seconds || 0)} · ${(detail?.cost_usd || 0).toFixed(2)} · {detail?.close_reason || detail?.status}</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>{detail?.started_at ? when(detail.started_at) : ''} · {mins(detail?.seconds || 0)} · ${(detail?.cost_usd || 0).toFixed(2)} · {REASON[detail?.close_reason] || detail?.close_reason || detail?.status}</Text>
+              {!!detail?.last_error && <Text style={{ fontSize: 12, color: RED }} {...tid('voice-session-last-error')}>Last error from the phone: {detail.last_error}</Text>}
               {(detail?.transcript || []).map((t: any, i: number) => (
                 <View key={i} style={{ alignSelf: t.role === 'rep' ? 'flex-end' : 'flex-start', maxWidth: '88%', backgroundColor: t.role === 'rep' ? colors.card : `${GOLD}1F`, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: t.role === 'rep' ? colors.border : `${GOLD}40` }}>
                   <Text style={{ fontSize: 13.5, color: colors.text, lineHeight: 19 }}>{t.text}</Text>

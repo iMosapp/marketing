@@ -41,6 +41,8 @@ export const INSTALLED_BUILD = Platform.OS === 'web' ? '' : `${Application.nativ
 export const LIVE_UNSUPPORTED_BODY = Platform.OS === 'web'
   ? 'Live Jessi needs a browser with a microphone (Chrome, Safari or Edge).'
   : `The app build installed on this phone, ${INSTALLED_BUILD}, was compiled without live voice${nativeRtcReason ? ` (${String(nativeRtcReason).replace(/\.$/, '')})` : ''}. An eas update cannot add it: it needs a new App Store or TestFlight build made from the current code. Install that build, or open app.imonsocial.com in Safari to talk to her now.`;
+// The server answered but the voice link never came up: nearly always a network that blocks WebRTC (UDP), not Jessi.
+export const NO_PICKUP_BODY = 'Jessi did not pick up. The server answered, but the voice connection could not open on this network. Dealership and office Wi-Fi often block it: switch to cellular (or another Wi-Fi) and tap Talk again.';
 
 // One live GPT-Live-1 conversation: WebRTC for audio (browser or react-native-webrtc), data channel for events, our backend for every fact.
 // `onOpen` fires when the backend wants something on the rep's screen (a contact, a thread, a task).
@@ -231,6 +233,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     rowsRef.current = [];
     queue.current = [];
     secondsRef.current = 0;
+    startedAt.current = 0;
     liveId.current = '';
     setRows([]); setError(''); setSeconds(0); setWorking(''); setCloseReason(''); setState('connecting');
     try {
@@ -245,7 +248,12 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       channel.addEventListener('message', (e: any) => onMessage(typeof e.data === 'string' ? e.data : String(e.data ?? '')));
       channel.addEventListener('close', () => { if (!finalized.current) finish('connection_lost'); });
       connection.addEventListener('connectionstatechange', () => {
-        if (['failed', 'disconnected'].includes(connection.connectionState) && !finalized.current) finish('connection_lost');
+        if (!['failed', 'disconnected'].includes(connection.connectionState) || finalized.current) return;
+        if (!startedAt.current) {
+          queue.current.push({ type: 'error', message: `ICE ${connection.connectionState} before session.started (ice: ${connection.iceConnectionState}, gathering: ${connection.iceGatheringState})` });
+          setError(NO_PICKUP_BODY); setState('error');
+        }
+        finish(startedAt.current ? 'connection_lost' : 'no_start');
       });
       const offer = await connection.createOffer();
       await connection.setLocalDescription(offer);
@@ -274,7 +282,11 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       setCapLeft(capRef.current);
       setVoice(r.data.voice || '');
       await connection.setRemoteDescription(rtc.answer(r.data.sdp));
-      startTimer.current = setTimeout(() => { if (!finalized.current) { setError('Jessi did not pick up. Try again.'); setState('error'); finish('no_start'); } }, 20000);
+      startTimer.current = setTimeout(() => {
+        if (finalized.current) return;
+        queue.current.push({ type: 'error', message: `no session.started after 20 s (pc: ${connection.connectionState}, ice: ${connection.iceConnectionState}, dc: ${channel.readyState})` });
+        setError(NO_PICKUP_BODY); setState('error'); finish('no_start');
+      }, 20000);
     } catch (e: any) {
       const detail = e?.response?.data?.detail || e?.message || 'Could not start the conversation';
       setError(typeof detail === 'string' ? detail : JSON.stringify(detail));

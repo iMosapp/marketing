@@ -408,7 +408,7 @@ async def record_events(db, live: dict, events: list) -> dict:
 
 def serialize(s: dict, full: bool = False) -> dict:
     out = {"live_id": s.get("live_id"), "user_id": s.get("user_id"), "user_name": s.get("user_name"), "mode": s.get("mode"), "voice": s.get("voice"), "status": s.get("status"), "contact_name": s.get("contact_name"),
-           "shopper": s.get("shopper"), "team": bool(s.get("team")), "walkthrough": {"stops": len(s["agenda"]), "done": len(s.get("agenda_done") or []), "skipped": len(s.get("agenda_skipped") or [])} if s.get("agenda") is not None else None,
+           "shopper": s.get("shopper"), "team": bool(s.get("team")), "last_error": s.get("last_error"), "walkthrough": {"stops": len(s["agenda"]), "done": len(s.get("agenda_done") or []), "skipped": len(s.get("agenda_skipped") or [])} if s.get("agenda") is not None else None,
            "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
            "seconds": int(s.get("seconds") or 0), "cost_usd": round(float(s.get("cost_usd") or 0), 4), "close_reason": s.get("close_reason"),
            "turns": len(s.get("transcript") or []), "delegations": len(s.get("delegations") or []), "tools": [d.get("tool") for d in (s.get("delegations") or [])]}

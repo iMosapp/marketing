@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Modal, TouchableOpacity, ScrollView, Animated, Easing, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GOLD, GREEN, RED, tid } from '../scripts/shared';
 import type { LiveJessi } from '../../hooks/useLiveJessi';
 
@@ -17,6 +18,7 @@ export const statusText = (live: LiveJessi, who = 'Jessi') =>
 export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi', who = 'Jessi', hint, onRetry, onCollapse }: Props) => {
   const pulse = useRef(new Animated.Value(1)).current;
   const scroll = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (live.state !== 'live') { pulse.stopAnimation(); pulse.setValue(1); return; }
@@ -36,7 +38,7 @@ export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi'
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={canCollapse ? onCollapse : end} presentationStyle="fullScreen">
       <View style={{ flex: 1, backgroundColor: '#0B0B0D' }} {...tid('live-jessi-sheet')}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: 18, paddingBottom: 8, gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: Math.max(18, insets.top + 8), paddingBottom: 8, gap: 10 }}>
           {canCollapse && (
             <TouchableOpacity onPress={onCollapse} hitSlop={10} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' }} {...tid('live-jessi-collapse')}>
               <Ionicons name="chevron-down" size={22} color="#D5D5DA" />
@@ -72,7 +74,7 @@ export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi'
           {!!live.error && <Text style={{ color: RED, fontSize: 13, textAlign: 'center', marginTop: 8 }} {...tid('live-jessi-error')}>{live.error}</Text>}
         </ScrollView>
 
-        <View style={{ padding: 18, paddingBottom: 30, gap: 10 }}>
+        <View style={{ padding: 18, paddingBottom: Math.max(30, insets.bottom + 12), gap: 10 }}>
           {(live.state === 'error' || live.state === 'ended') && (
             <TouchableOpacity onPress={onRetry} style={{ borderRadius: 26, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: `${GOLD}66` }} {...tid('live-jessi-retry')}>
               <Text style={{ color: GOLD, fontWeight: '800', fontSize: 15 }}>Talk again</Text>
