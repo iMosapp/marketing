@@ -32,6 +32,7 @@ import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 import { ComingUpStrip } from '../../components/home/ComingUpStrip';
 import { SoldThisMonthCard } from '../../components/home/SoldThisMonthCard';
 import { TalkToJessiButton } from '../../components/jessi/TalkToJessiButton';
+import { AskJessiSearchBar } from '../../components/jessi/AskJessiSearchBar';
 import { Section } from '../../components/ui/Section';
 import { Card, Row } from '../../components/ui/Row';
 import { PrimaryButton } from '../../components/ui/PrimaryButton';
@@ -943,6 +944,7 @@ function HomeScreen() {
 
         {/* ── JESSI — live voice when it is on, else the Jessi screen ── */}
         <TalkToJessiButton />
+        <AskJessiSearchBar />
 
         {/* ── NEEDS YOU — leads, replies, hot threads, failed AI sends, in one strip ── */}
         <NeedsYouStrip userId={user?._id || ''} hot={hotOpps.filter((c: any) => c.last_message?.sender === 'contact').length} />

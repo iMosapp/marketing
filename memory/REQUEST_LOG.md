@@ -142,6 +142,12 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 43 · Oct 7 — DONE / DEPLOY + EAS UPDATE
+> How would I do a manual search for something like "who do I know looking at Harley's" same as voice search but typing it?
+> Yes do 1
+
+Answer: Contacts → sparkle icon → "Who mentioned…" (typed twin of the voice hunt, same engine). Built #1: a search box on Home right under the Talk to Jessi card ("Type it: who's looking at Harleys, who asked about a Tahoe", Enter or the arrow runs the hunt), plus a "Who Mentioned" tile in Tools (daily group, also in the rep-first hub). Verified on web: typing "who is looking at a Kubota" returned Sarah Tester via her filed fleet-quote PDF.
+
 ### 42 · Oct 6 — DONE / EAS UPDATE
 > When I talk to Jessi with AirPods in it doesn't play through my headphones?  It played though my phone speaker
 
