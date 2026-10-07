@@ -20,6 +20,15 @@ def hdr(t):
     return {"Authorization": f"Bearer {t}"}
 
 
+def refresh(url, token, body):
+    """The rep bucket allows 6 market refreshes a minute (by design); when a long combined run trips it, honour Retry-After once."""
+    r = requests.post(url, headers=hdr(token), json=body)
+    if r.status_code == 429 and "refreshes" in r.text:
+        time.sleep(int(r.headers.get("Retry-After") or 2) + 1)
+        r = requests.post(url, headers=hdr(token), json=body)
+    return r
+
+
 @pytest.fixture(scope="module")
 def rep_token():
     return login(*REP)
@@ -65,8 +74,7 @@ def test_meta_steps(rep_token):
 
 def test_market_refresh_mock_and_cache(rep_token, appraisal_id):
     # first refresh with ZIP 84070
-    r = requests.post(f"{API}/appraisals/{appraisal_id}/market/refresh",
-                      headers=hdr(rep_token), json={"zip": "84070", "radius": 50})
+    r = refresh(f"{API}/appraisals/{appraisal_id}/market/refresh", rep_token, {"zip": "84070", "radius": 50})
     assert r.status_code == 200, r.text
     data = r.json()
     assert data.get("snapshot"), data
@@ -74,8 +82,7 @@ def test_market_refresh_mock_and_cache(rep_token, appraisal_id):
     assert snap1.get("provider") == "mock"
     assert "DEVELOPMENT DATA" in (snap1.get("badge") or data.get("badge","")) or snap1.get("mock") is True or True
     # cached: same ZIP+radius within 24h
-    r2 = requests.post(f"{API}/appraisals/{appraisal_id}/market/refresh",
-                       headers=hdr(rep_token), json={"zip": "84070", "radius": 50})
+    r2 = refresh(f"{API}/appraisals/{appraisal_id}/market/refresh", rep_token, {"zip": "84070", "radius": 50})
     assert r2.status_code == 200, r2.text
     d2 = r2.json()
     assert d2.get("cached") is True, d2
@@ -83,8 +90,7 @@ def test_market_refresh_mock_and_cache(rep_token, appraisal_id):
 
 
 def test_market_force_new_snapshot(rep_token, appraisal_id):
-    r = requests.post(f"{API}/appraisals/{appraisal_id}/market/refresh",
-                      headers=hdr(rep_token), json={"zip": "84070", "radius": 50, "force": True})
+    r = refresh(f"{API}/appraisals/{appraisal_id}/market/refresh", rep_token, {"zip": "84070", "radius": 50, "force": True})
     assert r.status_code == 200, r.text
     g = requests.get(f"{API}/appraisals/{appraisal_id}/market", headers=hdr(rep_token))
     assert g.status_code == 200

@@ -95,10 +95,16 @@ export default function ProviderLab() {
               ))}
             </View>
             <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>Radius and ZIP drive MarketCheck's listing search. VinAudit is national by VIN and ignores both.</Text>
-            <TouchableOpacity onPress={() => run(false)} disabled={busy || !configured.length} style={{ height: 50, borderRadius: 14, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: busy || !configured.length ? 0.5 : 1 }} {...tid('lab-run')}>
-              {busy ? <ActivityIndicator color="#0B0B0D" /> : <><Ionicons name="git-compare" size={18} color="#0B0B0D" /><Text style={{ fontSize: 15, fontWeight: '800', color: '#0B0B0D' }}>Run comparison · up to {callsPerRun} paid call{callsPerRun === 1 ? '' : 's'}</Text></>}
-            </TouchableOpacity>
-            {!configured.length ? <Text style={{ fontSize: 12, color: '#FF9500' }} {...tid('lab-no-keys')}>No live provider key is installed on this server, so there is nothing to compare yet.</Text> : null}
+            {configured.length ? (
+              <TouchableOpacity onPress={() => run(false)} disabled={busy} style={{ height: 50, borderRadius: 14, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, opacity: busy ? 0.5 : 1 }} {...tid('lab-run')}>
+                {busy ? <ActivityIndicator color="#0B0B0D" /> : <><Ionicons name="git-compare" size={18} color="#0B0B0D" /><Text style={{ fontSize: 15, fontWeight: '800', color: '#0B0B0D' }}>Run comparison · up to {callsPerRun} paid call{callsPerRun === 1 ? '' : 's'}</Text></>}
+              </TouchableOpacity>
+            ) : (
+              <View style={{ height: 50, borderRadius: 14, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('lab-run-disabled')}>
+                <Ionicons name="key-outline" size={16} color={colors.textSecondary} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.textSecondary }}>Run comparison · no live key installed</Text>
+              </View>
+            )}
+            {!configured.length ? <Text style={{ fontSize: 12, color: '#FF9500' }} {...tid('lab-no-keys')}>No live provider key is installed on this server, so there is nothing to compare yet. Keys are installed as backend secrets, never in the app.</Text> : null}
             {result ? (
               <TouchableOpacity onPress={() => run(true)} disabled={busy} style={{ alignSelf: 'flex-start' }} {...tid('lab-rerun')}>
                 <Text style={{ fontSize: 12.5, fontWeight: '800', color: GOLD }}>Re-run now (ignores the 24h cache, spends calls)</Text>

@@ -5,7 +5,7 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 
 ---
 
-### 53 · Oct 7 — IN PROGRESS (audit delivered, awaiting go-ahead to implement)
+### 53 · Oct 7 — BUILT, awaiting keys + approval (live matrix not run)
 > MVP5 is approved.
 > DO NOT build any additional Trade Appraisal features.
 > We are now moving into production valuation-provider activation and validation.
@@ -25,7 +25,7 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 > TESTING: MarketCheck live success, VinAudit live success, MarketCheck normalization, VinAudit normalization, different values preserved independently, no averaging, MarketCheck failure, VinAudit failure, both fail, rate-limit/provider error, invalid VIN, missing mileage, missing ZIP, snapshot reuse, forced refresh, development data rejected in production, provider comparison tenant isolation, API credentials never returned to frontend, existing MVP1–MVP5 regression suite.
 > STOP AFTER VALIDATION. Do not change the production valuation strategy after testing. Give me a report containing: existing provider architecture, changes made, MarketCheck endpoint + actual normalized response, VinAudit endpoint + actual normalized response, side-by-side comparison, provider differences, API usage/cost behavior, cache behavior, failure behavior, security verification, test results, recommendation for which provider should be primary (but DO NOT implement that recommendation yet). Then STOP for approval.
 
-Audit delivered Oct 7 (architecture + docs verified against docs.marketcheck.com and data.vinaudit.com). Implementation not started; waiting on go-ahead.
+Audit delivered Oct 7 (architecture + docs verified against docs.marketcheck.com and data.vinaudit.com). Owner picked: VinAudit retail + tradein (2 calls) in comparisons, MarketCheck stays Base + search, go. Built the same day: VinAuditProvider, rules.market (primary/fallback/comparison), admin comparison (ad-hoc Provider Lab + per-appraisal), call ledger + cost summary, matrix harness, 19 + 20 tests, testing_agent iteration_366. Live matrix waits for the keys to be installed as backend env secrets; production strategy untouched.
 
 ---
 
