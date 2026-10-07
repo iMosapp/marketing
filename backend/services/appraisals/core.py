@@ -25,7 +25,7 @@ ROLES = {"vin_photo": "VIN photo", "odometer_photo": "Odometer photo", "exterior
          "walkaround_video": "Walkaround video", "other": "Other"}
 # Status machine; MVP1 only moves within draft. Later MVPs add analyzing/ready/submitted/approved/changed/needs_info/declined/presented/closed.
 STATUSES = ["draft", "analyzing", "ready", "submitted", "approved", "changed", "needs_info", "declined", "presented", "closed"]
-STEPS = ["customer", "mode", "identity", "mileage", "inspection", "expectation", "review"]
+STEPS = ["customer", "mode", "identity", "mileage", "inspection", "market", "expectation", "review"]
 MAX_IMAGE = 25 * 1024 * 1024
 MAX_VIDEO = 150 * 1024 * 1024
 
@@ -80,9 +80,11 @@ def public_vehicle(v: dict) -> dict:
 def public_appraisal(a: dict) -> dict:
     keep = ("contact_id", "contact_name", "vehicle_id", "vin", "vehicle", "status", "step", "mode", "mileage_detected", "mileage_confirmed", "mileage_source",
             "expectation_asked", "customer_expected_value", "notes", "stock_number", "user_id", "user_name", "store_id", "previous_appraisal_id", "is_reappraisal",
-            "identity_method", "created_at", "updated_at", "submitted_at", "approved_value", "suggested_acv", "outcome")
+            "identity_method", "created_at", "updated_at", "submitted_at", "approved_value", "suggested_acv", "outcome",
+            "market_snapshot_id", "market_zip", "market_radius", "market_summary")
     out = {k: a.get(k) for k in keep}
     out["id"] = str(a["_id"])
+    out["book_values_count"] = len(a.get("book_values") or [])
     out["vehicle_label"] = vehicle_label(a.get("vehicle") or {"vin": a.get("vin")}) if (a.get("vehicle") or a.get("vin")) else None
     out["mode_label"] = MODES.get(a.get("mode") or "", "")
     return out
@@ -420,6 +422,11 @@ async def for_context(db, contact_id: str) -> list:
                 bits.append(f"suggested ${a['suggested_acv']:,}")
             if a.get("customer_expected_value"):
                 bits.append(f"customer wanted ${a['customer_expected_value']:,}")
+            ms = a.get("market_summary") or {}
+            if ms.get("estimated_retail"):
+                bits.append(f"market retail est ${ms['estimated_retail']:,} ({ms.get('provider_label')}{', development data' if not ms.get('live') else ''}, {ms.get('comps_used') or 0} comps)")
+            for b in a.get("book_values") or []:
+                bits.append(f"{b.get('source_label')} {str(b.get('value_type') or '').replace('_', '-')} ${int(b.get('value') or 0):,}")
             ins = await db["appraisal_inspections"].find_one({"appraisal_id": str(a["_id"])}, {"final_overall": 1, "override": 1})
             if ins and ins.get("final_overall"):
                 issues = [f"{d.get('location_label')} {str(d.get('subtype') or '').replace('_', ' ')}" async for d in

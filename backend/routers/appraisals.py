@@ -15,6 +15,8 @@ from routers.database import get_db, get_data_filter
 from routers.lead_sources import require_user
 from services.appraisals import core
 from services.appraisals import inspection
+from services.appraisals import market
+from services.appraisals import market_providers as mp
 from services.appraisals.providers import ProviderUnavailable, identity_options, IDENTITY
 from services.appraisals import readers
 
@@ -83,6 +85,20 @@ class OverrideBody(BaseModel):
     reason: str = ""
 
 
+class MarketRefreshBody(BaseModel):
+    zip: Optional[str] = None
+    radius: Optional[int] = None
+    force: bool = False
+
+
+class BookValueBody(BaseModel):
+    source: Optional[str] = None
+    source_label: Optional[str] = None
+    value_type: Optional[str] = None
+    value: Optional[int] = None
+    note: Optional[str] = None
+
+
 def _me(request: Request) -> dict:
     return request.state.user
 
@@ -126,7 +142,19 @@ def _dt(s: Optional[str]) -> Optional[datetime]:
 async def meta(request: Request):
     me = _me(request)
     _allowed(me)
-    return {"modes": core.MODES, "sources": core.SOURCES, "roles": core.ROLES, "identity": identity_options(), "steps": core.STEPS}
+    return {"modes": core.MODES, "sources": core.SOURCES, "roles": core.ROLES, "identity": identity_options(), "steps": core.STEPS,
+            "market_provider": {"name": mp.active().name, "label": mp.active().label, "live": mp.active().live, "badge": mp.active().badge}}
+
+
+@router.get("/providers")
+async def providers(request: Request):
+    """Which market data provider is live vs mock, plus this month's usage. Managers and admins only; keys are never returned."""
+    me = _me(request)
+    if me.get("role") not in ("super_admin", "org_admin", "store_manager"):
+        raise HTTPException(status_code=403, detail="Managers and admins only")
+    db = get_db()
+    return {"market": mp.provider_options(), "usage": await market.usage(db, mp.active()), "identity": identity_options(),
+            "monthly_cap": market.MONTHLY_CAP_DEFAULT, "cache_hours": market.CACHE_HOURS}
 
 
 @router.get("")
@@ -182,6 +210,8 @@ async def detail(appraisal_id: str, request: Request):
     out["media"] = await core.list_media(db, a)
     out["activity"] = await core.activity(db, a)
     out["inspection"] = await inspection.summary(db, a)
+    out["market"] = await market.summary(db, a)
+    out["book_values"] = market.public_book_values(a)
     if a.get("vehicle_id"):
         veh = await core.get_vehicle(db, me, a["vehicle_id"])
         out["vehicle_record"] = core.public_vehicle(veh) if veh else None
@@ -418,3 +448,79 @@ async def override_condition(appraisal_id: str, body: OverrideBody, request: Req
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return await inspection.read(db, a)
+
+
+# ---------- Market analysis (MVP3) ----------
+def _market_error(e: Exception) -> HTTPException:
+    if isinstance(e, mp.MarketRateLimited):
+        return HTTPException(status_code=429, detail=str(e), headers={"Retry-After": str(int(e.retry_after) + 1)})
+    if isinstance(e, mp.MarketQuotaExceeded):
+        return HTTPException(status_code=429, detail=str(e), headers={"Retry-After": str(e.retry_after or 3600), "X-Quota-Monthly": "1" if e.monthly else "0"})
+    if isinstance(e, mp.MarketUnavailable):
+        return HTTPException(status_code=503, detail=str(e))
+    return HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{appraisal_id}/market")
+async def get_market(appraisal_id: str, request: Request):
+    """Latest snapshot + comparables + book values + which provider is answering (live vs DEVELOPMENT DATA). Scoped through the appraisal."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    return await market.read(db, a, me)
+
+
+@router.post("/{appraisal_id}/market/refresh")
+async def refresh_market(appraisal_id: str, body: MarketRefreshBody, request: Request):
+    """Fetch market data (reused for 24h unless force). Every fetch is a new snapshot; nothing is overwritten. 429 = rate limit / quota, 503 = provider down."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        res = await market.refresh(db, a, me, zip_code=body.zip, radius=body.radius, force=body.force)
+    except (ValueError, mp.MarketUnavailable, mp.MarketRateLimited) as e:
+        raise _market_error(e)
+    out = await market.read(db, await _appr(db, me, appraisal_id), me)
+    out["cached"] = res["cached"]
+    return out
+
+
+@router.post("/{appraisal_id}/book-values")
+async def add_book_value(appraisal_id: str, body: BookValueBody, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        doc = await market.add_book_value(db, a, me, body.model_dump(exclude_none=True))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"book_values": market.public_book_values(doc), "appraisal": core.public_appraisal(doc)}
+
+
+@router.patch("/{appraisal_id}/book-values/{book_id}")
+async def edit_book_value(appraisal_id: str, book_id: str, body: BookValueBody, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        doc = await market.edit_book_value(db, a, me, book_id, body.model_dump(exclude_none=True))
+    except ValueError as e:
+        raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
+    return {"book_values": market.public_book_values(doc), "appraisal": core.public_appraisal(doc)}
+
+
+@router.delete("/{appraisal_id}/book-values/{book_id}")
+async def remove_book_value(appraisal_id: str, book_id: str, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        doc = await market.remove_book_value(db, a, me, book_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
+    return {"book_values": market.public_book_values(doc), "appraisal": core.public_appraisal(doc)}

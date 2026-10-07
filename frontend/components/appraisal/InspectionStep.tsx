@@ -58,7 +58,7 @@ export const InspectionStep = ({ colors, appraisal, media, onSaved, showToast }:
     try { await api.delete(`/appraisals/${appraisal.id}/media/${m.id}`); await load(); } catch (e) { showToast(errText(e, 'Could not remove it'), 'error'); }
   });
   const next = async () => {
-    try { const r = (await api.patch(`/appraisals/${appraisal.id}`, { step: 'expectation' })).data; onSaved(r.appraisal); }
+    try { const r = (await api.patch(`/appraisals/${appraisal.id}`, { step: 'market' })).data; onSaved(r.appraisal); }
     catch (e) { showToast(errText(e, 'Could not continue'), 'error'); }
   };
 

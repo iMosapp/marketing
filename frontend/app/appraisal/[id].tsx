@@ -14,6 +14,7 @@ import { ModeStep } from '../../components/appraisal/ModeStep';
 import { IdentityStep } from '../../components/appraisal/IdentityStep';
 import { MileageStep } from '../../components/appraisal/MileageStep';
 import { InspectionStep } from '../../components/appraisal/InspectionStep';
+import { MarketStep } from '../../components/appraisal/MarketStep';
 import { ExpectationStep } from '../../components/appraisal/ExpectationStep';
 import { ReviewStep } from '../../components/appraisal/ReviewStep';
 
@@ -55,6 +56,7 @@ export default function AppraisalScreen() {
           {step === 'identity' && <IdentityStep colors={colors} appraisal={appraisal} media={media} onConfirmed={merge} showToast={showToast} />}
           {step === 'mileage' && <MileageStep colors={colors} appraisal={appraisal} media={media} onSaved={merge} showToast={showToast} />}
           {step === 'inspection' && <InspectionStep colors={colors} appraisal={appraisal} media={media} onSaved={merge} showToast={showToast} />}
+          {step === 'market' && <MarketStep colors={colors} appraisal={appraisal} onSaved={merge} showToast={showToast} />}
           {step === 'expectation' && <ExpectationStep colors={colors} appraisal={appraisal} onSaved={merge} showToast={showToast} />}
           {step === 'review' && <ReviewStep colors={colors} appraisal={appraisal} onEdit={(s) => setStep(s)} />}
           {step !== 'review' && appraisal.step === 'review' ? (

@@ -14,6 +14,8 @@ export const ReviewStep = ({ colors, appraisal, onEdit }: Props) => {
   const router = useRouter();
   const v = appraisal.vehicle || {};
   const i = appraisal.inspection;
+  const mk = appraisal.market;
+  const market = !mk ? 'Not pulled yet' : `${mk.estimated_retail ? `Est. retail ${money(mk.estimated_retail)}` : 'No estimate'} · ${mk.comps_used || 0} comps · ${mk.live ? mk.provider_label : 'DEVELOPMENT DATA'}${appraisal.book_values?.length ? ` · ${appraisal.book_values.length} book value${appraisal.book_values.length > 1 ? 's' : ''}` : ''}`;
   const insp = !i ? 'Not started' : ['queued', 'processing'].includes(i.status) ? 'Jessi is inspecting…' : i.status === 'failed' ? 'Last run failed — tap to retry'
     : i.final_overall_label ? `${i.final_overall_label}${i.overridden ? ' (overridden)' : ''} · ${i.confirmed} confirmed${i.pending ? `, ${i.pending} to review` : ''}${i.possible ? `, ${i.possible} possible` : ''}` : 'Media added, not analyzed';
   const Row = ({ icon, label, value, step, testId }: { icon: any; label: string; value: string; step?: string; testId: string }) => (
@@ -26,13 +28,14 @@ export const ReviewStep = ({ colors, appraisal, onEdit }: Props) => {
   );
   return (
     <View style={{ gap: 12 }}>
-      <StepTitle colors={colors} title="Draft saved" sub="Everything is on the customer's record. Next releases add market data and manager approval right here." />
+      <StepTitle colors={colors} title="Draft saved" sub="Everything is on the customer's record, market data included. The next release adds the dealership's number and manager approval right here." />
       <View style={{ borderRadius: 16, paddingHorizontal: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }} {...tid('review-card')}>
         <Row icon="car-sport" label="Vehicle" value={appraisal.vehicle_label || ''} step={appraisal.is_reappraisal ? undefined : 'identity'} testId="review-vehicle" />
         <Row icon="barcode-outline" label="VIN" value={appraisal.vin || 'No VIN on file'} testId="review-vin" />
         <Row icon="speedometer" label="Mileage" value={appraisal.mileage_confirmed != null ? miles(appraisal.mileage_confirmed) + (appraisal.mileage_detected != null && appraisal.mileage_detected !== appraisal.mileage_confirmed ? ` (Jessi read ${miles(appraisal.mileage_detected)})` : '') : ''} step="mileage" testId="review-mileage" />
         <Row icon="cash-outline" label="Customer wants" value={appraisal.customer_expected_value ? money(appraisal.customer_expected_value) : appraisal.expectation_asked === false ? 'Has not named a number' : ''} step="expectation" testId="review-expectation" />
         <Row icon="scan" label="Inspection" value={insp} step="inspection" testId="review-inspection" />
+        <Row icon="stats-chart" label="Market" value={market} step="market" testId="review-market" />
         <Row icon={appraisal.mode === 'customer_sent' ? 'cloud-upload-outline' : 'location-outline'} label="Captured" value={appraisal.mode_label} step={appraisal.vehicle_id ? undefined : 'mode'} testId="review-mode" />
         <Row icon="person-outline" label="Customer" value={appraisal.contact_name} testId="review-customer" />
         {appraisal.is_reappraisal ? <Row icon="refresh" label="Reappraisal" value={`Vehicle first appraised ${when(appraisal.history?.[appraisal.history.length - 1]?.created_at)}`} testId="review-reappraisal" /> : null}
