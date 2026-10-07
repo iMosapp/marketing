@@ -69,6 +69,11 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   voice_note: 'Voice Note',
   note_updated: 'Note Updated',
   customer_reply: 'Customer Reply',
+
+  // Trade appraisal
+  appraisal_started: 'Trade Appraisal Started',
+  vehicle_added: 'Vehicle Added',
+  trade_expectation: 'Trade Expectation Noted',
 };
 
 /** Notification icon/color mapping for event types */
@@ -87,6 +92,9 @@ export const EVENT_TYPE_ICONS: Record<string, { icon: string; color: string }> =
   personal_sms: { icon: 'chatbubble', color: '#30D158' },
   sms_sent: { icon: 'chatbubble', color: '#30D158' },
   customer_reply: { icon: 'arrow-down', color: '#30D158' },
+  appraisal_started: { icon: 'car-sport', color: '#C9A962' },
+  vehicle_added: { icon: 'car', color: '#C9A962' },
+  trade_expectation: { icon: 'cash', color: '#C9A962' },
 };
 
 const CARD_DISPLAY: Record<string, string> = {

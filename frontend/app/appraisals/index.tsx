@@ -31,7 +31,7 @@ export default function AppraisalsHome() {
       const d = (await api.get('/appraisals', { params: { group: group === 'all' ? undefined : group, q: q.trim() || undefined } })).data;
       setRows(d.appraisals || []); setCounts(d.counts || {});
     } catch (e: any) {
-      if (e?.response?.status === 403) { showToast(e.response.data?.detail || 'Not switched on for you', 'error', 5000); router.back(); return; }
+      if (e?.response?.status === 403) { showToast(e.response.data?.detail || 'Not switched on for you', 'error', 5000); if (router.canGoBack()) router.back(); else router.replace('/(tabs)/home' as any); return; }
       showToast(errText(e, 'Could not load appraisals'), 'error'); setRows([]);
     } finally { setRefreshing(false); }
   }, [group, q]);
