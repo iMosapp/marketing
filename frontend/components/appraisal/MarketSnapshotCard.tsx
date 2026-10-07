@@ -16,10 +16,10 @@ export const ProviderBadge = ({ live, badge, testId }: { live: boolean; badge: s
 );
 
 const Tile = ({ label, value, sub, colors, testId }: { label: string; value: string; sub?: string; colors: any; testId: string }) => (
-  <View style={{ flex: 1, minWidth: 96, borderRadius: 12, padding: 10, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, gap: 2 }} {...tid(testId)}>
-    <Text style={{ fontSize: 10, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.5 }}>{label}</Text>
-    <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }} numberOfLines={1}>{value}</Text>
-    {sub ? <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={2}>{sub}</Text> : null}
+  <View style={{ flex: 1, flexShrink: 1, minWidth: 0, borderRadius: 12, padding: 10, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, gap: 2 }} {...tid(testId)}>
+    <Text style={{ fontSize: 10, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.5 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+    <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{value}</Text>
+    {sub ? <Text style={{ fontSize: 11, color: colors.textSecondary, lineHeight: 14 }} numberOfLines={3}>{sub}</Text> : null}
   </View>
 );
 
@@ -47,9 +47,9 @@ export const MarketSnapshotCard = ({ colors, snapshot, mileage, historyCount }: 
         {conf.level ? <Chip label={`${String(conf.level).toUpperCase()} CONFIDENCE`} color={cc} testId="market-confidence" icon="pulse" /> : null}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        <Tile colors={colors} testId="market-range" label="ASKING RANGE" value={range ? `${money(range.low)}–${money(range.high)}` : '—'} sub={r.price_range_basis ? `Middle half of ${r.price_range_basis}` : undefined} />
+        <Tile colors={colors} testId="market-range" label="ASK RANGE" value={range ? money(range.low) : '—'} sub={range ? `to ${money(range.high)}${r.price_range_basis ? ` · ${/comparables/.test(r.price_range_basis) ? `middle half of ${r.price_range_basis}` : r.price_range_basis}` : ''}` : undefined} />
         <Tile colors={colors} testId="market-listings" label={r.comps_kind === 'sales records' ? 'SALES RECORDS' : 'LISTINGS'} value={r.listing_count != null ? String(r.listing_count) : '—'} sub={r.comps_kind === 'sales records' ? `${snapshot.provider_label} national by VIN · no listings` : `${r.comps_used || 0} priced comps · ${snapshot.requested?.radius || 100} mi of ${snapshot.requested?.zip}`} />
-        <Tile colors={colors} testId="market-dom" label="DAYS ON MARKET" value={r.avg_dom != null ? `${r.avg_dom} avg` : '—'} sub={r.median_dom != null ? `${r.median_dom} median` : undefined} />
+        <Tile colors={colors} testId="market-dom" label="DAYS LISTED" value={r.avg_dom != null ? `${r.avg_dom} avg` : '—'} sub={r.median_dom != null ? `${r.median_dom} median` : undefined} />
       </View>
       <View style={{ gap: 4 }}>
         <Text style={{ fontSize: 12.5, color: colors.text }} {...tid('market-wholesale')}>

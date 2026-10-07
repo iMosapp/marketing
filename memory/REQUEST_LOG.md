@@ -5,7 +5,16 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 
 ---
 
+### 54 · Oct 7 — DONE (formatting) + answered (VinAudit, tagging, remote link); tagging + remote intake awaiting owner choice
+> look at formatting on some of the boxes and clean it up.  Also I didn't see that vinaudit did anything? and I want to be able to group or tag these for campaign follow ups just not sure best way to do this yet.. also how do I send a link to a customer that is not at store to have them upload info?
+> (screen recording: production desk detail for a 2021 Jeep Gladiator Mojave, live MarketCheck $29,469 / 36 comps; truncated "$29,4…" tiles, "ASKING RANGE $29,59…", "Not prov…" reference row)
+
+Fixed: three-number tiles and snapshot tiles shrink-to-fit on native (adjustsFontSizeToFit), subs wrap to 2-3 lines, ASK RANGE shows low on the value line and "to high · basis" beneath, reference rows put the note under the label, shorter labels (APPROVED, ASK RANGE, DAYS LISTED). VinAudit: by design it only runs in Provider Lab or on an appraisal's Market step after the rule "Let admins compare" is on, and needs VINAUDIT_API_KEY in Deploy > Secrets. Tagging + remote intake link: options proposed, waiting for the owner's pick.
+
+---
+
 ### 53 · Oct 7 — BUILT, awaiting keys + approval (live matrix not run)
+
 > MVP5 is approved.
 > DO NOT build any additional Trade Appraisal features.
 > We are now moving into production valuation-provider activation and validation.

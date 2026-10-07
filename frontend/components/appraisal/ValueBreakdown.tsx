@@ -16,17 +16,17 @@ type Props = { colors: any; output: any; marketRetail?: number | null; marketLab
 // Three numbers, three labels, never blended: MARKET VALUE (what the data says) · SUGGESTED ACV (the dealership's rules) · MANAGER-APPROVED VALUE (the real trade number).
 export const ThreeNumbers = ({ colors, marketRetail, marketLabel, suggested, low, high, approved, approvedBy, pending }: { colors: any; marketRetail?: number | null; marketLabel?: string | null; suggested?: number | null; low?: number | null; high?: number | null; approved?: number | null; approvedBy?: string | null; pending?: boolean }) => {
   const Tile = ({ label, value, sub, color, testId, strong }: { label: string; value: string; sub?: string; color: string; testId: string; strong?: boolean }) => (
-    <View style={{ flex: 1, minWidth: 100, borderRadius: 14, padding: 12, backgroundColor: strong ? color + '1A' : colors.card, borderWidth: 1, borderColor: strong ? color : colors.border, gap: 3 }} {...tid(testId)}>
-      <Text style={{ fontSize: 9.5, fontWeight: '800', color, letterSpacing: 0.6 }}>{label}</Text>
-      <Text style={{ fontSize: value.length > 8 ? 17 : 20, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] }} numberOfLines={1}>{value}</Text>
-      {sub ? <Text style={{ fontSize: 10.5, color: colors.textSecondary }} numberOfLines={2}>{sub}</Text> : null}
+    <View style={{ flex: 1, flexShrink: 1, minWidth: 0, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 10, backgroundColor: strong ? color + '1A' : colors.card, borderWidth: 1, borderColor: strong ? color : colors.border, gap: 3 }} {...tid(testId)}>
+      <Text style={{ fontSize: 9.5, fontWeight: '800', color, letterSpacing: 0.6 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+      <Text style={{ fontSize: value.length > 8 ? 16 : 19, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{value}</Text>
+      {sub ? <Text style={{ fontSize: 10.5, color: colors.textSecondary, lineHeight: 13 }} numberOfLines={2}>{sub}</Text> : null}
     </View>
   );
   return (
     <View style={{ flexDirection: 'row', gap: 8 }} {...tid('three-numbers')}>
       <Tile label="MARKET VALUE" value={marketRetail ? money(marketRetail) : '—'} sub={marketRetail ? (marketLabel || 'Market data') : 'No market pull'} color={SOURCE_COLORS['MARKET DATA']} testId="num-market" />
       <Tile label="SUGGESTED ACV" value={suggested != null ? money(suggested) : '—'} sub={suggested != null && low != null ? `${money(low)} to ${money(high)}` : 'Manager sets it'} color={GOLD} testId="num-suggested" />
-      <Tile label="MANAGER APPROVED" value={approved != null ? money(approved) : pending ? 'Waiting' : '—'} sub={approved != null ? (approvedBy ? `by ${approvedBy}` : 'Approved') : pending ? 'At the desk' : 'Not submitted'} color={SOURCE_COLORS['MANAGER-APPROVED VALUE']} testId="num-approved" strong={approved != null} />
+      <Tile label="APPROVED" value={approved != null ? money(approved) : pending ? 'Waiting' : '—'} sub={approved != null ? (approvedBy ? `by ${approvedBy}` : 'Approved') : pending ? 'At the desk' : 'Not submitted'} color={SOURCE_COLORS['MANAGER-APPROVED VALUE']} testId="num-approved" strong={approved != null} />
     </View>
   );
 };
@@ -41,7 +41,10 @@ export const ReferencesCard = ({ colors, output: o }: { colors: any; output: any
       {refs.map((s: any) => (
         <View key={s.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 7, borderTopWidth: 1, borderTopColor: colors.border }} {...tid(`reference-${s.key.replace(':', '-')}`)}>
           <SourceTagSmall source={s.source} />
-          <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: colors.text }} numberOfLines={1}>{s.label}{s.note ? <Text style={{ color: colors.textSecondary, fontWeight: '400' }}> · {s.note}</Text> : null}</Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }} numberOfLines={1}>{s.label}</Text>
+            {s.note ? <Text style={{ fontSize: 10.5, color: colors.textSecondary }} numberOfLines={1}>{s.note}</Text> : null}
+          </View>
           <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] }}>{money(s.amount)}</Text>
         </View>
       ))}
