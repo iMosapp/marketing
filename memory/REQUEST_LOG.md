@@ -5,6 +5,20 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 
 ---
 
+### 48 · Oct 7 — DONE (MVP2, awaiting review before MVP3)
+> B — MVP1 APPROVED with the following additions before proceeding into MVP2 … START MVP2 … AI VEHICLE INSPECTION … When MVP2 is complete, STOP. Do not begin MarketCheck/MVP3.
+
+Built the AI Vehicle Inspection: record/import walkaround video + take/import photos (mixed, with provenance), ffmpeg frame extraction + quality/dedupe, Jessi vision findings with evidence frames + timestamps, coverage, confirm/dismiss/edit/add, condition report with explained grade + override, org video-retention setting. 32 backend tests green, testing_agent iteration_361 frontend pass. Report delivered; MVP3 blocked on approval.
+
+---
+
+### 47 · Oct 7 — DONE (report only)
+> MVP1 Completion Report requested ("When MVP1 is complete, STOP and give me: files created…")
+
+Delivered the MVP1 report; on the way in fixed requirements.txt (zxing-cpp missing), a flaky test assertion, appraisal feed labels, and the 403 redirect on web.
+
+---
+
 ### 1 · Oct 3 — DONE
 > Jesus where are these old logos coming from??? Current logo is this one [screenshot of imonsocial.com header]
 

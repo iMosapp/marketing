@@ -28,7 +28,7 @@ export const FindingCard = ({ colors, finding: f, onDecide, onEdit, onEvidence, 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 2 }}>
             <Chip label={f.category_label} color={GOLD} />
             {f.origin === 'ai' ? <Chip label={CONFIDENCE_LABEL[f.confidence] || f.confidence} color={f.confidence === 'high' ? '#34C759' : f.confidence === 'medium' ? '#30B0C7' : '#FF9500'} testId={`finding-confidence-${f.id}`} /> : <Chip label="Added by you" color="#AF52DE" icon="person" />}
-            {f.edited ? <Chip label="Edited" color="#8E8E93" icon="create-outline" /> : null}
+            {f.edited ? <Chip label="Edited" color="#8E8E93" icon="create-outline" testId={`finding-edited-${f.id}`} /> : null}
             {confirmed ? <Chip label={`Confirmed${f.decision_by_name ? ` · ${f.decision_by_name.split(' ')[0]}` : ''}`} color="#34C759" icon="checkmark" testId={`finding-state-${f.id}`} /> : dismissed ? <Chip label="Dismissed" color="#8E8E93" icon="close" testId={`finding-state-${f.id}`} /> : <Chip label="Needs your call" color="#FF9500" testId={`finding-state-${f.id}`} />}
           </View>
         </View>

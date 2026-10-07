@@ -1,6 +1,13 @@
 # AI Trade-In Appraisal — read-only implementation assessment (Oct 7 2026)
 
-Status: ARCHITECTURE APPROVED Oct 7 2026 with the 10 changes below. MVP1 in build; MVP2-5 blocked until the owner reviews MVP1.
+Status: ARCHITECTURE APPROVED Oct 7 2026 with the 10 changes below. MVP1 DONE + approved Oct 7. MVP2 (AI Vehicle Inspection) DONE Oct 7 — awaiting owner review before MVP3 (MarketCheck).
+
+## MVP2 as built (Oct 7 2026)
+- One pipeline for every file, whoever supplied it: `appraisal_media` (role, source) → `services/appraisals/frames.py` (video: ffmpeg via imageio-ffmpeg, ~120 candidates, Laplacian sharpness floor, dHash near-duplicate removal, 12–18 kept spread across the clip, `quality: poor` flag; photo: itself) → `appraisal_frames` (copies `media_source`, `media_name`, `timestamp_s/label`) → Jessi vision (`inspection.ANALYZER`, batches of 6, gpt-5.4) classifies areas (13) + lists findings → `coverage()` (areas + groups exterior/wheels/glass/interior, partial allowed, missing named) → `appraisal_findings` upserted by fingerprint `category|subtype|location` (human decisions never overwritten; retries don't duplicate) → `grade()` (minor 1 / moderate 2 / major 4; wheels+glass weigh half; any major caps at Fair; low confidence = "Possible — Needs Review", excluded until confirmed) → report with AI grade, final grade, override {overall, reason, by, at}, per-category grades, explained reason.
+- Human review: CONFIRM / DISMISS / EDIT (ai_original kept + edit_history) / ADD ISSUE (origin human, confirmed) / OVERRIDE overall; every action in `appraisal_activity`; `inspection_completed` on the contact feed; Ask Jessi context includes condition + confirmed issues.
+- Retention: org `retain_original_inspection_video` (default ON) + `inspection_video_retention_days` (default 365) editable in admin org editor; OFF → original overwritten right after a successful run; ON → daily 03:45 UTC `purge_videos`. Frames/thumbs/findings are never destroyed. `recover_interrupted` on startup fails runs killed by a restart so the rep can retry.
+- Customer-link ready: nothing requires the uploader to be a logged-in rep — media carries `source`/`uploaded_by`/`upload_token`, the run is keyed by appraisal, frames/findings by inspection.
+- Step order now: customer → mode → identity → mileage → **inspection** → expectation → review. Appraisal status: draft → analyzing (while running) → ready.
 
 ## 0. Owner's approved changes (Oct 7 2026) — binding
 1. **Naming**: product is I'm On Social, assistant is Jessi. No Tok/TracTok anywhere in this feature. Inspection UI wording: "AI Vehicle Inspection"; Jessi may give voice/text guidance.

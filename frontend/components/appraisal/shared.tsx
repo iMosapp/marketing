@@ -59,7 +59,7 @@ export const StepDots = ({ step, colors }: { step: string; colors: any }) => {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10 }} {...tid('step-dots')}>
       {STEP_ORDER.map((s, i) => (
-        <View key={s} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
+        <View key={s} style={{ flex: 1, alignItems: 'center', gap: 4 }} {...tid(`step-dot-${s}`)}>
           <View style={{ height: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: i <= idx ? GOLD : colors.border }} />
           <Text style={{ fontSize: 10, fontWeight: '700', color: i === idx ? GOLD : colors.textSecondary }}>{STEP_LABELS[s]}</Text>
         </View>
