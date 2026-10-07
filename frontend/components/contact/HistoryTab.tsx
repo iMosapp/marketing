@@ -19,8 +19,8 @@ export const HISTORY_FILTERS: { key: HistoryFilter; label: string; icon: string 
   { key: 'texts', label: 'Texts', icon: 'chatbubble' },
   { key: 'calls', label: 'Calls', icon: 'call' },
   { key: 'memos', label: 'Memos', icon: 'mic' },
-  { key: 'files', label: 'Files', icon: 'folder' },
   { key: 'tasks', label: 'Tasks', icon: 'checkbox' },
+  { key: 'files', label: 'Files', icon: 'folder' },
 ];
 
 export function matchesHistoryFilter(e: any, f: HistoryFilter): boolean {

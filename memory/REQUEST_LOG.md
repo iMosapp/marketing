@@ -142,6 +142,11 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 45 · Oct 7 — DONE / EAS UPDATE (+ Deploy for web)
+> Just a couple of cosmetic things here. I love the new files under history, but let's move it to the far right so tasks would be to the left of it. And then the gold bar just on camera, photos and files PDF is a little bit confusing. I would think we would want a button that says upload. And then I would feel like if I click on photos or PDFs, it would sort them by what's what. I don't know. It's really cool. I just don't love the way it's laid out. Let's think through that
+
+History chips now end with Files (All · Texts · Calls · Memos · Tasks · Files · N). Files section rebuilt: a quiet summary line ("5 files · 2 photos · 2 PDFs · 1 card") with ONE gold "+ Add" button that opens an "Add to files" sheet (Take a photo on phones, Choose photos, File / PDF, then JESSI SCANS: Business card, VIN / odometer, Trade-in); below it outline filter chips with counts (All · Photos · PDFs · Cards · Vehicles · Locked, zero-count chips hidden) that filter the grid. Nothing looks pressed by default any more.
+
 ### 44 · Oct 7 — DONE / DEPLOY + EAS UPDATE
 > Strong match is causing names to wrap let's change placement so it doesn't do this *(screenshot: "1. Tami Ice Queeen" wrapping beside the badge)*
 

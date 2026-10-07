@@ -5,16 +5,26 @@ import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../common/Toast';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { GOLD, tid } from '../inbox/ownership';
-import { useContactFileUpload, ScanHint } from '../../hooks/useContactFileUpload';
+import { useContactFileUpload } from '../../hooks/useContactFileUpload';
 import type { ContactFilesStore } from '../../hooks/useContactFiles';
 import { FileDetailSheet } from './FileDetailSheet';
+import { AddFileSheet } from './AddFileSheet';
 
 const RED = '#FF3B30';
-const SCANS: { hint: ScanHint; label: string; icon: any }[] = [
-  { hint: 'business_card', label: 'Business card', icon: 'card-outline' },
-  { hint: 'vin', label: 'VIN / odometer', icon: 'barcode-outline' },
-  { hint: 'trade_in', label: 'Trade-in', icon: 'car-sport-outline' },
+type Filter = 'all' | 'photos' | 'pdfs' | 'cards' | 'vehicles' | 'locked';
+const FILTERS: { key: Filter; label: string; test: (f: any) => boolean }[] = [
+  { key: 'all', label: 'All', test: () => true },
+  { key: 'photos', label: 'Photos', test: f => f.kind !== 'pdf' && !['business_card', 'vin', 'trade_in', 'id_document', 'insurance_card', 'credit_app'].includes(f.scan_type) },
+  { key: 'pdfs', label: 'PDFs', test: f => f.kind === 'pdf' },
+  { key: 'cards', label: 'Cards', test: f => f.scan_type === 'business_card' },
+  { key: 'vehicles', label: 'Vehicles', test: f => f.scan_type === 'vin' || f.scan_type === 'trade_in' },
+  { key: 'locked', label: 'Locked', test: f => !!f.sensitive },
 ];
+const summaryLine = (files: any[]) => {
+  const n = (k: Filter) => files.filter(FILTERS.find(x => x.key === k)!.test).length;
+  const parts = [[n('photos'), 'photo'], [n('pdfs'), 'PDF'], [n('cards'), 'card'], [n('vehicles'), 'vehicle'], [n('locked'), 'locked']] as [number, string][];
+  return [`${files.length} file${files.length === 1 ? '' : 's'}`, ...parts.filter(([c]) => c > 0).map(([c, w]) => `${c} ${w}${c === 1 || w === 'locked' ? '' : 's'}`)].join(' · ');
+};
 
 type Props = { contactId: string; colors: any; store: ContactFilesStore; contact?: any; onContactChanged?: () => void };
 
@@ -25,35 +35,34 @@ export default function FilesSection({ contactId, colors, store, contact, onCont
   const { width } = useWindowDimensions();
   const { files, setFiles, meta } = store;
   const [openId, setOpenId] = useState<string | null>(null);
-
+  const [adding, setAdding] = useState(false);
+  const [filter, setFilter] = useState<Filter>('all');
   const up = useContactFileUpload({ userId: user?._id, contactId, onSaved: (f) => { setFiles(prev => [f, ...(prev || [])]); showToast(f.title ? `Filed: ${f.title}` : 'Filed', 'success'); }, onError: (m) => showToast(m, 'error', 3500) });
   const cols = width >= 900 ? 5 : width >= 600 ? 4 : 3;
   const tile = Math.floor((Math.min(width, 1200) - 32 - (cols - 1) * 10) / cols);
   const open = files?.find(f => f.id === openId) || null;
 
+  const shown = (files || []).filter(FILTERS.find(x => x.key === filter)!.test);
+  const chips = FILTERS.filter(x => x.key === 'all' || (files || []).some(x.test));
+
   return (
     <View style={{ paddingHorizontal: 16, paddingBottom: 24, gap: 12 }} {...tid('files-section')}>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        {Platform.OS !== 'web' ? (
-          <TouchableOpacity onPress={() => up.pickCamera()} disabled={!!up.busy} style={{ flex: 1, height: 44, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }} {...tid('files-camera')}>
-            <Ionicons name="camera" size={18} color="#111" /><Text style={{ fontSize: 13.5, fontWeight: '800', color: '#111' }}>Camera</Text>
-          </TouchableOpacity>
-        ) : null}
-        <TouchableOpacity onPress={() => up.pickLibrary()} disabled={!!up.busy} style={{ flex: 1, height: 44, borderRadius: 12, backgroundColor: Platform.OS === 'web' ? GOLD : colors.card, borderWidth: 1, borderColor: Platform.OS === 'web' ? GOLD : colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }} {...tid('files-library')}>
-          <Ionicons name="images-outline" size={18} color={Platform.OS === 'web' ? '#111' : colors.text} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: Platform.OS === 'web' ? '#111' : colors.text }}>Photos</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => up.pickDocument()} disabled={!!up.busy} style={{ flex: 1, height: 44, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }} {...tid('files-document')}>
-          <Ionicons name="document-attach-outline" size={18} color={colors.text} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: colors.text }}>Files / PDF</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Text style={{ flex: 1, fontSize: 12.5, color: colors.textSecondary }} numberOfLines={1} {...tid('files-summary')}>{files ? (files.length ? summaryLine(files) : 'Nothing filed yet') : ' '}</Text>
+        <TouchableOpacity onPress={() => setAdding(true)} disabled={!!up.busy} style={{ height: 38, paddingHorizontal: 16, borderRadius: 19, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, opacity: up.busy ? 0.6 : 1 }} {...tid('files-add')}>
+          <Ionicons name="add" size={18} color="#111" /><Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>Add</Text>
         </TouchableOpacity>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }} {...tid('files-scan-row')}>
-        <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.8, marginRight: 2 }}>SCAN</Text>
-        {SCANS.map(s => (
-          <TouchableOpacity key={s.hint} onPress={() => up.scan(s.hint)} disabled={!!up.busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, height: 30, paddingHorizontal: 10, borderRadius: 15, borderWidth: 1, borderColor: GOLD + '77', backgroundColor: GOLD + '14' }} {...tid(`files-scan-${s.hint}`)}>
-            <Ionicons name={s.icon} size={13} color={GOLD} /><Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>{s.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {files && files.length > 0 && chips.length > 1 ? (
+        <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }} {...tid('files-filter-row')}>
+          {chips.map(c => { const on = filter === c.key; const n = c.key === 'all' ? files.length : files.filter(c.test).length; return (
+            <TouchableOpacity key={c.key} onPress={() => setFilter(c.key)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, height: 30, paddingHorizontal: 11, borderRadius: 15, borderWidth: 1, borderColor: on ? GOLD : colors.border, backgroundColor: on ? GOLD + '22' : 'transparent' }} {...tid(`files-filter-${c.key}`)}>
+              {c.key === 'locked' ? <Ionicons name="lock-closed" size={11} color={on ? GOLD : colors.textSecondary} /> : null}
+              <Text style={{ fontSize: 12.5, fontWeight: '700', color: on ? GOLD : colors.textSecondary }}>{c.label} · {n}</Text>
+            </TouchableOpacity>
+          ); })}
+        </View>
+      ) : null}
       {up.busy ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: GOLD + '66' }} {...tid('files-busy')}>
           <ActivityIndicator color={GOLD} /><Text style={{ flex: 1, fontSize: 13, color: colors.text }}>{up.busy}</Text>
@@ -62,11 +71,11 @@ export default function FilesSection({ contactId, colors, store, contact, onCont
 
       {files === null ? <ActivityIndicator color={GOLD} style={{ marginTop: 16 }} /> : files.length === 0 ? (
         <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20, lineHeight: 19 }} {...tid('files-empty')}>
-          Nothing filed yet. Snap a business card, a VIN plate or a trade-in, add a PDF, or just save a photo. Jessi reads every one so you can ask her about it later. Pictures the customer texts land here on their own.
+          Tap Add to snap a business card, a VIN plate or a trade-in, drop in a PDF, or save a photo. Jessi reads every one so you can ask her about it later. Pictures the customer texts land here on their own.
         </Text>
       ) : (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }} {...tid('files-grid')}>
-          {files.map(f => (
+          {shown.map(f => (
             <TouchableOpacity key={f.id} onPress={() => setOpenId(f.id)} activeOpacity={0.85} style={{ width: tile, gap: 5 }} {...tid(`file-tile-${f.id}`)}>
               <View style={{ width: tile, height: tile, borderRadius: 14, overflow: 'hidden', backgroundColor: colors.card, borderWidth: 1, borderColor: f.sensitive ? RED + '66' : colors.border, alignItems: 'center', justifyContent: 'center' }}>
                 {f.thumb_url ? <Image source={{ uri: resolvePhotoUrl(f.thumb_url) || '' }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Ionicons name={f.kind === 'pdf' ? 'document-text' : 'image'} size={30} color={GOLD} />}
@@ -80,6 +89,7 @@ export default function FilesSection({ contactId, colors, store, contact, onCont
           ))}
         </View>
       )}
+      <AddFileSheet visible={adding} onClose={() => setAdding(false)} colors={colors} up={up} />
       <FileDetailSheet visible={!!open} file={open} userId={user?._id} colors={colors} scanTypes={meta.scan_types} sensitiveTypes={meta.sensitive_types} ttlDays={meta.ttl_days} contact={contact}
         onClose={() => setOpenId(null)} onChanged={(nf) => setFiles(prev => (prev || []).map(x => x.id === nf.id ? { ...x, ...nf } : x))} onDeleted={(id) => setFiles(prev => (prev || []).filter(x => x.id !== id))}
         onApplied={() => onContactChanged?.()} showToast={showToast} />
