@@ -43,8 +43,8 @@ DEFAULT_RULES = {
     "review": {"low_confidence": True, "poor_condition": True, "customer_gap_over": None, "reason": "When to require a manager's eyes before any number goes out."},
     "range": {"method": "fixed", "below": 500, "above": 500, "percent": 2, "reason": "Trade range shown around the suggested ACV."},
     "rounding": 50,
-    "follow_up": {"tag_on_outcome": False, "tags": {"accepted": "trade-accepted", "wants_more": "trade-wants-more", "thinking": "trade-thinking", "not_trading": "trade-not-trading", "other": ""},
-                  "reason": "When on, each outcome adds a contact tag so your existing tag workflows (campaigns, Jessi) take it from there. Nothing is enrolled automatically otherwise.",
+    "follow_up": {"tag_on_outcome": True, "gap_tags": True, "tags": {"accepted": "trade-accepted", "wants_more": "trade-wants-more", "thinking": "trade-thinking", "not_trading": "trade-not-trading", "other": ""},
+                  "reason": "Every submitted trade tags the contact trade-appraised. When on, each outcome replaces that customer's trade tags with the current one (plus a gap bucket) so lists, Smart Lists and tag-triggered campaigns can group them. Turn off to keep tags manual.",
                   "tasks": {
                       "wants_more": {"enabled": True, "days": 1, "title": "Follow up on the {gap} gap with {first_name}", "description": "{first_name} wanted more for the {vehicle}. Call, then decide whether it goes back to the desk."},
                       "thinking": {"enabled": True, "days": 2, "title": "Check in with {first_name} about the {vehicle}", "description": "{first_name} was still thinking about the trade. A quick call keeps it alive."},
@@ -137,7 +137,7 @@ def validate(raw: dict) -> dict:
     d["rounding"] = _num(raw.get("rounding"), 50) if _num(raw.get("rounding"), 50) in (1, 5, 10, 25, 50, 100) else 50
     fu = raw.get("follow_up") or {}
     tags = {k: str((fu.get("tags") or {}).get(k, v) or "").strip().lower()[:40] for k, v in d["follow_up"]["tags"].items()}
-    d["follow_up"].update({"tag_on_outcome": _bool(fu.get("tag_on_outcome", False)), "tags": tags, "reason": str(fu.get("reason") or d["follow_up"]["reason"])[:300]})
+    d["follow_up"].update({"tag_on_outcome": _bool(fu.get("tag_on_outcome", True)), "gap_tags": _bool(fu.get("gap_tags", True)), "tags": tags, "reason": str(fu.get("reason") or d["follow_up"]["reason"])[:300]})
     tasks_in = fu.get("tasks") or {}
     for k in TASK_KINDS:
         base = d["follow_up"]["tasks"][k]

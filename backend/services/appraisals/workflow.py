@@ -254,25 +254,10 @@ async def emit(db, appr: dict, event: str, me: Optional[dict] = None, extra: Opt
     await db[EVT].insert_one(doc)
     try:
         from services.appraisals import followup
-        await followup.on_event(db, appr, event)
+        return await followup.on_event(db, appr, event)
     except Exception as e:
         logger.warning(f"[Appraisal] follow-up bridge skipped for {event}: {e}")
-
-
-async def follow_up_hook(db, appr: dict, outcome: str):
-    """Only when the organization switched it on: add the outcome tag so the existing tag workflows take over. Nothing enrolls otherwise."""
-    eff = await rulesvc.effective(db, appr.get("organization_id"), appr.get("store_id"))
-    fu = eff["rules"].get("follow_up") or {}
-    tag = (fu.get("tags") or {}).get(outcome) if fu.get("tag_on_outcome") else None
-    if not tag or not _oid(appr.get("contact_id")):
-        return None
-    await db.contacts.update_one({"_id": ObjectId(appr["contact_id"])}, {"$addToSet": {"tags": tag}})
-    try:
-        from services.tag_workflows import apply_tag_workflows
-        await apply_tag_workflows(appr["user_id"], appr["contact_id"], [tag], source="trade-appraisal")
-    except Exception as e:
-        logger.warning(f"[Appraisal] tag workflow skipped: {e}")
-    return tag
+        return {}
 
 
 # ---------- rep actions ----------
@@ -349,11 +334,10 @@ async def record_outcome(db, appr: dict, me: dict, outcome: str, expected_value:
     await log_activity(db, user_id=appr["user_id"], contact_id=appr["contact_id"], event_type="appraisal_outcome",
                        description=f"{OUTCOMES[outcome]} on {_money(appr.get('approved_value'))} for {vehicle_label(appr.get('vehicle') or {})}" + (f" · wants {_money(appr['customer_expected_value'])}" if outcome == 'wants_more' and appr.get('customer_expected_value') else ""),
                        metadata={"appraisal_id": str(appr["_id"]), "outcome": outcome, "approved_value": appr.get("approved_value"), "customer_expected_value": appr.get("customer_expected_value")})
-    await emit(db, appr, outcome, me)
+    res = await emit(db, appr, outcome, me) or {}
     await emit(db, appr, "closed", me)
-    tag = await follow_up_hook(db, appr, outcome)
-    if tag:
-        await audit(db, appr, me, "follow_up_tagged", f"Tag '{tag}' added for the tag workflows", meta={"tag": tag})
+    if res.get("tags"):
+        await audit(db, appr, me, "follow_up_tagged", f"Contact tagged {', '.join(res['tags'])} for lists and tag workflows", meta={"tags": res["tags"]})
     if appr.get("vehicle_id"):
         # Intent, not a completed trade: the vehicle stays "owns" until someone confirms the trade on the vehicle record (or a deal does).
         await db[V].update_one({"_id": _oid(appr["vehicle_id"])}, {"$set": {"trade_intent_status": outcome, "trade_intent_at": now, "trade_intent_appraisal_id": str(appr["_id"]), "updated_at": now}})

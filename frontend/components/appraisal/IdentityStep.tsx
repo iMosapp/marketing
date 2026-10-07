@@ -22,6 +22,8 @@ export const IdentityStep = ({ colors, appraisal, media, onConfirmed, showToast 
   const [saving, setSaving] = useState(false);
   const customerSent = appraisal.mode === 'customer_sent';
   const importSource: MediaSource = customerSent ? 'customer_supplied' : 'uploaded_by_rep';
+  const customerVinPhoto = (appraisal.media || []).find((m: any) => m.role === 'vin_photo' && m.source === 'customer_supplied');
+  const customerVin: string | null = !appraisal.vin ? (customerVinPhoto?.reading?.vin || appraisal.customer_intake?.vin || null) : null;
 
   const afterPhoto = (m: any) => {
     if (!m) return;
@@ -136,6 +138,14 @@ export const IdentityStep = ({ colors, appraisal, media, onConfirmed, showToast 
   return (
     <View style={{ gap: 12 }}>
       <StepTitle colors={colors} title="Identify the vehicle" sub={customerSent ? 'Import the VIN photo the customer sent, or type the VIN.' : 'Point the camera at the door-jamb label or the dash plate. Jessi reads the barcode or the characters.'} />
+      {customerVin ? (
+        <TouchableOpacity onPress={() => decode(customerVin, customerVinPhoto?.reading?.vin ? (customerVinPhoto.reading.method === 'barcode' ? 'vin_photo_barcode' : 'vin_photo_ocr') : 'customer_link', customerVinPhoto?.reading?.confidence, customerVinPhoto)} disabled={saving || !!media.busy}
+          style={{ borderRadius: 16, padding: 14, backgroundColor: GOLD + '14', borderWidth: 1.5, borderColor: GOLD, gap: 6 }} {...tid('identity-customer-vin')}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 0.6 }}>FROM THE CUSTOMER'S TRADE LINK</Text>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, letterSpacing: 2, fontVariant: ['tabular-nums'] }}>{customerVin}</Text>
+          <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>{customerVinPhoto?.reading?.vin ? 'Read from the VIN photo they sent. ' : 'Typed by the customer. '}Tap to look it up, then confirm it like any other VIN.</Text>
+        </TouchableOpacity>
+      ) : null}
       {Platform.OS !== 'web' && !customerSent ? <BigButton colors={colors} icon="scan" label="Scan VIN" sub="Camera · barcode or printed characters" onPress={() => media.capture('vin_photo').then(afterPhoto)} primary disabled={!!media.busy} testId="identity-scan-vin" /> : null}
       <BigButton colors={colors} icon="image-outline" label={customerSent ? "Upload customer's VIN photo" : 'Upload VIN photo'} sub={customerSent ? 'From the photo they texted or emailed you' : 'From your photo library or Files'} onPress={() => media.importOne('vin_photo', importSource).then(afterPhoto)} primary={customerSent || Platform.OS === 'web'} disabled={!!media.busy} testId="identity-upload-vin" />
       <BigButton colors={colors} icon="keypad-outline" label="Enter VIN manually" sub="Type the 17 characters" onPress={() => setPhase('typing')} disabled={!!media.busy} testId="identity-type-vin" />

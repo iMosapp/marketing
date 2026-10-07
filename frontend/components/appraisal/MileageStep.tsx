@@ -11,7 +11,12 @@ type Props = { colors: any; appraisal: any; media: ReturnType<typeof useAppraisa
 
 // SCAN ODOMETER · UPLOAD ODOMETER PHOTO · ENTER MANUALLY. Jessi's reading is shown, never silently accepted.
 export const MileageStep = ({ colors, appraisal, media, onSaved, showToast }: Props) => {
-  const [detected, setDetected] = useState<{ mileage: number | null; confidence?: string; note?: string; photo?: any } | null>(null);
+  const reported = appraisal.customer_intake?.mileage;
+  const customerOdo = (appraisal.media || []).find((m: any) => m.role === 'odometer_photo' && m.source === 'customer_supplied');
+  const [detected, setDetected] = useState<{ mileage: number | null; confidence?: string; note?: string; photo?: any; reported?: boolean } | null>(
+    appraisal.mileage_confirmed != null ? null
+      : customerOdo?.reading?.mileage != null ? { mileage: customerOdo.reading.mileage, confidence: customerOdo.reading.confidence, note: reported != null && reported !== customerOdo.reading.mileage ? `The customer typed ${miles(reported)}; Jessi read ${miles(customerOdo.reading.mileage)} from their photo.` : 'Read from the odometer photo the customer sent through the trade link.', photo: customerOdo }
+      : reported != null ? { mileage: reported, confidence: 'medium', note: 'Typed by the customer through the trade link.', reported: true, photo: customerOdo } : null);
   const [typed, setTyped] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -39,17 +44,17 @@ export const MileageStep = ({ colors, appraisal, media, onSaved, showToast }: Pr
   if (detected && !editing && detected.mileage != null) {
     return (
       <View style={{ gap: 12 }}>
-        <StepTitle colors={colors} title="Detected mileage" sub="Confirm it or fix it. The number you confirm is what the appraisal uses." />
+        <StepTitle colors={colors} title={detected.reported ? 'Customer reported mileage' : 'Detected mileage'} sub="Confirm it or fix it. The number you confirm is what the appraisal uses." />
         <View style={{ borderRadius: 16, padding: 18, backgroundColor: colors.card, borderWidth: 1.5, borderColor: GOLD, gap: 8, alignItems: 'center' }} {...tid('odometer-detected-card')}>
           <Text style={{ fontSize: 36, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] }} {...tid('odometer-detected-value')}>{miles(detected.mileage)}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ fontSize: 12, color: colors.textSecondary }}>Read by Jessi · {detected.confidence === 'high' ? 'high confidence' : detected.confidence === 'medium' ? 'medium confidence, double-check' : 'low confidence, double-check'}</Text>
-            {detected.photo ? <SourceTag source={detected.photo.source} colors={colors} /> : null}
+            <Text style={{ fontSize: 12, color: colors.textSecondary }}>{detected.reported ? 'Reported by the customer' : `Read by Jessi · ${detected.confidence === 'high' ? 'high confidence' : detected.confidence === 'medium' ? 'medium confidence, double-check' : 'low confidence, double-check'}`}</Text>
+            {detected.photo ? <SourceTag source={detected.photo.source} colors={colors} /> : detected.reported ? <SourceTag source="customer_supplied" colors={colors} /> : null}
           </View>
-          {detected.note ? <Text style={{ fontSize: 12, color: colors.textSecondary }}>{detected.note}</Text> : null}
+          {detected.note ? <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center' }}>{detected.note}</Text> : null}
           {detected.photo?.thumb_url ? <Image source={{ uri: resolvePhotoUrl(detected.photo.thumb_url) || '' }} style={{ width: '100%', height: 140, borderRadius: 10 }} resizeMode="cover" /> : null}
         </View>
-        <BigButton colors={colors} icon="checkmark" label="Confirm" sub={miles(detected.mileage)} onPress={() => save(detected.mileage!, 'photo')} primary disabled={saving} testId="odometer-confirm" />
+        <BigButton colors={colors} icon="checkmark" label="Confirm" sub={miles(detected.mileage)} onPress={() => save(detected.mileage!, detected.reported ? 'customer_reported' : 'photo')} primary disabled={saving} testId="odometer-confirm" />
         <BigButton colors={colors} icon="create-outline" label="Edit" sub="Type the exact number" onPress={() => { setTyped(String(detected.mileage)); setEditing(true); }} disabled={saving} testId="odometer-edit" />
         <BusyBar text={saving ? 'Saving…' : media.busy} colors={colors} />
       </View>

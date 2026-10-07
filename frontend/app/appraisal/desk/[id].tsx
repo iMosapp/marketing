@@ -11,7 +11,7 @@ import { GOLD, tid, errText } from '../../../components/inbox/ownership';
 import { Chip, money, miles, marketLabel } from '../../../components/appraisal/shared';
 import { ValueBreakdown, ReferencesCard } from '../../../components/appraisal/ValueBreakdown';
 import { DeskDecisionBar } from '../../../components/appraisal/desk/DeskDecisionBar';
-import { CustomerWantsCard, ConditionCard, MarketCard, RepCard, HistoryCard, ActivityCard } from '../../../components/appraisal/desk/DeskCards';
+import { CustomerWantsCard, ConditionCard, MarketCard, RepCard, CustomerIntakeCard, HistoryCard, ActivityCard } from '../../../components/appraisal/desk/DeskCards';
 
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 const ago = (s?: number | null) => (s == null ? '' : s < 3600 ? `${Math.max(1, Math.round(s / 60))} min` : s < 86400 ? `${Math.round(s / 3600)} h` : `${Math.round(s / 86400)} d`);
@@ -60,6 +60,7 @@ export default function DeskReview() {
           <MarketCard colors={colors} market={a.market} mileage={a.mileage_confirmed} />
           <ReferencesCard colors={colors} output={w} />
           <RepCard colors={colors} a={a} />
+          <CustomerIntakeCard colors={colors} a={a} />
           <HistoryCard colors={colors} a={a} />
           {a.decisions?.length ? (
             <View style={{ borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }} {...tid('desk-decisions')}>

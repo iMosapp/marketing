@@ -28,6 +28,18 @@ export const TradeTriggerPicker = ({ colors, selected, onChange, disabled }: { c
           </TouchableOpacity>
         ); })}
       </View>
+      <View style={{ borderRadius: 12, padding: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, gap: 6 }} {...tid('trade-tags-help')}>
+        <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.4 }}>TAGS ADDED AUTOMATICALLY (USE THEM AS "A TAG" TRIGGERS OR IN CONTACT FILTERS)</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {Object.entries(opts?.tags || {}).map(([k, help]: any) => (
+            <View key={k} style={{ borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border }} {...tid(`trade-tag-${k}`)}>
+              <Text style={{ fontSize: 11.5, fontWeight: '700', color: colors.text }}>{k}</Text>
+              <Text style={{ fontSize: 10.5, color: colors.textSecondary }}>{help}</Text>
+            </View>
+          ))}
+        </View>
+        <Text style={{ fontSize: 11.5, color: colors.textSecondary, lineHeight: 16 }}>Every submitted trade adds trade-appraised. Each outcome replaces the customer's trade tags with the current one plus a gap bucket, so a customer is always in exactly one trade group. Switch off under Appraisal Rules › After the customer answers.</Text>
+      </View>
       <View style={{ borderRadius: 12, padding: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, gap: 6 }} {...tid('trade-merge-fields')}>
         <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.4 }}>MERGE FIELDS YOU CAN USE IN THE TEXTS</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>

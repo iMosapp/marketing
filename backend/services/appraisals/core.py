@@ -83,9 +83,10 @@ def public_appraisal(a: dict) -> dict:
             "expectation_asked", "customer_expected_value", "notes", "stock_number", "user_id", "user_name", "store_id", "previous_appraisal_id", "is_reappraisal",
             "identity_method", "created_at", "updated_at", "submitted_at", "approved_value", "suggested_acv", "suggested_low", "suggested_high", "outcome", "outcome_label",
             "manager_review_required", "approved_by_name", "approved_at", "declined_reason", "needs_info_request", "presented_at", "closed_at", "rules_version", "calculation_version", "customer_expected_value_before_outcome",
-            "market_snapshot_id", "market_zip", "market_radius", "market_summary")
+            "market_snapshot_id", "market_zip", "market_radius", "market_summary", "customer_intake")
     out = {k: a.get(k) for k in keep}
     out["id"] = str(a["_id"])
+    out["intake"] = {k: (a.get("intake") or {}).get(k) for k in ("url", "short_url", "created_at", "expires_at", "sent_at", "sent_via", "sent_to", "opened_at", "submitted_at", "photo_count", "revoked_at")} if a.get("intake") else None
     out["book_values_count"] = len(a.get("book_values") or [])
     out["vehicle_label"] = vehicle_label(a.get("vehicle") or {"vin": a.get("vin")}) if (a.get("vehicle") or a.get("vin")) else None
     out["mode_label"] = MODES.get(a.get("mode") or "", "")

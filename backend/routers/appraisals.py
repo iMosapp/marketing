@@ -16,6 +16,7 @@ from routers.lead_sources import require_user
 from services.appraisals import core
 from services.appraisals import followup
 from services.appraisals import inspection
+from services.appraisals import intake
 from services.appraisals import market
 from services.appraisals import market_providers as mp
 from services.appraisals.providers import ProviderUnavailable, identity_options, IDENTITY
@@ -461,7 +462,7 @@ async def campaign_options(request: Request):
     me = _me(request)
     db = get_db()
     org = await core.org_id_for(db, me)
-    return {"triggers": followup.TRIGGER_EVENTS, "merge_fields": followup.MERGE_FIELD_HELP, "money_fields": list(followup.MONEY_FIELDS),
+    return {"triggers": followup.TRIGGER_EVENTS, "merge_fields": followup.MERGE_FIELD_HELP, "money_fields": list(followup.MONEY_FIELDS), "tags": followup.TRADE_TAG_HELP,
             "allow_trade_values": await followup.org_allows_trade_values(db, org), "organization_id": org}
 
 
@@ -551,6 +552,37 @@ async def set_mode(appraisal_id: str, body: ModeBody, request: Request):
         return {"appraisal": core.public_appraisal(await core.set_mode(db, a, me, body.mode))}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+class IntakeLinkBody(BaseModel):
+    channel: str = "copy"
+
+
+@router.post("/{appraisal_id}/intake-link")
+async def intake_link(appraisal_id: str, body: IntakeLinkBody, request: Request):
+    """Customer not at the store: mint a 7-day link to this appraisal and text it (channel sms) or hand it back to copy (channel copy)."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    _editable(a)
+    try:
+        res = await intake.create_link(db, a, me, channel=body.channel if body.channel in ("sms", "copy") else "copy")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"intake": res, "appraisal": core.public_appraisal(await db[core.A].find_one({"_id": a["_id"]}))}
+
+
+@router.delete("/{appraisal_id}/intake-link")
+async def intake_link_revoke(appraisal_id: str, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    if not a.get("intake"):
+        raise HTTPException(status_code=404, detail="No link on this appraisal")
+    res = await intake.revoke(db, a, me)
+    return {"intake": res, "appraisal": core.public_appraisal(await db[core.A].find_one({"_id": a["_id"]}))}
 
 
 @router.post("/{appraisal_id}/vehicle")

@@ -18,6 +18,7 @@ import { InspectionStep } from '../../components/appraisal/InspectionStep';
 import { MarketStep } from '../../components/appraisal/MarketStep';
 import { ExpectationStep } from '../../components/appraisal/ExpectationStep';
 import { ReviewStep } from '../../components/appraisal/ReviewStep';
+import { TradeLinkCard } from '../../components/appraisal/TradeLinkCard';
 import { StatusPanel } from '../../components/appraisal/StatusPanel';
 
 // One appraisal, one step at a time. The server keeps `step`, so a rep can close the app on the lot and pick up where they were.
@@ -67,6 +68,7 @@ export default function AppraisalScreen() {
             </View>
           ) : (
             <>
+              {['mode', 'identity', 'mileage', 'inspection'].includes(step) ? <TradeLinkCard colors={colors} appraisal={appraisal} onSaved={merge} showToast={showToast} /> : null}
               {step === 'mode' && <ModeStep colors={colors} mode={appraisal.mode} onPick={setMode} />}
               {step === 'identity' && <IdentityStep colors={colors} appraisal={appraisal} media={media} onConfirmed={merge} showToast={showToast} />}
               {step === 'mileage' && <MileageStep colors={colors} appraisal={appraisal} media={media} onSaved={merge} showToast={showToast} />}

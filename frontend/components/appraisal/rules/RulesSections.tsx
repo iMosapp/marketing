@@ -144,10 +144,11 @@ export const FollowUpSection = ({ colors, rules, set, options }: P) => {
   const fu = rules.follow_up;
   const up = (p: any) => set({ follow_up: { ...fu, ...p } });
   return (
-    <SectionCard colors={colors} title="After the customer answers" hint="When on, each outcome adds a contact tag so your existing tag workflows (campaigns, tasks, Jessi) take it from there. Nothing is enrolled otherwise." enabled={fu.tag_on_outcome} onToggle={v => up({ tag_on_outcome: v })} testId="rules-follow-up">
+    <SectionCard colors={colors} title="After the customer answers" hint="Every submitted trade tags the contact trade-appraised. When this is on, each outcome replaces that customer's trade tags with the current one so contact lists, Smart Lists and tag-triggered campaigns can group them. Off keeps tags manual." enabled={fu.tag_on_outcome} onToggle={v => up({ tag_on_outcome: v })} testId="rules-follow-up">
       {Object.entries(options.outcomes || {}).map(([k, label]: any) => (
         <TextField key={k} colors={colors} label={`${label} → tag`} value={fu.tags?.[k] || ''} onChange={v => up({ tags: { ...fu.tags, [k]: v } })} placeholder="leave empty for no tag" testId={`follow-up-tag-${k}`} />
       ))}
+      <SwitchRow colors={colors} label="Add a gap bucket tag too" hint="trade-gap-none · trade-gap-under-1k · trade-gap-1k-3k · trade-gap-3k-plus, from what the customer wanted versus the offer. Lets a 'wants more' campaign speak differently to a $500 gap than a $4,000 one." value={fu.gap_tags !== false} onChange={v => up({ gap_tags: v })} testId="follow-up-gap-tags" />
     </SectionCard>
   );
 };

@@ -6,6 +6,7 @@ import { resolvePhotoUrl } from '../../../utils/photoUrl';
 import { Chip, GRADE_COLORS, SEVERITY_COLORS, money, miles } from '../shared';
 import { MarketSnapshotCard } from '../MarketSnapshotCard';
 import { ComparablesList } from '../ComparablesList';
+import { answerChips } from '../TradeLinkCard';
 
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 const whenDay = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
@@ -87,6 +88,22 @@ const Books = ({ colors, rows }: { colors: any; rows: any[] }) => (
     ))}
   </View>
 );
+
+// WHAT THE CUSTOMER SENT through the trade link (answers, notes, a number in mind). Reference only; the rep confirmed VIN and mileage in the steps.
+export const CustomerIntakeCard = ({ colors, a }: { colors: any; a: any }) => {
+  const ci = a.customer_intake;
+  if (!ci) return null;
+  const chips = answerChips(ci.condition);
+  const photos = (a.media || []).filter((m: any) => m.source === 'customer_supplied');
+  return (
+    <Card colors={colors} title="FROM THE CUSTOMER · TRADE LINK" testId="desk-customer-intake">
+      <Text style={{ fontSize: 12, color: colors.textSecondary }}>Sent {ci.submitted_at ? new Date(ci.submitted_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}{ci.zip ? ` · vehicle in ${ci.zip}` : ''}{ci.mileage != null ? ` · reported ${miles(ci.mileage)}` : ''}{photos.length ? ` · ${photos.length} photo${photos.length === 1 ? '' : 's'}` : ''}</Text>
+      {chips.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{chips.map(c => <View key={c} style={{ borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border }}><Text style={{ fontSize: 11.5, fontWeight: '700', color: colors.text }}>{c}</Text></View>)}</View> : null}
+      {ci.notes ? <Text style={{ fontSize: 13.5, color: colors.text, lineHeight: 19, fontStyle: 'italic' }} {...tid('desk-customer-notes')}>"{ci.notes}"</Text> : null}
+      {ci.wants ? <Text style={{ fontSize: 12.5, color: colors.textSecondary }} {...tid('desk-customer-wants-hint')}>Mentioned a number in mind on the link: ${Math.round(ci.wants).toLocaleString()} (not the recorded expectation unless the rep asked)</Text> : null}
+    </Card>
+  );
+};
 
 // REP NOTES + MEDIA + VEHICLE HISTORY + AUDIT TRAIL.
 export const RepCard = ({ colors, a }: { colors: any; a: any }) => (

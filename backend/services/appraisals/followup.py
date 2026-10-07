@@ -182,11 +182,70 @@ async def tasks_for_event(db, appr: dict, event: str) -> list:
 
 
 async def on_event(db, appr: dict, event: str) -> dict:
-    """Called by workflow.emit for every trade_appraisal.* event: campaign triggers through the existing engine, then dealership tasks."""
+    """Called by workflow.emit for every trade_appraisal.* event: campaign triggers through the existing engine, dealership tasks, then contact tags."""
     full = f"trade_appraisal.{event}"
     camps = await fire_campaign_triggers(db, appr, full) if full in TRIGGER_EVENTS else []
     tasks = await tasks_for_event(db, appr, event)
-    return {"campaigns": camps, "tasks": tasks}
+    tags = await apply_trade_tags(db, appr, event)
+    return {"campaigns": camps, "tasks": tasks, "tags": tags}
+
+
+# ---------- contact tags (grouping + tag-triggered campaigns) ----------
+OUTCOME_TAGS = {"accepted": "trade-accepted", "wants_more": "trade-wants-more", "thinking": "trade-thinking", "not_trading": "trade-not-trading"}
+GAP_TAGS = ("trade-gap-none", "trade-gap-under-1k", "trade-gap-1k-3k", "trade-gap-3k-plus")
+TRADE_TAGS = ["trade-appraised", *OUTCOME_TAGS.values(), *GAP_TAGS]
+TRADE_TAG_HELP = {"trade-appraised": "Any customer whose trade reached the desk", "trade-accepted": "Took the number", "trade-wants-more": "Wanted more than the offer",
+                  "trade-thinking": "Left to think about it", "trade-not-trading": "Decided not to trade", "trade-gap-none": "Offer met or beat what they wanted",
+                  "trade-gap-under-1k": "Wanted under $1,000 more", "trade-gap-1k-3k": "Wanted $1,000 to $3,000 more", "trade-gap-3k-plus": "Wanted $3,000+ more"}
+
+
+def gap_tag(appr: dict) -> Optional[str]:
+    wants, offer = appr.get("customer_expected_value"), appr.get("approved_value") or appr.get("suggested_acv")
+    if not wants or not offer:
+        return None
+    gap = int(wants) - int(offer)
+    return "trade-gap-none" if gap <= 0 else "trade-gap-under-1k" if gap < 1000 else "trade-gap-1k-3k" if gap < 3000 else "trade-gap-3k-plus"
+
+
+async def apply_trade_tags(db, appr: dict, event: str) -> list:
+    """Submitted → trade-appraised (always). An outcome → the dealership's outcome tag (+ a gap bucket when gap_tags is on), REPLACING earlier trade
+    outcome/gap tags so the contact carries one current trade state. New tags run through the existing tag workflow so tag-triggered campaigns fire."""
+    if not appr.get("contact_id"):
+        return []
+    add = []
+    if event == "submitted":
+        add.append("trade-appraised")
+    elif event in OUTCOME_TAGS:
+        fu = (await rulesvc.effective(db, appr.get("organization_id"), appr.get("store_id")))["rules"].get("follow_up") or {}
+        if not fu.get("tag_on_outcome", True):
+            return []
+        t = ((fu.get("tags") or {}).get(event) or OUTCOME_TAGS[event]).strip().lower()
+        if t:
+            add.append(t)
+        g = gap_tag(appr) if fu.get("gap_tags", True) else None
+        if g:
+            add.append(g)
+    if not add:
+        return []
+    cid = _oid(appr["contact_id"])
+    c = await db.contacts.find_one({"_id": cid}, {"tags": 1})
+    if not c:
+        return []
+    before = [t for t in (c.get("tags") or []) if isinstance(t, str)]
+    stale_set = set(OUTCOME_TAGS.values()) | set(GAP_TAGS) | {str(v).strip().lower() for v in ((fu.get("tags") or {}).values() if event in OUTCOME_TAGS else []) if v}
+    stale = [t for t in before if t.lower() in stale_set and t.lower() not in add] if event in OUTCOME_TAGS else []
+    kept = [t for t in before if t not in stale]
+    new = [t for t in add if t not in [k.lower() for k in kept]]
+    if not stale and not new:
+        return []
+    await db.contacts.update_one({"_id": cid}, {"$set": {"tags": kept + new, "updated_at": _now()}})
+    if new:
+        try:
+            from services.tag_workflows import apply_tag_workflows
+            await apply_tag_workflows(appr["user_id"], appr["contact_id"], new, source="trade_appraisal")
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"[Appraisal] tag workflows failed: {e}")
+    return new
 
 
 async def reappraisal_tasks(db) -> int:

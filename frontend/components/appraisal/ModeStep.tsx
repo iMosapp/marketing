@@ -10,6 +10,6 @@ export const ModeStep = ({ colors, mode, onPick, busy }: Props) => (
     <StepTitle colors={colors} title="Where is the vehicle?" sub="Both paths run through the same VIN, mileage and inspection steps. This just sets how you capture." />
     <BigButton colors={colors} icon="car-sport" label="Vehicle is here" sub="Scan the VIN and odometer, then walk around it with the phone" onPress={() => onPick('vehicle_here')} primary={mode === 'vehicle_here'} disabled={busy} testId="mode-vehicle-here" />
     <BigButton colors={colors} icon="cloud-upload-outline" label="Customer sent media" sub="Import the VIN photo, odometer photo, pictures and walkaround video they texted or emailed" onPress={() => onPick('customer_sent')} primary={mode === 'customer_sent'} disabled={busy} testId="mode-customer-sent" />
-    <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>Coming later: send the customer a secure link so they can take the photos and video themselves.</Text>
+    <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>Customer not here and nothing sent yet? Use the trade link above: they photograph the VIN sticker and odometer and add pictures from their own phone.</Text>
   </View>
 );
