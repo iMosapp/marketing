@@ -5,6 +5,14 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 
 ---
 
+### 49 · Oct 7 — DONE (MVP3, awaiting review before MVP4)
+> MVP2 APPROVED … START MVP3 — MARKET DATA + COMPARABLES + VALUATION FOUNDATION. Normalized MarketDataProvider with MarketCheckProvider and a fallback MockMarketProvider; do not invent endpoints, verify MarketCheck via docs; badge mock data "DEVELOPMENT DATA — NOT LIVE"; vehicle_market_snapshots (estimated retail/wholesale, listing count, days on market) never overwritten on refresh; vehicle_comparables with I'm On Social's own match quality (EXACT/STRONG/CLOSE/LOOSE MATCH); MARKET ANALYSIS screen with snapshot, confidence and best comparables; manual external book values (Black Book, MMR, etc.); tenant isolation, rate limiting, failure handling, caching. DO NOT build the final ACV yet (MVP4). When MVP3 is complete, STOP: files created, example normalized snapshot, full test results, wait for approval before MVP4.
+
+Built: `services/appraisals/market_providers.py` (MarketCheck live provider verified against developers.marketcheck.com + docs, Mock provider), `services/appraisals/market.py` (snapshots, comparables + match quality, confidence, book values), 5 new routes + providers status route, Market step UI (MarketStep / MarketSnapshotCard / ComparablesList / BookValuesEditor), review row. 16 backend tests + testing_agent iteration_362 (backend 8 e2e + full web flows at 1920 and 390) all green. No key in preview → mock badged everywhere. Report delivered; MVP4 blocked on approval.
+
+---
+
+
 ### 48 · Oct 7 — DONE (MVP2, awaiting review before MVP3)
 > B — MVP1 APPROVED with the following additions before proceeding into MVP2 … START MVP2 … AI VEHICLE INSPECTION … When MVP2 is complete, STOP. Do not begin MarketCheck/MVP3.
 
