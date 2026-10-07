@@ -351,7 +351,8 @@ async def serve_image(path: str, request: Request):
         if not content_type or content_type == "application/octet-stream":
             _p = path.lower().split("?")[0]
             for _e, _ct in ((".m4a", "audio/mp4"), (".mp3", "audio/mpeg"),
-                            (".wav", "audio/wav"), (".webm", "audio/webm")):
+                            (".wav", "audio/wav"), (".webm", "audio/webm"),
+                            (".mp4", "video/mp4"), (".mov", "video/quicktime")):
                 if _p.endswith(_e):
                     content_type = _ct
                     break

@@ -30,6 +30,8 @@ interface Organization {
   state?: string;
   active: boolean;
   hires_images?: boolean;
+  retain_original_inspection_video?: boolean;
+  inspection_video_retention_days?: number;
 }
 
 interface UserInfo {
@@ -722,6 +724,40 @@ export default function OrganizationDetailScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Retain Original Inspection Video</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 2 }}>
+                    {editedOrg.retain_original_inspection_video === false
+                      ? 'Walkaround videos are removed once Jessi has saved the evidence frames and findings.'
+                      : 'Walkaround videos are kept for the retention window below. Evidence frames are always kept.'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.toggleBtn, editedOrg.retain_original_inspection_video !== false && styles.toggleBtnActive]}
+                  onPress={() => setEditedOrg({ ...editedOrg, retain_original_inspection_video: editedOrg.retain_original_inspection_video === false })}
+                  data-testid="retain-inspection-video-toggle"
+                >
+                  <Text style={[styles.toggleBtnText, editedOrg.retain_original_inspection_video !== false && styles.toggleBtnTextActive]}>
+                    {editedOrg.retain_original_inspection_video !== false ? 'ON' : 'OFF'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {editedOrg.retain_original_inspection_video !== false ? (
+                <>
+                  <Text style={styles.inputLabel}>Inspection Video Retention (days)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={String(editedOrg.inspection_video_retention_days ?? 365)}
+                    onChangeText={(text) => setEditedOrg({ ...editedOrg, inspection_video_retention_days: parseInt(text.replace(/\D/g, ''), 10) || 0 })}
+                    placeholder="365"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="number-pad"
+                    data-testid="inspection-video-retention-input"
+                  />
+                </>
+              ) : null}
               
               <TouchableOpacity 
                 style={styles.cancelButton}

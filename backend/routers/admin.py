@@ -271,8 +271,14 @@ async def update_organization(
         else:
             raise HTTPException(status_code=403, detail="Only admins can update organizations")
     
-    allowed_fields = ['name', 'email', 'website', 'admin_email', 'admin_phone', 'city', 'state', 'active', 'settings', 'hires_images']
+    allowed_fields = ['name', 'email', 'website', 'admin_email', 'admin_phone', 'city', 'state', 'active', 'settings', 'hires_images',
+                      'retain_original_inspection_video', 'inspection_video_retention_days']
     update_dict = {k: v for k, v in org_data.items() if k in allowed_fields}
+    if 'inspection_video_retention_days' in update_dict:
+        try:
+            update_dict['inspection_video_retention_days'] = max(1, min(3650, int(update_dict['inspection_video_retention_days'] or 365)))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Retention days must be a number")
     
     result = await get_db().organizations.update_one(
         {"_id": ObjectId(org_id)},

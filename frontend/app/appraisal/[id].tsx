@@ -13,6 +13,7 @@ import { StepDots } from '../../components/appraisal/shared';
 import { ModeStep } from '../../components/appraisal/ModeStep';
 import { IdentityStep } from '../../components/appraisal/IdentityStep';
 import { MileageStep } from '../../components/appraisal/MileageStep';
+import { InspectionStep } from '../../components/appraisal/InspectionStep';
 import { ExpectationStep } from '../../components/appraisal/ExpectationStep';
 import { ReviewStep } from '../../components/appraisal/ReviewStep';
 
@@ -46,13 +47,14 @@ export default function AppraisalScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} {...tid('appraisal-screen')}>
       <ScreenHeader title={appraisal.is_reappraisal ? 'Reappraisal' : 'Trade Appraisal'} subtitle={sub} onBack={() => router.replace('/appraisals' as any)}
-        right={appraisal.status === 'draft' ? <HeaderTextButton label="Discard" onPress={discard} testID="appraisal-discard" color="#FF3B30" /> : undefined} />
+        right={['draft', 'ready'].includes(appraisal.status) ? <HeaderTextButton label="Discard" onPress={discard} testID="appraisal-discard" color="#FF3B30" /> : undefined} />
       <StepDots step={step} colors={colors} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
           {step === 'mode' && <ModeStep colors={colors} mode={appraisal.mode} onPick={setMode} />}
           {step === 'identity' && <IdentityStep colors={colors} appraisal={appraisal} media={media} onConfirmed={merge} showToast={showToast} />}
           {step === 'mileage' && <MileageStep colors={colors} appraisal={appraisal} media={media} onSaved={merge} showToast={showToast} />}
+          {step === 'inspection' && <InspectionStep colors={colors} appraisal={appraisal} media={media} onSaved={merge} showToast={showToast} />}
           {step === 'expectation' && <ExpectationStep colors={colors} appraisal={appraisal} onSaved={merge} showToast={showToast} />}
           {step === 'review' && <ReviewStep colors={colors} appraisal={appraisal} onEdit={(s) => setStep(s)} />}
           {step !== 'review' && appraisal.step === 'review' ? (

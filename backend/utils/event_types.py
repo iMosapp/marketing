@@ -134,6 +134,7 @@ EVENT_META = {
     "appraisal_started":   ("car-sport",           "#C9A962", "appraisal"),
     "vehicle_added":       ("car",                 "#C9A962", "appraisal"),
     "trade_expectation":   ("cash",                "#C9A962", "appraisal"),
+    "inspection_completed": ("scan",               "#C9A962", "appraisal"),
 }
 
 # ===== card_type field → event_type and display info =====

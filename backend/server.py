@@ -1663,6 +1663,13 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Object storage init deferred (will retry on first upload): {e}")
 
+    # AI inspections that were mid-run when the process stopped are marked failed so the rep can retry (frames already stored are reused)
+    try:
+        from services.appraisals.inspection import recover_interrupted
+        asyncio.create_task(recover_interrupted(get_db()))
+    except Exception as e:
+        logger.warning(f"[Inspection] recovery skipped: {e}")
+
     # ── Backfill account_id for existing users ────────────────────────────────
     # One-time migration: super_admins get account_id = their own _id,
     # other users get account_id from their creator's account (approx via org/store match).

@@ -16,6 +16,7 @@ import base64
 import hashlib
 import logging
 import threading
+import time
 import requests
 from collections import OrderedDict
 from PIL import Image, ImageOps
@@ -119,23 +120,27 @@ def init_storage():
 def put_object(path: str, data: bytes, content_type: str) -> dict:
     global storage_key
     key = init_storage()
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data,
-        timeout=120,
-    )
-    if resp.status_code in (401, 403):
-        # cached storage key went stale — re-init once and retry
-        logger.warning(f"Object storage rejected key ({resp.status_code}); re-initializing")
-        storage_key = None
-        key = init_storage()
+    resp = None
+    for attempt in range(4):
         resp = requests.put(
             f"{STORAGE_URL}/objects/{path}",
             headers={"X-Storage-Key": key, "Content-Type": content_type},
             data=data,
             timeout=120,
         )
+        if resp.status_code in (401, 403):
+            # cached storage key went stale — re-init once and retry
+            logger.warning(f"Object storage rejected key ({resp.status_code}); re-initializing")
+            storage_key = None
+            key = init_storage()
+            continue
+        if resp.status_code in (429, 502, 503, 504) and attempt < 3:
+            # rate limited / transient — back off (bursts of inspection frames hit this)
+            wait = float(resp.headers.get("Retry-After") or 0) or (1.5 * (attempt + 1))
+            logger.warning(f"Object storage {resp.status_code} on PUT {path[-60:]}; retrying in {wait:.1f}s")
+            time.sleep(min(wait, 10))
+            continue
+        break
     resp.raise_for_status()
     # Also warm the cache on upload
     _cache.put(path, data, content_type)
@@ -158,6 +163,13 @@ def _storage_request(method: str, url: str, **kw):
         logger.warning(f"Object storage rejected key ({resp.status_code}) on {method} {url[-60:]}; re-initializing")
         storage_key = None
         key = init_storage()
+        resp = requests.request(method, url, headers={**kw.get("headers", {}), "X-Storage-Key": key}, **kw)
+    for attempt in range(3):
+        if resp.status_code not in (429, 502, 503, 504):
+            break
+        wait = float(resp.headers.get("Retry-After") or 0) or (1.5 * (attempt + 1))
+        logger.warning(f"Object storage {resp.status_code} on {method} {url[-60:]}; retrying in {wait:.1f}s")
+        time.sleep(min(wait, 10))
         resp = requests.request(method, url, headers={**kw.get("headers", {}), "X-Storage-Key": key}, **kw)
     return resp
 

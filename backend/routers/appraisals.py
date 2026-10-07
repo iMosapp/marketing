@@ -14,6 +14,7 @@ from permissions import is_feature_enabled, merge_permissions
 from routers.database import get_db, get_data_filter
 from routers.lead_sources import require_user
 from services.appraisals import core
+from services.appraisals import inspection
 from services.appraisals.providers import ProviderUnavailable, identity_options, IDENTITY
 from services.appraisals import readers
 
@@ -61,6 +62,25 @@ class MediaChunk(BaseModel):
     content_type: str = "application/octet-stream"
     role: str
     source: str
+
+
+class FindingBody(BaseModel):
+    category: Optional[str] = None
+    subtype: Optional[str] = None
+    location: Optional[str] = None
+    location_label: Optional[str] = None
+    severity: Optional[str] = None
+    explanation: Optional[str] = None
+    frame_ids: Optional[list] = None
+
+
+class DecisionBody(BaseModel):
+    decision: str
+
+
+class OverrideBody(BaseModel):
+    overall: Optional[str] = None
+    reason: str = ""
 
 
 def _me(request: Request) -> dict:
@@ -161,6 +181,7 @@ async def detail(appraisal_id: str, request: Request):
     out = core.public_appraisal(a)
     out["media"] = await core.list_media(db, a)
     out["activity"] = await core.activity(db, a)
+    out["inspection"] = await inspection.summary(db, a)
     if a.get("vehicle_id"):
         veh = await core.get_vehicle(db, me, a["vehicle_id"])
         out["vehicle_record"] = core.public_vehicle(veh) if veh else None
@@ -288,3 +309,112 @@ async def media(appraisal_id: str, request: Request):
     db = get_db()
     a = await _appr(db, me, appraisal_id)
     return {"media": await core.list_media(db, a)}
+
+
+@router.delete("/{appraisal_id}/media/{media_id}")
+async def delete_media(appraisal_id: str, media_id: str, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        await core.delete_media(db, a, me, media_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"success": True, "media": await core.list_media(db, a)}
+
+
+# ---------- AI Vehicle Inspection ----------
+@router.get("/{appraisal_id}/inspection")
+async def get_inspection(appraisal_id: str, request: Request):
+    """Status, frames, findings, coverage and the condition report. Same shape while Jessi is still working (poll on status)."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    out = await inspection.read(db, a)
+    out["media"] = await core.list_media(db, a)
+    areas = {}
+    for f in out["frames"]:
+        for ar in f.get("areas") or []:
+            areas.setdefault(f["media_id"], [])
+            if ar not in areas[f["media_id"]]:
+                areas[f["media_id"]].append(ar)
+    for m in out["media"]:
+        m["areas"] = areas.get(m["id"], [])
+    out["appraisal_status"] = a.get("status")
+    return out
+
+
+@router.post("/{appraisal_id}/inspection/run")
+async def run_inspection(appraisal_id: str, request: Request):
+    """Start (or retry) the pipeline over everything on the appraisal. Frames already extracted are reused; findings are matched, not duplicated."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        ins = await inspection.start_run(db, a, me)
+    except ValueError as e:
+        raise HTTPException(status_code=409 if "already" in str(e) else 400, detail=str(e))
+    return {"status": ins.get("status"), "stage": ins.get("stage"), "run_count": ins.get("run_count")}
+
+
+@router.post("/{appraisal_id}/inspection/findings")
+async def add_finding(appraisal_id: str, body: FindingBody, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    ins = await inspection.get_or_create(db, a)
+    try:
+        d = await inspection.add_finding(db, ins, a, me, body.model_dump(exclude_none=True))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    frames = {str(f["_id"]): f for f in await inspection.frames_for(db, ins)}
+    return {"finding": inspection.public_finding(d, frames)}
+
+
+@router.patch("/{appraisal_id}/inspection/findings/{finding_id}")
+async def edit_finding(appraisal_id: str, finding_id: str, body: FindingBody, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    ins = await inspection.get_or_create(db, a)
+    try:
+        d = await inspection.edit_finding(db, ins, a, me, finding_id, body.model_dump(exclude_none=True))
+    except ValueError as e:
+        raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
+    frames = {str(f["_id"]): f for f in await inspection.frames_for(db, ins)}
+    return {"finding": inspection.public_finding(d, frames)}
+
+
+@router.post("/{appraisal_id}/inspection/findings/{finding_id}/decision")
+async def decide_finding(appraisal_id: str, finding_id: str, body: DecisionBody, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    ins = await inspection.get_or_create(db, a)
+    try:
+        d = await inspection.decide(db, ins, a, me, finding_id, body.decision)
+    except ValueError as e:
+        raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
+    frames = {str(f["_id"]): f for f in await inspection.frames_for(db, ins)}
+    return {"finding": inspection.public_finding(d, frames)}
+
+
+@router.post("/{appraisal_id}/inspection/override")
+async def override_condition(appraisal_id: str, body: OverrideBody, request: Request):
+    """Manager/rep sets the final overall condition (overall=null clears it). Reason and author are kept."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    ins = await inspection.get_or_create(db, a)
+    try:
+        await inspection.override(db, ins, a, me, body.overall, body.reason)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return await inspection.read(db, a)

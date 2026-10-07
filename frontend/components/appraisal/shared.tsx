@@ -5,8 +5,18 @@ import { GOLD, tid } from '../inbox/ownership';
 
 export const money = (n?: number | null) => (n == null ? '' : `$${Math.round(n).toLocaleString()}`);
 export const miles = (n?: number | null) => (n == null ? '' : `${Math.round(n).toLocaleString()} mi`);
-export const STEP_LABELS: Record<string, string> = { mode: 'How', identity: 'Vehicle', mileage: 'Mileage', expectation: 'Expectation', review: 'Review' };
-export const STEP_ORDER = ['mode', 'identity', 'mileage', 'expectation', 'review'];
+export const STEP_LABELS: Record<string, string> = { mode: 'How', identity: 'Vehicle', mileage: 'Mileage', inspection: 'Inspect', expectation: 'Expects', review: 'Review' };
+export const STEP_ORDER = ['mode', 'identity', 'mileage', 'inspection', 'expectation', 'review'];
+export const GRADE_COLORS: Record<string, string> = { very_good: '#34C759', good: '#30B0C7', fair: '#FF9500', poor: '#FF3B30' };
+export const SEVERITY_COLORS: Record<string, string> = { minor: '#8E8E93', moderate: '#FF9500', major: '#FF3B30' };
+export const CONFIDENCE_LABEL: Record<string, string> = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' };
+
+export const Chip = ({ label, color, testId, icon }: { label: string; color: string; testId?: string; icon?: any }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: color + '22', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 }} {...(testId ? tid(testId) : {})}>
+    {icon ? <Ionicons name={icon} size={11} color={color} /> : null}
+    <Text style={{ fontSize: 10.5, fontWeight: '800', color }}>{label}</Text>
+  </View>
+);
 
 // Big, thumb-friendly action for a rep standing next to a car. Gold = primary, outline = secondary.
 export const BigButton = ({ icon, label, sub, onPress, primary, disabled, testId, colors }: { icon: any; label: string; sub?: string; onPress: () => void; primary?: boolean; disabled?: boolean; testId: string; colors: any }) => (

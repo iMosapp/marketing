@@ -11,6 +11,7 @@ from bson import ObjectId
 from routers.database import get_accessible_user_ids
 from services.appraisals.providers import IDENTITY, ProviderUnavailable, empty_vehicle, vehicle_label, VEHICLE_FIELDS
 from services.appraisals import readers
+from services.appraisals import frames
 from services.contact_files import _normalize_image
 from utils.activity_log import log_activity
 from utils.image_storage import put_object
@@ -20,11 +21,11 @@ logger = logging.getLogger(__name__)
 V, A, M, ACT = "vehicles", "vehicle_appraisals", "appraisal_media", "appraisal_activity"
 MODES = {"vehicle_here": "Vehicle is here", "customer_sent": "Customer sent media"}
 SOURCES = {"captured_by_rep": "Captured by rep", "uploaded_by_rep": "Uploaded by rep", "customer_supplied": "Customer supplied"}
-ROLES = {"vin_photo": "VIN photo", "odometer_photo": "Odometer photo", "exterior": "Exterior photo", "interior": "Interior photo",
+ROLES = {"vin_photo": "VIN photo", "odometer_photo": "Odometer photo", "exterior": "Exterior photo", "interior": "Interior photo", "photo": "Photo",
          "walkaround_video": "Walkaround video", "other": "Other"}
 # Status machine; MVP1 only moves within draft. Later MVPs add analyzing/ready/submitted/approved/changed/needs_info/declined/presented/closed.
 STATUSES = ["draft", "analyzing", "ready", "submitted", "approved", "changed", "needs_info", "declined", "presented", "closed"]
-STEPS = ["customer", "mode", "identity", "mileage", "expectation", "review"]
+STEPS = ["customer", "mode", "identity", "mileage", "inspection", "expectation", "review"]
 MAX_IMAGE = 25 * 1024 * 1024
 MAX_VIDEO = 150 * 1024 * 1024
 
@@ -58,6 +59,15 @@ def _contact_name(c: dict) -> str:
     return (c.get("name") or f"{c.get('first_name') or ''} {c.get('last_name') or ''}".strip()).strip() or "Customer"
 
 
+async def org_id_for(db, me: dict) -> Optional[str]:
+    """The user's organization, or their store's when the user record has none (older accounts)."""
+    if me.get("organization_id"):
+        return str(me["organization_id"])
+    sid = _store(me)
+    st = await db.stores.find_one({"_id": _oid(sid)}, {"organization_id": 1}) if sid else None
+    return str(st["organization_id"]) if st and st.get("organization_id") else None
+
+
 # ---------- serializers ----------
 def public_vehicle(v: dict) -> dict:
     out = {k: v.get(k) for k in VEHICLE_FIELDS}
@@ -79,11 +89,14 @@ def public_appraisal(a: dict) -> dict:
 
 
 def public_media(m: dict) -> dict:
+    available = m.get("original_available") is not False
     return {"id": str(m["_id"]), "appraisal_id": m.get("appraisal_id"), "role": m.get("role"), "role_label": ROLES.get(m.get("role") or "", "File"),
             "source": m.get("source"), "source_label": SOURCES.get(m.get("source") or "", ""), "kind": m.get("kind"), "name": m.get("name"), "size": m.get("size"),
-            "url": f"/api/images/{m['path']}" if m.get("path") and m.get("kind") == "image" else None,
+            "url": f"/api/images/{m['path']}" if m.get("path") and available else None,
             "thumb_url": f"/api/images/{m['thumb_path']}" if m.get("thumb_path") else None,
-            "uploaded_by": m.get("uploaded_by"), "uploaded_by_name": m.get("uploaded_by_name"), "uploaded_at": m.get("created_at"), "reading": m.get("reading")}
+            "uploaded_by": m.get("uploaded_by"), "uploaded_by_name": m.get("uploaded_by_name"), "uploaded_at": m.get("created_at"), "reading": m.get("reading"),
+            "duration": m.get("duration"), "frame_count": m.get("frame_count"), "video_quality": m.get("video_quality"), "extraction": m.get("extraction"),
+            "original_available": available, "original_destroyed_at": m.get("original_destroyed_at")}
 
 
 # ---------- audit ----------
@@ -128,7 +141,7 @@ async def create(db, me: dict, contact: dict, mode: str = "vehicle_here", vehicl
     """New draft. With vehicle_id this is a REAPPRAISE: same vehicles doc, new appraisal carrying the VIN/decoded vehicle forward."""
     now = _now()
     doc = {"_id": ObjectId(), "contact_id": str(contact["_id"]), "contact_name": _contact_name(contact), "user_id": str(me["_id"]), "user_name": _name(me),
-           "store_id": _store(me), "organization_id": str(me.get("organization_id") or "") or None, "status": "draft", "step": "mode",
+           "store_id": _store(me), "organization_id": await org_id_for(db, me), "status": "draft", "step": "mode",
            "mode": mode if mode in MODES else "vehicle_here", "vehicle_id": None, "vin": None, "vehicle": None, "identity_method": None,
            "mileage_detected": None, "mileage_confirmed": None, "mileage_source": None, "expectation_asked": None, "customer_expected_value": None,
            "notes": "", "stock_number": None, "book_values": [], "is_reappraisal": False, "previous_appraisal_id": None, "created_at": now, "updated_at": now}
@@ -227,7 +240,7 @@ async def set_mileage(db, appr: dict, me: dict, confirmed: int, detected: Option
     if not (0 <= int(confirmed) <= 1_500_000):
         raise ValueError("That mileage does not look right")
     now = _now()
-    upd = {"mileage_confirmed": int(confirmed), "mileage_source": source, "step": "expectation", "updated_at": now}
+    upd = {"mileage_confirmed": int(confirmed), "mileage_source": source, "step": "inspection", "updated_at": now}
     if detected is not None:
         upd["mileage_detected"] = int(detected)
     await db[A].update_one({"_id": appr["_id"]}, {"$set": upd})
@@ -266,7 +279,9 @@ async def patch(db, appr: dict, me: dict, data: dict) -> dict:
 
 async def delete_draft(db, appr: dict, me: dict):
     """Soft-delete a draft. A vehicle that no other appraisal references goes with it, so a discarded test never leaves a ghost car on the customer."""
-    if appr.get("status") != "draft":
+    if appr.get("status") == "analyzing":
+        raise ValueError("Wait for the inspection to finish first")
+    if appr.get("status") not in ("draft", "ready"):
         raise ValueError("Only drafts can be deleted")
     await db[A].update_one({"_id": appr["_id"]}, {"$set": {"deleted": True, "updated_at": _now()}})
     vid = appr.get("vehicle_id")
@@ -314,12 +329,23 @@ async def save_media(db, appr: dict, me: dict, *, role: str, source: str, data: 
     else:
         ext = "mp4" if "mp4" in (content_type or "") or (name or "").lower().endswith(".mp4") else "mov"
         path = f"{base}.{ext}"
+        content_type = content_type if (content_type or "").startswith("video/") else ("video/mp4" if ext == "mp4" else "video/quicktime")
     await asyncio.to_thread(put_object, path, data, content_type)
+    duration = None
+    if kind == "video":
+        try:
+            info = await asyncio.to_thread(frames.probe, data, ext)
+            duration = info["duration"]
+            if info.get("poster"):
+                thumb_path = f"{base}_thumb.jpg"
+                await asyncio.to_thread(put_object, thumb_path, frames.thumb(info["poster"]), "image/jpeg")
+        except Exception as e:
+            logger.warning(f"[Appraisal] video probe failed: {e}")
     now = _now()
     doc = {"_id": mid, "appraisal_id": str(appr["_id"]), "contact_id": appr["contact_id"], "vehicle_id": appr.get("vehicle_id"), "user_id": appr["user_id"],
            "store_id": appr.get("store_id"), "role": role, "source": source, "kind": kind, "name": (name or f"{role}.{path.rsplit('.', 1)[-1]}")[:120], "content_type": content_type,
            "size": len(data), "path": path, "thumb_path": thumb_path, "uploaded_by": str(me["_id"]), "uploaded_by_name": _name(me), "upload_token": None,
-           "reading": None, "retain_original": True, "created_at": now}
+           "reading": None, "retain_original": True, "original_available": True, "duration": duration, "frame_count": None, "created_at": now}
     await db[M].insert_one(doc)
     reading = None
     if kind == "image" and role == "vin_photo":
@@ -337,6 +363,21 @@ async def save_media(db, appr: dict, me: dict, *, role: str, source: str, data: 
 async def list_media(db, appr: dict) -> list:
     rows = await db[M].find({"appraisal_id": str(appr["_id"]), "deleted": {"$ne": True}}).sort("created_at", 1).to_list(200)
     return [public_media(m) for m in rows]
+
+
+async def delete_media(db, appr: dict, me: dict, media_id: str) -> dict:
+    """Remove a wrong file. Its frames go too; findings keep their other evidence."""
+    m = await db[M].find_one({"_id": _oid(media_id), "appraisal_id": str(appr["_id"]), "deleted": {"$ne": True}})
+    if not m:
+        raise ValueError("File not found")
+    if appr.get("status") == "analyzing":
+        raise ValueError("Wait for the inspection to finish first")
+    now = _now()
+    await db[M].update_one({"_id": m["_id"]}, {"$set": {"deleted": True, "deleted_at": now}})
+    await db["appraisal_frames"].update_many({"media_id": str(m["_id"])}, {"$set": {"deleted": True, "deleted_at": now}})
+    await db["appraisal_inspections"].update_one({"appraisal_id": str(appr["_id"])}, {"$pull": {"processed_media_ids": str(m["_id"])}})
+    await audit(db, appr, me, "media_removed", f"{ROLES.get(m.get('role'), 'File')} · {m.get('name')}", meta={"media_id": str(m["_id"])})
+    return m
 
 
 # ---------- lists / search ----------
@@ -379,6 +420,11 @@ async def for_context(db, contact_id: str) -> list:
                 bits.append(f"suggested ${a['suggested_acv']:,}")
             if a.get("customer_expected_value"):
                 bits.append(f"customer wanted ${a['customer_expected_value']:,}")
+            ins = await db["appraisal_inspections"].find_one({"appraisal_id": str(a["_id"])}, {"final_overall": 1, "override": 1})
+            if ins and ins.get("final_overall"):
+                issues = [f"{d.get('location_label')} {str(d.get('subtype') or '').replace('_', ' ')}" async for d in
+                          db["appraisal_findings"].find({"appraisal_id": str(a["_id"]), "decision": "confirmed", "deleted": {"$ne": True}}, {"location_label": 1, "subtype": 1}).limit(8)]
+                bits.append(f"condition {str(ins['final_overall']).replace('_', ' ')}" + (" (manager override)" if ins.get("override") else "") + (f" with {', '.join(issues)}" if issues else ""))
             if a.get("outcome"):
                 bits.append(f"outcome {a['outcome']}")
             hist.append(" · ".join(bits))

@@ -143,7 +143,7 @@ def test_mvp1_flow_vin_photo_odometer_reappraise(rep, db):
     else:
         detected = None
     st, r = call("POST", f"/api/appraisals/{aid}/mileage", {"confirmed": 47821, "detected": detected, "source": "photo" if detected else "manual"}, hdrs)
-    assert st == 200 and r["appraisal"]["mileage_confirmed"] == 47821 and r["appraisal"]["step"] == "expectation"
+    assert st == 200 and r["appraisal"]["mileage_confirmed"] == 47821 and r["appraisal"]["step"] == "inspection"
 
     st, r = call("POST", f"/api/appraisals/{aid}/expectation", {"asked": True, "value": 32000}, hdrs)
     assert st == 200 and r["appraisal"]["customer_expected_value"] == 32000 and r["appraisal"]["step"] == "review"

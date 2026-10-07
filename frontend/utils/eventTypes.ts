@@ -74,6 +74,7 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   appraisal_started: 'Trade Appraisal Started',
   vehicle_added: 'Vehicle Added',
   trade_expectation: 'Trade Expectation Noted',
+  inspection_completed: 'AI Vehicle Inspection',
 };
 
 /** Notification icon/color mapping for event types */
@@ -95,6 +96,7 @@ export const EVENT_TYPE_ICONS: Record<string, { icon: string; color: string }> =
   appraisal_started: { icon: 'car-sport', color: '#C9A962' },
   vehicle_added: { icon: 'car', color: '#C9A962' },
   trade_expectation: { icon: 'cash', color: '#C9A962' },
+  inspection_completed: { icon: 'scan', color: '#C9A962' },
 };
 
 const CARD_DISPLAY: Record<string, string> = {

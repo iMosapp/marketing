@@ -2031,6 +2031,20 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
+    # Daily 3:45 AM UTC - original walkaround videos past the organization's retention window (evidence frames are never touched)
+    async def run_inspection_video_purge():
+        from routers.database import get_db
+        from services.appraisals import inspection
+        await inspection.purge_videos(get_db())
+    scheduler.add_job(
+        safe_job(run_inspection_video_purge),
+        CronTrigger(hour=3, minute=45),
+        id="inspection_video_purge",
+        replace_existing=True,
+        misfire_grace_time=3600,
+        coalesce=True,
+    )
+
     # Daily at 6 AM UTC  - lifecycle scan (tenure tags, inactivity detection, milestone messages)
     scheduler.add_job(
         safe_job(run_daily_lifecycle_scan),
