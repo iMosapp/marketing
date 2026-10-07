@@ -18,6 +18,7 @@ export const MileageStep = ({ colors, appraisal, media, onSaved, showToast }: Pr
   const customerSent = appraisal.mode === 'customer_sent';
   const importSource: MediaSource = customerSent ? 'customer_supplied' : 'uploaded_by_rep';
   const prev = appraisal.is_reappraisal && appraisal.vehicle_record?.current_mileage;
+  const prevAppr = appraisal.is_reappraisal ? appraisal.vehicle_record?.last_appraisal : null;
 
   const afterPhoto = (m: any) => {
     if (!m) return;
@@ -76,6 +77,13 @@ export const MileageStep = ({ colors, appraisal, media, onSaved, showToast }: Pr
     <View style={{ gap: 12 }}>
       <StepTitle colors={colors} title="Capture mileage" sub={customerSent ? "Import the odometer photo the customer sent, or type it." : 'Photograph the instrument cluster with the ignition on. Jessi reads the total, not the trip meter.'} />
       {prev ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 12, backgroundColor: GOLD + '14', borderWidth: 1, borderColor: GOLD + '55' }} {...tid('mileage-previous')}><Ionicons name="time-outline" size={16} color={GOLD} /><Text style={{ fontSize: 12.5, color: colors.text }}>Reappraisal · last known {miles(prev)}</Text></View> : null}
+      {prevAppr && (prevAppr.suggested_acv || prevAppr.approved_value || prevAppr.customer_expected_value) ? (
+        <View style={{ padding: 10, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, gap: 4 }} {...tid('previous-appraisal-card')}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.5 }}>PREVIOUS APPRAISAL{prevAppr.appraised_at ? ` · ${new Date(prevAppr.appraised_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}</Text>
+          <Text style={{ fontSize: 12.5, color: colors.text, lineHeight: 18 }}>{[prevAppr.suggested_acv ? `Suggested $${Math.round(prevAppr.suggested_acv).toLocaleString()}` : null, prevAppr.approved_value ? `Offered $${Math.round(prevAppr.approved_value).toLocaleString()}` : null, prevAppr.customer_expected_value ? `Wanted $${Math.round(prevAppr.customer_expected_value).toLocaleString()}` : null, prevAppr.outcome_label ? `Customer: ${prevAppr.outcome_label}` : null].filter(Boolean).join(' · ')}</Text>
+          <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>Kept for reference only. This appraisal gets a fresh value from today's mileage, condition and market.</Text>
+        </View>
+      ) : null}
       {Platform.OS !== 'web' && !customerSent ? <BigButton colors={colors} icon="speedometer" label="Scan odometer" sub="Camera" onPress={() => media.capture('odometer_photo').then(afterPhoto)} primary disabled={!!media.busy} testId="mileage-scan" /> : null}
       <BigButton colors={colors} icon="image-outline" label={customerSent ? "Upload customer's odometer photo" : 'Upload odometer photo'} sub={customerSent ? 'From what they sent you' : 'From your photo library or Files'} onPress={() => media.importOne('odometer_photo', importSource).then(afterPhoto)} primary={customerSent || Platform.OS === 'web'} disabled={!!media.busy} testId="mileage-upload" />
       <BigButton colors={colors} icon="keypad-outline" label="Enter manually" onPress={() => setEditing(true)} disabled={!!media.busy} testId="mileage-manual" />

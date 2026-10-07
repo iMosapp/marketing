@@ -11,6 +11,7 @@ import api, { campaignsAPI } from '../../services/api';
 import { SmartTagPicker } from '../../components/SmartTagPicker';
 import { Eyebrow, OptionRow, GoldButton, Segmented, Chip } from '../../components/campaigns/Sheet';
 import { DATE_TYPES, normalizeTouches, summarizeTouches, GOLD, tid } from '../../components/campaigns/utils';
+import { TradeTriggerPicker } from '../../components/campaigns/TradeTriggerPicker';
 
 const SCOPES = [
   { value: 'personal', label: 'Just me', roles: null },
@@ -26,8 +27,9 @@ export default function NewCampaignScreen() {
   const { showToast } = useToast();
 
   const [name, setName] = useState('');
-  const [triggerType, setTriggerType] = useState<'tag' | 'date'>('tag');
+  const [triggerType, setTriggerType] = useState<'tag' | 'date' | 'trade'>('tag');
   const [triggerTag, setTriggerTag] = useState('');
+  const [tradeEvents, setTradeEvents] = useState<string[]>([]);
   const [dateType, setDateType] = useState('birthday');
   const [scope, setScope] = useState('personal');
   const [tags, setTags] = useState<any[]>([]);
@@ -54,12 +56,14 @@ export default function NewCampaignScreen() {
   const create = async () => {
     if (!name.trim()) { showToast('Give the plan a name', 'error'); return; }
     if (triggerType === 'tag' && !triggerTag) { showToast('Pick the tag that starts it', 'error'); return; }
+    if (triggerType === 'trade' && !tradeEvents.length) { showToast('Pick at least one trade appraisal moment', 'error'); return; }
     setCreating(true);
     try {
       const c = await campaignsAPI.create(user!._id, {
         name: name.trim(),
         type: triggerType === 'date' ? dateType : (template?.type || 'custom'),
         trigger_tag: triggerType === 'tag' ? triggerTag : '',
+        trigger_events: triggerType === 'trade' ? tradeEvents : [],
         date_type: triggerType === 'date' ? dateType : '',
         sequences: template?.sequences || [],
         active: false,
@@ -91,12 +95,14 @@ export default function NewCampaignScreen() {
           <View style={{ gap: 10 }}>
             <Eyebrow colors={colors}>WHAT STARTS IT?</Eyebrow>
             <Segmented colors={colors} testId="new-trigger-type" value={triggerType} onChange={v => setTriggerType(v as any)}
-              options={[{ value: 'tag', label: 'A tag', icon: 'pricetag' }, { value: 'date', label: 'A date', icon: 'calendar' }]} />
+              options={[{ value: 'tag', label: 'A tag', icon: 'pricetag' }, { value: 'date', label: 'A date', icon: 'calendar' }, { value: 'trade', label: 'A trade', icon: 'car-sport' }]} />
             {triggerType === 'tag' ? (
               <>
                 <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>The moment anyone tags a contact with this, the plan starts for them.</Text>
                 <SmartTagPicker tags={tags} selectedTag={triggerTag} onSelect={setTriggerTag} onTagCreated={t => setTags(p => [...p, { name: t, color: GOLD }])} userId={user?._id || ''} colors={colors} userRole={user?.role} />
               </>
+            ) : triggerType === 'trade' ? (
+              <TradeTriggerPicker colors={colors} selected={tradeEvents} onChange={setTradeEvents} />
             ) : (
               <View style={{ gap: 8 }}>
                 {DATE_TYPES.map(d => <OptionRow key={d.id} label={d.name} sub={d.phrase} selected={dateType === d.id} onPress={() => setDateType(d.id)} testId={`new-date-${d.id}`} colors={colors} />)}

@@ -13,6 +13,7 @@ import { SheetShell, Eyebrow, OptionRow, GoldButton, Segmented, Chip } from '../
 import { TouchEditorSheet } from '../../components/campaigns/TouchEditorSheet';
 import { TouchTimeline } from '../../components/campaigns/TouchTimeline';
 import { PeopleInPlan, Enrollment } from '../../components/campaigns/PeopleInPlan';
+import { TradeTriggerPicker, tradeTriggerSummary } from '../../components/campaigns/TradeTriggerPicker';
 import { useQuickLinks } from '../../components/campaigns/useQuickLinks';
 import {
   Touch, normalizeTouches, touchesToSequences, newTouch, touchMinutes, summarizeTouches, isDateCampaign, dateTypeOf, DATE_TYPES,
@@ -40,8 +41,9 @@ export default function CampaignEditorScreen() {
   const [workflows, setWorkflows] = useState<any[]>([]);
 
   const [name, setName] = useState('');
-  const [triggerType, setTriggerType] = useState<'tag' | 'date'>('tag');
+  const [triggerType, setTriggerType] = useState<'tag' | 'date' | 'trade'>('tag');
   const [triggerTag, setTriggerTag] = useState('');
+  const [tradeEvents, setTradeEvents] = useState<string[]>([]);
   const [dateType, setDateType] = useState('');
   const [active, setActive] = useState(true);
   const [aiAssistMode, setAiAssistMode] = useState('auto_reply');
@@ -76,7 +78,9 @@ export default function CampaignEditorScreen() {
       setWorkflows(wfs);
       setName(data.name || '');
       const dateBased = isDateCampaign(data);
-      setTriggerType(dateBased ? 'date' : 'tag');
+      const tradeEvts: string[] = Array.isArray(data.trigger_events) ? data.trigger_events : [];
+      setTriggerType(tradeEvts.length ? 'trade' : dateBased ? 'date' : 'tag');
+      setTradeEvents(tradeEvts);
       setTriggerTag(data.trigger_tag || '');
       setDateType(dateTypeOf(data));
       setActive(data.active ?? true);
@@ -100,8 +104,8 @@ export default function CampaignEditorScreen() {
     setWorkflow(triggerType === 'tag' && triggerTag ? workflows.find((w: any) => w.tag === triggerTag.toLowerCase()) || null : null);
   }, [workflows, triggerTag, triggerType]);
 
-  const triggerLabel = triggerType === 'date' ? (DATE_TYPES.find(d => d.id === dateType)?.name.toLowerCase() || 'the date') : (triggerTag || 'the tag');
-  const triggerColor = triggerType === 'date' ? (DATE_TYPES.find(d => d.id === dateType)?.color || AMBER) : tagColor(triggerTag);
+  const triggerLabel = triggerType === 'date' ? (DATE_TYPES.find(d => d.id === dateType)?.name.toLowerCase() || 'the date') : triggerType === 'trade' ? 'a trade appraisal moment' : (triggerTag || 'the tag');
+  const triggerColor = triggerType === 'date' ? (DATE_TYPES.find(d => d.id === dateType)?.color || AMBER) : triggerType === 'trade' ? GOLD : tagColor(triggerTag);
   const livePeople = enrollments.filter(e => e.status === 'active' || e.status === 'paused');
   const sample: Sample = useMemo(() => ({
     ...DEFAULT_SAMPLE,
@@ -120,6 +124,7 @@ export default function CampaignEditorScreen() {
       await campaignsAPI.update(user!._id, id!, {
         name: name.trim(),
         trigger_tag: triggerType === 'tag' ? triggerTag : '',
+        trigger_events: triggerType === 'trade' ? tradeEvents : [],
         type: triggerType === 'date' ? dateType : (isDateCampaign(campaign) ? 'custom' : campaign?.type || 'custom'),
         date_type: triggerType === 'date' ? dateType : '',
         active,
@@ -252,16 +257,17 @@ export default function CampaignEditorScreen() {
 
         <TouchableOpacity onPress={() => canEdit && setSheet('trigger')} disabled={!canEdit} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 14 }} {...tid('campaign-trigger-card')}>
           <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: triggerColor + '22', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name={triggerType === 'date' ? ((DATE_TYPES.find(d => d.id === dateType)?.icon as any) || 'calendar') : 'pricetag'} size={18} color={triggerColor} />
+            <Ionicons name={triggerType === 'date' ? ((DATE_TYPES.find(d => d.id === dateType)?.icon as any) || 'calendar') : triggerType === 'trade' ? 'car-sport' : 'pricetag'} size={18} color={triggerColor} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>
               {triggerType === 'date'
                 ? (DATE_TYPES.find(d => d.id === dateType)?.phrase || 'Pick a date')
+                : triggerType === 'trade' ? <>When a trade appraisal hits <Text style={{ color: triggerColor }}>{tradeTriggerSummary(tradeEvents).toLowerCase()}</Text></>
                 : triggerTag ? <>When a contact is tagged <Text style={{ color: triggerColor }}>{triggerTag}</Text></> : 'Pick the tag that starts this'}
             </Text>
             <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-              {triggerType === 'date' ? 'Runs the morning of the date for contacts with that date on file' : triggerTag ? 'Applied by you, a quick action, or any rep in the store' : 'Nothing starts until a trigger is set'}
+              {triggerType === 'date' ? 'Runs the morning of the date for contacts with that date on file' : triggerType === 'trade' ? (tradeEvents.length ? 'Starts the moment the desk or the customer reaches that point on their trade' : 'Nothing starts until a moment is picked') : triggerTag ? 'Applied by you, a quick action, or any rep in the store' : 'Nothing starts until a trigger is set'}
             </Text>
           </View>
           {canEdit ? <Text style={{ fontSize: 13, fontWeight: '800', color: GOLD }}>Change</Text> : null}
@@ -385,9 +391,11 @@ export default function CampaignEditorScreen() {
       {sheet === 'trigger' ? (
         <SheetShell title="What starts this plan?" onClose={() => setSheet(null)} testId="trigger-sheet" colors={colors} footer={<GoldButton label="Done" onPress={() => setSheet(null)} testId="trigger-done" />}>
           <Segmented colors={colors} testId="trigger-type" value={triggerType} onChange={v => { setTriggerType(v as any); setDirty(true); }}
-            options={[{ value: 'tag', label: 'A tag', icon: 'pricetag' }, { value: 'date', label: 'A date', icon: 'calendar' }]} />
+            options={[{ value: 'tag', label: 'A tag', icon: 'pricetag' }, { value: 'date', label: 'A date', icon: 'calendar' }, { value: 'trade', label: 'A trade', icon: 'car-sport' }]} />
           {triggerType === 'tag' ? (
             <SmartTagPicker tags={tags} selectedTag={triggerTag} onSelect={t => { setTriggerTag(t); setDirty(true); }} onTagCreated={t => setTags(p => [...p, { name: t, color: GOLD }])} userId={user?._id || ''} colors={colors} userRole={user?.role} />
+          ) : triggerType === 'trade' ? (
+            <TradeTriggerPicker colors={colors} selected={tradeEvents} onChange={e => { setTradeEvents(e); setDirty(true); }} />
           ) : (
             <View style={{ gap: 8 }}>
               {DATE_TYPES.map(d => <OptionRow key={d.id} label={d.name} sub={d.phrase} selected={dateType === d.id} onPress={() => { setDateType(d.id); setDirty(true); }} testId={`trigger-date-${d.id}`} colors={colors} />)}

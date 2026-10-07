@@ -633,6 +633,8 @@ async def create_campaign(user_id: str, campaign_data: CampaignCreate):
     campaign_dict = campaign_data.dict()
     campaign_dict['user_id'] = user_id
     campaign_dict['created_at'] = datetime.utcnow()
+    from services.appraisals.followup import TRIGGER_EVENTS as _TRADE_EVENTS
+    campaign_dict['trigger_events'] = [e for e in (campaign_dict.get('trigger_events') or []) if e in _TRADE_EVENTS]
 
     # Set scope and store/org ids based on requested scope + role
     db = get_db()
@@ -915,8 +917,11 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
     
     base_filter = await get_data_filter(user_id)
     
-    allowed_fields = ['name', 'type', 'trigger_tag', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ai_assist_mode', 'escalation_threshold', 'escalation_timeout_minutes', 'escalation_manager_id', 'ownership_level', 'action_type', 'card_type', 'scope', 'store_id', 'org_id', 'description', 'repeat_every_months', 'repeat_step']
+    allowed_fields = ['name', 'type', 'trigger_tag', 'trigger_events', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ai_assist_mode', 'escalation_threshold', 'escalation_timeout_minutes', 'escalation_manager_id', 'ownership_level', 'action_type', 'card_type', 'scope', 'store_id', 'org_id', 'description', 'repeat_every_months', 'repeat_step']
     update_dict = {k: v for k, v in update_data.items() if k in allowed_fields}
+    if "trigger_events" in update_dict:
+        from services.appraisals.followup import TRIGGER_EVENTS
+        update_dict["trigger_events"] = [e for e in (update_dict["trigger_events"] or []) if isinstance(e, str) and e in TRIGGER_EVENTS]
 
     # Auto-wrap URLs in sequences when saving
     if "sequences" in update_dict:

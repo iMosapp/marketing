@@ -11,6 +11,7 @@ import { GOLD, tid, errText } from '../../components/inbox/ownership';
 import { showConfirm } from '../../services/alert';
 import { BasisEditor } from '../../components/appraisal/rules/BasisEditor';
 import { TargetGrossSection, ReconSection, MileageSection, AgeSection, ReserveSection, ReviewSection, RangeSection, FollowUpSection } from '../../components/appraisal/rules/RulesSections';
+import { FollowUpTasksSection, MoneyInMessagesCard } from '../../components/appraisal/rules/FollowUpTasks';
 
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 
@@ -66,6 +67,13 @@ export default function AppraisalRulesScreen() {
     try { const d = (await api.delete(`/appraisals/rules/store/${storeId}`)).data; setData(d); setRules(JSON.parse(JSON.stringify(d.effective.rules))); setDirty(false); showToast('Override removed', 'success'); }
     catch (e) { showToast(errText(e, 'Could not remove'), 'error'); }
   }, undefined, 'Remove');
+  const setMoney = async (v: boolean) => {
+    try {
+      const r = (await api.put('/appraisals/org-settings', { allow_trade_values_in_automated_messages: v, organization_id: data?.organization_id })).data;
+      setData((d: any) => ({ ...d, org_settings: { ...(d?.org_settings || {}), allow_trade_values_in_automated_messages: r.allow_trade_values_in_automated_messages } }));
+      showToast(v ? 'Trade values may now appear in automated messages' : 'Trade values stay out of automated messages', 'success');
+    } catch (e) { showToast(errText(e, 'Could not change that setting'), 'error', 5000); }
+  };
 
   if (!data || !rules) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}><ScreenHeader title="Appraisal Rules" /><ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /></SafeAreaView>;
   const eff = data.effective;
@@ -102,6 +110,8 @@ export default function AppraisalRulesScreen() {
           <ReviewSection {...p} />
           <RangeSection {...p} />
           <FollowUpSection {...p} />
+          <FollowUpTasksSection colors={colors} rules={rules} set={set} />
+          <MoneyInMessagesCard colors={colors} value={!!data.org_settings?.allow_trade_values_in_automated_messages} editable={!!data.org_settings?.editable} onChange={setMoney} mergeFields={data.options?.merge_fields || {}} />
           {storeId && data.store ? (
             <TouchableOpacity onPress={removeOverride} style={{ height: 44, alignItems: 'center', justifyContent: 'center' }} {...tid('rules-remove-override')}>
               <Text style={{ fontSize: 13, fontWeight: '800', color: '#FF3B30' }}>Remove this store's override</Text>

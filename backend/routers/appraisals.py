@@ -14,11 +14,14 @@ from permissions import is_feature_enabled, merge_permissions
 from routers.database import get_db, get_data_filter
 from routers.lead_sources import require_user
 from services.appraisals import core
+from services.appraisals import followup
 from services.appraisals import inspection
 from services.appraisals import market
 from services.appraisals import market_providers as mp
 from services.appraisals.providers import ProviderUnavailable, identity_options, IDENTITY
 from services.appraisals import readers
+from services.appraisals import relationship
+from services.appraisals import reporting
 from services.appraisals import rules as rulesvc
 from services.appraisals import workflow
 
@@ -49,6 +52,17 @@ class CreateBody(BaseModel):
     contact_id: str
     mode: str = "vehicle_here"
     vehicle_id: Optional[str] = None
+
+
+class OwnershipBody(BaseModel):
+    status: str
+    note: Optional[str] = ""
+    deal_id: Optional[str] = None
+
+
+class OrgSettingsBody(BaseModel):
+    allow_trade_values_in_automated_messages: bool = False
+    organization_id: Optional[str] = None
 
 
 class ModeBody(BaseModel):
@@ -223,7 +237,9 @@ async def _rules_payload(db, me: dict, store_id: Optional[str], organization_id:
     return {"organization_id": org_id, "store_id": store_id, "org_editable": r["org_editable"] and bool(org_id), "stores": r["stores"], "effective": eff,
             "org": rulesvc.public_rules_doc(docs["org"]), "store": rulesvc.public_rules_doc(docs["store"]), "warnings": rulesvc.double_count_warnings(eff["rules"]),
             "options": {"basis": rulesvc.BASIS_OPTIONS, "conditions": rulesvc.CONDITION_LABELS, "defaults": rulesvc.DEFAULT_RULES, "outcomes": workflow.OUTCOMES,
-                        "roundings": [1, 5, 10, 25, 50, 100]}, "can_edit": workflow.can_edit_rules(me)}
+                        "roundings": [1, 5, 10, 25, 50, 100], "task_kinds": list(rulesvc.TASK_KINDS), "triggers": followup.TRIGGER_EVENTS, "merge_fields": followup.MERGE_FIELD_HELP},
+            "org_settings": {"allow_trade_values_in_automated_messages": await followup.org_allows_trade_values(db, org_id), "editable": me.get("role") in ("org_admin", "super_admin") and bool(org_id)},
+            "can_edit": workflow.can_edit_rules(me)}
 
 
 @router.get("/rules")
@@ -311,14 +327,107 @@ async def create(body: CreateBody, request: Request):
 
 @router.get("/vehicles/{contact_id}")
 async def contact_vehicles(contact_id: str, request: Request):
-    """Vehicles on a contact with their appraisal history (also used by the contact's Vehicles section and REAPPRAISE)."""
+    """Vehicles on a contact as relationship records: ownership, trade intent, last appraisal numbers, reappraisal opportunity (MVP5)."""
     me = _me(request)
     db = get_db()
     await _contact(db, me, contact_id)
-    vehicles = await core.contact_vehicles(db, me, contact_id)
-    for v in vehicles:
-        v["appraisals"] = await core.vehicle_appraisals(db, me, v["id"])
-    return {"vehicles": vehicles, "can_appraise": can_appraise(me)}
+    return {"vehicles": await relationship.contact_cards(db, me, contact_id), "can_appraise": can_appraise(me), "ownership_options": relationship.OWNERSHIP}
+
+
+async def _vehicle(db, me: dict, vehicle_id: str) -> dict:
+    v = await core.get_vehicle(db, me, vehicle_id)
+    if not v:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    return v
+
+
+@router.get("/vehicle/{vehicle_id}")
+async def vehicle_detail(vehicle_id: str, request: Request):
+    """One vehicle: chronological appraisal history (normalized numbers), value changes over time, ownership, trade intent, opportunity."""
+    me = _me(request)
+    db = get_db()
+    v = await _vehicle(db, me, vehicle_id)
+    out = await relationship.vehicle_detail(db, me, v)
+    out["can_appraise"] = can_appraise(me)
+    return out
+
+
+@router.put("/vehicle/{vehicle_id}/ownership")
+async def vehicle_ownership(vehicle_id: str, body: OwnershipBody, request: Request):
+    """Confirm what actually happened to the vehicle (traded / sold / still owns). The only way a vehicle becomes 'traded'; an accepted offer never does it."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    v = await _vehicle(db, me, vehicle_id)
+    try:
+        v2 = await relationship.set_ownership(db, me, v, body.status, body.note or "", body.deal_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    out = await relationship.vehicle_detail(db, me, v2)
+    out["can_appraise"] = can_appraise(me)
+    return out
+
+
+@router.get("/pipeline")
+async def pipeline(request: Request, team: bool = False):
+    """MY TRADE PIPELINE: needs attention, waiting on manager, approved to present, presented to follow up, reappraisal opportunities, recently closed."""
+    me = _me(request)
+    _allowed(me)
+    return await reporting.pipeline(get_db(), me, team)
+
+
+@router.get("/search")
+async def search(request: Request, q: str = "", status: Optional[str] = None, outcome: Optional[str] = None, make: Optional[str] = None, user_id: Optional[str] = None,
+                 store_id: Optional[str] = None, date_from: Optional[str] = None, date_to: Optional[str] = None, limit: int = 100):
+    me = _me(request)
+    _allowed(me)
+    return await reporting.search(get_db(), me, q, status, outcome, make, user_id, store_id, _dt(date_from), _dt(date_to), limit)
+
+
+@router.get("/reports/summary")
+async def reports_summary(request: Request, store_id: Optional[str] = None, user_id: Optional[str] = None, manager_id: Optional[str] = None, outcome: Optional[str] = None,
+                          make: Optional[str] = None, date_from: Optional[str] = None, date_to: Optional[str] = None):
+    """Manager dashboard: counts, averages (ACV, approved, adjustment, gap, response time), rates, by salesperson / manager / make. Scoped."""
+    me = _me(request)
+    _manager(me)
+    f = {k: v for k, v in {"store_id": store_id, "user_id": user_id, "manager_id": manager_id, "outcome": outcome, "make": make, "date_from": _dt(date_from), "date_to": _dt(date_to)}.items() if v}
+    return await reporting.summary(get_db(), me, f)
+
+
+@router.get("/reports/followup")
+async def reports_followup(request: Request):
+    """Manager follow-up view: waiting too long, large gaps, large adjustments, wants more / thinking, vehicles to revisit."""
+    me = _me(request)
+    _manager(me)
+    return await reporting.followup_view(get_db(), me)
+
+
+@router.get("/campaign-options")
+async def campaign_options(request: Request):
+    """For the campaign editor: trade appraisal triggers + merge fields, and whether this org lets dollar amounts into automated messages."""
+    me = _me(request)
+    db = get_db()
+    org = await core.org_id_for(db, me)
+    return {"triggers": followup.TRIGGER_EVENTS, "merge_fields": followup.MERGE_FIELD_HELP, "money_fields": list(followup.MONEY_FIELDS),
+            "allow_trade_values": await followup.org_allows_trade_values(db, org), "organization_id": org}
+
+
+@router.put("/org-settings")
+async def put_org_settings(body: OrgSettingsBody, request: Request):
+    """Organization-level safety switch: allow_trade_values_in_automated_messages (default OFF). Org admins and super admins only."""
+    me = _me(request)
+    db = get_db()
+    if me.get("role") not in ("org_admin", "super_admin"):
+        raise HTTPException(status_code=403, detail="Only organization admins change this setting.")
+    org = (body.organization_id if me.get("role") == "super_admin" else None) or await core.org_id_for(db, me)
+    if not org:
+        raise HTTPException(status_code=400, detail="No organization on your account")
+    key = {"$or": [{"_id": org}] + ([{"_id": ObjectId(org)}] if ObjectId.is_valid(str(org)) else [])}
+    res = await db.organizations.update_one(key, {"$set": {"allow_trade_values_in_automated_messages": bool(body.allow_trade_values_in_automated_messages),
+                                                          "allow_trade_values_updated_by": str(me["_id"]), "allow_trade_values_updated_at": datetime.now(timezone.utc)}})
+    if not res.matched_count:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return {"organization_id": org, "allow_trade_values_in_automated_messages": bool(body.allow_trade_values_in_automated_messages)}
 
 
 @router.post("/vin/decode")

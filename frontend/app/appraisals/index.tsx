@@ -9,9 +9,11 @@ import { useToast } from '../../components/common/Toast';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { GOLD, tid, errText } from '../../components/inbox/ownership';
 import { money, miles } from '../../components/appraisal/shared';
+import { PipelineSection } from '../../components/appraisal/PipelineSection';
 
 type Group = 'all' | 'drafts' | 'waiting' | 'approved' | 'completed';
 const GROUPS: { key: Group; label: string }[] = [{ key: 'all', label: 'Recent' }, { key: 'drafts', label: 'Drafts' }, { key: 'waiting', label: 'Waiting for manager' }, { key: 'approved', label: 'Approved' }, { key: 'completed', label: 'Completed' }];
+const OUTCOMES: { key: string; label: string }[] = [{ key: 'accepted', label: 'Accepted' }, { key: 'wants_more', label: 'Wants more' }, { key: 'thinking', label: 'Thinking' }, { key: 'not_trading', label: 'Not trading' }];
 const STATUS_LABEL: Record<string, string> = { draft: 'Draft', capturing: 'Capturing', analyzing: 'Inspecting', ready: 'Ready', submitted: 'Waiting for manager', needs_info: 'Manager wants more', resubmitted: 'Resubmitted', approved: 'Approved', changed: 'Approved (changed)', declined: 'Declined', presented: 'Presented', closed: 'Closed' };
 const STATUS_COLOR: Record<string, string> = { needs_info: '#FF9500', submitted: '#FF9500', resubmitted: '#FF9500', approved: '#34C759', changed: '#34C759', declined: '#FF3B30' };
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
@@ -22,6 +24,7 @@ export default function AppraisalsHome() {
   const { colors } = useThemeStore();
   const { showToast } = useToast();
   const [group, setGroup] = useState<Group>('all');
+  const [outcome, setOutcome] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<any[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -30,13 +33,18 @@ export default function AppraisalsHome() {
 
   const load = useCallback(async () => {
     try {
-      const d = (await api.get('/appraisals', { params: { group: group === 'all' ? undefined : group, q: q.trim() || undefined } })).data;
-      setRows(d.appraisals || []); setCounts(d.counts || {}); setDesk(d.desk || null);
+      if (outcome) {
+        const d = (await api.get('/appraisals/search', { params: { outcome, q: q.trim() || undefined } })).data;
+        setRows(d.appraisals || []);
+      } else {
+        const d = (await api.get('/appraisals', { params: { group: group === 'all' ? undefined : group, q: q.trim() || undefined } })).data;
+        setRows(d.appraisals || []); setCounts(d.counts || {}); setDesk(d.desk || null);
+      }
     } catch (e: any) {
       if (e?.response?.status === 403) { showToast(e.response.data?.detail || 'Not switched on for you', 'error', 5000); if (router.canGoBack()) router.back(); else router.replace('/(tabs)/home' as any); return; }
       showToast(errText(e, 'Could not load appraisals'), 'error'); setRows([]);
     } finally { setRefreshing(false); }
-  }, [group, q]);
+  }, [group, q, outcome]);
   useEffect(() => { const t = setTimeout(load, q ? 250 : 0); return () => clearTimeout(t); }, [load]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -54,15 +62,26 @@ export default function AppraisalsHome() {
         </TouchableOpacity>
 
         {desk ? (
-          <TouchableOpacity onPress={() => router.push('/appraisal/desk' as any)} activeOpacity={0.85} style={{ borderRadius: 16, padding: 14, backgroundColor: colors.card, borderWidth: 1.5, borderColor: desk.waiting ? '#FF9500' : colors.border, flexDirection: 'row', alignItems: 'center', gap: 12 }} {...tid('open-desk')}>
-            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: (desk.waiting ? '#FF9500' : GOLD) + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="briefcase" size={20} color={desk.waiting ? '#FF9500' : GOLD} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Appraisal Desk</Text>
-              <Text style={{ fontSize: 12.5, color: colors.textSecondary, marginTop: 2 }} {...tid('open-desk-sub')}>{desk.waiting ? `${desk.waiting} waiting for your decision` : 'Nothing waiting'}{desk.sent_back ? ` · ${desk.sent_back} sent back` : ''}</Text>
-            </View>
-            {desk.waiting ? <View style={{ minWidth: 26, height: 26, borderRadius: 13, backgroundColor: '#FF9500', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>{desk.waiting}</Text></View> : <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity onPress={() => router.push('/appraisal/desk' as any)} activeOpacity={0.85} style={{ flex: 1, borderRadius: 16, padding: 14, backgroundColor: colors.card, borderWidth: 1.5, borderColor: desk.waiting ? '#FF9500' : colors.border, flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid('open-desk')}>
+              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: (desk.waiting ? '#FF9500' : GOLD) + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="briefcase" size={18} color={desk.waiting ? '#FF9500' : GOLD} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>Desk</Text>
+                <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }} numberOfLines={2} {...tid('open-desk-sub')}>{desk.waiting ? `${desk.waiting} waiting` : 'Nothing waiting'}{desk.sent_back ? ` · ${desk.sent_back} sent back` : ''}</Text>
+              </View>
+              {desk.waiting ? <View style={{ minWidth: 24, height: 24, borderRadius: 12, backgroundColor: '#FF9500', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}><Text style={{ fontSize: 11.5, fontWeight: '800', color: '#fff' }}>{desk.waiting}</Text></View> : null}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/appraisal/reports' as any)} activeOpacity={0.85} style={{ flex: 1, borderRadius: 16, padding: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid('open-reports')}>
+              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="stats-chart" size={18} color={GOLD} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>Reports</Text>
+                <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }} numberOfLines={2}>Numbers, gaps, follow-ups</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         ) : null}
+
+        <PipelineSection colors={colors} />
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
           <Ionicons name="search" size={16} color={colors.textSecondary} />
@@ -71,15 +90,21 @@ export default function AppraisalsHome() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-          {GROUPS.map(g => { const on = group === g.key; const n = g.key === 'all' ? undefined : counts[g.key]; return (
-            <TouchableOpacity key={g.key} onPress={() => setGroup(g.key)} style={{ height: 32, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: on ? GOLD : colors.border, backgroundColor: on ? GOLD + '22' : colors.card, alignItems: 'center', justifyContent: 'center' }} {...tid(`appraisals-group-${g.key}`)}>
+          {GROUPS.map(g => { const on = group === g.key && !outcome; const n = g.key === 'all' ? undefined : counts[g.key]; return (
+            <TouchableOpacity key={g.key} onPress={() => { setGroup(g.key); setOutcome(null); }} style={{ height: 32, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: on ? GOLD : colors.border, backgroundColor: on ? GOLD + '22' : colors.card, alignItems: 'center', justifyContent: 'center' }} {...tid(`appraisals-group-${g.key}`)}>
               <Text style={{ fontSize: 12.5, fontWeight: '700', color: on ? GOLD : colors.textSecondary }}>{g.label}{typeof n === 'number' && n > 0 ? ` · ${n}` : ''}</Text>
+            </TouchableOpacity>
+          ); })}
+          <View style={{ width: 1, backgroundColor: colors.border, marginVertical: 6 }} />
+          {OUTCOMES.map(o => { const on = outcome === o.key; return (
+            <TouchableOpacity key={o.key} onPress={() => setOutcome(on ? null : o.key)} style={{ height: 32, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: on ? '#FF9500' : colors.border, backgroundColor: on ? '#FF950022' : colors.card, alignItems: 'center', justifyContent: 'center' }} {...tid(`appraisals-outcome-${o.key}`)}>
+              <Text style={{ fontSize: 12.5, fontWeight: '700', color: on ? '#FF9500' : colors.textSecondary }}>{o.label}</Text>
             </TouchableOpacity>
           ); })}
         </ScrollView>
 
         {rows === null ? <ActivityIndicator color={GOLD} style={{ marginTop: 24 }} /> : rows.length === 0 ? (
-          <Text style={{ textAlign: 'center', color: colors.textSecondary, fontSize: 13, paddingVertical: 24, lineHeight: 19 }} {...tid('appraisals-empty')}>{q ? 'Nothing matches that search.' : group === 'all' ? 'No appraisals yet. Start one above; it takes about three minutes at the car.' : `Nothing ${GROUPS.find(g => g.key === group)?.label.toLowerCase()} right now.`}</Text>
+          <Text style={{ textAlign: 'center', color: colors.textSecondary, fontSize: 13, paddingVertical: 24, lineHeight: 19 }} {...tid('appraisals-empty')}>{q ? 'Nothing matches that search.' : outcome ? `No appraisals closed as ${OUTCOMES.find(o => o.key === outcome)?.label.toLowerCase()}.` : group === 'all' ? 'No appraisals yet. Start one above; it takes about three minutes at the car.' : `Nothing ${GROUPS.find(g => g.key === group)?.label.toLowerCase()} right now.`}</Text>
         ) : rows.map(a => (
           <TouchableOpacity key={a.id} onPress={() => router.push(`/appraisal/${a.id}` as any)} activeOpacity={0.85} style={{ borderRadius: 16, padding: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, gap: 6 }} {...tid(`appraisal-row-${a.id}`)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>

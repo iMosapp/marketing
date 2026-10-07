@@ -475,6 +475,7 @@ class Campaign(BaseModel):
     name: str
     type: str = "custom"  # birthday, anniversary, check_in, sold_followup, sold_date, custom
     trigger_tag: str = ""  # Tag that triggers this campaign
+    trigger_events: List[str] = []  # trade_appraisal.* moments that start it (MVP5)
     date_type: str = ""  # birthday, anniversary, sold_date — for date-based campaigns
     segment_tags: List[str] = []
     message_template: str = ""  # Legacy single message
@@ -500,6 +501,7 @@ class CampaignCreate(BaseModel):
     name: str
     type: str = "custom"
     trigger_tag: str = ""
+    trigger_events: List[str] = []  # trade_appraisal.* events that enroll the contact (MVP5); alongside trigger_tag / date_type
     date_type: str = ""  # birthday, anniversary, sold_date — for date-based campaigns
     segment_tags: List[str] = []
     message_template: str = ""

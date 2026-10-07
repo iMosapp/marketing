@@ -8,8 +8,9 @@ type Props = { campaign: any; colors: any; onPress: () => void; onToggleActive?:
 export function PlanCard({ campaign: c, colors, onPress, onToggleActive }: Props) {
   const touches = normalizeTouches(c.sequences, c.message_template);
   const dateBased = isDateCampaign(c);
+  const tradeBased = !dateBased && Array.isArray(c.trigger_events) && c.trigger_events.length > 0;
   const dt = DATE_TYPES.find(d => d.id === dateTypeOf(c));
-  const color = dateBased ? (dt?.color || AMBER) : tagColor(c.trigger_tag);
+  const color = dateBased ? (dt?.color || AMBER) : tradeBased ? GOLD : tagColor(c.trigger_tag);
   const issues = planIssues(c);
   const live = !!c.active;
   const jessi = c.ai_assist_mode === 'auto_reply' || c.ai_assist_mode === 'auto_with_approval' || (!c.ai_assist_mode && c.ai_enabled);
@@ -20,12 +21,12 @@ export function PlanCard({ campaign: c, colors, onPress, onToggleActive }: Props
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={{ backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: issues.length && live ? RED + '66' : colors.border, padding: 14, gap: 12 }} {...tid(`plan-card-${id}`)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: color + '22', alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name={dateBased ? ((dt?.icon as any) || 'calendar') : 'pricetag'} size={18} color={color} />
+          <Ionicons name={dateBased ? ((dt?.icon as any) || 'calendar') : tradeBased ? 'car-sport' : 'pricetag'} size={18} color={color} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }} numberOfLines={1}>{c.name}</Text>
           <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>
-            {dateBased ? dt?.phrase || 'On a date' : c.trigger_tag ? <>When tagged <Text style={{ color, fontWeight: '700' }}>{c.trigger_tag}</Text></> : 'No trigger yet'}
+            {dateBased ? dt?.phrase || 'On a date' : tradeBased ? <>On a <Text style={{ color, fontWeight: '700' }}>trade appraisal</Text> moment{c.trigger_events.length > 1 ? ` (${c.trigger_events.length})` : ''}</> : c.trigger_tag ? <>When tagged <Text style={{ color, fontWeight: '700' }}>{c.trigger_tag}</Text></> : 'No trigger yet'}
             {` · ${scopeLabel(c)}`}
           </Text>
         </View>

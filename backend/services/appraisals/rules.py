@@ -38,8 +38,15 @@ DEFAULT_RULES = {
     "range": {"method": "fixed", "below": 500, "above": 500, "percent": 2, "reason": "Trade range shown around the suggested ACV."},
     "rounding": 50,
     "follow_up": {"tag_on_outcome": False, "tags": {"accepted": "trade-accepted", "wants_more": "trade-wants-more", "thinking": "trade-thinking", "not_trading": "trade-not-trading", "other": ""},
-                  "reason": "When on, each outcome adds a contact tag so your existing tag workflows (campaigns, Jessi) take it from there. Nothing is enrolled automatically otherwise."},
+                  "reason": "When on, each outcome adds a contact tag so your existing tag workflows (campaigns, Jessi) take it from there. Nothing is enrolled automatically otherwise.",
+                  "tasks": {
+                      "wants_more": {"enabled": True, "days": 1, "title": "Follow up on the {gap} gap with {first_name}", "description": "{first_name} wanted more for the {vehicle}. Call, then decide whether it goes back to the desk."},
+                      "thinking": {"enabled": True, "days": 2, "title": "Check in with {first_name} about the {vehicle}", "description": "{first_name} was still thinking about the trade. A quick call keeps it alive."},
+                      "manager_changed": {"enabled": True, "days": 0, "title": "Review the changed value on {first_name}'s {vehicle}", "description": "The desk approved a different number than suggested. Read the reason before you present it."},
+                      "reappraisal": {"enabled": True, "days": 0, "title": "Reappraise {first_name}'s {vehicle}", "description": "The last value is getting old. Fresh mileage and a new market pull when the customer is ready."},
+                  }},
 }
+TASK_KINDS = ("wants_more", "thinking", "manager_changed", "reappraisal")
 
 MANAGER_ROLES = ("super_admin", "org_admin", "store_manager")
 
@@ -115,6 +122,12 @@ def validate(raw: dict) -> dict:
     fu = raw.get("follow_up") or {}
     tags = {k: str((fu.get("tags") or {}).get(k, v) or "").strip().lower()[:40] for k, v in d["follow_up"]["tags"].items()}
     d["follow_up"].update({"tag_on_outcome": _bool(fu.get("tag_on_outcome", False)), "tags": tags, "reason": str(fu.get("reason") or d["follow_up"]["reason"])[:300]})
+    tasks_in = fu.get("tasks") or {}
+    for k in TASK_KINDS:
+        base = d["follow_up"]["tasks"][k]
+        t = tasks_in.get(k) or {}
+        d["follow_up"]["tasks"][k] = {"enabled": _bool(t.get("enabled", base["enabled"])), "days": max(0, min(30, _num(t.get("days"), base["days"]))),
+                                      "title": str(t.get("title") or base["title"]).strip()[:140], "description": str(t.get("description") if t.get("description") is not None else base["description"]).strip()[:500]}
     d["schema_version"] = RULES_SCHEMA_VERSION
     return d
 
@@ -157,7 +170,10 @@ async def effective(db, organization_id: Optional[str], store_id: Optional[str])
         src, doc = "org", docs["org"]
     else:
         return {"rules": copy.deepcopy(DEFAULT_RULES), "source": "default", "version": 0, "rules_id": None, "scope_label": "I'm On Social defaults"}
-    return {"rules": doc["rules"], "source": src, "version": doc.get("version") or 1, "rules_id": str(doc["_id"]),
+    rules = copy.deepcopy(doc["rules"])
+    fu = rules.setdefault("follow_up", copy.deepcopy(DEFAULT_RULES["follow_up"]))
+    fu.setdefault("tasks", copy.deepcopy(DEFAULT_RULES["follow_up"]["tasks"]))
+    return {"rules": rules, "source": src, "version": doc.get("version") or 1, "rules_id": str(doc["_id"]),
             "scope_label": "Store override" if src == "store" else "Organization default"}
 
 

@@ -192,7 +192,7 @@ export const scopeLabel = (c: any) =>
 
 export const planIssues = (c: any): string[] => {
   const out: string[] = [];
-  if (!isDateCampaign(c) && !c?.trigger_tag) out.push('No trigger tag');
+  if (!isDateCampaign(c) && !c?.trigger_tag && !(Array.isArray(c?.trigger_events) && c.trigger_events.length)) out.push('No trigger tag');
   const seqs = c?.sequences || [];
   if (!seqs.length) out.push('No touches yet');
   seqs.forEach((s: any, i: number) => {

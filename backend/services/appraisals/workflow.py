@@ -222,7 +222,8 @@ def relationship_summary(appr: dict) -> dict:
             "suggested_acv": appr.get("suggested_acv"), "approved_value": appr.get("approved_value"), "approved_by_name": appr.get("approved_by_name"), "approved_at": appr.get("approved_at"),
             "customer_expected_value": appr.get("customer_expected_value"), "expectation_gap": gap, "outcome": appr.get("outcome"), "outcome_label": OUTCOMES.get(appr.get("outcome") or "", None),
             "status": appr.get("status"), "status_label": STATUS_LABELS.get(appr.get("status") or "", ""), "presented_at": appr.get("presented_at"), "closed_at": appr.get("closed_at"),
-            "salesperson": appr.get("user_name"), "updated_at": _now()}
+            "salesperson": appr.get("user_name"), "is_reappraisal": bool(appr.get("is_reappraisal")), "manager_delta": (appr.get("manager_adjustment") or {}).get("delta"),
+            "contact_name": appr.get("contact_name"), "updated_at": _now()}
 
 
 def merge_context(appr: dict) -> dict:
@@ -245,12 +246,17 @@ async def sync_relationship(db, appr: dict):
 
 
 async def emit(db, appr: dict, event: str, me: Optional[dict] = None, extra: Optional[dict] = None):
-    """trade_appraisal.* events: structured rows for the campaign system / reporting, plus the optional tag hook from the dealership rules."""
+    """trade_appraisal.* events: structured rows for the campaign system / reporting, then the follow-up bridge (campaign triggers + tasks)."""
     doc = {"event": f"trade_appraisal.{event}", "appraisal_id": str(appr["_id"]), "contact_id": appr.get("contact_id"), "vehicle_id": appr.get("vehicle_id"), "user_id": appr.get("user_id"),
            "store_id": appr.get("store_id"), "organization_id": appr.get("organization_id"), "actor_id": str(me["_id"]) if me else None, "context": merge_context(appr),
            "numbers": {"suggested_acv": appr.get("suggested_acv"), "approved_value": appr.get("approved_value"), "customer_expected_value": appr.get("customer_expected_value"),
                        "market_retail": (appr.get("market_summary") or {}).get("estimated_retail")}, **(extra or {}), "created_at": _now()}
     await db[EVT].insert_one(doc)
+    try:
+        from services.appraisals import followup
+        await followup.on_event(db, appr, event)
+    except Exception as e:
+        logger.warning(f"[Appraisal] follow-up bridge skipped for {event}: {e}")
 
 
 async def follow_up_hook(db, appr: dict, outcome: str):
@@ -303,6 +309,8 @@ async def submit(db, appr: dict, me: dict) -> dict:
                        description=f"{'Resubmitted' if resub else 'Submitted'} {vehicle_label(appr.get('vehicle') or {})} for approval · suggested {_money(out['suggested_acv'])}",
                        metadata={"appraisal_id": str(appr["_id"]), "suggested_acv": out["suggested_acv"], "calculation_version": calc["version"]})
     await emit(db, appr, "resubmitted" if resub else "submitted", me)
+    if appr.get("is_reappraisal") and not resub:
+        await emit(db, appr, "reappraised", me)
     await sync_relationship(db, appr)
     notified = await notify_managers(db, appr, me, resubmitted=resub)
     await db[A].update_one({"_id": appr["_id"]}, {"$set": {"notified_manager_ids": notified}})
@@ -346,8 +354,9 @@ async def record_outcome(db, appr: dict, me: dict, outcome: str, expected_value:
     tag = await follow_up_hook(db, appr, outcome)
     if tag:
         await audit(db, appr, me, "follow_up_tagged", f"Tag '{tag}' added for the tag workflows", meta={"tag": tag})
-    if appr.get("vehicle_id") and outcome == "accepted":
-        await db[V].update_one({"_id": _oid(appr["vehicle_id"])}, {"$set": {"ownership_status": "traded", "updated_at": now}})
+    if appr.get("vehicle_id"):
+        # Intent, not a completed trade: the vehicle stays "owns" until someone confirms the trade on the vehicle record (or a deal does).
+        await db[V].update_one({"_id": _oid(appr["vehicle_id"])}, {"$set": {"trade_intent_status": outcome, "trade_intent_at": now, "trade_intent_appraisal_id": str(appr["_id"]), "updated_at": now}})
     await sync_relationship(db, appr)
     return appr
 

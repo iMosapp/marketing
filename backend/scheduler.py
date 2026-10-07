@@ -206,7 +206,15 @@ async def resolve_template_variables(db, message: str, contact: dict, user_id: s
                 message = _re.sub(r"\b(your|the) new " + _re.escape(tok), r"\1 new ride", message)
                 message = _re.sub(r"\bthe " + _re.escape(tok), "the new ride", message)
                 message = message.replace(tok, "new ride")
-    
+
+    # Trade appraisal merge fields {trade_*}: normalized summary only; dollar amounts stay blank unless the organization allows them
+    if "{trade_" in message and db is not None:
+        try:
+            from services.appraisals.followup import merge_values_for_contact, apply_merge_fields
+            message = apply_merge_fields(message, await merge_values_for_contact(db, contact, user_id))
+        except Exception as e:
+            logger.warning(f"[Templates] trade merge fields skipped: {e}")
+
     return message
 
 scheduler = AsyncIOScheduler()
@@ -2017,6 +2025,22 @@ def start_scheduler():
         safe_job(run_contact_files_purge),
         CronTrigger(hour=3, minute=30),
         id="contact_files_purge",
+        replace_existing=True,
+        misfire_grace_time=3600,
+        coalesce=True,
+    )
+
+    # Daily 13:00 UTC (morning in the US) - trade appraisal reappraisal tasks for vehicles whose last value is 90+ days old (stored history only, no provider calls)
+    async def run_reappraisal_tasks():
+        from routers.database import get_db
+        from services.appraisals import followup
+        n = await followup.reappraisal_tasks(get_db())
+        if n:
+            logger.info(f"[Appraisal] {n} reappraisal task(s) created")
+    scheduler.add_job(
+        safe_job(run_reappraisal_tasks),
+        CronTrigger(hour=13, minute=0),
+        id="appraisal_reappraisal_tasks",
         replace_existing=True,
         misfire_grace_time=3600,
         coalesce=True,

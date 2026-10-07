@@ -336,6 +336,13 @@ async def campaign_history(user_id: str, contact_id: str) -> str:
     if sent:
         sent.sort(key=lambda x: (x[0].replace(tzinfo=timezone.utc) if isinstance(x[0], datetime) and x[0].tzinfo is None else x[0]), reverse=True)
         parts.append("CHECK-INS I ALREADY SENT (never reuse these angles or phrasings):\n" + "\n".join(f"  {c[:160]}" for _, c in sent[:6]))
+    try:
+        from services.appraisals.followup import ai_context as _trade_ctx
+        trade = await _trade_ctx(db, await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"trade_appraisal": 1}) or {}, user_id)
+        if trade:
+            parts.append(trade)
+    except Exception as e:
+        logger.warning(f"[AI campaigns] trade context skipped: {e}")
     return "\n\n".join(parts)
 
 

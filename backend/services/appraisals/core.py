@@ -412,19 +412,23 @@ async def for_context(db, contact_id: str) -> list:
     """One line per vehicle plus its appraisal history, oldest first, for the contact record Jessi reads."""
     out = []
     async for v in db[V].find({"contact_id": contact_id, "deleted": {"$ne": True}}).sort("created_at", 1):
-        line = f"VEHICLE {vehicle_label(v)}" + (f" VIN {v['vin']}" if v.get("vin") else "") + (f", {v['current_mileage']:,} mi" if v.get("current_mileage") else "") + f", status {v.get('ownership_status') or 'owns'}"
+        line = f"VEHICLE {vehicle_label(v)}" + (f" VIN {v['vin']}" if v.get("vin") else "") + (f", {v['current_mileage']:,} mi" if v.get("current_mileage") else "") + f", ownership {v.get('ownership_status') or 'owns'}"
+        if v.get("trade_intent_status"):
+            line += f", trade intent: {str(v['trade_intent_status']).replace('_', ' ')}" + (" (offer accepted, trade not confirmed yet)" if v["trade_intent_status"] == "accepted" and v.get("ownership_status") in (None, "owns") else "")
+        if v.get("trade_confirmed_at"):
+            line += f", trade confirmed {v['trade_confirmed_at'].strftime('%b %d, %Y')}"
         hist = []
         async for a in db[A].find({"vehicle_id": str(v["_id"]), "deleted": {"$ne": True}}).sort("created_at", 1):
-            bits = [a["created_at"].strftime("%b %d, %Y"), STATUS_LABELS_CTX.get(a.get("status") or "draft", a.get("status") or "draft")]
+            bits = [a["created_at"].strftime("%b %d, %Y") + (" (reappraisal)" if a.get("is_reappraisal") else ""), STATUS_LABELS_CTX.get(a.get("status") or "draft", a.get("status") or "draft")]
             if a.get("mileage_confirmed") is not None:
                 bits.append(f"{a['mileage_confirmed']:,} mi")
             if a.get("suggested_acv"):
                 bits.append(f"suggested ACV ${a['suggested_acv']:,}")
             if a.get("approved_value"):
                 adj = a.get("manager_adjustment") or {}
-                bits.append(f"dealer approved ${a['approved_value']:,}" + (f" ({'+' if adj['delta'] > 0 else '-'}${abs(adj['delta']):,} vs suggested, {adj.get('manager_name')})" if adj.get("delta") else (f" ({a.get('approved_by_name')})" if a.get("approved_by_name") else "")))
+                bits.append(f"dealer offered ${a['approved_value']:,}" + (f" ({'+' if adj['delta'] > 0 else '-'}${abs(adj['delta']):,} vs suggested, {adj.get('manager_name')})" if adj.get("delta") else (f" ({a.get('approved_by_name')})" if a.get("approved_by_name") else "")))
             if a.get("customer_expected_value"):
-                bits.append(f"customer wanted ${a['customer_expected_value']:,}")
+                bits.append(f"customer wanted ${a['customer_expected_value']:,}" + (f" (gap ${a['customer_expected_value'] - a['approved_value']:,})" if a.get("approved_value") and a["customer_expected_value"] != a["approved_value"] else ""))
             ms = a.get("market_summary") or {}
             if ms.get("estimated_retail"):
                 bits.append(f"market retail est ${ms['estimated_retail']:,} ({ms.get('provider_label')}, {ms.get('comps_used') or 0} comps{'' if ms.get('live') else ' — DEVELOPMENT DATA, NOT LIVE'})")

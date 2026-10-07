@@ -1670,6 +1670,17 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"[Inspection] recovery skipped: {e}")
 
+    # MVP5 correction: an accepted trade offer is intent, not a completed trade (one-time, idempotent)
+    async def _appraisal_accepted_migration():
+        try:
+            db = get_db()
+            if not await db.migrations.find_one({"_id": "appraisal_accepted_not_traded"}):
+                from services.appraisals.relationship import migrate_accepted_traded
+                await migrate_accepted_traded(db)
+        except Exception as e:
+            logger.warning(f"[Appraisal] accepted->intent migration skipped: {e}")
+    asyncio.create_task(_appraisal_accepted_migration())
+
     # ── Backfill account_id for existing users ────────────────────────────────
     # One-time migration: super_admins get account_id = their own _id,
     # other users get account_id from their creator's account (approx via org/store match).
@@ -2071,6 +2082,17 @@ async def startup_event():
                     db.ai_reply_queue.create_index([("status", 1), ("send_at", 1)]),
                     db.ai_reply_queue.create_index([("contact_id", 1), ("status", 1)]),
                     db.ai_reply_queue.create_index([("assigned_user_id", 1), ("status", 1), ("requires_approval", 1)]),
+                    # Trade appraisal (MVP5): vehicles as relationship records, history, reporting, campaign triggers
+                    db.vehicles.create_index([("contact_id", 1), ("deleted", 1)]),
+                    db.vehicles.create_index([("user_id", 1), ("ownership_status", 1), ("last_appraisal.status", 1), ("last_appraisal.closed_at", 1)]),
+                    db.vehicle_appraisals.create_index([("vehicle_id", 1), ("created_at", -1)]),
+                    db.vehicle_appraisals.create_index([("user_id", 1), ("status", 1), ("updated_at", -1)]),
+                    db.vehicle_appraisals.create_index([("store_id", 1), ("created_at", -1)]),
+                    db.vehicle_appraisals.create_index([("user_id", 1), ("created_at", -1)]),
+                    db.appraisal_decisions.create_index([("appraisal_id", 1), ("decided_at", 1)]),
+                    db.appraisal_events.create_index([("contact_id", 1), ("created_at", -1)]),
+                    db.campaigns.create_index([("trigger_events", 1), ("active", 1)]),
+                    db.tasks.create_index([("appraisal_id", 1), ("task_kind", 1)]),
                 ), timeout=15)
                 logger.info("Database indexes created/verified (production-ready)")
 
