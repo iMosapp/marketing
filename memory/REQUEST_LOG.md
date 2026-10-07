@@ -142,6 +142,11 @@ Cause: a site read left as "running" forever when the server restarted mid-read 
 
 Every reply that touches `/app/frontend` ends with the `eas update` terminal command; backend-only changes say "Deploy only".
 
+### 46 · Oct 7 — ASSESSMENT DELIVERED (no code) — awaiting architecture approval
+> BUILD: AI TRADE-IN APPRAISAL SYSTEM — We are adding a new Trade Appraisal module to I'm On Social. The goal is to let a salesperson quickly scan a VIN, capture mileage, perform a guided photo/video walkaround, use AI to identify visible vehicle condition issues, retrieve current market/comparable data, calculate a suggested trade/ACV range, submit the appraisal to a manager, and permanently attach the vehicle/appraisal information to the customer's relationship intelligence. [24 phases + build rules + MVP1-5 order; full verbatim spec is long — key rules: reuse existing auth/RBAC/media/notifications/AI/contacts/scoping; provider abstraction for VIN (NHTSA first), market data (MarketCheck first, Black Book / J.D. Power / AccuTrade later) and condition AI; never trap the salesperson; tenant isolation tests; AI must not price repairs; distinguish MARKET DATA vs I'M ON SOCIAL CALCULATION vs MANAGER-APPROVED VALUE; STOP AND TEST after each MVP.] FINAL REQUIREMENT BEFORE CODING: give me a read-only implementation assessment … DO NOT CODE YET.
+
+Assessment written to /app/memory/APPRAISAL_PLAN.md and posted in chat (reuse table, data model, routes, screens, VIN/video/NHTSA/MarketCheck/provider/approval/intel mechanics, security, file estimate, concerns, MVP order).
+
 ### 45 · Oct 7 — DONE / EAS UPDATE (+ Deploy for web)
 > Just a couple of cosmetic things here. I love the new files under history, but let's move it to the far right so tasks would be to the left of it. And then the gold bar just on camera, photos and files PDF is a little bit confusing. I would think we would want a button that says upload. And then I would feel like if I click on photos or PDFs, it would sort them by what's what. I don't know. It's really cool. I just don't love the way it's laid out. Let's think through that
 
