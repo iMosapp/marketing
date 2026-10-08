@@ -34,7 +34,7 @@ export const InspectionMedia = ({ colors, media, processed, onDelete, onOpen, bu
                   </TouchableOpacity>
                 ) : null}
               </View>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }} numberOfLines={1}>{m.kind === 'video' ? (m.frame_count != null ? `${m.frame_count} frames` : 'Video') : m.areas?.length ? m.areas.slice(0, 2).map((a: string) => a.replace(/_/g, ' ')).join(', ') : m.role_label}</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }} numberOfLines={1}>{m.kind === 'video' ? (m.frames_status === 'extracting' ? 'Pulling snapshots…' : m.frames_status === 'failed' ? 'No snapshots' : m.frame_count != null ? `${m.frame_count} snapshot${m.frame_count === 1 ? '' : 's'}` : 'Video') : m.areas?.length ? m.areas.slice(0, 2).map((a: string) => a.replace(/_/g, ' ')).join(', ') : m.role_label}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <SourceTag source={m.source} colors={colors} />
                 {done ? <Ionicons name="checkmark-circle" size={13} color={GOLD} /> : null}

@@ -30,13 +30,18 @@ EXTERIOR = ["front", "driver_front", "driver_side", "driver_rear", "rear", "pass
 GROUPS = {"exterior": EXTERIOR, "wheels": ["wheels"], "glass": ["windshield"], "interior": ["interior", "dashboard", "seats"]}
 GROUP_LABELS = {"exterior": "Exterior", "wheels": "Wheels", "glass": "Glass", "interior": "Interior"}
 
-CATEGORIES = {"body": "Body", "glass": "Glass", "wheels_tires": "Wheels / Tires", "interior": "Interior"}
+CATEGORIES = {"body": "Body", "glass": "Glass", "wheels_tires": "Wheels / Tires", "interior": "Interior", "mechanical": "Mechanical"}
 SUBTYPES = {"body": {"dent": "Dent", "scratch": "Scratches", "paint_damage": "Paint Damage", "bumper_damage": "Bumper Damage", "rust": "Rust", "broken_trim": "Broken Trim",
                      "mismatched_panel": "Mismatched Panel", "other": "Other Body Issue"},
             "glass": {"windshield_chip": "Windshield Chip", "windshield_crack": "Windshield Crack", "damaged_glass": "Damaged Glass", "other": "Other Glass Issue"},
             "wheels_tires": {"curb_rash": "Curb Rash", "wheel_damage": "Wheel Damage", "tire_wear": "Tire Wear", "tire_damage": "Tire Damage", "other": "Other Wheel/Tire Issue"},
             "interior": {"seat_damage": "Seat Damage", "stain": "Stain", "excessive_wear": "Excessive Wear", "damaged_trim": "Damaged Trim", "warning_light": "Dashboard Warning Light",
-                         "other": "Other Interior Issue"}}
+                         "odor": "Odor", "other": "Other Interior Issue"},
+            # Mechanical issues are heard, not seen: they come from voice notes (rep or customer) or are added by hand, never from photos.
+            "mechanical": {"ac_heat": "AC / Heat", "engine": "Engine", "transmission": "Transmission", "brakes": "Brakes", "suspension_steering": "Suspension / Steering",
+                           "electrical": "Electrical", "noise_vibration": "Noise / Vibration", "fluid_leak": "Fluid Leak", "exhaust": "Exhaust", "check_engine_light": "Check Engine Light",
+                           "other": "Other Mechanical Issue"}}
+FRAMES_WAIT_S = 240  # how long a run waits for an upload-time extraction that is still working before extracting itself
 SEVERITIES = {"minor": "Minor", "moderate": "Moderate", "major": "Major"}
 CONFIDENCES = ("high", "medium", "low")
 GRADES = {"very_good": "Very Good", "good": "Good", "fair": "Fair", "poor": "Poor"}
@@ -124,6 +129,7 @@ def public_finding(d: dict, frames_by_id: dict) -> dict:
             "location": d.get("location"), "location_label": d.get("location_label") or _title(d.get("location")), "severity": d.get("severity"), "severity_label": SEVERITIES.get(d.get("severity"), ""),
             "confidence": d.get("confidence"), "possible": d.get("confidence") == "low" and d.get("decision") == "pending", "explanation": d.get("explanation") or "",
             "origin": d.get("origin"), "decision": d.get("decision"), "decision_by_name": d.get("decision_by_name"), "decision_at": d.get("decision_at"),
+            "voice_note_id": d.get("voice_note_id"), "spoken_by": d.get("spoken_by"), "quote": d.get("quote"),
             "edited": bool(d.get("edited")), "edited_by_name": d.get("edited_by_name"), "edited_at": d.get("edited_at"), "ai_original": d.get("ai_original"),
             "sources": sorted({e.get("media_source") for e in ev if e.get("media_source")}), "evidence": ev, "created_at": d.get("created_at"), "updated_at": d.get("updated_at")}
 
@@ -210,6 +216,50 @@ async def _extract_media(db, ins: dict, m: dict) -> int:
     await db[FR].insert_one(_frame_doc(ins, m, path=m["path"], thumb_path=m.get("thumb_path"), t=None, label=None, sharp=round(sharp, 1)))
     await db[M].update_one({"_id": m["_id"]}, {"$set": {"frame_count": 1, "frames_extracted_at": _now()}})
     return 1
+
+
+async def extract_frames(db, appr: dict, m: dict, actor: Optional[dict] = None, force: bool = False) -> int:
+    """Upload time: pull the snapshots out of a walkaround video right away so they sit on the appraisal before anyone taps Analyze.
+    The run reuses them. Failure is written on the media (frames_error) and never blocks the upload."""
+    if m.get("kind") != "video":
+        return 0
+    fresh = await db[M].find_one({"_id": m["_id"], "deleted": {"$ne": True}})
+    if not fresh or (fresh.get("frames_extracted_at") and not force):
+        return int((fresh or {}).get("frame_count") or 0)
+    if force:
+        await db[FR].update_many({"media_id": str(m["_id"])}, {"$set": {"deleted": True, "deleted_at": _now()}})
+        await db[INS].update_one({"appraisal_id": str(appr["_id"])}, {"$pull": {"processed_media_ids": str(m["_id"])}})
+    await db[M].update_one({"_id": m["_id"]}, {"$set": {"frames_started_at": _now(), "frames_error": None}, "$unset": {"frames_extracted_at": ""}})
+    ins = await get_or_create(db, appr)
+    try:
+        n = await _extract_media(db, ins, {**fresh, "frames_extracted_at": None})
+        await _audit(db, appr, actor or {"_id": fresh.get("uploaded_by"), "name": fresh.get("uploaded_by_name")}, "snapshots_extracted",
+                     f"{n} snapshot{'s' if n != 1 else ''} pulled from {fresh.get('name')}", {"media_id": str(m["_id"]), "count": n})
+        return n
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"[Inspection] snapshot extraction failed for {m['_id']}: {e}")
+        await db[M].update_one({"_id": m["_id"]}, {"$set": {"frames_error": str(e)[:200], "frame_count": 0}})
+        return 0
+
+
+async def _ensure_frames(db, ins: dict, m: dict) -> int:
+    """A run never extracts twice: frames already pulled at upload are reused, an extraction still working is waited for, anything else is extracted now."""
+    deadline = _now() + timedelta(seconds=FRAMES_WAIT_S)
+    cur = m
+    while True:
+        if cur.get("frames_extracted_at"):
+            have = await db[FR].count_documents({"media_id": str(m["_id"]), "deleted": {"$ne": True}})
+            if have:
+                return have
+            break
+        started = _aware(cur.get("frames_started_at"))
+        if not started or cur.get("frames_error") or _now() - started > timedelta(minutes=15) or _now() > deadline:
+            break
+        await asyncio.sleep(2)
+        cur = await db[M].find_one({"_id": m["_id"]}) or cur
+    await db[FR].update_many({"media_id": str(m["_id"]), "deleted": {"$ne": True}}, {"$set": {"deleted": True, "deleted_at": _now()}})
+    await db[M].update_one({"_id": m["_id"]}, {"$set": {"frames_started_at": _now(), "frames_error": None}})
+    return await _extract_media(db, ins, cur)
 
 
 def _norm_finding(raw: dict, idx_to_frame: dict) -> Optional[dict]:
@@ -341,6 +391,8 @@ def _counts(findings: list, final: bool) -> dict:
             continue
         if d.get("decision") == "pending" and d.get("confidence") == "low":
             continue
+        if d.get("origin") == "voice" and d.get("decision") != "confirmed":
+            continue  # heard, not seen: a voice finding weighs nothing until a human confirms it
         if not final and d.get("decision") != "pending" and d.get("origin") == "ai" and d.get("ai_original"):
             sev = d["ai_original"].get("severity", d.get("severity"))
         else:
@@ -371,7 +423,7 @@ def _grade_category(cat: str, c: dict) -> str:
 def grade(findings: list, final: bool) -> dict:
     per = _counts(findings, final)
     cats = {c: _grade_category(c, per[c]) for c in CATEGORIES}
-    total = per["body"]["points"] + per["interior"]["points"] + 0.5 * (per["wheels_tires"]["points"] + per["glass"]["points"])
+    total = per["body"]["points"] + per["interior"]["points"] + per["mechanical"]["points"] + 0.5 * (per["wheels_tires"]["points"] + per["glass"]["points"])
     overall = "very_good" if total == 0 else "good" if total <= 4 else "fair" if total <= 8 else "poor"
     majors = sum(per[c]["major"] for c in CATEGORIES)
     if majors and overall in ("very_good", "good"):
@@ -385,7 +437,8 @@ def grade(findings: list, final: bool) -> dict:
             parts = [f"{n[s]} {s}" for s in ("major", "moderate", "minor") if n[s]]
             bits.append(f"{CATEGORIES[c]}: {', '.join(parts)} ({GRADES[cats[c]]})")
     reason = (f"Overall {GRADES[overall]}. " + "; ".join(bits) + ". Minor counts 1, moderate 2, major 4; wheels and glass weigh half toward the overall"
-              + ("; any major issue caps the overall at Fair" if majors else "") + ". Low-confidence findings are listed as possible issues and do not affect the grade until confirmed.")
+              + ("; any major issue caps the overall at Fair" if majors else "") + ". Low-confidence findings are listed as possible issues and do not affect the grade until confirmed"
+              + "; issues heard in voice notes count only once confirmed.")
     return {"overall": overall, "categories": cats, "reason": reason, "points": {c: per[c]["points"] for c in CATEGORIES}}
 
 
@@ -437,7 +490,7 @@ async def run(db, ins_id: str, actor: dict):
         for m in media:
             if str(m["_id"]) in done:
                 continue
-            await _extract_media(db, ins, m)
+            await _ensure_frames(db, ins, m)
             await db[INS].update_one({"_id": ins["_id"]}, {"$addToSet": {"processed_media_ids": str(m["_id"])}})
         frames = await frames_for(db, ins)
         if not frames:

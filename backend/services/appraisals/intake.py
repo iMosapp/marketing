@@ -1,6 +1,7 @@
 """Customer trade link: the rep texts (or copies) a one-vehicle, 7-day link; the customer sends VIN, mileage, photos and a few condition answers from
 their own phone. Everything lands on the SAME appraisal through the same media path as rep captures (source customer_supplied), so the stepper, the
 inspection and the desk see it. Nothing the customer types is accepted as confirmed: the rep confirms VIN and mileage exactly as before."""
+import asyncio
 import datetime as dt
 import logging
 import os
@@ -48,16 +49,14 @@ async def _store_name(db, appr: dict) -> str:
     return (st or {}).get("name") or "the dealership"
 
 
-async def _thread_log(db, appr: dict, me: dict, *, phone: str, body: str, res: dict, rep_number: Optional[str]):
-    """Put the bubble in the rep's inbox thread with this customer, on the same (rep number, customer number) key the Twilio webhook uses,
-    so the text shows as sent and the customer's reply lands beside it."""
+async def _conversation(db, appr: dict, uid: str, *, phone: Optional[str], rep_number: Optional[str]) -> dict:
+    """The rep's inbox thread with this customer, on the same (rep number, customer number) key the Twilio webhook uses; created when there is none yet."""
     from bson import ObjectId
     from services.tag_workflows import initial_ai_state
     from services.twilio_service import normalize_phone
-    from utils.activity_log import log_activity
     now = _now()
-    uid, cid = str(me["_id"]), str(appr.get("contact_id") or "")
-    to_norm = normalize_phone(phone)
+    cid = str(appr.get("contact_id") or "")
+    to_norm = normalize_phone(phone) if phone else None
     conv = await db.conversations.find_one({"rep_phone": rep_number, "contact_phone": to_norm}) if rep_number and to_norm else None
     if not conv and cid:
         conv = await db.conversations.find_one({"user_id": uid, "contact_id": {"$in": [cid, ObjectId(cid)] if ObjectId.is_valid(cid) else [cid]}}, sort=[("last_message_at", -1)])
@@ -65,11 +64,80 @@ async def _thread_log(db, appr: dict, me: dict, *, phone: str, body: str, res: d
         conv = {"user_id": uid, "rep_phone": rep_number, "contact_id": cid, "contact_phone": to_norm, "contact_name": appr.get("contact_name"), "status": "active",
                 **(await initial_ai_state(db, cid)), "unread": False, "unread_count": 0, "needs_assistance": False, "created_at": now, "last_message_at": now}
         conv["_id"] = (await db.conversations.insert_one(conv)).inserted_id
+    return conv
+
+
+async def _thread_log(db, appr: dict, me: dict, *, phone: str, body: str, res: dict, rep_number: Optional[str]):
+    """Put the bubble in the rep's inbox thread with this customer so the text shows as sent and the customer's reply lands beside it."""
+    from utils.activity_log import log_activity
+    now = _now()
+    uid, cid = str(me["_id"]), str(appr.get("contact_id") or "")
+    conv = await _conversation(db, appr, uid, phone=phone, rep_number=rep_number)
     sid = res.get("message_sid") or res.get("sid")
     await db.messages.insert_one({"conversation_id": str(conv["_id"]), "user_id": uid, "contact_id": cid, "content": body, "sender": "user", "direction": "outbound", "channel": "sms",
                                   "kind": "trade_link", "appraisal_id": str(appr["_id"]), "twilio_sid": sid, "status": "sent_mock" if res.get("mock") else "sent", "timestamp": now})
     await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"last_message_at": now, "last_message": body[:200], "last_message_sender": "user", "rep_engaged": True, "rep_last_replied_at": now}})
     await log_activity(db, user_id=uid, contact_id=cid, event_type="sms_sent", description="Customer trade link texted", channel="sms", ref=sid, metadata={"appraisal_id": str(appr["_id"]), "kind": "trade_link"})
+
+
+# ---------- pings: the rep hears about the link being opened, photos landing, a voice note, the submit ----------
+PHOTO_QUIET_S = 40      # a burst of photos is announced once, after the customer has been quiet this long
+PHOTO_BURST_MAX_S = 600  # ... or at the latest after this long
+
+
+async def _system_line(db, appr: dict, text: str, kind: str):
+    """A centered event chip in the rep's inbox thread with this customer (same shape the shared-inbox routing events use)."""
+    from services.twilio_service import get_rep_twilio_number
+    uid = str(appr["user_id"])
+    contact = await db.contacts.find_one({"_id": _oid(appr.get("contact_id"))}, {"phone": 1}) if appr.get("contact_id") else None
+    rep_number = await get_rep_twilio_number(uid)
+    conv = await _conversation(db, appr, uid, phone=(contact or {}).get("phone"), rep_number=rep_number)
+    now = _now()
+    await db.messages.insert_one({"conversation_id": str(conv["_id"]), "user_id": uid, "contact_id": str(appr.get("contact_id") or ""), "sender": "system", "direction": "system",
+                                  "channel": "system", "type": "event", "kind": kind, "appraisal_id": str(appr["_id"]), "content": text, "timestamp": now, "created_at": now})
+    await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"last_message_at": now, "last_message": text[:200], "last_message_sender": "system"}})
+
+
+async def ping(db, appr: dict, kind: str, line: str, title: str, body: str, icon: str = "phone-portrait-outline"):
+    """Thread chip + in-app notification + push to the rep. Best effort: the customer's page never fails because of it."""
+    try:
+        await _system_line(db, appr, line, f"trade_link_{kind}")
+        await audit(db, appr, _customer_actor(appr), f"intake_{kind}", line)
+        await workflow._notify(str(appr["user_id"]), "appraisal_intake", title, body, f"/appraisal/{appr['_id']}", appr, icon=icon)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Intake] {kind} ping failed: {e}")
+
+
+def _veh(appr: dict) -> str:
+    return core.vehicle_label(appr.get("vehicle")) if appr.get("vehicle") else "their trade"
+
+
+def _files(photos: int, videos: int) -> str:
+    bits = [f"{photos} photo{'s' if photos != 1 else ''}" if photos else None, f"{videos} video{'s' if videos != 1 else ''}" if videos else None]
+    return " and ".join(b for b in bits if b) or "a file"
+
+
+async def _photo_ping_later(db, appr_id):
+    """One announcement per burst of uploads, once the customer has gone quiet (or the burst has run long enough)."""
+    started = _now()
+    try:
+        while True:
+            await asyncio.sleep(PHOTO_QUIET_S)
+            a = await db[A].find_one({"_id": appr_id})
+            i = (a or {}).get("intake") or {}
+            photos, videos = int(i.get("photo_burst") or 0), int(i.get("video_burst") or 0)
+            if not a or photos + videos == 0:
+                return
+            last = i.get("last_photo_at")
+            quiet = not last or (_now() - last.replace(tzinfo=last.tzinfo or dt.timezone.utc)).total_seconds() >= PHOTO_QUIET_S - 1
+            if quiet or (_now() - started).total_seconds() >= PHOTO_BURST_MAX_S:
+                await db[A].update_one({"_id": appr_id}, {"$set": {"intake.photo_burst": 0, "intake.video_burst": 0}})
+                first = _first(a.get("contact_name"))
+                what = _files(photos, videos)
+                await ping(db, a, "photos", f"{first} sent {what} through the trade link", f"{first} sent {what}", f"New {'photos' if not videos else 'media'} of {_veh(a)} just landed on the appraisal.", icon="images-outline")
+                return
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Intake] photo ping loop failed: {e}")
 
 
 async def create_link(db, appr: dict, me: dict, *, channel: str = "copy") -> dict:
@@ -147,7 +215,11 @@ async def context(db, appr: dict, *, mark_opened: bool = False) -> dict:
     """What the customer page needs: who is asking, what we already have, what is still wanted. No values, no internal ids."""
     i = appr.get("intake") or {}
     if mark_opened and not i.get("opened_at"):
-        await db[A].update_one({"_id": appr["_id"]}, {"$set": {"intake.opened_at": _now()}})
+        r = await db[A].update_one({"_id": appr["_id"], "intake.opened_at": None}, {"$set": {"intake.opened_at": _now()}})
+        if r.modified_count:
+            first = _first(appr.get("contact_name"))
+            asyncio.create_task(ping(db, appr, "opened", f"{first} opened the trade link", f"{first} opened your trade link",
+                                     f"{first} just opened the link for {_veh(appr)}. Photos and answers land on the appraisal as they come in.", icon="eye-outline"))
     rep = await db.users.find_one({"_id": _oid(appr["user_id"])}, {"name": 1, "first_name": 1, "last_name": 1, "phone": 1}) if appr.get("user_id") else None
     media = await db[core.M].find({"appraisal_id": str(appr["_id"]), "source": "customer_supplied", "deleted": {"$ne": True}}, {"role": 1, "thumb_path": 1, "kind": 1}).sort("created_at", 1).to_list(MAX_PHOTOS)
     ci = appr.get("customer_intake") or {}
@@ -171,7 +243,12 @@ async def add_photo(db, appr: dict, *, role: str, data: bytes, content_type: str
         raise ValueError(f"That is plenty of photos ({MAX_PHOTOS} max).")
     role = role if role in PHOTO_ROLES else "photo"
     doc = await core.save_media(db, appr, _customer_actor(appr), role=role, source="customer_supplied", data=data, content_type=content_type, name=name or f"{role}.jpg")
-    await db[A].update_one({"_id": appr["_id"]}, {"$inc": {"intake.photo_count": 1}, "$set": {"updated_at": _now()}})
+    burst = "intake.video_burst" if doc.get("kind") == "video" else "intake.photo_burst"
+    await db[A].update_one({"_id": appr["_id"]}, {"$inc": {"intake.photo_count": 1, burst: 1}, "$set": {"intake.last_photo_at": _now(), "updated_at": _now()}})
+    fresh = await db[A].find_one({"_id": appr["_id"]}, {"intake": 1})
+    fi = (fresh or {}).get("intake") or {}
+    if int(fi.get("photo_burst") or 0) + int(fi.get("video_burst") or 0) == 1:
+        asyncio.create_task(_photo_ping_later(db, appr["_id"]))
     pm = core.public_media(doc)
     return {"id": pm["id"], "role": pm["role"], "thumb": pm.get("thumb_url"), "reading": pm.get("reading")}
 
@@ -185,6 +262,11 @@ async def add_voice(db, appr: dict, *, data: bytes, content_type: str, duration:
     if link_state(appr) != "open":
         raise ValueError("This link is no longer active.")
     vn = await voice.add_voice_note(db, appr, _customer_actor(appr), by="customer", data=data, content_type=content_type, duration=duration, name=name)
+    first = _first(appr.get("contact_name"))
+    said = (vn.get("transcript") or "").strip()
+    n = len(vn.get("findings") or [])
+    asyncio.create_task(ping(db, appr, "voice", f"{first} left a voice note about {_veh(appr)}" + (f": \"{said[:140]}{'...' if len(said) > 140 else ''}\"" if said else ""),
+                             f"{first} left a voice note", (said[:160] if said else "Listen to it on the appraisal.") + (f" · {n} possible issue{'s' if n != 1 else ''} to confirm" if n else ""), icon="mic-outline"))
     return _public_voice(vn)
 
 
@@ -208,7 +290,7 @@ async def submit(db, appr: dict, body: dict) -> dict:
     if wants is not None and not (0 < wants < 5_000_000):
         wants = None
     ci = {"submitted_at": now, "vin": vin, "mileage": mileage, "zip": zip_code, "condition": answers, "notes": notes, "wants": wants, "photo_count": (appr.get("intake") or {}).get("photo_count", 0)}
-    await db[A].update_one({"_id": appr["_id"]}, {"$set": {"customer_intake": ci, "intake.submitted_at": now, "updated_at": now}, "$inc": {"intake.submits": 1}})
+    await db[A].update_one({"_id": appr["_id"]}, {"$set": {"customer_intake": ci, "intake.submitted_at": now, "intake.photo_burst": 0, "intake.video_burst": 0, "updated_at": now}, "$inc": {"intake.submits": 1}})
     actor = _customer_actor(appr)
     vehicle_set = False
     if vin and len(vin) == 17 and not appr.get("vin"):
@@ -222,6 +304,10 @@ async def submit(db, appr: dict, body: dict) -> dict:
     text = "Customer sent trade info: " + " · ".join(b for b in bits if b) if any(bits) else "Customer submitted the trade link with notes only"
     await audit(db, appr, actor, "customer_intake", text, meta={"vehicle_set": vehicle_set, "zip": zip_code})
     fresh = await db[A].find_one({"_id": appr["_id"]})
+    try:
+        await _system_line(db, fresh, f"{_first(fresh.get('contact_name'))} submitted the trade link" + (": " + " · ".join(b for b in bits if b) if any(bits) else " (notes only)"), "trade_link_submitted")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Intake] submit thread line failed: {e}")
     try:
         label = core.vehicle_label(fresh.get("vehicle")) if fresh.get("vehicle") else "their trade"
         await workflow._notify(fresh["user_id"], "appraisal_intake", "Customer sent trade info", f"{fresh.get('contact_name') or 'Your customer'} sent details for {label}. Open the appraisal to confirm and keep going.",

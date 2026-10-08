@@ -75,7 +75,7 @@ MAX_NOTES = 8000
 
 def public_voice_note(v: dict) -> dict:
     return {"id": v.get("id"), "by": v.get("by"), "by_label": VOICE_BY.get(v.get("by") or "", "Voice note"), "by_name": v.get("by_name"), "audio_url": v.get("audio_url"),
-            "duration": v.get("duration"), "transcript": v.get("transcript") or "", "transcribed": bool(v.get("transcript")), "created_at": v.get("created_at")}
+            "duration": v.get("duration"), "transcript": v.get("transcript") or "", "transcribed": bool(v.get("transcript")), "findings_count": v.get("findings_count") or 0, "created_at": v.get("created_at")}
 
 
 # ---------- serializers ----------
@@ -111,7 +111,48 @@ def public_media(m: dict) -> dict:
             "thumb_url": f"/api/images/{m['thumb_path']}" if m.get("thumb_path") else None,
             "uploaded_by": m.get("uploaded_by"), "uploaded_by_name": m.get("uploaded_by_name"), "uploaded_at": m.get("created_at"), "reading": m.get("reading"),
             "duration": m.get("duration"), "frame_count": m.get("frame_count"), "video_quality": m.get("video_quality"), "extraction": m.get("extraction"),
+            "frames_status": _frames_status(m), "frames_error": m.get("frames_error"),
             "original_available": available, "original_destroyed_at": m.get("original_destroyed_at")}
+
+
+def _frames_status(m: dict) -> Optional[str]:
+    """Walkaround videos only: extracting (upload-time pull still working) | ready | failed | None (older video, never pulled)."""
+    if m.get("kind") != "video":
+        return None
+    if m.get("frames_extracted_at"):
+        return "ready"
+    if m.get("frames_error"):
+        return "failed"
+    started = m.get("frames_started_at")
+    if started and (_now() - started.replace(tzinfo=started.tzinfo or timezone.utc)).total_seconds() < 900:
+        return "extracting"
+    return "failed" if started else None
+
+
+def public_snapshot(f: dict, m: dict) -> dict:
+    """A still pulled out of a walkaround video, shaped like a media item so every photo grid and the full-screen viewer can show it."""
+    return {"id": str(f["_id"]), "kind": "image", "snapshot": True, "media_id": str(m["_id"]), "media_name": m.get("name"), "role": "walkaround_frame",
+            "role_label": f"Walk-around · {f.get('timestamp_label') or ''}".rstrip(" ·"), "source": m.get("source"), "source_label": SOURCES.get(m.get("source") or "", ""),
+            "url": f"/api/images/{f['path']}" if f.get("path") else None, "thumb_url": f"/api/images/{f['thumb_path']}" if f.get("thumb_path") else None,
+            "timestamp_s": f.get("timestamp_s"), "timestamp_label": f.get("timestamp_label"), "areas": f.get("areas") or [], "usable": f.get("usable"),
+            "uploaded_by_name": m.get("uploaded_by_name"), "uploaded_at": m.get("created_at"), "created_at": f.get("created_at")}
+
+
+async def list_snapshots(db, appr: dict) -> list:
+    """Every snapshot from every walkaround video on the appraisal, in video order then by timestamp."""
+    videos = await db[M].find({"appraisal_id": str(appr["_id"]), "kind": "video", "deleted": {"$ne": True}}).sort("created_at", 1).to_list(50)
+    if not videos:
+        return []
+    by_id = {str(v["_id"]): v for v in videos}
+    frames = await db["appraisal_frames"].find({"appraisal_id": str(appr["_id"]), "media_id": {"$in": list(by_id)}, "deleted": {"$ne": True}}).sort("timestamp_s", 1).to_list(600)
+    order = {mid: i for i, mid in enumerate(by_id)}
+    frames.sort(key=lambda f: (order.get(f.get("media_id"), 99), f.get("timestamp_s") or 0))
+    return [public_snapshot(f, by_id[f["media_id"]]) for f in frames]
+
+
+def _kick_snapshots(db, appr: dict, doc: dict, me: dict):
+    from services.appraisals import inspection
+    asyncio.create_task(inspection.extract_frames(db, appr, doc, me))
 
 
 # ---------- audit ----------
@@ -372,6 +413,10 @@ async def save_media(db, appr: dict, me: dict, *, role: str, source: str, data: 
         doc["reading"] = reading
     await audit(db, appr, me, "media_added", f"{ROLES[role]} · {SOURCES[source]}" + (f" · read {reading.get('vin') or reading.get('mileage')}" if reading and (reading.get('vin') or reading.get('mileage')) else ""),
                 meta={"media_id": str(mid), "role": role, "source": source})
+    if kind == "video":
+        doc["frames_started_at"] = now
+        await db[M].update_one({"_id": mid}, {"$set": {"frames_started_at": now}})
+        _kick_snapshots(db, appr, doc, me)
     return doc
 
 

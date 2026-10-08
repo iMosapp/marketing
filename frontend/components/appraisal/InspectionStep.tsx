@@ -14,6 +14,7 @@ import { ConditionReport } from './ConditionReport';
 import { EvidenceViewer } from './EvidenceViewer';
 import { VoiceNotes } from './VoiceNotes';
 import { MediaViewer } from './MediaViewer';
+import { Snapshots } from './Snapshots';
 import type { useAppraisalMedia, MediaSource } from '../../hooks/useAppraisalMedia';
 
 type Props = { colors: any; appraisal: any; media: ReturnType<typeof useAppraisalMedia>; onSaved: (appraisal: any) => void; showToast: (m: string, t?: any, d?: number) => void };
@@ -36,6 +37,7 @@ export const InspectionStep = ({ colors, appraisal, media, onSaved, showToast }:
   }, [appraisal.id]);
   useEffect(() => { load(); }, [load]);
   const running = !!insp && ['queued', 'processing'].includes(insp.status);
+  const extracting = !!insp && (insp.media || []).some((m: any) => m.frames_status === 'extracting');
   useEffect(() => {
     if (!running) return;
     const t = setInterval(async () => {
@@ -44,12 +46,24 @@ export const InspectionStep = ({ colors, appraisal, media, onSaved, showToast }:
     }, 3000);
     return () => clearInterval(t);
   }, [running, load]);
+  useEffect(() => {
+    if (!extracting || running) return;
+    const t = setInterval(async () => {
+      const d = await load();
+      if (d && !(d.media || []).some((m: any) => m.frames_status === 'extracting')) { clearInterval(t); if (d.snapshots?.length) showToast(`${d.snapshots.length} snapshots pulled from the video.`, 'success', 3000); onSaved({}); }
+    }, 3000);
+    return () => clearInterval(t);
+  }, [extracting, running, load]);
 
   const analyze = async () => {
     setActing(true);
     try { await api.post(`/appraisals/${appraisal.id}/inspection/run`); showToast('Jessi is on it. You can keep adding media.', 'success', 3000); await load(); }
     catch (e) { showToast(errText(e, 'Could not start the inspection'), 'error'); }
     finally { setActing(false); }
+  };
+  const retrySnapshots = async (v: any) => {
+    try { await api.post(`/appraisals/${appraisal.id}/media/${v.id}/snapshots`); showToast('Pulling snapshots again…', 'success', 2500); await load(); }
+    catch (e) { showToast(errText(e, 'Could not pull snapshots'), 'error'); }
   };
   const decide = async (f: any, decision: string) => {
     setActing(true);
@@ -78,7 +92,8 @@ export const InspectionStep = ({ colors, appraisal, media, onSaved, showToast }:
       <BusyBar text={media.busy} colors={colors} />
       <InspectionMedia colors={colors} media={mediaList} processed={insp?.processed_media_ids || []} onDelete={remove} busy={busy} onOpen={(m) => setViewer(inspectable.findIndex((x: any) => x.id === m.id))} />
       <MediaViewer colors={colors} media={inspectable} index={viewer} onClose={() => setViewer(null)} />
-      <VoiceNotes colors={colors} appraisal={appraisal} onSaved={onSaved} showToast={showToast} />
+      <Snapshots colors={colors} snapshots={insp?.snapshots || appraisal.snapshots || []} media={mediaList} onRetry={busy ? undefined : retrySnapshots} />
+      <VoiceNotes colors={colors} appraisal={appraisal} onSaved={(a) => { onSaved(a); load(); }} showToast={showToast} />
       {running ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: GOLD }} {...tid('inspect-running')}>
           <ActivityIndicator color={GOLD} />
@@ -99,7 +114,8 @@ export const InspectionStep = ({ colors, appraisal, media, onSaved, showToast }:
           </View>
           {insp.findings.length ? insp.findings.map((f: any) => <FindingCard key={f.id} colors={colors} finding={f} onDecide={d => decide(f, d)} onEdit={() => setEditor({ finding: f })} onEvidence={setEvidence} busy={busy} />)
             : <Text style={{ fontSize: 13, color: colors.textSecondary }}>Jessi did not see any issues. Add anything you noticed in person.</Text>}
-          <ConditionReport colors={colors} appraisalId={appraisal.id} report={report} grades={insp.grades} onChanged={load} showToast={showToast} />
+          {insp.coverage || insp.run_count > 0 ? <ConditionReport colors={colors} appraisalId={appraisal.id} report={report} grades={insp.grades} onChanged={load} showToast={showToast} />
+            : <Text style={{ fontSize: 12.5, color: colors.textSecondary }} {...tid('inspect-no-run-hint')}>Issues heard in voice notes wait here for your call. The condition grade appears once Jessi has looked at the photos or video.</Text>}
         </>
       ) : null}
       <BigButton colors={colors} icon="arrow-forward" label={report ? 'Continue' : 'Skip inspection for now'} sub={report && insp.coverage?.missing?.length ? `Missing: ${insp.coverage.missing.slice(0, 4).join(', ')}${insp.coverage.missing.length > 4 ? '…' : ''}` : report ? 'On to what the customer wants' : 'You can come back from the summary'} onPress={next} primary={!!report} disabled={busy} testId="inspect-continue" />

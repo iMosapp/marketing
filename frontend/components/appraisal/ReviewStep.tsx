@@ -8,6 +8,7 @@ import { StepTitle, SourceTag, money, miles } from './shared';
 import { SubmitPanel } from './SubmitPanel';
 import { VoiceNotes } from './VoiceNotes';
 import { MediaViewer } from './MediaViewer';
+import { Snapshots } from './Snapshots';
 
 type Props = { colors: any; appraisal: any; onEdit: (step: string) => void; onSaved?: (appraisal: any) => void; showToast?: (m: string, t?: any, d?: number) => void; readOnly?: boolean };
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
@@ -70,6 +71,7 @@ export const ReviewStep = ({ colors, appraisal, onEdit, onSaved, showToast, read
           <MediaViewer colors={colors} media={appraisal.media} index={viewer} onClose={() => setViewer(null)} />
         </View>
       ) : null}
+      <Snapshots colors={colors} snapshots={appraisal.snapshots || []} media={appraisal.media || []} testPrefix="review-snapshot" />
       {appraisal.history?.length > 1 ? (
         <View style={{ gap: 6 }} {...tid('review-history')}>
           <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6 }}>APPRAISAL HISTORY</Text>

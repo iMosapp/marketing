@@ -7,6 +7,7 @@ import os
 
 from bson import ObjectId
 
+from services.appraisals import voice_findings
 from services.appraisals.core import A, VOICE_BY, _name, _now, audit, public_voice_note
 from utils.image_storage import put_object
 from utils.text_sanitize import no_em_dash
@@ -98,16 +99,17 @@ async def add_voice_note(db, appr: dict, actor: dict, *, by: str, data: bytes, c
     new_notes = (f"{notes}\n\n{block}" if notes else block) if block else notes
     if len(new_notes) > MAX_NOTES:
         new_notes = notes
+    found = await voice_findings.add_from_transcript(db, appr, vid, transcript, by, actor) if transcript else []
     note = {"id": vid, "by": by, "by_name": _name(actor) if by == "rep" else (appr.get("contact_name") or "Customer"), "audio_path": path, "audio_url": f"/api/images/{path}",
-            "content_type": content_type, "size": len(data), "duration": round(float(duration or 0), 1), "transcript": transcript, "note_block": block, "created_at": now}
+            "content_type": content_type, "size": len(data), "duration": round(float(duration or 0), 1), "transcript": transcript, "note_block": block, "findings_count": len(found), "created_at": now}
     await db[A].update_one({"_id": appr["_id"]}, {"$push": {"voice_notes": note}, "$set": {"notes": new_notes, "updated_at": now}})
-    await audit(db, appr, actor, "voice_note_added", f"{VOICE_BY[by]}: {transcript[:200]}" if transcript else f"{VOICE_BY[by]} recorded (no words made out)",
-                meta={"voice_note_id": vid, "duration": note["duration"], "by": by})
-    return public_voice_note(note)
+    await audit(db, appr, actor, "voice_note_added", (f"{VOICE_BY[by]}: {transcript[:200]}" if transcript else f"{VOICE_BY[by]} recorded (no words made out)") + (f" · {len(found)} possible issue{'s' if len(found) != 1 else ''} to confirm" if found else ""),
+                meta={"voice_note_id": vid, "duration": note["duration"], "by": by, "findings": len(found)})
+    return {**public_voice_note(note), "findings": found}
 
 
 async def delete_voice_note(db, appr: dict, me: dict, note_id: str):
-    """Remove the clip and take its words back out of the notes."""
+    """Remove the clip, take its words back out of the notes and drop the issues it suggested that nobody confirmed."""
     v = next((x for x in appr.get("voice_notes") or [] if x.get("id") == note_id), None)
     if not v:
         raise ValueError("Voice note not found")
@@ -115,4 +117,5 @@ async def delete_voice_note(db, appr: dict, me: dict, note_id: str):
     if v.get("note_block"):
         notes = notes.replace(v["note_block"], "").replace("\n\n\n\n", "\n\n").strip()
     await db[A].update_one({"_id": appr["_id"]}, {"$pull": {"voice_notes": {"id": note_id}}, "$set": {"notes": notes, "updated_at": _now()}})
-    await audit(db, appr, me, "voice_note_removed", f"{VOICE_BY.get(v.get('by') or '', 'Voice note')} removed", meta={"voice_note_id": note_id})
+    dropped = await voice_findings.remove_for_note(db, appr, note_id)
+    await audit(db, appr, me, "voice_note_removed", f"{VOICE_BY.get(v.get('by') or '', 'Voice note')} removed" + (f" · {dropped} unconfirmed issue{'s' if dropped != 1 else ''} dropped" if dropped else ""), meta={"voice_note_id": note_id})

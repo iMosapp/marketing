@@ -483,6 +483,7 @@ async def desk_detail(db, appr: dict, me: dict) -> dict:
     out["decisions"] = await decisions(db, appr)
     out["activity"] = await core.activity(db, appr)
     out["media"] = await core.list_media(db, appr)
+    out["snapshots"] = await core.list_snapshots(db, appr)
     mk = await market.read(db, appr, me)
     out["market"] = {k: mk.get(k) for k in ("provider", "snapshot", "comparables", "book_values", "match_labels", "history")}
     ins_doc = await db["appraisal_inspections"].find_one({"appraisal_id": str(appr["_id"])}, {"_id": 1})

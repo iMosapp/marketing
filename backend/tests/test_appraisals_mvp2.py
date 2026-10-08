@@ -135,7 +135,7 @@ async def test_grade_rules_match_the_spec_example():
                 mk("glass", "windshield_chip", "minor", "low")]
     g = inspection.grade(findings, final=True)
     assert g["overall"] == "good"
-    assert g["categories"] == {"body": "good", "interior": "very_good", "wheels_tires": "fair", "glass": "very_good"}
+    assert g["categories"] == {"body": "good", "interior": "very_good", "wheels_tires": "fair", "glass": "very_good", "mechanical": "very_good"}
     assert "Low-confidence findings" in g["reason"]
     assert inspection.grade([mk("body", "rust", "major", "high")], final=False)["overall"] == "fair"
     assert inspection.grade([mk("glass", "windshield_crack", "major", "high")], final=False)["categories"]["glass"] == "poor"

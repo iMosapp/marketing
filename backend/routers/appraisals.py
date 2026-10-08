@@ -1,5 +1,6 @@
 """Trade Appraisal (MVP1): drafts, customer, capture mode, vehicle identity (VIN photo / typed / reappraise), mileage, customer expectation,
 media with provenance, audit trail, vehicles on a contact. Scoped by the platform's accessible-user rule."""
+import asyncio
 import base64
 import logging
 import re
@@ -580,6 +581,7 @@ async def detail(appraisal_id: str, request: Request):
     a = await _appr(db, me, appraisal_id)
     out = core.public_appraisal(a)
     out["media"] = await core.list_media(db, a)
+    out["snapshots"] = await core.list_snapshots(db, a)
     out["activity"] = await core.activity(db, a)
     out["inspection"] = await inspection.summary(db, a)
     out["market"] = await market.summary(db, a)
@@ -732,6 +734,26 @@ async def media_chunk(appraisal_id: str, chunk: MediaChunk, request: Request):
     return {"success": True, "received": chunk.total, "total": chunk.total, "media": core.public_media(doc)}
 
 
+@router.post("/{appraisal_id}/media/{media_id}/snapshots")
+async def media_snapshots_retry(appraisal_id: str, media_id: str, request: Request):
+    """Pull the snapshots out of a walkaround video again (upload-time extraction failed, or an older video never had them). Runs in the background; poll the inspection."""
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    m = await db[core.M].find_one({"_id": core._oid(media_id), "appraisal_id": str(a["_id"]), "deleted": {"$ne": True}})
+    if not m or m.get("kind") != "video":
+        raise HTTPException(status_code=404, detail="Video not found")
+    if m.get("original_available") is False:
+        raise HTTPException(status_code=409, detail="The original video is no longer kept, so no new snapshots can be pulled")
+    if a.get("status") == "analyzing":
+        raise HTTPException(status_code=409, detail="Wait for the inspection to finish first")
+    now = core._now()
+    await db[core.M].update_one({"_id": m["_id"]}, {"$set": {"frames_started_at": now, "frames_error": None}, "$unset": {"frames_extracted_at": ""}})
+    asyncio.create_task(inspection.extract_frames(db, a, m, me, force=True))
+    return {"success": True, "media": core.public_media({**m, "frames_started_at": now, "frames_error": None, "frames_extracted_at": None})}
+
+
 @router.post("/{appraisal_id}/voice-note/chunk")
 async def voice_note_chunk(appraisal_id: str, chunk: VoiceChunk, request: Request):
     """The rep talks about the car. Same base64-piece protocol; on the last piece the clip is stored, Whisper types it and the words are appended to
@@ -805,6 +827,7 @@ async def get_inspection(appraisal_id: str, request: Request):
     a = await _appr(db, me, appraisal_id)
     out = await inspection.read(db, a)
     out["media"] = await core.list_media(db, a)
+    out["snapshots"] = await core.list_snapshots(db, a)
     areas = {}
     for f in out["frames"]:
         for ar in f.get("areas") or []:

@@ -9,6 +9,7 @@ import { ComparablesList } from '../ComparablesList';
 import { answerChips } from '../TradeLinkCard';
 import { VoiceNoteList } from '../VoiceNotes';
 import { MediaViewer } from '../MediaViewer';
+import { Snapshots } from '../Snapshots';
 
 // Tappable thumbnails; any one opens the full-screen viewer on that item.
 const MediaStrip = ({ colors, media, testPrefix }: { colors: any; media: any[]; testPrefix: string }) => {
@@ -132,6 +133,7 @@ export const RepCard = ({ colors, a }: { colors: any; a: any }) => (
     <VoiceNoteList colors={colors} appraisal={a} readOnly />
     <Text style={{ fontSize: 12, color: colors.textSecondary }}>{a.mode_label}{a.vin ? ` · VIN ${a.vin}` : ' · no VIN'}{a.stock_number ? ` · stock ${a.stock_number}` : ''}{a.mileage_confirmed != null ? ` · ${miles(a.mileage_confirmed)}` : ''}{a.mileage_detected != null && a.mileage_detected !== a.mileage_confirmed ? ` (Jessi read ${miles(a.mileage_detected)})` : ''}</Text>
     {a.media?.length ? <MediaStrip colors={colors} media={a.media} testPrefix="desk-media" /> : null}
+    <Snapshots colors={colors} snapshots={a.snapshots || []} media={a.media || []} testPrefix="desk-snapshot" size={72} />
   </Card>
 );
 

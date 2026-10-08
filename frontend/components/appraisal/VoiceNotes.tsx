@@ -17,7 +17,11 @@ const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { 
 export const VoiceNoteRecorder = ({ colors, appraisal, onSaved, showToast }: Props) => {
   const rec = useMemoRecorder({
     path: `/appraisals/${appraisal.id}/voice-note/chunk`, maxSeconds: VOICE_MAX_SECONDS,
-    onSaved: (r) => { onSaved?.(r.appraisal); showToast?.(r.voice_note?.transcribed ? 'Got it. Added to the notes.' : 'Saved the clip. Jessi could not make out the words, so it is kept as audio.', r.voice_note?.transcribed ? 'success' : 'info', 3500); },
+    onSaved: (r) => {
+      onSaved?.(r.appraisal);
+      const n = r.voice_note?.findings_count || 0;
+      showToast?.(!r.voice_note?.transcribed ? 'Saved the clip. Jessi could not make out the words, so it is kept as audio.' : n ? `Got it. ${n} possible issue${n === 1 ? '' : 's'} added to the inspection for you to confirm.` : 'Got it. Added to the notes.', r.voice_note?.transcribed ? 'success' : 'info', 4000);
+    },
     onError: (m) => showToast?.(m, 'error', 4000),
   });
   const busy = !!rec.saving;
@@ -57,7 +61,7 @@ export const VoiceNoteList = ({ colors, appraisal, onSaved, showToast, readOnly 
               <Ionicons name={player.playingId === v.id ? 'pause' : 'play'} size={16} color={GOLD} />
             </TouchableOpacity>
             <View style={{ flex: 1, gap: 3 }}>
-              <Text style={{ fontSize: 11.5, fontWeight: '800', color: customer ? '#5AC8FA' : GOLD }}>{customer ? `${v.by_name || 'Customer'} · customer` : v.by_name || 'Rep'} · {fmt(v.duration || 0)} · {when(v.created_at)}</Text>
+              <Text style={{ fontSize: 11.5, fontWeight: '800', color: customer ? '#5AC8FA' : GOLD }}>{customer ? `${v.by_name || 'Customer'} · customer` : v.by_name || 'Rep'} · {fmt(v.duration || 0)} · {when(v.created_at)}{v.findings_count ? ` · ${v.findings_count} issue${v.findings_count === 1 ? '' : 's'} to confirm` : ''}</Text>
               <Text style={{ fontSize: 13.5, color: v.transcript ? colors.text : colors.textSecondary, lineHeight: 19, fontStyle: v.transcript ? 'normal' : 'italic' }} {...tid(`voice-note-text-${v.id}`)}>{v.transcript || 'No words could be made out. Listen to the clip.'}</Text>
             </View>
             {!readOnly ? (
