@@ -5,6 +5,15 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 
 ---
 
+### 58 · Oct 8 — DONE / DEPLOY + EAS UPDATE (push leak: owner got Kira's Morning Brief)
+> i continue to get notifications as if i'm kira.. this is not ok at all!!!!
+
+ROOT CAUSE (code, confirmed): `POST /push/subscribe-native/{user_id}` upserted on (user_id, token), so one phone could be bound to many people. The app registers the phone's push token on every launch for whoever is signed in, INCLUDING while a super-admin is in "view as" (impersonation) mode, so the owner's phone got bound to Kira the moment he viewed as Kira, and Kira's 7 AM Morning Brief then went to his phone. Nothing in the digest itself crosses users; the device table did.
+FIX: (1) one device = one person: registering a token unbinds it from every other user; same for web push endpoints. (2) impersonate_* sessions never bind and actively remove a stale binding to the viewed user (backend guard, so even the OLD app build is safe after deploy). (3) sign-out now calls `DELETE /push/unsubscribe-native/{user_id}` with the phone's token. (4) startup self-heal `dedupe_push_devices()` keeps only the newest owner per device in prod. App: `_layout.tsx` skips registration while impersonating; `authStore.logout` unbinds. Tests: `tests/test_push_device_binding.py` 4/4.
+OWNER ACTION: after deploy, open the app once signed in as yourself so your phone re-binds to you (it happens automatically on launch).
+
+---
+
 ### 57 · Oct 8 — DONE / DEPLOY + EAS UPDATE (full-screen photos on the desk + trade-link text in the inbox thread)
 > As a manager I want to be able to click on photos submitted and have them expand full screen so I can see them better
 > I text Bridget the link to submit his trade but it doesn't show in the inbox text thread that I did

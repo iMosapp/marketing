@@ -96,6 +96,7 @@ export default function RootLayout() {
   const mode = useThemeStore((state) => state.mode);
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isImpersonating = useAuthStore((state) => state.isImpersonating);
   const authLoading = useAuthStore((state) => state.isLoading);
   const segments = useSegments();
   const [mounted, setMounted] = useState(false);
@@ -238,12 +239,21 @@ export default function RootLayout() {
     import('../services/installBeacon').then(m => m.claimInstall(user._id));
   }, [isAuthenticated, user?._id]);
 
-  // Register push token whenever user is authenticated — runs after BOTH fresh login AND session restore
+  // Register push token whenever user is authenticated — runs after BOTH fresh login AND session restore.
+  // Never while a super-admin is viewing as someone else: this phone belongs to the admin, not the person being viewed.
   useEffect(() => {
     if (!isAuthenticated || !user?._id || Platform.OS === 'web') return;
     const registerPush = async () => {
       try {
         const Notifications = await import('expo-notifications');
+        if (isImpersonating || user?.isImpersonating) {
+          const stored = await AsyncStorage.getItem('expo_push_token');
+          if (stored) {
+            const { default: apiInstance } = await import('../services/api');
+            await apiInstance.delete(`/push/unsubscribe-native/${user._id}`, { data: { expo_push_token: stored } }).catch(() => {});
+          }
+          return;
+        }
         const { status: existing } = await Notifications.getPermissionsAsync();
         let finalStatus = existing;
         if (existing !== 'granted') {
@@ -265,6 +275,7 @@ export default function RootLayout() {
             platform: Platform.OS,
             timezone,
           });
+          await AsyncStorage.setItem('expo_push_token', tokenData.data).catch(() => {});
           console.log('[Push] ✅ Token registered:', tokenData.data.slice(0, 25) + '...');
         }
       } catch (err: any) {
@@ -277,7 +288,7 @@ export default function RootLayout() {
     };
     const t = setTimeout(registerPush, 3000);
     return () => clearTimeout(t);
-  }, [isAuthenticated, user?._id]);
+  }, [isAuthenticated, user?._id, isImpersonating]);
 
   // Re-check auth when PWA comes back from background (iOS aggressively kills JS context)
   useEffect(() => {

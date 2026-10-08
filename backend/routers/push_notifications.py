@@ -99,19 +99,46 @@ async def get_vapid_key():
     return {"public_key": VAPID_PUBLIC_KEY}
 
 
+def _impersonating(request: Request) -> bool:
+    """Super-admin 'view as' sessions carry an impersonate_* bearer; a device must never be bound to the person being viewed."""
+    auth = request.headers.get("Authorization") or ""
+    return auth.replace("Bearer ", "", 1).strip().startswith("impersonate_")
+
+
+async def dedupe_push_devices() -> dict:
+    """One device = one person. Where a push token / web endpoint is registered to several users, keep only the newest registration."""
+    db = get_db()
+    out = {"expo_removed": 0, "web_removed": 0}
+    for coll, key, field in ((db.expo_push_tokens, "expo_push_token", "expo_removed"), (db.push_subscriptions, "endpoint", "web_removed")):
+        dups = await coll.aggregate([{"$match": {key: {"$ne": None}}}, {"$group": {"_id": f"${key}", "n": {"$sum": 1}}}, {"$match": {"n": {"$gt": 1}}}]).to_list(5000)
+        for d in dups:
+            docs = await coll.find({key: d["_id"]}).sort([("updated_at", -1), ("created_at", -1)]).to_list(50)
+            losers = [x["_id"] for x in docs[1:]]
+            if losers:
+                r = await coll.delete_many({"_id": {"$in": losers}})
+                out[field] += r.deleted_count
+                logger.warning(f"[Push] device {str(d['_id'])[:24]}... was bound to {len(docs)} users; kept {docs[0].get('user_id')}, dropped {[x.get('user_id') for x in docs[1:]]}")
+    return out
+
+
 @router.post("/subscribe/{user_id}")
-async def subscribe(user_id: str, data: dict):
-    """Store a push subscription for a user."""
+async def subscribe(user_id: str, data: dict, request: Request):
+    """Store a push subscription for a user. A browser endpoint belongs to exactly one person."""
     db = get_db()
     subscription = data.get("subscription")
     if not subscription or not subscription.get("endpoint"):
         raise HTTPException(status_code=400, detail="Invalid subscription")
+    if _impersonating(request):
+        await db.push_subscriptions.delete_many({"endpoint": subscription["endpoint"], "user_id": user_id})
+        return {"status": "skipped", "reason": "impersonating"}
+    await db.push_subscriptions.delete_many({"endpoint": subscription["endpoint"], "user_id": {"$ne": user_id}})
 
     await db.push_subscriptions.update_one(
         {"user_id": user_id, "endpoint": subscription["endpoint"]},
         {
             "$set": {
                 "user_id": user_id,
+                "endpoint": subscription["endpoint"],
                 "subscription": subscription,
                 "updated_at": datetime.now(timezone.utc),
             },
@@ -376,13 +403,21 @@ async def diagnose_push_test(user_id: str):
 
 @router.post("/subscribe-native/{user_id}")
 async def subscribe_native_push(user_id: str, request: Request):
-    """Store Expo push token for native iOS/Android push notifications."""
+    """Store Expo push token for native iOS/Android push notifications. A device token belongs to exactly one person: registering it
+    here unbinds it from anyone else, and a super-admin viewing as another user never binds their own phone to that user."""
     db = get_db()
     data = await request.json()
     expo_token = data.get("expo_push_token", "")
     platform = data.get("platform", "ios")
     if not expo_token:
         raise HTTPException(status_code=400, detail="expo_push_token required")
+    if _impersonating(request):
+        r = await db.expo_push_tokens.delete_many({"expo_push_token": expo_token, "user_id": user_id})
+        logger.info(f"[Push] impersonation session: not binding device {expo_token[:20]}... to {user_id} (removed {r.deleted_count} stale)")
+        return {"success": True, "registered": False, "reason": "impersonating"}
+    moved = await db.expo_push_tokens.delete_many({"expo_push_token": expo_token, "user_id": {"$ne": user_id}})
+    if moved.deleted_count:
+        logger.warning(f"[Push] device {expo_token[:20]}... moved to user {user_id}; unbound from {moved.deleted_count} other user(s)")
     await db.expo_push_tokens.update_one(
         {"user_id": user_id, "expo_push_token": expo_token},
         {"$set": {
@@ -401,6 +436,19 @@ async def subscribe_native_push(user_id: str, request: Request):
             logger.debug(f"[Push] timezone refresh skipped: {e}")
     logger.info(f"[Push] ✅ Native Expo token registered for user {user_id} ({platform}): {expo_token[:20]}...")
     return {"success": True, "registered": True}
+
+
+@router.delete("/unsubscribe-native/{user_id}")
+async def unsubscribe_native_push(user_id: str, request: Request):
+    """Called on sign-out: this phone no longer belongs to this person."""
+    db = get_db()
+    data = await request.json()
+    expo_token = (data or {}).get("expo_push_token", "")
+    if not expo_token:
+        raise HTTPException(status_code=400, detail="expo_push_token required")
+    r = await db.expo_push_tokens.delete_many({"expo_push_token": expo_token, "user_id": user_id})
+    logger.info(f"[Push] device {expo_token[:20]}... unbound from user {user_id} ({r.deleted_count})")
+    return {"success": True, "removed": r.deleted_count}
 
 
 @router.post("/log-error")

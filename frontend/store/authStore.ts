@@ -313,6 +313,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   logout: async () => {
+    // This phone stops belonging to this person before anything else is cleared
+    try {
+      const { user: leaving } = get();
+      const pushToken = await AsyncStorage.getItem('expo_push_token');
+      if (leaving?._id && pushToken) {
+        const { default: api } = await import('../services/api');
+        await api.delete(`/push/unsubscribe-native/${leaving._id}`, { data: { expo_push_token: pushToken }, timeout: 4000 });
+      }
+    } catch {}
     try { await AsyncStorage.removeItem('auth_token'); } catch {}
     try { await AsyncStorage.removeItem('user'); } catch {}
     try { await AsyncStorage.removeItem('original_auth'); } catch {}

@@ -1871,6 +1871,18 @@ async def startup_event():
             logger.warning(f"[Startup] Voice note backfill skipped: {e}")
     _aio2.create_task(_voice_note_backfill())
 
+    # Self-heal: a phone/browser push device must belong to exactly one person. Super-admin "view as" sessions used to
+    # bind the admin's phone to the viewed user, so that user's Morning Brief landed on the admin's phone.
+    async def _push_device_dedupe():
+        try:
+            from routers.push_notifications import dedupe_push_devices
+            r = await dedupe_push_devices()
+            if r.get("expo_removed") or r.get("web_removed"):
+                logger.warning(f"[Startup] Push device dedupe: {r}")
+        except Exception as e:
+            logger.warning(f"[Startup] Push device dedupe skipped: {e}")
+    _aio2.create_task(_push_device_dedupe())
+
     # ONE-TIME migration: birthday/anniversary sends become manual opt-in.
     # Wipes previously auto-applied Birthday/Anniversary tags and cancels
     # enrollments created by the old save-time auto-enroll (which fired
