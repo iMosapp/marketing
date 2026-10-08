@@ -16,6 +16,7 @@ from services.appraisals import followup  # noqa: E402
 REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
 OTHER_ORG_ADMIN = ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!")
 SARAH = "6aa413008f0d53e3f2261853"
+REP_ID = "6a978d68b8673c29063aa8b9"
 VIN = "2T3DWRFV3LW077677"  # decodes at NHTSA: 2020 Toyota RAV4
 
 
@@ -108,6 +109,15 @@ def test_sms_channel_needs_a_phone_or_sends(rep):
         assert st in (200, 400), b
         if st == 200:
             assert b["intake"]["sent_via"] == "sms" and b["intake"]["sent_to"]
+            # the text shows in the rep's inbox thread with the customer, as a sent bubble
+            st, convs = call("GET", f"/api/messages/conversations/{REP_ID}", None, rep)
+            assert st == 200
+            conv = next((c for c in (convs if isinstance(convs, list) else convs.get("conversations", [])) if str(c.get("contact_id")) == SARAH), None)
+            assert conv, "no inbox conversation with Sarah"
+            st, t = call("GET", f"/api/messages/thread/{conv.get('id') or conv.get('_id')}", None, rep)
+            msgs = t if isinstance(t, list) else t.get("messages", [])
+            mine = [m for m in msgs if b["intake"]["short_url"] in (m.get("content") or "")]
+            assert mine and mine[-1]["sender"] == "user" and mine[-1].get("status") in ("sent", "sent_mock", "delivered"), mine[-1:] or msgs[-2:]
         else:
             assert "phone" in b["detail"].lower() or "Text failed" in b["detail"]
     finally:

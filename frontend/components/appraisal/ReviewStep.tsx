@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,6 +7,7 @@ import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { StepTitle, SourceTag, money, miles } from './shared';
 import { SubmitPanel } from './SubmitPanel';
 import { VoiceNotes } from './VoiceNotes';
+import { MediaViewer } from './MediaViewer';
 
 type Props = { colors: any; appraisal: any; onEdit: (step: string) => void; onSaved?: (appraisal: any) => void; showToast?: (m: string, t?: any, d?: number) => void; readOnly?: boolean };
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
@@ -14,6 +15,7 @@ const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined
 // Value + summary. Editable: live suggested ACV and the Submit button on top of the rows. Read-only (after submission): just the frozen record.
 export const ReviewStep = ({ colors, appraisal, onEdit, onSaved, showToast, readOnly }: Props) => {
   const router = useRouter();
+  const [viewer, setViewer] = useState<number | null>(null);
   const v = appraisal.vehicle || {};
   const i = appraisal.inspection;
   const mk = appraisal.market;
@@ -54,16 +56,18 @@ export const ReviewStep = ({ colors, appraisal, onEdit, onSaved, showToast, read
         <View style={{ gap: 8 }}>
           <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6 }}>MEDIA · {appraisal.media.length}</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {appraisal.media.map((m: any) => (
-              <View key={m.id} style={{ width: 104, gap: 4 }} {...tid(`review-media-${m.id}`)}>
+            {appraisal.media.map((m: any, idx: number) => (
+              <TouchableOpacity key={m.id} onPress={() => setViewer(idx)} activeOpacity={0.85} style={{ width: 104, gap: 4 }} {...tid(`review-media-${m.id}`)}>
                 <View style={{ width: 104, height: 78, borderRadius: 10, overflow: 'hidden', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
                   {m.thumb_url ? <Image source={{ uri: resolvePhotoUrl(m.thumb_url) || '' }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Ionicons name={m.kind === 'video' ? 'videocam' : 'image'} size={22} color={GOLD} />}
+                  {m.kind === 'video' ? <View style={{ position: 'absolute', left: 6, bottom: 6, backgroundColor: '#000000AA', borderRadius: 6, padding: 3 }}><Ionicons name="play" size={10} color="#fff" /></View> : null}
                 </View>
                 <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }} numberOfLines={1}>{m.role_label}</Text>
                 <SourceTag source={m.source} colors={colors} />
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
+          <MediaViewer colors={colors} media={appraisal.media} index={viewer} onClose={() => setViewer(null)} />
         </View>
       ) : null}
       {appraisal.history?.length > 1 ? (

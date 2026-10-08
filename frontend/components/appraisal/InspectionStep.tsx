@@ -13,6 +13,7 @@ import { FindingEditor } from './FindingEditor';
 import { ConditionReport } from './ConditionReport';
 import { EvidenceViewer } from './EvidenceViewer';
 import { VoiceNotes } from './VoiceNotes';
+import { MediaViewer } from './MediaViewer';
 import type { useAppraisalMedia, MediaSource } from '../../hooks/useAppraisalMedia';
 
 type Props = { colors: any; appraisal: any; media: ReturnType<typeof useAppraisalMedia>; onSaved: (appraisal: any) => void; showToast: (m: string, t?: any, d?: number) => void };
@@ -26,6 +27,7 @@ export const InspectionStep = ({ colors, appraisal, media, onSaved, showToast }:
   const [source, setSource] = useState<MediaSource>(appraisal.mode === 'customer_sent' ? 'customer_supplied' : 'uploaded_by_rep');
   const [editor, setEditor] = useState<{ finding?: any } | null>(null);
   const [evidence, setEvidence] = useState<any | null>(null);
+  const [viewer, setViewer] = useState<number | null>(null);
   const [acting, setActing] = useState(false);
 
   const load = useCallback(async () => {
@@ -74,7 +76,8 @@ export const InspectionStep = ({ colors, appraisal, media, onSaved, showToast }:
       <StepTitle colors={colors} title="AI Vehicle Inspection" sub={appraisal.mode === 'customer_sent' ? GUIDE_SENT : GUIDE_HERE} />
       <InspectionCapture colors={colors} mode={appraisal.mode} media={media} source={source} onSource={setSource} onDone={load} disabled={busy} />
       <BusyBar text={media.busy} colors={colors} />
-      <InspectionMedia colors={colors} media={mediaList} processed={insp?.processed_media_ids || []} onDelete={remove} busy={busy} />
+      <InspectionMedia colors={colors} media={mediaList} processed={insp?.processed_media_ids || []} onDelete={remove} busy={busy} onOpen={(m) => setViewer(inspectable.findIndex((x: any) => x.id === m.id))} />
+      <MediaViewer colors={colors} media={inspectable} index={viewer} onClose={() => setViewer(null)} />
       <VoiceNotes colors={colors} appraisal={appraisal} onSaved={onSaved} showToast={showToast} />
       {running ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: GOLD }} {...tid('inspect-running')}>

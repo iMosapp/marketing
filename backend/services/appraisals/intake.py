@@ -48,6 +48,30 @@ async def _store_name(db, appr: dict) -> str:
     return (st or {}).get("name") or "the dealership"
 
 
+async def _thread_log(db, appr: dict, me: dict, *, phone: str, body: str, res: dict, rep_number: Optional[str]):
+    """Put the bubble in the rep's inbox thread with this customer, on the same (rep number, customer number) key the Twilio webhook uses,
+    so the text shows as sent and the customer's reply lands beside it."""
+    from bson import ObjectId
+    from services.tag_workflows import initial_ai_state
+    from services.twilio_service import normalize_phone
+    from utils.activity_log import log_activity
+    now = _now()
+    uid, cid = str(me["_id"]), str(appr.get("contact_id") or "")
+    to_norm = normalize_phone(phone)
+    conv = await db.conversations.find_one({"rep_phone": rep_number, "contact_phone": to_norm}) if rep_number and to_norm else None
+    if not conv and cid:
+        conv = await db.conversations.find_one({"user_id": uid, "contact_id": {"$in": [cid, ObjectId(cid)] if ObjectId.is_valid(cid) else [cid]}}, sort=[("last_message_at", -1)])
+    if not conv:
+        conv = {"user_id": uid, "rep_phone": rep_number, "contact_id": cid, "contact_phone": to_norm, "contact_name": appr.get("contact_name"), "status": "active",
+                **(await initial_ai_state(db, cid)), "unread": False, "unread_count": 0, "needs_assistance": False, "created_at": now, "last_message_at": now}
+        conv["_id"] = (await db.conversations.insert_one(conv)).inserted_id
+    sid = res.get("message_sid") or res.get("sid")
+    await db.messages.insert_one({"conversation_id": str(conv["_id"]), "user_id": uid, "contact_id": cid, "content": body, "sender": "user", "direction": "outbound", "channel": "sms",
+                                  "kind": "trade_link", "appraisal_id": str(appr["_id"]), "twilio_sid": sid, "status": "sent_mock" if res.get("mock") else "sent", "timestamp": now})
+    await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"last_message_at": now, "last_message": body[:200], "last_message_sender": "user", "rep_engaged": True, "rep_last_replied_at": now}})
+    await log_activity(db, user_id=uid, contact_id=cid, event_type="sms_sent", description="Customer trade link texted", channel="sms", ref=sid, metadata={"appraisal_id": str(appr["_id"]), "kind": "trade_link"})
+
+
 async def create_link(db, appr: dict, me: dict, *, channel: str = "copy") -> dict:
     """Mint (or reuse an unexpired) link, optionally text it. Mode becomes customer_sent because that is what is happening."""
     from routers.short_urls import create_short_url
@@ -70,7 +94,7 @@ async def create_link(db, appr: dict, me: dict, *, channel: str = "copy") -> dic
         await audit(db, appr, me, "intake_link_created", f"Customer trade link created, good for {LINK_DAYS} days")
     sent_note = ""
     if channel == "sms":
-        from services.twilio_service import send_sms
+        from services.twilio_service import send_sms, get_rep_twilio_number
         contact = await db.contacts.find_one({"_id": _oid(appr["contact_id"])}, {"phone": 1, "first_name": 1, "name": 1}) if appr.get("contact_id") else None
         phone = (contact or {}).get("phone")
         if not phone:
@@ -79,9 +103,11 @@ async def create_link(db, appr: dict, me: dict, *, channel: str = "copy") -> dic
         veh = core.vehicle_label(appr.get("vehicle") or {}) if appr.get("vehicle") else None
         msg = (f"Hi {_first(appr.get('contact_name'))}, it's {_first(_name(me))} at {store}. Tap this link to send me your {veh or 'vehicle'}'s VIN, mileage and a few photos "
                f"so I can work up a real number for your trade: {intake['short_url']} Takes about 3 minutes.")
-        res = await send_sms(phone, msg, org_id=appr.get("organization_id"), user_id=str(me["_id"]), contact_id=appr.get("contact_id"))
-        if not (res or {}).get("success", True) and (res or {}).get("error"):
+        rep_number = await get_rep_twilio_number(str(me["_id"]))
+        res = await send_sms(phone, msg, from_phone=rep_number, org_id=appr.get("organization_id"), user_id=str(me["_id"]), contact_id=appr.get("contact_id")) or {}
+        if not res.get("success", True) and res.get("error"):
             raise ValueError(f"Text failed: {res['error']}")
+        await _thread_log(db, appr, me, phone=phone, body=msg, res=res, rep_number=rep_number)
         intake.update({"sent_at": now, "sent_via": "sms", "sent_to": phone})
         await db[A].update_one({"_id": appr["_id"]}, {"$set": {"intake.sent_at": now, "intake.sent_via": "sms", "intake.sent_to": phone, "updated_at": now}})
         sent_note = f" · texted to {phone}"
