@@ -5,6 +5,13 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 
 ---
 
+### 56 · Oct 8 — DONE / EAS UPDATE ONLY (home quick-actions order)
+> lets move appraise trade above sold
+
+Swapped the two entries in the home FAB list (`app/(tabs)/home.tsx`): Appraise trade now sits directly above SOLD! (SOLD! stays closest to the +). Frontend only.
+
+---
+
 ### 55 · Oct 7 — DONE / DEPLOY + EAS UPDATE (voice notes on appraisals)
 > I want to be able to record voice notes about the car also and if customer can great if not no big deal then transcribe those and add to description
 
