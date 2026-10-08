@@ -1,19 +1,36 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, Image, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { GOLD, tid } from '../../inbox/ownership';
+import api from '../../../services/api';
+import { GOLD, tid, errText } from '../../inbox/ownership';
 import { resolvePhotoUrl } from '../../../utils/photoUrl';
 import { Chip, GRADE_COLORS, SEVERITY_COLORS, money, miles } from '../shared';
 import { MarketSnapshotCard } from '../MarketSnapshotCard';
 import { ComparablesList } from '../ComparablesList';
 import { answerChips } from '../TradeLinkCard';
 import { VoiceNoteList } from '../VoiceNotes';
-import { MediaViewer } from '../MediaViewer';
+import { MediaViewer, type MarkupPayload } from '../MediaViewer';
 import { Snapshots } from '../Snapshots';
+import { MarkupBadge } from '../MarkupCanvas';
 
-// Tappable thumbnails; any one opens the full-screen viewer on that item.
-const MediaStrip = ({ colors, media, testPrefix }: { colors: any; media: any[]; testPrefix: string }) => {
+export type DeskActions = { appraisalId: string; onChanged: () => Promise<void> | void; showToast: (msg: string, type?: any, ms?: number) => void };
+
+// The manager draws on a photo or snapshot and sends it back: one call, then the desk reloads so the ink shows everywhere.
+export const useMarkup = (act?: DeskActions) => {
+  if (!act) return undefined;
+  return async (item: any, payload: MarkupPayload) => {
+    try {
+      await api.post(`/appraisals/${act.appraisalId}/markups`, { target_id: item.id, strokes: payload.strokes, note: payload.note });
+      act.showToast('Sent to the rep with your markup.', 'success', 3000);
+      await act.onChanged();
+    } catch (e) { act.showToast(errText(e, 'Could not send the markup'), 'error'); throw e; }
+  };
+};
+
+// Tappable thumbnails; any one opens the full-screen viewer on that item (with Mark up when the desk passes actions).
+const MediaStrip = ({ colors, media, testPrefix, act }: { colors: any; media: any[]; testPrefix: string; act?: DeskActions }) => {
   const [viewer, setViewer] = useState<number | null>(null);
+  const onMarkup = useMarkup(act);
   if (!media.length) return null;
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -21,9 +38,10 @@ const MediaStrip = ({ colors, media, testPrefix }: { colors: any; media: any[]; 
         <TouchableOpacity key={m.id} onPress={() => setViewer(idx)} activeOpacity={0.85} style={{ width: 72, height: 54, borderRadius: 8, overflow: 'hidden', backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid(`${testPrefix}-${m.id}`)}>
           {m.thumb_url ? <Image source={{ uri: resolvePhotoUrl(m.thumb_url) || '' }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Ionicons name={m.kind === 'video' ? 'videocam' : 'image'} size={18} color={GOLD} />}
           {m.kind === 'video' ? <View style={{ position: 'absolute', left: 4, bottom: 4, backgroundColor: '#000000AA', borderRadius: 5, padding: 2 }}><Ionicons name="play" size={9} color="#fff" /></View> : null}
+          <MarkupBadge count={m.markups?.length} testId={`${testPrefix}-markup-${m.id}`} />
         </TouchableOpacity>
       ))}
-      <MediaViewer colors={colors} media={media} index={viewer} onClose={() => setViewer(null)} />
+      <MediaViewer colors={colors} media={media} index={viewer} onClose={() => setViewer(null)} canMarkup={!!onMarkup} onMarkup={onMarkup} />
     </View>
   );
 };
@@ -56,10 +74,14 @@ export const CustomerWantsCard = ({ colors, a }: { colors: any; a: any }) => {
 };
 
 // CONDITION: Jessi's grade (or the human override), the confirmed issues the rep stood behind, and what is still unreviewed.
-export const ConditionCard = ({ colors, inspection }: { colors: any; inspection: any }) => {
+// With desk actions, every confirmed issue takes a dollar figure: priced findings itemize the recon line in the number.
+export const ConditionCard = ({ colors, inspection, recon, act }: { colors: any; inspection: any; recon?: any; act?: DeskActions }) => {
   const r = inspection?.report;
   if (!inspection) return <Card colors={colors} title="CONDITION" testId="desk-condition"><Text style={{ fontSize: 14, color: colors.textSecondary }}>No inspection on this appraisal.</Text></Card>;
   const color = GRADE_COLORS[r?.final_overall] || colors.textSecondary;
+  const priced = (r?.confirmed || []).filter((f: any) => f.recon_cost != null);
+  const total = priced.reduce((s: number, f: any) => s + (f.recon_cost || 0), 0);
+  const unpriced = (r?.confirmed || []).length - priced.length;
   return (
     <Card colors={colors} title="CONDITION · AI VEHICLE INSPECTION" testId="desk-condition"
       right={r?.final_overall_label ? <Chip label={`${r.final_overall_label.toUpperCase()}${r.overridden ? ' · OVERRIDE' : ''}`} color={color} testId="desk-condition-grade" /> : <Chip label={(inspection.status || 'not run').toUpperCase()} color={colors.textSecondary} />}>
@@ -67,18 +89,51 @@ export const ConditionCard = ({ colors, inspection }: { colors: any; inspection:
       {r?.override?.reason ? <Text style={{ fontSize: 12, color: colors.textSecondary }}>Override by {r.override.by_name}: {r.override.reason}</Text> : null}
       {r?.confirmed?.length ? (
         <View style={{ gap: 3 }}>
-          <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, marginTop: 4 }}>CONFIRMED ISSUES · {r.confirmed.length}</Text>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, marginTop: 4 }}>CONFIRMED ISSUES · {r.confirmed.length}{act ? ' · PRICE EACH TO ITEMIZE RECON' : ''}</Text>
           {r.confirmed.map((f: any) => (
             <View key={f.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }} {...tid(`desk-issue-${f.id}`)}>
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: SEVERITY_COLORS[f.severity] || colors.textSecondary }} />
-              <Text style={{ flex: 1, fontSize: 13.5, color: colors.text }}><Text style={{ fontWeight: '800' }}>{f.location_label}</Text>  {f.severity_label} {f.subtype_label}</Text>
+              <Text style={{ flex: 1, fontSize: 13.5, color: colors.text }}><Text style={{ fontWeight: '800' }}>{f.location_label}</Text>  {f.severity_label} {f.subtype_label}{!act && f.recon_cost != null ? <Text style={{ color: '#34C759', fontWeight: '800' }}>  {money(f.recon_cost)}</Text> : null}</Text>
               {f.evidence?.[0]?.thumb_url ? <Image source={{ uri: resolvePhotoUrl(f.evidence[0].thumb_url) || '' }} style={{ width: 44, height: 34, borderRadius: 6 }} /> : null}
+              {act ? <ReconPrice colors={colors} finding={f} act={act} /> : null}
             </View>
           ))}
+          {priced.length || (act && unpriced) ? (
+            <Text style={{ fontSize: 12.5, fontWeight: '700', color: priced.length ? '#34C759' : colors.textSecondary, marginTop: 2 }} {...tid('desk-recon-total')}>
+              {priced.length ? `Itemized recon ${money(total)} · ${priced.length} item${priced.length === 1 ? '' : 's'}` : 'No findings priced yet'}{unpriced ? ` · ${unpriced} unpriced${priced.length ? ' (flat allowance still covers them)' : ' (flat allowance applies)'}` : priced.length ? ' · replaces the flat allowance' : ''}
+            </Text>
+          ) : null}
         </View>
       ) : r ? <Text style={{ fontSize: 13, color: colors.textSecondary }}>No confirmed issues.</Text> : null}
       {(r?.pending?.length || r?.possible?.length) ? <Text style={{ fontSize: 12, fontWeight: '700', color: '#FF9500' }} {...tid('desk-condition-unreviewed')}>{(r.pending?.length || 0) + (r.possible?.length || 0)} finding{((r.pending?.length || 0) + (r.possible?.length || 0)) > 1 ? 's' : ''} not reviewed by the rep yet.</Text> : null}
     </Card>
+  );
+};
+
+// One dollar box per confirmed finding. Enter or blur saves; empty clears. The number re-freezes on the server and the desk reloads.
+const ReconPrice = ({ colors, finding: f, act }: { colors: any; finding: any; act: DeskActions }) => {
+  const [val, setVal] = useState(f.recon_cost != null ? String(f.recon_cost) : '');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { setVal(f.recon_cost != null ? String(f.recon_cost) : ''); }, [f.recon_cost]);
+  const save = async () => {
+    const digits = val.replace(/[^0-9]/g, '');
+    const amount = digits ? parseInt(digits, 10) : null;
+    if (amount === (f.recon_cost ?? null)) return;
+    setBusy(true);
+    try {
+      const r = await api.post(`/appraisals/${act.appraisalId}/inspection/findings/${f.id}/recon`, { amount });
+      act.showToast(amount == null ? 'Price removed. Flat allowance applies again.' : r.data?.calculation ? `Priced at ${money(amount)}. Number re-frozen as calc v${r.data.calculation.version}.` : `Priced at ${money(amount)}.`, 'success', 3500);
+      await act.onChanged();
+    } catch (e) { act.showToast(errText(e, 'Could not save the price'), 'error'); setVal(f.recon_cost != null ? String(f.recon_cost) : ''); }
+    finally { setBusy(false); }
+  };
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, height: 34, paddingHorizontal: 8, borderRadius: 9, borderWidth: 1, borderColor: f.recon_cost != null ? '#34C759' : colors.border, backgroundColor: colors.bg, minWidth: 92 }}>
+      <Text style={{ fontSize: 13, fontWeight: '800', color: f.recon_cost != null ? '#34C759' : colors.textSecondary }}>$</Text>
+      <TextInput value={val} onChangeText={(t) => setVal(t.replace(/[^0-9]/g, '').slice(0, 5))} onBlur={save} onSubmitEditing={save} keyboardType="number-pad" returnKeyType="done" placeholder="price" placeholderTextColor={colors.textSecondary}
+        editable={!busy} style={{ flex: 1, fontSize: 14, fontWeight: '800', color: colors.text, paddingVertical: 0, minWidth: 48 }} {...tid(`desk-recon-${f.id}`)} />
+      {busy ? <ActivityIndicator size="small" color={GOLD} /> : null}
+    </View>
   );
 };
 
@@ -110,7 +165,7 @@ const Books = ({ colors, rows }: { colors: any; rows: any[] }) => (
 );
 
 // WHAT THE CUSTOMER SENT through the trade link (answers, notes, a number in mind). Reference only; the rep confirmed VIN and mileage in the steps.
-export const CustomerIntakeCard = ({ colors, a }: { colors: any; a: any }) => {
+export const CustomerIntakeCard = ({ colors, a, act }: { colors: any; a: any; act?: DeskActions }) => {
   const ci = a.customer_intake;
   if (!ci) return null;
   const chips = answerChips(ci.condition);
@@ -120,22 +175,26 @@ export const CustomerIntakeCard = ({ colors, a }: { colors: any; a: any }) => {
       <Text style={{ fontSize: 12, color: colors.textSecondary }}>Sent {ci.submitted_at ? new Date(ci.submitted_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}{ci.zip ? ` · vehicle in ${ci.zip}` : ''}{ci.mileage != null ? ` · reported ${miles(ci.mileage)}` : ''}{photos.length ? ` · ${photos.length} photo${photos.length === 1 ? '' : 's'}` : ''}</Text>
       {chips.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{chips.map(c => <View key={c} style={{ borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border }}><Text style={{ fontSize: 11.5, fontWeight: '700', color: colors.text }}>{c}</Text></View>)}</View> : null}
       {ci.notes ? <Text style={{ fontSize: 13.5, color: colors.text, lineHeight: 19, fontStyle: 'italic' }} {...tid('desk-customer-notes')}>"{ci.notes}"</Text> : null}
-      <MediaStrip colors={colors} media={photos} testPrefix="desk-customer-media" />
+      <MediaStrip colors={colors} media={photos} testPrefix="desk-customer-media" act={act} />
       {ci.wants ? <Text style={{ fontSize: 12.5, color: colors.textSecondary }} {...tid('desk-customer-wants-hint')}>Mentioned a number in mind on the link: ${Math.round(ci.wants).toLocaleString()} (not the recorded expectation unless the rep asked)</Text> : null}
     </Card>
   );
 };
 
 // REP NOTES + MEDIA + VEHICLE HISTORY + AUDIT TRAIL.
-export const RepCard = ({ colors, a }: { colors: any; a: any }) => (
-  <Card colors={colors} title={`FROM ${(a.user_name || 'THE SALESPERSON').toUpperCase()}`} testId="desk-rep">
-    <Text style={{ fontSize: 13.5, color: a.notes ? colors.text : colors.textSecondary, lineHeight: 19 }} {...tid('desk-notes')}>{a.notes || 'No notes.'}</Text>
-    <VoiceNoteList colors={colors} appraisal={a} readOnly />
-    <Text style={{ fontSize: 12, color: colors.textSecondary }}>{a.mode_label}{a.vin ? ` · VIN ${a.vin}` : ' · no VIN'}{a.stock_number ? ` · stock ${a.stock_number}` : ''}{a.mileage_confirmed != null ? ` · ${miles(a.mileage_confirmed)}` : ''}{a.mileage_detected != null && a.mileage_detected !== a.mileage_confirmed ? ` (Jessi read ${miles(a.mileage_detected)})` : ''}</Text>
-    {a.media?.length ? <MediaStrip colors={colors} media={a.media} testPrefix="desk-media" /> : null}
-    <Snapshots colors={colors} snapshots={a.snapshots || []} media={a.media || []} testPrefix="desk-snapshot" size={72} />
-  </Card>
-);
+export const RepCard = ({ colors, a, act }: { colors: any; a: any; act?: DeskActions }) => {
+  const onMarkup = useMarkup(act);
+  return (
+    <Card colors={colors} title={`FROM ${(a.user_name || 'THE SALESPERSON').toUpperCase()}`} testId="desk-rep">
+      <Text style={{ fontSize: 13.5, color: a.notes ? colors.text : colors.textSecondary, lineHeight: 19 }} {...tid('desk-notes')}>{a.notes || 'No notes.'}</Text>
+      <VoiceNoteList colors={colors} appraisal={a} readOnly />
+      <Text style={{ fontSize: 12, color: colors.textSecondary }}>{a.mode_label}{a.vin ? ` · VIN ${a.vin}` : ' · no VIN'}{a.stock_number ? ` · stock ${a.stock_number}` : ''}{a.mileage_confirmed != null ? ` · ${miles(a.mileage_confirmed)}` : ''}{a.mileage_detected != null && a.mileage_detected !== a.mileage_confirmed ? ` (Jessi read ${miles(a.mileage_detected)})` : ''}</Text>
+      {a.media?.length ? <MediaStrip colors={colors} media={a.media} testPrefix="desk-media" act={act} /> : null}
+      <Snapshots colors={colors} snapshots={a.snapshots || []} media={a.media || []} testPrefix="desk-snapshot" size={72} canMarkup={!!onMarkup} onMarkup={onMarkup} />
+      {act ? <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>Open any photo or snapshot and tap Mark up to circle something for {a.user_name || 'the rep'}.</Text> : null}
+    </Card>
+  );
+};
 
 export const HistoryCard = ({ colors, a }: { colors: any; a: any }) => {
   const prev = (a.history || []).filter((h: any) => h.id !== a.id);

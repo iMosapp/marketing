@@ -104,11 +104,13 @@ async def gather_inputs(db, appr: dict) -> dict:
     cond = {"overall": ins.get("final_overall"), "label": ins.get("final_overall_label"), "confirmed": ins.get("confirmed"), "overridden": ins.get("overridden"),
             "inspection_status": ins.get("status")} if ins else None
     ins_doc = await db["appraisal_inspections"].find_one({"appraisal_id": str(appr["_id"])}, {"run_count": 1, "updated_at": 1})
+    recon = await inspection.recon_items(db, appr)
     eff = await rulesvc.effective(db, appr.get("organization_id"), appr.get("store_id"))
     return {"vehicle": appr.get("vehicle") or {}, "mileage": appr.get("mileage_confirmed"), "condition": cond, "market": mkt, "book_values": appr.get("book_values") or [],
             "customer_expected_value": appr.get("customer_expected_value"), "market_snapshot_id": str(snap["_id"]) if snap else None,
             "inspection_id": str(ins_doc["_id"]) if ins_doc else None, "inspection_run_count": (ins_doc or {}).get("run_count"), "rules_version": eff["version"],
             "rules_source": eff["source"], "rules_id": eff["rules_id"], "rules_snapshot": eff["rules"], "now_year": _now().year,
+            "recon_items": recon["items"], "recon_unpriced": recon["unpriced"], "recon_confirmed": recon["confirmed"],
             "allow_development_basis": development_basis_allowed()}
 
 
@@ -121,7 +123,7 @@ def development_basis_allowed() -> bool:
 def run_engine(inputs: dict) -> dict:
     out = engine.calculate(vehicle=inputs["vehicle"], mileage=inputs["mileage"], condition=inputs["condition"], market=inputs["market"], book_values=inputs["book_values"],
                            customer_expected_value=inputs["customer_expected_value"], rules=inputs["rules_snapshot"], now_year=inputs["now_year"],
-                           allow_development_basis=bool(inputs.get("allow_development_basis")))
+                           allow_development_basis=bool(inputs.get("allow_development_basis")), recon_items=inputs.get("recon_items") or [], recon_unpriced=int(inputs.get("recon_unpriced") or 0))
     out["warnings"] = list(dict.fromkeys(out["warnings"] + rulesvc.double_count_warnings(inputs["rules_snapshot"])))
     return out
 
@@ -131,7 +133,28 @@ def public_calc(c: dict) -> dict:
     return {"id": str(c["_id"]), "version": c.get("version"), "trigger": c.get("trigger"), "output": c.get("output"), "engine_version": c.get("engine_version"),
             "rules_version": inp.get("rules_version"), "rules_source": inp.get("rules_source"), "market_snapshot_id": inp.get("market_snapshot_id"), "inspection_id": inp.get("inspection_id"),
             "inspection_run_count": inp.get("inspection_run_count"), "condition": inp.get("condition"), "market": inp.get("market"), "mileage": inp.get("mileage"),
-            "book_values": inp.get("book_values"), "customer_expected_value": inp.get("customer_expected_value"), "created_by_name": c.get("created_by_name"), "created_at": c.get("created_at")}
+            "book_values": inp.get("book_values"), "customer_expected_value": inp.get("customer_expected_value"), "recon_items": inp.get("recon_items") or [], "recon_unpriced": inp.get("recon_unpriced") or 0,
+            "created_by_name": c.get("created_by_name"), "created_at": c.get("created_at")}
+
+
+DESK_OPEN = ("submitted", "resubmitted", "needs_info")
+
+
+async def refresh_number(db, appr: dict, me: dict, trigger: str) -> Optional[dict]:
+    """The desk changed an input after submission (priced the recon): freeze a new calculation version and move the appraisal's suggested numbers to it.
+    Drafts need nothing (the rep's preview is live); approved or closed appraisals keep the number the manager signed."""
+    if appr.get("status") not in DESK_OPEN or not appr.get("calculation_id"):
+        return None
+    calc = await snapshot_calculation(db, appr, me, trigger)
+    out, inp = calc["output"], calc["inputs"]
+    extra = {"suggested_acv": out["suggested_acv"], "suggested_low": out["suggested_low"], "suggested_high": out["suggested_high"],
+             "suggested_range": {"low": out["suggested_low"], "high": out["suggested_high"]} if out["suggested_acv"] is not None else None,
+             "calculation_id": str(calc["_id"]), "calculation_version": calc["version"], "rules_version": inp["rules_version"], "rules_source": inp["rules_source"],
+             "manager_review_required": out["manager_review_required"], "review_reasons": out["review_reasons"], "updated_at": _now()}
+    await db[A].update_one({"_id": appr["_id"]}, {"$set": extra})
+    await audit(db, appr, me, "number_refreshed", f"Suggested ACV {_money(out['suggested_acv'])} · calc v{calc['version']} · {trigger.replace('_', ' ')}",
+                meta={"calculation_id": str(calc["_id"]), "trigger": trigger})
+    return calc
 
 
 async def preview(db, appr: dict) -> dict:
@@ -484,6 +507,7 @@ async def desk_detail(db, appr: dict, me: dict) -> dict:
     out["activity"] = await core.activity(db, appr)
     out["media"] = await core.list_media(db, appr)
     out["snapshots"] = await core.list_snapshots(db, appr)
+    out["recon"] = await inspection.recon_items(db, appr)
     mk = await market.read(db, appr, me)
     out["market"] = {k: mk.get(k) for k in ("provider", "snapshot", "comparables", "book_values", "match_labels", "history")}
     ins_doc = await db["appraisal_inspections"].find_one({"appraisal_id": str(appr["_id"])}, {"_id": 1})

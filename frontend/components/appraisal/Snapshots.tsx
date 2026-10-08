@@ -3,13 +3,14 @@ import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { GOLD, tid } from '../inbox/ownership';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
-import { MediaViewer } from './MediaViewer';
+import { MediaViewer, type MarkupPayload } from './MediaViewer';
+import { MarkupBadge } from './MarkupCanvas';
 
-type Props = { colors: any; snapshots: any[]; media?: any[]; testPrefix?: string; onRetry?: (video: any) => void; size?: number };
+type Props = { colors: any; snapshots: any[]; media?: any[]; testPrefix?: string; onRetry?: (video: any) => void; size?: number; canMarkup?: boolean; onMarkup?: (item: any, payload: MarkupPayload) => Promise<void> };
 
 // The stills Jessi pulled out of every walkaround video, as photos on the appraisal: a grid anyone can tap into full screen.
 // While a video is still being worked on it says so; a failed pull offers a retry (rep only).
-export const Snapshots = ({ colors, snapshots, media = [], testPrefix = 'snapshot', onRetry, size = 92 }: Props) => {
+export const Snapshots = ({ colors, snapshots, media = [], testPrefix = 'snapshot', onRetry, size = 92, canMarkup, onMarkup }: Props) => {
   const [viewer, setViewer] = useState<number | null>(null);
   const videos = media.filter(m => m.kind === 'video');
   const extracting = videos.filter(m => m.frames_status === 'extracting');
@@ -41,11 +42,12 @@ export const Snapshots = ({ colors, snapshots, media = [], testPrefix = 'snapsho
             <TouchableOpacity key={s.id} onPress={() => setViewer(idx)} activeOpacity={0.85} style={{ width: size, height: Math.round(size * 0.72), borderRadius: 10, overflow: 'hidden', backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border }} {...tid(`${testPrefix}-${s.id}`)}>
               {s.thumb_url ? <Image source={{ uri: resolvePhotoUrl(s.thumb_url) || '' }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Ionicons name="image" size={18} color={GOLD} />}
               {s.timestamp_label ? <View style={{ position: 'absolute', left: 4, bottom: 4, backgroundColor: '#000000AA', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}><Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{s.timestamp_label}</Text></View> : null}
+              <MarkupBadge count={s.markups?.length} testId={`${testPrefix}-markup-${s.id}`} />
             </TouchableOpacity>
           ))}
         </View>
       ) : null}
-      <MediaViewer colors={colors} media={snapshots} index={viewer} onClose={() => setViewer(null)} />
+      <MediaViewer colors={colors} media={snapshots} index={viewer} onClose={() => setViewer(null)} canMarkup={canMarkup} onMarkup={onMarkup} />
     </View>
   );
 };

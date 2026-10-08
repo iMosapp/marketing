@@ -130,6 +130,7 @@ def public_finding(d: dict, frames_by_id: dict) -> dict:
             "confidence": d.get("confidence"), "possible": d.get("confidence") == "low" and d.get("decision") == "pending", "explanation": d.get("explanation") or "",
             "origin": d.get("origin"), "decision": d.get("decision"), "decision_by_name": d.get("decision_by_name"), "decision_at": d.get("decision_at"),
             "voice_note_id": d.get("voice_note_id"), "spoken_by": d.get("spoken_by"), "quote": d.get("quote"),
+            "recon_cost": d.get("recon_cost"), "recon_by_name": d.get("recon_by_name"), "recon_at": d.get("recon_at"),
             "edited": bool(d.get("edited")), "edited_by_name": d.get("edited_by_name"), "edited_at": d.get("edited_at"), "ai_original": d.get("ai_original"),
             "sources": sorted({e.get("media_source") for e in ev if e.get("media_source")}), "evidence": ev, "created_at": d.get("created_at"), "updated_at": d.get("updated_at")}
 
@@ -643,6 +644,42 @@ async def decide(db, ins: dict, appr: dict, me: dict, fid: str, decision: str) -
     await _audit(db, appr, me, f"finding_{decision}", f"{d.get('location_label')} · {SUBTYPES.get(d.get('category'), {}).get(d.get('subtype'), d.get('subtype'))}", {"finding_id": fid})
     await recompute(db, ins)
     return await db[FD].find_one({"_id": d["_id"]})
+
+
+MAX_RECON_COST = 50_000
+
+
+def finding_title(d: dict) -> str:
+    label = d.get("location_label") or d.get("location") or CATEGORIES.get(d.get("category"), "")
+    if label and ("_" in label or label.islower()):
+        label = _title(label)
+    return f"{label} · {SUBTYPES.get(d.get('category'), {}).get(d.get('subtype'), d.get('subtype'))}"
+
+
+async def price_finding(db, appr: dict, me: dict, fid: str, amount: Optional[int]) -> dict:
+    """Desk: a manager puts a dollar figure on a CONFIRMED finding (or clears it). The number then itemizes recon instead of the flat allowance."""
+    d = await db[FD].find_one({"_id": _oid(fid), "appraisal_id": str(appr["_id"]), "deleted": {"$ne": True}})
+    if not d:
+        raise ValueError("Finding not found")
+    if d.get("decision") != "confirmed":
+        raise ValueError("Only confirmed findings can be priced. Confirm it first.")
+    if amount is not None and not (0 <= int(amount) <= MAX_RECON_COST):
+        raise ValueError(f"Recon cost must be between $0 and ${MAX_RECON_COST:,}")
+    now = _now()
+    upd = {"recon_cost": int(amount), "recon_by": str(me["_id"]), "recon_by_name": _name(me), "recon_at": now, "updated_at": now} if amount is not None \
+        else {"recon_cost": None, "recon_by": None, "recon_by_name": None, "recon_at": None, "updated_at": now}
+    await db[FD].update_one({"_id": d["_id"]}, {"$set": upd})
+    await _audit(db, appr, me, "finding_priced" if amount is not None else "finding_price_cleared", f"{finding_title(d)}" + (f" · ${int(amount):,}" if amount is not None else " · price removed"),
+                 {"finding_id": fid, "amount": amount})
+    return await db[FD].find_one({"_id": d["_id"]})
+
+
+async def recon_items(db, appr: dict) -> dict:
+    """What the engine needs: every confirmed finding with a manager price, plus how many confirmed ones still have none."""
+    rows = await db[FD].find({"appraisal_id": str(appr["_id"]), "decision": "confirmed", "deleted": {"$ne": True}}).sort("created_at", 1).to_list(200)
+    items = [{"finding_id": str(d["_id"]), "label": finding_title(d), "amount": int(d["recon_cost"]), "severity": d.get("severity"), "category": d.get("category"), "by_name": d.get("recon_by_name")}
+             for d in rows if d.get("recon_cost") is not None]
+    return {"items": items, "unpriced": sum(1 for d in rows if d.get("recon_cost") is None), "confirmed": len(rows)}
 
 
 async def override(db, ins: dict, appr: dict, me: dict, overall: Optional[str], reason: str) -> dict:

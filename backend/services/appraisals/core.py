@@ -15,6 +15,7 @@ from services.appraisals import frames
 from services.contact_files import _normalize_image
 from utils.activity_log import log_activity
 from utils.image_storage import put_object
+from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +148,8 @@ async def list_snapshots(db, appr: dict) -> list:
     frames = await db["appraisal_frames"].find({"appraisal_id": str(appr["_id"]), "media_id": {"$in": list(by_id)}, "deleted": {"$ne": True}}).sort("timestamp_s", 1).to_list(600)
     order = {mid: i for i, mid in enumerate(by_id)}
     frames.sort(key=lambda f: (order.get(f.get("media_id"), 99), f.get("timestamp_s") or 0))
-    return [public_snapshot(f, by_id[f["media_id"]]) for f in frames]
+    marks = await markups_by_target(db, appr)
+    return [{**public_snapshot(f, by_id[f["media_id"]]), "markups": marks.get(str(f["_id"]), [])} for f in frames]
 
 
 def _kick_snapshots(db, appr: dict, doc: dict, me: dict):
@@ -422,7 +424,76 @@ async def save_media(db, appr: dict, me: dict, *, role: str, source: str, data: 
 
 async def list_media(db, appr: dict) -> list:
     rows = await db[M].find({"appraisal_id": str(appr["_id"]), "deleted": {"$ne": True}}).sort("created_at", 1).to_list(200)
-    return [public_media(m) for m in rows]
+    marks = await markups_by_target(db, appr)
+    return [{**public_media(m), "markups": marks.get(str(m["_id"]), [])} for m in rows]
+
+
+# ---------- markups: a manager circles something on a photo or snapshot and sends it back to the rep ----------
+MK = "appraisal_markups"
+MAX_STROKES, MAX_POINTS = 30, 600
+
+
+def public_markup(k: dict) -> dict:
+    return {"id": str(k["_id"]), "target_id": k.get("target_id"), "target_kind": k.get("target_kind"), "strokes": k.get("strokes") or [], "color": k.get("color") or "#FF3B30",
+            "note": k.get("note") or "", "by": k.get("by"), "by_name": k.get("by_name"), "created_at": k.get("created_at")}
+
+
+async def markups_by_target(db, appr: dict) -> dict:
+    rows = await db[MK].find({"appraisal_id": str(appr["_id"]), "deleted": {"$ne": True}}).sort("created_at", 1).to_list(500)
+    out: dict = {}
+    for k in rows:
+        out.setdefault(k.get("target_id"), []).append(public_markup(k))
+    return out
+
+
+def clean_strokes(strokes) -> list:
+    """Freehand strokes as lists of {x, y} in 0..1 of the photo itself (not the screen), so they land on the same spot on every device."""
+    if not isinstance(strokes, list) or not strokes:
+        raise ValueError("Draw something first")
+    out = []
+    for s in strokes[:MAX_STROKES]:
+        pts = []
+        for p in (s if isinstance(s, list) else [])[:MAX_POINTS]:
+            try:
+                x, y = float(p["x"]), float(p["y"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if x == x and y == y:  # not NaN
+                pts.append({"x": round(min(1.0, max(0.0, x)), 4), "y": round(min(1.0, max(0.0, y)), 4)})
+        if len(pts) >= 2:
+            out.append(pts)
+    if not out:
+        raise ValueError("Draw something first")
+    return out
+
+
+async def add_markup(db, appr: dict, me: dict, *, target_id: str, strokes, note: str = "", color: str = "#FF3B30") -> dict:
+    tid = (target_id or "").strip()
+    media = await db[M].find_one({"_id": _oid(tid), "appraisal_id": str(appr["_id"]), "deleted": {"$ne": True}}) if ObjectId.is_valid(tid) else None
+    frame = None if media else (await db["appraisal_frames"].find_one({"_id": _oid(tid), "appraisal_id": str(appr["_id"]), "deleted": {"$ne": True}}) if ObjectId.is_valid(tid) else None)
+    if not media and not frame:
+        raise ValueError("Photo not found on this appraisal")
+    if media and media.get("kind") == "video":
+        raise ValueError("Mark up a snapshot from the video, not the video itself")
+    note = no_em_dash((note or "").strip())[:300]
+    color = color if isinstance(color, str) and len(color) in (4, 7) and color.startswith("#") else "#FF3B30"
+    now = _now()
+    doc = {"_id": ObjectId(), "appraisal_id": str(appr["_id"]), "target_id": tid, "target_kind": "media" if media else "snapshot", "strokes": clean_strokes(strokes), "color": color,
+           "note": note, "by": str(me["_id"]), "by_name": _name(me), "by_role": me.get("role"), "created_at": now}
+    await db[MK].insert_one(doc)
+    what = ROLES.get((media or {}).get("role") or "", "Photo") if media else f"snapshot {frame.get('timestamp_label') or ''}".strip()
+    await audit(db, appr, me, "photo_marked_up", f"{what}" + (f": {note}" if note else ""), meta={"markup_id": str(doc["_id"]), "target_id": tid})
+    return doc
+
+
+async def delete_markup(db, appr: dict, me: dict, markup_id: str):
+    k = await db[MK].find_one({"_id": _oid(markup_id), "appraisal_id": str(appr["_id"]), "deleted": {"$ne": True}})
+    if not k:
+        raise ValueError("Markup not found")
+    if k.get("by") != str(me["_id"]) and me.get("role") not in ("super_admin", "org_admin", "store_manager"):
+        raise ValueError("Only the person who drew it can remove it")
+    await db[MK].update_one({"_id": k["_id"]}, {"$set": {"deleted": True, "deleted_at": _now()}})
+    await audit(db, appr, me, "photo_markup_removed", k.get("note") or "", meta={"markup_id": markup_id})
 
 
 async def delete_media(db, appr: dict, me: dict, media_id: str) -> dict:

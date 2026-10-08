@@ -29,6 +29,7 @@ export const FindingCard = ({ colors, finding: f, onDecide, onEdit, onEvidence, 
             <Chip label={f.category_label} color={GOLD} />
             {f.origin === 'voice' ? <Chip label={f.spoken_by === 'customer' ? 'Customer said' : 'You said'} color="#5AC8FA" icon="mic" testId={`finding-voice-${f.id}`} /> : null}
             {f.origin === 'ai' || f.origin === 'voice' ? <Chip label={CONFIDENCE_LABEL[f.confidence] || f.confidence} color={f.confidence === 'high' ? '#34C759' : f.confidence === 'medium' ? '#30B0C7' : '#FF9500'} testId={`finding-confidence-${f.id}`} /> : <Chip label="Added by you" color="#AF52DE" icon="person" />}
+            {f.recon_cost != null ? <Chip label={`Recon $${Math.round(f.recon_cost).toLocaleString()}${f.recon_by_name ? ` · ${f.recon_by_name}` : ''}`} color="#34C759" icon="cash-outline" testId={`finding-recon-${f.id}`} /> : null}
             {f.edited ? <Chip label="Edited" color="#8E8E93" icon="create-outline" testId={`finding-edited-${f.id}`} /> : null}
             {confirmed ? <Chip label={`Confirmed${f.decision_by_name ? ` · ${f.decision_by_name.split(' ')[0]}` : ''}`} color="#34C759" icon="checkmark" testId={`finding-state-${f.id}`} /> : dismissed ? <Chip label="Dismissed" color="#8E8E93" icon="close" testId={`finding-state-${f.id}`} /> : <Chip label="Needs your call" color="#FF9500" testId={`finding-state-${f.id}`} />}
           </View>

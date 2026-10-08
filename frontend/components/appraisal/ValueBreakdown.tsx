@@ -70,6 +70,16 @@ export const ValueBreakdown = ({ colors, output: o, marketRetail, marketLabel, a
               <SourceTagSmall source={l.source} />
               {l.reason ? <Text style={{ flex: 1, fontSize: 11.5, color: colors.textSecondary }} numberOfLines={2}>{l.reason}</Text> : null}
             </View>
+            {l.items?.length ? (
+              <View style={{ marginTop: 4, gap: 3, paddingLeft: 10, borderLeftWidth: 2, borderLeftColor: colors.border }} {...tid('breakdown-recon-items')}>
+                {l.items.map((it: any) => (
+                  <View key={it.finding_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} {...tid(`breakdown-item-${it.finding_id}`)}>
+                    <Text style={{ flex: 1, fontSize: 12.5, color: colors.text }} numberOfLines={1}>{it.label}{it.by_name ? <Text style={{ color: colors.textSecondary }}>  · {it.by_name}</Text> : null}</Text>
+                    <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#FF3B30', fontVariant: ['tabular-nums'] }}>-{money(it.amount)}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
         )) : <Text style={{ fontSize: 13, color: colors.textSecondary, paddingBottom: 10 }} {...tid('breakdown-empty')}>No starting value yet. Pull market data or add a book value, or the manager sets the number at the desk.</Text>}
         {o.suggested_acv != null ? (

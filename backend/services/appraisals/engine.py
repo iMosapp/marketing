@@ -84,7 +84,8 @@ def _age_years(vehicle: dict, now_year: int) -> Optional[int]:
 
 
 def calculate(*, vehicle: dict, mileage: Optional[int], condition: Optional[dict], market: Optional[dict], book_values: list,
-              customer_expected_value: Optional[int], rules: dict, now_year: int, manual_basis: Optional[int] = None, allow_development_basis: bool = False) -> dict:
+              customer_expected_value: Optional[int], rules: dict, now_year: int, manual_basis: Optional[int] = None, allow_development_basis: bool = False,
+              recon_items: Optional[list] = None, recon_unpriced: int = 0) -> dict:
     """-> {suggested_acv, suggested_low, suggested_high, basis, breakdown, warnings, confidence, manager_review_required, review_reasons,
     customer_expected_value, expectation_gap, valuation_sources, engine_version}. Disabled or not-applied rules produce no breakdown line."""
     rounding = int(rules.get("rounding") or 50)
@@ -117,24 +118,38 @@ def calculate(*, vehicle: dict, mileage: Optional[int], condition: Optional[dict
             warnings.append(f"Target gross not deducted: the starting value ({basis['label']}) is already a wholesale number.")
 
     rc = rules.get("recon") or {}
+    items = [i for i in (recon_items or []) if i.get("amount") is not None]
     if rc.get("enabled"):
-        if cond_key in (rc.get("by_condition") or {}):
-            amt = (rc.get("by_condition") or {}).get(cond_key)
-            if amt is None:
-                if cond_key == "poor" and rc.get("poor_requires_review", True):
-                    review.append("Condition is Poor: reconditioning needs a manager's estimate.")
-                warnings.append(f"No recon allowance deducted for {cond_label} condition (rule says manager review).")
+        if items:
+            # Itemized by the desk: each confirmed finding priced by a manager. Replaces the flat allowance once every confirmed finding carries a price.
+            tot = sum(int(i["amount"]) for i in items)
+            who = sorted({i.get("by_name") for i in items if i.get("by_name")})
+            lines.append({"key": "recon", "label": f"Recon (itemized · {len(items)} item{'s' if len(items) != 1 else ''})", "amount": -int(tot), "source": SRC_MANUAL,
+                          "reason": ("Priced by " + ", ".join(who)) if who else "Priced at the desk", "rule": "recon", "items": items})
+            total -= float(tot)
+        if recon_unpriced and items:
+            review.append(f"{recon_unpriced} confirmed finding{'s have' if recon_unpriced != 1 else ' has'} no recon price yet; the flat allowance still covers {'them' if recon_unpriced != 1 else 'it'}.")
+        if not items or recon_unpriced:
+            if cond_key in (rc.get("by_condition") or {}):
+                amt = (rc.get("by_condition") or {}).get(cond_key)
+                if amt is None:
+                    if cond_key == "poor" and rc.get("poor_requires_review", True):
+                        review.append("Condition is Poor: reconditioning needs a manager's estimate.")
+                    warnings.append(f"No recon allowance deducted for {cond_label} condition (rule says manager review).")
+                else:
+                    lines.append({"key": "recon_allowance" if items else "recon", "label": f"Condition / recon allowance ({cond_label})" + (f" · covers {recon_unpriced} unpriced" if items else ""),
+                                  "amount": -int(amt), "source": SRC_CALC, "reason": rc.get("reason") or "Reconditioning allowance", "rule": "recon"})
+                    total -= float(amt)
             else:
-                lines.append({"key": "recon", "label": f"Condition / recon ({cond_label})", "amount": -int(amt), "source": SRC_CALC, "reason": rc.get("reason") or "Reconditioning allowance", "rule": "recon"})
-                total -= float(amt)
-        else:
-            amt = rc.get("unknown_amount")
-            if rc.get("unknown_requires_review", True):
-                review.append("No confirmed condition on this appraisal yet.")
-            if amt is not None:
-                lines.append({"key": "recon", "label": "Condition / recon (not graded)", "amount": -int(amt), "source": SRC_CALC, "reason": "Default recon while the condition is not confirmed", "rule": "recon"})
-                total -= float(amt)
-                warnings.append("Recon uses the default amount because the inspection has no confirmed overall condition.")
+                amt = rc.get("unknown_amount")
+                if rc.get("unknown_requires_review", True):
+                    review.append("No confirmed condition on this appraisal yet.")
+                if amt is not None:
+                    lines.append({"key": "recon_allowance" if items else "recon", "label": "Condition / recon (not graded)", "amount": -int(amt), "source": SRC_CALC, "reason": "Default recon while the condition is not confirmed", "rule": "recon"})
+                    total -= float(amt)
+                    warnings.append("Recon uses the default amount because the inspection has no confirmed overall condition.")
+            if recon_unpriced and not items:
+                warnings.append(f"{recon_unpriced} confirmed finding{'s are' if recon_unpriced != 1 else ' is'} not priced; the flat allowance covers {'them' if recon_unpriced != 1 else 'it'}. Price findings at the desk to itemize recon.")
 
     age = _age_years(vehicle, now_year)
     mi = rules.get("mileage") or {}

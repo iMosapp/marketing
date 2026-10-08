@@ -9,6 +9,7 @@ import { SubmitPanel } from './SubmitPanel';
 import { VoiceNotes } from './VoiceNotes';
 import { MediaViewer } from './MediaViewer';
 import { Snapshots } from './Snapshots';
+import { MarkupBadge } from './MarkupCanvas';
 
 type Props = { colors: any; appraisal: any; onEdit: (step: string) => void; onSaved?: (appraisal: any) => void; showToast?: (m: string, t?: any, d?: number) => void; readOnly?: boolean };
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
@@ -62,6 +63,7 @@ export const ReviewStep = ({ colors, appraisal, onEdit, onSaved, showToast, read
                 <View style={{ width: 104, height: 78, borderRadius: 10, overflow: 'hidden', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
                   {m.thumb_url ? <Image source={{ uri: resolvePhotoUrl(m.thumb_url) || '' }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Ionicons name={m.kind === 'video' ? 'videocam' : 'image'} size={22} color={GOLD} />}
                   {m.kind === 'video' ? <View style={{ position: 'absolute', left: 6, bottom: 6, backgroundColor: '#000000AA', borderRadius: 6, padding: 3 }}><Ionicons name="play" size={10} color="#fff" /></View> : null}
+                  <MarkupBadge count={m.markups?.length} testId={`review-media-markup-${m.id}`} />
                 </View>
                 <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }} numberOfLines={1}>{m.role_label}</Text>
                 <SourceTag source={m.source} colors={colors} />

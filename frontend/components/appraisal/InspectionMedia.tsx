@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { GOLD, tid } from '../inbox/ownership';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { SourceTag } from './shared';
+import { MarkupBadge } from './MarkupCanvas';
 
 type Props = { colors: any; media: any[]; processed: string[]; onDelete: (m: any) => void; onOpen?: (m: any) => void; busy?: boolean };
 const dur = (s?: number | null) => (s == null ? '' : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`);
@@ -28,6 +29,7 @@ export const InspectionMedia = ({ colors, media, processed, onDelete, onOpen, bu
                   </View>
                 ) : null}
                 {m.video_quality === 'poor' ? <View style={{ position: 'absolute', right: 6, top: 6, backgroundColor: '#FF9500', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 }} {...tid(`inspect-media-poor-${m.id}`)}><Text style={{ fontSize: 9.5, fontWeight: '800', color: '#0B0B0D' }}>BLURRY</Text></View> : null}
+                <MarkupBadge count={m.markups?.length} testId={`inspect-media-markup-${m.id}`} />
                 {!busy ? (
                   <TouchableOpacity onPress={() => onDelete(m)} hitSlop={8} style={{ position: 'absolute', right: 4, bottom: 4, width: 22, height: 22, borderRadius: 11, backgroundColor: '#000000AA', alignItems: 'center', justifyContent: 'center' }} {...tid(`inspect-media-delete-${m.id}`)}>
                     <Ionicons name="trash-outline" size={12} color="#fff" />

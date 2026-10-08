@@ -149,6 +149,17 @@ class DecisionBody(BaseModel):
     decision: str
 
 
+class ReconPriceBody(BaseModel):
+    amount: Optional[int] = None
+
+
+class MarkupBody(BaseModel):
+    target_id: str
+    strokes: list
+    note: Optional[str] = ""
+    color: Optional[str] = "#FF3B30"
+
+
 class OverrideBody(BaseModel):
     overall: Optional[str] = None
     reason: str = ""
@@ -919,7 +930,51 @@ async def override_condition(appraisal_id: str, body: OverrideBody, request: Req
     return await inspection.read(db, a)
 
 
-# ---------- Market analysis (MVP3) ----------
+@router.post("/{appraisal_id}/inspection/findings/{finding_id}/recon")
+async def price_finding(appraisal_id: str, finding_id: str, body: ReconPriceBody, request: Request):
+    """Desk only: put a dollar figure on a confirmed finding (null clears it). On an open desk item the number is re-frozen as a new calculation version."""
+    me = _me(request)
+    _manager(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        d = await inspection.price_finding(db, a, me, finding_id, body.amount)
+    except ValueError as e:
+        raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
+    calc = await workflow.refresh_number(db, a, me, "recon_itemized")
+    fresh = await _appr(db, me, appraisal_id)
+    return {"finding": inspection.public_finding(d, {}), "recon": await inspection.recon_items(db, a), "calculation": workflow.public_calc(calc) if calc else None,
+            "suggested_acv": fresh.get("suggested_acv"), "preview": None if calc else (await workflow.preview(db, fresh))["output"]}
+
+
+# ---------- Photo markups: a manager circles something on a photo or snapshot and sends it back to the rep ----------
+@router.post("/{appraisal_id}/markups")
+async def add_markup(appraisal_id: str, body: MarkupBody, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        k = await core.add_markup(db, a, me, target_id=body.target_id, strokes=body.strokes, note=body.note or "", color=body.color or "#FF3B30")
+    except ValueError as e:
+        raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
+    if str(a["user_id"]) != str(me["_id"]):
+        await workflow._notify(str(a["user_id"]), "appraisal_markup", f"{core._name(me)} marked up a photo", (body.note or "").strip() or f"Open the photo on {core.vehicle_label(a.get('vehicle') or {}) if a.get('vehicle') else 'the appraisal'} to see what they circled.",
+                               f"/appraisal/{a['_id']}", a, icon="brush-outline")
+    return {"markup": core.public_markup(k), "media": await core.list_media(db, a), "snapshots": await core.list_snapshots(db, a)}
+
+
+@router.delete("/{appraisal_id}/markups/{markup_id}")
+async def delete_markup(appraisal_id: str, markup_id: str, request: Request):
+    me = _me(request)
+    _allowed(me)
+    db = get_db()
+    a = await _appr(db, me, appraisal_id)
+    try:
+        await core.delete_markup(db, a, me, markup_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404 if "not found" in str(e) else 403, detail=str(e))
+    return {"success": True, "media": await core.list_media(db, a), "snapshots": await core.list_snapshots(db, a)}
 def _market_error(e: Exception) -> HTTPException:
     if isinstance(e, mp.MarketRateLimited):
         return HTTPException(status_code=429, detail=str(e), headers={"Retry-After": str(int(e.retry_after) + 1)})

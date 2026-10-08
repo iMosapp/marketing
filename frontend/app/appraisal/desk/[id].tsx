@@ -38,6 +38,8 @@ export default function DeskReview() {
   if (!a) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}><ScreenHeader title="Appraisal Desk" /><ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /></SafeAreaView>;
   const w = a.calculation?.output;
   const sc = STATUS_COLOR[a.status] || colors.textSecondary;
+  const act = { appraisalId: a.id, onChanged: load, showToast };
+  const calcHow = a.calculation?.trigger === 'recon_itemized' ? `Re-frozen when ${a.calculation.created_by_name || 'the desk'} priced the recon` : 'Frozen at submission';
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} {...tid('desk-review')}>
       <ScreenHeader title={a.contact_name} subtitle={`${a.vehicle_label || 'Vehicle not identified'}${a.mileage_confirmed != null ? ` · ${miles(a.mileage_confirmed)}` : ''}`}
@@ -54,13 +56,13 @@ export default function DeskReview() {
           {a.declined_reason && a.status === 'declined' ? <Text style={{ fontSize: 13, color: '#FF3B30', fontWeight: '700' }} {...tid('desk-declined-line')}>Declined: {a.declined_reason}</Text> : null}
           <ValueBreakdown colors={colors} output={w} marketRetail={a.market_retail ?? a.market?.snapshot?.estimated_retail} marketLabel={marketLabel(a.market?.snapshot)}
             approvedValue={a.approved_value} approvedBy={a.approved_by_name} approvedPending={a.status === 'submitted' || a.status === 'resubmitted'} showReferences={false} />
-          {a.calculation ? <Text style={{ fontSize: 11.5, color: colors.textSecondary }} {...tid('desk-calc-line')}>Frozen at submission: calculation v{a.calculation.version} · rules {a.calculation.rules_source === 'default' ? "I'm On Social defaults" : `${a.calculation.rules_source} v${a.calculation.rules_version}`} · {when(a.calculation.created_at)}</Text> : null}
+          {a.calculation ? <Text style={{ fontSize: 11.5, color: colors.textSecondary }} {...tid('desk-calc-line')}>{calcHow}: calculation v{a.calculation.version} · rules {a.calculation.rules_source === 'default' ? "I'm On Social defaults" : `${a.calculation.rules_source} v${a.calculation.rules_version}`} · {when(a.calculation.created_at)}</Text> : null}
           <CustomerWantsCard colors={colors} a={a} />
-          <ConditionCard colors={colors} inspection={a.inspection} />
+          <ConditionCard colors={colors} inspection={a.inspection} recon={a.recon} act={act} />
           <MarketCard colors={colors} market={a.market} mileage={a.mileage_confirmed} />
           <ReferencesCard colors={colors} output={w} />
-          <RepCard colors={colors} a={a} />
-          <CustomerIntakeCard colors={colors} a={a} />
+          <RepCard colors={colors} a={a} act={act} />
+          <CustomerIntakeCard colors={colors} a={a} act={act} />
           <HistoryCard colors={colors} a={a} />
           {a.decisions?.length ? (
             <View style={{ borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }} {...tid('desk-decisions')}>
