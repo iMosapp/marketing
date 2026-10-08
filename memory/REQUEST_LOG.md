@@ -5,6 +5,14 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 
 ---
 
+### 57 · Oct 8 — DONE / DEPLOY + EAS UPDATE (full-screen photos on the desk + trade-link text in the inbox thread)
+> As a manager I want to be able to click on photos submitted and have them expand full screen so I can see them better
+> I text Bridget the link to submit his trade but it doesn't show in the inbox text thread that I did
+
+Built: `components/appraisal/MediaViewer.tsx`, a full-screen viewer (swipe or arrows between items, pinch-zoom on the phone, counter, caption with role + who sent it + when, video plays inline, tap or X to close). Wired on the Value step grid, the Inspect step grid, and both desk cards (FROM <REP>, FROM THE CUSTOMER photo strip). Fixed: texting the trade link now sends from the rep's own number (when they have one) and logs the bubble in the rep's inbox thread with that customer (`intake._thread_log`, same conversation key the Twilio webhook uses, so the reply lands beside it). Tests: test_trade_link_and_tags sms case asserts the bubble; testing_agent iteration_369 green on all surfaces.
+
+---
+
 ### 56 · Oct 8 — DONE / EAS UPDATE ONLY (home quick-actions order)
 > lets move appraise trade above sold
 
