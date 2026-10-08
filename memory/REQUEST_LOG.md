@@ -5,6 +5,13 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 
 ---
 
+### 55 · Oct 7 — DONE / DEPLOY + EAS UPDATE (voice notes on appraisals)
+> I want to be able to record voice notes about the car also and if customer can great if not no big deal then transcribe those and add to description
+
+Built: "Record a note about this car" mic button on the Inspect and Value steps (tap, talk, tap; Jessi types it into the appraisal notes as "[Rep voice note · time] ..."; clip kept for playback with a VOICE NOTES list + delete that takes the words back out). Customer trade-link page got "Or just tell us about it" under the notes box (browser recording, same path, "[Customer voice note · time] ..."). Desk FROM THE SALESPERSON card shows the full notes + every clip with play. Whisper runs with a vehicle-condition prompt and drops silence so quiet clips do not invent words. Tests: test_appraisal_voice_notes 4 (real speech) + 21 regression + testing_agent iteration_368 green.
+
+---
+
 ### 54 · Oct 7 — DONE (formatting + auto trade tags + customer trade link; owner said 'use your best judgement')
 > look at formatting on some of the boxes and clean it up.  Also I didn't see that vinaudit did anything? and I want to be able to group or tag these for campaign follow ups just not sure best way to do this yet.. also how do I send a link to a customer that is not at store to have them upload info?
 > (screen recording: production desk detail for a 2021 Jeep Gladiator Mojave, live MarketCheck $29,469 / 36 comps; truncated "$29,4…" tiles, "ASKING RANGE $29,59…", "Not prov…" reference row)
