@@ -23,6 +23,7 @@ from services.appraisals.providers import ProviderUnavailable, identity_options,
 from services.appraisals import providers as identity
 from services.appraisals import readers
 from services.appraisals import voice
+from services.appraisals import matrix
 from services.appraisals import relationship
 from services.appraisals import reporting
 from services.appraisals import rules as rulesvc
@@ -293,6 +294,52 @@ async def list_provider_comparisons(request: Request, limit: int = 50):
     me = _me(request)
     _admin(me)
     return {"comparisons": await market.list_comparisons(get_db(), me, limit)}
+
+
+class MatrixBody(BaseModel):
+    vehicles: list = []
+    zip: str = ""
+    radius: Optional[int] = None
+    force: bool = False
+
+
+@router.post("/providers/matrix/plan")
+async def matrix_plan(body: MatrixBody, request: Request):
+    """Zero API calls: how many vehicles would run and how many paid calls that costs."""
+    _admin(_me(request))
+    try:
+        vs = matrix.clean_vehicles(body.vehicles)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"plan": matrix.plan(vs), "vehicles": vs}
+
+
+@router.post("/providers/matrix")
+async def matrix_start(body: MatrixBody, request: Request):
+    """Admin, deliberate, runs where the keys live: up to 25 real vehicles through both live providers in the background. Poll GET /providers/matrix/{id}."""
+    me = _me(request)
+    _admin(me)
+    try:
+        return await matrix.start(get_db(), me, vehicles=body.vehicles, zip_code=body.zip, radius=body.radius, force=body.force)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/providers/matrix")
+async def matrix_recent(request: Request, limit: int = 5):
+    me = _me(request)
+    _admin(me)
+    return {"runs": await matrix.recent(get_db(), me, limit)}
+
+
+@router.get("/providers/matrix/{run_id}")
+async def matrix_get(run_id: str, request: Request):
+    me = _me(request)
+    _admin(me)
+    run = await matrix.get(get_db(), me, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Matrix run not found")
+    return run
 
 
 @router.get("")

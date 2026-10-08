@@ -9,6 +9,7 @@ import { useToast } from '../../components/common/Toast';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { GOLD, tid, errText } from '../../components/inbox/ownership';
 import { ProviderCompare } from '../../components/appraisal/ProviderCompare';
+import { ProviderMatrix } from '../../components/appraisal/ProviderMatrix';
 import { money } from '../../components/appraisal/shared';
 
 const RADII = [25, 50, 100, 200];
@@ -113,6 +114,8 @@ export default function ProviderLab() {
           </View>
 
           {result ? <ProviderCompare colors={colors} comparison={result} /> : null}
+
+          <ProviderMatrix colors={colors} zip={form.zip} radius={form.radius} callsPerVehicle={callsPerRun} showToast={showToast} onFinished={load} />
 
           {(info.cost?.rows || []).length ? (
             <View style={{ borderRadius: 16, padding: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, gap: 6 }} {...tid('provider-lab-cost')}>

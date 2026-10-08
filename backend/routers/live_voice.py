@@ -33,6 +33,9 @@ class EventsBody(BaseModel):
 
 class ConfigBody(BaseModel):
     voice: Optional[str] = None
+    engine: Optional[str] = None
+    mini_voice: Optional[str] = None
+    mini_daily_cap_min: Optional[int] = None
     energy: Optional[int] = None
     pacing: Optional[int] = None
     playful: Optional[int] = None
@@ -73,7 +76,7 @@ async def config(request: Request):
     cfg = await lv.get_config(db)
     reason = lv.configured()
     return {"available": await _available(db, me), "is_super_admin": _is_super(me), "configured": reason is None, "reason": reason,
-            "voice": cfg["voice"], "greeting": lv.greeting_text(cfg, me), "idle_close_s": cfg["idle_close_s"], "usage": await lv.usage_summary(db, me, cfg)}
+            "voice": cfg["mini_voice"] if cfg["engine"] == "mini" else cfg["voice"], "engine": cfg["engine"], "greeting": lv.greeting_text(cfg, me), "idle_close_s": cfg["idle_close_s"], "usage": await lv.usage_summary(db, me, cfg)}
 
 
 @router.post("/session")
@@ -120,7 +123,7 @@ async def events(live_id: str, body: EventsBody, request: Request):
 async def admin_config(request: Request):
     await _super(request)
     db = get_db()
-    return {"config": await lv.get_config(db), "defaults": lv.DEFAULTS, "voices": lv.VOICES, "configured": lv.configured() is None, "reason": lv.configured(),
+    return {"config": await lv.get_config(db), "defaults": lv.DEFAULTS, "voices": lv.VOICES, "mini_voices": lv.RT_VOICES, "engines": lv.ENGINES, "configured": lv.configured() is None, "reason": lv.configured(),
             "labels": {"energy": lv.ENERGY, "pacing": lv.PACING, "playful": lv.PLAYFUL, "brevity": lv.BREVITY}, "price_per_min": lv.PRICE_PER_MIN, "model": lv.MODEL,
             "lab_live": await lab.is_live(db, lv.LAB_KEY)}
 
@@ -131,6 +134,10 @@ async def admin_save(body: ConfigBody, request: Request):
     patch = {k: v for k, v in body.model_dump().items() if v is not None}
     if patch.get("voice") and patch["voice"] not in lv.VOICE_IDS:
         raise HTTPException(status_code=400, detail="Unknown voice")
+    if patch.get("mini_voice") and patch["mini_voice"] not in lv.RT_VOICE_IDS:
+        raise HTTPException(status_code=400, detail="Unknown Realtime voice")
+    if patch.get("engine") and patch["engine"] not in lv.ENGINES:
+        raise HTTPException(status_code=400, detail="Unknown engine")
     return {"config": await lv.save_config(get_db(), patch, me)}
 
 

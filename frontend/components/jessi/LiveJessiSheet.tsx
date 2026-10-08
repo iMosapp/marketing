@@ -46,7 +46,7 @@ export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi'
           )}
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }} {...tid('live-jessi-title')}>{title}</Text>
-            <Text style={{ color: '#8E8E93', fontSize: 12, marginTop: 2 }} {...tid('live-jessi-status')}>{statusText(live, who)}{live.voice ? ` · ${live.voice}` : ''}</Text>
+            <Text style={{ color: '#8E8E93', fontSize: 12, marginTop: 2 }} {...tid('live-jessi-status')}>{statusText(live, who)}{live.voice ? ` · ${live.voice}` : ''}{live.engine === 'mini' ? ' · mini' : ''}</Text>
           </View>
           <View style={{ backgroundColor: live.state === 'live' ? `${GREEN}22` : '#1C1C1E', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 6 }} {...tid('live-jessi-timer')}>
             {live.state === 'live' && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: GREEN }} />}

@@ -22,8 +22,15 @@ from utils.text_sanitize import no_em_dash, clean_ai_text
 logger = logging.getLogger(__name__)
 
 LIVE_URL = "https://api.openai.com/v1/live/sessions"
+REALTIME_URL = "https://api.openai.com/v1/realtime/calls"
 MODEL = "gpt-live-1"
+MINI_MODEL = "gpt-realtime-2.1-mini"
 PRICE_PER_MIN = 0.05
+# Two voice engines behind the same brain. "live" = GPT-Live-1, flat $0.05 per session minute. "mini" = Realtime mini, billed by audio actually
+# spoken (about $0.01-0.02 a minute in a normal back-and-forth). Reps get the engine saved in the Voice Lab; auditions can pick either.
+ENGINES = {"live": {"model": MODEL, "label": "GPT-Live-1", "price_per_min": PRICE_PER_MIN, "note": "full duplex, flat rate per session minute"},
+           "mini": {"model": MINI_MODEL, "label": "Realtime mini", "price_per_min": 0.015, "note": "same live feel, billed by what is said; roughly a quarter of the cost"}}
+MINI_PRICES = {"audio_in": 10.0, "audio_in_cached": 0.30, "text_in": 0.60, "text_in_cached": 0.06, "audio_out": 20.0, "text_out": 2.40}  # USD per 1M tokens
 SETTINGS_KEY = "jessi_voice"
 COLL = "live_sessions"
 LAB_KEY = "jessi_live_voice"
@@ -49,15 +56,37 @@ VOICES = [
     {"id": "tempo", "name": "Tempo", "accent": "Brazilian Portuguese", "tone": "masculine", "natural": True},
 ]
 VOICE_IDS = {v["id"] for v in VOICES}
+# Realtime mini speaks with the Realtime API voice set (a different list from GPT-Live's).
+RT_VOICES = [
+    {"id": "marin", "name": "Marin", "accent": "North American", "tone": "feminine", "natural": True},
+    {"id": "coral", "name": "Coral", "accent": "North American, bright", "tone": "feminine", "natural": True},
+    {"id": "sage", "name": "Sage", "accent": "North American, calm", "tone": "feminine", "natural": True},
+    {"id": "shimmer", "name": "Shimmer", "accent": "North American, light", "tone": "feminine", "natural": True},
+    {"id": "alloy", "name": "Alloy", "accent": "North American, even", "tone": "feminine", "natural": True},
+    {"id": "cedar", "name": "Cedar", "accent": "North American", "tone": "masculine", "natural": True},
+    {"id": "ash", "name": "Ash", "accent": "North American, warm", "tone": "masculine", "natural": True},
+    {"id": "echo", "name": "Echo", "accent": "North American, steady", "tone": "masculine", "natural": True},
+    {"id": "ballad", "name": "Ballad", "accent": "British", "tone": "masculine", "natural": True},
+    {"id": "verse", "name": "Verse", "accent": "North American, quick", "tone": "masculine", "natural": True},
+]
+RT_VOICE_IDS = {v["id"] for v in RT_VOICES}
+DELEGATE_TOOL = {"type": "function", "name": "delegate",
+                 "description": "Hand the rep's request to the I'm On Social backend: people, history, texting, reminders, notes, calls, sales, appointments, screens, duplicates, numbers, app help, and every yes/no to something read back. Returns exactly what to say.",
+                 "parameters": {"type": "object", "properties": {"request": {"type": "string", "description": "What the rep wants, in one plain sentence. Keep names, spellings, numbers, dates and the exact wording of any text."}}, "required": ["request"]}}
+REALTIME_RULES = ("\n\nTOOL: you have one function, delegate(request). Every case under 'Delegate to the backend when' means: call delegate with what the rep wants in one plain sentence "
+                  "(keep names, spellings, numbers, dates and the exact wording of any text). Say two or three words first ('one sec', 'pulling that up') so there is no dead air, then call it. "
+                  "The function returns what to say: say it in your own voice, keep every name and number, add nothing. If it returns a question (which one, yes or no), ask it and wait. "
+                  "Never say a text was sent, a reminder was set or anything was saved unless the function said so.")
 
 
 def voice_gender(voice_id: Optional[str]) -> Optional[str]:
-    """'male' / 'female' for a GPT-Live voice id, None for unknown ids."""
-    v = next((v for v in VOICES if v["id"] == voice_id), None)
+    """'male' / 'female' for a GPT-Live or Realtime voice id, None for unknown ids."""
+    v = next((v for v in VOICES + RT_VOICES if v["id"] == voice_id), None)
     return None if not v else "male" if v["tone"] == "masculine" else "female"
 
 
 DEFAULTS = {"voice": "gleam", "energy": 4, "pacing": 4, "playful": 3, "brevity": 4, "daily_cap_min": 15, "idle_close_s": 25,
+            "engine": "mini", "mini_voice": "marin", "mini_daily_cap_min": 60,
             "greeting": "Hey {first}, it's Jessi. Who are we talking about today?", "contact_greeting": "Hey {first}. {contact} is up. What do you want to know?", "notes": ""}
 SLIDERS = ("energy", "pacing", "playful", "brevity")
 ENERGY = {1: "calm and steady", 2: "relaxed and easy", 3: "warm and engaged", 4: "upbeat and energetic", 5: "high-energy and lively"}
@@ -105,6 +134,15 @@ def clean_config(patch: dict, base: Optional[dict] = None) -> dict:
         return cfg
     if patch.get("voice") in VOICE_IDS:
         cfg["voice"] = patch["voice"]
+    if patch.get("engine") in ENGINES:
+        cfg["engine"] = patch["engine"]
+    if patch.get("mini_voice") in RT_VOICE_IDS:
+        cfg["mini_voice"] = patch["mini_voice"]
+    if "mini_daily_cap_min" in patch:
+        try:
+            cfg["mini_daily_cap_min"] = min(480, max(1, int(patch["mini_daily_cap_min"])))
+        except (TypeError, ValueError):
+            pass
     for k in SLIDERS:
         if k in patch:
             try:
@@ -262,10 +300,17 @@ async def focus_brief(db, contact: dict) -> str:
 
 
 # ── usage / cap ───────────────────────────────────────────────────────────────
-async def seconds_today(db, user_id: str, start: Optional[datetime] = None) -> int:
+def _engine_filter(engine: Optional[str]) -> dict:
+    """Sessions before engines existed were all GPT-Live."""
+    if not engine:
+        return {}
+    return {"$or": [{"engine": "live"}, {"engine": {"$exists": False}}]} if engine == "live" else {"engine": engine}
+
+
+async def seconds_today(db, user_id: str, start: Optional[datetime] = None, engine: Optional[str] = None) -> int:
     start = start or _now().replace(hour=0, minute=0, second=0, microsecond=0)
     total = 0
-    async for s in db[COLL].find({"user_id": user_id, "started_at": {"$gte": start}}, {"seconds": 1}):
+    async for s in db[COLL].find({"user_id": user_id, "started_at": {"$gte": start}, **_engine_filter(engine)}, {"seconds": 1}):
         total += int(s.get("seconds") or 0)
     return total
 
@@ -278,14 +323,26 @@ def uncapped(user: dict) -> bool:
     return user.get("role") == "super_admin" or bool(user.get("is_owner"))
 
 
-async def usage_summary(db, user: dict, cfg: dict) -> dict:
-    """The cap window is the rep's own calendar day, so it resets at their midnight, not UTC's."""
+def cap_minutes(cfg: dict, engine: str) -> int:
+    return int(cfg["daily_cap_min"] if engine == "live" else cfg.get("mini_daily_cap_min") or DEFAULTS["mini_daily_cap_min"])
+
+
+async def usage_summary(db, user: dict, cfg: dict, engine: Optional[str] = None) -> dict:
+    """The cap window is the rep's own calendar day, so it resets at their midnight, not UTC's. Each engine has its own cap."""
+    engine = engine if engine in ENGINES else (cfg.get("engine") if cfg.get("engine") in ENGINES else "mini")
     tz = await _tz(user)
     local_midnight = _now().astimezone(tz).replace(hour=0, minute=0, second=0, microsecond=0)
-    used = await seconds_today(db, str(user["_id"]), local_midnight.astimezone(timezone.utc))
+    used = await seconds_today(db, str(user["_id"]), local_midnight.astimezone(timezone.utc), engine)
     free = uncapped(user)
-    cap = UNCAPPED_S if free else int(cfg["daily_cap_min"]) * 60
-    return {"used_s": used, "cap_s": cap, "left_s": UNCAPPED_S if free else max(0, cap - used), "unlimited": free, "reset_at": (local_midnight + timedelta(days=1)).isoformat()}
+    cap = UNCAPPED_S if free else cap_minutes(cfg, engine) * 60
+    return {"used_s": used, "cap_s": cap, "left_s": UNCAPPED_S if free else max(0, cap - used), "unlimited": free, "reset_at": (local_midnight + timedelta(days=1)).isoformat(), "engine": engine}
+
+
+def mini_cost(tokens: Optional[dict]) -> float:
+    """Realtime mini bills tokens, not minutes: price the cumulative usage the client forwarded from response.done events."""
+    t = tokens or {}
+    usd = sum(float(t.get(k) or 0) * MINI_PRICES[k] / 1_000_000 for k in MINI_PRICES)
+    return round(usd, 4)
 
 
 # ── session creation ──────────────────────────────────────────────────────────
@@ -306,9 +363,10 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
                 user = {**user, "store_name": store.get("name")}
         except Exception:
             pass
-    usage = await usage_summary(db, user, cfg)
+    usage = await usage_summary(db, user, cfg, "live" if mode == "shopper" else None)
+    engine = usage["engine"]
     if mode == "assistant" and usage["left_s"] <= 0:
-        raise LiveCapReached(f"You have used today's {cfg['daily_cap_min']} minutes of live Jessi. It resets at midnight your time.")
+        raise LiveCapReached(f"You have used today's {cap_minutes(cfg, engine)} minutes of live Jessi. It resets at midnight your time.")
     contact = await focus_contact(db, user, contact_id)
     shop = None
     agenda = None
@@ -338,13 +396,20 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         context += " TEAM DIGEST already pulled; the rep is a manager and asked for it. They can say a rep's name for that rep's full list or ask to nudge a rep about a customer."
     if agenda is not None:
         context += " DAY WALKTHROUGH, the stops in order: " + ("; ".join(f"{s['n']}. {s['name']} ({s['kind']}: {s['why']})" for s in agenda) if agenda else "none, the rep is caught up") + "."
-    session = {"model": MODEL, "instructions": instructions, "audio": {"output": {"voice": voice}}, "delegation": {"type": "client"},
-               "input": [{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": context}]}]}
-    body = {"session": session, "transport": {"type": "webrtc", "sdp": sdp}}
-    headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY'].strip()}", "Content-Type": "application/json", "OpenAI-Safety-Identifier": f"imos-{uid[-8:]}"}
+    headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY'].strip()}", "OpenAI-Safety-Identifier": f"imos-{uid[-8:]}"}
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
-            resp = await client.post(LIVE_URL, json=body, headers=headers)
+            if engine == "mini":
+                voice = cfg["mini_voice"]
+                session = {"type": "realtime", "model": MINI_MODEL, "instructions": instructions + REALTIME_RULES + "\n\n" + context,
+                           "audio": {"input": {"turn_detection": {"type": "semantic_vad", "create_response": True, "interrupt_response": True}, "transcription": {"model": "gpt-4o-mini-transcribe"}},
+                                     "output": {"voice": voice}},
+                           "tools": [DELEGATE_TOOL], "tool_choice": "auto"}
+                resp = await client.post(REALTIME_URL, files={"sdp": (None, sdp, "application/sdp"), "session": (None, json.dumps(session), "application/json")}, headers=headers)
+            else:
+                session = {"model": MODEL, "instructions": instructions, "audio": {"output": {"voice": voice}}, "delegation": {"type": "client"},
+                           "input": [{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": context}]}]}
+                resp = await client.post(LIVE_URL, json={"session": session, "transport": {"type": "webrtc", "sdp": sdp}}, headers={**headers, "Content-Type": "application/json"})
     except httpx.HTTPError as e:
         raise LiveUnavailable(f"Could not reach OpenAI: {e}")
     if resp.status_code >= 300:
@@ -352,17 +417,23 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
             msg = (resp.json().get("error") or {}).get("message") or resp.text[:200]
         except Exception:
             msg = resp.text[:200]
-        logger.warning(f"[Live] session create failed {resp.status_code}: {msg}")
+        logger.warning(f"[Live] {engine} session create failed {resp.status_code}: {msg}")
         raise LiveUnavailable(f"OpenAI refused the live session ({resp.status_code}): {msg}")
-    data = resp.json()
+    if engine == "mini":
+        answer_sdp = resp.text
+        openai_id = (resp.headers.get("Location") or "").rstrip("/").rsplit("/", 1)[-1] or None
+    else:
+        data = resp.json()
+        answer_sdp = (data.get("transport") or {}).get("sdp")
+        openai_id = (data.get("session") or {}).get("id")
     live_id = uuid.uuid4().hex[:12]
-    doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "mode": mode, "openai_session_id": (data.get("session") or {}).get("id"), "voice": voice,
+    doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "mode": mode, "engine": engine, "model": ENGINES[engine]["model"], "openai_session_id": openai_id, "voice": voice,
            "contact_id": str(contact["_id"]) if contact else None, "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None,
            "agenda": agenda, "agenda_pos": 0 if agenda is not None else None, "agenda_done": [], "agenda_skipped": [], "team": {"digest": team} if team is not None else None,
-           "config": {k: cfg[k] for k in DEFAULTS}, "status": "open", "started_at": _now(), "ended_at": None, "seconds": 0, "cost_usd": 0.0, "close_reason": None,
+           "config": {k: cfg[k] for k in DEFAULTS}, "status": "open", "started_at": _now(), "ended_at": None, "seconds": 0, "cost_usd": 0.0, "tokens": None, "close_reason": None,
            "transcript": [], "delegations": [], "pending": None, "created_at": _now(), "updated_at": _now()}
     await db[COLL].insert_one(doc)
-    logger.info(f"[Live] {mode} session {live_id} for {uid} voice={voice}" + (f" walkthrough={len(agenda)} stops" if agenda is not None else ""))
+    logger.info(f"[Live] {mode} session {live_id} for {uid} engine={engine} voice={voice}" + (f" walkthrough={len(agenda)} stops" if agenda is not None else ""))
     greet = shop["greet_instruction"] if shop else None
     opened = None
     if agenda is not None:
@@ -373,10 +444,11 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         from services import team_today as tt
         greet = f'Open with this, in your own words but keep every name and number: "{tt.spoken(team)}" Then stop and wait for the manager.'
         opened = {"kind": "team_today"}
-    return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": (data.get("transport") or {}).get("sdp"), "greeting": greeting_text(cfg, user, contact), "greet_instruction": greet,
+    return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": answer_sdp, "greeting": greeting_text(cfg, user, contact), "greet_instruction": greet,
             "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None, "open": opened,
             "agenda": [{k: s.get(k) for k in ("n", "kind", "name", "first", "why", "contact_id")} for s in agenda] if agenda is not None else None,
-            "idle_close_s": SHOPPER_IDLE_S if shop else cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": voice}
+            "idle_close_s": SHOPPER_IDLE_S if shop else cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": voice,
+            "engine": engine, "model": ENGINES[engine]["model"]}
 
 
 async def get_live(db, live_id: str) -> Optional[dict]:
@@ -386,15 +458,26 @@ async def get_live(db, live_id: str) -> Optional[dict]:
 async def record_events(db, live: dict, events: list) -> dict:
     """Transcript fragments, usage snapshots and the final close, batched by the browser."""
     rows, sets = [], {"updated_at": _now()}
+    mini = live.get("engine") == "mini"
+    tokens = live.get("tokens")
     for ev in events or []:
         t = ev.get("type")
         if t == "transcript" and ev.get("text"):
             rows.append({"role": "assistant" if ev.get("role") == "assistant" else "rep", "text": str(ev["text"])[:2000], "start_ms": ev.get("start_ms"), "end_ms": ev.get("end_ms"), "at": _now()})
         elif t == "usage" and ev.get("seconds") is not None:
             sets["seconds"] = max(int(live.get("seconds") or 0), int(ev["seconds"]))
+            if isinstance(ev.get("tokens"), dict):
+                tokens = {k: int(ev["tokens"].get(k) or 0) for k in MINI_PRICES}
+                sets["tokens"] = tokens
+                if mini:
+                    sets["cost_usd"] = mini_cost(tokens)
         elif t == "closed":
             secs = int(ev.get("seconds") if ev.get("seconds") is not None else live.get("seconds") or 0)
-            sets.update({"status": "closed", "ended_at": _now(), "seconds": secs, "cost_usd": round(secs / 60 * PRICE_PER_MIN, 4), "close_reason": ev.get("reason") or "close_requested"})
+            if isinstance(ev.get("tokens"), dict):
+                tokens = {k: int(ev["tokens"].get(k) or 0) for k in MINI_PRICES}
+                sets["tokens"] = tokens
+            cost = mini_cost(tokens) if mini and tokens else round(secs / 60 * ENGINES.get(live.get("engine") or "live", ENGINES["live"])["price_per_min"], 4)
+            sets.update({"status": "closed", "ended_at": _now(), "seconds": secs, "cost_usd": cost, "close_reason": ev.get("reason") or "close_requested"})
         elif t == "error":
             sets["last_error"] = str(ev.get("message") or "")[:300]
     ops = {"$set": sets}
@@ -408,6 +491,7 @@ async def record_events(db, live: dict, events: list) -> dict:
 
 def serialize(s: dict, full: bool = False) -> dict:
     out = {"live_id": s.get("live_id"), "user_id": s.get("user_id"), "user_name": s.get("user_name"), "mode": s.get("mode"), "voice": s.get("voice"), "status": s.get("status"), "contact_name": s.get("contact_name"),
+           "engine": s.get("engine") or "live", "model": s.get("model") or MODEL, "tokens": s.get("tokens"),
            "shopper": s.get("shopper"), "team": bool(s.get("team")), "last_error": s.get("last_error"), "walkthrough": {"stops": len(s["agenda"]), "done": len(s.get("agenda_done") or []), "skipped": len(s.get("agenda_skipped") or [])} if s.get("agenda") is not None else None,
            "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
            "seconds": int(s.get("seconds") or 0), "cost_usd": round(float(s.get("cost_usd") or 0), 4), "close_reason": s.get("close_reason"),
@@ -1206,12 +1290,22 @@ async def stats(db) -> dict:
     out = {}
     for label, since in (("today", now.replace(hour=0, minute=0, second=0, microsecond=0)), ("week", now - timedelta(days=7)), ("month", now - timedelta(days=30))):
         secs = sessions = 0
+        cost = 0.0
         reps = set()
-        async for s in db[COLL].find({"started_at": {"$gte": since}}, {"seconds": 1, "user_id": 1}):
-            secs += int(s.get("seconds") or 0)
+        by_engine = {"live": {"sessions": 0, "minutes": 0.0, "cost_usd": 0.0}, "mini": {"sessions": 0, "minutes": 0.0, "cost_usd": 0.0}}
+        async for s in db[COLL].find({"started_at": {"$gte": since}}, {"seconds": 1, "user_id": 1, "engine": 1, "cost_usd": 1, "status": 1, "tokens": 1}):
+            sec = int(s.get("seconds") or 0)
+            eng = s.get("engine") or "live"
+            # open sessions have no final cost yet: estimate from what is known so far
+            c = float(s.get("cost_usd") or 0) if s.get("status") == "closed" else (mini_cost(s.get("tokens")) if eng == "mini" else sec / 60 * PRICE_PER_MIN)
+            secs += sec
+            cost += c
             sessions += 1
             reps.add(s.get("user_id"))
-        out[label] = {"sessions": sessions, "minutes": round(secs / 60, 1), "cost_usd": round(secs / 60 * PRICE_PER_MIN, 2), "reps": len(reps)}
+            by_engine[eng]["sessions"] += 1
+            by_engine[eng]["minutes"] = round(by_engine[eng]["minutes"] + sec / 60, 1)
+            by_engine[eng]["cost_usd"] = round(by_engine[eng]["cost_usd"] + c, 2)
+        out[label] = {"sessions": sessions, "minutes": round(secs / 60, 1), "cost_usd": round(cost, 2), "reps": len(reps), "by_engine": by_engine}
     out["open"] = await db[COLL].count_documents({"status": "open", "started_at": {"$gte": now - timedelta(hours=3)}})
     return out
 
@@ -1219,5 +1313,10 @@ async def stats(db) -> dict:
 async def close_stale(db) -> int:
     """Sessions the browser never closed (tab killed): mark closed after 3 h using the last usage snapshot."""
     cutoff = _now() - timedelta(hours=3)
-    r = await db[COLL].update_many({"status": "open", "updated_at": {"$lt": cutoff}}, [{"$set": {"status": "closed", "close_reason": "stale", "ended_at": _now(), "cost_usd": {"$round": [{"$multiply": [{"$divide": [{"$ifNull": ["$seconds", 0]}, 60]}, PRICE_PER_MIN]}, 4]}}}])
-    return r.modified_count
+    n = 0
+    async for s in db[COLL].find({"status": "open", "updated_at": {"$lt": cutoff}}, {"seconds": 1, "engine": 1, "tokens": 1}):
+        secs = int(s.get("seconds") or 0)
+        cost = mini_cost(s.get("tokens")) if s.get("engine") == "mini" else round(secs / 60 * PRICE_PER_MIN, 4)
+        await db[COLL].update_one({"_id": s["_id"]}, {"$set": {"status": "closed", "close_reason": "stale", "ended_at": _now(), "cost_usd": cost}})
+        n += 1
+    return n

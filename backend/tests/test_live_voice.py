@@ -58,6 +58,7 @@ async def test_config_and_prompt():
 
 
 async def test_create_session_with_fake_openai(monkeypatch):
+    """Default engine is Realtime mini: multipart to /v1/realtime/calls, SDP answer back as text, delegate tool declared, no averaging of protocols."""
     db = get_db()
     user = await _tester(db)
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-fake")
@@ -65,7 +66,8 @@ async def test_create_session_with_fake_openai(monkeypatch):
 
     class FakeResp:
         status_code = 201
-        text = ""
+        text = "v=0 answer"
+        headers = {"Location": "/v1/realtime/calls/rtc_abc123"}
 
         def json(self):
             return {"session": {"id": "live_abc123"}, "transport": {"type": "webrtc", "sdp": "v=0 answer"}}
@@ -80,24 +82,58 @@ async def test_create_session_with_fake_openai(monkeypatch):
         async def __aexit__(self, *a):
             return False
 
-        async def post(self, url, json=None, headers=None):
-            captured.update({"url": url, "body": json, "headers": headers})
+        async def post(self, url, json=None, headers=None, files=None, data=None):
+            captured.update({"url": url, "body": json, "headers": headers, "files": files})
             return FakeResp()
 
     monkeypatch.setattr(lv.httpx, "AsyncClient", FakeClient)
     out = await lv.create_session(db, user, "assistant", "v=0 offer")
     try:
-        assert out["sdp"] == "v=0 answer" and out["session_id"] == "live_abc123" and out["voice"] == "gleam" and out["cap_left_s"] == 900
+        assert out["sdp"] == "v=0 answer" and out["session_id"] == "rtc_abc123" and out["voice"] == "marin" and out["engine"] == "mini" and out["model"] == "gpt-realtime-2.1-mini"
+        assert out["cap_left_s"] == 60 * 60
         assert "Activation" in out["greeting"]
+        assert captured["url"] == lv.REALTIME_URL and captured["headers"]["Authorization"] == "Bearer sk-test-fake" and "Content-Type" not in captured["headers"]
+        assert captured["body"] is None and captured["files"]["sdp"][1] == "v=0 offer"
+        import json as _json
+        session = _json.loads(captured["files"]["session"][1])
+        assert session["type"] == "realtime" and session["model"] == "gpt-realtime-2.1-mini" and session["audio"]["output"]["voice"] == "marin"
+        assert session["audio"]["input"]["turn_detection"]["type"] == "semantic_vad" and session["tools"][0]["name"] == "delegate" and "delegation" not in session
+        assert "TOOL: you have one function, delegate(request)" in session["instructions"] and "Right now it is" in session["instructions"]
+        live = await lv.get_live(db, out["live_id"])
+        assert live and live["status"] == "open" and live["openai_session_id"] == "rtc_abc123" and live["engine"] == "mini"
+        # token usage prices the session; seconds alone do not
+        sets = await lv.record_events(db, live, [{"type": "usage", "seconds": 120, "tokens": {"audio_in": 60000, "audio_in_cached": 200000, "text_in": 5000, "text_in_cached": 40000, "audio_out": 24000, "text_out": 800}}])
+        assert sets["seconds"] == 120 and 1.1 < sets["cost_usd"] < 1.3, sets
+        sets = await lv.record_events(db, {**live, "tokens": sets["tokens"]}, [{"type": "closed", "reason": "close_requested", "seconds": 130}])
+        assert sets["status"] == "closed" and sets["cost_usd"] == lv.mini_cost({"audio_in": 60000, "audio_in_cached": 200000, "text_in": 5000, "text_in_cached": 40000, "audio_out": 24000, "text_out": 800})
+    finally:
+        await db[lv.COLL].delete_one({"live_id": out["live_id"]})
+
+    # the lab can audition GPT-Live-1 explicitly: JSON to /v1/live/sessions with client delegation, as before
+    captured.clear()
+    out = await lv.create_session(db, {**user, "role": "super_admin"}, "lab", "v=0 offer", overrides={"engine": "live", "voice": "gleam"})
+    try:
+        assert out["engine"] == "live" and out["voice"] == "gleam" and out["session_id"] == "live_abc123"
         body = captured["body"]
-        assert captured["url"] == lv.LIVE_URL and captured["headers"]["Authorization"] == "Bearer sk-test-fake"
+        assert captured["url"] == lv.LIVE_URL and captured["headers"]["Content-Type"] == "application/json"
         assert body["transport"] == {"type": "webrtc", "sdp": "v=0 offer"}
         assert body["session"]["model"] == "gpt-live-1" and body["session"]["delegation"] == {"type": "client"} and body["session"]["audio"]["output"]["voice"] == "gleam"
         assert body["session"]["input"][0]["role"] == "developer"
         live = await lv.get_live(db, out["live_id"])
-        assert live and live["status"] == "open" and live["openai_session_id"] == "live_abc123"
+        sets = await lv.record_events(db, live, [{"type": "closed", "reason": "close_requested", "seconds": 120}])
+        assert sets["cost_usd"] == 0.1
     finally:
         await db[lv.COLL].delete_one({"live_id": out["live_id"]})
+
+
+async def test_engine_caps_are_separate():
+    cfg = dict(lv.DEFAULTS)
+    assert lv.cap_minutes(cfg, "mini") == 60 and lv.cap_minutes(cfg, "live") == 15
+    cfg = lv.clean_config({"engine": "live", "mini_voice": "cedar", "mini_daily_cap_min": 999, "voice": "nope"})
+    assert cfg["engine"] == "live" and cfg["mini_voice"] == "cedar" and cfg["mini_daily_cap_min"] == 480 and cfg["voice"] == "gleam"
+    assert lv.clean_config({"engine": "bogus", "mini_voice": "gleam"})["engine"] == "mini"
+    assert lv.voice_gender("cedar") == "male" and lv.voice_gender("marin") == "female" and lv.voice_gender("gleam") == "female"
+    assert lv.mini_cost(None) == 0.0 and lv.mini_cost({"audio_out": 1_000_000}) == 20.0
 
 
 async def test_brain_who_today_recall_text_confirm_reminder():
@@ -299,13 +335,22 @@ async def test_events_and_admin_api(forest_h, tester_h):
         assert r.status_code == 200 and r.json()["mode"] == "lab" and r.json()["cost_usd"] == 0.075
         # config save round trip + preview
         before = requests.get(f"{BASE}/api/live-voice/admin/config", headers=forest_h, timeout=30).json()["config"]
-        r = requests.put(f"{BASE}/api/live-voice/admin/config", headers=forest_h, json={"voice": "willow", "energy": 2, "notes": "Loves a quick car joke."}, timeout=30)
+        r = requests.put(f"{BASE}/api/live-voice/admin/config", headers=forest_h, json={"voice": "willow", "energy": 2, "notes": "Loves a quick car joke.", "engine": "mini", "mini_voice": "cedar", "mini_daily_cap_min": 90}, timeout=30)
         assert r.status_code == 200 and r.json()["config"]["voice"] == "willow" and r.json()["config"]["energy"] == 2 and r.json()["config"]["updated_by"] == FOREST["email"]
+        assert r.json()["config"]["engine"] == "mini" and r.json()["config"]["mini_voice"] == "cedar" and r.json()["config"]["mini_daily_cap_min"] == 90
         assert requests.put(f"{BASE}/api/live-voice/admin/config", headers=forest_h, json={"voice": "nope"}, timeout=30).status_code == 400
+        assert requests.put(f"{BASE}/api/live-voice/admin/config", headers=forest_h, json={"mini_voice": "gleam"}, timeout=30).status_code == 400
+        assert requests.put(f"{BASE}/api/live-voice/admin/config", headers=forest_h, json={"engine": "elevenlabs"}, timeout=30).status_code == 400
+        meta = requests.get(f"{BASE}/api/live-voice/admin/config", headers=forest_h, timeout=30).json()
+        assert set(meta["engines"]) == {"live", "mini"} and len(meta["mini_voices"]) == 10 and meta["engines"]["mini"]["model"] == "gpt-realtime-2.1-mini"
         r = requests.get(f"{BASE}/api/live-voice/admin/preview", headers=forest_h, params={"energy": 5, "playful": 5}, timeout=30)
         assert r.status_code == 200 and "high-energy" in r.json()["personality"] and "quick with a one-liner" in r.json()["personality"] and "car joke" in r.json()["personality"]
         cfg = requests.get(f"{BASE}/api/live-voice/config", headers=tester_h, timeout=30).json()
-        assert cfg["voice"] == "willow" and cfg["available"] is False and cfg["is_super_admin"] is False
+        # the rep-facing config names the voice of the engine reps actually get
+        assert cfg["engine"] == "mini" and cfg["voice"] == "cedar" and cfg["usage"]["engine"] == "mini" and cfg["usage"]["cap_s"] == 90 * 60 and cfg["available"] is False and cfg["is_super_admin"] is False
+        r = requests.put(f"{BASE}/api/live-voice/admin/config", headers=forest_h, json={"engine": "live"}, timeout=30)
+        cfg = requests.get(f"{BASE}/api/live-voice/config", headers=tester_h, timeout=30).json()
+        assert cfg["engine"] == "live" and cfg["voice"] == "willow" and cfg["usage"]["cap_s"] == before["daily_cap_min"] * 60
         # session start guards
         assert requests.post(f"{BASE}/api/live-voice/session", headers=tester_h, json={"mode": "lab", "sdp": "v=0"}, timeout=30).status_code == 403
         assert requests.post(f"{BASE}/api/live-voice/session", headers=tester_h, json={"mode": "assistant", "sdp": "v=0"}, timeout=30).status_code == 403
@@ -328,7 +373,8 @@ async def test_focus_contact_from_ask_button(monkeypatch):
 
     class FakeResp:
         status_code = 201
-        text = ""
+        text = "v=0 answer"
+        headers = {"Location": "/v1/realtime/calls/rtc_fake"}
 
         def json(self):
             return {"session": {"id": "live_focus"}, "transport": {"type": "webrtc", "sdp": "v=0 answer"}}
@@ -343,8 +389,10 @@ async def test_focus_contact_from_ask_button(monkeypatch):
         async def __aexit__(self, *a):
             return False
 
-        async def post(self, url, json=None, headers=None):
-            captured.update(json)
+        async def post(self, url, json=None, headers=None, files=None, data=None):
+            # GPT-Live posts JSON; Realtime mini posts multipart with the session JSON in `files`
+            captured.update(json or {"session": __import__("json").loads(files["session"][1])})
+            captured["context"] = captured["context"] if captured["session"].get("input") else captured["session"]["instructions"]
             return FakeResp()
 
     monkeypatch.setattr(lv.httpx, "AsyncClient", FakeClient)
@@ -353,7 +401,7 @@ async def test_focus_contact_from_ask_button(monkeypatch):
     try:
         assert out["contact_name"] == "Sarah Tester" and "Sarah" in out["greeting"]
         assert "Sarah Tester is the person in focus" in captured["session"]["instructions"]
-        assert "Sarah Tester's conversation" in captured["session"]["input"][0]["content"][0]["text"]
+        assert "Sarah Tester's conversation" in captured["context"]
         assert live["contact_id"] == sarah and live["contact_name"] == "Sarah Tester"
         r = await lv.delegate(db, live, user, [{"role": "rep", "text": "What do we know about her?"}], "f1")
         assert r["tool"] in ("recall_person", "find_person") and r["content"]
@@ -365,7 +413,7 @@ async def test_focus_contact_from_ask_button(monkeypatch):
         assert "Mike" in r["content"]
         # unknown contact id -> plain session, no focus
         out2 = await lv.create_session(db, user, "assistant", "v=0 offer", None, "000000000000000000000000")
-        assert out2["contact_name"] is None and "Home screen" in captured["session"]["input"][0]["content"][0]["text"]
+        assert out2["contact_name"] is None and "Home screen" in captured["context"]
         await db[lv.COLL].delete_one({"live_id": out2["live_id"]})
     finally:
         await db[lv.COLL].delete_one({"live_id": out["live_id"]})

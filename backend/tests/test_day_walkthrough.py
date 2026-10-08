@@ -91,7 +91,8 @@ async def test_walkthrough_session_and_advance(monkeypatch):
 
     class FakeResp:
         status_code = 201
-        text = ""
+        text = "v=0 answer"
+        headers = {"Location": "/v1/realtime/calls/rtc_fake"}
 
         def json(self):
             return {"session": {"id": "live_walk1"}, "transport": {"type": "webrtc", "sdp": "v=0 answer"}}
@@ -106,8 +107,10 @@ async def test_walkthrough_session_and_advance(monkeypatch):
         async def __aexit__(self, *a):
             return False
 
-        async def post(self, url, json=None, headers=None):
-            captured.update(json)
+        async def post(self, url, json=None, headers=None, files=None, data=None):
+            # GPT-Live posts JSON; Realtime mini posts multipart with the session JSON in `files`
+            captured.update(json or {"session": __import__("json").loads(files["session"][1])})
+            captured["context"] = captured["context"] if captured["session"].get("input") else captured["session"]["instructions"]
             return FakeResp()
 
     monkeypatch.setattr(lv.httpx, "AsyncClient", FakeClient)
@@ -116,7 +119,7 @@ async def test_walkthrough_session_and_advance(monkeypatch):
         assert out["open"] == {"kind": "thread", "id": str(s["contacts"][0]["_id"]), "name": "Jeremy QA-Cole", "first": "Jeremy"}
         assert out["greet_instruction"].startswith("Open with this") and "First up: Reply to Jeremy" in out["greet_instruction"]
         assert out["agenda"][0]["kind"] == "reply" and out["contact_name"] == "Jeremy QA-Cole"
-        assert "WALKTHROUGH OF THE REP'S DAY" in captured["session"]["instructions"] and "DAY WALKTHROUGH, the stops in order" in captured["session"]["input"][0]["content"][0]["text"]
+        assert "WALKTHROUGH OF THE REP'S DAY" in captured["session"]["instructions"] and "DAY WALKTHROUGH, the stops in order" in captured["context"]
         live = await lv.get_live(db, out["live_id"])
         assert live["agenda_pos"] == 0 and live["contact_id"] == str(s["contacts"][0]["_id"])
         assert lv._walkthrough_line(live).startswith("DAY WALKTHROUGH: stop 1 of")

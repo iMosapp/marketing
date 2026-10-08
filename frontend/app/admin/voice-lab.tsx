@@ -12,8 +12,9 @@ import { SessionsList } from '../../components/jessi/SessionsList';
 import { useLiveJessiLauncher } from '../../components/jessi/LiveJessiProvider';
 import { liveSupported } from '../../hooks/useLiveJessi';
 
-type Cfg = { voice: string; energy: number; pacing: number; playful: number; brevity: number; daily_cap_min: number; idle_close_s: number; greeting: string; contact_greeting: string; notes: string; updated_at?: string | null; updated_by?: string | null };
-type Meta = { voices: Voice[]; labels: Record<string, Record<string, string>>; configured: boolean; reason?: string | null; price_per_min: number; model: string; lab_live: boolean };
+type Cfg = { voice: string; engine: 'live' | 'mini'; mini_voice: string; mini_daily_cap_min: number; energy: number; pacing: number; playful: number; brevity: number; daily_cap_min: number; idle_close_s: number; greeting: string; contact_greeting: string; notes: string; updated_at?: string | null; updated_by?: string | null };
+type Engine = { model: string; label: string; price_per_min: number; note: string };
+type Meta = { voices: Voice[]; mini_voices: Voice[]; engines: Record<'live' | 'mini', Engine>; labels: Record<string, Record<string, string>>; configured: boolean; reason?: string | null; price_per_min: number; model: string; lab_live: boolean };
 const LEVELS: { key: keyof Cfg; label: string }[] = [{ key: 'energy', label: 'Energy' }, { key: 'pacing', label: 'Pacing' }, { key: 'playful', label: 'Playfulness' }, { key: 'brevity', label: 'Brevity' }];
 
 export default function VoiceLab() {
@@ -27,7 +28,9 @@ export default function VoiceLab() {
   const [preview, setPreview] = useState('');
   const jessi = useLiveJessiLauncher();
   const [refreshKey, setRefreshKey] = useState(0);
-  const audition = () => cfg && jessi.open({ options: { mode: 'lab', overrides: cfg }, title: `Audition · ${cfg.voice}`, onClose: () => setRefreshKey(k => k + 1) });
+  const audition = () => cfg && jessi.open({ options: { mode: 'lab', overrides: cfg }, title: `Audition · ${cfg.engine === 'mini' ? cfg.mini_voice : cfg.voice} · ${meta?.engines[cfg.engine]?.label || cfg.engine}`, onClose: () => setRefreshKey(k => k + 1) });
+  const engine = cfg ? meta?.engines[cfg.engine] : undefined;
+  const capMin = cfg ? (cfg.engine === 'mini' ? cfg.mini_daily_cap_min : cfg.daily_cap_min) : 0;
 
   useEffect(() => {
     api.get('/live-voice/admin/config').then(r => { setCfg(r.data.config); setSaved(r.data.config); setMeta(r.data); })
@@ -80,12 +83,35 @@ export default function VoiceLab() {
           )}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: `${GOLD}14`, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: `${GOLD}40`, marginBottom: 14 }} {...tid('voice-lab-intro')}>
             <Ionicons name="radio" size={18} color={GOLD} />
-            <Text style={{ flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>{meta.model}, full duplex, about ${meta.price_per_min.toFixed(2)} a minute. Audition uses the settings on this screen even before you save. Reps hear the saved config{meta.lab_live ? '' : ' once you release Talk to Jessi in the Test Lab'}.</Text>
+            <Text style={{ flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>{engine?.model || meta.model}, {engine?.note || 'full duplex'}, about ${(engine?.price_per_min ?? meta.price_per_min).toFixed(3)} a minute. Audition uses the settings on this screen even before you save. Reps hear the saved config{meta.lab_live ? '' : ' once you release Talk to Jessi in the Test Lab'}.</Text>
           </View>
 
           <View style={card}>
-            <Text style={h}>HER VOICE</Text>
-            <VoicePicker voices={meta.voices} value={cfg.voice} onChange={v => set({ voice: v })} />
+            <Text style={h}>HER ENGINE</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }} {...tid('engine-picker')}>
+              {(['mini', 'live'] as const).map(id => {
+                const e = meta.engines[id];
+                const on = cfg.engine === id;
+                return (
+                  <TouchableOpacity key={id} onPress={() => set({ engine: id })} style={{ flex: 1, borderRadius: 12, padding: 12, borderWidth: 1.5, borderColor: on ? GOLD : colors.border, backgroundColor: on ? `${GOLD}1A` : colors.bg }} {...tid(`engine-${id}`)}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '800', color: on ? GOLD : colors.text, flex: 1 }}>{e.label}</Text>
+                      {on && <Ionicons name="checkmark-circle" size={16} color={GOLD} />}
+                    </View>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 3, lineHeight: 15 }}>{e.model} · about ${e.price_per_min.toFixed(3)}/min</Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2, lineHeight: 15 }}>{e.note}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 8 }}>Same brain, same 27 tools, same confirm-by-voice on both. The engine only changes who turns sound into words and words into sound, and what a minute costs.</Text>
+          </View>
+
+          <View style={card}>
+            <Text style={h}>HER VOICE{cfg.engine === 'mini' ? ' · REALTIME MINI' : ' · GPT-LIVE'}</Text>
+            {cfg.engine === 'mini'
+              ? <VoicePicker voices={meta.mini_voices} value={cfg.mini_voice} onChange={v => set({ mini_voice: v })} />
+              : <VoicePicker voices={meta.voices} value={cfg.voice} onChange={v => set({ voice: v })} />}
           </View>
 
           <View style={card}>
@@ -113,12 +139,14 @@ export default function VoiceLab() {
           <View style={card}>
             <Text style={h}>LIMITS</Text>
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <NumPill label="Minutes per rep per day" value={cfg.daily_cap_min} opts={[5, 10, 15, 30, 60, 120, 240]} onPick={n => set({ daily_cap_min: n })} testID="voice-cap" />
+              {cfg.engine === 'mini'
+                ? <NumPill label="Minutes per rep per day (Realtime mini)" value={cfg.mini_daily_cap_min} opts={[15, 30, 60, 90, 120, 240, 480]} onPick={n => set({ mini_daily_cap_min: n })} testID="voice-cap-mini" />
+                : <NumPill label="Minutes per rep per day (GPT-Live)" value={cfg.daily_cap_min} opts={[5, 10, 15, 30, 60, 120, 240]} onPick={n => set({ daily_cap_min: n })} testID="voice-cap" />}
             </View>
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
               <NumPill label="Hang up after quiet seconds" value={cfg.idle_close_s} opts={[15, 25, 40, 60, 90]} onPick={n => set({ idle_close_s: n })} testID="voice-idle" />
             </View>
-            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 8 }}>Cap: {cfg.daily_cap_min} min is about ${(cfg.daily_cap_min * meta.price_per_min).toFixed(2)} a day per rep at most. The cap resets at each rep's local midnight. You and other super admins are never capped.</Text>
+            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 8 }}>Cap: {capMin} min is about ${(capMin * (engine?.price_per_min ?? meta.price_per_min)).toFixed(2)} a day per rep at most on {engine?.label || 'this engine'}. Each engine has its own cap; it resets at each rep's local midnight. You and other super admins are never capped.</Text>
           </View>
 
           {!!error && <Text style={{ color: RED, marginBottom: 10 }} {...tid('voice-lab-error')}>{error}</Text>}
