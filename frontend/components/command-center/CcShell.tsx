@@ -24,7 +24,7 @@ export const CcShell = ({ title, subtitle, children, loading, right, footer }: S
         {TABS.map(([k, label]) => {
           const active = current === k;
           return (
-            <TouchableOpacity key={k} onPress={() => router.push(`/admin/command-center${k === 'index' ? '' : '/' + k}` as any)} style={{ paddingHorizontal: 14, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? GOLD : 'transparent', borderWidth: 1, borderColor: active ? GOLD : colors.border }} {...tid(`cc-tab-${k}`)}>
+            <TouchableOpacity key={k} onPress={() => router.push(`/admin/command-center${k === 'index' ? '' : '/' + k}` as any)} style={{ paddingHorizontal: 14, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? GOLD : 'transparent', borderWidth: 1, borderColor: active ? GOLD : colors.border }} {...tid(`cc-tab-${k === 'index' ? 'focus' : k}`)}>
               <Text style={{ fontSize: 13, fontWeight: '800', color: active ? '#1C1C1E' : colors.textSecondary, letterSpacing: 0.2 }}>{label}</Text>
             </TouchableOpacity>
           );
