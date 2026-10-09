@@ -44,6 +44,14 @@ export default function FounderFocus() {
   const Left = (
     <View style={{ flex: 1, gap: 20 }}>
       <TodayBrief colors={colors} showToast={showToast} />
+      <TouchableOpacity onPress={() => router.push('/admin/command-center/team' as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: GOLD + '66' }} {...tid('cc-team-entry')}>
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="sparkles" size={20} color={GOLD} /></View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14.5, fontWeight: '800', color: colors.text }}>Your leadership team</Text>
+          <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>Seven executives. Ask one directly, or convene a roundtable on a decision.</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={GOLD} />
+      </TouchableOpacity>
       <Card colors={colors} accent={GOLD} testID="cc-objective" onPress={() => setSheet('objective')}>
         <Eyebrow t="THE ONE BIG THING" colors={colors} right={<Pill text={obSt.label} color={obSt.color} testID="cc-objective-status" />} />
         <Text style={{ fontSize: wide ? 26 : 22, fontWeight: '800', color: colors.text, lineHeight: wide ? 34 : 29, letterSpacing: -0.3 }} {...tid('cc-objective-title')}>{ob?.title || 'Set the one objective that matters most right now.'}</Text>

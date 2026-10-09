@@ -17,19 +17,23 @@ export const CcShell = ({ title, subtitle, children, loading, right, footer }: S
   const { width } = useWindowDimensions();
   const wide = width >= 1024;
   const current = TABS.find(([k]) => (k === 'index' ? /command-center\/?$/.test(pathname) : pathname.endsWith(`/${k}`)))?.[0] || 'index';
+  const nav = React.useRef<ScrollView>(null);
+  React.useEffect(() => { if (current === 'team') setTimeout(() => nav.current?.scrollToEnd({ animated: false }), 0); }, [current]);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScreenHeader title={title} subtitle={subtitle} right={right} testID="cc-header" onBack={() => router.push('/(tabs)/more' as any)} />
-      <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 8, alignSelf: wide ? 'center' : 'stretch', width: wide ? 1100 : undefined }} {...tid('cc-nav')}>
+      <ScrollView ref={nav} horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, alignSelf: wide ? 'center' : 'stretch', width: wide ? 1100 : undefined }} contentContainerStyle={{ flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 8 }} {...tid('cc-nav')}>
         {TABS.map(([k, label]) => {
           const active = current === k;
+          const team = k === 'team';
           return (
-            <TouchableOpacity key={k} onPress={() => router.push(`/admin/command-center${k === 'index' ? '' : '/' + k}` as any)} style={{ paddingHorizontal: 14, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? GOLD : 'transparent', borderWidth: 1, borderColor: active ? GOLD : colors.border }} {...tid(`cc-tab-${k === 'index' ? 'focus' : k}`)}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: active ? '#1C1C1E' : colors.textSecondary, letterSpacing: 0.2 }}>{label}</Text>
+            <TouchableOpacity key={k} onPress={() => router.push(`/admin/command-center${k === 'index' ? '' : '/' + k}` as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, height: 34, borderRadius: 17, justifyContent: 'center', backgroundColor: active ? GOLD : 'transparent', borderWidth: 1, borderColor: active || team ? GOLD : colors.border }} {...tid(`cc-tab-${k === 'index' ? 'focus' : k}`)}>
+              {team && <Ionicons name="sparkles" size={13} color={active ? '#1C1C1E' : GOLD} />}
+              <Text style={{ fontSize: 13, fontWeight: '800', color: active ? '#1C1C1E' : team ? GOLD : colors.textSecondary, letterSpacing: 0.2 }}>{label}</Text>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
       {loading ? <ActivityIndicator color={GOLD} style={{ marginTop: 60 }} /> : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: footer ? 120 : 60, gap: 20, alignSelf: wide ? 'center' : 'stretch', width: wide ? 1100 : undefined }} keyboardShouldPersistTaps="handled">
           {children}
@@ -41,12 +45,9 @@ export const CcShell = ({ title, subtitle, children, loading, right, footer }: S
 };
 
 export const Card = ({ children, colors, accent, testID, onPress, style }: { children: React.ReactNode; colors: any; accent?: string; testID?: string; onPress?: () => void; style?: any }) => {
-  const body = (
-    <View style={[{ backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 18, gap: 10, borderLeftWidth: accent ? 4 : 1, borderLeftColor: accent || colors.border }, style]} {...(onPress ? {} : tid(testID || 'cc-card'))}>
-      {children}
-    </View>
-  );
-  return onPress ? <TouchableOpacity onPress={onPress} activeOpacity={0.85} {...tid(testID || 'cc-card')}>{body}</TouchableOpacity> : body;
+  const visual = { backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 18, gap: 10, borderLeftWidth: accent ? 4 : 1, borderLeftColor: accent || colors.border };
+  if (!onPress) return <View style={[visual, style]} {...tid(testID || 'cc-card')}>{children}</View>;
+  return <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={style} {...tid(testID || 'cc-card')}><View style={visual}>{children}</View></TouchableOpacity>;
 };
 
 export const Eyebrow = ({ t, colors, right }: { t: string; colors: any; right?: React.ReactNode }) => (
