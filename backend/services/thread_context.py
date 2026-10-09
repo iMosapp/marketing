@@ -39,6 +39,7 @@ class Episode:
     ref: str = ""
     lines: list = field(default_factory=list)
     customer_texts: int = 0
+    last_customer: str = ""
 
     def label(self) -> str:
         return self.topic or KIND_LABEL.get(self.kind, "a general question")
@@ -77,7 +78,13 @@ class ThreadView:
             lines.append("EARLIER, SEPARATE TOPICS WITH THIS PERSON (background only; never mix them into this reply unless the customer brings them up):")
             for e in earlier[-4:]:
                 lines.append(f"- {_day(e.started_at)}, {e.trigger}: {e.label()}")
-        rule = "The customer just changed the subject: follow them to the new topic and leave the previous one alone." if self.switched else "Answer the current topic only."
+        if self.forced:
+            rule = (f"The rep chose this topic, so write about THIS topic even if the customer's latest message is about something else: pick up where it left off"
+                    + (f" (their last words on it: \"{cur.last_customer[:160]}\")" if cur.last_customer else "") + " and move it forward with a concrete next step or answer.")
+        elif self.switched:
+            rule = "The customer just changed the subject: follow them to the new topic and leave the previous one alone."
+        else:
+            rule = "Answer the current topic only."
         if cur.kind == "software":
             rule += " This is about the software we sell, not a vehicle: never mention vehicles, trade-ins, test drives, inventory or financing."
         elif cur.kind == "trade_in":
@@ -238,8 +245,13 @@ def build(messages: list, first: str, inquiry: Optional[dict] = None, vehicles: 
             cur.lines.append(f"--- {_ago(prev_ts, ts).replace(' ago', '')} later, {_day(ts)} ---")
         cur.lines.append(line)
         cur.ended_at = ts
-        if m.get("sender") == "contact" and m.get("type") != "webchat_transcript":
-            cur.customer_texts += 1
+        if m.get("sender") == "contact":
+            if m.get("type") == "webchat_transcript":
+                asked = [ln.partition(": ")[2] for ln in (m.get("content") or "").split("\n") if ln.startswith("Visitor: ")]
+                cur.last_customer = cur.last_customer or " / ".join(a.strip() for a in asked if a.strip())[:200]
+            else:
+                cur.customer_texts += 1
+                cur.last_customer = (m.get("content") or "").strip()[:200] or cur.last_customer
         prev_ts = ts
     return ThreadView(episodes=episodes, current=cur, switched=switched, now=now)
 

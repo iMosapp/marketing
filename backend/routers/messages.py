@@ -2135,7 +2135,8 @@ async def get_ai_suggestion_smart(conversation_id: str, body: Optional[dict] = B
             (f"Customer context:\n{contact_ctx}\n\n" if contact_ctx else "") +
             (f"{topic_block}\n\n" if topic_block else "") +
             (f"The thread so far (oldest first):\n{conv_lines}\n\n" if conv_lines else "") +
-            "Draft my reply to the latest customer message. Answer what they actually said, use the specifics they gave (names, numbers, days, vehicles). Just the reply text."
+            ("Draft my next text about the topic the rep chose (see the RULE above), not about the latest message if that is on another subject. Just the reply text." if view.forced else
+             "Draft my reply to the latest customer message. Answer what they actually said, use the specifics they gave (names, numbers, days, vehicles). Just the reply text.")
         )
 
         emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")

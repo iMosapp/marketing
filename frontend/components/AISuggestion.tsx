@@ -37,7 +37,7 @@ export default function AISuggestion({
           <Ionicons name="sparkles" size={16} color="#34C759" />
           <Text style={styles.headerText}>Jessi suggests:</Text>
         </View>
-        <TouchableOpacity onPress={onDismiss}>
+        <TouchableOpacity onPress={onDismiss} testID="ai-suggestion-dismiss" dataSet={{ testid: 'ai-suggestion-dismiss' } as any}>
           <Ionicons name="close" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>

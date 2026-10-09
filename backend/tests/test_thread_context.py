@@ -86,6 +86,11 @@ def test_customer_switching_subject_in_their_own_words():
     # the rep overrides: this reply is about the trade-in after all
     view.force("trade_in")
     assert view.current.kind == "trade_in" and view.forced and "chosen by the rep" in view.topic_block() and not view.switched
+    assert 'their last words on it: "ok sent them. what do you think it\'s worth?"' in view.topic_block()
+    view.force("software")
+    assert 'their last words on it: "also, I still need to know how to install the widget on my website"' in view.topic_block(), "force picks the latest episode of that kind"
+    only_chat = tc.build(_scenario(), "Forest", vehicles={"a1": "2019 Ford F-150"}, now=T0 + timedelta(hours=24)).force("software")
+    assert 'their last words on it: "how do I get this chat added to my site? / yes please"' in only_chat.topic_block(), "a web chat episode remembers what the visitor asked"
     # a plain thread with no triggers and vague texts stays one general episode
     plain = tc.build([{"conversation_id": "c2", "sender": "contact", "timestamp": T0, "content": "hey"}, {"conversation_id": "c2", "sender": "user", "timestamp": T0 + timedelta(minutes=1), "content": "hi Forest, what can I do for you?"},
                       {"conversation_id": "c2", "sender": "contact", "timestamp": T0 + timedelta(minutes=2), "content": "do you still have the blue truck in stock?"}], "Forest", now=T0 + timedelta(minutes=3))
@@ -118,7 +123,7 @@ def test_live_suggest_and_brief_use_the_thread_reader():
         contact = {"first_name": "Forest", "last_name": "QAThread", "phone": "+15005550777", "user_id": str(me["_id"]), "created_at": datetime.now(timezone.utc)}
         cid = str((await db.contacts.insert_one(contact)).inserted_id)
         appr_id = (await db.vehicle_appraisals.insert_one({"user_id": str(me["_id"]), "contact_id": cid, "vehicle": {"year": 2019, "make": "Ford", "model": "F-150", "trim": "Lariat"}, "created_at": datetime.now(timezone.utc), "qa_thread_context": True})).inserted_id
-        conv = {"user_id": str(me["_id"]), "contact_id": cid, "contact_name": "Forest QAThread", "contact_phone": "+15005550777", "status": "active", "ai_mode": "suggest", "created_at": T0, "last_message_at": datetime.now(timezone.utc)}
+        conv = {"user_id": str(me["_id"]), "contact_id": cid, "contact_name": "Forest QAThread", "contact_phone": "+15005550777", "status": "active", "ai_mode": "assisted", "created_at": T0, "last_message_at": datetime.now(timezone.utc)}
         conv_id = str((await db.conversations.insert_one(conv)).inserted_id)
         rows = _scenario(conv_id, str(appr_id))
         for m in rows:
@@ -154,6 +159,9 @@ def test_live_suggest_and_brief_use_the_thread_reader():
         r2 = requests.post(f"{API}/messages/ai-suggest/{conv_id}", headers=headers, json={"topic_kind": "software"}, timeout=60)
         d2 = r2.json()
         assert d2["topic"]["kind"] == "software" and d2["topic"]["forced"] is True and d2["suggestion"], d2
+        low2 = d2["suggestion"].lower()
+        assert any(w in low2 for w in ("site", "website", "chat", "widget", "code", "platform", "install", "wordpress", "page")), f"forced software draft ignored the topic: {d2['suggestion']}"
+        assert "truck" not in low2 and "f-150" not in low2 and "trade" not in low2, d2["suggestion"]
     finally:
         async def cl():
             db = _db()
