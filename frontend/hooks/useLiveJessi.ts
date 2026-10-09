@@ -6,7 +6,7 @@ import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, applyAu
 
 export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
-export type LiveOptions = { mode: 'assistant' | 'lab' | 'shopper'; overrides?: Record<string, any>; contactId?: string };
+export type LiveOptions = { mode: 'assistant' | 'lab' | 'shopper' | 'advisor'; overrides?: Record<string, any>; contactId?: string };
 export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions' | 'team_today'; id?: string; name?: string; first?: string; contact_id?: string; query?: string; days?: number | null; res?: any; rep?: string; draft?: string };
 
 const TOOL_LABELS: Record<string, string> = {
@@ -15,7 +15,7 @@ const TOOL_LABELS: Record<string, string> = {
   find_duplicates: 'Checked for duplicates', merge_duplicates: 'Merge ready, say yes', hang_up: 'The shopper hung up', stay_in_character: 'Staying in character',
   next_stop: 'Next stop', find_mentions: 'Searched your conversations',
   call_person: 'Calling, your phone will ring', add_note: 'Note saved', tag_person: 'Tag updated', mark_sold: 'Sale ready, say yes', finish_task: 'Reminder updated',
-  update_contact: 'Record updated', book_appointment: 'Appointment ready, say yes', enroll_campaign: 'Enrollment ready, say yes', send_card: 'Text ready to send',
+  update_contact: 'Record updated', book_appointment: 'Appointment ready, say yes', enroll_campaign: 'Enrollment ready, say yes', send_card: 'Text ready to send', advise: 'Advisor answered',
 };
 const ROW_GAP_MS = 1500;
 

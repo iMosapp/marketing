@@ -34,7 +34,7 @@ MINI_PRICES = {"audio_in": 10.0, "audio_in_cached": 0.30, "text_in": 0.60, "text
 SETTINGS_KEY = "jessi_voice"
 COLL = "live_sessions"
 LAB_KEY = "jessi_live_voice"
-MODES = ("assistant", "lab", "shopper")
+MODES = ("assistant", "lab", "shopper", "advisor")
 SHOPPER_IDLE_S = 45
 WALKTHROUGH_RULES = ("\n\nThis session is a WALKTHROUGH OF THE REP'S DAY. The backend hands you each stop in order (a customer waiting on a reply, an overdue touchpoint, one of today's three, a hot opportunity); "
                      "say it in your own words, keep every name and detail, then stop and wait. The rep moves it along with next, skip or done, and texting or finishing a stop through you moves it along too. "
@@ -380,10 +380,18 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         from services import team_today as tt
         if tt.is_manager(user):
             team = await tt.build(db, user)
+    advisor_convo = None
     if mode == "shopper":
         from services import live_shops
         shop = await live_shops.audition(db, user, overrides or {})
         instructions, voice = shop["instructions"], shop["voice"]
+    elif mode == "advisor":
+        from services import command_center_ai as cc_ai
+        advisor_convo = await cc_ai.get_conversation(db, (overrides or {}).get("conversation_id") or "")
+        if not advisor_convo:
+            made = await cc_ai.create_conversation(db, user, title=f"Live talk {_now().strftime('%b %d, %H:%M')}", source="voice")
+            advisor_convo = await cc_ai.get_conversation(db, made["id"])
+        instructions, voice = await cc_ai.live_instructions(db, user, advisor_convo.get("title") or ""), cfg["voice"]
     else:
         instructions, voice = (lab_instructions(cfg, user, contact) if mode == "lab" else assistant_instructions(cfg, user, contact=contact)), cfg["voice"]
         if agenda is not None:
@@ -391,7 +399,7 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
     tz = await _tz(user)
     now_local = _now().astimezone(tz).strftime("%A %B %d, %Y, %-I:%M %p")
     where = f"Their app is open on {_first_last(contact)}'s conversation. {await focus_brief(db, contact)}" if contact else "Their app is open on the Home screen."
-    context = f"Right now it is {now_local}." if shop else f"Right now it is {now_local} for the rep. {where}"
+    context = f"Right now it is {now_local}." if (shop or advisor_convo) else f"Right now it is {now_local} for the rep. {where}"
     if team is not None:
         context += " TEAM DIGEST already pulled; the rep is a manager and asked for it. They can say a rep's name for that rep's full list or ask to nudge a rep about a customer."
     if agenda is not None:
@@ -431,10 +439,13 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
            "contact_id": str(contact["_id"]) if contact else None, "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None,
            "agenda": agenda, "agenda_pos": 0 if agenda is not None else None, "agenda_done": [], "agenda_skipped": [], "team": {"digest": team} if team is not None else None,
            "config": {k: cfg[k] for k in DEFAULTS}, "status": "open", "started_at": _now(), "ended_at": None, "seconds": 0, "cost_usd": 0.0, "tokens": None, "close_reason": None,
+           "advisor_conversation_id": str(advisor_convo["_id"]) if advisor_convo else None,
            "transcript": [], "delegations": [], "pending": None, "created_at": _now(), "updated_at": _now()}
     await db[COLL].insert_one(doc)
     logger.info(f"[Live] {mode} session {live_id} for {uid} engine={engine} voice={voice}" + (f" walkthrough={len(agenda)} stops" if agenda is not None else ""))
     greet = shop["greet_instruction"] if shop else None
+    if advisor_convo:
+        greet = "Greet the founder by first name in one short sentence and ask what is on their mind. Then wait."
     opened = None
     if agenda is not None:
         from services import day_agenda
@@ -445,7 +456,7 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         greet = f'Open with this, in your own words but keep every name and number: "{tt.spoken(team)}" Then stop and wait for the manager.'
         opened = {"kind": "team_today"}
     return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": answer_sdp, "greeting": greeting_text(cfg, user, contact), "greet_instruction": greet,
-            "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None, "open": opened,
+            "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None, "open": opened, "advisor_conversation_id": doc["advisor_conversation_id"],
             "agenda": [{k: s.get(k) for k in ("n", "kind", "name", "first", "why", "contact_id")} for s in agenda] if agenda is not None else None,
             "idle_close_s": SHOPPER_IDLE_S if shop else cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": voice,
             "engine": engine, "model": ENGINES[engine]["model"]}
@@ -1167,6 +1178,9 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
     t0 = _now()
     if live.get("mode") == "shopper":
         return await _shopper_delegation(db, live, transcript, delegation_id, t0)
+    if live.get("mode") == "advisor":
+        from services import command_center_ai as cc_ai
+        return await cc_ai.live_delegation(db, live, user, transcript, delegation_id, t0)
     convo = "\n".join(f"{'JESSI' if t.get('role') == 'assistant' else 'REP'}: {str(t.get('text', ''))[:400]}" for t in (transcript or [])[-16:])
     pending = live.get("pending")
     focus = await focus_contact(db, user, live.get("contact_id")) if live.get("contact_id") else None

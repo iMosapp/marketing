@@ -8,6 +8,7 @@ import { useThemeStore } from '../../../store/themeStore';
 import { useToast } from '../../../components/common/Toast';
 import { CcShell, Card, Eyebrow, Progress, Pill, Empty } from '../../../components/command-center/CcShell';
 import { CaptureBar } from '../../../components/command-center/CaptureBar';
+import { TodayBrief } from '../../../components/command-center/TodayBrief';
 import { ObjectiveSheet, PrioritySheet, ReplaceSheet, NextActionSheet, NoteSheet, SmallAction } from '../../../components/command-center/FocusSheets';
 import { GOLD, GREEN, RED, OBJECTIVE_STATUS, PILLAR_COLOR, fmtDay, detail, bounceIfPrivate, tid, type Focus, type Priority } from '../../../components/command-center/shared';
 
@@ -42,6 +43,7 @@ export default function FounderFocus() {
 
   const Left = (
     <View style={{ flex: 1, gap: 20 }}>
+      <TodayBrief colors={colors} showToast={showToast} />
       <Card colors={colors} accent={GOLD} testID="cc-objective" onPress={() => setSheet('objective')}>
         <Eyebrow t="THE ONE BIG THING" colors={colors} right={<Pill text={obSt.label} color={obSt.color} testID="cc-objective-status" />} />
         <Text style={{ fontSize: wide ? 26 : 22, fontWeight: '800', color: colors.text, lineHeight: wide ? 34 : 29, letterSpacing: -0.3 }} {...tid('cc-objective-title')}>{ob?.title || 'Set the one objective that matters most right now.'}</Text>

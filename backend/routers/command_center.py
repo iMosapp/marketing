@@ -313,3 +313,122 @@ async def export_json():
 @router.get("/export.md", response_class=PlainTextResponse)
 async def export_md():
     return await cc.export_markdown(get_db())
+
+
+# ───────────────────────── Phase 2: Founder Advisor (advisory only; the model never writes to the Command Center) ─────────────────────────
+from services import command_center_ai as ai  # noqa: E402
+
+
+class MessageBody(BaseModel):
+    text: str
+
+
+class ConvoBody(BaseModel):
+    title: Optional[str] = None
+    archived: Optional[bool] = None
+
+
+class BriefBody(BaseModel):
+    force: bool = False
+
+
+def _ai_error(e: Exception):
+    if isinstance(e, ai.AdvisorBusy):
+        raise HTTPException(status_code=429, detail=str(e))
+    if isinstance(e, ai.AdvisorUnavailable):
+        raise HTTPException(status_code=503, detail=str(e))
+    if isinstance(e, ValueError):
+        raise HTTPException(status_code=400, detail=str(e)[:300])
+    raise e
+
+
+async def _convo(db, cid: str) -> dict:
+    c = await ai.get_conversation(db, cid)
+    if not c:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return c
+
+
+@router.get("/advisor/conversations")
+async def advisor_conversations():
+    return {"conversations": await ai.conversations(get_db())}
+
+
+@router.post("/advisor/conversations")
+async def advisor_new_conversation(body: ConvoBody, request: Request):
+    return await ai.create_conversation(get_db(), request.state.user, body.title or "")
+
+
+@router.get("/advisor/conversations/{cid}")
+async def advisor_conversation(cid: str):
+    return ai._pub_convo(await _convo(get_db(), cid), full=True)
+
+
+@router.patch("/advisor/conversations/{cid}")
+async def advisor_update_conversation(cid: str, body: ConvoBody):
+    db = get_db()
+    return await ai.update_conversation(db, await _convo(db, cid), body.model_dump(exclude_none=True))
+
+
+@router.post("/advisor/conversations/{cid}/messages")
+async def advisor_message(cid: str, body: MessageBody, request: Request):
+    db = get_db()
+    await _seeded(db, request)
+    convo = await _convo(db, cid)
+    try:
+        return await ai.chat_turn(db, request.state.user, convo, body.text)
+    except Exception as e:
+        _ai_error(e)
+
+
+@router.get("/advisor/suggestions")
+async def advisor_suggestions(request: Request):
+    db = get_db()
+    await _seeded(db, request)
+    ctx = await ai.assemble_context(db)
+    return {"questions": ai.suggested_questions(ctx), "facts": ctx["facts"]}
+
+
+@router.post("/ideas/{iid}/evaluate")
+async def advisor_evaluate_idea(iid: str, request: Request):
+    db = get_db()
+    idea = await _get(db, cc.IDEAS, iid)
+    try:
+        return await ai.evaluate_idea(db, request.state.user, idea)
+    except Exception as e:
+        _ai_error(e)
+
+
+@router.get("/ideas/{iid}/evaluations")
+async def advisor_idea_evaluations(iid: str):
+    db = get_db()
+    await _get(db, cc.IDEAS, iid)
+    return {"evaluations": await ai.evaluations_for(db, iid)}
+
+
+@router.post("/advisor/evaluations/{eid}/disagree")
+async def advisor_disagree(eid: str, body: ReasonBody, request: Request):
+    out = await ai.disagree(get_db(), request.state.user, eid, body.reason)
+    if not out:
+        raise HTTPException(status_code=400, detail="Say why you disagree (a sentence is enough).")
+    return out
+
+
+@router.get("/advisor/brief")
+async def advisor_cached_brief():
+    return {"brief": await ai.cached_brief(get_db())}
+
+
+@router.post("/advisor/brief")
+async def advisor_generate_brief(body: BriefBody, request: Request):
+    db = get_db()
+    await _seeded(db, request)
+    try:
+        return {"brief": await ai.brief(db, request.state.user, force=body.force)}
+    except Exception as e:
+        _ai_error(e)
+
+
+@router.get("/advisor/usage")
+async def advisor_usage():
+    return await ai.usage_summary(get_db())

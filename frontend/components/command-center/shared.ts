@@ -15,7 +15,13 @@ export type RoadmapItem = { id: string; phase: 'package' | 'validate' | 'replica
 export type RoadmapPhase = { phase: string; label: string; items: RoadmapItem[]; done: number; total: number; pct: number };
 export type Focus = { objective: Objective; next_action: NextAction; active: Priority[]; proposed: Priority[]; paused: Priority[]; slots: number; waiting: Note[]; wins: Note[]; ideas_new_week: number; pillars: { key: string; name: string }[]; products: { key: string; name: string }[] };
 
-export const TABS = [['index', 'Focus'], ['strategy', 'Strategy'], ['roadmap', 'Roadmap'], ['ideas', 'Ideas']] as const;
+export const TABS = [['index', 'Focus'], ['strategy', 'Strategy'], ['roadmap', 'Roadmap'], ['ideas', 'Ideas'], ['advisor', 'Advisor']] as const;
+export type Suggestion = { kind: 'set_next_action'; text: string; why: string } | { kind: 'park_idea' | 'validate_idea'; idea_id: string; idea_title: string; why: string };
+export type AdvisorMessage = { role: 'founder' | 'advisor'; text: string; at: string; voice?: boolean; suggestions?: Suggestion[]; facts_used?: string[]; usage?: { prompt_tokens: number; completion_tokens: number; ms: number; approx_cost_usd: number; model: string } };
+export type Conversation = { id: string; title: string; created_at: string; updated_at: string; archived: boolean; message_count: number; last_text: string; source: 'text' | 'voice'; messages?: AdvisorMessage[]; summary?: string };
+export type Evaluation = { id: string; idea_id: string; recommendation: 'BUILD_NOW' | 'VALIDATE_FIRST' | 'PARK' | 'REJECT'; rationale: string; scores: Record<string, { score: number | null; why: string; label: string }>; deal_breakers: string[]; dependencies: string[]; uncertainty: string[]; missing_info: string[]; experiment: { what: string; with_whom: string; success_signal: string; time_box: string } | null; advances: string; displaces: string; model: string; created_at: string; disagreement: { reason: string; at: string } | null };
+export type Brief = { headline: string; one_big_thing: string; priorities: { title: string; progress_pct: number; note: string }[]; next_best_action: string; attention: string[]; recommendation: string; missing: string[]; generated_at: string; cached: boolean; stale?: boolean };
+export const VERDICT: Record<string, { label: string; color: string }> = { BUILD_NOW: { label: 'Build now', color: GREEN }, VALIDATE_FIRST: { label: 'Validate first', color: AMBER }, PARK: { label: 'Park', color: PURPLE }, REJECT: { label: 'Reject', color: RED } };
 export const PILLAR_COLOR: Record<string, string> = { capture: BLUE, understand: PURPLE, engage: GOLD, improve: GREEN };
 export const PILLAR_ICON: Record<string, any> = { capture: 'radio-button-on', understand: 'eye', engage: 'chatbubbles', improve: 'trending-up' };
 export const IDEA_STATUS: Record<string, { label: string; color: string }> = {

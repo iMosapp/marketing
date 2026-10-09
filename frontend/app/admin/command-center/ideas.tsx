@@ -9,6 +9,7 @@ import { useToast } from '../../../components/common/Toast';
 import { Sheet, Field, Label, Chip, GoldButton } from '../../../components/mystery-shops/shared';
 import { CcShell, Card, Eyebrow, Pill, Empty } from '../../../components/command-center/CcShell';
 import { CaptureBar } from '../../../components/command-center/CaptureBar';
+import { EvaluationPanel } from '../../../components/command-center/EvaluationPanel';
 import { GOLD, RED, IDEA_STATUS, fmtDay, detail, bounceIfPrivate, tid, type Idea, type Focus } from '../../../components/command-center/shared';
 
 type View_ = 'all' | 'new_week' | 'captured' | 'evaluating' | 'parked' | 'approved' | 'active' | 'rejected';
@@ -69,6 +70,7 @@ export default function IdeaVault() {
       <Sheet visible={!!edit} onClose={() => setEdit(null)} title="Idea" colors={colors} testID="cc-idea-sheet" error={err}
         footer={<View style={{ gap: 8 }}><GoldButton label="Save" onPress={save} busy={busy} icon="checkmark" testID="cc-idea-save" /><TouchableOpacity onPress={remove} style={{ alignSelf: 'center', padding: 6 }} {...tid('cc-idea-delete')}><Text style={{ fontSize: 12.5, fontWeight: '800', color: RED }}>Delete</Text></TouchableOpacity></View>}>
         {!!edit && <>
+          <EvaluationPanel ideaId={edit.id} colors={colors} showToast={showToast} />
           <View style={{ gap: 6 }}><Label t="STATUS" colors={colors} /><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{Object.entries(IDEA_STATUS).map(([k, v]) => <Chip key={k} small label={v.label} active={f.status === k} onPress={() => setF(x => ({ ...x, status: k }))} colors={colors} testID={`cc-idea-status-${k}`} />)}</View>
             <Text style={{ fontSize: 12, color: colors.textSecondary }}>Approved and Active are labels for your own tracking. Nothing is scheduled or built from here.</Text></View>
           <Field label="IDEA" value={f.title} onChange={(v: string) => setF(x => ({ ...x, title: v }))} colors={colors} multiline testID="cc-idea-title" />

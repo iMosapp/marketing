@@ -23,10 +23,33 @@ def _db():
 
 def _run(coro):
     loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
         return loop.run_until_complete(coro)
     finally:
+        loop.run_until_complete(asyncio.sleep(0.05))
         loop.close()
+
+
+CC_COLLS = ["cc_blueprint", "cc_priorities", "cc_roadmap", "cc_ideas", "cc_notes"]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def cc_guard():
+    """Snapshot the founder's cc_* data before the module and put it back afterwards (the 409 test leaves 3 active)."""
+    async def save():
+        db = _db()
+        return {c: await db[c].find({}).to_list(5000) for c in CC_COLLS}
+    snap = _run(save())
+    yield
+
+    async def restore():
+        db = _db()
+        for c in CC_COLLS:
+            await db[c].delete_many({})
+            if snap[c]:
+                await db[c].insert_many(snap[c])
+    _run(restore())
 
 
 def _login(email, password):
@@ -53,7 +76,9 @@ def other_h():
     try:
         yield _login(OTHER_EMAIL, "Other123!")
     finally:
-        _run(_db().users.delete_many({"email": OTHER_EMAIL}))
+        async def rm():
+            await _db().users.delete_many({"email": OTHER_EMAIL})
+        _run(rm())
 
 
 def test_access_control_owner_200(owner_h):
