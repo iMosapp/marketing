@@ -82,7 +82,7 @@ async def list_shops(request: Request, client_id: str, limit: int = 50):
     await require_admin(request)
     db = get_db()
     await _client(db, client_id)
-    rows = await db[ls.COLL].find({"client_id": client_id}).sort("created_at", -1).limit(max(1, min(limit, 200))).to_list(200)
+    rows = await db[ls.COLL].find({"client_id": client_id, "status": {"$ne": "draft"}}).sort("created_at", -1).limit(max(1, min(limit, 200))).to_list(200)
     return {"shops": [await ls.serialize(db, s) for s in rows]}
 
 

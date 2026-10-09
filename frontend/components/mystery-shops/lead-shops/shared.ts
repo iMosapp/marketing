@@ -22,6 +22,7 @@ export type LeadShop = {
 
 export const CHANNELS: { key: string; label: string; icon: any }[] = [{ key: 'call', label: 'Call', icon: 'call' }, { key: 'text', label: 'Text', icon: 'chatbubbles' }, { key: 'email', label: 'Email', icon: 'mail' }];
 export const LEAD_STATUS: Record<string, { label: string; color: string; icon: any }> = {
+  draft: { label: 'Draft', color: AMBER, icon: 'create-outline' },
   pending_delivery: { label: 'Submit the form', color: AMBER, icon: 'clipboard-outline' }, live: { label: 'Live', color: GREEN, icon: 'radio' },
   closing: { label: 'Grading', color: PURPLE, icon: 'hourglass' }, completed: { label: 'Done', color: BLUE, icon: 'checkmark-circle' },
 };

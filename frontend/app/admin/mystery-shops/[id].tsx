@@ -15,11 +15,12 @@ import { CallsTab } from '../../../components/mystery-shops/CallsTab';
 import { ChallengesTab } from '../../../components/mystery-shops/ChallengesTab';
 import { BillingTab } from '../../../components/mystery-shops/BillingTab';
 import { LeadShopsTab } from '../../../components/mystery-shops/lead-shops/LeadShopsTab';
+import { JourneysTab } from '../../../components/mystery-shops/journeys/JourneysTab';
 import { ReportView, openUrl, type Report } from '../../../components/mystery-shops/ReportView';
 import { AutoReportCard, type AutoReport } from '../../../components/mystery-shops/AutoReportCard';
 import { Chip, GoldButton, monthKey, monthLabel, shiftMonth, perMonthText, deptsOfClient, loadIndustries, GOLD, RED, tid, type Client, type Person } from '../../../components/mystery-shops/shared';
 
-const TABS = [['people', 'People'], ['calls', 'Shops'], ['leads', 'Lead Shops'], ['challenges', 'Challenges'], ['report', 'Report'], ['billing', 'Billing']] as const;
+const TABS = [['people', 'People'], ['calls', 'Shops'], ['leads', 'Lead Shops'], ['journeys', 'Journeys'], ['challenges', 'Challenges'], ['report', 'Report'], ['billing', 'Billing']] as const;
 type Tab = typeof TABS[number][0];
 
 export default function MysteryShopClient() {
@@ -66,7 +67,7 @@ export default function MysteryShopClient() {
   const rotate = () => showConfirm('New report link?', 'The old link stops working. Send the new one to the store.', async () => { const r = await api.post(`/shop-clients/${id}/report/rotate-link`); setReportUrl(r.data.report_url); showToast('New link ready', 'success'); }, undefined, 'Replace link');
 
   if (!client) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}><ScreenHeader title="Client" testID="shop-client-header" /><ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /></SafeAreaView>;
-  const tabs = client.demo ? TABS.filter(t => t[0] !== 'billing' && t[0] !== 'leads') : TABS;
+  const tabs = client.demo ? TABS.filter(t => t[0] !== 'billing' && t[0] !== 'leads' && t[0] !== 'journeys') : TABS;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScreenHeader title={client.name} subtitle={client.demo ? 'Shop anyone on the spot · one try, nothing scheduled · not billed' : `${client.locale && client.locale !== 'en-US' ? `${client.locale_label} · ${client.language === 'nl' ? 'Nederlands' : client.locale === 'en-GB' ? 'UK English' : client.locale === 'en-IE' ? 'Irish English' : client.locale} · ` : ''}${client.industry && client.industry !== 'automotive' ? `${client.industry_label} · ` : ''}${perMonthText(client.plan.per_month, ' + ', deptsOfClient(client))}${Object.values(client.plan.text_per_month || {}).some(n => n > 0) ? ` + ${perMonthText(client.plan.text_per_month, ' + ', deptsOfClient(client))} by text` : ''} / mo${client.active ? '' : ' · PAUSED'}`} testID="shop-client-header"
@@ -78,6 +79,7 @@ export default function MysteryShopClient() {
         {tab === 'people' && <PeopleTab client={client} people={people} colors={colors} onChanged={load} onShopStarted={() => { setCallsKey(k => k + 1); setTab('calls'); }} kickoffUrl={client.demo ? undefined : kickoffUrl} kickoff={kickoff} />}
         {tab === 'calls' && <CallsTab client={client} colors={colors} month={month} onMonth={setMonth} refreshKey={callsKey} onChanged={load} />}
         {tab === 'leads' && !client.demo && <LeadShopsTab client={client} colors={colors} />}
+        {tab === 'journeys' && !client.demo && <JourneysTab client={client} colors={colors} />}
         {tab === 'challenges' && <ChallengesTab client={client} colors={colors} />}
         {tab === 'report' && (
           <View style={{ gap: 14 }}>

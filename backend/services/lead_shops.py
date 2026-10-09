@@ -24,7 +24,7 @@ POOL = "phone_number_pool"
 POOL_PURPOSE = "lead_shop"
 POOL_CAP = 10
 COOLDOWN_DAYS = 14
-WINDOWS = {24: "24 hours", 72: "3 days", 168: "7 days"}
+WINDOWS = {24: "24 hours", 72: "3 days", 168: "7 days", 720: "30 days"}
 DEFAULT_PROCESS = {"first_call_min": 5, "first_text_min": 5, "first_email_min": 15, "channels": ["call", "text", "email"], "day1_calls": 3, "follow_up_days": 3,
                    "must": ["Answer the question the lead asked", "Offer a specific appointment time", "Give their name and the store name", "Confirm what the lead asked about is available"]}
 AUTO_REPLY_S = 90
@@ -282,6 +282,9 @@ async def mark_delivered(db, shop: dict, email_id: Optional[str] = None, subject
     ev = {"at": now, "channel": "lead", "direction": "out", "kind": "delivered", "summary": f"Lead delivered to the store ({'ADF email to ' + (shop.get('delivery') or {}).get('to_email', '') if shop.get('method') == 'adf' else 'web form submitted by hand'})"}
     await db[COLL].update_one({"_id": shop["_id"]}, {"$set": {"status": "live", "started_at": now, "expires_at": now + timedelta(hours=int(shop.get("window_hours") or 72)), "delivery.sent_at": now,
                                                               "delivery.email_id": email_id, "delivery.subject": subject, "delivery.error": None, "updated_at": now}, "$push": {"events": ev}})
+    if shop.get("campaign_id"):
+        from services.journey import campaigns as jc
+        await jc.on_identity_live(db, shop)
 
 
 async def add_event(db, shop_id, channel: str, kind: str, summary: str, **extra):
@@ -577,7 +580,10 @@ async def serialize(db, shop: dict, with_sessions: bool = False) -> dict:
     started = _utc(shop.get("started_at"))
     out = {"id": str(shop["_id"]), "client_id": shop.get("client_id"), "status": shop.get("status"), "method": shop.get("method"), "source_name": shop.get("source_name"), "department": shop.get("department"),
            "store_name": shop.get("store_name"), "window_hours": shop.get("window_hours"), "window_label": WINDOWS.get(int(shop.get("window_hours") or 72), ""), "process": clean_process(shop.get("process")),
-           "persona": {"name": p.get("name"), "first": p.get("first"), "last": p.get("last"), "email": p.get("email"), "phone": p.get("phone"), "offering": p.get("offering") or p.get("vehicle"), "goals": p.get("goals"), "summary": p.get("summary")},
+           "persona": {"name": p.get("name"), "first": p.get("first"), "last": p.get("last"), "email": p.get("email"), "phone": p.get("phone"), "offering": p.get("offering") or p.get("vehicle"), "goals": p.get("goals"), "summary": p.get("summary"),
+                       "timeline": p.get("timeline") or "", "personality": p.get("personality") or "", "channel_prefs": p.get("channel_prefs") or [], "questions": p.get("questions") or [], "objections": p.get("objections") or [],
+                       "ai_instructions": p.get("ai_instructions") or "", "no_commit": bool(p.get("no_commit"))},
+           "campaign_id": shop.get("campaign_id"),
            "script_title": shop.get("script_title"), "delivery": {k: _iso(v) for k, v in (shop.get("delivery") or {}).items()}, "created_at": _iso(shop.get("created_at")), "started_at": _iso(started),
            "expires_at": _iso(shop.get("expires_at")), "closed_at": _iso(shop.get("closed_at")), "close_reason": shop.get("close_reason"), "score": shop.get("score"), "notes": shop.get("notes"),
            "events": [{**{k: v for k, v in e.items() if k != "at"}, "at": _iso(e.get("at")), "since": _fmt_delta(_utc(e["at"]) - started) if started and e.get("at") else None} for e in sorted(shop.get("events") or [], key=lambda e: _utc(e["at"]))],

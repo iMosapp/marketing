@@ -2398,7 +2398,9 @@ def start_scheduler():
     async def _lead_shops_sweep():
         from routers.database import get_db
         from services.lead_shops import sweep
+        from services.journey.campaigns import sweep as sweep_campaigns
         await sweep(get_db())
+        await sweep_campaigns(get_db())
     scheduler.add_job(safe_job(_lead_shops_sweep), IntervalTrigger(seconds=60), id="lead_shops_sweep", replace_existing=True, misfire_grace_time=60)
 
     # Every 6 hours — keep every active mystery shop client's month scheduled up to its plan

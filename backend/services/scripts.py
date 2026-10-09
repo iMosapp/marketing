@@ -741,6 +741,12 @@ def shopper_temper(difficulty: Optional[str], objections: list, spoken: bool = T
             "Ask one thing at a time. Only if the rep flatly ignores a question may you ask it a second time, once, then let it go. Each curveball comes up once and never again. ")
     return temper, once, objs
 
+def identity_rules(persona: dict) -> str:
+    """Journey identities carry a timeline, personality, open questions and a no-commit rule; ordinary shop personas add nothing here."""
+    from services.journey.identities import prompt_rules
+    return prompt_rules(persona)
+
+
 def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound", mystery: bool = False, industry: Optional[str] = None, department: Optional[str] = None, locale: Optional[str] = None, channel: str = "call", covert: bool = False, difficulty: Optional[str] = None) -> str:
     from services import industries as ind
     temper, once, objections = shopper_temper(difficulty, persona.get("objections") or [], spoken=(channel == "call"))
@@ -760,7 +766,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
                 "Answer what they asked and add at most one or two things. A real email lead takes a few exchanges: price, availability, what is included, a time to come in, your trade, financing. "
                 "If a reply took the rep a long time (noted like [replied after 3 h 10 min]) you may mention it once, mildly, the way a real person would. "
                 + loc.language_rule(locale)
-                + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
+                + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} " + identity_rules(persona)
                 + (f"OBJECTIONS YOU MAY RAISE (each at most once, only when it fits): {'; '.join(objections)}. " if objections else "You have no particular objections; you just want your question answered and a clear next step. ") + temper + once
                 + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
                 + "RULES: Never narrate, never break character, never coach. Volunteer a little, not everything. If the rep earns it (clear answers, specific times), agree to come in and end warmly with a short final email. "
@@ -776,7 +782,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
                 "Answer what they asked and add at most one thing. A real text lead takes several exchanges: price, availability, a time to come in, your trade, hours. "
                 "If a reply took the rep a long time (noted like [replied after 40 min]) you may mention it once, mildly, the way a real person would. "
                 + loc.language_rule(locale)
-                + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
+                + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} " + identity_rules(persona)
                 + (f"OBJECTIONS YOU MAY RAISE (each at most once, only when it fits): {'; '.join(objections)}. " if objections else "You have no particular objections; you just want your question answered and a clear next step. ") + temper + once
                 + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
                 + "RULES: Never narrate, never break character, never coach. Volunteer a little, not everything. If the rep earns it (clear answers, offers specific times), agree to come in and end warmly with a short final text. "
@@ -790,7 +796,7 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
             + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "
                "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " + numbers_rule(locale) if live else "")
             + loc.language_rule(locale)
-            + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
+            + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} " + identity_rules(persona)
             + (f"OBJECTIONS YOU MAY RAISE (each at most once, only when it fits): {'; '.join(objections)}. " if objections else "You have no particular objections; you just want your question answered and a clear next step. ") + temper + once
             + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
             + "RULES: Speak like a real person on the phone: short, 1 to 3 sentences, contractions, occasional hesitation. Never narrate, never break character, never coach. "
