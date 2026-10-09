@@ -15,6 +15,7 @@ router = APIRouter(prefix="/owner", tags=["Owner"], dependencies=[Depends(requir
 
 # key, title, visible to other super admins by default
 OWNER_TOOLS = [
+    ("command_center", "Founder Command Center", False),
     ("request_log", "Request Log", False),
     ("owner_settings", "Owner Settings", False),
     ("billing_revenue", "Billing & Revenue", False),

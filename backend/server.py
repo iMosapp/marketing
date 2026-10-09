@@ -830,6 +830,8 @@ from routers import lead_shops as lead_shops_router
 api_router.include_router(lead_shops_router.router)
 from routers import journeys as journeys_router
 api_router.include_router(journeys_router.router)
+from routers import command_center as command_center_router
+api_router.include_router(command_center_router.router)
 from routers import courses as courses_router
 api_router.include_router(courses_router.router)
 api_router.include_router(courses_router.public_router)

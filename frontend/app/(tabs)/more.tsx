@@ -85,7 +85,7 @@ export default function MoreScreen() {
   const canSee = (key?: string) => !key || isOwner || (ownerLoaded && ownerVis[key] !== false);
   // Owner-controlled tools (title -> key). Hidden for other super admins unless the owner shares them in Owner Settings.
   const OWNER_KEY: Record<string, string> = {
-    'Request Log': 'request_log', 'Owner Settings': 'owner_settings', 'Billing & Revenue': 'billing_revenue', 'Revenue Forecast': 'revenue_forecast', 'Partner Agreements': 'partner_agreements',
+    'Founder Command Center': 'command_center', 'Request Log': 'request_log', 'Owner Settings': 'owner_settings', 'Billing & Revenue': 'billing_revenue', 'Revenue Forecast': 'revenue_forecast', 'Partner Agreements': 'partner_agreements',
     'White Label Partners': 'white_label_partners', 'Discount Codes': 'discount_codes', 'Partner Portal': 'partner_portal', 'View Quotes': 'view_quotes', 'Create Quote': 'create_quote',
     'Mystery Shops': 'mystery_shops', 'Test Lab': 'test_lab', 'Jessi Voice Lab': 'jessi_voice_lab', 'Texting Compliance': 'texting_compliance', 'Twilio Migration': 'twilio_migration',
     'Shared Inboxes': 'shared_inboxes', 'Bulk Transfer': 'bulk_transfer', 'App Directory': 'app_directory', 'Company Docs': 'company_docs', 'Brand Assets': 'brand_assets',
@@ -621,6 +621,7 @@ export default function MoreScreen() {
   if (isSuperAdmin) {
     const items: MenuItem[] = [
       // Owner
+      { icon: 'compass', title: 'Founder Command Center', subtitle: 'One objective, three priorities, one next action, every idea kept', onPress: () => router.push('/admin/command-center' as any), color: '#C9A962' },
       { icon: 'journal', title: 'Request Log', subtitle: 'Everything you have asked for, in your words, with status', onPress: () => router.push('/admin/request-log' as any), color: '#C9A962' },
       { icon: 'key', title: 'Owner Settings', subtitle: 'What other super admins can see, and who else is an owner', onPress: () => router.push('/admin/owner-settings' as any), color: '#C9A962' },
       // Partners
