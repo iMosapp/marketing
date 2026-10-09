@@ -8,6 +8,7 @@ import { showConfirm } from '../../services/alert';
 import { BigButton, money, marketLabel } from './shared';
 import { ValueBreakdown } from './ValueBreakdown';
 import { OutcomeSheet } from './OutcomeSheet';
+import { DeskNotified } from './DeskNotified';
 
 type Props = { colors: any; appraisal: any; onSaved: (appraisal: any) => void; showToast: (m: string, t?: any, d?: number) => void };
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
@@ -22,8 +23,9 @@ export const StatusPanel = ({ colors, appraisal: a, onSaved, showToast }: Props)
   const st = a.status;
   const approved = w.approved_value ?? a.approved_value;
   const adj = w.manager_adjustment;
-  const banner = st === 'submitted' || st === 'resubmitted'
-    ? { icon: 'hourglass', color: '#FF9500', title: st === 'resubmitted' ? 'Resubmitted, waiting for the desk' : 'Waiting for the desk', sub: `Sent ${when(w.submitted_at)} by ${w.submitted_by_name || 'you'}${w.notified_manager_ids?.length ? ` · ${w.notified_manager_ids.length} manager${w.notified_manager_ids.length > 1 ? 's' : ''} notified` : ''}. The inputs are frozen until a manager answers.` }
+  const waiting = st === 'submitted' || st === 'resubmitted';
+  const banner = waiting
+    ? { icon: 'hourglass', color: '#FF9500', title: st === 'resubmitted' ? 'Resubmitted, waiting for the desk' : 'Waiting for the desk', sub: `Sent ${when(w.submitted_at)} by ${w.submitted_by_name || 'you'}. The inputs are frozen until a manager answers.` }
     : st === 'approved' ? { icon: 'checkmark-circle', color: '#34C759', title: `Approved: ${money(approved)}`, sub: `${w.approved_by_name} approved the suggested number ${when(w.approved_at)}. Present it when you are with the customer.` }
     : st === 'changed' ? { icon: 'checkmark-circle', color: '#34C759', title: `Approved: ${money(approved)}`, sub: `${w.approved_by_name} changed it from the suggested ${money(adj?.system_suggested_acv)} (${(adj?.delta || 0) >= 0 ? '+' : '-'}${money(Math.abs(adj?.delta || 0))})${adj?.reason ? `: ${adj.reason}` : ''}.` }
     : st === 'declined' ? { icon: 'close-circle', color: '#FF3B30', title: 'Declined by the desk', sub: `${w.declined_by_name}: ${w.declined_reason}` }
@@ -47,6 +49,7 @@ export const StatusPanel = ({ colors, appraisal: a, onSaved, showToast }: Props)
         </View>
         {banner.sub ? <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }} {...tid('status-sub')}>{banner.sub}</Text> : null}
       </View>
+      <DeskNotified colors={colors} rows={w.notified_managers} legacyCount={w.notified_manager_ids?.length || 0} waiting={waiting} testId="status-notified" />
       {a.abilities?.present ? <BigButton icon="hand-left" label={`Present ${money(approved)} to ${a.contact_name?.split(' ')[0] || 'the customer'}`} sub="Marks it presented; then record what they said" onPress={present} primary disabled={busy} testId="present-btn" colors={colors} /> : null}
       {a.abilities?.outcome ? <BigButton icon="chatbubble-ellipses" label="What did the customer say?" sub="Accepted · wants more · thinking · not trading" onPress={() => setSheet(true)} primary testId="outcome-btn" colors={colors} /> : null}
       {st === 'closed' && a.vehicle_id ? (

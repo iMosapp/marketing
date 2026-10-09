@@ -6,6 +6,7 @@ import { GOLD, tid, errText } from '../inbox/ownership';
 import { showConfirm } from '../../services/alert';
 import { BigButton, money, marketLabel } from './shared';
 import { ValueBreakdown } from './ValueBreakdown';
+import { notifiedSummary } from './DeskNotified';
 
 type Props = { colors: any; appraisal: any; onSaved: (appraisal: any) => void; showToast: (m: string, t?: any, d?: number) => void };
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
@@ -30,7 +31,8 @@ export const SubmitPanel = ({ colors, appraisal, onSaved, showToast }: Props) =>
       setBusy(true);
       try {
         const r = (await api.post(`/appraisals/${appraisal.id}/submit`)).data;
-        showToast(r.notified ? `Sent to the desk. ${r.notified} manager${r.notified > 1 ? 's' : ''} notified.` : 'Sent to the desk.', 'success', 4000);
+        if (r.notified) showToast(`Sent to the desk. ${notifiedSummary(r.notified_managers) || `${r.notified} manager${r.notified > 1 ? 's' : ''} notified`}.`, 'success', 5000);
+        else showToast('Sent to the desk, but nobody was alerted: no manager at this store has appraisal approvals switched on. Ask your admin.', 'error', 7000);
         onSaved({ ...r.appraisal, workflow: r.workflow, abilities: r.abilities });
       } catch (e) { showToast(errText(e, 'Could not submit'), 'error', 5000); }
       finally { setBusy(false); }

@@ -208,30 +208,64 @@ async def managers_for(db, appr: dict, exclude_user_id: Optional[str] = None) ->
     return out[:25]
 
 
-async def _notify(user_id: str, ntype: str, title: str, body: str, link: str, appr: dict, icon: str = "car-sport"):
+async def _notify(user_id: str, ntype: str, title: str, body: str, link: str, appr: dict, icon: str = "car-sport") -> str:
+    """In-app alert + push, each on its own so one failing never silences the other. Returns how the push went (see PUSH_OUTCOMES)."""
     try:
         from routers.notifications import create_notification
-        from routers.push_notifications import send_push_to_user
         await create_notification(ntype, title, body, user_id=user_id, contact_id=appr.get("contact_id"), contact_name=appr.get("contact_name"), priority="high", link=link)
-        await send_push_to_user(user_id, title, body, url=link, icon=icon)
     except Exception as e:
-        logger.warning(f"[Appraisal] notification to {user_id} skipped: {e}")
+        logger.warning(f"[Appraisal] in-app alert to {user_id} skipped: {e}")
+    sent = 0
+    try:
+        from routers.push_notifications import send_push_to_user
+        sent = await send_push_to_user(user_id, title, body, url=link, icon=icon) or 0
+    except Exception as e:
+        logger.warning(f"[Appraisal] push to {user_id} failed: {e}")
+        return "failed"
+    return "sent" if sent else await _push_miss_reason(user_id)
+
+
+PUSH_OUTCOMES = {"sent": "push sent", "no_device": "no phone registered for alerts", "sms_only": "texts only, no push", "quiet_hours": "held for quiet hours", "failed": "push failed"}
+
+
+async def _push_miss_reason(user_id: str) -> str:
+    """Why a push returned 0: the manager sees this next to their name instead of wondering."""
+    from routers.database import get_db
+    db = get_db()
+    if not (await db.expo_push_tokens.count_documents({"user_id": user_id}) or await db.push_subscriptions.count_documents({"user_id": user_id})):
+        return "no_device"
+    u = await db.users.find_one({"_id": ObjectId(user_id)}, {"notification_mode": 1}) or {}
+    if u.get("notification_mode") == "sms":
+        return "sms_only"
+    try:
+        from routers.user_schedule import is_quiet_now
+        if await is_quiet_now(user_id):
+            return "quiet_hours"
+    except Exception:
+        pass
+    return "failed"
 
 
 def _money(v) -> str:
     return f"${int(v):,}" if v is not None else "n/a"
 
 
-async def notify_managers(db, appr: dict, me: dict, resubmitted: bool = False):
+async def notify_managers(db, appr: dict, me: dict, resubmitted: bool = False) -> list:
+    """Every eligible manager of the store/org gets the alert + push; the result says per person whether the push reached a phone."""
     out = appr.get("suggested_acv")
     body = f"{appr.get('contact_name')} · {vehicle_label(appr.get('vehicle') or {})} · Suggested ACV {_money(out)}" + (f" · Customer wants {_money(appr['customer_expected_value'])}" if appr.get("customer_expected_value") else "")
     if appr.get("manager_review_required"):
         body += " · Needs your eyes"
     title = "Trade appraisal resubmitted" if resubmitted else "Trade appraisal ready"
     mgrs = await managers_for(db, appr, exclude_user_id=str(me["_id"]))
+    if not mgrs:
+        logger.warning(f"[Appraisal] {appr['_id']} submitted but no eligible manager for store {appr.get('store_id')} / org {appr.get('organization_id')}")
+    now = _now()
+    rows = []
     for u in mgrs:
-        await _notify(str(u["_id"]), "appraisal_resubmitted" if resubmitted else "appraisal_submitted", title, body, f"/appraisal/desk/{appr['_id']}", appr)
-    return [str(u["_id"]) for u in mgrs]
+        outcome = await _notify(str(u["_id"]), "appraisal_resubmitted" if resubmitted else "appraisal_submitted", title, body, f"/appraisal/desk/{appr['_id']}", appr)
+        rows.append({"user_id": str(u["_id"]), "name": _name(u), "role": u.get("role"), "push": outcome, "push_label": PUSH_OUTCOMES[outcome], "at": now})
+    return rows
 
 
 # ---------- relationship intelligence + events ----------
@@ -321,8 +355,9 @@ async def submit(db, appr: dict, me: dict) -> dict:
         await emit(db, appr, "reappraised", me)
     await sync_relationship(db, appr)
     notified = await notify_managers(db, appr, me, resubmitted=resub)
-    await db[A].update_one({"_id": appr["_id"]}, {"$set": {"notified_manager_ids": notified}})
-    appr["notified_manager_ids"] = notified
+    await db[A].update_one({"_id": appr["_id"]}, {"$set": {"notified_managers": notified, "notified_manager_ids": [n["user_id"] for n in notified]}})
+    appr["notified_managers"] = notified
+    appr["notified_manager_ids"] = [n["user_id"] for n in notified]
     return appr
 
 
@@ -451,7 +486,7 @@ def public_workflow(appr: dict) -> dict:
     return {k: appr.get(k) for k in ("suggested_acv", "suggested_low", "suggested_high", "suggested_range", "calculation_id", "calculation_version", "rules_version", "rules_source",
                                      "manager_review_required", "review_reasons", "submitted_by_name", "submitted_at", "first_submitted_at", "approved_value", "approved_by_name", "approved_at",
                                      "manager_adjustment", "needs_info_request", "declined_reason", "declined_by_name", "presented_at", "presented_by_name", "outcome", "outcome_label",
-                                     "outcome_note", "outcome_at", "closed_at", "expectation_gap_final", "condition_final", "status_history", "notified_manager_ids")}
+                                     "outcome_note", "outcome_at", "closed_at", "expectation_gap_final", "condition_final", "status_history", "notified_manager_ids", "notified_managers")}
 
 
 # ---------- manager desk ----------

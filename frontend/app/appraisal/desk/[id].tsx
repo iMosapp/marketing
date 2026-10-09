@@ -12,6 +12,7 @@ import { Chip, money, miles, marketLabel } from '../../../components/appraisal/s
 import { ValueBreakdown, ReferencesCard } from '../../../components/appraisal/ValueBreakdown';
 import { DeskDecisionBar } from '../../../components/appraisal/desk/DeskDecisionBar';
 import { CustomerWantsCard, ConditionCard, MarketCard, RepCard, CustomerIntakeCard, HistoryCard, ActivityCard } from '../../../components/appraisal/desk/DeskCards';
+import { DeskNotified } from '../../../components/appraisal/DeskNotified';
 
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 const ago = (s?: number | null) => (s == null ? '' : s < 3600 ? `${Math.max(1, Math.round(s / 60))} min` : s < 86400 ? `${Math.round(s / 3600)} h` : `${Math.round(s / 86400)} d`);
@@ -53,6 +54,7 @@ export default function DeskReview() {
             <Text style={{ flex: 1, fontSize: 12.5, color: colors.textSecondary }} numberOfLines={2}>{a.status === 'submitted' || a.status === 'resubmitted' ? `Sent ${when(a.submitted_at)} by ${a.submitted_by_name || a.user_name}` : `${a.user_name} · updated ${when(a.updated_at)}`}{a.is_reappraisal ? ' · reappraisal' : ''}</Text>
           </View>
           {a.needs_info_request && a.status === 'needs_info' ? <Text style={{ fontSize: 13, color: '#FF9500', fontWeight: '700' }} {...tid('desk-needs-info-line')}>Waiting on the rep: {a.needs_info_request.reason}</Text> : null}
+          <DeskNotified colors={colors} rows={a.notified_managers} legacyCount={a.notified_manager_ids?.length || 0} waiting={a.status === 'submitted' || a.status === 'resubmitted'} />
           {a.declined_reason && a.status === 'declined' ? <Text style={{ fontSize: 13, color: '#FF3B30', fontWeight: '700' }} {...tid('desk-declined-line')}>Declined: {a.declined_reason}</Text> : null}
           <ValueBreakdown colors={colors} output={w} marketRetail={a.market_retail ?? a.market?.snapshot?.estimated_retail} marketLabel={marketLabel(a.market?.snapshot)}
             approvedValue={a.approved_value} approvedBy={a.approved_by_name} approvedPending={a.status === 'submitted' || a.status === 'resubmitted'} showReferences={false} />

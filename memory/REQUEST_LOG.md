@@ -4,6 +4,14 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 61 · Oct 9 — DONE (preview) · NOT DEPLOYED YET (deploy + EAS update when you say so)
+> when a new appraisal is waiting managers need to get a push notification that they have one ready to be approved
+
+FOUND: the alert already existed (`workflow.notify_managers` on submit/resubmit -> in-app alert + push "Trade appraisal ready" deep-linking to `/appraisal/desk/{id}`, recipients = store managers / super admins on the store + org admins with the approvals permission, submitter excluded). Preview proof: 5 managers alerted in 60 ms; no push only because no phone is registered on preview. The owner skipped my clarifying question, so I hardened + made it observable instead of guessing at production.
+BUILT: per-manager delivery outcome stored on the appraisal (`notified_managers[] {user_id,name,role,push: sent|no_device|sms_only|quiet_hours|failed,push_label,at}`), in-app alert and push now independent (one failing never silences the other), rep toast names who was told and how many phones were reached, "DESK NOTIFIED" block on the rep status panel + manager desk detail (`components/appraisal/DeskNotified.tsx`; legacy appraisals show "N managers notified"), red gap warning when nobody at the store is eligible (`status-notified-gap` / `desk-notified-gap`). Tests: `tests/test_appraisal_desk_notify.py` 2/2, `tests/test_appraisals_mvp4.py` 7/7 regression, UI verified as rep + manager.
+
+---
+
 ### 60 · Oct 9 — DONE · BACKEND + WEB DEPLOYED (deploy job 22d64e5e, live ~09:25 UTC) · EAS UPDATE = OWNER'S STEP (command given, needs Save to GitHub first)
 > Founder Command Center ... Phase 1A-min ... I choose Option A — complete UI testing and fix any issues before we proceed. ... Do not deploy to production or publish an EAS update yet.
 > FOUNDER COMMAND CENTER — CONTROLLED DEPLOYMENT APPROVAL ... I approve proceeding with a controlled production release. Before deployment: Confirm the latest tested changes ... saved to the correct GitHub repository and branch. Verify production environment configuration and database isolation. Confirm the seed operation will not overwrite existing records ... Verify the existing Owner Tools authorization remains intact. Confirm the EAS production update targets the correct application, project, and channel. ... Run production smoke tests ... Do not run destructive database resets or test mutations against real production data. ... Do not begin Phase 1B.

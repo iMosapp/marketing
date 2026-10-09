@@ -1121,7 +1121,8 @@ async def submit(appraisal_id: str, request: Request):
         doc = await workflow.submit(db, a, me)
     except (ValueError, PermissionError) as e:
         raise _wf_error(e)
-    return {"appraisal": core.public_appraisal(doc), "workflow": workflow.public_workflow(doc), "abilities": workflow.abilities(me, doc), "notified": len(doc.get("notified_manager_ids") or [])}
+    return {"appraisal": core.public_appraisal(doc), "workflow": workflow.public_workflow(doc), "abilities": workflow.abilities(me, doc),
+            "notified": len(doc.get("notified_managers") or []), "notified_managers": doc.get("notified_managers") or []}
 
 
 @router.post("/{appraisal_id}/decide")
