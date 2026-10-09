@@ -64,10 +64,10 @@ async def update(db, company_id: str, me: dict, body: dict) -> dict:
         if not _tz(body["timezone"]):
             raise ValueError("Unknown timezone")
         upd["timezone"] = body["timezone"]
-    if upd.get("enabled", cur["enabled"]):
-        upd["user_id"], upd["user_name"] = str(me["_id"]), cc._who(me)["name"]
     if not upd:
         raise ValueError("Nothing to change")
+    if upd.get("enabled", cur["enabled"]):
+        upd["user_id"], upd["user_name"] = str(me["_id"]), cc._who(me)["name"]
     await db[core.COMPANIES].update_one({"_id": company_id}, {"$set": {**{f"morning_brief.{k}": v for k, v in upd.items()}, "updated_at": core._now()}})
     keys = ("enabled", "hour", "timezone")
     await core.audit(db, company_id, me, "morning_brief_updated", {"kind": "company", "id": company_id}, before={k: cur.get(k) for k in keys}, after={k: {**cur, **upd}.get(k) for k in keys})
