@@ -237,3 +237,67 @@ Phase 1 ships nothing that changes behaviour for any other user.
 10. Export format: JSON + Markdown bundle (portable, Git-friendly) — confirm.
 
 Stopped here. No code, schema or deployment changes were made.
+
+---
+
+# PHASE 1A — REVISED MVP PLAN (Oct 9, 2026; founder approved the direction, not the 170-190 h scope)
+
+Decisions taken from the founder: owner-account-only access; seed as editable drafts; reuse theme / auth / Whisper; GPT-5.2 later for the Advisor; weekly review screen-only, no email; metrics manual; active partner stages Qualified / Discovery / Proposal / Pilot / Negotiation (recorded for Phase 4); plain SVG; default owner = founder, due dates blank; JSON + Markdown export; portability; smallest schema.
+
+## A. Access (verified reuse, no new infrastructure)
+The app already has an **Owner layer** above super admins: `users.is_owner` (one account: forest@imosapp.com), `is_owner(user)`, `can_see(db, user, key)` and the `OWNER_TOOLS` visibility list in `routers/owner.py:12-67`. The Command Center registers as owner tool `("command_center", "Founder Command Center", False)` → visible to the owner only; other super admins get 403 and no menu entry unless the owner later grants it from Owner Settings. No `settings` allow-list needed.
+
+## B. Simplified data model: 20 → 5 collections (+ none modified)
+| Collection | Holds | Integrity |
+|---|---|---|
+| `cc_blueprint` | one doc per `key`: `mission, vision, positioning, promise, philosophy, objective (One Big Thing), pillar.capture/understand/engage/improve, product.relationship_os/opportunity_intelligence/performance_intelligence, next_action, focus` (singleton holding `active_priority_ids`) · `{key, kind, data{}, status: draft\|approved, versions[{data, by, at, reason}], updated_at}` | unique index on `key`; approve requires reason; previous versions kept |
+| `cc_priorities` | strategic priorities · `{title, status: proposed\|active\|paused\|completed\|replaced, pillar, product, purpose, next_action, due (null), owner, progress_pct, definition_of_done, history[]}` | **slot rule**: `cc_blueprint{key:"focus"}.active_priority_ids` updated with `update_one({key:"focus", "data.active_priority_ids.2": {$exists: false}}, {$push: ...})` → 409 when three are active; pillar + purpose required (422) |
+| `cc_roadmap` | 90-day milestones · `{phase: package\|validate\|replicate, title, status: not_started\|in_progress\|done\|blocked, owner, due (null), pillar, product, note}` | simple; no dependency engine |
+| `cc_ideas` | Idea Vault · `{title, description, transcript?, pillar?, product?, status: captured\|evaluating\|parked\|approved\|active\|rejected, created_at, reviewed_at}` | default `captured`; status changes never create roadmap items |
+| `cc_notes` | Waiting On and Wins · `{kind: waiting\|win, title, party?, since, due?, priority_id?, status: open\|done}` | tiny |
+Audit: approvals, priority activations / replacements and idea status changes append to `cc_blueprint`/`cc_priorities` `history[]`/`versions[]` (no separate audit collection in 1A; `cc_audit` arrives with Phase 2 if needed). Export reads these five collections only.
+
+## C. Screens (4) and entry
+- More tab → **Founder Command Center** (owner tool key) → `app/admin/command-center/index.tsx` = **Founder Focus** (default): One Big Thing card (title, why, target, progress, status; tap → edit sheet), up to three Active Priority cards (status, next action, due, owner, progress, done-when; tap → edit; "Propose a priority" → when 3 are active the server's 409 drives the "complete, pause or replace one, or park as an idea" sheet), Next Best Action card (manual text + why; Accept marks it current; Edit; Clear), Waiting On list (add/done), This Week's Wins (add; shows last 7 days), sticky Capture-an-idea bar (`VoiceTextInput`, saves to `cc_ideas` as `captured`).
+- `strategy.tsx`: North Star (five statements; edit → "Save draft" → "Approve (reason)" → version history list), four Pillar cards (promise, capabilities, outcome; tap → detail/edit), three Product cards (target, promise, includes, readiness `unknown`, pricing `uncommitted`; tap → edit).
+- `roadmap.tsx`: three phase columns on web / stacked on mobile, milestone rows with status chips, add/edit sheet, phase progress bars (SVG).
+- `ideas.tsx`: capture bar, status filter chips, "New this week" and "Parked" quick filters (the screen-only weekly review), idea sheet (fields + status chips). No AI.
+Shared: `components/command-center/` (nav chips, cards, sheets, progress bar). Mobile = chip row nav + stacked cards; web ≥ 1024 px = two columns on Focus.
+
+## D. Endpoints (`/api/command-center`, all `Depends(require_cc)` = owner or granted visibility)
+`GET /focus` · `GET /blueprint` · `PUT /blueprint/{key}` (new draft version) · `POST /blueprint/{key}/approve` `{reason}` · `GET /blueprint/{key}/versions`
+`GET/POST /priorities` · `PATCH /priorities/{id}` · `POST /priorities/{id}/activate` (409 when full) · `POST /priorities/{id}/pause` · `POST /priorities/{id}/complete` · `POST /priorities/{id}/replace` `{replace_id, reason}`
+`PUT /next-action` `{text, why}` · `DELETE /next-action`
+`GET/POST /notes` · `PATCH /notes/{id}` · `DELETE /notes/{id}`
+`GET/POST /roadmap` · `PATCH /roadmap/{id}` · `DELETE /roadmap/{id}`
+`GET/POST /ideas` · `PATCH /ideas/{id}` · `DELETE /ideas/{id}`
+`GET /export.json` · `GET /export.md` · `POST /seed` (idempotent: inserts missing keys only, never overwrites edits)
+22 endpoints, one router file, one service file.
+
+## E. Revised estimate (validated against the codebase)
+| Work | Hours |
+|---|---|
+| Backend: service + router, slot rule, versioning/approval, seed, export, owner-tool registration | 10-12 |
+| Backend tests (access, slot rule incl. concurrency, approval/versions, seed idempotency, export) | 4-5 |
+| Frontend: Focus (6 blocks + sheets + capture bar), Strategy, Roadmap, Ideas, nav shell, responsive, light/dark, More-tab entry | 16-20 |
+| Testing-agent pass + fixes | 4-5 |
+| **Phase 1A total** | **34-42 h** |
+This sits at the top of the 20-40 target. It is honest for four polished, mobile-friendly screens with sheets; the backend is small. If you want to land under 32 h, the **smallest functional release (1A-min, 26-30 h)** drops: the version-history viewer (versions still saved server-side, no UI), pillar/product *editing* (seeded content displays; edit arrives in 1B), and the roadmap edit sheet (status chips only, add via a one-line field). Everything on Founder Focus, the slot rule, idea capture and export stay.
+
+## F. Acceptance criteria (Phase 1A)
+1. Only the owner account opens `/admin/command-center` and sees the More-tab entry; another super admin gets 403 on every `/api/command-center/*` call.
+2. Landing is Founder Focus with: One Big Thing (seeded proposal, editable), three priority slots (seeded proposals start `proposed`; activating the fourth returns 409 and shows the complete / pause / replace / park choice; no fourth active ever appears, including under 20 parallel activate calls in tests), Next Best Action (manual add / edit / clear), Waiting On (add / done), Wins (add, last 7 days), Capture bar (text or voice → `cc_ideas` `captured` in one action, confirmation toast, screen stays on Focus).
+3. Strategy: five statements seeded as drafts; "Save draft" creates a version; "Approve" requires a reason and marks approved; history lists versions with who / when / reason. Four pillars and three products render seeded content; pricing shows "uncommitted", readiness "unknown"; edits persist.
+4. Roadmap: 19 seeded milestones across Package / Validate / Replicate, owner = founder, due blank, status changes persist, phase progress bars reflect done counts.
+5. Ideas: list with status filter chips, "New this week" and "Parked" filters, status edits persist; an idea never creates a roadmap item or priority.
+6. `GET /export.json` and `GET /export.md` return everything in the five collections; Markdown is readable as a company blueprint.
+7. Works on web desktop and a 390 px viewport, light and dark; no new dependencies; no existing collection written; no changes to campaigns, messages, Twilio, billing or customer data.
+
+## G. Implementation risks
+- Voice capture on web records WebM via MediaRecorder with a 30-s auto-stop (`components/VoiceInput.tsx:15-135`) and works on iOS/Android through expo-av; Safari web MediaRecorder support varies → text capture is always available as the fallback.
+- The slot rule relies on the singleton `focus` doc; the activate / replace flow must be the only writer of `active_priority_ids` (enforced in the service; tests cover parallel activations).
+- Seed idempotency: `POST /seed` and first `GET /focus` insert only missing keys so re-running never overwrites founder edits.
+- Expo Router nested folder `app/admin/command-center/*` follows the pattern already used for `app/admin/journeys/[id].tsx` (works on web and native).
+- Scope creep is the real risk; anything outside §C/§D goes into the Idea Vault once it exists.
+
+STOP: awaiting final approval of Phase 1A (34-42 h) or 1A-min (26-30 h). Nothing built.
