@@ -48,7 +48,11 @@ export const TodayBrief = ({ colors, showToast }: { colors: any; showToast: (m: 
             </View>
           ) : <Text style={{ fontSize: 13, color: AMBER }} {...tid('cc-brief-no-priorities')}>No active priorities. Activate up to three so the brief has something to track.</Text>}
           <Text style={{ fontSize: 13.5, color: colors.text }} {...tid('cc-brief-next')}><Text style={{ fontWeight: '800' }}>Next Best Action: </Text>{b.next_best_action || 'none set'}</Text>
-          {b.attention?.length ? <View style={{ gap: 3 }} {...tid('cc-brief-attention')}><Text style={{ fontSize: 11, fontWeight: '800', color: RED, letterSpacing: 0.8 }}>NEEDS ATTENTION</Text>{b.attention.map((a, i) => <Text key={i} style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>• {a}</Text>)}</View> : null}
+          <View style={{ gap: 3 }} {...tid('cc-brief-attention')}>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: b.attention?.length ? RED : colors.textSecondary, letterSpacing: 0.8 }}>NEEDS ATTENTION</Text>
+            {b.attention?.length ? b.attention.map((a, i) => <Text key={i} style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>• {a}</Text>)
+              : <Text style={{ fontSize: 13, color: colors.textSecondary }}>Nothing is flagged right now.</Text>}
+          </View>
           <View style={{ borderRadius: 12, padding: 10, backgroundColor: GOLD + '1A', borderWidth: 1, borderColor: GOLD + '66', gap: 3 }} {...tid('cc-brief-recommendation')}>
             <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 0.8 }}>DO THIS TODAY</Text>
             <Text style={{ fontSize: 14, color: colors.text, lineHeight: 20 }}>{b.recommendation}</Text>

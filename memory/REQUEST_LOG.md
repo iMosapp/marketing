@@ -4,6 +4,12 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 63 · Oct 9 — DONE (preview, tested) · NOT DEPLOYED YET (Save to GitHub -> Deploy -> EAS update)
+> FOUNDER COMMAND CENTER — PHASE 2: AI FOUNDER ADVISOR. Extend the Command Center into an AI-powered strategic advisory system: conversational interface with memory, Idea Evaluation Engine (6 dimensions, Build / Validate / Park / Reject), Daily Founder Brief. Do not rebuild Phase 1A-min. The Advisor reads the live strategic context, respects the three-active-priorities rule and can NEVER change priorities, tasks or ideas without explicit human approval. Integrate with Live Jessi voice. (wording from the handoff summary; follow-up answer: yes to Live Jessi)
+
+Built: Advisor tab (threads with memory + rolling summary, starter questions, FACT / ASSUMPTION / RECOMMENDATION replies, "proposed change" cards that only navigate), Idea Vault "Evaluate with Advisor" (6 scored dimensions, verdict, deal-breakers, experiment, disagree-and-record), Today's Brief card on Focus (cached 6 h, Refresh), "Talk live" with Jessi in advisor mode, usage meter. Guardrails verified: no write path from the model into cc_* data; stored text is data not instructions (injection test passed); owner-only. Tests: `tests/test_command_center_advisor.py` 9 + 2 live, testing agent iteration_376 backend 4/4 + UI 100%.
+
+
 ### 62 · Oct 9 — DIAGNOSED, FIX IS THE OWNER'S (production secret) · no code change
 > I am not seeing the new founder tile after opening and closing app twice [screenshot: Internal Operations = 17 tools, profile sheet without owner entries]
 
