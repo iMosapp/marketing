@@ -6,10 +6,13 @@ import { useToast } from '../../common/Toast';
 import { Label } from '../../mystery-shops/shared';
 import { Card, Eyebrow, Pill } from '../CcShell';
 import { Bullets } from './Roster';
+import { hourLabel } from './MorningBrief';
 import { GOLD, detail, tid, execColor, execShort, type Executive, type OperatingReview as Review } from '../shared';
 
-// OPERATING REVIEW (Mode D lite): one Chief of Staff call over the live Command Center, pending decisions and readiness gaps. On demand only.
-export const OperatingReview = ({ colors, execs }: { colors: any; execs: Executive[] }) => {
+type Props = { colors: any; execs: Executive[]; morning?: { enabled: boolean; hour: number }; onOpenControls?: () => void };
+
+// OPERATING REVIEW (Mode D lite): one Chief of Staff call over the live Command Center, pending decisions and readiness gaps. On demand, or pushed every morning when the brief is on.
+export const OperatingReview = ({ colors, execs, morning, onOpenControls }: Props) => {
   const { showToast } = useToast();
   const [r, setR] = useState<Review | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -52,6 +55,13 @@ export const OperatingReview = ({ colors, execs }: { colors: any; execs: Executi
             </View>
           )}
         </View>
+      )}
+      {!!morning && (
+        <TouchableOpacity onPress={onOpenControls} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }} {...tid('cc-review-morning')}>
+          <Ionicons name="sunny" size={13} color={morning.enabled ? GOLD : colors.textSecondary} />
+          <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>{morning.enabled ? `Pushed to your phone every morning at ${hourLabel(morning.hour)}.` : 'Want this on your phone every morning?'}</Text>
+          <Text style={{ fontSize: 11.5, fontWeight: '800', color: GOLD }}>{morning.enabled ? 'Change' : 'Set it up'}</Text>
+        </TouchableOpacity>
       )}
     </Card>
   );

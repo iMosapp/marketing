@@ -1,0 +1,8 @@
+crons:
+  - name: lt-morning-brief
+    description: "Hourly check that pushes the Chief of Staff morning brief at the founder's chosen local hour"
+    cron: "5 * * * *"
+    endpoint: "{{BASE_URL}}/api/cron/leadership-morning-brief"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true

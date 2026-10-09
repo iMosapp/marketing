@@ -834,6 +834,8 @@ from routers import command_center as command_center_router
 api_router.include_router(command_center_router.router)
 from routers import leadership as leadership_router
 api_router.include_router(leadership_router.router)
+from routers import cron as cron_router
+api_router.include_router(cron_router.router)
 from routers import courses as courses_router
 api_router.include_router(courses_router.router)
 api_router.include_router(courses_router.public_router)

@@ -29,6 +29,7 @@ export default function LeadershipTeam() {
   const [execs, setExecs] = useState<Executive[] | null>(null);
   const [controls, setControls] = useState<TeamControls | null>(null);
   const [spend, setSpend] = useState(0);
+  const [morning, setMorning] = useState<{ enabled: boolean; hour: number } | undefined>(undefined);
   const [view, setView] = useState<ViewKey>((VIEWS.some(([k]) => k === params.view) ? params.view : 'roster') as ViewKey);
   const [askKey, setAskKey] = useState<string | undefined>(params.exec);
   const [askThread, setAskThread] = useState<string | undefined>(params.thread);
@@ -36,7 +37,7 @@ export default function LeadershipTeam() {
   const [prefill, setPrefill] = useState('');
 
   const load = useCallback(async () => {
-    try { const r = (await api.get('/command-center/team/roster')).data; setExecs(r.executives); setControls(r.controls); setSpend(r.month_spend_usd); }
+    try { const r = (await api.get('/command-center/team/roster')).data; setExecs(r.executives); setControls(r.controls); setSpend(r.month_spend_usd); setMorning(r.morning_brief); }
     catch (e: any) { if (!bounceIfPrivate(e, router)) showToast(detail(e, 'Could not load the team'), 'error'); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -59,7 +60,7 @@ export default function LeadershipTeam() {
   const body = () => {
     if (!execs) return null;
     switch (view) {
-      case 'roster': return <View style={{ gap: 16 }}><OperatingReview colors={colors} execs={execs} /><Roster execs={execs} colors={colors} onAsk={goAsk} onTalk={k => { goAsk(k); setTimeout(() => ask.talk(k), 50); }} onChanged={load} /></View>;
+      case 'roster': return <View style={{ gap: 16 }}><OperatingReview colors={colors} execs={execs} morning={morning} onOpenControls={() => setView('controls')} /><Roster execs={execs} colors={colors} onAsk={goAsk} onTalk={k => { goAsk(k); setTimeout(() => ask.talk(k), 50); }} onChanged={load} onOpenRoundtable={openRt} /></View>;
       case 'ask': return wide ? <View style={{ flexDirection: 'row', gap: 20 }}>{ask.Threads}{ask.Chat}</View> : ask.Chat;
       case 'roundtables': return rtId ? <RoundtableView id={rtId} colors={colors} execs={execs} onBack={() => setRtId(null)} onChanged={load} /> : <Roundtables colors={colors} execs={execs} prefill={prefill} onOpen={openRt} />;
       case 'decisions': return <Decisions colors={colors} onOpen={openRt} />;

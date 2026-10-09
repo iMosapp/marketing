@@ -305,3 +305,73 @@ def test_unsupported_claims_json_repair_and_reaper(db):
     assert run(rt.fail_interrupted(db)) == 1
     assert run(rt.fail_interrupted(db, all_running=True)) == 1
     assert run(db[rt.RT].count_documents({"status": "interrupted"})) == 2
+
+
+def test_memory_lane_export_and_morning_brief(db, monkeypatch):
+    """Phase 1 follow-ups: Executive Memory Lane (code-built history), roundtable export (markdown + pdf) and the morning brief push (tick sends once per local day)."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from bson import ObjectId
+
+    import routers.push_notifications as pn
+    from services.leadership import export, history, morning
+
+    model = Scripted(select=("cto", "cfo"))
+    monkeypatch.setattr(ai, "complete", model)
+    before = run(_cc_fingerprint(db))
+    r = run(_convene_and_run(db, model))
+    dec = run(db[rt.DECISIONS].find_one({"roundtable_id": str(r["_id"])}))
+    run(rt.decide(db, CO, str(dec["_id"]), ME, "approve", "go"))
+    # memory lane: the cto (devil's advocate) raised the one material challenge against the cfo; the founder approved
+    counts = run(history.counts(db, CO))
+    assert counts["cto"] == {**counts["cto"], "roundtables": 1, "approved": 1, "dissents": 1, "open_dissents": 1, "devil_advocate": 1}
+    assert "chief_of_staff" not in counts
+    cfo = run(history.memory(db, CO, "cfo"))
+    assert cfo["summary"]["roundtables"] == 1 and len(cfo["entries"]) == 1
+    e = cfo["entries"][0]
+    assert e["position"] == "cfo: do it in phases" and e["confidence"] == "medium" and e["decision"]["status"] == "approved" and e["decision"]["reason"] == "go"
+    assert e["dissents"][0]["raised"] is False and e["challenged_on"] == 1 and e["challenges_raised"] == 0 and e["position_change"] == ""
+    cto = run(history.memory(db, CO, "cto"))["entries"][0]
+    assert cto["challenges_raised"] == 1 and cto["dissents"][0]["raised"] is True and cto["devil_advocate"] is True and cto["brief_recommendation"] == "Validate first"
+    assert run(history.memory(db, CO, "coo")) == {"executive": "coo", "summary": history._zero(), "entries": []}
+    # export: every section, the founder's verdict, the dissent register; the pdf renders from the same markdown
+    fresh = run(rt.get(db, CO, str(r["_id"])))
+    dec = run(db[rt.DECISIONS].find_one({"_id": dec["_id"]}))
+    md = export.markdown(fresh, dec, "Test Co")
+    for h in ("## The question", "## Decision", "## The room", "## Executive brief", "## Dissent register", "## Independent assessments", "## Challenge round", "## Claims labelled FACT without a citation", "## Record"):
+        assert h in md, h
+    assert "**Approved** by Test Founder" in md and "Founder's note: go" in md and "### D1: cfo: do it in phases" in md and "Test Co" in md and "devil's advocate" in md
+    pdf = export.pdf(md)
+    assert pdf[:5] == b"%PDF-" and len(pdf) > 2000
+    assert export.filename(fresh, "pdf").startswith("roundtable-brief-first-")
+    # morning brief: validation, settings, and the hourly tick that sends once per local day through the push helper
+    pushes = []
+
+    async def fake_push(uid, title, body, url="/", icon="flame", **kw):
+        pushes.append({"uid": uid, "title": title, "body": body, "url": url})
+        return 1
+    monkeypatch.setattr(pn, "send_push_to_user", fake_push)
+    with pytest.raises(ValueError):
+        run(morning.update(db, CO, ME, {"hour": 25}))
+    with pytest.raises(ValueError):
+        run(morning.update(db, CO, ME, {"timezone": "Mars/Olympus"}))
+    s = run(morning.update(db, CO, ME, {"enabled": True, "hour": 7, "timezone": "America/Denver"}))
+    assert s["enabled"] is True and s["user_id"] == ME["_id"] and s["timezone"] == "America/Denver" and s["next_send"].endswith("07:05:00-06:00") or s["next_send"].endswith("07:05:00-07:00")
+    now_h = datetime.now(ZoneInfo("America/Denver")).hour
+    run(morning.update(db, CO, ME, {"hour": (now_h + 1) % 24}))
+    out = run(morning.tick(db))
+    assert out["checked"] == 1 and out["sent"] == 0 and "brief is at" in out["skipped"][0] and pushes == []
+    run(morning.update(db, CO, ME, {"hour": now_h}))
+    run(db.users.insert_one({"_id": ObjectId(ME["_id"]), "name": "Test Founder", "role": "super_admin"}))
+    out = run(morning.tick(db))
+    assert out["sent"] == 1 and len(pushes) == 1 and pushes[0] == {"uid": ME["_id"], "title": morning.TITLE, "body": "steady. One Big Thing: x.", "url": morning.LINK}
+    s = run(morning.settings(db, CO))
+    assert s["last_sent_day"] == datetime.now(ZoneInfo("America/Denver")).strftime("%Y-%m-%d") and s["last_pushed"] == 1 and s["last_headline"] == "steady" and s["last_error"] is None
+    out = run(morning.tick(db))
+    assert out["sent"] == 0 and "already sent today" in out["skipped"][0] and len(pushes) == 1
+    assert run(db[rt.REVIEWS].count_documents({"source": "morning_brief:scheduled", "pushed": 1})) == 1
+    assert morning.compose({"headline": "Steady [F1][CC]", "one_big_thing": "Launch [F2]", "pending_decisions": ["a", "b"], "next_actions": [{"action": "Price it [D1]"}]}) == "Steady. One Big Thing: Launch. 2 decisions waiting on you. First move: Price it."
+    acts = [a["action"] for a in run(core.audit_list(db, CO))]
+    assert "morning_brief_sent" in acts and "morning_brief_updated" in acts
+    assert run(_cc_fingerprint(db)) == before, "the morning brief and the export never touch the Command Center"

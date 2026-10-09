@@ -5,6 +5,7 @@ import api from '../../../services/api';
 import { useToast } from '../../common/Toast';
 import { Sheet, GoldButton, Label } from '../../mystery-shops/shared';
 import { Card, Progress } from '../CcShell';
+import { MemoryLane, MemoryLine } from './MemoryLane';
 import { GOLD, GREEN, AMBER, RED, READY_COLOR, detail, tid, type Executive } from '../shared';
 
 const PART: Record<string, string> = { orchestrator: 'Convenes the room', always: 'Always in the room', on_topic: 'Joins when the topic is theirs' };
@@ -42,6 +43,7 @@ const ExecTile = ({ e, colors, onOpen, onAsk, width }: { e: Executive; colors: a
       </View>
       <Progress pct={e.readiness.score} color={READY_COLOR[e.readiness.level]} colors={colors} testID={`cc-exec-${e.key}-progress`} />
     </View>
+    {!e.is_orchestrator && <MemoryLine e={e} colors={colors} />}
     {!e.is_orchestrator && (
       <TouchableOpacity onPress={onAsk} disabled={!e.enabled} style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: e.enabled ? e.color + '22' : colors.border }} {...tid(`cc-exec-${e.key}-ask`)}>
         <Ionicons name="chatbubble-ellipses" size={14} color={e.enabled ? e.color : colors.textSecondary} /><Text style={{ fontSize: 12.5, fontWeight: '800', color: e.enabled ? e.color : colors.textSecondary }}>Ask the {e.short}</Text>
@@ -51,7 +53,7 @@ const ExecTile = ({ e, colors, onOpen, onAsk, width }: { e: Executive; colors: a
 );
 
 // THE ROSTER: seven executives, each a document the founder can switch on or off; readiness tells how much the company has actually told them.
-export const Roster = ({ execs, colors, onAsk, onTalk, onChanged }: { execs: Executive[]; colors: any; onAsk: (key: string) => void; onTalk: (key: string) => void; onChanged: () => void }) => {
+export const Roster = ({ execs, colors, onAsk, onTalk, onChanged, onOpenRoundtable }: { execs: Executive[]; colors: any; onAsk: (key: string) => void; onTalk: (key: string) => void; onChanged: () => void; onOpenRoundtable: (id: string) => void }) => {
   const { width } = useWindowDimensions();
   const [open, setOpen] = useState<Executive | null>(null);
   const cols = width >= 1024 ? 3 : width >= 700 ? 2 : 1;
@@ -62,14 +64,14 @@ export const Roster = ({ execs, colors, onAsk, onTalk, onChanged }: { execs: Exe
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
         {execs.map(e => <ExecTile key={e.key} e={e} colors={colors} width={tileW} onOpen={() => setOpen(e)} onAsk={() => onAsk(e.key)} />)}
       </View>
-      <ExecutiveSheet e={open} colors={colors} onClose={() => setOpen(null)} onAsk={onAsk} onTalk={onTalk} onChanged={onChanged} />
+      <ExecutiveSheet e={open} colors={colors} onClose={() => setOpen(null)} onAsk={onAsk} onTalk={onTalk} onChanged={onChanged} onOpenRoundtable={onOpenRoundtable} />
     </View>
   );
 };
 
 const Section = ({ t, children, colors }: { t: string; children: React.ReactNode; colors: any }) => <View style={{ gap: 6 }}><Label t={t} colors={colors} />{children}</View>;
 
-export const ExecutiveSheet = ({ e, colors, onClose, onAsk, onTalk, onChanged }: { e: Executive | null; colors: any; onClose: () => void; onAsk: (k: string) => void; onTalk: (k: string) => void; onChanged: () => void }) => {
+export const ExecutiveSheet = ({ e, colors, onClose, onAsk, onTalk, onChanged, onOpenRoundtable }: { e: Executive | null; colors: any; onClose: () => void; onAsk: (k: string) => void; onTalk: (k: string) => void; onChanged: () => void; onOpenRoundtable: (id: string) => void }) => {
   const { showToast } = useToast();
   const [busy, setBusy] = useState(false);
   if (!e) return null;
@@ -118,6 +120,11 @@ export const ExecutiveSheet = ({ e, colors, onClose, onAsk, onTalk, onChanged }:
         </View>
         <Text style={{ fontSize: 11, color: colors.textSecondary, lineHeight: 15 }}>{e.readiness.rule}</Text>
       </Section>
+      {!e.is_orchestrator && (
+        <Section t="MEMORY LANE · POSITIONS, DISSENTS, YOUR VERDICTS" colors={colors}>
+          <MemoryLane execKey={e.key} colors={colors} onOpenRoundtable={id => { onClose(); onOpenRoundtable(id); }} />
+        </Section>
+      )}
       <Section t="RESPONSIBILITIES" colors={colors}><Bullets items={e.responsibilities} colors={colors} /></Section>
       <Section t="DELIVERS" colors={colors}><Bullets items={e.deliverables} colors={colors} /></Section>
       <Section t="NEEDS YOUR APPROVAL FOR" colors={colors}><Bullets items={e.authority.needs_approval} colors={colors} /></Section>

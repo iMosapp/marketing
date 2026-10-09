@@ -9,6 +9,7 @@ import { Card, Eyebrow, Pill } from '../CcShell';
 import { Monogram } from './Roster';
 import { RoundtableBrief } from './RoundtableBrief';
 import { RoundtableDiscussion } from './RoundtableDiscussion';
+import { ExportRoundtable } from './ExportRoundtable';
 import { GOLD, GREEN, RED, AMBER, RT_STATUS, STEP_LABEL, detail, tid, type Executive, type Roundtable } from '../shared';
 
 type Props = { id: string; colors: any; execs: Executive[]; onBack: () => void; onChanged: () => void };
@@ -49,6 +50,7 @@ export const RoundtableView = ({ id, colors, execs, onBack, onChanged }: Props) 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <TouchableOpacity onPress={onBack} style={{ padding: 6 }} {...tid('cc-rt-back')}><Ionicons name="chevron-back" size={22} color={colors.text} /></TouchableOpacity>
         <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: colors.text }} numberOfLines={2} {...tid('cc-rt-title')}>{rt.title}</Text>
+        {!!rt.brief && <ExportRoundtable rt={rt} colors={colors} />}
         <Pill text={st.label} color={st.color} icon={st.icon} testID="cc-rt-status" />
       </View>
       <Card colors={colors} testID="cc-rt-question">

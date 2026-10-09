@@ -6,6 +6,7 @@ import { showConfirm } from '../../../services/alert';
 import { useToast } from '../../common/Toast';
 import { Field, GoldButton, Label } from '../../mystery-shops/shared';
 import { Card, Eyebrow, Progress } from '../CcShell';
+import { MorningBrief } from './MorningBrief';
 import { GOLD, GREEN, RED, AMBER, detail, tid, type TeamUsage } from '../shared';
 
 const KIND_LABEL: Record<string, string> = { lt_chat: 'Ask an Executive', lt_voice: 'Live voice turns', lt_select: 'Roundtable: room selection', lt_assess: 'Roundtable: assessments', lt_challenge: 'Roundtable: challenge round', lt_synth: 'Roundtable: synthesis', lt_review: 'Operating review' };
@@ -52,6 +53,7 @@ export const Controls = ({ colors, onChanged }: { colors: any; onChanged: () => 
           <Switch value={u.controls.stopped} onValueChange={stop} disabled={busy} trackColor={{ true: RED }} {...tid('cc-stop-switch')} />
         </View>
       </Card>
+      <MorningBrief colors={colors} onChanged={onChanged} />
       <Card colors={colors} testID="cc-limits-card">
         <Eyebrow t="LIMITS" colors={colors} />
         <View style={{ flexDirection: 'row', gap: 10 }}>

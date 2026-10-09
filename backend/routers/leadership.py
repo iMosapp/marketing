@@ -3,13 +3,14 @@ Founder-only through the Command Center gate. Every model call is advisory; noth
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 from routers.command_center import _ai_error, _seeded, require_cc
 from routers.database import get_db
 from services import command_center_ai as ai
-from services.leadership import ask, core, knowledge, roster
+from services.leadership import ask, core, export, history, knowledge, morning, roster
 from services.leadership import orchestrator as rt
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,12 @@ class ControlsBody(BaseModel):
     stopped: Optional[bool] = None
 
 
+class MorningBody(BaseModel):
+    enabled: Optional[bool] = None
+    hour: Optional[int] = None
+    timezone: Optional[str] = None
+
+
 def _co(request: Request) -> str:
     return core.company_for(request.state.user)
 
@@ -85,11 +92,22 @@ async def get_roster(request: Request):
     cid = await _ready(db, request)
     ros = await roster.roster(db, cid)
     snap = await knowledge.cc_snapshot(db)
+    mem = await history.counts(db, cid)
     for a in ros:
         a["readiness"] = await knowledge.readiness(db, cid, a, snap)
+        a["memory"] = mem.get(a["key"]) or history._zero()
         a.pop("prompt", None)
     co = await core.company(db, cid)
-    return {"executives": ros, "company": {"id": cid, "name": co["name"]}, "controls": co["controls"], "month_spend_usd": await core.month_spend(db, cid)}
+    mb = {**morning.DEFAULT, **(co.get("morning_brief") or {})}
+    return {"executives": ros, "company": {"id": cid, "name": co["name"]}, "controls": co["controls"], "month_spend_usd": await core.month_spend(db, cid), "morning_brief": {"enabled": mb["enabled"], "hour": mb["hour"]}}
+
+
+@router.get("/roster/{key}/history")
+async def roster_history(key: str, request: Request, limit: int = 30):
+    """Executive Memory Lane: past positions, dissents and how the founder decided. Built in code from the roundtable records."""
+    if key not in roster.ROLE_BY_KEY:
+        raise HTTPException(status_code=404, detail="Unknown executive")
+    return await history.memory(get_db(), _co(request), key, max(1, min(100, limit)))
 
 
 @router.patch("/roster/{key}")
@@ -286,6 +304,30 @@ async def cancel_roundtable(rid: str, request: Request):
     return await rt.cancel(db, cid, await _rt(db, cid, rid), request.state.user)
 
 
+async def _export(db, request: Request, rid: str, fmt: str) -> tuple:
+    cid = _co(request)
+    r = await _rt(db, cid, rid)
+    if not r.get("brief"):
+        raise HTTPException(status_code=400, detail="The brief is not ready yet; export once the Chief of Staff has synthesized the room")
+    d = await db[rt.DECISIONS].find_one({"_id": ai.cc._oid(r["decision_id"])}) if r.get("decision_id") else None
+    co = await core.company(db, cid)
+    md = export.markdown(r, d, co["name"])
+    await core.audit(db, cid, request.state.user, "roundtable_exported", {"kind": "roundtable", "id": rid}, after={"format": fmt})
+    return md, export.filename(r, fmt)
+
+
+@router.get("/roundtables/{rid}/export.md", response_class=PlainTextResponse)
+async def export_roundtable_md(rid: str, request: Request):
+    md, name = await _export(get_db(), request, rid, "md")
+    return PlainTextResponse(md, media_type="text/markdown; charset=utf-8", headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@router.get("/roundtables/{rid}/export.pdf")
+async def export_roundtable_pdf(rid: str, request: Request):
+    md, name = await _export(get_db(), request, rid, "pdf")
+    return Response(export.pdf(md), media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
 # ───────────────────────── decisions ─────────────────────────
 @router.get("/decisions")
 async def list_decisions(request: Request, status: Optional[str] = None):
@@ -317,6 +359,31 @@ async def generate_review(request: Request):
     cid = await _ready(db, request)
     try:
         return {"review": await rt.review(db, cid, request.state.user)}
+    except Exception as e:
+        _ai_error(e)
+
+
+# ───────────────────────── morning brief push ─────────────────────────
+@router.get("/morning-brief")
+async def get_morning_brief(request: Request):
+    return await morning.settings(get_db(), _co(request))
+
+
+@router.put("/morning-brief")
+async def put_morning_brief(body: MorningBody, request: Request):
+    try:
+        return await morning.update(get_db(), _co(request), request.state.user, body.model_dump(exclude_none=True))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)[:300])
+
+
+@router.post("/morning-brief/send")
+async def send_morning_brief(request: Request):
+    """Send today's brief now (one review call + one push); counts as today's scheduled brief."""
+    db = get_db()
+    cid = await _ready(db, request)
+    try:
+        return await morning.send(db, cid, request.state.user, reason="manual")
     except Exception as e:
         _ai_error(e)
 
