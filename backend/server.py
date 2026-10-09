@@ -832,6 +832,8 @@ from routers import journeys as journeys_router
 api_router.include_router(journeys_router.router)
 from routers import command_center as command_center_router
 api_router.include_router(command_center_router.router)
+from routers import leadership as leadership_router
+api_router.include_router(leadership_router.router)
 from routers import courses as courses_router
 api_router.include_router(courses_router.router)
 api_router.include_router(courses_router.public_router)
@@ -1640,6 +1642,17 @@ async def startup_event():
             logger.info(f"[Crawl] marked {_n} site read(s) interrupted by the restart")
     except Exception as _e:
         logger.warning(f"[Crawl] interrupted reads not cleared: {_e}")
+    try:
+        from services.leadership import knowledge as _lt_kn
+        from services.leadership import orchestrator as _lt_rt
+        from services.leadership import roster as _lt_roster
+        await _lt_roster.seed_templates(get_db())
+        await _lt_kn.seed(get_db(), "imos")
+        _n = await _lt_rt.fail_interrupted(get_db(), all_running=True)
+        if _n:
+            logger.info(f"[Leadership] marked {_n} roundtable(s) interrupted by the restart")
+    except Exception as _e:
+        logger.warning(f"[Leadership] startup seed skipped: {_e}")
     try:
         from services import agents as _ag
         _r = await _ag.migrate_va_profiles(get_db())

@@ -47,7 +47,7 @@ class FakeModel:
     def __init__(self, replies):
         self.replies, self.calls = list(replies), []
 
-    async def __call__(self, db, kind, system, messages, json_mode=False, max_tokens=None):
+    async def __call__(self, db, kind, system, messages, json_mode=False, max_tokens=None, tags=None, timeout=None):
         self.calls.append({"kind": kind, "system": system, "messages": messages})
         await ai._record(db, kind, True, 5, {"prompt_tokens": 100, "completion_tokens": 20})
         r = self.replies.pop(0) if self.replies else {"reply": "ok"}

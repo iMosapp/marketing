@@ -9,7 +9,6 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from bson import ObjectId
 
 from services import command_center as cc
 from services.llm_models import CUSTOMER_TEXT_MODEL
@@ -154,19 +153,20 @@ def _cost(model: str, pin: int, pout: int) -> float:
     return round((pin * i + pout * o) / 1_000_000, 6)
 
 
-async def _record(db, kind: str, ok: bool, ms: int, usage: Optional[dict] = None, error: str = ""):
+async def _record(db, kind: str, ok: bool, ms: int, usage: Optional[dict] = None, error: str = "", tags: Optional[dict] = None):
     u = usage or {}
     await db[USAGE].insert_one({"kind": kind, "model": MODEL[1], "prompt_version": PROMPT_VERSION, "ok": ok, "ms": ms, "prompt_tokens": u.get("prompt_tokens", 0), "completion_tokens": u.get("completion_tokens", 0),
-                                "approx_cost_usd": _cost(MODEL[1], u.get("prompt_tokens", 0), u.get("completion_tokens", 0)), "error": error[:200], "created_at": _now()})
+                                "approx_cost_usd": _cost(MODEL[1], u.get("prompt_tokens", 0), u.get("completion_tokens", 0)), "error": error[:200], "created_at": _now(), **(tags or {})})
 
 
 async def check_rate(db):
-    n = await db[USAGE].count_documents({"created_at": {"$gte": _now() - timedelta(hours=1)}, "kind": {"$ne": "summary"}})
+    # Leadership-team calls (kind lt_*) carry their own per-company budget and rate rules; they do not eat the advisor's hourly allowance.
+    n = await db[USAGE].count_documents({"created_at": {"$gte": _now() - timedelta(hours=1)}, "kind": {"$regex": "^(?!summary$|lt_)"}})
     if n >= HOURLY_LIMIT:
         raise AdvisorBusy(f"The advisor has handled {HOURLY_LIMIT} requests in the last hour; give it a few minutes.")
 
 
-async def complete(db, kind: str, system: str, messages: list, json_mode: bool = False, max_tokens: Optional[int] = None) -> tuple:
+async def complete(db, kind: str, system: str, messages: list, json_mode: bool = False, max_tokens: Optional[int] = None, tags: Optional[dict] = None, timeout: Optional[int] = None) -> tuple:
     """One model call. Returns (text, usage). Runs the blocking client off the event loop under a hard timeout and records tokens, cost and failures."""
     from emergentintegrations.llm.chat import LlmChat
     key = os.environ.get("EMERGENT_LLM_KEY")
@@ -182,12 +182,12 @@ async def complete(db, kind: str, system: str, messages: list, json_mode: bool =
         chat.with_params(**params)
     t0 = _now()
     try:
-        resp = await asyncio.wait_for(asyncio.to_thread(lambda: asyncio.run(chat._execute_completion(chat.messages))), timeout=TIMEOUTS.get(kind, 60))
+        resp = await asyncio.wait_for(asyncio.to_thread(lambda: asyncio.run(chat._execute_completion(chat.messages))), timeout=timeout or TIMEOUTS.get(kind, 60))
     except asyncio.TimeoutError:
-        await _record(db, kind, False, int((_now() - t0).total_seconds() * 1000), error="timeout")
+        await _record(db, kind, False, int((_now() - t0).total_seconds() * 1000), error="timeout", tags=tags)
         raise AdvisorUnavailable("The advisor took too long to answer. Try again in a moment.")
     except Exception as e:
-        await _record(db, kind, False, int((_now() - t0).total_seconds() * 1000), error=str(e))
+        await _record(db, kind, False, int((_now() - t0).total_seconds() * 1000), error=str(e), tags=tags)
         logger.warning(f"[Advisor] {kind} failed: {str(e)[:200]}")
         raise AdvisorUnavailable("The advisor is unavailable right now. Everything else in the Command Center still works.")
     text = ""
@@ -198,8 +198,43 @@ async def complete(db, kind: str, system: str, messages: list, json_mode: bool =
     u = getattr(resp, "usage", None)
     usage = {"prompt_tokens": int(getattr(u, "prompt_tokens", 0) or 0), "completion_tokens": int(getattr(u, "completion_tokens", 0) or 0)} if u else {}
     ms = int((_now() - t0).total_seconds() * 1000)
-    await _record(db, kind, True, ms, usage)
+    await _record(db, kind, True, ms, usage, tags=tags)
     return text, {**usage, "ms": ms, "approx_cost_usd": _cost(MODEL[1], usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)), "model": MODEL[1]}
+
+
+def _repair(s: str) -> dict:
+    """A reply cut off at the token cap is still mostly good JSON: cut back to the last complete value, drop a dangling key, close what is open."""
+    out, stack, cuts, in_str, esc = [], [], [], False, False
+    for ch in s:
+        out.append(ch)
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+                cuts.append((len(out), list(stack)))
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch in "{[":
+            stack.append("}" if ch == "{" else "]")
+        elif ch in "}]":
+            if stack:
+                stack.pop()
+            cuts.append((len(out), list(stack)))
+    for idx, st in reversed(cuts[-60:]):
+        frag = "".join(out[:idx]).rstrip().rstrip(",")
+        for cand in (frag, re.sub(r'[,{]\s*"[^"]*"\s*:?\s*$', lambda m: "{" if m.group(0).lstrip().startswith("{") else "", frag)):
+            try:
+                d = json.loads(cand.rstrip().rstrip(",") + "".join(reversed(st)))
+                if isinstance(d, dict) and d:
+                    d["_truncated"] = True
+                    return d
+            except Exception:
+                continue
+    return {}
 
 
 def _json(raw: str) -> dict:
@@ -211,19 +246,26 @@ def _json(raw: str) -> dict:
         return d if isinstance(d, dict) else {}
     except Exception:
         m = re.search(r"\{.*\}", s, re.S)
-        try:
-            return json.loads(m.group(0)) if m else {}
-        except Exception:
-            return {}
+        if m:
+            try:
+                d = json.loads(m.group(0))
+                if isinstance(d, dict):
+                    return d
+            except Exception:
+                pass
+        d = _repair(s[s.find("{"):] if "{" in s else "")
+        if d:
+            logger.warning("[Advisor] reply was cut off at the token cap; repaired %d keys", len(d))
+        return d
 
 
-async def complete_json(db, kind: str, system: str, messages: list, max_tokens: Optional[int] = None) -> tuple:
-    text, usage = await complete(db, kind, system + "\nReply with one JSON object only.", messages, json_mode=True, max_tokens=max_tokens)
+async def complete_json(db, kind: str, system: str, messages: list, max_tokens: Optional[int] = None, tags: Optional[dict] = None, timeout: Optional[int] = None) -> tuple:
+    text, usage = await complete(db, kind, system + "\nReply with one JSON object only.", messages, json_mode=True, max_tokens=max_tokens, tags=tags, timeout=timeout)
     data = _json(text)
     if data:
         return data, usage
     logger.warning(f"[Advisor] {kind}: bad JSON, retrying once")
-    text, usage2 = await complete(db, kind, system + "\nReply with one JSON object only. Your previous reply was not valid JSON.", messages, json_mode=True, max_tokens=max_tokens)
+    text, usage2 = await complete(db, kind, system + "\nReply with one JSON object only. Your previous reply was not valid JSON.", messages, json_mode=True, max_tokens=max_tokens, tags=tags, timeout=timeout)
     for k in ("prompt_tokens", "completion_tokens", "ms", "approx_cost_usd"):
         usage2[k] = round(usage.get(k, 0) + usage2.get(k, 0), 6)
     return _json(text), usage2
@@ -301,17 +343,19 @@ CHAT_FORMAT = ('Return JSON: {"reply": "markdown-free plain text with short para
                '"question": "one focused question if information is missing, else empty string"}. Suggestions are optional, at most two, only when you really recommend that change. Keep replies under 300 words.')
 
 
-async def chat_turn(db, me: dict, convo: dict, text: str, voice: bool = False) -> dict:
-    """One founder message in, one grounded advisor reply out; both saved on the thread. Voice turns ask for a spoken-length answer."""
-    await check_rate(db)
+async def chat_turn(db, me: dict, convo: dict, text: str, voice: bool = False, system: Optional[str] = None, agent_key: Optional[str] = None, tags: Optional[dict] = None) -> dict:
+    """One founder message in, one grounded advisor reply out; both saved on the thread. Voice turns ask for a spoken-length answer.
+    The leadership team passes its own role system prompt (`system`) and the answering executive (`agent_key`); the Founder Advisor path leaves both empty."""
+    if not agent_key:
+        await check_rate(db)
     text = clean(text, 4000)
     if not text:
         raise ValueError("Say or type something first.")
     ctx = await assemble_context(db)
-    system = PERSONA + "\n\nCOMMAND CENTER (live, authoritative):\n" + ctx["text"] + "\n\n" + (
+    system = (system or (PERSONA + "\n\nCOMMAND CENTER (live, authoritative):\n" + ctx["text"])) + "\n\n" + (
         'You are speaking aloud. Return JSON: {"reply": "three to five short spoken sentences, no lists, no labels, no markdown", "suggestions": [], "question": ""}.' if voice else CHAT_FORMAT)
     messages = _history(convo) + [{"role": "user", "content": text}]
-    data, usage = await complete_json(db, "voice" if voice else "chat", system, messages, max_tokens=350 if voice else 1200)
+    data, usage = await complete_json(db, ("lt_" if agent_key else "") + ("voice" if voice else "chat"), system, messages, max_tokens=350 if voice else 1200, tags=tags)
     reply = clean(data.get("reply") or data.get("answer") or "", 6000) or "I could not form an answer from the current data. Ask me again in a different way."
     question = clean(data.get("question"), 400)
     if question and question.lower() not in reply.lower():
@@ -328,8 +372,10 @@ async def chat_turn(db, me: dict, convo: dict, text: str, voice: bool = False) -
             if iid:
                 suggestions.append({"kind": s["kind"], "idea_id": iid, "idea_title": clean(s.get("idea_title"), 200), "why": clean(s.get("why"), 200)})
     now = _now()
+    bring = data.get("bring_in") if isinstance(data.get("bring_in"), dict) else None
     founder_msg = {"role": "founder", "text": text, "at": now, "voice": voice}
-    advisor_msg = {"role": "advisor", "text": reply, "at": now, "suggestions": suggestions, "facts_used": ctx["facts"], "usage": usage, "voice": voice}
+    advisor_msg = {"role": "advisor", "text": reply, "at": now, "suggestions": suggestions, "facts_used": ctx["facts"], "usage": usage, "voice": voice, "agent_key": agent_key or "strategic_advisor",
+                   "bring_in": {"agent_key": clean(bring.get("agent_key"), 40), "why": clean(bring.get("why"), 200)} if bring and clean(bring.get("agent_key"), 40) else None}
     title_set = {} if convo.get("n") or convo.get("messages") else {"title": clean(text, 60)}
     await db[CONVOS].update_one({"_id": convo["_id"]}, {"$push": {"messages": {"$each": [founder_msg, advisor_msg]}}, "$inc": {"n": 2}, "$set": {"updated_at": now, **title_set}})
     fresh = await db[CONVOS].find_one({"_id": convo["_id"]})
@@ -476,9 +522,10 @@ LIVE_PERSONA = (
 )
 
 
-async def live_instructions(db, user: dict, conversation_title: str) -> str:
+async def live_instructions(db, user: dict, conversation_title: str, role_title: str = "") -> str:
     first = (user.get("first_name") or (user.get("name") or "").split(" ")[0] or "there")
-    return LIVE_PERSONA + f"\n\nThe founder's first name is {first}. This live conversation is being saved in the Command Center under '{clean(conversation_title, 80)}'. Open by greeting {first} in one short sentence and asking what is on their mind."
+    who = f"You are speaking as the company's {role_title}; the backend answers in that role, so introduce yourself as the {role_title}. " if role_title else ""
+    return LIVE_PERSONA + f"\n\n{who}The founder's first name is {first}. This live conversation is being saved in the Command Center under '{clean(conversation_title, 80)}'. Open by greeting {first} in one short sentence and asking what is on their mind."
 
 
 async def live_delegation(db, live: dict, user: dict, transcript: list, delegation_id: Optional[str], t0: datetime) -> dict:
@@ -495,7 +542,8 @@ async def live_delegation(db, live: dict, user: dict, transcript: list, delegati
         content = "Ask the founder what they would like to talk through."
         return {"tool": "advise", "content": content, "kind": "thinking", "pending": False, "open": None, "end": False, "ms": ms()}
     try:
-        turn = await chat_turn(db, user, convo, request, voice=True)
+        from services.leadership import ask as lt_ask
+        turn = await lt_ask.turn(db, user, convo, request, voice=True)
         content = turn["reply"]
     except AdvisorBusy as e:
         content = str(e)

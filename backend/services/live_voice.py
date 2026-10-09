@@ -387,11 +387,18 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         instructions, voice = shop["instructions"], shop["voice"]
     elif mode == "advisor":
         from services import command_center_ai as cc_ai
-        advisor_convo = await cc_ai.get_conversation(db, (overrides or {}).get("conversation_id") or "")
+        from services.leadership import ask as lt_ask
+        from services.leadership import core as lt_core
+        from services.leadership import roster as lt_roster
+        ov = overrides or {}
+        advisor_convo = await cc_ai.get_conversation(db, ov.get("conversation_id") or "")
         if not advisor_convo:
-            made = await cc_ai.create_conversation(db, user, title=f"Live talk {_now().strftime('%b %d, %H:%M')}", source="voice")
+            # "Talk to the CTO" opens a thread with that executive; without agent_key it is the Strategic Advisor (the Phase 2 behaviour).
+            made = await lt_ask.create_thread(db, lt_core.company_for(user), user, ov.get("agent_key") or lt_ask.ADVISOR, title=f"Live talk {_now().strftime('%b %d, %H:%M')}", source="voice")
             advisor_convo = await cc_ai.get_conversation(db, made["id"])
-        instructions, voice = await cc_ai.live_instructions(db, user, advisor_convo.get("title") or ""), cfg["voice"]
+        key = (advisor_convo.get("agent_keys") or [lt_ask.ADVISOR])[0]
+        role = await lt_roster.agent(db, advisor_convo.get("company_id") or lt_core.DEFAULT_COMPANY, key) if key != lt_ask.ADVISOR else None
+        instructions, voice = await cc_ai.live_instructions(db, user, advisor_convo.get("title") or "", role_title=role["title"] if role else ""), cfg["voice"]
     else:
         instructions, voice = (lab_instructions(cfg, user, contact) if mode == "lab" else assistant_instructions(cfg, user, contact=contact)), cfg["voice"]
         if agenda is not None:

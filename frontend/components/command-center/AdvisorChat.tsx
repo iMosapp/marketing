@@ -27,12 +27,12 @@ export const SuggestionCard = ({ s, colors, onApply, index }: { s: Suggestion; c
   );
 };
 
-export const MessageBubble = ({ m, colors, onApply }: { m: AdvisorMessage; colors: any; onApply: (s: Suggestion) => void }) => {
+export const MessageBubble = ({ m, colors, onApply, label, color = GOLD }: { m: AdvisorMessage; colors: any; onApply: (s: Suggestion) => void; label?: string; color?: string }) => {
   const mine = m.role === 'founder';
   return (
     <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '92%', gap: 8 }} {...tid(`cc-msg-${m.role}`)}>
-      <View style={{ borderRadius: 16, borderTopRightRadius: mine ? 4 : 16, borderTopLeftRadius: mine ? 16 : 4, padding: 12, backgroundColor: mine ? GOLD : colors.card, borderWidth: mine ? 0 : 1, borderColor: colors.border }}>
-        {!mine && <Text style={{ fontSize: 10.5, fontWeight: '800', color: GOLD, letterSpacing: 1, marginBottom: 4 }}>ADVISOR{m.voice ? ' · SPOKEN' : ''}</Text>}
+      <View style={{ borderRadius: 16, borderTopRightRadius: mine ? 4 : 16, borderTopLeftRadius: mine ? 16 : 4, padding: 12, backgroundColor: mine ? GOLD : colors.card, borderWidth: mine ? 0 : 1, borderColor: mine ? 'transparent' : color === GOLD ? colors.border : color + '66' }}>
+        {!mine && <Text style={{ fontSize: 10.5, fontWeight: '800', color, letterSpacing: 1, marginBottom: 4 }} {...tid('cc-msg-role')}>{(label || 'ADVISOR').toUpperCase()}{m.voice ? ' · SPOKEN' : ''}</Text>}
         <Text style={{ fontSize: 15, lineHeight: 22, color: mine ? '#1C1C1E' : colors.text }} selectable>{m.text}</Text>
         <Text style={{ fontSize: 10.5, color: mine ? '#1C1C1E99' : colors.textSecondary, marginTop: 6, textAlign: 'right' }}>{when(m.at)}{!mine && m.usage?.ms ? ` · ${(m.usage.ms / 1000).toFixed(1)}s` : ''}</Text>
       </View>
