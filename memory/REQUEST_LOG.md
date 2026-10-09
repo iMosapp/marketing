@@ -4,6 +4,14 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 62 · Oct 9 — DIAGNOSED, FIX IS THE OWNER'S (production secret) · no code change
+> I am not seeing the new founder tile after opening and closing app twice [screenshot: Internal Operations = 17 tools, profile sheet without owner entries]
+
+RCA (deployer debug, read-only): production `OWNER_EMAIL=forest@imosapp.com` but no production account has that email; the owner signs in as **forest@imonsocial.com** (old account renamed `merged_forest@imosapp.com`), so `ensure_owner_flag` matched nobody, `is_owner` false, owner-only tiles (Founder Command Center, Request Log, Owner Settings, Billing & Revenue...) hidden since the Oct 5 owner layer went live (owner confirmed he never saw Request Log / Owner Settings in production). Live pod = today's build, no startup errors, prod DB `imos-admin-test_database` (legacy name, real data).
+FIX: Deployments > app > Secrets > Edit Custom Keys > `OWNER_EMAIL` = forest@imonsocial.com > Save & Redeploy; relaunch the app. Preview keeps forest@imosapp.com.
+
+---
+
 ### 61 · Oct 9 — DONE (preview) · NOT DEPLOYED YET (deploy + EAS update when you say so)
 > when a new appraisal is waiting managers need to get a push notification that they have one ready to be approved
 
