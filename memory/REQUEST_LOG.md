@@ -4,6 +4,14 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 59 · Oct 9 — PHASE 1 + 2 DONE / DEPLOY + EAS UPDATE · Phases 3-8 IN PROGRESS · USER (DNS for mvpline.com)
+> Unified Mystery Shop Customer Journey Engine ... Do not rebuild existing features. Audit the current codebase first and reuse all existing mystery shop, Twilio, Resend, AI assistant, scoring, reporting, and campaign functionality wherever practical. (Phases 1-8) ... test domain: mvpline.com ... i need help after with this
+
+PHASE 1 (audit) in `memory/JOURNEY_ENGINE_PLAN.md`: Lead Shops already cover ~60%, so the engine EXTENDS Lead Shops. Two production findings need your go-ahead: the only Resend webhook points at a dead host/path, and imosapp.com MX goes to Google, so inbound email never reaches the app today.
+PHASE 2 (built, tested iteration_373): Journeys tab on every mystery-shop client -> campaign of 1-10 virtual customers (name, cell from the pool, email on the test domain, timeline, personality, channel prefs, questions, objections, AI instructions, hard no-commit rule), edit before launch, reply modes (email/text observe | approve | auto, voice voicemail | live), window up to 30 days, arm with a signed authorization, emergency stop, 30-day auto-close.
+USER: paste the 6 DNS records for mvpline.com (table in the plan file) so Resend can verify the domain; then I switch INBOUND_EMAIL_DOMAIN / LEAD_SENDER_DOMAIN to it.
+
+
 
 ### 58 · Oct 8 — DONE / DEPLOY + EAS UPDATE (push leak: owner got Kira's Morning Brief)
 > i continue to get notifications as if i'm kira.. this is not ok at all!!!!

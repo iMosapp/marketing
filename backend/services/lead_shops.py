@@ -562,6 +562,10 @@ async def child_finished(db, session: dict):
 async def sweep(db) -> int:
     now = _now()
     n = 0
+    async for row in db[POOL].find({"purpose": POOL_PURPOSE, "status": "in_use", "lead_shop_id": {"$ne": None}}):
+        if not await db[COLL].count_documents({"_id": _oid(row["lead_shop_id"])}):
+            # the shop that held this number is gone (deleted by hand or a test): free the number instead of leaking it forever
+            await db[POOL].update_one({"_id": row["_id"]}, {"$set": {"status": "available", "lead_shop_id": None, "last_lead_shop_id": row["lead_shop_id"]}})
     async for shop in db[COLL].find({"status": "live", "expires_at": {"$lte": now}}):
         await close(db, shop, "window_closed")
         n += 1
