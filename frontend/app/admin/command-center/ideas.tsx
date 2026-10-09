@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import api from '../../../services/api';
 import { showConfirm } from '../../../services/alert';
 import { useThemeStore } from '../../../store/themeStore';
@@ -8,7 +9,7 @@ import { useToast } from '../../../components/common/Toast';
 import { Sheet, Field, Label, Chip, GoldButton } from '../../../components/mystery-shops/shared';
 import { CcShell, Card, Eyebrow, Pill, Empty } from '../../../components/command-center/CcShell';
 import { CaptureBar } from '../../../components/command-center/CaptureBar';
-import { GOLD, RED, IDEA_STATUS, fmtDay, detail, tid, type Idea, type Focus } from '../../../components/command-center/shared';
+import { GOLD, RED, IDEA_STATUS, fmtDay, detail, bounceIfPrivate, tid, type Idea, type Focus } from '../../../components/command-center/shared';
 
 type View_ = 'all' | 'new_week' | 'captured' | 'evaluating' | 'parked' | 'approved' | 'active' | 'rejected';
 const FILTERS: [View_, string][] = [['all', 'All'], ['new_week', 'New this week'], ['captured', 'Captured'], ['evaluating', 'Evaluating'], ['parked', 'Parked'], ['approved', 'Approved'], ['active', 'Active'], ['rejected', 'Declined']];
@@ -17,6 +18,7 @@ const FILTERS: [View_, string][] = [['all', 'All'], ['new_week', 'New this week'
 export default function IdeaVault() {
   const { colors } = useThemeStore();
   const { showToast } = useToast();
+  const router = useRouter();
   const [rows, setRows] = useState<Idea[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [view, setView] = useState<View_>('all');
@@ -30,7 +32,7 @@ export default function IdeaVault() {
       const params = view === 'all' ? {} : view === 'new_week' ? { view: 'new_week' } : { status: view };
       const [a, b] = await Promise.all([api.get('/command-center/ideas', { params }), meta ? Promise.resolve({ data: meta }) : api.get('/command-center/focus')]);
       setRows(a.data.ideas); setCounts(a.data.counts); if (!meta) setMeta(b.data);
-    } catch (e: any) { showToast(detail(e, 'Could not load'), 'error'); }
+    } catch (e: any) { if (bounceIfPrivate(e, router)) return; showToast(detail(e, 'Could not load'), 'error'); }
   }, [view]);
   useEffect(() => { load(); }, [load]);
   const open = (i: Idea) => { setEdit(i); setF({ title: i.title, description: i.description || '', pillar: i.pillar || '', product: i.product || '', customer: i.customer || '', value: i.value || '', status: i.status }); setErr(''); };

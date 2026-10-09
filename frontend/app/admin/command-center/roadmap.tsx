@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import api from '../../../services/api';
 import { showConfirm } from '../../../services/alert';
 import { useThemeStore } from '../../../store/themeStore';
 import { useToast } from '../../../components/common/Toast';
 import { CcShell, Card, Progress } from '../../../components/command-center/CcShell';
-import { GOLD, ROADMAP_STATUS, fmtDay, detail, tid, type RoadmapPhase, type RoadmapItem } from '../../../components/command-center/shared';
+import { GOLD, ROADMAP_STATUS, fmtDay, detail, bounceIfPrivate, tid, type RoadmapPhase, type RoadmapItem } from '../../../components/command-center/shared';
 
 const NEXT: Record<string, string> = { not_started: 'in_progress', in_progress: 'done', done: 'not_started', blocked: 'in_progress' };
 
@@ -14,11 +15,12 @@ const NEXT: Record<string, string> = { not_started: 'in_progress', in_progress: 
 export default function Roadmap() {
   const { colors } = useThemeStore();
   const { showToast } = useToast();
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const wide = width >= 1024;
   const [phases, setPhases] = useState<RoadmapPhase[] | null>(null);
   const [adding, setAdding] = useState<Record<string, string>>({});
-  const load = useCallback(async () => { try { setPhases((await api.get('/command-center/roadmap')).data.phases); } catch (e: any) { showToast(detail(e, 'Could not load'), 'error'); } }, []);
+  const load = useCallback(async () => { try { setPhases((await api.get('/command-center/roadmap')).data.phases); } catch (e: any) { if (bounceIfPrivate(e, router)) return; showToast(detail(e, 'Could not load'), 'error'); } }, []);
   useEffect(() => { load(); }, [load]);
   const cycle = async (it: RoadmapItem) => { try { await api.patch(`/command-center/roadmap/${it.id}`, { status: NEXT[it.status] }); load(); } catch (e: any) { showToast(detail(e, 'Could not update'), 'error'); } };
   const block = (it: RoadmapItem) => api.patch(`/command-center/roadmap/${it.id}`, { status: it.status === 'blocked' ? 'in_progress' : 'blocked' }).then(load);
@@ -31,7 +33,7 @@ export default function Roadmap() {
   const done = (phases || []).reduce((a, p) => a + p.done, 0);
 
   const Column = ({ ph }: { ph: RoadmapPhase }) => (
-    <View style={{ flex: 1, gap: 10 }} {...tid(`cc-phase-${ph.phase}`)}>
+    <View style={{ flex: wide ? 1 : undefined, gap: 10 }} {...tid(`cc-phase-${ph.phase}`)}>
       <View style={{ gap: 6 }}>
         <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{ph.label}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ flex: 1 }}><Progress pct={ph.pct} colors={colors} testID={`cc-phase-${ph.phase}-progress`} /></View><Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }} {...tid(`cc-phase-${ph.phase}-count`)}>{ph.done}/{ph.total}</Text></View>

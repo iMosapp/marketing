@@ -151,6 +151,17 @@ async def patch_priority(pid: str, body: dict, request: Request):
     return cc._pub(doc)
 
 
+@router.delete("/priorities/{pid}")
+async def delete_priority(pid: str):
+    """Only a proposed priority can be dropped (used when the founder parks it as an idea instead); anything that held a slot stays on record."""
+    db = get_db()
+    p = await _get(db, cc.PRIORITIES, pid)
+    if p.get("status") != "proposed":
+        raise HTTPException(status_code=400, detail="Only a proposed priority can be removed")
+    await db[cc.PRIORITIES].delete_one({"_id": p["_id"]})
+    return {"ok": True}
+
+
 @router.post("/priorities/{pid}/activate")
 async def activate_priority(pid: str, request: Request):
     db = get_db()

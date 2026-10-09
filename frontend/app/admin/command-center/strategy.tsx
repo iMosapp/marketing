@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import api from '../../../services/api';
 import { useThemeStore } from '../../../store/themeStore';
 import { useToast } from '../../../components/common/Toast';
 import { Sheet, Field, GoldButton } from '../../../components/mystery-shops/shared';
 import { CcShell, Card, Eyebrow, Pill } from '../../../components/command-center/CcShell';
-import { GOLD, GREEN, AMBER, PILLAR_COLOR, PILLAR_ICON, STATEMENT_LABEL, detail, tid, type Statement, type Pillar, type Product } from '../../../components/command-center/shared';
+import { GOLD, GREEN, AMBER, PILLAR_COLOR, PILLAR_ICON, STATEMENT_LABEL, detail, bounceIfPrivate, tid, type Statement, type Pillar, type Product } from '../../../components/command-center/shared';
 
 type Blueprint = { statements: Record<string, Statement>; pillars: Pillar[]; products: Product[] };
 const ORDER = ['company', 'category', 'vision', 'promise', 'mission', 'philosophy', 'positioning'];
@@ -15,6 +16,7 @@ const ORDER = ['company', 'category', 'vision', 'promise', 'mission', 'philosoph
 export default function Strategy() {
   const { colors } = useThemeStore();
   const { showToast } = useToast();
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const cols = width >= 1024 ? 2 : 1;
   const [bp, setBp] = useState<Blueprint | null>(null);
@@ -24,7 +26,7 @@ export default function Strategy() {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const load = useCallback(async () => { try { setBp((await api.get('/command-center/blueprint')).data); } catch (e: any) { showToast(detail(e, 'Could not load'), 'error'); } }, []);
+  const load = useCallback(async () => { try { setBp((await api.get('/command-center/blueprint')).data); } catch (e: any) { if (bounceIfPrivate(e, router)) return; showToast(detail(e, 'Could not load'), 'error'); } }, []);
   useEffect(() => { load(); }, [load]);
   const startEdit = (s: Statement) => { setEdit(s); setText(s.data?.text || ''); setReason(''); setErr(''); };
   const saveDraft = async () => {

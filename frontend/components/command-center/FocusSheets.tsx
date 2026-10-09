@@ -115,7 +115,11 @@ export const ReplaceSheet = ({ visible, onClose, colors, onSaved, incoming, acti
   const go = async (path: 'replace' | 'park') => {
     setBusy(true); setErr('');
     try {
-      if (path === 'park') { await api.post('/command-center/ideas', { title: incoming.title, description: incoming.purpose || '', pillar: incoming.pillar || '', product: incoming.product || '', source: 'text' }); showToast('Parked in the Idea Vault'); }
+      if (path === 'park') {
+        await api.post('/command-center/ideas', { title: incoming.title, description: incoming.purpose || '', pillar: incoming.pillar || '', product: incoming.product || '', source: 'text' });
+        if (incoming.status === 'proposed') await api.delete(`/command-center/priorities/${incoming.id}`).catch(() => {});
+        showToast('Parked in the Idea Vault');
+      }
       else { await api.post(`/command-center/priorities/${incoming.id}/replace`, { replace_id: pick, reason }); showToast('Replaced. Still three.'); }
       onClose(); onSaved();
     } catch (e: any) { setErr(detail(e, 'Could not do that')); } finally { setBusy(false); }

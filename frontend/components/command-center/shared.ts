@@ -28,3 +28,5 @@ export const OBJECTIVE_STATUS: Record<string, { label: string; color: string }> 
 export const STATEMENT_LABEL: Record<string, string> = { company: 'Company', category: 'Category', vision: 'Long-term vision', promise: 'Company promise', mission: 'Mission', philosophy: 'Core philosophy', positioning: 'Positioning' };
 export const fmtDay = (d?: string | null) => (d ? new Date(d.length === 10 ? d + 'T12:00:00' : d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
 export const detail = (e: any, fallback: string) => { const d = e?.response?.data?.detail; return typeof d === 'string' ? d : d?.message || fallback; };
+// A non-owner who deep-links in gets sent back to the hub instead of a spinner that never ends.
+export const bounceIfPrivate = (e: any, router: { replace: (p: any) => void }) => { if (e?.response?.status === 403) { router.replace('/(tabs)/more'); return true; } return false; };

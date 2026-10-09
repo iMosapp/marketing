@@ -9,7 +9,7 @@ import { useToast } from '../../../components/common/Toast';
 import { CcShell, Card, Eyebrow, Progress, Pill, Empty } from '../../../components/command-center/CcShell';
 import { CaptureBar } from '../../../components/command-center/CaptureBar';
 import { ObjectiveSheet, PrioritySheet, ReplaceSheet, NextActionSheet, NoteSheet, SmallAction } from '../../../components/command-center/FocusSheets';
-import { GOLD, GREEN, RED, OBJECTIVE_STATUS, PILLAR_COLOR, fmtDay, detail, tid, type Focus, type Priority } from '../../../components/command-center/shared';
+import { GOLD, GREEN, RED, OBJECTIVE_STATUS, PILLAR_COLOR, fmtDay, detail, bounceIfPrivate, tid, type Focus, type Priority } from '../../../components/command-center/shared';
 
 // FOUNDER FOCUS: the daily briefing. One objective, three priorities, one next action, what you wait on, what you won, and a place to drop ideas.
 export default function FounderFocus() {
@@ -26,7 +26,7 @@ export default function FounderFocus() {
 
   const load = useCallback(async () => {
     try { setF((await api.get('/command-center/focus')).data); }
-    catch (e: any) { showToast(detail(e, 'Could not load'), 'error'); if (e?.response?.status === 403) router.back(); }
+    catch (e: any) { if (bounceIfPrivate(e, router)) return; showToast(detail(e, 'Could not load'), 'error'); }
   }, []);
   useEffect(() => { load(); }, [load]);
 

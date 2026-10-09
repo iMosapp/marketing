@@ -4,6 +4,14 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 60 · Oct 9 — DONE (1A-min built + fully UI-tested) · NOT DEPLOYED (you asked to review first)
+> Founder Command Center ... Phase 1A-min ... I choose Option A — complete UI testing and fix any issues before we proceed. Please run the testing agent against all Phase 1A-min interactive workflows ... Fix any issues discovered within the approved Phase 1A-min scope. Do not add new features or begin Phase 1B. After testing, provide a concise pass/fail report ... Do not deploy to production or publish an EAS update yet.
+
+BUILT (previous session): `/admin/command-center` (Focus · Strategy · Roadmap · Ideas), owner-only via the Owner Tools gate, 5 `cc_*` collections, atomic three-slot rule, JSON + Markdown export. TESTED (this session): backend 4/4 + 9/9 API spot checks (testing agent) + every interactive UI flow driven in the browser (activate x3, 4th -> 409 -> replace/park, pause/complete/reactivate, statement draft + approve with reason, text + Whisper voice capture, roadmap status/add/remove, Waiting On / Wins / Next Best Action, exports, non-owner 403 + hidden menu, 1400 px + 390 px, dark + light).
+FIXED (3, all in scope): parking a 4th priority left it behind as a stray "proposed" row (new owner-only `DELETE /priorities/{id}`, proposed only); a non-owner deep link showed an endless spinner (now bounces to the hub); roadmap phases overlapped on a 390 px screen. Preview data reset to the pristine seed (3 proposed priorities, 0 ideas, 0 notes). Ship when you say so: Save to GitHub -> Deploy -> eas update.
+
+---
+
 ### 59 · Oct 9 — PHASE 1 + 2 DONE / DEPLOY + EAS UPDATE · Phases 3-8 IN PROGRESS · USER (DNS for mvpline.com)
 > Unified Mystery Shop Customer Journey Engine ... Do not rebuild existing features. Audit the current codebase first and reuse all existing mystery shop, Twilio, Resend, AI assistant, scoring, reporting, and campaign functionality wherever practical. (Phases 1-8) ... test domain: mvpline.com ... i need help after with this
 

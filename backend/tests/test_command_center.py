@@ -143,6 +143,11 @@ def test_three_slot_rule_under_concurrency(world):
     assert requests.post(f"{API}/command-center/priorities/{active[0]['id']}/activate", headers=h, timeout=30).json()["status"] == "active"
     # finished ones never come back
     assert requests.post(f"{API}/command-center/priorities/{active[1]['id']}/activate", headers=h, timeout=30).status_code == 400
+    # parking a proposed one removes it (the idea carries it); an active one can never be deleted
+    proposed = next(p for p in pri.values() if p["status"] == "proposed")
+    assert requests.delete(f"{API}/command-center/priorities/{active[0]['id']}", headers=h, timeout=30).status_code == 400
+    assert requests.delete(f"{API}/command-center/priorities/{proposed['id']}", headers=h, timeout=30).status_code == 200
+    assert proposed["id"] not in {p["id"] for p in requests.get(f"{API}/command-center/priorities", headers=h, timeout=30).json()["priorities"]}
 
 
 def test_next_action_notes_ideas_and_export(world):
