@@ -348,7 +348,15 @@ async def queue_ai_reply(
     except Exception:
         pass
     from services.lead_context import is_vehicle_inquiry, inquiry_prompt_block
-    vehicle_ok = is_vehicle_inquiry(lead_inquiry)
+    # What the customer is talking about RIGHT NOW (web chat, trade link, lead, or their own words) versus earlier, separate topics
+    from services import thread_context as tc
+    try:
+        thread_view = await tc.load(db, conversation_id, (_conv_pause or {}).get("contact_name") or "", lead_inquiry)
+    except Exception as _te:
+        logger.warning(f"[AIReply] thread context failed: {_te}")
+        thread_view = tc.ThreadView(episodes=[], current=None)
+    lead_inquiry = thread_view.inquiry_for_prompt(lead_inquiry)
+    vehicle_ok = is_vehicle_inquiry(lead_inquiry) and not (thread_view.current and thread_view.current.kind in ("software", "billing"))
     # Test Lab `industry_va`: the rep's industry decides the hold words, and manager facts may answer instead of holding
     from services import va_prompt
     _va = None
@@ -750,18 +758,11 @@ async def queue_ai_reply(
                 system_prompt += f"\n\nABOUT LEADS FROM {_src.get('name') or 'this source'}: {str(_src['va_prompt_override']).strip()[:1500]}"
 
         contact_context = await get_contact_context(
-            voice_user_id, contact_id, include_vehicle=vehicle_ok,
-            conversation_id=conversation_id if lead_inquiry else None)
+            voice_user_id, contact_id, include_vehicle=vehicle_ok, conversation_id=conversation_id)
 
-        # Pull recent conversation for context
-        recent = await db.messages.find(
-            {"conversation_id": conversation_id}
-        ).sort("timestamp", -1).limit(8).to_list(8)
-        recent.reverse()
-        conv_lines = "\n".join(
-            f"{'Me' if m.get('sender') in ('user','ai') else 'Customer'}: {m.get('content','')[:200]}"
-            for m in recent
-        )
+        # The thread, labelled: events are events, the site chat is a site chat, and each topic sits under its own header
+        conv_lines = thread_view.dialogue()
+        topic_block = thread_view.topic_block()
 
         nl = "\n\n"
         inv_block = ""
@@ -788,8 +789,9 @@ async def queue_ai_reply(
             inv_block += va_prompt.facts_block(fact_answers)
         user_prompt = (
             f"Customer context:\n{contact_context}\n\n"
+            f"{topic_block + nl if topic_block else ''}"
             f"{inv_block}"
-            f"{'Recent conversation:' + nl + conv_lines + nl if conv_lines else ''}"
+            f"{'The thread so far (oldest first):' + nl + conv_lines + nl if conv_lines else ''}"
             f"Customer just said: \"{incoming_message}\"\n\n"
             "Reply naturally and briefly as me. Just the reply text, nothing else."
         )
@@ -907,6 +909,7 @@ async def queue_ai_reply(
         "reply_count_at_creation":     reply_count,
         "incoming_message_preview":    incoming_message[:200],
         "media_urls":                  inventory_media or [],
+        "topic":                       thread_view.summary(),
         "created_at":                  now,
     }
 
@@ -1383,6 +1386,7 @@ async def get_pending_approvals(user_id: str):
             "contact_phone":  contact.get("phone","") if contact else "",
             "conversation_id": item.get("conversation_id"),
             "campaign_id":    item.get("campaign_id"),
+            "topic":          item.get("topic"),
             "body":           item["body"],
             "incoming_preview": item.get("incoming_message_preview",""),
             "reply_count":    item.get("reply_count_at_creation", 1),

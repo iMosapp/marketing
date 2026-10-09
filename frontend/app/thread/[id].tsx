@@ -254,7 +254,7 @@ function ThreadScreen() {
   const [aiMode, setAiMode] = useState<'auto_reply' | 'assisted' | 'draft_only' | 'off'>('assisted');
   const [showAISuggestion, setShowAISuggestion] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState({
+  const [aiSuggestion, setAiSuggestion] = useState<{ text: string; intent: string; topic?: any }>({
     text: '',
     intent: '',
   });
@@ -989,7 +989,7 @@ function ThreadScreen() {
     return parts;
   };
 
-  const loadAISuggestion = async () => {
+  const loadAISuggestion = async (topicKind?: string) => {
     if (!conversationId || aiMode === 'off') return;
     // Jessi already has a draft waiting for approval on this thread: that IS the
     // suggestion, so never stack the "Jessi suggests" popup on top of it.
@@ -1005,11 +1005,12 @@ function ThreadScreen() {
     
     try {
       setLoadingAI(true);
-      const data = await messagesAPI.getAISuggestion(conversationId);
+      const data = await messagesAPI.getAISuggestion(conversationId, topicKind);
       if (data?.suggestion) {
         setAiSuggestion({
           text: data.suggestion,
           intent: data.intent || '',
+          topic: data.topic || null,
         });
         setShowAISuggestion(true);
       } else {
@@ -2489,6 +2490,8 @@ function ThreadScreen() {
         <AISuggestion
           suggestion={aiSuggestion.text}
           intent={aiSuggestion.intent}
+          topic={aiSuggestion.topic}
+          onChangeTopic={(kind: string) => loadAISuggestion(kind)}
           onAccept={handleAcceptAISuggestion}
           onEdit={handleEditAISuggestion}
           onDismiss={() => setShowAISuggestion(false)}
@@ -2576,6 +2579,12 @@ function ThreadScreen() {
               JESSI DRAFTED A REPLY - APPROVE TO SEND
             </Text>
           </View>
+          {!!pendingDraft.topic?.label && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }} testID="pending-draft-topic" dataSet={{ testid: 'pending-draft-topic' } as any}>
+              <Ionicons name="pricetag-outline" size={12} color={colors.textSecondary} />
+              <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>Replying about: {pendingDraft.topic.label}{pendingDraft.topic.switched ? ' (they changed the subject)' : ''}</Text>
+            </View>
+          )}
           {draftEditing ? (
             <TextInput
               value={draftEditText}

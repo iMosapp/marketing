@@ -318,16 +318,25 @@ async def campaign_history(user_id: str, contact_id: str) -> str:
         parts.append("WHAT THEY BOUGHT FROM ME:\n" + "\n".join(lines) + (f"\n  Repeat buyer: {contact['sold_count']} purchases." if (contact.get("sold_count") or 0) > 1 else ""))
     elif contact.get("vehicle"):
         parts.append(f"THEIR VEHICLE: {contact['vehicle']}")
-    msgs = await db.messages.find({"contact_id": contact_id, "sender": {"$in": ["user", "contact", "ai"]}, "content": {"$exists": True, "$ne": ""}},
-                                  {"sender": 1, "content": 1, "timestamp": 1}).sort("timestamp", -1).limit(12).to_list(12)
-    if msgs:
-        msgs.reverse()
-        rows = []
-        for m in msgs:
-            ts = m.get("timestamp")
-            when = ts.strftime("%b %d") if isinstance(ts, datetime) else ""
-            rows.append(f"  [{when}] {'Me' if m.get('sender') in ('user', 'ai') else contact.get('first_name') or 'Them'}: {str(m.get('content'))[:300]}")
-        parts.append("OUR ACTUAL TEXTS (oldest first):\n" + "\n".join(rows))
+    conv = await db.conversations.find_one({"user_id": user_id, "contact_id": contact_id}, {"_id": 1, "contact_name": 1}, sort=[("last_message_at", -1)])
+    if conv:
+        from services import thread_context as tc
+        view = await tc.load(db, str(conv["_id"]), (conv.get("contact_name") or contact.get("first_name") or ""))
+        if view.topic_block():
+            parts.append(view.topic_block())
+        if view.dialogue():
+            parts.append("OUR THREAD (oldest first; events in brackets are things that happened, not things they said):\n" + view.dialogue(2500))
+    else:
+        msgs = await db.messages.find({"contact_id": contact_id, "sender": {"$in": ["user", "contact", "ai"]}, "content": {"$exists": True, "$ne": ""}},
+                                      {"sender": 1, "content": 1, "timestamp": 1}).sort("timestamp", -1).limit(12).to_list(12)
+        if msgs:
+            msgs.reverse()
+            rows = []
+            for m in msgs:
+                ts = m.get("timestamp")
+                when = ts.strftime("%b %d") if isinstance(ts, datetime) else ""
+                rows.append(f"  [{when}] {'Me' if m.get('sender') in ('user', 'ai') else contact.get('first_name') or 'Them'}: {str(m.get('content'))[:300]}")
+            parts.append("OUR ACTUAL TEXTS (oldest first; may span several threads):\n" + "\n".join(rows))
     sent = []
     async for enr in db.campaign_enrollments.find({"contact_id": contact_id}, {"campaign_name": 1, "messages_sent": 1}).limit(10):
         for ms in enr.get("messages_sent") or []:
@@ -368,8 +377,9 @@ async def generate_campaign_message(user_id: str, contact_id: str, data: dict):
     # Build system prompt with AI clone personality
     system_prompt = await build_clone_system_prompt(user_id)
 
-    # Build contact context
-    contact_context = await get_contact_context(user_id, contact_id)
+    # Build contact context (the rep's thread with this person, when there is one, keeps other threads out)
+    _conv = await get_db().conversations.find_one({"user_id": user_id, "contact_id": contact_id}, {"_id": 1}, sort=[("last_message_at", -1)])
+    contact_context = await get_contact_context(user_id, contact_id, conversation_id=str(_conv["_id"]) if _conv else None)
     try:
         history = await campaign_history(user_id, contact_id)
     except Exception as e:
@@ -449,27 +459,23 @@ async def handle_customer_reply(user_id: str, contact_id: str, data: dict):
     system_prompt += "\n\nIMPORTANT: You are responding to a customer who replied to a message from you. Keep it natural, short, and conversational. Act exactly like the salesperson would."
 
     # Build context
-    contact_context = await get_contact_context(user_id, contact_id)
+    contact_context = await get_contact_context(user_id, contact_id, conversation_id=conversation_id or None)
 
-    # Get recent conversation for context
-    recent_messages = []
+    # The thread, labelled and split into topics (events are events, the customer is the customer)
+    conversation_str, topic_block = "", ""
     if conversation_id:
-        msgs = await db.messages.find(
-            {"conversation_id": conversation_id}
-        ).sort("timestamp", -1).limit(10).to_list(10)
-        msgs.reverse()
-        for m in msgs:
-            role = "assistant" if m.get("sender") == "user" else "user"
-            recent_messages.append(f"{'Me' if role == 'assistant' else 'Customer'}: {m.get('content', '')[:200]}")
-
-    conversation_str = "\n".join(recent_messages) if recent_messages else ""
+        from services import thread_context as tc
+        view = await tc.load(db, conversation_id)
+        conversation_str, topic_block = view.dialogue(), view.topic_block()
 
     user_prompt = f"""A customer just replied to my message. Generate my response.
 
 Customer context:
 {contact_context}
 
-{f'Recent conversation:{chr(10)}{conversation_str}' if conversation_str else ''}
+{topic_block}
+
+{f'The thread so far (oldest first):{chr(10)}{conversation_str}' if conversation_str else ''}
 
 Customer just said: "{customer_message}"
 

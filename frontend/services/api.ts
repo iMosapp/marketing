@@ -477,8 +477,8 @@ export const messagesAPI = {
     return response.data;
   },
 
-  getAISuggestion: async (conversationId: string) => {
-    const response = await api.post(`/messages/ai-suggest/${conversationId}`);
+  getAISuggestion: async (conversationId: string, topicKind?: string) => {
+    const response = await api.post(`/messages/ai-suggest/${conversationId}`, topicKind ? { topic_kind: topicKind } : {});
     return response.data;
   },
 

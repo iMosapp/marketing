@@ -214,14 +214,18 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
     outbound_count = 0
     for m in messages:
         sender = m.get("sender", "")
-        if sender == "user":
+        if sender == "system" or (sender == "ai_draft" and m.get("status") != "sent"):
+            continue                       # event chips and unsent drafts are not dialogue
+        mine = sender in ("user", "ai", "ai_draft")
+        if mine:
             outbound_count += 1
         else:
             inbound_count += 1
+        ts = m.get("timestamp") or m.get("created_at")
         msg_summary.append({
-            "from": "Salesperson" if sender == "user" else name,
+            "from": "Salesperson" if mine else (f"{name} (web chat with the site assistant)" if m.get("type") == "webchat_transcript" else name),
             "content": (m.get("content", "") or "")[:150],
-            "when": str(m.get("timestamp", "")),
+            "when": ts.strftime("%b %d") if isinstance(ts, datetime) else str(ts or "")[:10],
         })
 
     # === RESPONSE PATTERN ===
@@ -365,25 +369,28 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
         ).sort("created_at", -1).limit(5).to_list(5)
 
         if voice_notes:
-            ai_parts.append("\nREP'S VOICE MEMOS (transcribed notes about this customer — use this context naturally in conversation):")
+            ai_parts.append("\nREP'S VOICE MEMOS (my own dated notes about this customer, possibly from other visits; use only what fits the current topic):")
             for i, vn in enumerate(voice_notes):
                 transcript = vn.get("transcript", "").strip()
                 if transcript:
                     # Truncate very long transcripts but keep meaningful content
                     truncated = transcript[:500] + ("..." if len(transcript) > 500 else "")
-                    ai_parts.append(f"  Memo {i+1}: {truncated}")
+                    ca = vn.get("created_at")
+                    when = ca.strftime("%b %d") if isinstance(ca, datetime) else ""
+                    ai_parts.append(f"  Memo {i+1}{f' ({when})' if when else ''}: {truncated}")
     except Exception as ve:
         logger.debug(f"Voice notes fetch failed (non-fatal): {ve}")
 
-    if msg_summary:
-        ai_parts.append("\nRECENT CONVERSATION:")
+    if msg_summary and not conversation_id:
+        # no thread given: these lines may span several threads and channels, so each carries its date
+        ai_parts.append("\nRECENT MESSAGES (may span several threads and channels; dated, oldest last):")
         for ms in msg_summary[:5]:
-            ai_parts.append(f"  {ms['from']}: {ms['content']}")
+            ai_parts.append(f"  [{ms['when']}] {ms['from']}: {ms['content']}")
 
     if brief["conversation_summary"]:
-        ai_parts.append("\nACTIVITY TIMELINE:")
+        ai_parts.append("\nBACKGROUND ACTIVITY (dated; for awareness only, this is not part of the conversation you are answering):")
         for cs in brief["conversation_summary"][:5]:
-            ai_parts.append(f"  {cs['type']}: {cs['title']} ({cs['when'][:10]})")
+            ai_parts.append(f"  {cs['when'][:10]} · {cs['type']}: {cs['title']}")
 
     brief["ai_context"] = "\n".join(ai_parts)
 

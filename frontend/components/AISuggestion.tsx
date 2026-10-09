@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useThemeStore } from '../store/themeStore';
+type Topic = { kind: string | null; label: string | null; switched?: boolean; forced?: boolean; episodes?: { kind: string; label: string; current: boolean }[] };
+
 interface AISuggestionProps {
   suggestion: string;
   intent?: string;
+  topic?: Topic | null;
+  onChangeTopic?: (kind: string) => void;
   onAccept: () => void;
   onEdit: () => void;
   onDismiss: () => void;
@@ -14,12 +18,18 @@ interface AISuggestionProps {
 export default function AISuggestion({
   suggestion,
   intent,
+  topic,
+  onChangeTopic,
   onAccept,
   onEdit,
   onDismiss,
 }: AISuggestionProps) {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
+  const [pickTopic, setPickTopic] = useState(false);
+  const others = (topic?.episodes || []).filter(e => !e.current);
+  const seen = new Set<string>();
+  const alternatives = others.filter(e => (seen.has(e.kind) ? false : (seen.add(e.kind), true)));
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -41,6 +51,40 @@ export default function AISuggestion({
         </View>
       )}
       
+      {!!topic?.label && (
+        <View style={{ marginBottom: 8, gap: 6 }}>
+          <TouchableOpacity
+            onPress={() => alternatives.length && setPickTopic(v => !v)}
+            style={styles.topicTag}
+            testID="ai-suggestion-topic"
+            dataSet={{ testid: 'ai-suggestion-topic' } as any}
+            activeOpacity={alternatives.length ? 0.7 : 1}
+          >
+            <Ionicons name="pricetag-outline" size={12} color={colors.textSecondary} />
+            <Text style={styles.topicText} numberOfLines={1}>
+              Replying about: {topic.label}{topic.switched ? ' (they changed the subject)' : ''}
+            </Text>
+            {alternatives.length > 0 && <Ionicons name={pickTopic ? 'chevron-up' : 'chevron-down'} size={12} color={colors.textSecondary} />}
+          </TouchableOpacity>
+          {pickTopic && alternatives.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }} testID="ai-suggestion-topic-options" dataSet={{ testid: 'ai-suggestion-topic-options' } as any}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, alignSelf: 'center' }}>No, this is about:</Text>
+              {alternatives.map(e => (
+                <TouchableOpacity
+                  key={e.kind}
+                  onPress={() => { setPickTopic(false); onChangeTopic && onChangeTopic(e.kind); }}
+                  style={styles.topicOption}
+                  testID={`ai-suggestion-topic-${e.kind}`}
+                  dataSet={{ testid: `ai-suggestion-topic-${e.kind}` } as any}
+                >
+                  <Text style={{ fontSize: 12, color: colors.text, fontWeight: '600' }} numberOfLines={1}>{e.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+
       <View style={styles.suggestionBox}>
         <Text style={styles.suggestionText}>{suggestion}</Text>
       </View>
@@ -106,6 +150,31 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#FF9500',
     fontWeight: '600',
     textTransform: 'capitalize',
+  },
+  topicTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 5,
+    maxWidth: '100%',
+  },
+  topicText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  topicOption: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    maxWidth: 260,
   },
   suggestionBox: {
     backgroundColor: colors.surface,

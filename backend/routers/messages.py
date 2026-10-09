@@ -1,7 +1,7 @@
 """
 Messages router - handles conversations and messages
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, Response
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, Response, Body
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
@@ -2076,13 +2076,15 @@ async def get_thread_messages(conversation_id: str, request: Request):
 
 
 @router.post("/ai-suggest/{conversation_id}")
-async def get_ai_suggestion_smart(conversation_id: str):
+async def get_ai_suggestion_smart(conversation_id: str, body: Optional[dict] = Body(default=None)):
     """
     Generate a contextual AI reply suggestion using the rep's VA persona +
     full conversation history. Falls back to generic suggestion on error.
+    Optional body {"topic_kind": "trade_in"} makes the draft answer that topic instead of the detected one.
     """
     import asyncio, os
     db = get_db()
+    topic = None
 
     try:
         conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
@@ -2107,32 +2109,32 @@ async def get_ai_suggestion_smart(conversation_id: str):
             "Reply with ONLY the message text, nothing else."
         )
         from services.lead_context import get_conversation_inquiry, is_vehicle_inquiry, inquiry_prompt_block
+        from services import thread_context as tc
         lead_inquiry = await get_conversation_inquiry(db, conv)
+        view = await tc.load(db, conversation_id, conv.get("contact_name") or "", lead_inquiry)
+        if body and body.get("topic_kind") in tc.KIND_LABEL:
+            view.force(body["topic_kind"], str(body.get("topic") or "")[:120])
+        lead_inquiry = view.inquiry_for_prompt(lead_inquiry)
+        topic = view.summary()
         system_prompt += inquiry_prompt_block(lead_inquiry)
+        vehicle_ok = is_vehicle_inquiry(lead_inquiry) and not (view.current and view.current.kind in ("software", "billing"))
 
         # Get contact context
         contact_ctx = ""
         if contact_id:
             try:
-                contact_ctx = await get_contact_context(
-                    user_id, contact_id, include_vehicle=is_vehicle_inquiry(lead_inquiry),
-                    conversation_id=conversation_id if lead_inquiry else None)
+                contact_ctx = await get_contact_context(user_id, contact_id, include_vehicle=vehicle_ok, conversation_id=conversation_id)
             except Exception:
                 pass
 
-        # Pull the last 12 messages for context: the draft has to answer what the customer actually said
-        recent_msgs = await db.messages.find(
-            {"conversation_id": conversation_id, "sender": {"$ne": "ai_draft"}}
-        ).sort("timestamp", -1).limit(12).to_list(12)
-        recent_msgs.reverse()
-        conv_lines = "\n".join(
-            f"{'Me' if m.get('sender') in ('user','ai') else 'Customer'}: {(m.get('content') or '')[:300]}"
-            for m in recent_msgs if m.get('content') and m.get('sender') != 'system'
-        )
+        # The thread, labelled and split into topics: the draft has to answer what the customer actually said, about the topic they are on
+        conv_lines = view.dialogue()
+        topic_block = view.topic_block()
 
         user_prompt = (
             (f"Customer context:\n{contact_ctx}\n\n" if contact_ctx else "") +
-            (f"Recent conversation (oldest first):\n{conv_lines}\n\n" if conv_lines else "") +
+            (f"{topic_block}\n\n" if topic_block else "") +
+            (f"The thread so far (oldest first):\n{conv_lines}\n\n" if conv_lines else "") +
             "Draft my reply to the latest customer message. Answer what they actually said, use the specifics they gave (names, numbers, days, vehicles). Just the reply text."
         )
 
@@ -2154,13 +2156,13 @@ async def get_ai_suggestion_smart(conversation_id: str):
         suggestion = await clean_ai_text(suggestion, user_id)
 
         if suggestion:
-            return {"suggestion": suggestion, "intent": "contextual"}
+            return {"suggestion": suggestion, "intent": "contextual", "topic": topic}
 
     except Exception as e:
         logger.warning(f"[AISuggest] draft failed for {conversation_id}: {e}")
 
     # Never hand the rep a canned line that ignores the thread; the app says "try again" instead.
-    return {"suggestion": None, "intent": "unavailable"}
+    return {"suggestion": None, "intent": "unavailable", "topic": topic}
 
 
 @router.post("/send/{user_id}")
