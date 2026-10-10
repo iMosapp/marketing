@@ -109,8 +109,10 @@ export default function VoiceInput({
     let stream: MediaStream;
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
     catch (e: any) { showSimpleAlert('Microphone blocked', e?.name === 'NotAllowedError' ? 'Allow the microphone for this site in the address bar, then try again.' : 'No microphone was found.'); return; }
+    let rec: MediaRecorder;
     const mime = webMime();
-    const rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 128000 } : undefined);
+    try { rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 128000 } : undefined); }
+    catch (e) { stream.getTracks().forEach(t => t.stop()); throw e; }
     const m: WebRec = { rec, stream, chunks: [], mime: rec.mimeType || mime || 'audio/webm' };
     rec.ondataavailable = ev => { if (ev.data && ev.data.size) m.chunks.push(ev.data); };
     rec.onerror = () => { stopWeb(); showSimpleAlert('Recording stopped', 'The browser interrupted the microphone. Try again.'); };
