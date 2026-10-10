@@ -66,3 +66,14 @@ What is and is not proven: topic / why / opening / evidence are deterministic (b
 ## Recommended next phase
 1. Production rollout steps 0-3 (deploy, backup, dry run, ingest on) per `INTEL_PRODUCTION_ROLLOUT.md`, then 4-7 after reading the production dry run. Backend only; no EAS update.
 2. Phase 2: Intelligent Timeline + Relationship Brief UI on the contact screen (facts, history, verify / dispute buttons), then Layer E phrasing with GPT-5.2 (`no_em_dash`) on top of the deterministic recommendation.
+
+## Addendum (production-readiness session): 337 vs 111 reconciled against the database
+| Step | Count | Reason |
+|---|---|---|
+| First preview dry run | 337 planned rows | every source row counted (appraisal 192, lead forms 78, import 54, sales 13) |
+| minus 111 soft-deleted vehicle rows (all `owns`, Sarah Tester QA appraisals) | 226 | filtering bug fixed: `vehicles.deleted` was not excluded |
+| within-contact repeats folded into evidence: appraisal 81 -> 10 (one F-150 label 69 times), lead forms 78 -> 32 (repeated QA leads) | 109 distinct facts | deduplication: same fact, more evidence, never a second row |
+| plus 2 `vehicle_purchased` mirror values kept as unconfirmed ownership | 111 | corrected extraction (previously dropped; nothing erased) |
+Cross-check: 111 facts carry 228 evidence rows = 226 + 2. Actual by source: import 56, lead_form 32, sale 13, appraisal 10.
+
+Production dry run: the endpoint only exists after one backend deploy (flags absent; verified zero behaviour change and read-only by test `test_1b_dry_run_is_read_only`). Not executed: deploy approval pending.
