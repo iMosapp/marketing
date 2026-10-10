@@ -22,7 +22,7 @@ export const CcShell = ({ title, subtitle, children, loading, right, footer }: S
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScreenHeader title={title} subtitle={subtitle} right={right} testID="cc-header" onBack={() => router.push('/(tabs)/more' as any)} />
-      <ScrollView ref={nav} horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, alignSelf: wide ? 'center' : 'stretch', width: wide ? 1100 : undefined }} contentContainerStyle={{ flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 8 }} {...tid('cc-nav')}>
+      <ScrollView ref={nav} horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, height: 58, alignSelf: wide ? 'center' : 'stretch', width: wide ? 1100 : undefined }} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 }} {...tid('cc-nav')}>
         {TABS.map(([k, label]) => {
           const active = current === k;
           const team = k === 'team';

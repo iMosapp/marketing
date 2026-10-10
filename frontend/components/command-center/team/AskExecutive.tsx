@@ -93,7 +93,7 @@ export const useAsk = ({ execs, colors, wide, initialKey, initialThread, onConve
     </View>
   );
   const Picker = (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} {...tid('cc-exec-picker')}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, height: 36 }} contentContainerStyle={{ gap: 8, alignItems: 'center' }} {...tid('cc-exec-picker')}>
       {talking.map(e => {
         const inThread = (convo?.agent_keys || []).includes(e.key);
         const active = e.key === key;
@@ -139,7 +139,7 @@ export const useAsk = ({ execs, colors, wide, initialKey, initialThread, onConve
   const Composer = (
     <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 12, paddingBottom: Platform.OS === 'web' ? 12 : 24, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.border, alignItems: 'center' }} {...tid('cc-composer')}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, width: wide ? 1100 : '100%' }}>
-        <View style={{ flex: 1 }}><VoiceTextInput value={text} onChangeText={setText} placeholder={`Ask the ${current?.short || 'Advisor'}, or tap the mic`} showVoice voiceAppend multiline onSubmitEditing={() => send()} blurOnSubmit testID="cc-advisor-input" /></View>
+        <View style={{ flex: 1 }}><VoiceTextInput value={text} onChangeText={setText} placeholder={`Ask the ${current?.short || 'Advisor'}, or tap the mic`} showVoice voiceAppend voiceColor={current?.color || GOLD} multiline onSubmitEditing={() => send()} blurOnSubmit testID="cc-advisor-input" /></View>
         <TouchableOpacity onPress={() => send()} disabled={!text.trim() || busy} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: text.trim() && !busy ? (current?.color || GOLD) : colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid('cc-advisor-send')}>
           <Ionicons name="arrow-up" size={20} color={text.trim() && !busy ? '#1C1C1E' : colors.textSecondary} />
         </TouchableOpacity>

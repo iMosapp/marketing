@@ -16,6 +16,7 @@ interface VoiceTextInputProps extends TextInputProps {
   hint?: string;
   showVoice?: boolean;
   voiceAppend?: boolean; // If true, appends to existing text. If false, replaces.
+  voiceColor?: string;
 }
 
 /**
@@ -37,6 +38,7 @@ export default function VoiceTextInput({
   hint,
   showVoice = true,
   voiceAppend = true,
+  voiceColor,
   style,
   ...props
 }: VoiceTextInputProps) {
@@ -71,7 +73,7 @@ export default function VoiceTextInput({
             <VoiceInput
               onTranscription={handleTranscription}
               size="small"
-              color={colors.textSecondary}
+              color={voiceColor || colors.textSecondary}
             />
           </View>
         )}

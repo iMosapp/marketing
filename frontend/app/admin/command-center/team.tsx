@@ -49,7 +49,7 @@ export default function LeadershipTeam() {
   const subtitle = execs ? `${n} executives on the team · $${spend.toFixed(2)} this month${controls?.stopped ? ' · EMERGENCY STOP ON' : ''}` : undefined;
 
   const Nav = (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} {...tid('cc-team-views')}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, height: 30 }} contentContainerStyle={{ gap: 6, alignItems: 'center' }} {...tid('cc-team-views')}>
       {VIEWS.map(([k, label]) => (
         <TouchableOpacity key={k} onPress={() => { setView(k); if (k !== 'roundtables') setRtId(null); }} style={{ paddingHorizontal: 12, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: view === k ? colors.text : 'transparent', borderWidth: 1, borderColor: view === k ? colors.text : colors.border }} {...tid(`cc-team-view-${k}`)}>
           <Text style={{ fontSize: 12.5, fontWeight: '800', color: view === k ? colors.bg : colors.textSecondary }}>{label}</Text>
