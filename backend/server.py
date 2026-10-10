@@ -836,6 +836,8 @@ from routers import leadership as leadership_router
 api_router.include_router(leadership_router.router)
 from routers import cron as cron_router
 api_router.include_router(cron_router.router)
+from routers import intelligence as intelligence_router
+api_router.include_router(intelligence_router.router)
 from routers import courses as courses_router
 api_router.include_router(courses_router.router)
 api_router.include_router(courses_router.public_router)
@@ -1656,6 +1658,12 @@ async def startup_event():
     except Exception as _e:
         logger.warning(f"[Leadership] startup seed skipped: {_e}")
     try:
+        from services.intelligence import facts as _intel_facts
+        await _intel_facts.ensure_indexes(get_db())  # unique fingerprint index: the fact store stays duplicate-free under concurrency (no-op when present)
+    except Exception as _e:
+        logger.warning(f"[Intel] index creation skipped: {_e}")
+
+    try:
         from services import agents as _ag
         _r = await _ag.migrate_va_profiles(get_db())
         if not _r.get("skipped"):
@@ -2050,6 +2058,10 @@ async def startup_event():
                     db.contact_photos.create_index("contact_id", unique=True),
                     db.contact_events.create_index([("user_id", 1), ("timestamp", -1)]),
                     db.contact_events.create_index([("contact_id", 1), ("timestamp", -1)]),
+                    db.contact_facts.create_index("fingerprint", unique=True),
+                    db.contact_facts.create_index([("contact_id", 1), ("status", 1), ("layer", 1)]),
+                    db.contact_facts.create_index([("contact_id", 1), ("key", 1), ("occurred_at", -1)]),
+                    db.contact_fact_events.create_index([("fact_id", 1), ("at", 1)]),
                     db.contact_events.create_index([("contact_id", 1), ("event_type", 1)]),
                     # Link pages — was missing, caused 60s timeout on full collection scan
                     db.link_pages.create_index("user_id", unique=True, sparse=True),

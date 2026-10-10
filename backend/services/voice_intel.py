@@ -282,6 +282,17 @@ async def process_voice_note_intelligence(user_id: str, contact_id: str, transcr
     # Merge into contact
     await merge_personal_details(contact_id, details)
 
+    # Living Relationship Intelligence (flagged): the same details become dated, sourced facts. Never breaks the memo flow.
+    try:
+        from services.intelligence import ingest as intel_ingest
+        c = await db.contacts.find_one({"_id": ObjectId(contact_id)}) if ObjectId.is_valid(str(contact_id)) else None
+        note = await db.voice_notes.find_one(note_q, {"created_at": 1}) or {}
+        if c:
+            await intel_ingest.from_extraction(db, c, details, transcript=transcript, source_kind="voice_memo", source_ref=str(voice_note_id),
+                                               occurred_at=intel_ingest._ts(note.get("created_at")) or datetime.now(timezone.utc), extractor={"name": "voice_intel", "version": 1})
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[VoiceIntel] facts ingest skipped: {e}")
+
     # Update the voice note record with extraction status (details kept so the app can show what was learned)
     await db.voice_notes.update_one(
         note_q,
@@ -440,6 +451,14 @@ async def process_conversation_intelligence(user_id: str, contact_id: str) -> di
     src = " + ".join(x for x, ok in (("texts", customer_chars >= 15), ("calls", bool(calls))) if ok)
     result = await merge_personal_details(contact_id, details, confirm_conflicts=True, source=src)
     applied, suggested = result["applied"], result["suggested"]
+    try:
+        from services.intelligence import ingest as intel_ingest
+        full = await db.contacts.find_one({"_id": contact["_id"]})
+        transcript = "\n".join(lines[-60:]) + "\n" + "\n".join((c.get("transcript") or "")[:6000] for c in calls)
+        await intel_ingest.from_extraction(db, full, details, transcript=transcript, source_kind="call" if calls and customer_chars < 15 else "message", source_ref=f"conv_intel:{contact_id}:{now.strftime('%Y%m%d%H%M')}",
+                                           occurred_at=newest or now, conversation_id=conv_ids[0] if conv_ids else None, extractor={"name": "voice_intel", "version": 1})
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[ConvIntel] facts ingest skipped: {e}")
     if not applied and not suggested:
         return {}
     if applied:

@@ -752,6 +752,15 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     lead_result = await db.inbound_leads.insert_one(lead_doc)
     lead_id = str(lead_result.inserted_id)
 
+    # Living Relationship Intelligence (flagged): the inquiry is the newest active buying signal for this customer; history stays.
+    try:
+        from services.intelligence import ingest as intel_ingest
+        _c = await db.contacts.find_one({"_id": ObjectId(contact_id)}) if ObjectId.is_valid(str(contact_id)) else None
+        if _c:
+            await intel_ingest.from_lead(db, _c, {**lead_doc, "_id": lead_result.inserted_id})
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[LeadIntake] facts ingest skipped: {e}")
+
     # ── Create conversation in inbox (Unassigned queue)
     conversation = {
         "contact_id":       contact_id,

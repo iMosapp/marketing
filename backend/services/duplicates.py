@@ -13,7 +13,7 @@ LIVE = {"$nin": ["hidden", "merged", "deleted"]}
 FIELDS = {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1, "user_id": 1, "tags": 1, "notes": 1, "source": 1, "created_at": 1,
           "photo_thumbnail": 1, "photo_url": 1, "possible_duplicate_of": 1, "vehicle": 1, "vehicle_interest": 1, "last_activity_at": 1, "updated_at": 1}
 MIGRATE = ["messages", "contact_events", "conversations", "tasks", "campaign_enrollments", "campaign_pending_sends", "congrats_cards",
-           "short_urls", "broadcast_messages", "inbound_leads", "voice_notes", "ai_reply_queue", "inventory_interest"]
+           "short_urls", "broadcast_messages", "inbound_leads", "voice_notes", "ai_reply_queue", "inventory_interest", "contact_facts", "contact_fact_events"]
 COPY_FIELDS = ["vehicle", "email", "phone", "notes", "birthday", "anniversary", "photo_url", "photo_thumbnail"]
 SOUNDS_ALIKE = 0.86
 
@@ -202,6 +202,11 @@ async def merge(db, user_id: str, primary_id: str, duplicate_id: str) -> dict:
         updates["user_id"] = user_id
     await db.contacts.update_one({"_id": ObjectId(primary_id)}, {"$set": {**updates, "updated_at": now}, "$pull": {"tags": "Possible Duplicate"}, "$unset": {"possible_duplicate_of": ""}})
     await db.contacts.update_one({"_id": ObjectId(duplicate_id)}, {"$set": {"status": "merged", "merged_into": primary_id, "updated_at": now}})
+    try:
+        from services.intelligence import ingest as intel_ingest
+        await intel_ingest.on_merge(db, primary_id, duplicate_id, user_id, counts=migrated if isinstance(migrated, dict) else {"records": migrated})
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Merge] merge record skipped: {e}")
     logger.info(f"[Merge] {duplicate_id} -> {primary_id} | {migrated} records migrated")
     return {"success": True, "records_migrated": migrated, "primary_id": primary_id}
 

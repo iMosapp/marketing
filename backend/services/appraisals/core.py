@@ -259,6 +259,14 @@ async def _upsert_vehicle(db, me: dict, appr: dict, vehicle: dict) -> dict:
     await db[V].insert_one(doc)
     await log_activity(db, user_id=appr["user_id"], contact_id=cid, event_type="vehicle_added", description=vehicle_label(doc),
                        metadata={"vehicle_id": str(doc["_id"]), "vin": doc.get("vin")})
+    # Living Relationship Intelligence (flagged): an appraised vehicle is probable, unconfirmed ownership
+    try:
+        from services.intelligence import ingest as intel_ingest
+        _c = await db.contacts.find_one({"_id": ObjectId(cid)}, {"user_id": 1, "store_id": 1}) if ObjectId.is_valid(str(cid)) else None
+        if _c:
+            await intel_ingest.from_appraisal_vehicle(db, _c, vehicle_label(doc), str(doc["_id"]), at=now)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Appraisals] facts ingest skipped: {e}")
     return doc
 
 

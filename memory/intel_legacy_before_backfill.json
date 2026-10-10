@@ -1,0 +1,714 @@
+[
+{
+"_id": "69a0c06f7626f14d125f8c34",
+"updated_at": "2026-09-16 17:30:21.901000",
+"employer": "",
+"occupation": "",
+"purchase_history": [
+{
+"id": "04523457-9c60-4c5d-b769-54005a5b5713",
+"title": "",
+"category": "vehicle",
+"date": "2026-08-01",
+"notes": "",
+"created_at": "2026-09-14T00:34:29.894175+00:00",
+"source": "migrated"
+}
+],
+"personal_details": {
+"interests": [
+"Moab",
+"Sand Hollow"
+],
+"vehicle_purchased": "Jeep (year/model/trim not specified)",
+"vehicle_details": "Customer has a Jeep and has driven it for miles in Moab and Sand Hollow.",
+"referral_potential": "Mike may be looking at a few cars (rep asked customer to tell Mike they can help).",
+"personal_notes": "Customer name appears to be Forest Ward."
+}
+},
+{
+"_id": "69a1354f2c0649ac6fb7f3f1",
+"updated_at": "2026-03-26 08:55:04.900000"
+},
+{
+"_id": "69a1dbb4320d732f90069652",
+"updated_at": "2026-03-05 15:29:57.978000"
+},
+{
+"_id": "69a47c84a61138c08044c502",
+"updated_at": "2026-03-01 17:51:00.139000"
+},
+{
+"_id": "69a47c84a61138c08044c504",
+"updated_at": "2026-03-01 17:51:00.256000"
+},
+{
+"_id": "69a47c84a61138c08044c506",
+"updated_at": "2026-03-01 17:51:00.380000"
+},
+{
+"_id": "69a47c84a61138c08044c509",
+"updated_at": "2026-07-01 20:15:48.091000"
+},
+{
+"_id": "69a47c85a61138c08044c50e",
+"updated_at": "2026-03-01 17:51:01.012000"
+},
+{
+"_id": "69a47c85a61138c08044c510",
+"updated_at": "2026-03-01 17:51:01.283000"
+},
+{
+"_id": "69a47c85a61138c08044c513",
+"updated_at": "2026-03-01 17:51:01.687000"
+},
+{
+"_id": "69a47c85a61138c08044c516",
+"updated_at": "2026-03-01 17:51:01.804000"
+},
+{
+"_id": "69a47c86a61138c08044c51a",
+"updated_at": "2026-03-01 17:51:02.330000"
+},
+{
+"_id": "69a47c86a61138c08044c51d",
+"updated_at": "2026-03-01 17:51:02.452000"
+},
+{
+"_id": "69a496841603573df5a41723",
+"updated_at": "2026-09-16 05:02:58.139000",
+"personal_details": {
+"spouse_name": "Sarah",
+"spouse_details": "Nurse at Intermountain",
+"kids": [
+{
+"name": "Jake",
+"details": "15 years old; plays football at Highland High"
+},
+{
+"name": "Emma",
+"details": "8 years old"
+}
+],
+"interests": [
+"fly fishing",
+"Provo River"
+],
+"occupation": "Works at Goldman Sachs downtown in a pretty senior role",
+"employer": "Goldman Sachs",
+"vehicle_purchased": "2024 Tahoe",
+"vehicle_color": "midnight blue",
+"vehicle_details": "Fully loaded; Max Tow package",
+"trade_in": "2020 Explorer",
+"neighborhood": "Draper",
+"referral_potential": "Buddy Mike at work might be looking at trucks too",
+"personal_notes": "Just met with Bud; described as a great guy",
+"test_manual_field": "This was manually added",
+"field_a": "value_a",
+"field_b": "value_b"
+},
+"employer": "Goldman Sachs",
+"occupation": "Works at Goldman Sachs downtown in a pretty senior role",
+"purchase_history": [
+{
+"id": "e6460a1b-a155-4395-9dac-ecb00f6d6061",
+"title": "2024 Tahoe",
+"category": "vehicle",
+"date": null,
+"notes": "",
+"created_at": "2026-09-16T05:02:58.139499+00:00",
+"source": "migrated"
+}
+]
+},
+{
+"_id": "69a4a25cfa75497baf35242e",
+"updated_at": "2026-07-01 20:15:48.102000"
+},
+{
+"_id": "69a7901ea9f726b6a7008b5d",
+"updated_at": "2026-03-04 01:51:26.428000"
+},
+{
+"_id": "69a7901fa9f726b6a7008b87",
+"updated_at": "2026-03-04 01:51:27.445000"
+},
+{
+"_id": "69a7903a959765551b70e73f",
+"updated_at": "2026-03-04 01:51:54.486000"
+},
+{
+"_id": "69a7903b959765551b70e76a",
+"updated_at": "2026-03-04 01:51:55.405000"
+},
+{
+"_id": "69a79047959765551b70e8b9",
+"updated_at": "2026-03-04 01:52:07.088000"
+},
+{
+"_id": "69a79088e9ee49471f4c698d",
+"updated_at": "2026-03-04 01:53:12.513000"
+},
+{
+"_id": "69a79089e9ee49471f4c69b8",
+"updated_at": "2026-03-04 01:53:13.453000"
+},
+{
+"_id": "69a7c0decce291a9e8772d1d",
+"store_id": "69a0b7095fddcede09591668"
+},
+{
+"_id": "69a7c17aac47fbd2960a1a92",
+"store_id": "69a0b7095fddcede09591668"
+},
+{
+"_id": "69a7c17bac47fbd2960a1a96",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-03-11 23:27:54.439000"
+},
+{
+"_id": "69a7c17bac47fbd2960a1a9a",
+"store_id": "69a0b7095fddcede09591668"
+},
+{
+"_id": "69a7c17bac47fbd2960a1aa5",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-03-04 21:45:33.281000"
+},
+{
+"_id": "69a8a01e58e6ffee3b8f41c5",
+"updated_at": "2026-03-04 21:11:58.136000"
+},
+{
+"_id": "69a8a0b458e6ffee3b8f41c7",
+"updated_at": "2026-03-04 21:14:28.170000"
+},
+{
+"_id": "69a8abe36a8712d026633756",
+"updated_at": "2026-09-14 00:34:29.944000",
+"personal_details": {
+"spouse_name": "Test Spouse Full",
+"interests": [
+"Golf",
+"Reading",
+"Travel"
+],
+"occupation": "Software Engineer",
+"neighborhood": "Westside",
+"pets": "Golden Retriever named Max",
+"spouse_details": "Works at company",
+"kids": [
+{
+"name": "Child 1",
+"details": "Age 5"
+},
+{
+"name": "Child 2",
+"details": "Age 3"
+}
+],
+"employer": "Tech Corp",
+"vehicle_purchased": "2024 Tesla Model 3",
+"vehicle_color": "Red",
+"vehicle_details": "Long range, autopilot",
+"trade_in": "2018 Honda Accord",
+"purchase_context": "Upgraded for family safety",
+"referral_potential": "High - knows many people",
+"personal_notes": "Prefers morning calls",
+"communication_preference": "Text preferred"
+},
+"purchase_history": [
+{
+"id": "188a5597-1217-4756-b79c-13b9587a7e98",
+"title": "TEST_Boat 2024",
+"category": "boat",
+"date": "2024-03-10",
+"notes": "",
+"created_at": "2026-07-23T00:31:54.651595+00:00"
+},
+{
+"id": "9df41029-f586-4832-9daa-a493060afa14",
+"title": "TEST_2023 Road Glide Updated",
+"category": "vehicle",
+"date": "2023-06-15",
+"notes": "Test purchase note",
+"created_at": "2026-07-23T00:31:54.399396+00:00"
+},
+{
+"id": "062d9705-fb02-418c-8f7e-5f6f99837b33",
+"title": "TEST_Delete Verify",
+"category": "vehicle",
+"date": "2022-01-01",
+"notes": "",
+"created_at": "2026-09-14T00:34:29.944659+00:00",
+"source": "migrated"
+}
+]
+},
+{
+"_id": "69a8ac4969a4fbbfda757332",
+"updated_at": "2026-07-01 20:15:48.098000"
+},
+{
+"_id": "69a92ad7ee0529db8ab218cd",
+"store_id": "69a0b7095fddcede09591668"
+},
+{
+"_id": "69af1788018976c1282e6aa4",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-03-09 18:55:04.031000"
+},
+{
+"_id": "69af7b0ab212a36750b1e115",
+"updated_at": "2026-07-01 20:15:48.097000"
+},
+{
+"_id": "69af7b2b95e4db06932afd6c",
+"updated_at": "2026-07-01 20:15:48.098000"
+},
+{
+"_id": "69b18f977fa27031079197c2",
+"updated_at": "2026-07-01 20:15:48.100000"
+},
+{
+"_id": "69b3af541bc9d5f1b60ebf4a",
+"updated_at": "2026-07-01 20:15:48.093000"
+},
+{
+"_id": "69b3af541bc9d5f1b60ebf4c",
+"updated_at": "2026-07-01 20:15:48.093000"
+},
+{
+"_id": "69b3af6b8ed0f350402b0c30",
+"updated_at": "2026-07-01 20:15:48.092000"
+},
+{
+"_id": "69b3af6b8ed0f350402b0c32",
+"updated_at": "2026-07-01 20:15:48.092000"
+},
+{
+"_id": "69ba0bc73e34e77b5824f7c3",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-03-18 02:19:51.313000"
+},
+{
+"_id": "69ba0bc83e34e77b5824f7c6",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-03-18 02:19:52.173000"
+},
+{
+"_id": "69ba0bc93e34e77b5824f7c9",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-03-18 02:19:53.052000"
+},
+{
+"_id": "69ba0bca3e34e77b5824f7cc",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-03-18 02:19:54.134000"
+},
+{
+"_id": "69be400d05c99b478bab5fb5",
+"updated_at": "2026-07-01 20:15:48.095000"
+},
+{
+"_id": "69be400d05c99b478bab5fba"
+},
+{
+"_id": "69be4300661bd5e4f560f735"
+},
+{
+"_id": "69be4302661bd5e4f560f739",
+"updated_at": "2026-09-08 01:46:25.363000"
+},
+{
+"_id": "69be4303661bd5e4f560f73d",
+"updated_at": "2026-09-08 01:46:25.364000"
+},
+{
+"_id": "69be4309661bd5e4f560f741",
+"updated_at": "2026-09-08 01:46:25.364000"
+},
+{
+"_id": "69be4314661bd5e4f560f745"
+},
+{
+"_id": "69be4617ae94bc0d7ebbf323"
+},
+{
+"_id": "69be461eae94bc0d7ebbf327"
+},
+{
+"_id": "69be46a9ae94bc0d7ebbf32b"
+},
+{
+"_id": "69be46b0ae94bc0d7ebbf32f"
+},
+{
+"_id": "69bebd34fd567b33d4953e43",
+"updated_at": "2026-03-21 15:45:56.486000"
+},
+{
+"_id": "6a0cb4606b5810e0a1b6ef3e",
+"updated_at": "2026-05-19 19:05:04.838000"
+},
+{
+"_id": "6a0cb8615acef82b022b684d",
+"updated_at": "2026-05-19 19:22:09.365000"
+},
+{
+"_id": "6a0cb8994bf9122cb1825a5f",
+"updated_at": "2026-05-19 19:23:05.083000"
+},
+{
+"_id": "6a0f2cf09ec811240bd1efe5",
+"updated_at": "2026-05-21 16:04:00.478000"
+},
+{
+"_id": "6a0f63f88fcb4940dddfab5c",
+"updated_at": "2026-05-21 19:58:48.274000"
+},
+{
+"_id": "6a1674b90499641528e11bfb",
+"updated_at": "2026-09-14 00:34:29.946000",
+"purchase_history": [
+{
+"id": "7da8d7c1-0b71-4f03-bd5c-b599fe2ce462",
+"title": "",
+"category": "vehicle",
+"date": "2026-06-09",
+"notes": "",
+"created_at": "2026-09-14T00:34:29.946535+00:00",
+"source": "migrated"
+}
+]
+},
+{
+"_id": "6a1675d45ab1a57ffe5ce07d",
+"updated_at": "2026-07-01 20:15:48.101000"
+},
+{
+"_id": "6a1675f25ab1a57ffe5ce085",
+"updated_at": "2026-07-01 20:15:48.100000"
+},
+{
+"_id": "6a167c35d95babb3418f21fb",
+"updated_at": "2026-07-01 20:15:48.101000"
+},
+{
+"_id": "6a36afdcd9b37a60e2e2ee72",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-09-14 00:34:29.947000",
+"purchase_history": [
+{
+"id": "00771106-494f-4dfe-a049-b4ecf07049aa",
+"title": "",
+"category": "vehicle",
+"date": "2026-06-20",
+"notes": "",
+"created_at": "2026-09-14T00:34:29.947951+00:00",
+"source": "migrated"
+}
+]
+},
+{
+"_id": "6a6161511bb7a048d08fefa8",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-07-23 00:33:21.470000"
+},
+{
+"_id": "6a61615a1bb7a048d08fefaa",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-07-23 00:33:30.177000"
+},
+{
+"_id": "6a66d2a16318d39934d517d8",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-07-27 03:38:09.785000"
+},
+{
+"_id": "6a66d3ee5f01b242bec98c3f",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-07-27 03:43:42.083000"
+},
+{
+"_id": "6a9079eff2de796445f2a0e9",
+"vehicle_interest": "2023 Ford F-150 Lariat",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-06 11:47:52.925000",
+"employer": null,
+"occupation": null
+},
+{
+"_id": "6a946667b9651edc60aacf32",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-08-30 17:20:39.987000"
+},
+{
+"_id": "6a9792363ea36960d16c8081",
+"updated_at": "2026-10-09 14:10:43.736000"
+},
+{
+"_id": "6a9b2eac0cf2265eeec1e0a1",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-04 20:48:44.283000"
+},
+{
+"_id": "6a9bac3b62b000abb6c965ec",
+"vehicle_interest": "2022 Honda Civic",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-05T11:36:21.709769+00:00"
+},
+{
+"_id": "6a9f67f43253f2f924658e83",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-08 01:42:12.919000"
+},
+{
+"_id": "6a9f67f53253f2f924658e90",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-08 01:42:13.501000"
+},
+{
+"_id": "6aa0dc64ca81b4cf66c0a0fd",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-09 04:11:16.085000"
+},
+{
+"_id": "6aa0dc83ca81b4cf66c0a104",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-09T04:11:49.995865+00:00"
+},
+{
+"_id": "6aa3673e65d794ba9962f1c0",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-27 00:33:33.742000"
+},
+{
+"_id": "6aa3673e65d794ba9962f1c9",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-11T02:28:14.802838+00:00"
+},
+{
+"_id": "6aa3673e65d794ba9962f1d4",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-11T02:28:14.877302+00:00"
+},
+{
+"_id": "6aa413008f0d53e3f2261853",
+"updated_at": "2026-10-09 14:23:03.723000",
+"personal_details": {
+"spouse_details": "Husband; coaches little league",
+"vehicle_color": "Midnight Blue",
+"vehicle_details": "Booked a test drive for a Bronco (red).",
+"trade_in": "2019 Ford Explorer with about 70,000 miles",
+"purchase_context": "Customer is shopping/test-driving a red Bronco.",
+"personal_notes": "Customer has three kids (just had their third). Appointment set for tomorrow at 5:30 after work.",
+"communication_preference": "Confirmation text to her cell at 555-0041",
+"spouse_name": "Mike",
+"kids": [
+{
+"name": "Emma",
+"details": "Daughter; turns 8 next month"
+}
+],
+"interests": [
+"camping"
+],
+"referral_potential": "Her brother is shopping for a truck too",
+"important_dates": [
+{
+"date": "Saturday Sep 26 10 AM",
+"description": "Booked test drive for Red Bronco"
+},
+{
+"date": "Monday Sep 28 9 AM",
+"description": "Booked test drive for Red Bronco"
+}
+],
+"website": "rockymtnkubota.com"
+},
+"purchase_history": [
+{
+"id": "ed26a9df-127a-4f35-8fbf-92c712040a19",
+"title": "",
+"category": "vehicle",
+"date": "2024-09-23",
+"notes": "",
+"created_at": "2026-09-19T19:26:30.559379+00:00",
+"source": "migrated"
+}
+],
+"employer": "Rocky Mountain Kubota",
+"occupation": "Fleet Sales Manager"
+},
+{
+"_id": "6aa413008f0d53e3f2261854",
+"updated_at": "2026-09-27T01:38:36.489728+00:00",
+"personal_details": {
+"vehicle_purchased": "2021 Chevy Tahoe"
+},
+"purchase_history": [
+{
+"id": "d89a5aa7-8977-43c5-8d76-269d61b13f0e",
+"title": "2021 Chevy Tahoe",
+"category": "vehicle",
+"date": "2026-09-19",
+"notes": "",
+"created_at": "2026-09-19T17:10:56.039539+00:00",
+"source": "wizard"
+}
+]
+},
+{
+"_id": "6aa413008f0d53e3f2261855",
+"updated_at": "2026-09-27 01:07:59.332000"
+},
+{
+"_id": "6aa7425eefb7a2e43806c16e",
+"updated_at": "2026-09-14 00:39:58.643000",
+"personal_details": {
+"vehicle_purchased": "2022 Toyota Supra"
+},
+"purchase_history": [
+{
+"id": "602d4ce9-2ec6-46c0-9370-d896d4e7c797",
+"title": "2022 Toyota Supra",
+"category": "vehicle",
+"date": "2026-09-01",
+"notes": "",
+"created_at": "2026-09-14T00:39:58.643670+00:00",
+"source": "wizard"
+},
+{
+"id": "fdf5fe25-a870-438a-81f4-084812d6e62b",
+"title": "2022 Road Glide",
+"category": "vehicle",
+"date": "2026-07-13",
+"notes": "",
+"created_at": "2026-09-14T00:39:58.442978+00:00",
+"source": "wizard"
+}
+]
+},
+{
+"_id": "6aaeb4692a133296ead18b7c",
+"updated_at": "2026-09-19 16:12:25.488000"
+},
+{
+"_id": "6aaeb494e271e5c3fd7cd0cd",
+"updated_at": "2026-09-19 16:13:08.184000"
+},
+{
+"_id": "6aaeb495e271e5c3fd7cd0dd",
+"updated_at": "2026-09-19 16:13:09.401000"
+},
+{
+"_id": "6aaeb9f74b75d326f79ffdd4",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-09-19 16:36:07.422000"
+},
+{
+"_id": "6ab1f34e88c0f139e1510654",
+"occupation": null,
+"employer": null,
+"updated_at": "2026-09-22 03:17:34.262000"
+},
+{
+"_id": "6ab72cd639815dbd03c5f9b3",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26T02:54:27.582595+00:00"
+},
+{
+"_id": "6ab7383b4b06def9506f0981",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26 03:12:59.061000"
+},
+{
+"_id": "6ab73c94b297d08504dd3353",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26 03:31:32.058000"
+},
+{
+"_id": "6ab7468cbfc93a911f2b99c2",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26 04:14:04.537000"
+},
+{
+"_id": "6ab749bee92af4ad95bbe55d",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26T04:58:37.325364+00:00"
+},
+{
+"_id": "6ab749cde92af4ad95bbe576",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26 04:27:57.604000"
+},
+{
+"_id": "6ab762aea5d5f9cba5de342f",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26 06:14:06.640000"
+},
+{
+"_id": "6ab762dfb388ca80973ea54e",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26 06:14:54.985000"
+},
+{
+"_id": "6ab762fb1e3c970e3db1dffe",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26 06:15:23.346000"
+},
+{
+"_id": "6ab7de929b919f0adef1cf2e",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26 15:02:42.197000"
+},
+{
+"_id": "6ab851b9d83dc707df7f595b",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-27 01:07:38.933000"
+},
+{
+"_id": "6ab8586d86cbd75c71b2cd0a",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-26 23:42:37.815000"
+},
+{
+"_id": "6ab864603b9300c38fd59e26",
+"vehicle_interest": "",
+"store_id": "69a0b7095fddcede09591668",
+"updated_at": "2026-09-27 00:33:36.926000"
+}
+]

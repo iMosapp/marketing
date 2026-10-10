@@ -784,6 +784,10 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
             logger.error(f"Referral count update failed: {e}")
     
     try:
+        _before = await get_db().contacts.find_one({"$and": [{"_id": ObjectId(contact_id)}, base_filter]}, {"phone": 1, "email": 1, "first_name": 1, "last_name": 1, "vehicle_interest": 1, "user_id": 1, "store_id": 1, "created_at": 1})
+    except Exception:
+        _before = None
+    try:
         result = await get_db().contacts.update_one(
             {"$and": [{"_id": ObjectId(contact_id)}, base_filter]},
             {"$set": update_dict}
@@ -796,6 +800,16 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Living Relationship Intelligence (flagged): a rep's change of phone/email/name is a confirmed identity fact; the old value stays as history.
+    if _before:
+        try:
+            from services.intelligence import ingest as intel_ingest
+            _actor = await get_db().users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "email": 1}) if ObjectId.is_valid(user_id) else None
+            if _actor:
+                await intel_ingest.from_rep_edit(get_db(), _before, {k: update_dict.get(k) for k in ("phone", "email", "first_name", "last_name", "vehicle_interest")}, _actor)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"[Contacts] facts ingest skipped: {e}")
 
     # Date Sold edited on the form = correcting the most recent purchase record (creates the record if there is none)
     try:
@@ -1152,6 +1166,16 @@ async def update_personal_details(user_id: str, contact_id: str, data: dict = Bo
         {"_id": ObjectId(contact_id)},
         {"$set": {"personal_details": merged, "updated_at": datetime.now(timezone.utc)}}
     )
+
+    # Living Relationship Intelligence (flagged): a manual edit is the rep vouching for the detail.
+    try:
+        from services.intelligence import ingest as intel_ingest
+        full = await db.contacts.find_one({"_id": ObjectId(contact_id)})
+        actor = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "email": 1}) if ObjectId.is_valid(user_id) else None
+        if full and actor:
+            await intel_ingest.from_personal_details_edit(db, full, {k: v for k, v in data.get("personal_details", {}).items() if v not in (None, "", [])}, actor)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Contacts] personal-details facts ingest skipped: {e}")
 
     return {"personal_details": merged}
 

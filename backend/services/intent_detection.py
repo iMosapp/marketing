@@ -193,6 +193,16 @@ async def process_inbound_intent(
         hot_summary = result.get("hot_summary", "")
         hot_threshold = await _get_hot_threshold(db, user_id)
 
+        # Living Relationship Intelligence (flagged): the customer's message refreshes open intents, may suppress ("not shopping") or add a dated buying signal.
+        try:
+            from services.intelligence import ingest as intel_ingest
+            from bson import ObjectId as _OID
+            c = await db.contacts.find_one({"_id": _OID(contact_id)}) if contact_id and _OID.is_valid(contact_id) else None
+            if c:
+                await intel_ingest.from_inbound_message(db, c, conversation_id, message, result)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"[Intent] facts ingest skipped: {e}")
+
         if score < min(4, hot_threshold):
             return  # Not interesting — skip DB write
 

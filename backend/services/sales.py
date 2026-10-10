@@ -105,6 +105,11 @@ async def save_entries(db, contact: dict, entries: list, keep_vehicle_text: bool
     if latest and latest.get("category", "vehicle") == "vehicle" and latest.get("title") and not keep_vehicle_text:
         sets["personal_details.vehicle_purchased"] = latest["title"]
     await db.contacts.update_one({"_id": contact["_id"]}, {"$set": sets, "$unset": {"prev_vehicle": ""}})
+    try:
+        from services.intelligence import ingest as intel_ingest
+        await intel_ingest.from_purchases(db, {**contact, **sets}, entries)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Sales] facts ingest skipped: {e}")
     return {**d, "entries": entries}
 
 

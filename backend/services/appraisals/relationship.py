@@ -167,6 +167,13 @@ async def set_ownership(db, me: dict, v: dict, status: str, note: str = "", deal
             from services.appraisals import workflow
             await workflow.emit(db, last, "trade_confirmed", me, {"ownership_status": status})
     label = vehicle_label(v)
+    try:
+        from services.intelligence import ingest as intel_ingest
+        _c = await db.contacts.find_one({"_id": ObjectId(v["contact_id"])}) if v.get("contact_id") and ObjectId.is_valid(str(v.get("contact_id"))) else None
+        if _c:
+            await intel_ingest.from_ownership(db, _c, label, status, actor=me, vehicle_id=str(v["_id"]))
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Appraisals] facts ingest skipped: {e}")
     await log_activity(db, user_id=str(me["_id"]), contact_id=v.get("contact_id"), event_type="trade_confirmed" if status in ("traded", "sold") else "vehicle_ownership_updated",
                        description=(f"Trade confirmed — {label}" if status == "traded" else f"{label}: {OWNERSHIP[status]}") + (f" · {note[:80]}" if note else ""),
                        metadata={"vehicle_id": str(v["_id"]), "ownership_status": status, "deal_id": deal_id})
