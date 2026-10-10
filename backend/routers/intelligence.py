@@ -120,7 +120,8 @@ async def confirm_fact(fact_id: str, body: NoteBody, request: Request):
     f, contact = await _fact_and_contact(db, me, fact_id)
     if not can_verify(me, contact):
         raise HTTPException(status_code=403, detail="Only the contact's owner or a manager of this store can confirm a fact; you can suggest a correction instead")
-    return {"fact": F.pub(await F.confirm(db, f["_id"], me, note=body.note or ""))}
+    out = F.pub(await F.confirm(db, f["_id"], me, note=body.note or ""))
+    return {"fact": out, "projection": await ingest.sync_legacy(db, f["contact_id"], contact.get("store_id"))}
 
 
 @router.post("/facts/{fact_id}/dispute")
@@ -130,7 +131,8 @@ async def dispute_fact(fact_id: str, body: NoteBody, request: Request):
     f, contact = await _fact_and_contact(db, me, fact_id)
     if not can_verify(me, contact):
         raise HTTPException(status_code=403, detail="Only the contact's owner or a manager of this store can dispute a fact; you can suggest a correction instead")
-    return {"fact": F.pub(await F.dispute(db, f["_id"], me, note=body.note or ""))}
+    out = F.pub(await F.dispute(db, f["_id"], me, note=body.note or ""))
+    return {"fact": out, "projection": await ingest.sync_legacy(db, f["contact_id"], contact.get("store_id"))}
 
 
 @router.post("/contacts/{contact_id}/facts/suggest")
@@ -149,7 +151,8 @@ async def suggest_fact(contact_id: str, body: SuggestBody, request: Request):
         f["status"] = "proposed"
         f["source"]["suggested_by"] = {"user_id": str(me["_id"]), "name": me.get("name") or me.get("email")}
     r = await F.record(db, f, me if verifier else None)
-    return {"fact": F.pub(r["fact"]), "action": r["action"], "as_verifier": verifier}
+    proj = await ingest.sync_legacy(db, str(contact["_id"]), contact.get("store_id")) if r["action"] != "duplicate" else {"written": False, "sets": {}}
+    return {"fact": F.pub(r["fact"]), "action": r["action"], "as_verifier": verifier, "projection": proj}
 
 
 @router.get("/backfill/dry-run")
