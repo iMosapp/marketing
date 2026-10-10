@@ -29,7 +29,7 @@ def backfill_execute_enabled() -> bool:
 
 
 def flags() -> dict:
-    return {"ingest": ingest_enabled(), "legacy_projection": projection_enabled(), "backfill_execute": backfill_execute_enabled()}
+    return {"ingest": ingest_enabled(), "legacy_projection": projection_enabled(), "backfill_execute": backfill_execute_enabled(), "nudges": _flag("INTEL_NUDGES")}
 
 
 async def settings(db, store_id: str | None) -> dict:

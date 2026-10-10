@@ -838,6 +838,18 @@ async def get_suggested_actions(user_id: str, contact_id: str):
                 "action": "sms",
             })
 
+    # Intelligent nudges (Phase 2C): open intelligence tasks for this contact, each saying whether it rests on a verified fact
+    try:
+        async for t in db.tasks.find({"user_id": user_id, "contact_id": contact_id, "source": "intelligence", "status": {"$in": ["pending", "snoozed", None]}, "completed": {"$ne": True}},
+                                     {"title": 1, "why": 1, "basis": 1, "evidence": 1, "suggested_message": 1, "intel_kind": 1, "priority": 1}).sort("priority_order", 1).limit(3):
+            actions.append({
+                "type": f"intel_{t.get('intel_kind')}", "priority": t.get("priority") or "medium", "icon": "sparkles", "color": "#C9A962",
+                "title": t.get("title") or "", "description": f"{t.get('why') or ''} {'Verified fact.' if t.get('basis') == 'verified' else 'Worth checking, not confirmed.'}".strip(),
+                "suggested_message": t.get("suggested_message") or "", "action": "sms", "task_id": str(t["_id"]), "basis": t.get("basis"), "evidence": t.get("evidence") or [],
+            })
+    except Exception as e:
+        logger.warning(f"[SuggestedActions] intel nudges skipped: {e}")
+
     # Sort by priority
     prio_order = {"high": 0, "medium": 1, "low": 2}
     actions.sort(key=lambda a: prio_order.get(a.get("priority", "low"), 2))

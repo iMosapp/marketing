@@ -9,7 +9,7 @@ from typing import Optional
 
 from bson import ObjectId
 
-from services.intelligence import config, ingest, projection, state
+from services.intelligence import config, ingest, projection
 from services.intelligence import facts as F
 from services.intelligence import intent as I
 
@@ -72,7 +72,7 @@ async def plan_contact(db, c: dict, settings: dict, now=None) -> list:
             # a person set the status on the vehicle page -> verified; the default "owns" written when an appraisal is opened is only a system record
             actor = {"_id": v["ownership_updated_by"], "name": v.get("ownership_updated_by_name") or "rep"} if v.get("ownership_updated_by") else None
             src = {"kind": "appraisal", "ref": str(v["_id"])}
-            if st == "owns" and not any(I.matches(label, t) for t in titles):
+            if st == "owns" and not any(I.same_vehicle(label, t) for t in titles):
                 facts.append(F.make(c, layer="state", domain="vehicle_owned", key="vehicle.owned", statement=f"Owns {label}" + ("" if actor else " (per appraisal record, not confirmed)"), value={"label": label},
                                     occurred_at=at, source=src, confidence="high" if actor else "medium", actor=actor, recorded_at=at))
             elif st in ("traded", "sold", "no_longer_owns"):

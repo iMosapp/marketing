@@ -17,6 +17,7 @@ load_dotenv("/app/backend/.env")
 os.environ["INTEL_FACTS_INGEST"] = "true"
 os.environ["INTEL_LEGACY_PROJECTION"] = "false"
 os.environ["INTEL_BACKFILL_EXECUTE"] = "false"
+os.environ["INTEL_NUDGES"] = "false"
 
 from services.intelligence import backfill, brief, config, ingest, projection, state, timeline  # noqa: E402
 from services.intelligence import facts as F  # noqa: E402
@@ -578,14 +579,14 @@ def test_1b_repeated_system_records_corroborate_but_never_confirm(db, monkeypatc
 
 def test_1b_dry_run_is_read_only(db, monkeypatch):
     """The production dry run: every flag off, every collection count and the legacy fields unchanged afterwards, no contact_facts collection created."""
-    for k in ("INTEL_FACTS_INGEST", "INTEL_LEGACY_PROJECTION", "INTEL_BACKFILL_EXECUTE"):
+    for k in ("INTEL_FACTS_INGEST", "INTEL_LEGACY_PROJECTION", "INTEL_BACKFILL_EXECUTE", "INTEL_NUDGES"):
         monkeypatch.setenv(k, "false")
     c = contact(db, "Read", "Only", vehicle_interest="2022 Honda Civic", personal_details={"spouse_name": "Kim", "interests": ["golf"]}, store_id="store-ro")
     run(db.inbound_leads.insert_one(lead(c, "2022 Honda Civic", days_ago=3, make="Honda", model="Civic")))
     before = {name: run(db[name].count_documents({})) for name in run(db.list_collection_names())}
     legacy_before = json.dumps(run(db.contacts.find_one({"_id": c["_id"]})), sort_keys=True, default=str)
     r = run(backfill.dry_run(db, store_id="store-ro"))
-    assert r["read_only"] is True and r["writes_performed"] == [] and r["run_id"] is None and r["flags"] == {"ingest": False, "legacy_projection": False, "backfill_execute": False}
+    assert r["read_only"] is True and r["writes_performed"] == [] and r["run_id"] is None and r["flags"] == {"ingest": False, "legacy_projection": False, "backfill_execute": False, "nudges": False}
     assert r["contacts_scanned"] == 1 and r["facts_distinct"] == 3 and r["repeat_evidence"] == 1 and r["by_store"] == {"store-ro": {"contacts": 1, "with_facts": 1, "facts_distinct": 3, "legacy_changes": 0}}
     assert "processing_ms" in r
     after = {name: run(db[name].count_documents({})) for name in run(db.list_collection_names())}
@@ -652,3 +653,13 @@ def test_2a_source_resolver_shows_the_record_and_never_leaks(db):
     # the same message id looked up through ANOTHER contact's fact never returns that contact's text (tenant/contact scoping)
     leaked = run(timeline.source(db, {**F.pub(sig), "source": {"kind": "message", "ref": str(mid), "quote": None}}, other))
     assert leaked["excerpt"] is None and leaked["link"] is None
+
+
+def test_2a_trading_one_truck_leaves_the_other_truck_alone(db):
+    c = contact(db, "Two", "Trucks")
+    run(ingest.from_purchases(db, c, [{"id": "s1", "title": "2020 Ford F-150 XLT", "category": "vehicle", "date": "2024-01-10", "created_at": "2024-01-10T18:00:00+00:00"}], REP_A))
+    run(ingest.from_appraisal_vehicle(db, c, "2019 Ford F-150 XLT", "veh-old"))
+    assert I.same_vehicle("2019 Ford F-150 XLT", "2020 Ford F-150 XLT") is False and I.same_vehicle("Ford F-150", "2020 Ford F-150 XLT") is True and I.matches("2019 Ford F-150 XLT", "2020 Ford F-150 XLT") is True
+    run(ingest.from_ownership(db, c, "2019 Ford F-150 XLT", "traded", actor=REP_A, vehicle_id="veh-old"))
+    owned = {f["statement"]: f["status"] for f in run(F.load(db, {"contact_id": str(c["_id"]), "key": "vehicle.owned"}))}
+    assert owned["Owns 2020 Ford F-150 XLT"] == "current" and owned["Owns 2019 Ford F-150 XLT (per appraisal record, not confirmed)"] == "historical"

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from routers.contact_ask import _contact, require_user
 from routers.database import get_db
-from services.intelligence import backfill, brief, config, ingest, projection, state, timeline
+from services.intelligence import backfill, brief, config, ingest, nudges, projection, reply_context, state, timeline
 from services.intelligence import facts as F
 from services.lead_flows import MANAGER_ROLES, user_store_id
 
@@ -43,6 +43,14 @@ class RollbackBody(BaseModel):
     contact_id: Optional[str] = None
 
 
+class NudgeRunBody(BaseModel):
+    user_id: Optional[str] = None
+    store_id: Optional[str] = None
+    contact_id: Optional[str] = None
+    dry: bool = False
+    limit: int = 5000
+
+
 def can_verify(user: dict, contact: dict) -> bool:
     """Owner rep, or a manager/admin of the contact's store, or the platform owner/super admin."""
     uid, role = str(user["_id"]), user.get("role")
@@ -57,6 +65,12 @@ def can_verify(user: dict, contact: dict) -> bool:
 def _manager(user: dict):
     if user.get("role") not in MANAGER_ROLES and not user.get("is_owner"):
         raise HTTPException(status_code=403, detail="Managers only")
+
+
+def _writes_on():
+    """Every human write to the fact store (suggest / confirm / dispute) is behind the ingest flag too: with the flags off this server reads only."""
+    if not config.ingest_enabled():
+        raise HTTPException(status_code=403, detail="Relationship intelligence is off for this server (INTEL_FACTS_INGEST)")
 
 
 async def _fact_and_contact(db, user: dict, fact_id: str) -> tuple:
@@ -125,6 +139,47 @@ async def fact_source(fact_id: str, request: Request):
     return await timeline.source(db, F.pub(f), contact)
 
 
+@router.get("/contacts/{contact_id}/reply-context")
+async def get_reply_context(contact_id: str, request: Request):
+    """Phase 2B: the exact fact block Jessi reads before drafting for this contact, plus the 'Why this reply?' rationale. Read-only; {"enabled": false} while ingest is off."""
+    db = get_db()
+    contact = await _contact(db, request.state.user, contact_id)
+    out = await reply_context.build(db, contact)
+    return {"enabled": False} if out is None and not config.ingest_enabled() else {"enabled": True, **(out or {"text": "", "rationale": None})}
+
+
+@router.get("/nudges/preview")
+async def nudges_preview(request: Request, contact_id: str):
+    """Phase 2C: what the facts would nudge for one contact and what would be skipped. Writes nothing."""
+    db = get_db()
+    contact = await _contact(db, request.state.user, contact_id)
+    cands = await nudges.candidates(db, contact)
+    plan = await nudges.write(db, contact, cands, dry=True)
+    return {"enabled": nudges.enabled(), "contact_id": str(contact["_id"]), "candidates": [{k: v for k, v in c.items() if k != "due"} | {"due": F.iso(c["due"])} for c in cands],
+            "would_create": plan["created"], "would_skip": plan["skipped"]}
+
+
+@router.post("/nudges/run")
+async def nudges_run(body: NudgeRunBody, request: Request):
+    """Run the nudge pass now (the scheduler does this daily). Managers are scoped to their store; owner / super admin may run everything. dry=true writes no tasks."""
+    me = request.state.user
+    _manager(me)
+    store_id, user_id = body.store_id, body.user_id
+    if me.get("role") not in EXEC_ROLES and not me.get("is_owner"):
+        store_id = user_store_id(me)
+        if not store_id:
+            raise HTTPException(status_code=403, detail="No store on your account")
+    if not body.dry and not nudges.enabled():
+        raise HTTPException(status_code=403, detail="Intelligent nudges are off for this server (INTEL_NUDGES)")
+    return await nudges.run(get_db(), user_id=user_id, store_id=store_id, contact_id=body.contact_id, dry=body.dry, limit=max(1, min(20000, body.limit)))
+
+
+@router.get("/nudges/runs")
+async def nudges_runs(request: Request):
+    _manager(request.state.user)
+    return {"enabled": nudges.enabled(), "runs": await nudges.runs(get_db())}
+
+
 @router.get("/facts/{fact_id}/events")
 async def fact_events(fact_id: str, request: Request):
     db = get_db()
@@ -134,6 +189,7 @@ async def fact_events(fact_id: str, request: Request):
 
 @router.post("/facts/{fact_id}/confirm")
 async def confirm_fact(fact_id: str, body: NoteBody, request: Request):
+    _writes_on()
     db = get_db()
     me = request.state.user
     f, contact = await _fact_and_contact(db, me, fact_id)
@@ -145,6 +201,7 @@ async def confirm_fact(fact_id: str, body: NoteBody, request: Request):
 
 @router.post("/facts/{fact_id}/dispute")
 async def dispute_fact(fact_id: str, body: NoteBody, request: Request):
+    _writes_on()
     db = get_db()
     me = request.state.user
     f, contact = await _fact_and_contact(db, me, fact_id)
@@ -157,6 +214,7 @@ async def dispute_fact(fact_id: str, body: NoteBody, request: Request):
 @router.post("/contacts/{contact_id}/facts/suggest")
 async def suggest_fact(contact_id: str, body: SuggestBody, request: Request):
     """Anyone who can see the contact may suggest; it lands as current+confirmed for verifiers and as proposed for everyone else. Verified facts are never silently overwritten."""
+    _writes_on()
     db = get_db()
     me = request.state.user
     contact = await _contact(db, me, contact_id)

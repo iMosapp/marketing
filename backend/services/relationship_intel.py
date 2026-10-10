@@ -274,9 +274,20 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
     else:
         brief["relationship_health"] = "cold"
 
+    # === LIVING RELATIONSHIP INTELLIGENCE (Phase 2B): dated, sourced facts lead; None while the engine is off ===
+    intel = None
+    try:
+        from services.intelligence import reply_context
+        intel = await reply_context.build(db, contact, now)
+    except Exception as ie:  # noqa: BLE001 - the legacy brief must never fail because of the fact engine
+        logger.warning(f"[Intel] reply context skipped for {contact_id}: {ie}")
+    brief["intel_rationale"] = intel["rationale"] if intel else None
+
     # === BUILD AI CONTEXT (what the AI reads) ===
     ai_parts = []
     ai_parts.append(f"=== RELATIONSHIP INTELLIGENCE: {name} ===")
+    if intel:
+        ai_parts.append(intel["text"] + "\n")
     ai_parts.append(f"Relationship health: {brief['relationship_health'].upper()} (score: {health_score}/100)")
     ai_parts.append(f"Response pattern: {brief['response_pattern'].replace('_', ' ')}")
 

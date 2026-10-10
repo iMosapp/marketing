@@ -79,6 +79,20 @@ def matches(a, b) -> bool:
     return bool(ta & tb)
 
 
+def _year(x) -> Optional[str]:
+    text = x.get("label") if isinstance(x, dict) else str(x or "")
+    m = re.search(r"\b(19[89]\d|20[0-4]\d)\b", str(x.get("year")) if isinstance(x, dict) and x.get("year") else text or "")
+    return m.group(1) if m else None
+
+
+def same_vehicle(a, b) -> bool:
+    """A specific car, not a shopping interest: model tokens must match AND, when both sides name a model year, the years must agree (trading a 2019 F-150 leaves the 2020 F-150 alone)."""
+    if not matches(a, b):
+        return False
+    ya, yb = _year(a), _year(b)
+    return not (ya and yb) or ya == yb
+
+
 async def close(db, contact_id: str, *, reason: str, at: datetime, match: Optional[object] = None, actor: Optional[dict] = None, note: str = "") -> list:
     """A purchase, lost deal or cancellation closes the relevant intents right away. With `match` (a vehicle label/dict) only matching interests close;
     without it every current vehicle interest closes. Dates and records stay."""

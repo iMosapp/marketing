@@ -1,6 +1,6 @@
 # Living Relationship Intelligence - Phase 1A acceptance journeys
 
-Generated Oct 10, 2026 20:30 UTC by tests/test_contact_intelligence.py (no model calls; the status engine, intent windows and rules-based next action are exercised directly).
+Generated Oct 10, 2026 21:48 UTC by tests/test_contact_intelligence.py (no model calls; the status engine, intent windows and rules-based next action are exercised directly).
 
 ## 1. Existing customer submits a new inquiry about a different product
 
@@ -29,7 +29,7 @@ CURRENT    vehicle.interest         2026-10-09  Website lead: asked about Ford F
 - Why: Newest active buying signal, yesterday via lead form (active).
 - Opening: "Hi John, I saw your inquiry on the Ford F-150. Is this to replace your Jeep Wrangler, or an additional vehicle?"
 - History worth mentioning: Owns Jeep Wrangler (recorded Jan 2024)
-**Supporting evidence**: lead_form:6acaa074f7a2ec09c3c10502 @ 2026-10-09; sale:p1 @ 2024-01-14
+**Supporting evidence**: lead_form:6acab2a81e7449477d55230d @ 2026-10-09; sale:p1 @ 2024-01-14
 
 ## 2. Customer trades a previously owned vehicle
 
@@ -127,7 +127,7 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Toyota
 - Topic: Toyota Grand Highlander
 - Why: Newest active buying signal, today via lead form (active).
 - Opening: "Hi Nora, I saw your inquiry on the Toyota Grand Highlander. What matters most to you in it?"
-**Supporting evidence**: lead_form:6acaa074f7a2ec09c3c10526 @ 2026-10-10
+**Supporting evidence**: lead_form:6acab2a81e7449477d552331 @ 2026-10-10
 
 ## 6. Customer submits multiple inquiries about different products
 
@@ -150,7 +150,7 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Chevro
 - Topic: Chevrolet Tahoe
 - Why: Newest active buying signal, today via lead form (active).
 - Opening: "Hi Mia, I saw your inquiry on the Chevrolet Tahoe. What matters most to you in it?"
-**Supporting evidence**: lead_form:6acaa074f7a2ec09c3c10530 @ 2026-10-10
+**Supporting evidence**: lead_form:6acab2a81e7449477d55233b @ 2026-10-10
 
 ## 7. Historical information becomes relevant again
 
@@ -178,7 +178,7 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Ford F
 - Why: Newest active buying signal, today via lead form (active).
 - Opening: "Hi Hank, I saw your inquiry on the Ford F-250 Super Duty. Is this to replace your 2023 Chevrolet Silverado 1500, or an additional vehicle?"
 - History worth mentioning: Asked about Ford F-250 in Jul 2025 (replaced); Owns 2023 Chevrolet Silverado 1500 (recorded Apr 2023)
-**Supporting evidence**: lead_form:6acaa074f7a2ec09c3c1053c @ 2026-10-10; message:msg-250708 @ 2025-07-08; sale:p7 @ 2023-04-10
+**Supporting evidence**: lead_form:6acab2a81e7449477d552347 @ 2026-10-10; message:msg-250708 @ 2025-07-08; sale:p7 @ 2023-04-10
 
 ## 8. Duplicate forms or webhook events arrive
 
@@ -200,7 +200,7 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Kia Te
 - Topic: Kia Telluride
 - Why: Newest active buying signal, today via lead form (active).
 - Opening: "Hi Dup, I saw your inquiry on the Kia Telluride. What matters most to you in it?"
-**Supporting evidence**: lead_form:6acaa074f7a2ec09c3c10542 @ 2026-10-10
+**Supporting evidence**: lead_form:6acab2a81e7449477d55234d @ 2026-10-10
 
 ## 9. Older events arrive after newer events
 
@@ -277,7 +277,7 @@ CURRENT    vehicle.owned            2026-10-10  Owns 2026 Ford F-150 XLT
 - Why: Newest active buying signal, 4 days ago via lead form (active).
 - Opening: "Hi Sam, I saw your inquiry on the Ford Explorer. Is this to replace your 2026 Ford F-150 XLT, or an additional vehicle?"
 - History worth mentioning: Owns 2026 Ford F-150 XLT (recorded Oct 2026)
-**Supporting evidence**: lead_form:6acaa074f7a2ec09c3c1055c @ 2026-10-06; sale:p11 @ 2026-10-10
+**Supporting evidence**: lead_form:6acab2a81e7449477d552367 @ 2026-10-06; sale:p11 @ 2026-10-10
 
 ## 12. Two customers share a phone number
 

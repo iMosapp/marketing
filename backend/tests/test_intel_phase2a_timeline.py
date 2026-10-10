@@ -177,7 +177,7 @@ class TestSarahTimeline:
         assert tl.get("enabled") is True
         drives = (tl.get("current") or {}).get("drives") or []
         assert drives, "sarah current.drives empty"
-        assert drives[0]["label"] == "2020 Ford F-150 XLT"
+        assert drives[0]["confirmed"] is True  # confirmed ownership sorts first (Sarah is shared QA data; the specific truck may change)
         assert drives[0].get("confirmed") is True
         unconfirmed_after = [d for d in drives[1:] if not d.get("confirmed")]
         assert len(unconfirmed_after) >= 1, f"expected unconfirmed drives after confirmed; got {drives}"

@@ -3,12 +3,15 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useThemeStore } from '../store/themeStore';
+import WhyThisReply, { ReplyRationale } from './contact/WhyThisReply';
 type Topic = { kind: string | null; label: string | null; switched?: boolean; forced?: boolean; episodes?: { kind: string; label: string; current: boolean }[] };
 
 interface AISuggestionProps {
   suggestion: string;
   intent?: string;
   topic?: Topic | null;
+  rationale?: ReplyRationale;
+  onWhy?: (factId: string) => void;
   onChangeTopic?: (kind: string) => void;
   onAccept: () => void;
   onEdit: () => void;
@@ -19,6 +22,8 @@ export default function AISuggestion({
   suggestion,
   intent,
   topic,
+  rationale,
+  onWhy,
   onChangeTopic,
   onAccept,
   onEdit,
@@ -82,6 +87,12 @@ export default function AISuggestion({
               ))}
             </View>
           )}
+        </View>
+      )}
+
+      {!!rationale && (
+        <View style={{ marginBottom: 8 }}>
+          <WhyThisReply rationale={rationale} colors={colors} onWhy={onWhy} testPrefix="ai-suggestion-why" />
         </View>
       )}
 

@@ -259,14 +259,14 @@ async def from_ownership(db, contact: dict, vehicle_label: str, status: str, *, 
     src = {"kind": "appraisal", "ref": vehicle_id or "", "excerpt_at": at}
     if status == "owns":
         for f in await F.load(db, {"contact_id": cid, "key": "vehicle.owned", "status": "current"}):
-            if I.matches(f.get("value"), vehicle_label) and actor:
+            if I.same_vehicle(f.get("value"), vehicle_label) and actor:
                 return {"confirmed": F.pub(await F.confirm(db, f["_id"], actor, note="ownership confirmed on the vehicle page", statement=f"Owns {vehicle_label}")), "projection": await sync_legacy(db, cid, contact.get("store_id"))}
         return await apply(db, [F.make(contact, layer="state", domain="vehicle_owned", key="vehicle.owned", statement=f"Owns {vehicle_label}", value={"label": vehicle_label}, occurred_at=at, source=src, confidence="high", actor=actor)], actor)
     if status not in ("traded", "sold", "no_longer_owns"):
         return None
     closed = []
     for f in await F.load(db, {"contact_id": cid, "key": "vehicle.owned", "status": "current"}):
-        if I.matches(f.get("value"), vehicle_label):
+        if I.same_vehicle(f.get("value"), vehicle_label):
             await F.set_status(db, f["_id"], "historical", actor, note=f"{status} per appraisal desk", outcome=status)
             closed.append(f["_id"])
     r = await apply(db, [F.make(contact, layer="history", domain="vehicle_owned", key="vehicle.disposed", statement=f"{vehicle_label}: {status.replace('_', ' ')}", value={"label": vehicle_label, "status": status},

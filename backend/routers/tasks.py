@@ -1641,6 +1641,9 @@ async def generate_system_tasks(user_id: str):
             idem = f"dormant_{user_id}_{cid}"
             if await db.tasks.find_one({"idempotency_key": idem, "status": {"$nin": ["completed", "dismissed", "done"]}}):
                 continue
+            # an intelligence nudge for this contact already says what to do; the generic reconnect would be a duplicate
+            if await db.tasks.find_one({"user_id": user_id, "contact_id": cid, "source": "intelligence", "status": {"$in": ["pending", "snoozed", None]}, "completed": {"$ne": True}}, {"_id": 1}):
+                continue
             days = (now - last_ts).days
             await db.tasks.insert_one({
                 "user_id": user_id, "contact_id": cid,

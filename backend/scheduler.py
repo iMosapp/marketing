@@ -1545,6 +1545,17 @@ async def send_morning_push_digest():
         logger.error(f"[Scheduler] Morning push digest error: {e}")
 
 
+async def run_intel_nudges():
+    """Daily job: Phase 2C intelligent nudges for every contact that has facts. Writes nothing while INTEL_NUDGES is off."""
+    from routers.database import get_db
+    from services.intelligence import nudges
+    db = get_db()
+    if db is None or not nudges.enabled():
+        return
+    result = await nudges.run(db)
+    logger.info(f"[Scheduler] Intel nudges: {result.get('created', 0)} created, {result.get('skipped', 0)} skipped over {result.get('contacts', 0)} contacts")
+
+
 async def generate_daily_system_tasks():
     """Daily job: generate system tasks (dormant contacts, birthdays, anniversaries) for all active users."""
     from routers.database import get_db
@@ -2111,6 +2122,15 @@ def start_scheduler():
         safe_job(generate_daily_system_tasks),
         CronTrigger(hour=5, minute=30),
         id="daily_system_tasks",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
+    # Daily at 5:45 AM UTC - intelligent nudges from the fact engine (no-op while INTEL_NUDGES is off)
+    scheduler.add_job(
+        safe_job(run_intel_nudges),
+        CronTrigger(hour=5, minute=45),
+        id="intel_nudges",
         replace_existing=True,
         misfire_grace_time=3600,
     )

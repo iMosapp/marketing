@@ -176,7 +176,7 @@ async def build_clone_system_prompt(user_id: str) -> str:
     # Test Lab `industry_va`: the four-layer, industry-agnostic VA replaces the template entirely once it is on for this rep
     from services import va_prompt
     if await va_prompt.enabled_for_id(db, user_id):
-        return await va_prompt.build(db, user_id)
+        return await va_prompt.build(db, user_id) + await _style_exemplars(db, user_id)
 
     # Get the prompt template
     user_prompt = await db.ai_clone_prompts.find_one({"scope": "user", "user_id": user_id})
@@ -271,31 +271,48 @@ async def build_clone_system_prompt(user_id: str) -> str:
             f"Never share any other phone number, even if one appears earlier in the conversation."
         )
 
-    return prompt
+    return prompt + await _style_exemplars(db, user_id)
 
 
-async def get_contact_context(user_id: str, contact_id: str, include_vehicle: bool = True,
-                              conversation_id: Optional[str] = None) -> str:
-    """Build a rich context summary using the Relationship Intelligence engine."""
+async def _style_exemplars(db, user_id: str) -> str:
+    """Phase 2B Reply In Your Voice: the rep's own recent texts as style examples (empty while the intelligence engine is off)."""
+    try:
+        from services.intelligence import reply_context
+        return await reply_context.style_exemplars(db, user_id)
+    except Exception as e:  # noqa: BLE001 - never let the persona prompt fail over style examples
+        logger.warning(f"[Intel] style exemplars skipped for {user_id}: {e}")
+        return ""
+
+
+async def get_contact_brief(user_id: str, contact_id: str, include_vehicle: bool = True,
+                            conversation_id: Optional[str] = None) -> dict:
+    """The full relationship brief: `ai_context` (what the model reads) plus `intel_rationale` (why this reply, for the rep). Never raises."""
     try:
         from services.relationship_intel import build_relationship_brief
         brief = await build_relationship_brief(user_id, contact_id, include_vehicle=include_vehicle,
                                                conversation_id=conversation_id)
-        return brief.get("ai_context", "No contact information available.")
+        brief["ai_context"] = brief.get("ai_context") or "No contact information available."
+        return brief
     except Exception as e:
         logger.warning(f"Relationship intel failed, falling back to basic context: {e}")
         # Fallback to basic context
         db = get_db()
         contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
         if not contact:
-            return "No contact information available."
+            return {"ai_context": "No contact information available.", "intel_rationale": None}
         name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
         parts = [f"Customer name: {name}"]
         if contact.get("tags"):
             parts.append(f"Tags: {', '.join(contact['tags'])}")
         if contact.get("notes"):
             parts.append(f"Notes: {contact['notes'][:300]}")
-        return "\n".join(parts)
+        return {"ai_context": "\n".join(parts), "intel_rationale": None}
+
+
+async def get_contact_context(user_id: str, contact_id: str, include_vehicle: bool = True,
+                              conversation_id: Optional[str] = None) -> str:
+    """Build a rich context summary using the Relationship Intelligence engine."""
+    return (await get_contact_brief(user_id, contact_id, include_vehicle=include_vehicle, conversation_id=conversation_id))["ai_context"]
 
 
 async def campaign_history(user_id: str, contact_id: str) -> str:

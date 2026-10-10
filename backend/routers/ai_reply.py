@@ -704,8 +704,9 @@ async def queue_ai_reply(
                 pass
 
     # ── Generate AI draft ──────────────────────────────────────────────────
+    intel_rationale = None
     try:
-        from routers.ai_campaigns import build_clone_system_prompt, get_contact_context
+        from routers.ai_campaigns import build_clone_system_prompt, get_contact_brief
         from emergentintegrations.llm.chat import LlmChat, UserMessage
 
         # Shared-inbox thread: while nobody owns it, Jessi speaks as the department assistant
@@ -757,8 +758,8 @@ async def queue_ai_reply(
             if (_src or {}).get("va_prompt_override"):
                 system_prompt += f"\n\nABOUT LEADS FROM {_src.get('name') or 'this source'}: {str(_src['va_prompt_override']).strip()[:1500]}"
 
-        contact_context = await get_contact_context(
-            voice_user_id, contact_id, include_vehicle=vehicle_ok, conversation_id=conversation_id)
+        _cb = await get_contact_brief(voice_user_id, contact_id, include_vehicle=vehicle_ok, conversation_id=conversation_id)
+        contact_context, intel_rationale = _cb["ai_context"], _cb.get("intel_rationale")
 
         # The thread, labelled: events are events, the site chat is a site chat, and each topic sits under its own header
         conv_lines = thread_view.dialogue()
@@ -910,6 +911,7 @@ async def queue_ai_reply(
         "incoming_message_preview":    incoming_message[:200],
         "media_urls":                  inventory_media or [],
         "topic":                       thread_view.summary(),
+        "intel_rationale":             intel_rationale,
         "created_at":                  now,
     }
 
@@ -1387,6 +1389,7 @@ async def get_pending_approvals(user_id: str):
             "conversation_id": item.get("conversation_id"),
             "campaign_id":    item.get("campaign_id"),
             "topic":          item.get("topic"),
+            "intel_rationale": item.get("intel_rationale"),
             "body":           item["body"],
             "incoming_preview": item.get("incoming_message_preview",""),
             "reply_count":    item.get("reply_count_at_creation", 1),

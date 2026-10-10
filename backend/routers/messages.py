@@ -2098,9 +2098,10 @@ async def get_ai_suggestion_smart(conversation_id: str, body: Optional[dict] = B
             raise ValueError("No user_id on conversation")
 
         # Build system prompt from rep's VA profile
-        from routers.ai_campaigns import build_clone_system_prompt, get_contact_context
+        from routers.ai_campaigns import build_clone_system_prompt, get_contact_brief
         from emergentintegrations.llm.chat import LlmChat, UserMessage
         import uuid as _uuid
+        intel_rationale = None
 
         system_prompt = await build_clone_system_prompt(user_id)
         system_prompt += (
@@ -2123,7 +2124,8 @@ async def get_ai_suggestion_smart(conversation_id: str, body: Optional[dict] = B
         contact_ctx = ""
         if contact_id:
             try:
-                contact_ctx = await get_contact_context(user_id, contact_id, include_vehicle=vehicle_ok, conversation_id=conversation_id)
+                _cb = await get_contact_brief(user_id, contact_id, include_vehicle=vehicle_ok, conversation_id=conversation_id)
+                contact_ctx, intel_rationale = _cb["ai_context"], _cb.get("intel_rationale")
             except Exception:
                 pass
 
@@ -2157,7 +2159,7 @@ async def get_ai_suggestion_smart(conversation_id: str, body: Optional[dict] = B
         suggestion = await clean_ai_text(suggestion, user_id)
 
         if suggestion:
-            return {"suggestion": suggestion, "intent": "contextual", "topic": topic}
+            return {"suggestion": suggestion, "intent": "contextual", "topic": topic, "intel_rationale": intel_rationale}
 
     except Exception as e:
         logger.warning(f"[AISuggest] draft failed for {conversation_id}: {e}")

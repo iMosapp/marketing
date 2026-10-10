@@ -442,6 +442,7 @@ export default function MoreScreen() {
     }
     if (isAdmin) {
       manageItems.push({ icon: 'git-compare', title: 'Provider Lab', subtitle: 'MarketCheck vs VinAudit on one vehicle, call usage, validation runs', onPress: () => router.push('/admin/provider-lab' as any), color: '#C9A962' });
+      manageItems.push({ icon: 'sparkles-outline', title: 'Relationship Intelligence', subtitle: 'Flags and the read-only backfill dry run', onPress: () => router.push('/admin/intelligence' as any), color: '#C9A962' });
     }
     sections.push({ id: 'manage', title: 'Manage', icon: 'settings-outline', color: '#8E8E93', items: manageItems });
 

@@ -49,6 +49,8 @@ import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert, showAlert, showConfirm } from '../../services/alert';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
+import WhyThisReply from '../../components/contact/WhyThisReply';
+import FactSourceSheet from '../../components/contact/FactSourceSheet';
 
 // Web platform detection
 const IS_WEB = Platform.OS === 'web';
@@ -254,10 +256,11 @@ function ThreadScreen() {
   const [aiMode, setAiMode] = useState<'auto_reply' | 'assisted' | 'draft_only' | 'off'>('assisted');
   const [showAISuggestion, setShowAISuggestion] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<{ text: string; intent: string; topic?: any }>({
+  const [aiSuggestion, setAiSuggestion] = useState<{ text: string; intent: string; topic?: any; rationale?: any }>({
     text: '',
     intent: '',
   });
+  const [whyFactId, setWhyFactId] = useState<string | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
   const [pendingDraft, setPendingDraft] = useState<any | null>(null);
   const [draftEditing, setDraftEditing] = useState(false);
@@ -1011,6 +1014,7 @@ function ThreadScreen() {
           text: data.suggestion,
           intent: data.intent || '',
           topic: data.topic || null,
+          rationale: data.intel_rationale || null,
         });
         setShowAISuggestion(true);
       } else {
@@ -2491,6 +2495,8 @@ function ThreadScreen() {
           suggestion={aiSuggestion.text}
           intent={aiSuggestion.intent}
           topic={aiSuggestion.topic}
+          rationale={aiSuggestion.rationale}
+          onWhy={(fid: string) => setWhyFactId(fid)}
           onChangeTopic={(kind: string) => loadAISuggestion(kind)}
           onAccept={handleAcceptAISuggestion}
           onEdit={handleEditAISuggestion}
@@ -2584,6 +2590,9 @@ function ThreadScreen() {
               <Ionicons name="pricetag-outline" size={12} color={colors.textSecondary} />
               <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>Replying about: {pendingDraft.topic.label}{pendingDraft.topic.switched ? ' (they changed the subject)' : ''}</Text>
             </View>
+          )}
+          {!!pendingDraft.intel_rationale && (
+            <WhyThisReply rationale={pendingDraft.intel_rationale} colors={colors} onWhy={(fid: string) => setWhyFactId(fid)} testPrefix="pending-draft-why" />
           )}
           {draftEditing ? (
             <TextInput
@@ -3913,6 +3922,7 @@ function ThreadScreen() {
           colors={colors} onClose={() => setMemoResult(null)} />
       )}
       <DeliveryDetailsSheet messageId={deliveryMsgId} colors={{ ...colors, text: colors.textPrimary, card: colors.surface }} onClose={() => setDeliveryMsgId(null)} onResent={() => loadMessages()} />
+      <FactSourceSheet factId={whyFactId} colors={{ ...colors, text: colors.textPrimary || colors.text, card: colors.surface }} onClose={() => setWhyFactId(null)} />
     </SafeAreaView>
   );
 }
