@@ -25,7 +25,7 @@ export default function FeedTab(props: any) {
     hasMoreEvents, loadMoreEvents, loadingMoreEvents,
     showLogReply, setShowLogReply, replyText, setReplyText,
     replyPhoto, setReplyPhoto, submittingReply, handleLogReply, pickReplyPhoto,
-    setShowAddTask, openInboxThread, openingInbox,
+    setShowAddTask, openInboxThread, openingInbox, onOpenFact,
     filter = 'all',
   } = props;
   const router = useRouter();
@@ -298,7 +298,7 @@ export default function FeedTab(props: any) {
           <View style={s.feedTimeline}>
             {(() => {
               const ENGAGEMENT_SET = new Set(['digital_card_viewed', 'showcase_viewed', 'link_page_viewed', 'link_clicked', 'review_link_clicked', 'congrats_card_viewed', 'review_page_viewed', 'training_video_clicked']);
-              const MILESTONE_SET = new Set(['new_contact_added', 'campaign_enrolled', 'review_submitted', 'referral_made']);
+              const MILESTONE_SET = new Set(['new_contact_added', 'campaign_enrolled', 'review_submitted', 'referral_made', 'intel_milestone']);
               return eventDateGroups.map((group: any) => {
               const isCollapsed = collapsedDateGroups[group.label] === true;
               const groupEvents = group.events; // Show ALL events — no artificial cap
@@ -336,14 +336,15 @@ export default function FeedTab(props: any) {
               let cleanLabel = getEventTitle(evt);
               if (!cleanLabel) cleanLabel = et.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
 
-              const hasDetail = !!(evt.description || evt.full_content);
+              const isIntel = !!evt.intel && !!evt.fact_id; // relationship-intelligence milestone: tap opens its source instead of expanding
+              const hasDetail = !isIntel && !!(evt.description || evt.full_content);
               const isLast = i === groupEvents.length - 1;
 
               return (
                 <TouchableOpacity
                   key={evtKey}
-                  activeOpacity={hasDetail ? 0.6 : 1}
-                  onPress={() => hasDetail && setExpandedEvents((prev: any) => ({ ...prev, [evtKey]: !prev[evtKey] }))}
+                  activeOpacity={hasDetail || isIntel ? 0.6 : 1}
+                  onPress={() => isIntel ? onOpenFact?.(evt.fact_id) : hasDetail && setExpandedEvents((prev: any) => ({ ...prev, [evtKey]: !prev[evtKey] }))}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -364,6 +365,9 @@ export default function FeedTab(props: any) {
                     <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text }} numberOfLines={isExpanded ? undefined : 1}>
                       {cleanLabel}
                     </Text>
+                    {isIntel && !!evt.description && (
+                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>{evt.description} · why?</Text>
+                    )}
                     {isExpanded && hasDetail && (
                       <View style={{ marginTop: 6, padding: 10, borderRadius: 10, backgroundColor: colors.surface }}>
                         <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}>

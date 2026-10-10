@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from routers.contact_ask import _contact, require_user
 from routers.database import get_db
-from services.intelligence import backfill, brief, config, ingest, projection, state
+from services.intelligence import backfill, brief, config, ingest, projection, state, timeline
 from services.intelligence import facts as F
 from services.lead_flows import MANAGER_ROLES, user_store_id
 
@@ -106,6 +106,25 @@ async def get_brief(contact_id: str, request: Request):
     return out
 
 
+@router.get("/contacts/{contact_id}/timeline")
+async def get_timeline(contact_id: str, request: Request):
+    """Recommended / Active / Current / Historical markers for the contact screen; {"enabled": false} while ingest is off so the screen stays unchanged."""
+    db = get_db()
+    me = request.state.user
+    contact = await _contact(db, me, contact_id)
+    out = await timeline.build(db, contact)
+    out["can_verify"] = can_verify(me, contact)
+    return out
+
+
+@router.get("/facts/{fact_id}/source")
+async def fact_source(fact_id: str, request: Request):
+    """Why we think this: the record behind the fact (excerpt, when, who, where to open it)."""
+    db = get_db()
+    f, contact = await _fact_and_contact(db, request.state.user, fact_id)
+    return await timeline.source(db, F.pub(f), contact)
+
+
 @router.get("/facts/{fact_id}/events")
 async def fact_events(fact_id: str, request: Request):
     db = get_db()
@@ -156,7 +175,7 @@ async def suggest_fact(contact_id: str, body: SuggestBody, request: Request):
 
 
 @router.get("/backfill/dry-run")
-async def backfill_dry_run(request: Request, store_id: Optional[str] = None, limit: Optional[int] = None):
+async def backfill_dry_run(request: Request, store_id: Optional[str] = None, limit: Optional[int] = None, persist: bool = False):
     """Read-only inventory of what the backfill would write. Store managers see their own store; owner/super admin any store or all."""
     me = request.state.user
     _manager(me)
@@ -164,7 +183,7 @@ async def backfill_dry_run(request: Request, store_id: Optional[str] = None, lim
         store_id = user_store_id(me)
         if not store_id:
             raise HTTPException(status_code=403, detail="No store on your account")
-    return await backfill.dry_run(get_db(), store_id=store_id, limit=limit)
+    return await backfill.dry_run(get_db(), store_id=store_id, limit=limit, persist=persist)
 
 
 @router.get("/backfill/runs")

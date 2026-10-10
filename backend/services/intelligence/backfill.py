@@ -2,6 +2,7 @@
 Legacy data never outranks newer verified facts: imported facts carry confidence medium, source import, and go through the same status engine."""
 import json
 import logging
+import time
 from collections import Counter
 from datetime import timedelta
 from typing import Optional
@@ -89,15 +90,14 @@ def _contacts_q(store_id: Optional[str]) -> dict:
     return q
 
 
-async def dry_run(db, *, store_id: Optional[str] = None, limit: Optional[int] = None, sample: int = 8) -> dict:
-    """Read-only. Counts what the backfill would write and how the legacy projection would differ from today's fields. Stores the report in intel_backfill_runs."""
+async def dry_run(db, *, store_id: Optional[str] = None, limit: Optional[int] = None, sample: int = 8, persist: bool = False) -> dict:
+    """Read-only: counts what the backfill would write and how the legacy projection would differ from today's fields. Writes nothing unless persist=True (then the report is kept in intel_backfill_runs)."""
     now = F.now_utc()
+    t0 = time.monotonic()
     settings_cache: dict = {}
-    by_layer, by_key, by_status, by_source = Counter(), Counter(), Counter(), Counter()
+    by_layer, by_key, by_status, by_source, by_store = Counter(), Counter(), Counter(), Counter(), {}
     scanned = with_facts = total = distinct = conflicts = projection_changes = 0
     samples, changed_fields = [], Counter()
-    run = {"mode": "dry_run", "store_id": store_id, "limit": limit, "started_at": now, "finished_at": None, "report": None}
-    rid = (await db[RUNS].insert_one(run)).inserted_id
     cur = db.contacts.find(_contacts_q(store_id), FIELDS).sort("_id", 1)
     if limit:
         cur = cur.limit(int(limit))
@@ -106,10 +106,13 @@ async def dry_run(db, *, store_id: Optional[str] = None, limit: Optional[int] = 
         sid = str(c.get("store_id") or "")
         if sid not in settings_cache:
             settings_cache[sid] = await config.settings(db, sid or None)
+        st_row = by_store.setdefault(sid or "(no store)", {"contacts": 0, "with_facts": 0, "facts_distinct": 0, "legacy_changes": 0})
+        st_row["contacts"] += 1
         facts = await plan_contact(db, c, settings_cache[sid], now)
         if not facts:
             continue
         with_facts += 1
+        st_row["with_facts"] += 1
         total += len(facts)
         seen: dict = {}
         distinct_here: set = set()
@@ -123,20 +126,25 @@ async def dry_run(db, *, store_id: Optional[str] = None, limit: Optional[int] = 
                 seen.setdefault(f["key"], set()).add(F.norm_value(f["value"]))
         conflicts += sum(1 for v in seen.values() if len(v) > 1)
         distinct += len(distinct_here)
+        st_row["facts_distinct"] += len(distinct_here)
         fake_state = _state_from_plan(c, facts, settings_cache[sid], now)
         sets = projection.plan(fake_state)
         diff = {k: v for k, v in sets.items() if _raw(_legacy_get(c, k)) != _raw(v)}
         if diff:
             projection_changes += 1
+            st_row["legacy_changes"] += 1
             changed_fields.update(diff.keys())
         if len(samples) < sample:
             samples.append({"contact_id": str(c["_id"]), "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip(), "facts": [{"key": f["key"], "status": f["status"], "occurred_at": F.iso(f["occurred_at"]), "statement": f["statement"][:100], "source": f["source"]["kind"]} for f in facts[:12]],
                             "projection_diff": {k: (str(_legacy_get(c, k))[:60], str(v)[:60]) for k, v in list(diff.items())[:6]}})
     report = {"contacts_scanned": scanned, "contacts_with_facts": with_facts, "facts_total": total, "facts_distinct": distinct, "repeat_evidence": total - distinct, "by_layer": dict(by_layer), "by_key": dict(by_key.most_common()), "by_status": dict(by_status),
               "by_source": dict(by_source), "scalar_conflicts": conflicts, "contacts_whose_legacy_fields_would_change": projection_changes, "legacy_fields_changed": dict(changed_fields.most_common()),
-              "existing_facts": await db[F.FACTS].count_documents({}), "samples": samples, "flags": config.flags(), "intent_window_days": config.DEFAULTS["intent_window_days"], "active_legacy_days": ACTIVE_LEGACY_DAYS}
-    await db[RUNS].update_one({"_id": rid}, {"$set": {"finished_at": F.now_utc(), "report": report}})
-    return {"run_id": str(rid), **report}
+              "by_store": by_store, "existing_facts": await db[F.FACTS].count_documents({}), "samples": samples, "flags": config.flags(), "intent_window_days": config.DEFAULTS["intent_window_days"], "active_legacy_days": ACTIVE_LEGACY_DAYS,
+              "processing_ms": int((time.monotonic() - t0) * 1000), "read_only": not persist, "writes_performed": ["intel_backfill_runs report"] if persist else []}
+    rid = None
+    if persist:
+        rid = (await db[RUNS].insert_one({"mode": "dry_run", "store_id": store_id, "limit": limit, "started_at": now, "finished_at": F.now_utc(), "report": report})).inserted_id
+    return {"run_id": str(rid) if rid else None, **report}
 
 
 def _raw(v) -> str:
@@ -164,6 +172,7 @@ async def execute(db, *, confirm: str = "", store_id: Optional[str] = None, batc
     """Phase 1B only. Needs INTEL_BACKFILL_EXECUTE=true and confirm == "EXECUTE". Resumable: the run doc keeps the last contact id written."""
     if not config.backfill_execute_enabled() or confirm != "EXECUTE":
         raise PermissionError("Backfill execution is not enabled (Phase 1B needs INTEL_BACKFILL_EXECUTE=true and confirm=EXECUTE)")
+    await F.ensure_indexes(db)
     now = F.now_utc()
     run = await db[RUNS].find_one({"_id": ObjectId(run_id)}) if run_id and ObjectId.is_valid(run_id) else None
     if not run:

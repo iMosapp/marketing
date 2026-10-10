@@ -23,7 +23,7 @@ function Line({ icon, label, value, colors, gold, testid, lines = 1 }: any) {
   );
 }
 
-export default function SnapshotCard({ colors, contact, stats, events, intelData, refreshing, onRefresh, firstName, onAsk, userId, contactId, onUpdate, onDetailsChanged, voiceNotesCount }: any) {
+export default function SnapshotCard({ colors, contact, stats, events, intelData, timeline, onOpenFact, refreshing, onRefresh, firstName, onAsk, userId, contactId, onUpdate, onDetailsChanged, voiceNotesCount }: any) {
   const [expanded, setExpanded] = useState(false);
   const [pd, setPd] = useState<any>(null);
 
@@ -40,7 +40,10 @@ export default function SnapshotCard({ colors, contact, stats, events, intelData
   const sections = useMemo(() => parseSections(summary), [summary]);
   const jessiLine = ((sections['Before Your Next Interaction'] || [])[0] || (sections['Quick Take'] || []).join(' ') || '').replace(/\s+/g, ' ').trim();
 
-  const drives = contact.vehicle || (pd?.vehicle_purchased ? `${pd.vehicle_purchased}${pd.vehicle_color ? ` (${pd.vehicle_color})` : ''}` : '');
+  // Living Relationship Intelligence: a confirmed ownership fact wins; an unconfirmed one is shown as such; legacy fields are the fallback
+  const factDrive = timeline?.enabled ? (timeline.current?.drives || []).find((d: any) => d.confirmed) || (timeline.current?.drives || [])[0] : null;
+  const legacyDrives = contact.vehicle || (pd?.vehicle_purchased ? `${pd.vehicle_purchased}${pd.vehicle_color ? ` (${pd.vehicle_color})` : ''}` : '');
+  const drives = factDrive ? `${factDrive.label}${pd?.vehicle_color && !factDrive.label.includes(pd.vehicle_color) ? ` (${pd.vehicle_color})` : ''}${factDrive.confirmed ? '' : ' · unconfirmed'}` : legacyDrives;
   const last = events?.[0];
   const lastTouch = last ? `${getEventTitle(last) || 'Activity'} · ${formatEventTime(last.timestamp)}` : '';
   const personal = pd ? [
@@ -71,7 +74,13 @@ export default function SnapshotCard({ colors, contact, stats, events, intelData
         </TouchableOpacity>
       </View>
       <View style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
-        <Line icon="car-sport" label="Drives" value={drives} colors={colors} testid="snapshot-line-drives" />
+        {factDrive && onOpenFact ? (
+          <TouchableOpacity onPress={() => onOpenFact(factDrive.fact_id)} activeOpacity={0.7} testID="snapshot-drives-source" dataSet={{ testid: 'snapshot-drives-source' } as any}>
+            <Line icon="car-sport" label="Drives" value={drives} colors={colors} testid="snapshot-line-drives" />
+          </TouchableOpacity>
+        ) : (
+          <Line icon="car-sport" label="Drives" value={drives} colors={colors} testid="snapshot-line-drives" />
+        )}
         <Line icon="time" label="Last touch" value={lastTouch} colors={colors} testid="snapshot-line-last-touch" />
         <Line icon="heart" label="Personal" value={personalLine} colors={colors} testid="snapshot-line-personal" lines={2} />
         <Line icon="sparkles" label="Jessi" value={jessiValue} colors={colors} gold testid="snapshot-line-jessi" lines={2} />

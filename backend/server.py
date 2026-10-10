@@ -1658,8 +1658,9 @@ async def startup_event():
     except Exception as _e:
         logger.warning(f"[Leadership] startup seed skipped: {_e}")
     try:
-        from services.intelligence import facts as _intel_facts
-        await _intel_facts.ensure_indexes(get_db())  # unique fingerprint index: the fact store stays duplicate-free under concurrency (no-op when present)
+        from services.intelligence import config as _intel_config, facts as _intel_facts
+        if _intel_config.ingest_enabled():  # the fact store is created (with its unique fingerprint index) only once writes are enabled; nothing is touched while the flags are off
+            await _intel_facts.ensure_indexes(get_db())
     except Exception as _e:
         logger.warning(f"[Intel] index creation skipped: {_e}")
 

@@ -455,6 +455,14 @@ export const contactsAPI = {
   },
 };
 
+// ============= RELATIONSHIP INTELLIGENCE API (facts, timeline, sources) =============
+export const intelAPI = {
+  timeline: async (contactId: string) => (await api.get(`/intel/contacts/${contactId}/timeline`)).data,
+  source: async (factId: string) => (await api.get(`/intel/facts/${factId}/source`)).data,
+  confirm: async (factId: string, note = '') => (await api.post(`/intel/facts/${factId}/confirm`, { note })).data,
+  dispute: async (factId: string, note = '') => (await api.post(`/intel/facts/${factId}/dispute`, { note })).data,
+};
+
 // ============= MESSAGES API =============
 export const messagesAPI = {
   getConversations: async (userId: string) => {

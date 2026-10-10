@@ -4,6 +4,7 @@ active intent, recommended next action, evidence.
     cd /app/backend && set -a && . ./.env && set +a && python -m pytest tests/test_contact_intelligence.py -q
 """
 import asyncio
+import json
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -17,7 +18,7 @@ os.environ["INTEL_FACTS_INGEST"] = "true"
 os.environ["INTEL_LEGACY_PROJECTION"] = "false"
 os.environ["INTEL_BACKFILL_EXECUTE"] = "false"
 
-from services.intelligence import backfill, brief, config, ingest, projection, state  # noqa: E402
+from services.intelligence import backfill, brief, config, ingest, projection, state, timeline  # noqa: E402
 from services.intelligence import facts as F  # noqa: E402
 from services.intelligence import intent as I  # noqa: E402
 
@@ -372,7 +373,7 @@ def test_j14_similar_records_other_tenant_and_dry_run(db):
     assert rep_a["contacts_scanned"] >= 1 and rep_b["contacts_scanned"] == 2  # store B: Shared PhoneB + John Smith B
     assert rep_a["flags"]["backfill_execute"] is False
     assert run(db.contact_facts.count_documents({"contact_id": str(a["_id"])})) == 0  # dry run wrote no facts
-    assert run(db.intel_backfill_runs.count_documents({"mode": "dry_run"})) == 2
+    assert run(db.intel_backfill_runs.count_documents({"mode": "dry_run"})) == 0  # read-only by default (persist=True keeps a report)
     # the plan for John Smith A: purchase + owned, 3 personal detail facts (spouse, 2 interests, 1 kid), legacy interest (active), lead (active), stale hot flag (historical)
     plan = run(backfill.plan_contact(db, run(db.contacts.find_one({"_id": a["_id"]})), settings(db), NOW))
     keys = sorted(f["key"] for f in plan)
@@ -573,3 +574,81 @@ def test_1b_repeated_system_records_corroborate_but_never_confirm(db, monkeypatc
     assert f["confirmations"] == 1 and "not confirmed" not in f["statement"]
     assert run(db.contacts.find_one({"_id": c["_id"]}))["personal_details"]["vehicle_purchased"] == "2019 Ford F-150 XLT"
     monkeypatch.setenv("INTEL_LEGACY_PROJECTION", "false")
+
+
+def test_1b_dry_run_is_read_only(db, monkeypatch):
+    """The production dry run: every flag off, every collection count and the legacy fields unchanged afterwards, no contact_facts collection created."""
+    for k in ("INTEL_FACTS_INGEST", "INTEL_LEGACY_PROJECTION", "INTEL_BACKFILL_EXECUTE"):
+        monkeypatch.setenv(k, "false")
+    c = contact(db, "Read", "Only", vehicle_interest="2022 Honda Civic", personal_details={"spouse_name": "Kim", "interests": ["golf"]}, store_id="store-ro")
+    run(db.inbound_leads.insert_one(lead(c, "2022 Honda Civic", days_ago=3, make="Honda", model="Civic")))
+    before = {name: run(db[name].count_documents({})) for name in run(db.list_collection_names())}
+    legacy_before = json.dumps(run(db.contacts.find_one({"_id": c["_id"]})), sort_keys=True, default=str)
+    r = run(backfill.dry_run(db, store_id="store-ro"))
+    assert r["read_only"] is True and r["writes_performed"] == [] and r["run_id"] is None and r["flags"] == {"ingest": False, "legacy_projection": False, "backfill_execute": False}
+    assert r["contacts_scanned"] == 1 and r["facts_distinct"] == 3 and r["repeat_evidence"] == 1 and r["by_store"] == {"store-ro": {"contacts": 1, "with_facts": 1, "facts_distinct": 3, "legacy_changes": 0}}
+    assert "processing_ms" in r
+    after = {name: run(db[name].count_documents({})) for name in run(db.list_collection_names())}
+    assert after == before and json.dumps(run(db.contacts.find_one({"_id": c["_id"]})), sort_keys=True, default=str) == legacy_before
+    assert run(db.intel_backfill_runs.count_documents({"mode": "dry_run"})) == 0
+    # the persisted variant is explicit and only touches the runs collection
+    r2 = run(backfill.dry_run(db, store_id="store-ro", persist=True))
+    assert r2["read_only"] is False and r2["writes_performed"] == ["intel_backfill_runs report"] and r2["run_id"]
+    monkeypatch.setenv("INTEL_FACTS_INGEST", "true")
+
+
+# ───────────────────────── Phase 2A: Intelligent Timeline + "why we think this" ─────────────────────────
+def test_2a_timeline_bands_and_markers(db, monkeypatch):
+    c = contact(db, "Tim", "Line", personal_details={})
+    run(ingest.from_lead(db, c, lead(c, "2022 Jeep Wrangler Rubicon", days_ago=950, make="Jeep", model="Wrangler")))  # the inquiry that led to the purchase
+    run(ingest.from_purchases(db, c, [{"id": "p1", "title": "2022 Jeep Wrangler Rubicon", "category": "vehicle", "date": "2024-03-09", "created_at": "2024-03-09T18:00:00+00:00"}], REP_A))
+    run(db.contacts.update_one({"_id": c["_id"]}, {"$set": {"purchase_history": [{"id": "p1", "title": "2022 Jeep Wrangler Rubicon", "category": "vehicle", "date": "2024-03-09", "notes": "Cash deal"}]}}))
+    run(ingest.from_personal_details_edit(db, c, {"employer": "Zions Bank"}, REP_A))
+    run(ingest.from_personal_details_edit(db, c, {"employer": "Intermountain Health"}, REP_A))  # supersedes -> "Employer changed" marker
+    run(ingest.from_lead(db, c, lead(c, "2025 Ford F-150", days_ago=2, make="Ford", model="F-150", comments="Looking at the F-150 Lariat")))
+    tl = run(timeline.build(db, run(db.contacts.find_one({"_id": c["_id"]}))))
+    assert tl["enabled"] is True
+    assert tl["recommended"]["topic"] == "2025 Ford F-150" and "Jeep" in tl["recommended"]["opening"] and tl["recommended"]["evidence"][0]["source"] == "Lead form"
+    assert [a["label"] for a in tl["active"]] == ["2025 Ford F-150"] and tl["active"][0]["detail"].startswith("2 days ago, via lead form") and tl["driving_fact_id"] == tl["active"][0]["fact_id"]
+    assert tl["current"]["drives"][0]["label"] == "2022 Jeep Wrangler Rubicon" and tl["current"]["drives"][0]["confirmed"] is True
+    assert tl["current"]["work"][0]["label"] == "Intermountain Health" and tl["current"]["work"][0]["confirmed"] is True
+    titles = [m["title"] for m in tl["markers"]]
+    assert "Bought 2022 Jeep Wrangler Rubicon" in titles and "Employer changed: Zions Bank -> Intermountain Health" in titles and "Interest in 2022 Jeep Wrangler Rubicon closed: bought" in titles
+    assert all(m["event_type"] == "intel_milestone" and m["category"] == "milestone" and m["fact_id"] and m["timestamp"] for m in tl["markers"])
+    assert tl["markers"] == sorted(tl["markers"], key=lambda m: m["timestamp"], reverse=True)
+    for n in tl["needs_look"]:
+        assert n["reason"] in ("unconfirmed", "stale", "disputed", "proposed") and n["fact_id"]
+    # the screen stays untouched when the tenant has intelligence off
+    monkeypatch.setenv("INTEL_FACTS_INGEST", "false")
+    assert run(timeline.build(db, c)) == {"enabled": False}
+    monkeypatch.setenv("INTEL_FACTS_INGEST", "true")
+
+
+def test_2a_source_resolver_shows_the_record_and_never_leaks(db):
+    c = contact(db, "Src", "Check", phone="+18015550177")
+    other = contact(db, "Other", "Person", phone="+18015550178")
+    conv = str(ObjectId())
+    mid = run(db.messages.insert_one({"contact_id": str(c["_id"]), "conversation_id": conv, "content": "We are looking at the Grand Highlander for the whole family", "direction": "inbound", "created_at": NOW})).inserted_id
+    run(ingest.from_inbound_message(db, c, conv, "We are looking at the Grand Highlander for the whole family", {"score": 8, "hot_summary": "Family SUV shopper"}, message_id=str(mid)))
+    sig = run(F.load(db, {"contact_id": str(c["_id"]), "key": "buying.signal"}))[0]
+    src = run(timeline.source(db, F.pub(sig), c))
+    assert src["kind"] == "message" and src["title"].startswith("Text from Src") and "Grand Highlander" in src["excerpt"] and src["link"] == f"/thread/{conv}"
+    # a lead form resolves to the lead's own words and source name
+    lid = ObjectId()
+    run(db.inbound_leads.insert_one(lead(c, "2025 Toyota Grand Highlander", comments="Need three rows", lead_id=lid, source="Cars.com", make="Toyota", model="Grand Highlander")))
+    run(ingest.from_lead(db, c, run(db.inbound_leads.find_one({"_id": lid}))))
+    li = run(F.load(db, {"contact_id": str(c["_id"]), "key": "vehicle.interest"}))[0]
+    ls = run(timeline.source(db, F.pub(li), c))
+    assert ls["title"] == "Cars.com lead" and "Need three rows" in ls["excerpt"] and ls["link"] == "/thread/conv1"
+    # appraisal -> the vehicle record; rep -> who typed it; import -> plain explanation
+    vid = run(db.vehicles.insert_one({"contact_id": str(c["_id"]), "year": 2018, "make": "Ram", "model": "2500", "trim": "Laramie", "vin": "3C6UR5FL0JG", "ownership_status": "owns", "created_at": NOW})).inserted_id
+    r = run(ingest.from_appraisal_vehicle(db, c, "2018 Ram 2500 Laramie", str(vid)))
+    a = run(timeline.source(db, F.pub(r["facts"][0]), c))
+    assert a["title"] == "Appraisal vehicle record" and "VIN 3C6UR5FL0JG" in a["excerpt"] and a["link"] == f"/vehicle/{vid}" and a["confirmed"] is False
+    run(ingest.from_personal_details_edit(db, c, {"spouse_name": "Dana"}, REP_A))
+    sp = run(F.load(db, {"contact_id": str(c["_id"]), "key": "family.spouse"}))[0]
+    rs = run(timeline.source(db, F.pub(sp), c))
+    assert rs["kind"] == "rep" and rs["title"] == f"Entered by {REP_A['name']}" and rs["confirmed"] is True
+    # the same message id looked up through ANOTHER contact's fact never returns that contact's text (tenant/contact scoping)
+    leaked = run(timeline.source(db, {**F.pub(sig), "source": {"kind": "message", "ref": str(mid), "quote": None}}, other))
+    assert leaked["excerpt"] is None and leaked["link"] is None

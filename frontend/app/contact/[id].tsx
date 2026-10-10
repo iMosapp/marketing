@@ -29,7 +29,7 @@ import { format, differenceInDays, differenceInMonths, differenceInYears } from 
 import { Image } from 'expo-image';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { contactsAPI, campaignsAPI, tagsAPI, messagesAPI } from '../../services/api';
+import { contactsAPI, campaignsAPI, tagsAPI, messagesAPI, intelAPI } from '../../services/api';
 import { useContactSearch } from '../../hooks/useContactSearch';
 import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
@@ -66,6 +66,8 @@ import DateModals from '../../components/contact/DateModals';
 import AddTaskModal from '../../components/contact/AddTaskModal';
 import GalleryModal from '../../components/contact/GalleryModal';
 import SnapshotCard from '../../components/contact/SnapshotCard';
+import NowStrip from '../../components/contact/NowStrip';
+import FactSourceSheet from '../../components/contact/FactSourceSheet';
 import { tid } from '../../components/scripts/shared';
 import { HealthBadge } from '../../components/contact/HealthBadge';
 import QuickActionsRow from '../../components/contact/QuickActionsRow';
@@ -94,6 +96,8 @@ interface ContactEvent {
   full_content?: string;
   link?: string;
   channel?: string;
+  intel?: boolean;
+  fact_id?: string;
   subject?: string;
 }
 
@@ -209,6 +213,8 @@ function ContactDetailScreen() {
 
   // AI Relationship Intel (auto-updating)
   const [intelData, setIntelData] = useState<any>(null);
+  const [intelTimeline, setIntelTimeline] = useState<any>(null); // Living Relationship Intelligence (null = off / not loaded)
+  const [openFactId, setOpenFactId] = useState<string | null>(null);
   const [intelRefreshing, setIntelRefreshing] = useState(false);
   const intelBusyRef = useRef(false);
   const composerInputRef = useRef<TextInput>(null);
@@ -279,7 +285,11 @@ function ContactDetailScreen() {
 
   // Computed: filtered events for search + the History chip (must come after state declarations)
   const feedQuery = feedSearch.toLowerCase().trim();
-  const filteredEvents = events.filter(e =>
+  const intelMarkers: ContactEvent[] = (historyFilter === 'all' && intelTimeline?.markers) ? intelTimeline.markers : [];
+  const eventsWithMarkers: ContactEvent[] = intelMarkers.length
+    ? [...events, ...intelMarkers.filter((m: any) => !events.some(e => e.timestamp === m.timestamp && e.title === m.title))].sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')))
+    : events;
+  const filteredEvents = eventsWithMarkers.filter(e =>
     (historyFilter === 'all' || historyFilter === 'calls' || historyFilter === 'memos' || historyFilter === 'files' || matchesHistoryFilter(e, historyFilter)) &&
     (!feedQuery ||
       (e.title || '').toLowerCase().includes(feedQuery) ||
@@ -622,8 +632,19 @@ function ContactDetailScreen() {
     }
   }, [contact.notes, loading]);
 
+  const loadIntelTimeline = async () => {
+    if (!user || isNewContact) return;
+    try {
+      const tl = await intelAPI.timeline(id as string);
+      setIntelTimeline(tl?.enabled ? tl : null);
+    } catch {
+      setIntelTimeline(null);
+    }
+  };
+
   const loadEvents = async () => {
     if (!user || isNewContact) return;
+    loadIntelTimeline();
     try {
       setEventsLoading(true);
       const [evtsResp, statsResp] = await Promise.all([
@@ -2692,6 +2713,8 @@ function ContactDetailScreen() {
               stats={stats}
               events={events}
               intelData={intelData}
+              timeline={intelTimeline}
+              onOpenFact={(fid: string) => setOpenFactId(fid)}
               refreshing={intelRefreshing}
               onRefresh={refreshIntel}
               firstName={contact.first_name}
@@ -2750,6 +2773,14 @@ function ContactDetailScreen() {
 
           {/* ===== HISTORY TAB (feed · texts · calls · memos · tasks) ===== */}
           {!isNewContact && !isEditing && contactTab === 'history' && (
+            <NowStrip
+              timeline={intelTimeline}
+              colors={colors}
+              onOpenFact={(fid: string) => setOpenFactId(fid)}
+              onUseOpening={(text: string) => { setComposerMessage(text); setComposerMode('sms'); showToast('Opening added to your text'); }}
+            />
+          )}
+          {!isNewContact && !isEditing && contactTab === 'history' && (
             <HistoryTab
               colors={colors}
               filter={historyFilter}
@@ -2764,6 +2795,7 @@ function ContactDetailScreen() {
                 hasMoreEvents, loadMoreEvents, loadingMoreEvents,
                 showLogReply, setShowLogReply, replyText, setReplyText, replyPhoto, setReplyPhoto,
                 submittingReply, handleLogReply, pickReplyPhoto, setShowAddTask,
+                onOpenFact: (fid: string) => setOpenFactId(fid),
               }}
               callsProps={{
                 colors, callLogs, voiceNotes, callLogsLoading,
@@ -2778,6 +2810,13 @@ function ContactDetailScreen() {
               counts={{ files: contactFiles.files?.length }}
             />
           )}
+          <FactSourceSheet
+            factId={openFactId}
+            colors={colors}
+            canVerify={!!intelTimeline?.can_verify}
+            onClose={() => setOpenFactId(null)}
+            onChanged={() => { loadIntelTimeline(); loadContact(); }}
+          />
           <CaptureStorySheet
             visible={!!captureSheet}
             mode={captureSheet || 'memo'}
