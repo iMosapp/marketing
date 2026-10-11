@@ -576,6 +576,9 @@ export default function MoreScreen() {
       { permKey: 'brand_kit', icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
       { permKey: 'brand_kit', icon: 'chatbubbles', title: 'Messaging Channels', subtitle: 'SMS, WhatsApp, Messenger & more', onPress: () => router.push('/settings/messaging-channels'), color: '#25D366' },
       { permKey: 'accounts', icon: 'call', title: 'Phone Numbers', subtitle: 'Twilio inventory & billing', onPress: () => router.push('/admin/twilio-numbers'), color: '#34C759' },
+      ...((!repPreview && (user?.role === 'store_manager' || user?.role === 'org_admin')) ? [
+        { icon: 'card' as any, title: 'Billing', subtitle: 'Your plan, invoices and payment method', onPress: () => router.push('/settings/billing' as any), color: '#C9A962' },
+      ] : []),
       ...((!repPreview && user?.role === 'org_admin') ? [
         { permKey: 'accounts', icon: 'chatbubbles' as any, title: 'Communications', subtitle: 'Your texting numbers, who holds them, compliance and messaging status', onPress: () => router.push(`/admin/org-twilio/${user?.organization_id}` as any), color: '#C9A962' },
         { permKey: 'accounts', icon: 'shield-checkmark' as any, title: 'Texting Compliance', subtitle: 'Register each store for A2P 10DLC texting and Caller ID', onPress: () => router.push('/admin/compliance' as any), color: '#C9A962' },

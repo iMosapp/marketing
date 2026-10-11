@@ -10,7 +10,7 @@ import pytest
 from tests.live_auth import ORG_B, STORE_A, STORE_B, Session, anon, oid
 from tests.wipe_pilot_customers import wipe
 
-PREFIX = "QA Pilot"
+PREFIX = "QA Pilot Co"
 OWNER_PASSWORD = "PilotOwner123!"
 
 

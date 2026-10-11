@@ -8,8 +8,9 @@ import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 import { showConfirm, showSimpleAlert } from '../../../services/alert';
 import { ScreenHeader } from '../../../components/common/ScreenHeader';
-import { BILLING_LABEL, StatusPill } from '../../../components/customers/StatusPill';
+import { StatusPill } from '../../../components/customers/StatusPill';
 import { ExceptionSheet } from '../../../components/customers/ExceptionSheet';
+import { BillingPanel } from '../../../components/customers/BillingPanel';
 import { Step, StepRail } from '../../../components/customers/StepRail';
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
@@ -72,6 +73,20 @@ export default function CustomerScreen() {
   const invited = !!c.owner_invited_at;
   const ownerActive = !!c.owner_activated_at || !!owner?.activated;
   const exc = c.billing_exception;
+  const billingDetail = () => {
+    if (c.billing_status === 'exception') return `Billing exception: ${exc?.reason} (ends ${fmt(exc?.expires_at)}). Not a Stripe payment.`;
+    if (c.billing_status === 'active' || c.billing_status === 'trialing') return `Paid through Stripe${c.current_period_end ? ` · renews ${fmt(c.current_period_end)}` : ''}${c.cancel_at_period_end ? ' · cancellation scheduled' : ''}`;
+    if (c.billing_status === 'past_due') return `Payment failed · Stripe is retrying · access continues until ${fmt(c.grace_until)}`;
+    if (c.billing_status === 'awaiting_payment') return `Payment link sent ${fmt(c.payment_link_sent_at || c.checkout_created_at)} · waiting for the owner to pay on Stripe`;
+    if (c.billing_status === 'canceled') return `Subscription canceled ${fmt(c.canceled_at)} · send a new payment link or grant an exception`;
+    if (c.exception_expired) return `The billing exception ended ${fmt(exc?.expires_at)}. Grant a new one or send a payment link.`;
+    return 'Text or email the owner a Stripe payment link (card details go to Stripe, never to us). A super admin can also grant a billing exception with a reason and an end date.';
+  };
+  const sendLink = () => act(async () => {
+    const res = await api.post(`/customers/${orgId}/payment-link`, { send: true });
+    showSimpleAlert('Payment link sent', `Text ${res.data.sent?.sms_sent ? 'sent' : 'not sent'} · email ${res.data.sent?.email_sent ? 'sent' : 'not sent'}.`);
+    return res;
+  });
 
   const steps: Step[] = [
     {
@@ -80,10 +95,11 @@ export default function CustomerScreen() {
     },
     {
       key: 'billing', title: 'Plan and payment', done: billingOk, current: !billingOk,
-      detail: billingOk
-        ? (c.billing_status === 'exception' ? `Billing exception: ${exc?.reason} (ends ${fmt(exc?.expires_at)}). Not a Stripe payment.` : `Billing: ${BILLING_LABEL[c.billing_status]}`)
-        : (c.exception_expired ? `The billing exception ended ${fmt(exc?.expires_at)}. Grant a new one or collect payment.` : 'Stripe checkout arrives in Stage 2. Until then a super admin can grant a billing exception with a reason and an end date.'),
-      action: isSuper && !billingOk ? { label: 'Grant billing exception', onPress: () => setShowException(true), testID: 'customer-exception-btn', tone: 'orange' } : undefined,
+      detail: billingDetail(),
+      action: isSuper && !billingOk ? (c.billing_status === 'awaiting_payment'
+        ? { label: 'Check payment', onPress: () => act(() => api.post(`/customers/${orgId}/sync-billing`), 'Synced with Stripe'), testID: 'customer-check-payment-btn' }
+        : { label: 'Send payment link', onPress: sendLink, testID: 'customer-payment-link-btn' }) : undefined,
+      secondary: isSuper && !billingOk ? { label: 'Grant billing exception instead', onPress: () => setShowException(true), testID: 'customer-exception-btn' } : undefined,
     },
     {
       key: 'activate', title: 'Activate account', done: activated, current: billingOk && !activated,
@@ -123,7 +139,7 @@ export default function CustomerScreen() {
         </View>
         {isSuper && c.seat_price ? (
           <TouchableOpacity
-            onPress={() => showConfirm('Add a seat?', `Adds one seat at ${money(c.seat_price)}/mo. Billing changes land in Stage 2; this only raises the limit.`, () => act(() => api.patch(`/customers/${orgId}`, { seats_extra: (c.seats_extra || 0) + 1 }), 'Seat added'))}
+            onPress={() => showConfirm('Add a seat?', `Adds one seat at ${money(c.seat_price)}/mo.${c.stripe_subscription_id ? ' The Stripe subscription is updated and the prorated amount is invoiced now.' : ' Billing follows once the customer pays through Stripe.'}`, () => act(() => api.patch(`/customers/${orgId}`, { seats_extra: (c.seats_extra || 0) + 1 }), 'Seat added'))}
             disabled={busy}
             style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6 }}
             data-testid="customer-add-seat"
@@ -143,6 +159,8 @@ export default function CustomerScreen() {
         ) : null}
 
         <StepRail steps={steps} colors={colors} busy={busy} />
+
+        {isSuper ? <BillingPanel orgId={orgId} customer={c} colors={colors} busy={busy} act={act} /> : null}
 
         {isSuper ? (
           <View style={{ gap: 8 }}>

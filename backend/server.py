@@ -744,6 +744,8 @@ api_router.include_router(linkpage.router)
 api_router.include_router(setup_wizard.router)
 from routers import customers as customers_router
 api_router.include_router(customers_router.router)
+from routers import billing as billing_router
+api_router.include_router(billing_router.router)
 api_router.include_router(help_center.router)
 api_router.include_router(review_templates.router)
 api_router.include_router(social_templates.router)

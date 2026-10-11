@@ -3,11 +3,13 @@ Separate from legacy organization administration on purpose. Creation stays on P
 from typing import Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
+from routers.billing import public_base
 from routers.database import get_db
 from routers.rbac import get_scoped_organization_ids, require_account_creator, require_role
+from services import billing
 from services import customers as svc
 
 router = APIRouter(prefix="/customers", tags=["Customers"])
@@ -80,11 +82,61 @@ async def patch_customer(org_id: str, body: PatchBody, me: dict = SUPER):
         if p["seats_included"] + seats_extra < used:
             raise HTTPException(status_code=400, detail=f"{used} seats are already in use. Deactivate people before shrinking the plan.")
         changes.update(plan_key=plan_key, plan_name=p["name"], amount=p["amount"], seat_price=p["seat_price"], seats_included=p["seats_included"], seats_extra=seats_extra)
+        if body.plan_key is not None and plan_key != c["plan_key"] and c.get("stripe_subscription_id") and c.get("billing_status") not in ("canceled", "unpaid"):
+            raise HTTPException(status_code=409, detail="This customer has a live subscription. Change the plan from Stripe, then sync.")
+        if seats_extra != int(c.get("seats_extra") or 0):
+            await billing.sync_seats_to_stripe(db, org, seats_extra, me)
     if not changes:
         raise HTTPException(status_code=400, detail="Nothing to change")
     await svc._set(db, org_id, **changes)
     await svc.audit(db, org_id, "customer_updated", me, **changes)
     return await svc.row(db, await svc.customer_org(db, org_id))
+
+
+# ── Stage 2: Stripe billing (super admin) ─────────────────────────────────────
+
+class SendBody(BaseModel):
+    send: bool = True
+
+
+class CancelBody(BaseModel):
+    cancel: bool = True
+
+
+@router.post("/{org_id}/payment-link")
+async def payment_link(org_id: str, body: SendBody, request: Request, me: dict = SUPER):
+    """Create (or reuse) the Stripe Checkout link for this customer and optionally text + email it to the owner."""
+    db = get_db()
+    org = await _org(org_id, me)
+    c = org["customer"]
+    reusable = c.get("checkout_url") and c.get("billing_status") == "awaiting_payment" and (c.get("checkout_expires_at") or "") > svc.now_iso()
+    res = {"url": c["checkout_url"], "session_id": c.get("checkout_session_id"), "expires_at": c.get("checkout_expires_at")} if reusable \
+        else await billing.create_checkout(db, org, me, public_base(request))
+    if body.send:
+        res["sent"] = await billing.send_payment_link(db, await svc.customer_org(db, org_id), me, res["url"])
+    return res
+
+
+@router.post("/{org_id}/sync-billing")
+async def sync_billing(org_id: str, me: dict = SUPER):
+    db = get_db()
+    org = await _org(org_id, me)
+    result = await billing.sync_from_stripe(db, org, me)
+    return {"billing_status": result.get("billing_status"), "customer": await svc.row(db, await svc.customer_org(db, org_id))}
+
+
+@router.post("/{org_id}/portal-link")
+async def portal_link(org_id: str, request: Request, me: dict = SUPER):
+    org = await _org(org_id, me)
+    url = await billing.portal_url(get_db(), org, public_base(request), f"/admin/customers/{org_id}")
+    await svc.audit(get_db(), org_id, "portal_link_created", me)
+    return {"url": url}
+
+
+@router.post("/{org_id}/cancel")
+async def cancel_subscription(org_id: str, body: CancelBody, me: dict = SUPER):
+    org = await _org(org_id, me)
+    return await billing.set_cancel_at_period_end(get_db(), org, me, body.cancel)
 
 
 @router.post("/{org_id}/billing-exception")

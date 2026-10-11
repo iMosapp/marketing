@@ -12,8 +12,25 @@ USER_COLLECTIONS = ["templates", "email_templates", "campaigns", "date_trigger_c
 STORE_COLLECTIONS = ["tags", "lead_sources", "congrats_card_templates", "setup_wizard_progress"]
 
 
+def _stripe_cleanup(org: dict) -> None:
+    """Best effort: delete the test-mode Stripe customer (which cancels its subscriptions) for a QA org."""
+    cid = (org.get("customer") or {}).get("stripe_customer_id")
+    if not cid or not os.environ.get("STRIPE_BILLING_SECRET_KEY"):
+        return
+    try:
+        import stripe
+        sc = stripe.StripeClient(os.environ["STRIPE_BILLING_SECRET_KEY"])
+        if sc.v1.balance.retrieve().livemode:
+            print("  live-mode key: Stripe objects left alone")
+            return
+        sc.v1.customers.delete(cid)
+        print(f"  Stripe customer {cid} deleted")
+    except Exception as e:
+        print(f"  Stripe cleanup skipped: {type(e).__name__}")
+
+
 def wipe(db, prefix: str, dry_run: bool) -> int:
-    orgs = list(db.organizations.find({"customer": {"$exists": True}, "name": {"$regex": f"^{prefix}"}}, {"name": 1}))
+    orgs = list(db.organizations.find({"customer": {"$exists": True}, "name": {"$regex": f"^{prefix}"}}, {"name": 1, "customer.stripe_customer_id": 1}))
     for org in orgs:
         org_id = str(org["_id"])
         users = list(db.users.find({"organization_id": org_id}, {"_id": 1, "email": 1}))
@@ -22,6 +39,8 @@ def wipe(db, prefix: str, dry_run: bool) -> int:
         print(f"{'would remove' if dry_run else 'removing'} {org['name']} ({org_id}): {len(users)} users, {len(stores)} stores")
         if dry_run:
             continue
+        _stripe_cleanup(org)
+        db.stripe_events.delete_many({"organization_id": org_id})
         for coll in USER_COLLECTIONS:
             db[coll].delete_many({"user_id": {"$in": user_ids}})
         db.contacts.delete_many({"email": {"$in": [u.get("email") for u in users if u.get("email")]}, "source": "user_creation"})
