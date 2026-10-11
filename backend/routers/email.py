@@ -1,7 +1,7 @@
 """
 Email router - handles email sending via Resend, email templates, and email campaigns
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -12,6 +12,7 @@ import resend
 
 from pydantic import BaseModel, EmailStr
 from routers.database import get_db, get_data_filter, get_user_by_id
+from routers.rbac import get_current_user, require_user_access, assert_self_or_manager, assert_store_manager, verify_organization_access, _at_least
 
 router = APIRouter(prefix="/email", tags=["Email"])
 logger = logging.getLogger(__name__)
@@ -253,8 +254,9 @@ async def wrap_email_with_brand(html_content: str, user_id: str = None, store_id
 # ============= SEND EMAIL ENDPOINT =============
 
 @router.post("/send")
-async def send_email(request: SendEmailRequest, user_id: str):
-    """Send an email via Resend"""
+async def send_email(request: SendEmailRequest, user_id: str, me: dict = Depends(get_current_user)):
+    """Send an email via Resend (the user themselves, or their manager)"""
+    await assert_self_or_manager(me, user_id)
     if not RESEND_API_KEY:
         raise HTTPException(status_code=500, detail="Email service not configured")
     
@@ -317,7 +319,7 @@ async def send_email(request: SendEmailRequest, user_id: str):
 
 # ============= EMAIL TEMPLATES CRUD =============
 
-@router.get("/templates/{user_id}")
+@router.get("/templates/{user_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def get_email_templates(user_id: str):
     """Get all email templates for a user"""
     db = get_db()
@@ -343,7 +345,7 @@ async def get_email_templates(user_id: str):
     
     return [{**t, "_id": str(t["_id"])} for t in templates]
 
-@router.post("/templates/{user_id}")
+@router.post("/templates/{user_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def create_email_template(user_id: str, template: EmailTemplateCreate):
     """Create a new email template"""
     db = get_db()
@@ -367,7 +369,7 @@ async def create_email_template(user_id: str, template: EmailTemplateCreate):
     
     return template_doc
 
-@router.put("/templates/{user_id}/{template_id}")
+@router.put("/templates/{user_id}/{template_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def update_email_template(user_id: str, template_id: str, update: EmailTemplateUpdate):
     """Update an email template"""
     db = get_db()
@@ -385,7 +387,7 @@ async def update_email_template(user_id: str, template_id: str, update: EmailTem
     
     return {"message": "Template updated"}
 
-@router.delete("/templates/{user_id}/{template_id}")
+@router.delete("/templates/{user_id}/{template_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def delete_email_template(user_id: str, template_id: str):
     """Delete an email template"""
     db = get_db()
@@ -406,7 +408,7 @@ async def delete_email_template(user_id: str, template_id: str):
 
 # ============= EMAIL CAMPAIGNS CRUD =============
 
-@router.get("/campaigns/{user_id}")
+@router.get("/campaigns/{user_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def get_email_campaigns(user_id: str):
     """Get all email campaigns for a user"""
     db = get_db()
@@ -415,7 +417,7 @@ async def get_email_campaigns(user_id: str):
     campaigns = await db.email_campaigns.find(base_filter).to_list(100)
     return [{**c, "_id": str(c["_id"])} for c in campaigns]
 
-@router.post("/campaigns/{user_id}")
+@router.post("/campaigns/{user_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def create_email_campaign(user_id: str, campaign: EmailCampaignCreate):
     """Create a new email campaign"""
     db = get_db()
@@ -441,7 +443,7 @@ async def create_email_campaign(user_id: str, campaign: EmailCampaignCreate):
     
     return campaign_doc
 
-@router.put("/campaigns/{user_id}/{campaign_id}")
+@router.put("/campaigns/{user_id}/{campaign_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def update_email_campaign(user_id: str, campaign_id: str, updates: dict):
     """Update an email campaign"""
     db = get_db()
@@ -458,7 +460,7 @@ async def update_email_campaign(user_id: str, campaign_id: str, updates: dict):
     
     return {"message": "Campaign updated"}
 
-@router.delete("/campaigns/{user_id}/{campaign_id}")
+@router.delete("/campaigns/{user_id}/{campaign_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def delete_email_campaign(user_id: str, campaign_id: str):
     """Delete an email campaign"""
     db = get_db()
@@ -474,10 +476,25 @@ async def delete_email_campaign(user_id: str, campaign_id: str):
 
 # ============= BRAND KIT ENDPOINTS =============
 
+async def _assert_brand_kit_access(me: dict, entity_type: str, entity_id: str) -> None:
+    """user: self or their manager; store: a manager of that store; organization: an admin of that org."""
+    if not ObjectId.is_valid(entity_id or ""):
+        raise HTTPException(status_code=404, detail="Not found")
+    if entity_type == "user":
+        await assert_self_or_manager(me, entity_id)
+    elif entity_type == "store":
+        await assert_store_manager(me, entity_id)
+    elif entity_type == "organization":
+        _at_least(me, "org_admin")
+        if me.get("role") != "super_admin" and not await verify_organization_access(me, entity_id):
+            raise HTTPException(status_code=403, detail="Access denied to this organization")
+
+
 @router.get("/brand-kit/{entity_type}/{entity_id}")
-async def get_brand_kit(entity_type: str, entity_id: str):
-    """Get brand kit for user, store, or organization"""
+async def get_brand_kit(entity_type: str, entity_id: str, me: dict = Depends(get_current_user)):
+    """Get brand kit for user, store, or organization (scoped to the caller)"""
     db = get_db()
+    await _assert_brand_kit_access(me, entity_type, entity_id)
     
     collection_map = {
         "user": "users",
@@ -497,9 +514,10 @@ async def get_brand_kit(entity_type: str, entity_id: str):
     return entity.get("email_brand_kit", {})
 
 @router.put("/brand-kit/{entity_type}/{entity_id}")
-async def update_brand_kit(entity_type: str, entity_id: str, brand_kit: BrandKitUpdate):
-    """Update brand kit for user, store, or organization"""
+async def update_brand_kit(entity_type: str, entity_id: str, brand_kit: BrandKitUpdate, me: dict = Depends(get_current_user)):
+    """Update brand kit for user, store, or organization (scoped to the caller)"""
     db = get_db()
+    await _assert_brand_kit_access(me, entity_type, entity_id)
     
     collection_map = {
         "user": "users",
@@ -525,7 +543,7 @@ async def update_brand_kit(entity_type: str, entity_id: str, brand_kit: BrandKit
 
 # ============= USER PREFERENCES =============
 
-@router.get("/preferences/{user_id}")
+@router.get("/preferences/{user_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def get_email_preferences(user_id: str):
     """Get user's email/SMS mode preferences"""
     db = get_db()
@@ -550,7 +568,7 @@ async def get_email_preferences(user_id: str):
         "toggle_style": "pill",  # pill, fab, tabs, segmented
     })
 
-@router.put("/preferences/{user_id}")
+@router.put("/preferences/{user_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def update_email_preferences(user_id: str, preferences: dict):
     """Update user's email/SMS mode preferences"""
     db = get_db()
@@ -572,7 +590,7 @@ async def update_email_preferences(user_id: str, preferences: dict):
 
 # ============= EMAIL LOGS =============
 
-@router.get("/logs/{user_id}")
+@router.get("/logs/{user_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def get_email_logs(user_id: str, limit: int = 50):
     """Get email sending logs for a user"""
     db = get_db()
@@ -585,7 +603,7 @@ async def get_email_logs(user_id: str, limit: int = 50):
 
 # ============= EMAIL ANALYTICS =============
 
-@router.get("/analytics/{user_id}")
+@router.get("/analytics/{user_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def get_email_analytics(user_id: str, days: int = 30):
     """Get email analytics summary for a user"""
     db = get_db()

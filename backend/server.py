@@ -136,6 +136,8 @@ logger = logging.getLogger(__name__)
 import time
 
 ADMIN_PUBLIC_RE = re.compile(r"^/api/admin/(partners/by-slug/|team/shared-inboxes/[^/]+/webhook$)")
+# Routers with no public surface at all: a proven caller is required before any handler runs (defense in depth; the routes also carry their own scope checks)
+PRIVATE_PREFIXES = ("/api/setup-wizard/", "/api/onboarding-settings/", "/api/scheduler/")
 
 
 async def _verified_caller_id(request: Request):
@@ -163,7 +165,7 @@ async def bind_identity_header(request: Request, call_next):
     if request.method == "OPTIONS" or path.startswith("/api/auth/"):
         return await call_next(request)
     claimed = (request.headers.get("X-User-ID") or "").strip()
-    is_admin = path.startswith("/api/admin/") and not ADMIN_PUBLIC_RE.match(path)
+    is_admin = (path.startswith("/api/admin/") and not ADMIN_PUBLIC_RE.match(path)) or path.startswith(PRIVATE_PREFIXES)
     if not claimed and not is_admin:
         return await call_next(request)
     caller = await _verified_caller_id(request)

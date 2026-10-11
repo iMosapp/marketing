@@ -2,7 +2,7 @@
 Team Invite Router
 Handles team member invitations and account creation from invite links
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
@@ -14,6 +14,7 @@ import asyncio
 
 from routers.database import get_db
 from routers.auth import hash_password
+from routers.rbac import get_current_user, require_store_access, require_user_access, assert_store_manager, assert_self_or_manager
 
 router = APIRouter(prefix="/team-invite", tags=["Team Invite"])
 logger = logging.getLogger(__name__)
@@ -22,13 +23,17 @@ logger = logging.getLogger(__name__)
 APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
 
+def _oid(value: str, what: str = "id") -> ObjectId:
+    if not ObjectId.is_valid(value or ""):
+        raise HTTPException(status_code=404, detail=f"{what} not found")
+    return ObjectId(value)
 
 
 # ============= MODELS =============
 
 class TeamInviteCreate(BaseModel):
     store_id: str
-    created_by: str  # User ID of the person who created the invite
+    created_by: Optional[str] = None  # ignored: the invite is always attributed to the authenticated caller
     expires_days: int = 30
 
 
@@ -41,7 +46,7 @@ class TeamMemberJoin(BaseModel):
 
 class EmailInviteRequest(BaseModel):
     store_id: str
-    created_by: str
+    created_by: Optional[str] = None  # ignored: always the authenticated caller
     recipient_email: EmailStr
     recipient_name: Optional[str] = None
     custom_message: Optional[str] = None
@@ -74,12 +79,15 @@ def generate_invite_code(length: int = 8) -> str:
 # ============= ENDPOINTS =============
 
 @router.post("/create")
-async def create_team_invite(data: TeamInviteCreate):
-    """Create a new team invite link for a store"""
+async def create_team_invite(data: TeamInviteCreate, me: dict = Depends(get_current_user)):
+    """Create a new team invite link for a store (store managers and above, scoped to their stores)"""
     db = get_db()
-    
+    await assert_store_manager(me, data.store_id)
+    data.created_by = str(me["_id"])
+    data.expires_days = max(1, min(int(data.expires_days or 30), 90))
+
     # Verify store exists
-    store = await db.stores.find_one({"_id": ObjectId(data.store_id)})
+    store = await db.stores.find_one({"_id": _oid(data.store_id, "Store")})
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
@@ -147,13 +155,13 @@ async def validate_invite(invite_code: str):
         raise HTTPException(status_code=400, detail="This invite link has expired")
     
     # Get store info
-    store = await db.stores.find_one({"_id": ObjectId(invite["store_id"])})
+    store = await db.stores.find_one({"_id": _oid(invite["store_id"], "Store")})
     if not store:
         raise HTTPException(status_code=404, detail="Store no longer exists")
     
     # Get organization info
     org = None
-    if store.get("organization_id"):
+    if ObjectId.is_valid(store.get("organization_id") or ""):
         org_doc = await db.organizations.find_one({"_id": ObjectId(store["organization_id"])})
         if org_doc:
             org = {"name": org_doc.get("name")}
@@ -215,7 +223,7 @@ async def join_team(data: TeamMemberJoin):
         raise HTTPException(status_code=400, detail="An account with this phone number already exists")
     
     # Get store info
-    store = await db.stores.find_one({"_id": ObjectId(invite["store_id"])})
+    store = await db.stores.find_one({"_id": _oid(invite["store_id"], "Store")})
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
@@ -309,9 +317,9 @@ async def join_team(data: TeamMemberJoin):
     }
 
 
-@router.get("/store/{store_id}")
+@router.get("/store/{store_id}", dependencies=[Depends(require_store_access("store_manager"))])
 async def get_store_invites(store_id: str):
-    """Get all active invite links for a store"""
+    """Get all active invite links for a store (store managers and above, scoped)"""
     db = get_db()
     
     invites = await db.team_invites.find({
@@ -349,12 +357,17 @@ async def get_store_invites(store_id: str):
 
 
 @router.delete("/{invite_id}")
-async def deactivate_invite(invite_id: str):
-    """Deactivate an invite link"""
+async def deactivate_invite(invite_id: str, me: dict = Depends(get_current_user)):
+    """Deactivate an invite link (its creator, or a manager scoped to its store)"""
     db = get_db()
-    
+    invite = await db.team_invites.find_one({"_id": _oid(invite_id, "Invite")}, {"store_id": 1, "created_by": 1})
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite not found")
+    if str(invite.get("created_by")) != str(me["_id"]):
+        await assert_store_manager(me, str(invite.get("store_id") or ""))
+
     result = await db.team_invites.update_one(
-        {"_id": ObjectId(invite_id)},
+        {"_id": invite["_id"]},
         {"$set": {"is_active": False, "deactivated_at": datetime.utcnow()}}
     )
     
@@ -364,10 +377,10 @@ async def deactivate_invite(invite_id: str):
     return {"message": "Invite deactivated successfully"}
 
 
-@router.get("/user/{user_id}/invite-link")
+@router.get("/user/{user_id}/invite-link", dependencies=[Depends(require_user_access("store_manager"))])
 async def get_user_share_link(user_id: str):
     """
-    Get or create a personal share link for a user to invite team members.
+    Get or create a personal share link for a user to invite team members (the user, or their manager).
     This link is tied to the user's store.
     """
     db = get_db()
@@ -446,15 +459,16 @@ class ShareInviteViaSMS(BaseModel):
 
 
 @router.post("/share-via-sms")
-async def share_invite_via_sms(data: ShareInviteViaSMS):
+async def share_invite_via_sms(data: ShareInviteViaSMS, me: dict = Depends(get_current_user)):
     """
-    Share team invite link via SMS with full tracking/analytics.
+    Share team invite link via SMS with full tracking/analytics (the user themselves, or their manager).
     Creates a tracked share record for analytics.
     """
     db = get_db()
+    await assert_self_or_manager(me, data.user_id)
     
     # Get user and their store
-    user = await db.users.find_one({"_id": ObjectId(data.user_id)})
+    user = await db.users.find_one({"_id": _oid(data.user_id, "User")})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -610,7 +624,7 @@ async def share_invite_via_sms(data: ShareInviteViaSMS):
     }
 
 
-@router.get("/shares/{user_id}")
+@router.get("/shares/{user_id}", dependencies=[Depends(require_user_access("store_manager"))])
 async def get_user_invite_shares(user_id: str, limit: int = 50):
     """
     Get analytics for invite shares by a user.
@@ -654,7 +668,7 @@ async def get_user_invite_shares(user_id: str, limit: int = 50):
     }
 
 
-@router.get("/analytics/store/{store_id}")
+@router.get("/analytics/store/{store_id}", dependencies=[Depends(require_store_access("store_manager"))])
 async def get_store_invite_analytics(store_id: str, days: int = 30):
     """
     Get store-wide invite share analytics.
@@ -716,17 +730,20 @@ async def get_store_invite_analytics(store_id: str, days: int = 30):
 # ============= EMAIL INVITE ENDPOINTS =============
 
 @router.post("/send-email-invite")
-async def send_email_invite(data: EmailInviteRequest):
+async def send_email_invite(data: EmailInviteRequest, me: dict = Depends(get_current_user)):
     """
-    Send a team invite via email.
-    Creates an invite record and sends an email with a unique invite link.
+    Send a team invite via email (store managers and above, scoped to their stores).
+    Creates a single-use invite record and sends an email with a unique invite link.
     """
     import resend
     
     db = get_db()
+    await assert_store_manager(me, data.store_id)
+    data.created_by = str(me["_id"])
+    data.expires_days = max(1, min(int(data.expires_days or 7), 30))
     
     # Verify store exists
-    store = await db.stores.find_one({"_id": ObjectId(data.store_id)})
+    store = await db.stores.find_one({"_id": _oid(data.store_id, "Store")})
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
@@ -920,6 +937,10 @@ async def accept_invite(data: AcceptInviteRequest):
     # Check expiration
     if invite.get("expires_at") and invite["expires_at"] < datetime.utcnow():
         raise HTTPException(status_code=400, detail="This invite link has expired")
+
+    # An email invite is bound to the address it was sent to
+    if invite.get("invite_type") == "email" and (invite.get("recipient_email") or "").lower().strip() != data.email.lower().strip():
+        raise HTTPException(status_code=403, detail="This invite was sent to a different email address")
     
     # Check if email already exists
     existing_email = await db.users.find_one({"email": data.email.lower().strip()})
@@ -927,7 +948,7 @@ async def accept_invite(data: AcceptInviteRequest):
         raise HTTPException(status_code=400, detail="An account with this email already exists. Try logging in.")
     
     # Get store info
-    store = await db.stores.find_one({"_id": ObjectId(invite["store_id"])})
+    store = await db.stores.find_one({"_id": _oid(invite["store_id"], "Store")})
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
@@ -1024,20 +1045,20 @@ async def validate_email_invite(invite_code: str):
         raise HTTPException(status_code=400, detail="This invite link has expired")
     
     # Get store info
-    store = await db.stores.find_one({"_id": ObjectId(invite["store_id"])})
+    store = await db.stores.find_one({"_id": _oid(invite["store_id"], "Store")})
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
     # Get organization info
     org = None
-    if store.get("organization_id"):
+    if ObjectId.is_valid(store.get("organization_id") or ""):
         org_doc = await db.organizations.find_one({"_id": ObjectId(store["organization_id"])})
         if org_doc:
             org = {"name": org_doc.get("name")}
     
     # Get inviter info
     inviter = None
-    if invite.get("created_by"):
+    if ObjectId.is_valid(invite.get("created_by") or ""):
         inviter_doc = await db.users.find_one({"_id": ObjectId(invite["created_by"])})
         if inviter_doc:
             inviter = {"name": inviter_doc.get("name")}

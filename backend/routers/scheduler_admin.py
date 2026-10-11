@@ -2,11 +2,13 @@
 Scheduler Admin Router
 Provides status, manual trigger, and configuration endpoints for the campaign scheduler.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime, timezone
 import logging
 
-router = APIRouter(prefix="/scheduler", tags=["Scheduler"])
+from routers.rbac import require_role
+
+router = APIRouter(prefix="/scheduler", tags=["Scheduler"], dependencies=[Depends(require_role("super_admin"))])
 logger = logging.getLogger(__name__)
 
 

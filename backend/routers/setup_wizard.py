@@ -2,19 +2,22 @@
 Setup Wizard API  - Tracks wizard progress and handles bulk setup operations.
 Most actual creation (org, store, users) is delegated to existing endpoints.
 """
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime, timezone
 from bson import ObjectId
 from routers.database import get_db
 from routers.auth import hash_password
+from routers.rbac import get_current_user, require_role, require_org_access, require_account_creator, assert_store_manager
 import secrets
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/setup-wizard", tags=["Setup Wizard"])
+
+BULK_INVITE_ROLES = {"user", "store_manager"}
 
 
 class WizardProgress(BaseModel):
@@ -45,7 +48,7 @@ def serialize(doc: dict) -> dict:
     return doc
 
 
-@router.get("/progress/{org_id}")
+@router.get("/progress/{org_id}", dependencies=[Depends(require_org_access("org_admin"))])
 async def get_wizard_progress(org_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
     """Get the wizard progress for an organization"""
     db = get_db()
@@ -63,7 +66,7 @@ async def get_wizard_progress(org_id: str, x_user_id: str = Header(None, alias="
     return progress
 
 
-@router.post("/progress/{org_id}")
+@router.post("/progress/{org_id}", dependencies=[Depends(require_org_access("org_admin"))])
 async def save_wizard_progress(org_id: str, data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
     """Save wizard progress for an organization"""
     db = get_db()
@@ -84,20 +87,23 @@ async def save_wizard_progress(org_id: str, data: dict, x_user_id: str = Header(
 
 
 @router.post("/bulk-invite")
-async def bulk_invite_team_members(data: BulkInviteRequest, x_user_id: str = Header(None, alias="X-User-ID")):
+async def bulk_invite_team_members(data: BulkInviteRequest, me: dict = Depends(get_current_user)):
     """
-    Create multiple team members at once. For each member:
+    Create multiple team members at once (store managers and above, scoped to the store). For each member:
     1. Creates user account with temp password
     2. Assigns to the store
     3. Returns list of created users (with temp passwords for admin to share)
+    Only `user` and `store_manager` roles can be created this way.
     """
     db = get_db()
-
-    if not x_user_id:
-        raise HTTPException(status_code=401, detail="User ID required")
+    x_user_id = str(me["_id"])
+    await assert_store_manager(me, data.store_id)
+    bad_roles = sorted({m.role for m in data.members if m.role not in BULK_INVITE_ROLES})
+    if bad_roles:
+        raise HTTPException(status_code=400, detail=f"Role not allowed here: {', '.join(bad_roles)}")
 
     # Verify store exists
-    store = await db.stores.find_one({"_id": ObjectId(data.store_id)})
+    store = await db.stores.find_one({"_id": ObjectId(data.store_id)}) if ObjectId.is_valid(data.store_id) else None
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
 
@@ -181,7 +187,7 @@ async def bulk_invite_team_members(data: BulkInviteRequest, x_user_id: str = Hea
     }
 
 
-@router.post("/complete/{org_id}")
+@router.post("/complete/{org_id}", dependencies=[Depends(require_org_access("org_admin"))])
 async def mark_wizard_complete(org_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
     """Mark the setup wizard as complete for this organization"""
     db = get_db()
@@ -216,9 +222,9 @@ class ClientCreate(BaseModel):
     notes: Optional[str] = ""
 
 
-@router.get("/clients")
+@router.get("/clients", dependencies=[Depends(require_role("super_admin"))])
 async def list_onboarding_clients(x_user_id: str = Header(None, alias="X-User-ID")):
-    """List all onboarding client records"""
+    """List all onboarding client records (super admins)"""
     db = get_db()
     cursor = db.onboarding_clients.find({}, {"_id": 1, "client_name": 1, "contact_email": 1, "contact_phone": 1, "industry": 1, "notes": 1, "completed_step_ids": 1, "step_data": 1, "status": 1, "created_at": 1})
     results = []
@@ -228,7 +234,7 @@ async def list_onboarding_clients(x_user_id: str = Header(None, alias="X-User-ID
     return results
 
 
-@router.post("/clients")
+@router.post("/clients", dependencies=[Depends(require_role("super_admin"))])
 async def create_onboarding_client(data: ClientCreate, x_user_id: str = Header(None, alias="X-User-ID")):
     """Create a new client onboarding record"""
     db = get_db()
@@ -249,10 +255,12 @@ async def create_onboarding_client(data: ClientCreate, x_user_id: str = Header(N
     return doc
 
 
-@router.put("/clients/{client_id}")
+@router.put("/clients/{client_id}", dependencies=[Depends(require_role("super_admin"))])
 async def update_onboarding_client(client_id: str, data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
     """Update a client onboarding record (step progress, status, etc.)"""
     db = get_db()
+    if not ObjectId.is_valid(client_id):
+        raise HTTPException(status_code=404, detail="Client not found")
     allowed = {"completed_step_ids", "status", "client_name", "contact_email", "contact_phone", "industry", "notes", "step_data"}
     update = {k: v for k, v in data.items() if k in allowed}
     update["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -296,10 +304,10 @@ class NewAccountRequest(BaseModel):
 @router.post("/new-account")
 async def create_new_account(
     data: NewAccountRequest,
-    x_user_id: str = Header(None, alias="X-User-ID"),
+    me: dict = Depends(require_account_creator),
 ):
     """
-    Streamlined new-account onboarding:
+    Streamlined new-account onboarding (super admins and partner admins):
     1. Creates an organization
     2. Creates a store under that org
     3. Creates a primary user (store_manager) with a temp password
@@ -308,6 +316,7 @@ async def create_new_account(
     """
     db = get_db()
     import re
+    x_user_id = str(me["_id"])
 
     if not data.business_name.strip():
         raise HTTPException(status_code=400, detail="Business name is required")

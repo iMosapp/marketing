@@ -154,6 +154,40 @@ def require_user_access(min_role: str = "store_manager"):
     return check
 
 
+async def assert_store_manager(user: dict, store_id: str, min_role: str = "store_manager") -> None:
+    """Body- or query-supplied store_id: caller must hold min_role and be scoped to that store."""
+    _at_least(user, min_role)
+    if user.get('role') != 'super_admin' and store_id not in await get_scoped_store_ids(user) and store_id not in (user.get('store_ids') or []):
+        raise HTTPException(status_code=403, detail="Access denied to this store")
+
+
+async def assert_self_or_manager(user: dict, target_user_id: str, min_role: str = "store_manager") -> None:
+    """Body- or query-supplied user_id: the caller themselves, or a manager scoped to that user."""
+    if str(user.get('_id')) == str(target_user_id):
+        return
+    _at_least(user, min_role)
+    if user.get('role') != 'super_admin' and not await verify_user_access(user, str(target_user_id)):
+        raise HTTPException(status_code=403, detail="Access denied to this user")
+
+
+async def assert_partner_scope(user: dict, partner_id: str) -> None:
+    """Partner-portal data: super admins, or an admin whose org/store belongs to that partner."""
+    if user.get('role') == 'super_admin':
+        return
+    if not partner_id or await get_user_partner_id(user) != partner_id:
+        raise HTTPException(status_code=403, detail="Access denied to this partner")
+
+
+async def require_account_creator(request: Request) -> dict:
+    """Who may create customer accounts: super admins and partner (reseller) org admins, same rule as POST /admin/organizations."""
+    user = await get_current_user(request)
+    if user.get('role') == 'super_admin':
+        return user
+    if user.get('role') == 'org_admin' and await get_user_partner_id(user):
+        return user
+    raise HTTPException(status_code=403, detail="Only super admins or partner admins can create accounts")
+
+
 async def bind_query_user(request: Request, user_id: str) -> dict:
     """Legacy routes that name the caller via ?user_id=: it must be the user proven by the Bearer token."""
     user = await get_current_user(request)

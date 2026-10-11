@@ -2,13 +2,14 @@
 Onboarding Settings Router
 Manages branding, welcome messages, and onboarding configuration for stores/organizations
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
 
 from routers.database import get_db
+from routers.rbac import get_current_user, require_role, require_store_access, require_org_access
 
 router = APIRouter(prefix="/onboarding-settings", tags=["Onboarding Settings"])
 
@@ -83,10 +84,12 @@ DEFAULT_SETTINGS = {
 
 # ============= ENDPOINTS =============
 
-@router.get("/store/{store_id}")
+@router.get("/store/{store_id}", dependencies=[Depends(require_store_access("store_manager"))])
 async def get_store_onboarding_settings(store_id: str):
-    """Get onboarding settings for a specific store"""
+    """Get onboarding settings for a specific store (store managers and above, scoped)"""
     db = get_db()
+    if not ObjectId.is_valid(store_id):
+        raise HTTPException(status_code=404, detail="Store not found")
     
     # First check if store exists
     store = await db.stores.find_one({"_id": ObjectId(store_id)})
@@ -119,7 +122,7 @@ async def get_store_onboarding_settings(store_id: str):
     }
 
 
-@router.put("/store/{store_id}")
+@router.put("/store/{store_id}", dependencies=[Depends(require_store_access("store_manager"))])
 async def update_store_onboarding_settings(store_id: str, settings: OnboardingSettingsUpdate):
     """Update onboarding settings for a specific store"""
     db = get_db()
@@ -163,7 +166,7 @@ async def update_store_onboarding_settings(store_id: str, settings: OnboardingSe
         return new_settings
 
 
-@router.get("/organization/{org_id}")
+@router.get("/organization/{org_id}", dependencies=[Depends(require_org_access("org_admin"))])
 async def get_organization_onboarding_settings(org_id: str):
     """Get onboarding settings for an organization (applies to all stores unless overridden)"""
     db = get_db()
@@ -191,7 +194,7 @@ async def get_organization_onboarding_settings(org_id: str):
     }
 
 
-@router.put("/organization/{org_id}")
+@router.put("/organization/{org_id}", dependencies=[Depends(require_org_access("org_admin"))])
 async def update_organization_onboarding_settings(org_id: str, settings: OnboardingSettingsUpdate):
     """Update onboarding settings for an organization"""
     db = get_db()
@@ -238,7 +241,7 @@ async def update_organization_onboarding_settings(org_id: str, settings: Onboard
         return new_settings
 
 
-@router.get("/global")
+@router.get("/global", dependencies=[Depends(require_role("super_admin"))])
 async def get_global_onboarding_settings():
     """Get global/platform-wide onboarding settings (super admin only)"""
     db = get_db()
@@ -260,7 +263,7 @@ async def get_global_onboarding_settings():
     }
 
 
-@router.put("/global")
+@router.put("/global", dependencies=[Depends(require_role("super_admin"))])
 async def update_global_onboarding_settings(settings: OnboardingSettingsUpdate):
     """Update global/platform-wide onboarding settings (super admin only)"""
     db = get_db()
@@ -316,7 +319,7 @@ async def update_global_onboarding_settings(settings: OnboardingSettingsUpdate):
 
 # ============= MESSAGE PREVIEW =============
 
-@router.post("/preview-message")
+@router.post("/preview-message", dependencies=[Depends(require_role("store_manager"))])
 async def preview_message(data: dict):
     """
     Preview a message with placeholder values filled in.
@@ -348,7 +351,7 @@ async def preview_message(data: dict):
 
 # ============= AVAILABLE PLACEHOLDERS =============
 
-@router.get("/placeholders")
+@router.get("/placeholders", dependencies=[Depends(get_current_user)])
 async def get_available_placeholders():
     """Get list of available placeholders for message templates"""
     return {

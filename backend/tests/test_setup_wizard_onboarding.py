@@ -7,9 +7,18 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com")
-# Super admin credentials for testing
-SUPER_ADMIN_USER_ID = "69a0b7095fddcede09591667"
+from tests.live_auth import SUPER_ADMIN, Session
+
+BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
+_ADMIN = None
+
+
+def _admin_headers():
+    """Real Bearer JWT for the super admin (bare X-User-ID has not been accepted since Sep 27 2026)."""
+    global _ADMIN
+    if _ADMIN is None:
+        _ADMIN = Session(*SUPER_ADMIN)
+    return {"Content-Type": "application/json", **_ADMIN.headers}
 
 class TestSetupWizardAPIs:
     """Test the admin APIs used by the setup wizard"""
@@ -17,10 +26,7 @@ class TestSetupWizardAPIs:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Setup for each test"""
-        self.headers = {
-            "Content-Type": "application/json",
-            "X-User-ID": SUPER_ADMIN_USER_ID
-        }
+        self.headers = _admin_headers()
         self.test_org_id = None
         self.test_store_id = None
         self.test_user_id = None
@@ -337,10 +343,7 @@ class TestSetupWizardProgressAPI:
     
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.headers = {
-            "Content-Type": "application/json",
-            "X-User-ID": SUPER_ADMIN_USER_ID
-        }
+        self.headers = _admin_headers()
         self.test_org_id = "test_progress_org_" + str(int(time.time()))
     
     def test_get_wizard_progress_new_org(self):

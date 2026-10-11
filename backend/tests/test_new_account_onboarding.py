@@ -7,7 +7,40 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
+from tests.live_auth import SUPER_ADMIN, Session
+
+BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
+_ADMIN = None
+RUN_TAG = str(int(time.time()))
+
+
+def _admin_headers():
+    """Real Bearer JWT for the super admin (only super admins and partner admins may create accounts)."""
+    global _ADMIN
+    if _ADMIN is None:
+        _ADMIN = Session(*SUPER_ADMIN)
+    return {"Content-Type": "application/json", **_ADMIN.headers}
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _remove_everything_this_module_created():
+    """Every account these tests create is named TEST_*_{RUN_TAG}; remove orgs, stores, users, seeds and tracking rows afterwards."""
+    yield
+    from pymongo import MongoClient
+    from bson import ObjectId
+    db = MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
+    name_re = {"$regex": f"^TEST_.*_{RUN_TAG}"}
+    org_ids = [str(o["_id"]) for o in db.organizations.find({"name": name_re}, {"_id": 1})]
+    store_ids = [str(st["_id"]) for st in db.stores.find({"$or": [{"name": name_re}, {"organization_id": {"$in": org_ids}}]}, {"_id": 1})]
+    user_ids = [str(u["_id"]) for u in db.users.find({"organization_id": {"$in": org_ids}}, {"_id": 1})]
+    for coll in ("campaigns", "date_trigger_configs", "email_templates", "review_response_templates", "social_templates", "tags", "templates", "notifications"):
+        db[coll].delete_many({"user_id": {"$in": user_ids}})
+    for coll in ("tags", "lead_sources", "compliance_onboarding", "setup_wizard_progress"):
+        db[coll].delete_many({"store_id": {"$in": store_ids}})
+    db.onboarding_clients.delete_many({"organization_id": {"$in": org_ids}})
+    db.users.delete_many({"_id": {"$in": [ObjectId(i) for i in user_ids]}})
+    db.stores.delete_many({"_id": {"$in": [ObjectId(i) for i in store_ids]}})
+    db.organizations.delete_many({"_id": {"$in": [ObjectId(i) for i in org_ids]}})
 
 class TestNewAccountOnboarding:
     """Tests for POST /api/setup-wizard/new-account endpoint"""
@@ -15,15 +48,15 @@ class TestNewAccountOnboarding:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Setup test fixtures"""
-        self.headers = {"Content-Type": "application/json", "X-User-ID": "test-user-id"}
-        self.timestamp = str(int(time.time()))
+        self.headers = _admin_headers()
+        self.timestamp = RUN_TAG
     
     def test_successful_account_creation(self):
         """Test successful creation of org, store, and user"""
         payload = {
             "business_name": f"TEST_Successful_Biz_{self.timestamp}",
             "contact_name": "John Doe",
-            "contact_phone": "5551234567",
+            "contact_phone": "5005554567",
             "contact_email": f"test_success_{self.timestamp}@example.com",
             "address": "123 Main St",
             "city": "Denver",
@@ -60,7 +93,7 @@ class TestNewAccountOnboarding:
         payload = {
             "business_name": f"TEST_First_Biz_{self.timestamp}",
             "contact_name": "First User",
-            "contact_phone": "5551111111",
+            "contact_phone": "5005551111",
             "contact_email": unique_email,
             "plan": "starter"
         }
@@ -76,7 +109,7 @@ class TestNewAccountOnboarding:
         payload2 = {
             "business_name": f"TEST_Second_Biz_{self.timestamp}",
             "contact_name": "Second User",
-            "contact_phone": "5552222222",
+            "contact_phone": "5005552222",
             "contact_email": unique_email,
             "plan": "pro"
         }
@@ -95,7 +128,7 @@ class TestNewAccountOnboarding:
         payload = {
             "business_name": "",
             "contact_name": "Test User",
-            "contact_phone": "5553333333"
+            "contact_phone": "5005553333"
         }
         
         response = requests.post(
@@ -112,7 +145,7 @@ class TestNewAccountOnboarding:
         payload = {
             "business_name": f"TEST_NoContact_{self.timestamp}",
             "contact_name": "",
-            "contact_phone": "5554444444"
+            "contact_phone": "5005554444"
         }
         
         response = requests.post(
@@ -146,7 +179,7 @@ class TestNewAccountOnboarding:
         payload = {
             "business_name": f"TEST_PhoneNorm10_{self.timestamp}",
             "contact_name": "Phone Test",
-            "contact_phone": "5559876543",  # 10 digits
+            "contact_phone": "5005556543",  # 10 digits, Twilio test range
             "contact_email": f"test_phone10_{self.timestamp}@example.com",
             "plan": "pro"
         }
@@ -167,14 +200,14 @@ class TestNewAccountOnboarding:
         )
         assert user_response.status_code == 200
         user_data = user_response.json()
-        assert user_data["phone"] == "+15559876543", f"Expected +15559876543, got {user_data['phone']}"
+        assert user_data["phone"] == "+15005556543", f"Expected +15005556543, got {user_data['phone']}"
         
     def test_phone_normalization_with_formatting(self):
         """Test phone with formatting chars is normalized to E.164"""
         payload = {
             "business_name": f"TEST_PhoneFormat_{self.timestamp}",
             "contact_name": "Phone Format Test",
-            "contact_phone": "(555) 123-4567",  # With formatting
+            "contact_phone": "(500) 555-4567",  # With formatting, Twilio test range
             "contact_email": f"test_phoneformat_{self.timestamp}@example.com",
             "plan": "pro"
         }
@@ -195,14 +228,14 @@ class TestNewAccountOnboarding:
         )
         assert user_response.status_code == 200
         user_data = user_response.json()
-        assert user_data["phone"] == "+15551234567", f"Expected +15551234567, got {user_data['phone']}"
+        assert user_data["phone"] == "+15005554567", f"Expected +15005554567, got {user_data['phone']}"
         
     def test_created_user_has_correct_role(self):
         """Test created user has role=store_manager"""
         payload = {
             "business_name": f"TEST_RoleCheck_{self.timestamp}",
             "contact_name": "Role Test",
-            "contact_phone": "5550001111",
+            "contact_phone": "5005551111",
             "contact_email": f"test_role_{self.timestamp}@example.com",
             "plan": "enterprise"
         }
@@ -230,7 +263,7 @@ class TestNewAccountOnboarding:
         payload = {
             "business_name": f"TEST_PasswordChange_{self.timestamp}",
             "contact_name": "Password Test",
-            "contact_phone": "5550002222",
+            "contact_phone": "5005552222",
             "contact_email": f"test_pwd_{self.timestamp}@example.com",
             "plan": "pro"
         }
@@ -258,7 +291,7 @@ class TestNewAccountOnboarding:
         payload = {
             "business_name": f"TEST_Links_{self.timestamp}",
             "contact_name": "Link Test",
-            "contact_phone": "5550003333",
+            "contact_phone": "5005553333",
             "contact_email": f"test_links_{self.timestamp}@example.com",
             "plan": "pro"
         }
@@ -292,7 +325,7 @@ class TestNewAccountOnboarding:
         payload = {
             "business_name": f"TEST_NoEmail_{self.timestamp}",
             "contact_name": "No Email Test",
-            "contact_phone": "5550004444",
+            "contact_phone": "5005554444",
             "plan": "starter"
         }
         
@@ -313,7 +346,7 @@ class TestNewAccountOnboarding:
             payload = {
                 "business_name": f"TEST_Plan_{plan}_{self.timestamp}",
                 "contact_name": f"Plan {plan} Test",
-                "contact_phone": "5550005555",
+                "contact_phone": "5005555555",
                 "contact_email": f"test_plan_{plan}_{self.timestamp}@example.com",
                 "plan": plan
             }
@@ -342,15 +375,15 @@ class TestTrackingRecordCreation:
     
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.headers = {"Content-Type": "application/json", "X-User-ID": "test-user-id"}
-        self.timestamp = str(int(time.time()))
+        self.headers = _admin_headers()
+        self.timestamp = RUN_TAG
         
     def test_tracking_record_created(self):
         """Test that a tracking record is created in onboarding_clients"""
         payload = {
             "business_name": f"TEST_Tracking_{self.timestamp}",
             "contact_name": "Tracking Test",
-            "contact_phone": "5556666666",
+            "contact_phone": "5005556666",
             "contact_email": f"test_tracking_{self.timestamp}@example.com",
             "industry": "Real Estate",
             "plan": "pro"

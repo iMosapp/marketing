@@ -7,7 +7,13 @@ import requests
 import os
 from datetime import datetime
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com')
+from tests.live_auth import SUPER_ADMIN, Session
+
+BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")  # never the production EXPO_PUBLIC_BACKEND_URL
+
+# Quotes and discount codes are owner tools: every call carries the super admin's Bearer JWT
+_http = requests.Session()
+_http.headers.update(Session(*SUPER_ADMIN).headers)
 
 
 class TestSubscriptionPlans:
@@ -15,7 +21,7 @@ class TestSubscriptionPlans:
     
     def test_get_all_plans(self):
         """Test GET /api/subscriptions/plans - returns all plans"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans")
         assert response.status_code == 200
         
         data = response.json()
@@ -27,7 +33,7 @@ class TestSubscriptionPlans:
     
     def test_get_individual_plans(self):
         """Test GET /api/subscriptions/plans?plan_type=individual"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans?plan_type=individual")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans?plan_type=individual")
         assert response.status_code == 200
         
         data = response.json()
@@ -43,7 +49,7 @@ class TestSubscriptionPlans:
     
     def test_get_store_plans(self):
         """Test GET /api/subscriptions/plans?plan_type=store"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans?plan_type=store")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans?plan_type=store")
         assert response.status_code == 200
         
         data = response.json()
@@ -57,7 +63,7 @@ class TestSubscriptionPlans:
     
     def test_get_plan_details_monthly(self):
         """Test GET /api/subscriptions/plans/monthly"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans/monthly")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans/monthly")
         assert response.status_code == 200
         
         plan = response.json()
@@ -71,7 +77,7 @@ class TestSubscriptionPlans:
     
     def test_get_plan_details_annual(self):
         """Test GET /api/subscriptions/plans/annual - has discount info"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans/annual")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans/annual")
         assert response.status_code == 200
         
         plan = response.json()
@@ -84,7 +90,7 @@ class TestSubscriptionPlans:
     
     def test_get_plan_not_found(self):
         """Test GET /api/subscriptions/plans/invalid returns 404"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans/invalid_plan")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans/invalid_plan")
         assert response.status_code == 404
         print("✓ GET invalid plan returns 404")
 
@@ -94,7 +100,7 @@ class TestStorePricing:
     
     def test_store_pricing_5_users(self):
         """Test store pricing with 5 users - standard rate"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans/store/calculate?num_users=5")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans/store/calculate?num_users=5")
         assert response.status_code == 200
         
         data = response.json()
@@ -107,7 +113,7 @@ class TestStorePricing:
     
     def test_store_pricing_6_users(self):
         """Test store pricing with 6 users - volume discount"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans/store/calculate?num_users=6")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans/store/calculate?num_users=6")
         assert response.status_code == 200
         
         data = response.json()
@@ -121,7 +127,7 @@ class TestStorePricing:
     
     def test_store_pricing_10_users(self):
         """Test store pricing with 10 users - volume discount"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans/store/calculate?num_users=10")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans/store/calculate?num_users=10")
         assert response.status_code == 200
         
         data = response.json()
@@ -133,7 +139,7 @@ class TestStorePricing:
     
     def test_store_pricing_minimum_users(self):
         """Test store pricing with less than 5 users returns error"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/plans/store/calculate?num_users=3")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/plans/store/calculate?num_users=3")
         assert response.status_code == 200
         
         data = response.json()
@@ -153,7 +159,7 @@ class TestDiscountCodes:
     
     def test_get_discount_codes(self):
         """Test GET /api/subscriptions/discount-codes - lists all codes"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/discount-codes?active_only=false")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/discount-codes?active_only=false")
         assert response.status_code == 200
         
         codes = response.json()
@@ -175,7 +181,7 @@ class TestDiscountCodes:
             "plan_types": ["individual", "store"]
         }
         
-        response = requests.post(f"{BASE_URL}/api/subscriptions/discount-codes", json=payload)
+        response = _http.post(f"{BASE_URL}/api/subscriptions/discount-codes", json=payload)
         assert response.status_code == 200
         
         data = response.json()
@@ -201,7 +207,7 @@ class TestDiscountCodes:
             "plan_types": ["individual"]
         }
         
-        response = requests.post(f"{BASE_URL}/api/subscriptions/discount-codes", json=payload)
+        response = _http.post(f"{BASE_URL}/api/subscriptions/discount-codes", json=payload)
         assert response.status_code == 200
         
         data = response.json()
@@ -220,7 +226,7 @@ class TestDiscountCodes:
             "description": "Invalid code"
         }
         
-        response = requests.post(f"{BASE_URL}/api/subscriptions/discount-codes", json=payload)
+        response = _http.post(f"{BASE_URL}/api/subscriptions/discount-codes", json=payload)
         assert response.status_code == 400
         assert "Discount must be one of" in response.json()["detail"]
         print("✓ Invalid discount percent returns 400")
@@ -230,7 +236,7 @@ class TestDiscountCodes:
         # Use the code we created earlier
         test_code = getattr(self.__class__, 'test_code', 'MVPJV324H')
         
-        response = requests.get(f"{BASE_URL}/api/subscriptions/discount-codes/validate/{test_code}?plan_type=individual")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/discount-codes/validate/{test_code}?plan_type=individual")
         assert response.status_code == 200
         
         data = response.json()
@@ -240,7 +246,7 @@ class TestDiscountCodes:
     
     def test_validate_discount_code_invalid(self):
         """Test validate with non-existent code"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/discount-codes/validate/INVALIDCODE123")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/discount-codes/validate/INVALIDCODE123")
         assert response.status_code == 200
         
         data = response.json()
@@ -255,7 +261,7 @@ class TestDiscountCodes:
         if not code_id:
             pytest.skip("No auto-generated code to deactivate")
         
-        response = requests.delete(f"{BASE_URL}/api/subscriptions/discount-codes/{code_id}")
+        response = _http.delete(f"{BASE_URL}/api/subscriptions/discount-codes/{code_id}")
         assert response.status_code == 200
         assert "deactivated" in response.json()["message"].lower()
         print(f"✓ Deactivated discount code {code_id}")
@@ -266,7 +272,7 @@ class TestQuotes:
     
     def test_list_quotes(self):
         """Test GET /api/subscriptions/quotes"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/quotes")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/quotes")
         assert response.status_code == 200
         
         quotes = response.json()
@@ -290,7 +296,7 @@ class TestQuotes:
             "notes": "Test quote for automation"
         }
         
-        response = requests.post(f"{BASE_URL}/api/subscriptions/quotes", json=payload)
+        response = _http.post(f"{BASE_URL}/api/subscriptions/quotes", json=payload)
         assert response.status_code == 200
         
         quote = response.json()
@@ -332,7 +338,7 @@ class TestQuotes:
             "prepared_by_name": "Super Admin"
         }
         
-        response = requests.post(f"{BASE_URL}/api/subscriptions/quotes", json=payload)
+        response = _http.post(f"{BASE_URL}/api/subscriptions/quotes", json=payload)
         assert response.status_code == 200
         
         quote = response.json()
@@ -356,7 +362,7 @@ class TestQuotes:
             "company_name": "Small Store"
         }
         
-        response = requests.post(f"{BASE_URL}/api/subscriptions/quotes", json=payload)
+        response = _http.post(f"{BASE_URL}/api/subscriptions/quotes", json=payload)
         assert response.status_code == 400
         assert "Minimum 5 users" in response.json()["detail"]
         print("✓ Store quote <5 users returns 400")
@@ -367,7 +373,7 @@ class TestQuotes:
         if not quote_id:
             pytest.skip("No quote created to retrieve")
         
-        response = requests.get(f"{BASE_URL}/api/subscriptions/quotes/{quote_id}")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/quotes/{quote_id}")
         assert response.status_code == 200
         
         quote = response.json()
@@ -377,13 +383,13 @@ class TestQuotes:
     
     def test_get_quote_not_found(self):
         """Test GET quote with invalid ID returns 404"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/quotes/000000000000000000000000")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/quotes/000000000000000000000000")
         assert response.status_code == 404
         print("✓ GET invalid quote returns 404")
     
     def test_list_quotes_with_filter(self):
         """Test GET /api/subscriptions/quotes?status=draft"""
-        response = requests.get(f"{BASE_URL}/api/subscriptions/quotes?status=draft")
+        response = _http.get(f"{BASE_URL}/api/subscriptions/quotes?status=draft")
         assert response.status_code == 200
         
         quotes = response.json()
@@ -403,7 +409,7 @@ class TestQuoteWithDiscountCode:
         code_name = f"QUOTECODE{random_suffix}"
         
         # Create discount code
-        code_response = requests.post(f"{BASE_URL}/api/subscriptions/discount-codes", json={
+        code_response = _http.post(f"{BASE_URL}/api/subscriptions/discount-codes", json={
             "code": code_name,
             "discount_percent": 20,
             "plan_types": ["individual"]
@@ -419,7 +425,7 @@ class TestQuoteWithDiscountCode:
             "discount_code": code_name
         }
         
-        response = requests.post(f"{BASE_URL}/api/subscriptions/quotes", json=quote_payload)
+        response = _http.post(f"{BASE_URL}/api/subscriptions/quotes", json=quote_payload)
         assert response.status_code == 200
         
         quote = response.json()
@@ -440,7 +446,7 @@ class TestQuoteWithDiscountCode:
             "discount_code": "INVALID_CODE_12345"
         }
         
-        response = requests.post(f"{BASE_URL}/api/subscriptions/quotes", json=quote_payload)
+        response = _http.post(f"{BASE_URL}/api/subscriptions/quotes", json=quote_payload)
         assert response.status_code == 400
         assert "Invalid or expired" in response.json()["detail"]
         print("✓ Quote with invalid code returns 400")

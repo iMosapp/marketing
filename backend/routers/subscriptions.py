@@ -14,8 +14,20 @@ import base64
 import re as _re
 
 from routers.database import get_db
+from fastapi import Depends
+from routers.rbac import get_current_user, require_role, assert_partner_scope
 
 router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
+
+OWNER = [Depends(require_role("super_admin"))]
+
+
+def _assert_own_email(me: dict, email: str) -> None:
+    """Subscription lookups by email: only your own address unless you are a super admin."""
+    if me.get("role") == "super_admin":
+        return
+    if (email or "").lower().strip() != (me.get("email") or "").lower().strip():
+        raise HTTPException(status_code=403, detail="You can only look up your own subscription")
 logger = logging.getLogger(__name__)
 
 # ── Email / PDF config ────────────────────────────────────────────────────────
@@ -762,7 +774,7 @@ async def get_plan_details(plan_id: str):
 
 DISCOUNT_TIERS = [5, 10, 15, 20, 25]  # Available discount percentages
 
-@router.get("/discount-codes")
+@router.get("/discount-codes", dependencies=OWNER)
 async def list_discount_codes(active_only: bool = True):
     """List all discount codes"""
     db = get_db()
@@ -780,7 +792,7 @@ async def list_discount_codes(active_only: bool = True):
     return codes
 
 
-@router.post("/discount-codes")
+@router.post("/discount-codes", dependencies=OWNER)
 async def create_discount_code(data: dict):
     """Create a new discount code"""
     db = get_db()
@@ -852,7 +864,7 @@ async def validate_discount_code(code: str, plan_type: str = "individual"):
     }
 
 
-@router.delete("/discount-codes/{code_id}")
+@router.delete("/discount-codes/{code_id}", dependencies=OWNER)
 async def deactivate_discount_code(code_id: str):
     """Deactivate a discount code"""
     db = get_db()
@@ -870,7 +882,7 @@ async def deactivate_discount_code(code_id: str):
 
 # ============= QUOTES =============
 
-@router.post("/quotes")
+@router.post("/quotes", dependencies=OWNER)
 async def create_quote(data: dict):
     """Create a new subscription quote with full business details"""
     db = get_db()
@@ -1031,7 +1043,7 @@ async def create_quote(data: dict):
     return quote
 
 
-@router.get("/quotes")
+@router.get("/quotes", dependencies=OWNER)
 async def list_quotes(status: Optional[str] = None):
     """List all quotes (admin only in future)"""
     db = get_db()
@@ -1048,7 +1060,7 @@ async def list_quotes(status: Optional[str] = None):
     return quotes
 
 
-@router.get("/quotes/{quote_id}")
+@router.get("/quotes/{quote_id}", dependencies=OWNER)
 async def get_quote(quote_id: str):
     """Get a specific quote by ID"""
     db = get_db()
@@ -1070,7 +1082,7 @@ async def get_quote(quote_id: str):
     return quote
 
 
-@router.patch("/quotes/{quote_id}")
+@router.patch("/quotes/{quote_id}", dependencies=OWNER)
 async def update_quote(quote_id: str, data: dict):
     """Update a quote (notes, status, etc.)"""
     db = get_db()
@@ -1092,7 +1104,7 @@ async def update_quote(quote_id: str, data: dict):
     return {"message": "Quote updated successfully"}
 
 
-@router.post("/quotes/{quote_id}/send")
+@router.post("/quotes/{quote_id}/send", dependencies=OWNER)
 async def send_quote(quote_id: str):
     """Send/resend a quote to the customer via email"""
     db = get_db()
@@ -1328,7 +1340,7 @@ async def download_quote_pdf(quote_id: str):
 
 
 
-@router.post("/quotes/{quote_id}/add-contact")
+@router.post("/quotes/{quote_id}/add-contact", dependencies=OWNER)
 async def add_quote_contact(quote_id: str, request: Request):
     """
     Creates the customer from this quote as a contact in the requesting user's account.
@@ -1428,7 +1440,7 @@ async def add_quote_contact(quote_id: str, request: Request):
 
 
 
-@router.delete("/quotes/{quote_id}")
+@router.delete("/quotes/{quote_id}", dependencies=OWNER)
 async def delete_quote(quote_id: str):
     """Delete a quote (only drafts can be deleted)"""
     db = get_db()
@@ -1445,7 +1457,7 @@ async def delete_quote(quote_id: str):
     return {"message": "Quote deleted successfully"}
 
 
-@router.put("/quotes/{quote_id}/archive")
+@router.put("/quotes/{quote_id}/archive", dependencies=OWNER)
 async def archive_quote(quote_id: str):
     """Archive a quote"""
     db = get_db()
@@ -1650,9 +1662,10 @@ async def get_checkout_status(session_id: str):
 # ============= SUBSCRIPTION MANAGEMENT =============
 
 @router.get("/my-subscription")
-async def get_my_subscription(email: str):
-    """Get subscription for a customer by email"""
+async def get_my_subscription(email: str, me: dict = Depends(get_current_user)):
+    """Get subscription for a customer by email (your own, or any as a super admin)"""
     db = get_db()
+    _assert_own_email(me, email)
     
     subscription = await db.subscriptions.find_one(
         {"customer_email": email, "status": {"$ne": "cancelled"}},
@@ -1676,11 +1689,12 @@ async def get_my_subscription(email: str):
 
 
 @router.post("/cancel")
-async def request_cancellation(data: dict):
-    """Request subscription cancellation (30 days notice)"""
+async def request_cancellation(data: dict, me: dict = Depends(get_current_user)):
+    """Request subscription cancellation (30 days notice); your own subscription only unless super admin"""
     db = get_db()
     
     email = data.get("email")
+    _assert_own_email(me, email)
     reason = data.get("reason", "")
     
     if not email:
@@ -1728,9 +1742,10 @@ async def request_cancellation(data: dict):
 
 
 @router.get("/cancellation-status")
-async def get_cancellation_status(email: str):
-    """Check if there's a pending cancellation"""
+async def get_cancellation_status(email: str, me: dict = Depends(get_current_user)):
+    """Check if there's a pending cancellation (your own, or any as a super admin)"""
     db = get_db()
+    _assert_own_email(me, email)
     
     cancellation = await db.subscription_cancellations.find_one(
         {"customer_email": email, "status": "pending"},
@@ -1838,11 +1853,12 @@ async def upload_w9(
 # ── Reseller / Partner Portal ─────────────────────────────────────────────────
 
 @router.get("/partner/accounts")
-async def get_partner_accounts(partner_id: str, include_deactivated: bool = True):
+async def get_partner_accounts(partner_id: str, include_deactivated: bool = True, me: dict = Depends(get_current_user)):
     """
-    List all accounts (quotes) for a reseller/partner.
+    List all accounts (quotes) for a reseller/partner (super admins, or that partner's own admins).
     Returns both active and deactivated so partners have full visibility.
     """
+    await assert_partner_scope(me, partner_id)
     db = get_db()
     query: dict = {"partner_id": partner_id}
     if not include_deactivated:
