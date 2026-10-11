@@ -65,6 +65,20 @@ async def my_billing(me: dict = Depends(require_role("store_manager"))):
     return svc.owner_summary(await _my_customer_org(me))
 
 
+@router.post("/checkout")
+async def my_checkout(request: Request, me: dict = Depends(require_role("store_manager"))):
+    """The owner chooses to continue after the pilot (or to pay an unpaid plan): hosted Stripe Checkout, card saved on Stripe's page."""
+    org = await _my_customer_org(me)
+    c = org["customer"]
+    if c.get("stripe_subscription_id") and c.get("billing_status") in ("active", "trialing", "past_due"):
+        raise HTTPException(status_code=409, detail="Your subscription is already set up. Use Payment method, invoices and plan.")
+    if c.get("billing_status") not in svc.RESUBSCRIBE_OK:
+        raise HTTPException(status_code=409, detail="Nothing to pay right now.")
+    res = await svc.checkout_link(get_db(), org, me, public_base(request))
+    await cust.audit(get_db(), str(org["_id"]), "owner_checkout_opened", me, first_charge_on=res.get("first_charge_on"))
+    return res
+
+
 @router.post("/portal")
 async def my_portal(request: Request, me: dict = Depends(require_role("store_manager"))):
     org = await _my_customer_org(me)

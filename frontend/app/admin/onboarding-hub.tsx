@@ -174,6 +174,21 @@ export default function OnboardingHub() {
         {customers.length > 0 && (
           <View data-testid="hub-customers">
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Customers</Text>
+            {(() => {
+              const sum = (kind: string) => customers.filter((c: any) => c.mrr?.kind === kind);
+              const total = (rows: any[]) => rows.reduce((s: number, c: any) => s + (c.mrr?.amount || 0), 0);
+              const money = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+              const paying = sum('actual'); const scheduled = sum('scheduled'); const pilots = customers.filter((c: any) => c.customer?.billing_status === 'pilot' && c.pilot_program?.state !== 'ended');
+              const ended = customers.filter((c: any) => c.pilot_program?.state === 'ended');
+              return (
+                <Text style={[styles.recentMeta, { color: colors.textSecondary, marginBottom: 10 }]} data-testid="hub-customers-summary">
+                  {paying.length} paying · {money(total(paying))} MRR
+                  {scheduled.length ? ` · ${scheduled.length} card saved · ${money(total(scheduled))} starting soon` : ''}
+                  {` · ${pilots.length} pilot${pilots.length === 1 ? '' : 's'} · ${money(total(pilots))} potential MRR`}
+                  {ended.length ? ` · ${ended.length} ended` : ''}
+                </Text>
+              );
+            })()}
             {customers.map((c: any) => (
               <TouchableOpacity
                 key={c.organization_id}
@@ -190,8 +205,12 @@ export default function OnboardingHub() {
                     {c.customer?.plan_name} · {c.seats?.used}/{c.seats?.limit} seats · {c.owner?.name || 'no owner'}
                   </Text>
                   <Text style={[styles.recentMeta, { color: c.attention?.length ? '#FF9500' : colors.textSecondary }]} data-testid={`hub-customer-progress-${c.organization_id}`}>
+                    {c.customer?.billing_status === 'pilot' && c.pilot_program ? (
+                      c.pilot_program.state === 'pending' ? 'Pilot not started · ' : c.pilot_program.state === 'ended' ? 'Pilot ended · ' : c.pilot_program.state === 'completed' ? 'Pilot period over · ' : `Pilot · ${c.pilot_program.days_left} days left · `
+                    ) : ''}
                     {c.progress ? (c.progress.complete ? 'Setup complete' : `Setup ${c.progress.done}/${c.progress.total}`) : 'Owner not signed in'}
                     {' · '}{c.last_activity ? `active ${new Date(c.last_activity).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'no activity'}
+                    {c.mrr?.amount ? ` · $${Math.round(c.mrr.amount).toLocaleString()} ${c.mrr.kind === 'actual' ? 'MRR' : c.mrr.kind === 'scheduled' ? 'MRR from ' + new Date(c.mrr.first_charge_on).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : c.mrr.kind === 'potential' ? 'potential' : ''}` : ''}
                     {c.issues_open ? ` · ${c.issues_open} open issue${c.issues_open === 1 ? '' : 's'}` : ''}
                     {(() => { const flag = (c.attention || []).find((a: string) => !a.includes('open issue')); return flag ? ` · ${flag}` : ''; })()}
                   </Text>

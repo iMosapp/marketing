@@ -1,7 +1,7 @@
 """Stage 3: simplified pilot onboarding. Everything here is derived from existing collections (users, contacts, contact_events,
 voice_notes, bug_reports); the only write is the first-completion timestamp per step on the user document."""
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from bson import ObjectId
 
@@ -86,6 +86,27 @@ async def issues(db, user_ids: list[str], limit: int = 10) -> tuple[int, list[di
                          "user_name": r.get("user_name"), "screen": r.get("screen"), "description": (r.get("description") or "")[:240]} for r in rows]
 
 
+async def engagement(db, user_ids: list[str], users: list[dict]) -> dict:
+    """What the whole org actually did: totals and the last 7 days (contacts, card shares, voice memos, texts sent, people active)."""
+    since = datetime.now(timezone.utc) - timedelta(days=7)
+    since_iso = since.isoformat()
+    base = {"user_id": {"$in": user_ids}}
+    shares = {**base, "event_type": {"$in": sorted(CARD_SHARE_EVENTS)}}
+    texts = {**base, "sender": "user", "direction": "outbound"}
+
+    async def pair(coll, q, field, iso=False):
+        total = await db[coll].count_documents(q)
+        recent = await db[coll].count_documents({**q, field: {"$gte": since_iso if iso else since}})
+        return {"total": total, "week": recent}
+
+    contacts = await pair("contacts", {**base, "source": {"$ne": "user_creation"}}, "created_at", iso=True)
+    contacts_dt = await db.contacts.count_documents({**base, "source": {"$ne": "user_creation"}, "created_at": {"$gte": since}})
+    contacts["week"] = max(contacts["week"], contacts_dt)
+    active_week = sum(1 for u in users if (_iso(u.get("last_login")) or "") >= since_iso)
+    return {"contacts": contacts, "shares": await pair("contact_events", shares, "timestamp"), "memos": await pair("voice_notes", base, "created_at"),
+            "texts": await pair("messages", texts, "timestamp"), "people": {"total": len(users), "active_week": active_week}}
+
+
 def attention(c: dict, owner: dict | None, progress: dict | None, last_active: str | None, issues_open: int) -> list[str]:
     """Plain-language reasons this customer needs the founder's attention."""
     now = datetime.now(timezone.utc)
@@ -113,6 +134,18 @@ def attention(c: dict, owner: dict | None, progress: dict | None, last_active: s
             reasons.append("Billing exception expired")
         elif d is not None and d >= -7:
             reasons.append("Billing exception ends within a week")
+    if bs == "pilot":
+        p = c.get("pilot_program") or {}
+        d = age_days(p.get("ends_at"))
+        if p.get("state") == "ended":
+            e = age_days(p.get("ended_at")) or 0
+            reasons.append(f"Pilot ended {e} days ago · data kept, review after 12 months" if e < 365 else "Ended pilot: data older than 12 months, review")
+        elif p.get("state") in ("active", "completed") and d is not None and d >= 14:
+            reasons.append("Pilot over 14+ days without a decision")
+        elif p.get("state") in ("active", "completed") and d is not None and d >= 0:
+            reasons.append("Pilot period over · decide: continue, extend or end")
+        elif p.get("state") == "active" and d is not None and d >= -14:
+            reasons.append(f"Pilot ends in {-d} day{'s' if d != -1 else ''}")
     if c.get("owner_invited_at") and not c.get("owner_activated_at") and (age_days(c.get("owner_invited_at")) or 0) >= 2:
         reasons.append("Owner has not activated (2+ days)")
     if c.get("activated_at") and not c.get("owner_invited_at") and (age_days(c.get("activated_at")) or 0) >= 2:
@@ -144,6 +177,7 @@ async def founder_view(db, org: dict, owner: dict | None, with_issues: bool = Fa
                                   "steps": {s["key"]: {"done": s["done"], "done_at": s.get("done_at")} for s in progress["steps"]}},
         "last_activity": last_active, "issues_open": issues_open,
         "attention": attention(c, owner, progress, last_active, issues_open),
+        "engagement": await engagement(db, user_ids, users) if user_ids else None,
     }
     if with_issues:
         view["issues"] = rows

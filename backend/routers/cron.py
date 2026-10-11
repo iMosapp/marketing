@@ -62,3 +62,26 @@ async def leadership_morning_brief(request: Request, background: BackgroundTasks
         return {"ok": True, "duplicate": True}
     background.add_task(_morning_brief, get_db(), key)
     return {"ok": True, "accepted": True, "run": key}
+
+
+async def _pilot_reminders(db, key: str):
+    from services import pilot_program
+    try:
+        res = await pilot_program.tick(db)
+    except Exception as e:
+        logger.exception("[Cron] pilot reminders tick failed")
+        res = {"error": str(e)[:300]}
+    await db[RUNS].update_one({"_id": key}, {"$set": {"result": res, "finished_at": datetime.now(timezone.utc)}})
+    logger.info("[Cron] pilot reminders: %s", res)
+
+
+@router.post("/pilot-reminders")
+async def pilot_reminders(request: Request, background: BackgroundTasks, authorization: str | None = Header(None), x_webhook_id: str | None = Header(None)):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    _check(authorization)
+    body = await _envelope(request)
+    key = await _claim(get_db(), "pilot-reminders", str(x_webhook_id or body.get("run_id") or ""))
+    if not key:
+        return {"ok": True, "duplicate": True}
+    background.add_task(_pilot_reminders, get_db(), key)
+    return {"ok": True, "accepted": True, "run": key}

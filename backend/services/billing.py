@@ -28,7 +28,8 @@ HANDLED_EVENTS = ("checkout.session.completed", "customer.subscription.created",
                   "customer.subscription.deleted", "invoice.paid", "invoice.payment_failed")
 STATUS_MAP = {"active": "active", "trialing": "trialing", "past_due": "past_due", "unpaid": "past_due", "paused": "past_due",
               "canceled": "canceled", "incomplete": "awaiting_payment", "incomplete_expired": "unpaid"}
-RESUBSCRIBE_OK = {"unpaid", "awaiting_payment", "canceled", "exception"}
+RESUBSCRIBE_OK = {"unpaid", "awaiting_payment", "canceled", "exception", "pilot"}
+TRIAL_MIN_AHEAD_S = 48 * 3600 + 600  # Stripe: trial_end must be at least 48 hours in the future
 
 _client: stripe.StripeClient | None = None
 _prices: dict[str, str] = {}
@@ -167,20 +168,57 @@ async def create_checkout(db, org: dict, actor: dict, base_url: str) -> dict:
     if c.get("seat_price") and int(c.get("seats_extra") or 0) > 0:
         line_items.append({"price": prices[SEAT_KEY], "quantity": int(c["seats_extra"])})
     meta = {"organization_id": org_id, "source": "customer_launch", "plan_key": c["plan_key"]}
-    session = await _run(client().v1.checkout.sessions.create, {
+    params = {
         "mode": "subscription", "customer": customer_id, "client_reference_id": org_id, "line_items": line_items,
         "success_url": f"{base_url}/billing/success?session_id={{CHECKOUT_SESSION_ID}}", "cancel_url": f"{base_url}/billing/cancel",
         "metadata": meta, "subscription_data": {"metadata": meta, "description": f"{c['plan_name']} - {org.get('name', '')}"[:500]},
         "billing_address_collection": "auto", "customer_update": {"name": "auto", "address": "auto"},
-    })
+    }
+    first_charge = pilot_first_charge(c)
+    if first_charge:
+        # Founding Partner Pilot conversion: the card is saved now, the first invoice is created at trial_end (the day the pilot ends), never earlier.
+        params["subscription_data"]["trial_end"] = int(first_charge.timestamp())
+        params["payment_method_collection"] = "always"
+        params["metadata"]["pilot_conversion"] = "1"
+        params["subscription_data"]["metadata"]["pilot_conversion"] = "1"
+        total = float(c.get("amount") or 0) + float(c.get("seat_price") or 0) * int(c.get("seats_extra") or 0)
+        params["custom_text"] = {"submit": {"message": f"Nothing is charged today. Your Founding Partner Pilot stays complimentary; the first charge of ${total:,.2f} happens on {first_charge.strftime('%b %d, %Y')} and then monthly. Cancel any time before then from Billing."}}
+    session = await _run(client().v1.checkout.sessions.create, params)
     fields = {"checkout_session_id": session.id, "checkout_url": session.url, "checkout_created_at": cust.now_iso(), "checkout_expires_at": _iso(session.expires_at)}
     if c.get("billing_status") in ("unpaid", "canceled", "awaiting_payment"):
         fields["billing_status"] = "awaiting_payment"
     if c.get("onboarding_status") == "created":
         fields["onboarding_status"] = "payment_link_sent"
     await cust._set(db, org_id, **fields)
-    await cust.audit(db, org_id, "payment_link_created", actor, amount=c.get("amount"), seats_extra=c.get("seats_extra", 0))
-    return {"url": session.url, "session_id": session.id, "expires_at": fields["checkout_expires_at"]}
+    await cust.audit(db, org_id, "payment_link_created", actor, amount=c.get("amount"), seats_extra=c.get("seats_extra", 0), first_charge_on=first_charge.isoformat() if first_charge else None)
+    return {"url": session.url, "session_id": session.id, "expires_at": fields["checkout_expires_at"], "first_charge_on": first_charge.isoformat() if first_charge else None}
+
+
+def pilot_first_charge(c: dict) -> datetime | None:
+    """For a running pilot the subscription trial ends when the pilot ends (at least 48 h out, Stripe's minimum)."""
+    if c.get("billing_status") != "pilot":
+        return None
+    p = c.get("pilot_program") or {}
+    if p.get("state") not in ("active", "completed"):
+        return None
+    try:
+        ends = datetime.fromisoformat(p.get("ends_at", ""))
+    except (ValueError, TypeError):
+        return None
+    if ends.tzinfo is None:
+        ends = ends.replace(tzinfo=timezone.utc)
+    floor = datetime.now(timezone.utc) + timedelta(seconds=TRIAL_MIN_AHEAD_S)
+    return max(ends, floor)
+
+
+async def checkout_link(db, org: dict, actor: dict, base_url: str) -> dict:
+    """Reuse the open Checkout session while it is valid, else create one."""
+    c = org["customer"]
+    reusable = c.get("checkout_url") and not c.get("stripe_subscription_id") and (c.get("checkout_expires_at") or "") > cust.now_iso() \
+        and c.get("billing_status") in ("awaiting_payment", "pilot")
+    if reusable:
+        return {"url": c["checkout_url"], "session_id": c.get("checkout_session_id"), "expires_at": c.get("checkout_expires_at"), "first_charge_on": pilot_first_charge(c).isoformat() if pilot_first_charge(c) else None}
+    return await create_checkout(db, org, actor, base_url)
 
 
 async def send_payment_link(db, org: dict, actor: dict, url: str) -> dict:
@@ -242,7 +280,8 @@ async def apply_subscription(db, org: dict, sub: dict, source: str, actor: dict 
         fields["seats_extra"] = int((seat_item or {}).get("quantity") or 0)
     if new_status in ("active", "trialing"):
         fields["grace_until"] = None
-        fields["paid_at"] = c.get("paid_at") or cust.now_iso()
+        if new_status == "active":
+            fields["paid_at"] = c.get("paid_at") or cust.now_iso()
         if c.get("onboarding_status") in ("created", "payment_link_sent"):
             fields["onboarding_status"] = "paid"
     await cust._set(db, org_id, **fields)
@@ -250,6 +289,9 @@ async def apply_subscription(db, org: dict, sub: dict, source: str, actor: dict 
         await cust.audit(db, org_id, f"subscription_{new_status}", actor, source=source, stripe_status=sub.get("status"))
     if fields.get("seats_extra") is not None and fields["seats_extra"] != int(c.get("seats_extra") or 0):
         await cust.audit(db, org_id, "seats_synced_from_stripe", actor, before=c.get("seats_extra", 0), after=fields["seats_extra"], source=source)
+    if c.get("billing_status") == "pilot" and new_status in ("active", "trialing"):
+        from services import pilot_program
+        await pilot_program.mark_converted(db, await cust.customer_org(db, org_id), source, sub.get("status"))
     return fields
 
 
@@ -405,11 +447,13 @@ async def _dispatch(db, typ: str, obj: dict) -> dict:
     amount = (obj.get("amount_paid") if typ == "invoice.paid" else obj.get("amount_due")) or 0
     if typ == "invoice.paid":
         before = org["customer"].get("billing_status")
-        fields = {"last_payment_at": _iso(obj.get("status_transitions", {}).get("paid_at")) or cust.now_iso(), "last_payment_amount": amount / 100, "last_invoice_id": obj.get("id"),
-                  "grace_until": None, "failed_attempts": 0}
         if sub_id:
             sub = await _run(client().v1.subscriptions.retrieve, sub_id)
             await apply_subscription(db, org, sub, "webhook")
+        if amount == 0:
+            return {"organization_id": org_id, "result": "trial_invoice"}  # the $0 invoice Stripe issues when a trial starts is not a payment
+        fields = {"last_payment_at": _iso(obj.get("status_transitions", {}).get("paid_at")) or cust.now_iso(), "last_payment_amount": amount / 100, "last_invoice_id": obj.get("id"),
+                  "grace_until": None, "failed_attempts": 0}
         await cust._set(db, org_id, **fields)
         await cust.audit(db, org_id, "payment_succeeded", None, amount=amount / 100, invoice=obj.get("id"), billing_reason=obj.get("billing_reason"))
         if before == "past_due":
@@ -429,6 +473,9 @@ async def _dispatch(db, typ: str, obj: dict) -> dict:
 def owner_summary(org: dict) -> dict:
     """What the paying owner may see about their own billing. No Stripe ids, no card data."""
     c = org.get("customer") or {}
+    from services import pilot_program
+    pv = pilot_program.view(c)
+    first_charge = pilot_first_charge(c)
     return {
         "business_name": org.get("name"), "plan_name": c.get("plan_name"), "amount": c.get("amount"), "seat_price": c.get("seat_price"),
         "seats_included": c.get("seats_included"), "seats_extra": c.get("seats_extra", 0),
@@ -438,4 +485,6 @@ def owner_summary(org: dict) -> dict:
         "portal_available": bool(c.get("stripe_customer_id")) and configured(),
         "checkout_url": c.get("checkout_url") if c.get("billing_status") in ("unpaid", "awaiting_payment", "canceled") else None,
         "exception": bool(c.get("billing_status") == "exception"), "exception_ends": (c.get("billing_exception") or {}).get("expires_at") if c.get("billing_status") == "exception" else None,
+        "pilot": pv and {**pv, "can_continue": c.get("billing_status") == "pilot" and pv["state"] in ("active", "completed") and configured(),
+                         "first_charge_on": first_charge.isoformat() if first_charge else None},
     }

@@ -43,6 +43,17 @@ export function ProgressCard({ row, colors, onOpenIssues }: { row: any; colors: 
             })}
           </View>
         ) : null}
+        {row.engagement ? (
+          <View style={{ gap: 3 }} data-testid="customer-engagement">
+            <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: '#8E8E93' }}>ENGAGEMENT</Text>
+            <Text style={{ fontSize: 13, color: colors.text }} data-testid="customer-engagement-week">
+              Last 7 days: {row.engagement.contacts.week} contacts · {row.engagement.shares.week} card shares · {row.engagement.memos.week} memos · {row.engagement.texts.week} texts · {row.engagement.people.active_week} of {row.engagement.people.total} people signed in
+            </Text>
+            <Text style={{ fontSize: 12.5, color: colors.textSecondary }} data-testid="customer-engagement-total">
+              All time: {row.engagement.contacts.total} contacts · {row.engagement.shares.total} shares · {row.engagement.memos.total} memos · {row.engagement.texts.total} texts
+            </Text>
+          </View>
+        ) : null}
         {attention.length ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }} data-testid="customer-attention">
             {attention.map((a) => (

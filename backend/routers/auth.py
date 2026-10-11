@@ -99,6 +99,17 @@ def _apply_pilot_flags(user: dict, org: dict) -> None:
         user["pilot"] = True
         user["pilot_billing_status"] = c.get("billing_status")
         user["pilot_owner"] = str(user.get("_id")) == str(c.get("owner_user_id") or "")
+        if c.get("pilot_program"):
+            from services import pilot_program
+            v = pilot_program.view(c) or {}
+            user["pilot_program"] = {k: v.get(k) for k in ("state", "days_left", "ends_at", "started_at", "day")}
+
+
+def _refuse_blocked(user: Optional[dict], status_code: int = 403) -> None:
+    """Every user of an ended Founding Partner Pilot is refused at sign-in and at session restore (the API middleware covers the rest)."""
+    if user and user.get("access_blocked"):
+        from services.pilot_program import ENDED_MSG
+        raise HTTPException(status_code=status_code, detail=ENDED_MSG)
 
 
 def _session_json(obj):
@@ -528,6 +539,7 @@ async def login(credentials: dict, request: Request = None):
     # Success — clear any failed-attempt record for this ip:email
     await _clear_login_attempts(rl_id)
     _refuse_dormant(user)
+    _refuse_blocked(user)
     
     # Auto-upgrade legacy plain-text passwords to bcrypt (always hash, even if bcrypt unavailable next deploy)
     stored_pw = user.get('password', '')
@@ -676,6 +688,7 @@ async def get_current_user(request: Request):
         raise HTTPException(status_code=401, detail="Invalid session")
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    _refuse_blocked(user, 401)
     return await _session_response(user)
 
 
@@ -710,6 +723,7 @@ async def refresh_session(request: Request):
         user = None
     if not user or user.get("status") in ("deactivated", "inactive") or user.get("is_active") is False:
         raise HTTPException(status_code=401, detail="This account is no longer active")
+    _refuse_blocked(user, 401)
     if body.get("timezone"):
         from .user_schedule import set_device_timezone
         if await set_device_timezone(str(user["_id"]), body.get("timezone")):

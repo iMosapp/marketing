@@ -108,13 +108,45 @@ async def payment_link(org_id: str, body: SendBody, request: Request, me: dict =
     """Create (or reuse) the Stripe Checkout link for this customer and optionally text + email it to the owner."""
     db = get_db()
     org = await _org(org_id, me)
-    c = org["customer"]
-    reusable = c.get("checkout_url") and c.get("billing_status") == "awaiting_payment" and (c.get("checkout_expires_at") or "") > svc.now_iso()
-    res = {"url": c["checkout_url"], "session_id": c.get("checkout_session_id"), "expires_at": c.get("checkout_expires_at")} if reusable \
-        else await billing.create_checkout(db, org, me, public_base(request))
+    res = await billing.checkout_link(db, org, me, public_base(request))
     if body.send:
         res["sent"] = await billing.send_payment_link(db, await svc.customer_org(db, org_id), me, res["url"])
     return res
+
+
+# ── Founding Partner Pilot (super admin) ──────────────────────────────────────
+
+class PilotBody(BaseModel):
+    reason: str = ""
+    days: int = 0
+
+
+@router.post("/{org_id}/pilot/start")
+async def pilot_start(org_id: str, me: dict = SUPER):
+    from services import pilot_program
+    org = await _org(org_id, me)
+    return {"success": True, "pilot_program": await pilot_program.grant(get_db(), org, me)}
+
+
+@router.post("/{org_id}/pilot/extend")
+async def pilot_extend(org_id: str, body: PilotBody, me: dict = SUPER):
+    from services import pilot_program
+    org = await _org(org_id, me)
+    return {"success": True, "extension": await pilot_program.extend(get_db(), org, me, body.days, body.reason)}
+
+
+@router.post("/{org_id}/pilot/end")
+async def pilot_end(org_id: str, body: PilotBody, me: dict = SUPER):
+    from services import pilot_program
+    org = await _org(org_id, me)
+    return {"success": True, **await pilot_program.end(get_db(), org, me, body.reason)}
+
+
+@router.post("/{org_id}/pilot/resume")
+async def pilot_resume(org_id: str, body: PilotBody, me: dict = SUPER):
+    from services import pilot_program
+    org = await _org(org_id, me)
+    return {"success": True, **await pilot_program.resume(get_db(), org, me, body.reason, body.days)}
 
 
 @router.post("/{org_id}/sync-billing")

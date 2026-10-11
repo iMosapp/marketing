@@ -166,9 +166,14 @@ async def bind_identity_header(request: Request, call_next):
         return await call_next(request)
     claimed = (request.headers.get("X-User-ID") or "").strip()
     is_admin = (path.startswith("/api/admin/") and not ADMIN_PUBLIC_RE.match(path)) or path.startswith(PRIVATE_PREFIXES)
+    caller = await _verified_caller_id(request) if request.headers.get("Authorization", "").startswith("Bearer ") else None
+    if caller:
+        from services import access_block
+        if await access_block.is_blocked(get_db(), caller):
+            logger.info(f"[ACCESS] Blocked user {caller} refused on {request.method} {path}")
+            return _JSONResponse(access_block.REFUSAL, status_code=401)
     if not claimed and not is_admin:
         return await call_next(request)
-    caller = await _verified_caller_id(request)
     if not caller or (claimed and claimed != caller):
         logger.warning(f"[IDENTITY] Rejected {request.method} {path} — X-User-ID={claimed or '-'} caller={caller or '-'}")
         return _JSONResponse({"detail": "Authentication required"}, status_code=401)

@@ -303,6 +303,7 @@ class NewAccountRequest(BaseModel):
     plan_key: Optional[str] = None
     seats_extra: int = 0
     pilot: bool = True
+    billing_mode: str = "paid"  # founding_pilot (90 complimentary days from owner activation, super admin only) | paid (payment link from day one)
 
     # Location data (from Nominatim / Google Places)
     place_id: Optional[str] = ""
@@ -331,6 +332,15 @@ async def create_new_account(
     plan_key = data.plan_key or data.plan
     customer = cust.new_customer(plan_key, data.seats_extra, "", x_user_id)  # validates plan + seats before anything is written
     customer["pilot"] = bool(data.pilot)
+    if data.billing_mode not in ("founding_pilot", "paid"):
+        raise HTTPException(status_code=400, detail="billing_mode must be founding_pilot or paid")
+    founding_pilot = data.billing_mode == "founding_pilot"
+    if founding_pilot and me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only a super admin can grant a Founding Partner Pilot")
+    if founding_pilot:
+        from services import pilot_program
+        customer["billing_status"] = "pilot"
+        customer["pilot_program"] = pilot_program.new_program(me)
 
     if not data.business_name.strip():
         raise HTTPException(status_code=400, detail="Business name is required")
@@ -455,7 +465,9 @@ async def create_new_account(
     # Customer record: plan, seats, billing + onboarding status (legacy orgs never get this field)
     customer["owner_user_id"] = user_id
     await db.organizations.update_one({"_id": org_result.inserted_id}, {"$set": {"customer": customer}})
-    await cust.audit(db, org_id, "customer_created", me, plan_key=plan_key, seats_extra=int(data.seats_extra or 0), pilot=bool(data.pilot))
+    await cust.audit(db, org_id, "customer_created", me, plan_key=plan_key, seats_extra=int(data.seats_extra or 0), pilot=bool(data.pilot), billing_mode=data.billing_mode)
+    if founding_pilot:
+        await cust.audit(db, org_id, "pilot_granted", me, days=customer["pilot_program"]["days"], plan_key=plan_key, amount=customer.get("amount"))
 
     # Seed user-level defaults (templates, campaigns, triggers)
     try:

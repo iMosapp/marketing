@@ -81,6 +81,23 @@ export function PilotHome() {
           <PilotChecklist data={checklist} colors={colors} onStep={onStep} />
         ) : null}
 
+        {(() => {
+          const pp = (user as any)?.pilot_program;
+          const owner = !!(user as any)?.pilot_owner;
+          if (!owner || !pp || !(pp.state === 'completed' || (pp.state === 'active' && typeof pp.days_left === 'number' && pp.days_left <= 14))) return null;
+          const over = pp.state === 'completed';
+          return (
+            <TouchableOpacity onPress={() => router.push('/settings/billing' as any)} activeOpacity={0.85} {...tid('pilot-banner')}
+              style={{ marginHorizontal: SPACE.lg, marginBottom: SPACE.lg, padding: SPACE.md, borderRadius: RADIUS.md, borderWidth: 1, borderColor: tint(GOLD, 0.45), backgroundColor: tint(GOLD, 0.1), flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Ionicons name="time-outline" size={18} color={GOLD} />
+              <Text style={{ flex: 1, fontSize: 13.5, color: colors.text, lineHeight: 18 }}>
+                {over ? 'Your complimentary pilot has ended. Nothing was charged.' : `Your complimentary pilot ends in ${pp.days_left} day${pp.days_left === 1 ? '' : 's'}.`}
+                <Text style={{ fontWeight: '700', color: GOLD }}> Continue →</Text>
+              </Text>
+            </TouchableOpacity>
+          );
+        })()}
+
         <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 1.4, color: colors.textSecondary, marginHorizontal: SPACE.lg, marginBottom: SPACE.sm }}>EVERY DAY</Text>
 
         <TouchableOpacity

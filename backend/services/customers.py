@@ -16,7 +16,7 @@ PILOT_PLANS = {
     "pilot_individual_monthly": {"key": "pilot_individual_monthly", "name": "Pilot Individual", "amount": 100.0, "interval": "month",
                                  "seats_included": 1, "seat_price": None, "kind": "individual", "desc": "One person, one seat"},
 }
-BILLING_OK = {"active", "trialing", "exception"}
+BILLING_OK = {"active", "trialing", "exception", "pilot"}
 INVITE_TTL_HOURS = 72
 MAX_EXCEPTION_DAYS = 180
 PLACEHOLDER_EMAIL_SUFFIX = "@placeholder.local"
@@ -207,12 +207,18 @@ async def on_owner_activated(db, user_id: str) -> None:
     org_id = str(org["_id"])
     await _set(db, org_id, owner_activated_at=now_iso(), onboarding_status="owner_active")
     await audit(db, org_id, "owner_activated", None, user_id=user_id)
+    from services import pilot_program
+    org = await db.organizations.find_one({"_id": org["_id"]}, {"name": 1, "customer": 1})
+    started = await pilot_program.start(db, org)
     owner = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1})
     founder = org["customer"].get("created_by")
     if not founder:
         return
     title = f"{(owner or {}).get('name') or 'The owner'} activated {org.get('name', 'their account')}"
     body = "They can sign in now. Next: a work number and their first card share."
+    if started:
+        ends = ((await db.organizations.find_one({"_id": org["_id"]}, {"customer.pilot_program.ends_at": 1}))["customer"]["pilot_program"].get("ends_at") or "")[:10]
+        body = f"Their 90-day Founding Partner Pilot started today and ends {ends}. Next: a work number and their first card share."
     try:
         from routers.push_notifications import send_push_to_user
         await send_push_to_user(founder, title, body, f"/admin/customers/{org_id}", "checkmark-circle")
@@ -240,10 +246,12 @@ async def row(db, org: dict, with_issues: bool = False) -> dict:
         c["exception_expired"] = True
     owner_email = (owner or {}).get("email") or ""
     signals = await pilot.founder_view(db, org, owner, with_issues=with_issues)
+    from services import pilot_program
     return {
         "organization_id": org_id, "name": org.get("name"), "city": org.get("city"), "state": org.get("state"), "industry": org.get("industry"),
         "org_active": bool(org.get("active")), "created_at": org.get("created_at"),
         "customer": c,
+        "pilot_program": pilot_program.view(c), "mrr": pilot_program.mrr(c),
         **signals,
         "owner": owner and {
             "user_id": str(owner["_id"]), "name": owner.get("name"), "email": "" if owner_email.endswith(PLACEHOLDER_EMAIL_SUFFIX) else owner_email,

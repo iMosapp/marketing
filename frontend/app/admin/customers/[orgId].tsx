@@ -11,11 +11,14 @@ import { ScreenHeader } from '../../../components/common/ScreenHeader';
 import { StatusPill } from '../../../components/customers/StatusPill';
 import { ExceptionSheet } from '../../../components/customers/ExceptionSheet';
 import { BillingPanel } from '../../../components/customers/BillingPanel';
+import { PilotPanel } from '../../../components/customers/PilotPanel';
+import { PilotAction, PilotSheet } from '../../../components/customers/PilotSheet';
 import { Step, StepRail } from '../../../components/customers/StepRail';
 import { ProgressCard } from '../../../components/customers/ProgressCard';
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 const money = (n?: number) => (typeof n === 'number' ? `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '');
+const MRR_LABEL: Record<string, string> = { actual: 'MRR', scheduled: 'MRR (card saved)', potential: 'Potential MRR', none: 'MRR' };
 
 export default function CustomerScreen() {
   const { orgId } = useLocalSearchParams<{ orgId: string }>();
@@ -27,6 +30,7 @@ export default function CustomerScreen() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [showException, setShowException] = useState(false);
+  const [pilotAction, setPilotAction] = useState<PilotAction | null>(null);
   const [notes, setNotes] = useState('');
 
   const load = useCallback(async () => {
@@ -69,14 +73,22 @@ export default function CustomerScreen() {
 
   const c = row.customer || {};
   const owner = row.owner;
-  const billingOk = ['active', 'trialing', 'exception'].includes(c.billing_status) && !c.exception_expired;
+  const pp = row.pilot_program;
+  const isPilot = c.billing_status === 'pilot';
+  const pilotEnded = isPilot && pp?.state === 'ended';
+  const billingOk = ['active', 'trialing', 'exception', 'pilot'].includes(c.billing_status) && !c.exception_expired && !pilotEnded;
   const activated = !!c.activated_at;
   const invited = !!c.owner_invited_at;
   const ownerActive = !!c.owner_activated_at || !!owner?.activated;
   const exc = c.billing_exception;
   const billingDetail = () => {
+    if (isPilot && pp?.state === 'pending') return `Founding Partner Pilot · ${pp.days} complimentary days from the day the owner activates · then ${money(row.mrr?.amount)}/mo. No card, no Stripe until they choose to continue.`;
+    if (isPilot && pp?.state === 'active') return `Founding Partner Pilot · day ${pp.day} of ${pp.days} · ${pp.days_left} days left (ends ${fmt(pp.ends_at)}) · agreed ${money(row.mrr?.amount)}/mo after. Nothing is charged automatically.`;
+    if (isPilot && pp?.state === 'completed') return `Founding Partner Pilot period ended ${fmt(pp.ends_at)} · access continues, nothing charged · waiting for your decision (continue, extend or end).`;
+    if (pilotEnded) return `Pilot ended ${fmt(pp.ended_at)} by the founder · access blocked, data kept.`;
     if (c.billing_status === 'exception') return `Billing exception: ${exc?.reason} (ends ${fmt(exc?.expires_at)}). Not a Stripe payment.`;
-    if (c.billing_status === 'active' || c.billing_status === 'trialing') return `Paid through Stripe${c.current_period_end ? ` · renews ${fmt(c.current_period_end)}` : ''}${c.cancel_at_period_end ? ' · cancellation scheduled' : ''}`;
+    if (c.billing_status === 'trialing') return `Continue confirmed · card saved on Stripe · first charge ${fmt(c.current_period_end)}${pp?.converted_at ? ` · chose to continue ${fmt(pp.converted_at)}` : ''}`;
+    if (c.billing_status === 'active') return `Paid through Stripe${c.current_period_end ? ` · renews ${fmt(c.current_period_end)}` : ''}${c.cancel_at_period_end ? ' · cancellation scheduled' : ''}${pp?.converted_at ? ` · converted from the pilot ${fmt(pp.converted_at)}` : ''}`;
     if (c.billing_status === 'past_due') return `Payment failed · Stripe is retrying · access continues until ${fmt(c.grace_until)}`;
     if (c.billing_status === 'awaiting_payment') return `Payment link sent ${fmt(c.payment_link_sent_at || c.checkout_created_at)} · waiting for the owner to pay on Stripe`;
     if (c.billing_status === 'canceled') return `Subscription canceled ${fmt(c.canceled_at)} · send a new payment link or grant an exception`;
@@ -95,12 +107,13 @@ export default function CustomerScreen() {
       detail: `${c.plan_name} · ${money(c.amount)}/mo · ${row.seats.included} seats included${row.seats.extra ? ` + ${row.seats.extra} extra` : ''} · created ${fmt(c.created_at)}`,
     },
     {
-      key: 'billing', title: 'Plan and payment', done: billingOk, current: !billingOk,
+      key: 'billing', title: isPilot ? 'Plan and pilot' : 'Plan and payment', done: billingOk, current: !billingOk,
       detail: billingDetail(),
-      action: isSuper && !billingOk ? (c.billing_status === 'awaiting_payment'
+      action: isSuper && !billingOk && !pilotEnded ? (c.billing_status === 'awaiting_payment'
         ? { label: 'Check payment', onPress: () => act(() => api.post(`/customers/${orgId}/sync-billing`), 'Synced with Stripe'), testID: 'customer-check-payment-btn' }
         : { label: 'Send payment link', onPress: sendLink, testID: 'customer-payment-link-btn' }) : undefined,
-      secondary: isSuper && !billingOk ? { label: 'Grant billing exception instead', onPress: () => setShowException(true), testID: 'customer-exception-btn' } : undefined,
+      secondary: isSuper && !billingOk && !pilotEnded ? { label: 'Start 90-day Founding Partner Pilot instead', onPress: () => showConfirm('Start the 90-day pilot?', `${row.name} gets 90 complimentary days from the day the owner activates. No card, no Stripe. Agreed pricing after: ${money(row.mrr?.amount)}/mo.`, () => act(() => api.post(`/customers/${orgId}/pilot/start`), 'Pilot started')), testID: 'customer-pilot-start-btn' } : undefined,
+      tertiary: isSuper && !billingOk && !pilotEnded ? { label: 'Grant billing exception instead', onPress: () => setShowException(true), testID: 'customer-exception-btn' } : undefined,
     },
     {
       key: 'activate', title: 'Activate account', done: activated, current: billingOk && !activated,
@@ -136,8 +149,14 @@ export default function CustomerScreen() {
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Stat colors={colors} label="Seats" value={`${row.seats.used}/${row.seats.limit}`} testID="customer-seats" />
           <Stat colors={colors} label="People active" value={`${row.users.activated}`} testID="customer-active-users" />
-          <Stat colors={colors} label="Monthly" value={money(c.amount + (c.seat_price || 0) * (c.seats_extra || 0))} testID="customer-monthly" />
+          <Stat colors={colors} label={MRR_LABEL[row.mrr?.kind] || 'Monthly'} value={money(row.mrr?.amount ?? (c.amount + (c.seat_price || 0) * (c.seats_extra || 0)))} testID="customer-monthly" />
         </View>
+        {pp && pp.state !== 'converted' ? (
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Stat colors={colors} label="Pilot" value={pp.state === 'pending' ? 'Not started' : pp.state === 'ended' ? 'Ended' : pp.state === 'completed' ? 'Period over' : `${pp.days_left} days left`} testID="customer-pilot-days" />
+            <Stat colors={colors} label="People active (7d)" value={`${row.engagement?.people?.active_week ?? 0}/${row.engagement?.people?.total ?? row.users.total}`} testID="customer-active-week" />
+          </View>
+        ) : null}
         {isSuper && c.seat_price ? (
           <TouchableOpacity
             onPress={() => showConfirm('Add a seat?', `Adds one seat at ${money(c.seat_price)}/mo.${c.stripe_subscription_id ? ' The Stripe subscription is updated and the prorated amount is invoiced now.' : ' Billing follows once the customer pays through Stripe.'}`, () => act(() => api.patch(`/customers/${orgId}`, { seats_extra: (c.seats_extra || 0) + 1 }), 'Seat added'))}
@@ -159,11 +178,22 @@ export default function CustomerScreen() {
           />
         ) : null}
 
+        {pilotAction ? (
+          <PilotSheet
+            action={pilotAction}
+            colors={colors}
+            busy={busy}
+            onCancel={() => setPilotAction(null)}
+            onSubmit={(reason, days) => act(() => api.post(`/customers/${orgId}/pilot/${pilotAction}`, { reason, days }), { extend: 'Pilot extended', end: 'Pilot ended', resume: 'Access resumed' }[pilotAction]).then(() => setPilotAction(null))}
+          />
+        ) : null}
+
         <StepRail steps={steps} colors={colors} busy={busy} />
 
         <ProgressCard row={row} colors={colors} onOpenIssues={isSuper ? () => router.push('/admin/bug-reports' as any) : undefined} />
 
-        {isSuper ? <BillingPanel orgId={orgId} customer={c} colors={colors} busy={busy} act={act} /> : null}
+        {isSuper && isPilot ? <PilotPanel orgId={orgId} row={row} colors={colors} busy={busy} act={act} onAction={setPilotAction} /> : null}
+        {isSuper && !isPilot ? <BillingPanel orgId={orgId} customer={c} colors={colors} busy={busy} act={act} /> : null}
 
         {isSuper ? (
           <View style={{ gap: 8 }}>

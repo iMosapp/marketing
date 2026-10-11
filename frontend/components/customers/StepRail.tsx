@@ -10,6 +10,7 @@ export type Step = {
   current?: boolean;
   action?: { label: string; onPress: () => void; disabled?: boolean; testID: string; tone?: 'gold' | 'orange' | 'plain' };
   secondary?: { label: string; onPress: () => void; testID: string };
+  tertiary?: { label: string; onPress: () => void; testID: string };
 };
 
 export function StepRail({ steps, colors, busy }: { steps: Step[]; colors: any; busy: boolean }) {
@@ -39,6 +40,11 @@ export function StepRail({ steps, colors, busy }: { steps: Step[]; colors: any; 
               {s.secondary ? (
                 <TouchableOpacity onPress={s.secondary.onPress} disabled={busy} style={{ alignSelf: 'flex-start', marginTop: 4 }} data-testid={s.secondary.testID}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962' }}>{s.secondary.label}</Text>
+                </TouchableOpacity>
+              ) : null}
+              {s.tertiary ? (
+                <TouchableOpacity onPress={s.tertiary.onPress} disabled={busy} style={{ alignSelf: 'flex-start', marginTop: 2 }} data-testid={s.tertiary.testID}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary }}>{s.tertiary.label}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>

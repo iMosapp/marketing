@@ -13,10 +13,12 @@ type Row = { key: string; icon: any; title: string; subtitle: string; color: str
 /** Pilot "More": only what a pilot customer needs. The full tool hub stays untouched for everyone else. */
 export function pilotRows(user: any): Row[] {
   const owner = !!user?.pilot_owner;
+  const pp = user?.pilot_program;
+  const billingSub = pp?.state === 'active' ? `Founding Partner Pilot · ${pp.days_left} days left` : pp?.state === 'completed' ? 'Your pilot period ended · continue here' : pp?.state === 'converted' ? 'Card saved · plan, invoices and payment method' : 'Your plan, invoices and payment method';
   return [
     { key: 'profile', icon: 'id-card', title: 'My Profile & Card', subtitle: 'Photo, title, bio and your digital card', color: GOLD, route: '/my-account' },
     ...(owner ? [
-      { key: 'billing', icon: 'card', title: 'Billing', subtitle: 'Your plan, invoices and payment method', color: '#34C759', route: '/settings/billing' },
+      { key: 'billing', icon: 'card', title: 'Billing', subtitle: billingSub, color: '#34C759', route: '/settings/billing' },
       { key: 'team', icon: 'person-add', title: 'Invite Your Team', subtitle: 'Add a teammate to one of your seats', color: '#007AFF', route: '/settings/invite-team' },
     ] : []),
     { key: 'notifications', icon: 'notifications', title: 'Notifications', subtitle: 'Push, text alerts and quiet times', color: '#FF9F0A', route: '/settings/notifications' },

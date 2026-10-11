@@ -93,6 +93,7 @@ export default function NewAccountScreen() {
   const [plans, setPlans] = useState<any[]>(FALLBACK_PLANS);
   const [plan, setPlan] = useState('pilot_store_monthly');
   const [seatsExtra, setSeatsExtra] = useState(0);
+  const [billingMode, setBillingMode] = useState<'founding_pilot' | 'paid'>('founding_pilot');
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState<'search' | 'details'>('search');
 
@@ -153,6 +154,7 @@ export default function NewAccountScreen() {
         plan_key: plan,
         seats_extra: selectedPlan?.seat_price ? seatsExtra : 0,
         pilot: true,
+        billing_mode: billingMode,
         place_id: selectedPlace?.place_id || '',
         lat: selectedPlace?.lat || '',
         lon: selectedPlace?.lon || '',
@@ -344,6 +346,27 @@ export default function NewAccountScreen() {
                 </View>
               </View>
             ) : null}
+
+            {/* Billing mode */}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>BILLING</Text>
+            <View style={{ gap: 8, paddingHorizontal: 16 }}>
+              {([
+                { key: 'founding_pilot', title: 'Founding Partner Pilot', desc: `90 complimentary days from the day the owner activates. No card, no Stripe. They agree to $${selectedPlan ? selectedPlan.amount + (selectedPlan.seat_price || 0) * seatsExtra : 375}/mo after and are charged only if they choose to continue.` },
+                { key: 'paid', title: 'Paid from day one', desc: 'Send a Stripe payment link; the account is activated once the first payment clears.' },
+              ] as const).map((m) => {
+                const sel = billingMode === m.key;
+                return (
+                  <TouchableOpacity key={m.key} onPress={() => setBillingMode(m.key)} data-testid={`billing-mode-${m.key}`}
+                    style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: 12, borderWidth: 1, backgroundColor: sel ? '#C9A96212' : colors.card, borderColor: sel ? '#C9A96260' : colors.border }}>
+                    <Ionicons name={sel ? 'radio-button-on' : 'radio-button-off'} size={20} color={sel ? '#C9A962' : colors.textTertiary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: sel ? '#C9A962' : colors.text }}>{m.title}</Text>
+                      <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2, lineHeight: 18 }}>{m.desc}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             {/* Submit */}
             <TouchableOpacity
