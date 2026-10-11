@@ -387,7 +387,7 @@ async def _dispatch(db, typ: str, obj: dict) -> dict:
         fields = await apply_subscription(db, org, obj, "webhook")
         if fields.get("ignored_stale_subscription"):
             return {"organization_id": str(org["_id"]), "result": fields["billing_status"], "stale": True}
-        if typ == "customer.subscription.deleted":
+        if typ == "customer.subscription.deleted" and before != "canceled":
             await _notify_founder(db, org, "customer_subscription_canceled", f"{org.get('name')} subscription ended",
                                   "The Stripe subscription is canceled. Access stays on until you decide; open the customer to resend a payment link or turn the account off.")
         elif obj.get("cancel_at_period_end") and not org["customer"].get("cancel_at_period_end"):

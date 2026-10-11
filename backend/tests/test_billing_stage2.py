@@ -176,6 +176,16 @@ def test_completed_subscription_marks_customer_paid(customer, super_admin, mongo
     assert status == 200 and body["billing_status"] == "active" and body["customer"]["customer"]["billing_status"] == "active"
     # unknown event types are acknowledged and ignored
     assert run(billing.handle_event(adb(), _event("charge.refunded", {"id": "ch_x"})))["ignored"] is True
+    # live delivery: with the endpoint registered, Stripe itself must have posted the real events for this subscription
+    if os.environ.get("STRIPE_BILLING_WEBHOOK_SECRET"):
+        for _ in range(30):
+            live = {e["type"] for e in mongo.stripe_events.find({"_id": {"$regex": "^evt_1"}, "organization_id": org_id, "processed": True})}
+            if {"customer.subscription.created", "invoice.paid"} <= live:
+                break
+            time.sleep(1)
+        assert {"customer.subscription.created", "invoice.paid"} <= live, live
+        assert _cust(mongo, org_id)["last_payment_amount"] == 450.0  # written by Stripe's own invoice.paid, not by this test
+        assert mongo.customer_audit_log.count_documents({"organization_id": org_id, "action": "subscription_active"}) == 1  # replayed by the live event: still one write
 
 
 def test_paid_customer_can_be_activated_and_owner_sees_billing(customer, super_admin, mongo, store_manager, rep):
@@ -231,7 +241,7 @@ def test_failed_payment_keeps_access_and_tells_founder(customer, mongo):
     assert c3["billing_status"] == "active" and c3["grace_until"] is None and c3["failed_attempts"] == 0 and c3["last_payment_amount"] == 450.0
     assert mongo.notifications.count_documents({"type": "customer_payment_recovered", "link": f"/admin/customers/{org_id}"}) == 1
     assert mongo.customer_audit_log.count_documents({"organization_id": org_id, "action": "payment_failed"}) == 2
-    assert mongo.customer_audit_log.count_documents({"organization_id": org_id, "action": "payment_succeeded"}) == 1
+    assert mongo.customer_audit_log.count_documents({"organization_id": org_id, "action": "payment_succeeded"}) >= 1  # + Stripe's own invoice.paid when live
 
 
 # ── B6 seats stay in step with Stripe ─────────────────────────────────────────

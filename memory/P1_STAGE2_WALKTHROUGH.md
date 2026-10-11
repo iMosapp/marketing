@@ -18,7 +18,10 @@
 ## Failed payment policy (documented)
 `invoice.payment_failed` -> billing_status past_due, grace_until = first failure + 14 days, failed_attempts += 1, founder notified. Stripe Smart Retries keep trying; `invoice.paid` clears it. Nothing is ever suspended automatically: the founder decides from the customer page / org page. Enable in the Stripe Dashboard: Settings -> Billing -> Subscriptions and emails -> Smart Retries + "Send emails about failed payments" so the owner gets Stripe's dunning emails too.
 
-## Webhook: create the endpoint now
+## Webhook: registered and verified (Oct 11 2026)
+Endpoint active in the owner's sandbox; `STRIPE_BILLING_WEBHOOK_SECRET` set in preview backend/.env by the owner. Verification: unsigned 400, forged 400, stale timestamp 400, self-signed 200; duplicate event id -> `{duplicate: true}` with one write; Stripe's own `customer.subscription.created` + `invoice.paid` deliveries reached the preview route (200, processed, idempotent against the pull writer); 0 x 500 in logs. Suite `test_billing_stage2.py` 11/11 twice.
+
+### Original setup notes
 Dashboard (Test mode) -> Developers -> Webhooks -> Add endpoint / destination:
 - URL: `https://user-routing-issue.preview.emergentagent.com/api/billing/stripe/webhook`
 - Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`
@@ -26,11 +29,11 @@ Dashboard (Test mode) -> Developers -> Webhooks -> Add endpoint / destination:
 Until then the route answers 503 to everything (by design) and status changes made outside the app (failed renewals, portal cancellations) land only when the founder presses Sync with Stripe.
 
 ## Remaining risks
-1. Webhook delivery not yet proven end-to-end (needs the secret). Pull-confirm covers payment success; failures / portal cancellations depend on the webhook or a manual Sync.
+1. (resolved Oct 11) Webhook delivery proven end-to-end in preview; production needs its own endpoint + secret.
 2. Legacy `/api/webhook/stripe` and `/api/stripe/webhook` keep their unsigned fallbacks (out of scope since the audit).
 3. Pilot owner's More menu still lists non-pilot tools (Campaigns, Inventory Feed, Appraisal Rules): Stage 3 trimming.
 4. No tax collection (amounts tax-exclusive); portal configuration exists in test mode only (live mode auto-creates on first use).
 5. Production needs: the two new Secrets, a second webhook endpoint for `https://app.imonsocial.com/api/billing/stripe/webhook`, live-mode catalog (same script, live key), backend Deploy + EAS update. Stage 1 backend deploy was started by the owner on Oct 11.
 
 ## GO/NO-GO for Stage 3
-GO once the webhook secret is in and the signed test passes. Stage 3 (pilot Home + founder progress on the row) needs no Stripe decisions.
+GO: the webhook secret is in and the signed + live tests pass. Stage 3 (pilot Home + founder progress on the row) needs no Stripe decisions.
