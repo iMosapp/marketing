@@ -37,3 +37,7 @@ Until then the route answers 503 to everything (by design) and status changes ma
 
 ## GO/NO-GO for Stage 3
 GO: the webhook secret is in and the signed + live tests pass. Stage 3 (pilot Home + founder progress on the row) needs no Stripe decisions.
+
+## Final verification (Oct 11 2026, owner confirmed live deliveries in the Stripe Dashboard)
+Full regression 150/150 (Stage 2 11, Stage 1 14, P0 + legacy 125). Logs: webhook route 46 x 200 (3 self-signed + Stripe's own deliveries), 19 x 400 (unsigned / forged / stale tests), 14 x 503 (before the secret), 0 x 500; no `rk_test_` / `whsec_` string anywhere in backend logs; backend/.env not tracked by git. Preview state: QA Pilot Demo Co paid / not activated (founder walkthrough), QA Pilot Owner Co paid / owner active, 37 legacy orgs untouched. Catalog dry-run: 3 prices present, nothing to create.
+FINAL: GO for Stage 3. Production blockers (ship checklist, not code): (1) live restricted key + live webhook endpoint `https://app.imonsocial.com/api/billing/stripe/webhook` (same 6 events) -> Deployments -> Secrets `STRIPE_BILLING_SECRET_KEY` / `STRIPE_BILLING_WEBHOOK_SECRET`; (2) live catalog `python tests/ensure_billing_catalog.py --live` (or it self-creates on the first production payment link); (3) Stripe account activated for live charges (KYC / payout bank), Smart Retries + failed-payment emails on, statement descriptor / branding; (4) backend Deploy (Stage 1 + 2) + EAS update. Non-blocking: legacy unsigned webhook fallbacks, pilot More-menu trimming (Stage 3), no Stripe Tax.
