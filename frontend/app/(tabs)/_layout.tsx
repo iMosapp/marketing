@@ -88,6 +88,8 @@ export default function TabLayout() {
   }, [mounted, isLoading, isAuthenticated]);
 
   const isPending = user?.status === 'pending';
+  // Stage 3: pilot customers get Home, Contacts and Messages only. Tasks and Phone stay routable, just not in the bar.
+  const pilot = !!user?.pilot;
 
   const BadgeIcon = ({ name, color, size, count, badgeTestID }: { name: string; color: string; size: number; count: number; badgeTestID: string }) => (
     <View>
@@ -150,7 +152,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="inbox"
         options={{
-          title: 'Inbox',
+          title: pilot ? 'Messages' : 'Inbox',
           tabBarIcon: ({ color, size }) => (
             <BadgeIcon name="chatbubbles" color={color} size={size} count={inboxUnreadCount} badgeTestID="tab-inbox-badge" />
           ),
@@ -170,6 +172,7 @@ export default function TabLayout() {
         name="touchpoints"
         options={{
           title: 'Tasks',
+          href: pilot ? null : undefined,
           tabBarIcon: ({ color, size }) => (
             <BadgeIcon name="checkmark-done-circle" color={color} size={size} count={tasksDueCount} badgeTestID="tab-tasks-badge" />
           ),
@@ -180,6 +183,7 @@ export default function TabLayout() {
         name="dialer"
         options={{
           title: 'Phone',
+          href: pilot ? null : undefined,
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="call" size={size} color={isPending ? '#3C3C3E' : color} />

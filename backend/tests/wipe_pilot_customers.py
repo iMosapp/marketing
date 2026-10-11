@@ -8,7 +8,8 @@ import sys
 from bson import ObjectId
 from pymongo import MongoClient
 
-USER_COLLECTIONS = ["templates", "email_templates", "campaigns", "date_trigger_configs", "review_response_templates", "social_templates", "tags", "contacts", "notifications"]
+USER_COLLECTIONS = ["templates", "email_templates", "campaigns", "date_trigger_configs", "review_response_templates", "social_templates", "tags", "contacts", "notifications",
+                    "contact_events", "voice_notes", "bug_reports", "card_scans"]
 STORE_COLLECTIONS = ["tags", "lead_sources", "congrats_card_templates", "setup_wizard_progress"]
 
 

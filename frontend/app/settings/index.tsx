@@ -25,14 +25,18 @@ const ROWS: Row[] = [
 export default function SettingsIndex() {
   const router = useRouter();
   const { colors, mode, toggle } = useThemeStore();
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
+  const pilot = !!user?.pilot;
+  const rows = pilot
+    ? ROWS.filter(r => !['schedule', 'calendar'].includes(r.key)).map(r => (r.key === 'bug' ? { ...r, icon: 'chatbox-ellipses', title: 'Send Feedback', subtitle: 'A question, a problem or a suggestion', color: '#5856D6' } : r))
+    : ROWS;
   const signOut = () => showConfirm('Sign out?', 'You can sign back in any time with Face ID or your password.', () => { logout(); }, undefined, 'Sign out');
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScreenHeader title="Settings" testID="settings-header" />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }} {...tid('settings-index')}>
         <View style={{ backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
-          {ROWS.map((r, i) => (
+          {rows.map((r, i) => (
             <TouchableOpacity key={r.key} onPress={() => router.push(r.route as any)} activeOpacity={0.7}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }} {...tid(`settings-row-${r.key}`)}>
               <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: r.color + '22', alignItems: 'center', justifyContent: 'center' }}>
@@ -56,7 +60,7 @@ export default function SettingsIndex() {
             <Switch value={mode === 'dark'} onValueChange={toggle} trackColor={{ true: '#C9A962', false: colors.border }} {...tid('settings-theme-switch')} />
           </View>
         </View>
-        <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 18, paddingHorizontal: 4 }}>Want another tool on your Tools tab? Ask your manager; they can switch it on for you in a tap.</Text>
+        {!pilot ? <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 18, paddingHorizontal: 4 }}>Want another tool on your Tools tab? Ask your manager; they can switch it on for you in a tap.</Text> : null}
         <TouchableOpacity onPress={signOut} style={{ marginTop: 10, height: 46, borderRadius: 14, borderWidth: 1, borderColor: '#FF3B3055', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('settings-sign-out')}>
           <Ionicons name="log-out-outline" size={18} color="#FF3B30" />
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#FF3B30' }}>Sign out</Text>

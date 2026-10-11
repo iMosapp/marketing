@@ -59,6 +59,9 @@ interface User {
   needs_onboarding?: boolean;
   needs_password_change?: boolean;  // Flag for first-time password change
   isImpersonating?: boolean;  // Flag for impersonation mode
+  pilot?: boolean;  // Stage 3: member of a launch-customer org marked pilot -> simplified experience
+  pilot_billing_status?: string;
+  pilot_owner?: boolean;
 }
 
 interface PartnerBranding {

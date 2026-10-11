@@ -59,6 +59,10 @@ export default function Index() {
       } else {
         setRedirectPath('/auth/login');
       }
+    } else if (user?.pilot) {
+      // Pilot customers: straight to the simplified Home, no slideshow or Jessi welcome
+      setRedirectPath('/(tabs)/home');
+      if (user?._id) registerPushOnce(user._id);
     } else if (!isImpersonating && (user as any)?.jessi_welcome_pending) {
       // Jessi already built their profile by text: her welcome screen replaces the product tour
       setRedirectPath('/welcome-jessi');

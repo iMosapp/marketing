@@ -12,6 +12,7 @@ import { StatusPill } from '../../../components/customers/StatusPill';
 import { ExceptionSheet } from '../../../components/customers/ExceptionSheet';
 import { BillingPanel } from '../../../components/customers/BillingPanel';
 import { Step, StepRail } from '../../../components/customers/StepRail';
+import { ProgressCard } from '../../../components/customers/ProgressCard';
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 const money = (n?: number) => (typeof n === 'number' ? `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '');
@@ -159,6 +160,8 @@ export default function CustomerScreen() {
         ) : null}
 
         <StepRail steps={steps} colors={colors} busy={busy} />
+
+        <ProgressCard row={row} colors={colors} onOpenIssues={isSuper ? () => router.push('/admin/bug-reports' as any) : undefined} />
 
         {isSuper ? <BillingPanel orgId={orgId} customer={c} colors={colors} busy={busy} act={act} /> : null}
 

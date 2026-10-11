@@ -27,9 +27,9 @@ async def _email_super_admins(report: dict):
         return
     html = f"""
     <div style="font-family: -apple-system, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
-        <h2 style="color: #1a1a1a;">New Bug Report</h2>
-        <p><strong>From:</strong> {report.get('user_name')} ({report.get('user_email')})</p>
-        <p><strong>Category:</strong> {(report.get('category') or 'bug').replace('_', ' ').title()}</p>
+        <h2 style="color: #1a1a1a;">New {(report.get('category') or 'bug').replace('_', ' ').title()}</h2>
+        <p><strong>From:</strong> {report.get('user_name')} ({report.get('user_email')}){f" &middot; {report.get('organization_name')}" if report.get('organization_name') else ''}{' &middot; pilot customer' if report.get('pilot') else ''}</p>
+        <p><strong>Category:</strong> {(report.get('category') or 'bug').replace('_', ' ').title()}{f" &middot; <strong>Screen:</strong> {report.get('screen')}" if report.get('screen') else ''}</p>
         <p><strong>Platform:</strong> {report.get('platform') or 'unknown'}</p>
         <div style="background: #f5f5f7; border-radius: 10px; padding: 16px; margin-top: 12px;">
             <p style="white-space: pre-wrap; margin: 0;">{report.get('description')}</p>
@@ -37,11 +37,12 @@ async def _email_super_admins(report: dict):
         <p style="color: #888; font-size: 12px; margin-top: 20px;">Manage in Hub &rarr; Internal Operations &rarr; Bug Reports.</p>
     </div>
     """
+    org_suffix = f" ({report.get('organization_name')})" if report.get("organization_name") else ""
     try:
         await asyncio.to_thread(resend.Emails.send, {
             "from": f"I'm On Social <{SENDER_EMAIL}>",
             "to": emails,
-            "subject": f"Bug Report from {report.get('user_name', 'User')}: {(report.get('category') or 'bug').replace('_', ' ').title()}",
+            "subject": f"{(report.get('category') or 'bug').replace('_', ' ').title()} from {report.get('user_name', 'User')}{org_suffix}",
             "html": html,
         })
     except Exception as e:
@@ -54,13 +55,14 @@ async def _push_super_admins(report: dict):
     try:
         from routers.push_notifications import send_push_to_user
         admins = await db.users.find({"role": "super_admin"}, {"_id": 1}).to_list(10)
+        org_suffix = f" · {report.get('organization_name')}" if report.get("organization_name") else ""
         for a in admins:
             try:
                 await send_push_to_user(
                     user_id=str(a["_id"]),
-                    title=f"🐛 Bug Report — {report.get('user_name', 'User')}",
+                    title=f"{(report.get('category') or 'bug').replace('_', ' ').title()} from {report.get('user_name', 'User')}{org_suffix}",
                     body=(report.get("description") or "")[:120],
-                    url="/admin/bug-reports",
+                    url=f"/admin/customers/{report['organization_id']}" if report.get("pilot") and report.get("organization_id") else "/admin/bug-reports",
                     icon="bug",
                 )
                 logger.info(f"[bug-reports] push sent to super admin {a['_id']}")
@@ -133,26 +135,41 @@ async def send_weekly_bug_digest():
         return {"sent": False, "reason": str(e)}
 
 
+CATEGORIES = {"bug", "question", "problem", "suggestion", "other"}
+
+
 @router.post("/{user_id}")
 async def submit_bug_report(user_id: str, data: dict = Body(...)):
-    """Field rep submits a bug report from Hub settings."""
+    """A user sends feedback (bug / question / problem / suggestion). Account context is added server-side, never from the client."""
     db = get_db()
     description = (data.get("description") or "").strip()
     if not description:
         raise HTTPException(status_code=400, detail="Description is required")
+    category = (data.get("category") or "bug").strip().lower()
+    if category not in CATEGORIES:
+        category = "other"
 
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "email": 1})
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "email": 1, "role": 1, "organization_id": 1, "store_id": 1})
     except Exception:
         user = None
+    org = None
+    if (user or {}).get("organization_id") and ObjectId.is_valid(user["organization_id"]):
+        org = await db.organizations.find_one({"_id": ObjectId(user["organization_id"])}, {"name": 1, "customer.pilot": 1})
 
     report = {
         "user_id": user_id,
         "user_name": (user or {}).get("name", "Unknown"),
         "user_email": (user or {}).get("email", ""),
-        "category": data.get("category", "bug"),
-        "description": description,
-        "platform": data.get("platform", ""),
+        "role": (user or {}).get("role"),
+        "organization_id": (user or {}).get("organization_id"),
+        "organization_name": (org or {}).get("name"),
+        "store_id": (user or {}).get("store_id"),
+        "pilot": bool(((org or {}).get("customer") or {}).get("pilot")),
+        "screen": str(data.get("screen") or "")[:200],
+        "category": category,
+        "description": description[:4000],
+        "platform": str(data.get("platform") or "")[:120],
         "status": "open",
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),

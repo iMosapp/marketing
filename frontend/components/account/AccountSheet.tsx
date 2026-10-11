@@ -10,6 +10,7 @@ import { tid } from '../scripts/shared';
 import { useAccountSheet } from './accountSheetStore';
 import { useOwnerStore } from '../../store/ownerStore';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
+import { pilotRows } from '../pilot/PilotMore';
 
 const GOLD = '#C9A962';
 
@@ -20,6 +21,15 @@ const ROLE_LABEL: Record<string, string> = { super_admin: 'Super admin', org_adm
 
 /** Configuration lives here, daily work lives in the tabs. Sections grow with the role, nothing is duplicated. */
 export const buildAccountSections = (user: any, ownerFlag = useOwnerStore.getState().isOwner): Section[] => {
+  if (user?.pilot) {
+    return [
+      { items: pilotRows(user).filter(r => r.key !== 'help').map(r => ({ key: r.key, label: r.title, icon: `${r.icon}-outline`, route: r.route })) },
+      { items: [
+        { key: 'help', label: 'Help & Support', icon: 'help-circle-outline', route: '/help' },
+        { key: 'legal', label: 'Terms & Privacy', icon: 'document-lock-outline', route: '/terms' },
+      ] },
+    ];
+  }
   const role = user?.role || 'user';
   const isManager = ['store_manager', 'org_admin', 'super_admin'].includes(role);
   const isOwner = ['org_admin', 'super_admin'].includes(role);
@@ -163,11 +173,11 @@ export const AccountSheet = () => {
             )}
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }} numberOfLines={1}>{user.name || user.email}</Text>
-              <Text style={{ fontSize: 13, color: colors.textSecondary }} numberOfLines={1}>{ROLE_LABEL[user.role || 'user'] || 'Sales'}{(user as any).store_name ? ` · ${(user as any).store_name}` : ''}</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }} numberOfLines={1}>{(user as any).pilot_owner ? 'Owner' : (ROLE_LABEL[user.role || 'user'] || 'Sales')}{(user as any).store_name ? ` · ${(user as any).store_name}` : ''}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
-          {(() => { const tools = ALL_TOOLS_ITEM(user); return (
+          {(() => { if (user?.pilot) return null; const tools = ALL_TOOLS_ITEM(user); return (
             <TouchableOpacity onPress={() => go(tools)} activeOpacity={0.8}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 20, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, backgroundColor: 'rgba(201,169,98,0.12)', borderWidth: 1, borderColor: 'rgba(201,169,98,0.45)' }}
               {...tid('account-item-tools')}>

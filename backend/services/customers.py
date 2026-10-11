@@ -225,8 +225,9 @@ async def on_owner_activated(db, user_id: str) -> None:
         logger.debug(f"[Customers] founder notification skipped: {e}")
 
 
-async def row(db, org: dict) -> dict:
+async def row(db, org: dict, with_issues: bool = False) -> dict:
     """One founder-facing record per customer, computed from existing collections."""
+    from services import pilot
     c = dict(org.get("customer") or {})
     org_id = str(org["_id"])
     owner = None
@@ -238,10 +239,12 @@ async def row(db, org: dict) -> dict:
     if c.get("billing_status") == "exception" and _exception_expired(c):
         c["exception_expired"] = True
     owner_email = (owner or {}).get("email") or ""
+    signals = await pilot.founder_view(db, org, owner, with_issues=with_issues)
     return {
         "organization_id": org_id, "name": org.get("name"), "city": org.get("city"), "state": org.get("state"), "industry": org.get("industry"),
         "org_active": bool(org.get("active")), "created_at": org.get("created_at"),
         "customer": c,
+        **signals,
         "owner": owner and {
             "user_id": str(owner["_id"]), "name": owner.get("name"), "email": "" if owner_email.endswith(PLACEHOLDER_EMAIL_SUFFIX) else owner_email,
             "phone": owner.get("phone"), "dormant": owner.get("is_active") is False,

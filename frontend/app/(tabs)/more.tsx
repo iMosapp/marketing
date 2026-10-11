@@ -36,6 +36,7 @@ import { useOwnerStore } from '../../store/ownerStore';
 import { useWindowDimensions } from 'react-native';
 import { slug as hubSlug, HubApp, HubFolderDef } from '../../components/hub/layout';
 import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
+import { PilotMore } from '../../components/pilot/PilotMore';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -65,6 +66,11 @@ type Section = {
 };
 
 export default function MoreScreen() {
+  const pilot = useAuthStore((s) => !!s.user?.pilot);
+  return pilot ? <PilotMore /> : <MoreScreenFull />;
+}
+
+function MoreScreenFull() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();

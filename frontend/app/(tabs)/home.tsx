@@ -42,6 +42,7 @@ import { WelcomeTour, shouldShowWelcomeTour, markWelcomeTourSeen } from '../../c
 import { WelcomeVideo, markWelcomeVideoSeen } from '../../components/home/WelcomeVideo';
 import { AvatarButton } from '../../components/account/AvatarButton';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
+import { PilotHome } from '../../components/home/PilotHome';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -1496,5 +1497,6 @@ const getStyles = (colors: any) => StyleSheet.create({
 });
 
 export default function HomeScreenWithBoundary(props: any) {
-  return <ScreenErrorBoundary screenName="Home"><HomeScreen {...props} /></ScreenErrorBoundary>;
+  const pilot = useAuthStore((s) => !!s.user?.pilot);
+  return <ScreenErrorBoundary screenName="Home">{pilot ? <PilotHome /> : <HomeScreen {...props} />}</ScreenErrorBoundary>;
 }

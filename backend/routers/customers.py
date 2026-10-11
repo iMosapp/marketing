@@ -59,7 +59,7 @@ async def get_customer(org_id: str, me: dict = Depends(require_account_creator))
     db = get_db()
     org = await _org(org_id, me)
     log = await db.customer_audit_log.find({"organization_id": org_id}, {"_id": 0}).sort("at", -1).to_list(50)
-    return {**await svc.row(db, org), "audit": log}
+    return {**await svc.row(db, org, with_issues=True), "audit": log}
 
 
 @router.patch("/{org_id}")

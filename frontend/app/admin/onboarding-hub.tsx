@@ -189,6 +189,12 @@ export default function OnboardingHub() {
                   <Text style={[styles.recentMeta, { color: colors.textSecondary }]}>
                     {c.customer?.plan_name} · {c.seats?.used}/{c.seats?.limit} seats · {c.owner?.name || 'no owner'}
                   </Text>
+                  <Text style={[styles.recentMeta, { color: c.attention?.length ? '#FF9500' : colors.textSecondary }]} data-testid={`hub-customer-progress-${c.organization_id}`}>
+                    {c.progress ? (c.progress.complete ? 'Setup complete' : `Setup ${c.progress.done}/${c.progress.total}`) : 'Owner not signed in'}
+                    {' · '}{c.last_activity ? `active ${new Date(c.last_activity).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'no activity'}
+                    {c.issues_open ? ` · ${c.issues_open} open issue${c.issues_open === 1 ? '' : 's'}` : ''}
+                    {c.attention?.length ? ` · ${c.attention[0]}` : ''}
+                  </Text>
                 </View>
                 <StatusPill status={c.customer?.onboarding_status} billing={c.customer?.billing_status} />
               </TouchableOpacity>

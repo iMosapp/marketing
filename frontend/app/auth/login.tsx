@@ -45,6 +45,7 @@ const getDefaultRoute = (role?: string): string => {
 /** Gate: first-time / incomplete profiles land on My Presence to set up their profile.
  *  Once they have photo + bio (or onboarding_complete === true), go to home. */
 const getProfileGatedRoute = (user: any): string => {
+  if (user?.pilot) return '/(tabs)/home';  // Stage 3: pilot customers land on their simplified Home, the checklist takes it from there
   if (user?.jessi_welcome_pending) return '/welcome-jessi';
   const hasPhoto = !!(user?.photo_url || user?.photo_path);
   const hasBio   = !!(user?.persona?.bio || user?.bio);

@@ -91,6 +91,16 @@ def _strip_binary(user: dict) -> dict:
     return user
 
 
+
+def _apply_pilot_flags(user: dict, org: dict) -> None:
+    """Stage 3: users of a launch customer org marked pilot get the simplified experience. Legacy orgs carry no `customer` field."""
+    c = org.get("customer") or {}
+    if c.get("pilot"):
+        user["pilot"] = True
+        user["pilot_billing_status"] = c.get("billing_status")
+        user["pilot_owner"] = str(user.get("_id")) == str(c.get("owner_user_id") or "")
+
+
 def _session_json(obj):
     """json.dumps default for login / me / refresh: dates and ids to strings, any stray bytes dropped instead of a 500."""
     if isinstance(obj, datetime):
@@ -564,12 +574,13 @@ async def login(credentials: dict, request: Request = None):
 
     try:
         if effective_org_id:
-            org = await get_db().organizations.find_one({"_id": ObjectId(effective_org_id)}, {"slug": 1, "name": 1})
+            org = await get_db().organizations.find_one({"_id": ObjectId(effective_org_id)}, {"slug": 1, "name": 1, "customer": 1})
             if org:
                 if org.get('name'):
                     user['organization_name'] = org['name']
                 if org.get('slug'):
                     user['org_slug'] = org['slug']
+                _apply_pilot_flags(user, org)
     except Exception:
         pass
 
@@ -744,10 +755,11 @@ async def _session_response(user: dict):
         user['organization_id'] = effective_org_id
         user['org_id'] = effective_org_id
         try:
-            org = await get_db().organizations.find_one({"_id": ObjectId(effective_org_id)}, {"slug": 1, "name": 1})
+            org = await get_db().organizations.find_one({"_id": ObjectId(effective_org_id)}, {"slug": 1, "name": 1, "customer": 1})
             if org:
                 if org.get('name'):
                     user['organization_name'] = org['name']
+                _apply_pilot_flags(user, org)
                 org_slug = org.get('slug')
                 if not org_slug and org.get('name'):
                     import re
