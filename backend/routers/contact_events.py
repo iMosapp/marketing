@@ -936,6 +936,33 @@ async def get_recent_calls(user_id: str, limit: int = 50):
     return {"calls": calls}
 
 
+CARD_SHARE_EVENTS = {"digital_card_shared", "card_qr_shown", "vcf_shared"}
+CARD_MEMO_NUDGE_DELAY_S = 60
+
+
+def schedule_card_memo_nudge(user_id: str, contact_id: str, first_name: str, delay_s: int = CARD_MEMO_NUDGE_DELAY_S):
+    """A brand-new contact came from the rep's digital card: nudge them to record a voice memo while it is fresh."""
+    import asyncio
+    first = (first_name or "").strip() or "them"
+
+    async def _send():
+        await asyncio.sleep(delay_s)
+        try:
+            from routers.push_notifications import send_push_to_user
+            await send_push_to_user(
+                user_id,
+                f"You just met {first}. Tell me about them",
+                "Tap and talk for a minute while it is fresh: who they are, what they want, anything personal. I'll save it to their profile.",
+                f"/contact/{contact_id}?capture=true",
+                "mic",
+            )
+            logger.info(f"[CardMemoNudge] sent for contact {contact_id}")
+        except Exception as e:
+            logger.warning(f"[CardMemoNudge] failed for contact {contact_id}: {e}")
+
+    return asyncio.get_running_loop().create_task(_send())
+
+
 @router.post("/{user_id}/find-or-create-and-log")
 async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
     """
@@ -1057,7 +1084,7 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
             "user_id": user_id,
             "original_user_id": user_id,
             "ownership_type": "org",
-            "source": "manual",
+            "source": "digital_card" if event_type in CARD_SHARE_EVENTS else "manual",
             "status": "active",
             "tags": [],
             "notes": "",
@@ -1100,6 +1127,9 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
                 logger.warning(f"[find-or-create] Photo backfill failed: {e}")
 
     contact_id = str(contact["_id"])
+
+    if created and event_type in CARD_SHARE_EVENTS:
+        schedule_card_memo_nudge(user_id, contact_id, contact.get("first_name") or "")
 
     # Log the event
     event_channel = payload.get("event_channel") or payload.get("channel")
