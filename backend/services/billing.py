@@ -224,6 +224,9 @@ async def apply_subscription(db, org: dict, sub: dict, source: str, actor: dict 
     sub = _d(sub)
     c = org["customer"]
     org_id = str(org["_id"])
+    ending = sub.get("status") in ("canceled", "incomplete_expired")
+    if ending and ((c.get("stripe_subscription_id") and sub.get("id") != c["stripe_subscription_id"]) or (c.get("billing_status") == "awaiting_payment" and c.get("checkout_session_id"))):
+        return {"billing_status": c.get("billing_status"), "ignored_stale_subscription": True}  # an older subscription ending must not overwrite a restart in progress
     items = ((sub.get("items") or {}).get("data")) or []
     seat_item = next((it for it in items if (it.get("price") or {}).get("lookup_key") == SEAT_KEY), None)
     base_item = next((it for it in items if (it.get("price") or {}).get("lookup_key") in cust.PILOT_PLANS), None)
@@ -251,20 +254,20 @@ async def apply_subscription(db, org: dict, sub: dict, source: str, actor: dict 
 
 
 async def sync_from_stripe(db, org: dict, actor: dict | None = None) -> dict:
-    """Pull the truth: subscription by id, else the pending Checkout session. Safe to call any time."""
+    """Pull the truth: an open Checkout first (a restart after cancellation), else the subscription by id. Safe to call any time."""
     c = org["customer"]
     sc = client()
-    if c.get("stripe_subscription_id"):
-        sub = await _run(sc.v1.subscriptions.retrieve, c["stripe_subscription_id"])
-        return await apply_subscription(db, org, sub, "pull", actor)
-    if c.get("checkout_session_id"):
+    if c.get("checkout_session_id") and c.get("billing_status") == "awaiting_payment":
         session = await _run(sc.v1.checkout.sessions.retrieve, c["checkout_session_id"], {"expand": ["subscription"]})
         if session.get("subscription") and session.get("payment_status") in ("paid", "no_payment_required"):
             return await apply_subscription(db, org, session["subscription"], "pull", actor)
-        if session.get("status") == "expired" and c.get("billing_status") == "awaiting_payment":
+        if session.get("status") == "expired":
             await cust._set(db, str(org["_id"]), billing_status="unpaid", checkout_url=None)
             return {"billing_status": "unpaid", "checkout_expired": True}
         return {"billing_status": c.get("billing_status"), "payment_status": session.get("payment_status")}
+    if c.get("stripe_subscription_id"):
+        sub = await _run(sc.v1.subscriptions.retrieve, c["stripe_subscription_id"])
+        return await apply_subscription(db, org, sub, "pull", actor)
     return {"billing_status": c.get("billing_status")}
 
 
@@ -382,6 +385,8 @@ async def _dispatch(db, typ: str, obj: dict) -> dict:
             return {"result": "no_customer"}
         before = org["customer"].get("billing_status")
         fields = await apply_subscription(db, org, obj, "webhook")
+        if fields.get("ignored_stale_subscription"):
+            return {"organization_id": str(org["_id"]), "result": fields["billing_status"], "stale": True}
         if typ == "customer.subscription.deleted":
             await _notify_founder(db, org, "customer_subscription_canceled", f"{org.get('name')} subscription ended",
                                   "The Stripe subscription is canceled. Access stays on until you decide; open the customer to resend a payment link or turn the account off.")

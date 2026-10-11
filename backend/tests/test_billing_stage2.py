@@ -296,6 +296,10 @@ def test_cancel_resume_and_restart(customer, super_admin, mongo, sc):
     status, res = super_admin.post(f"/api/customers/{org_id}/payment-link", {"send": False})
     assert status == 200 and res["session_id"] != c["checkout_session_id"]
     assert _cust(mongo, org_id)["billing_status"] == "awaiting_payment"
+    # a sync while the new link is out keeps "awaiting"; a late event for the OLD subscription is ignored as stale
+    assert super_admin.post(f"/api/customers/{org_id}/sync-billing")[1]["billing_status"] == "awaiting_payment"
+    assert run(billing.handle_event(adb(), _event("customer.subscription.deleted", json.loads(json.dumps(ended)))))["result"] == "awaiting_payment"
+    assert _cust(mongo, org_id)["billing_status"] == "awaiting_payment"
     # exception path from Stage 1 still works alongside Stripe
     ends = (datetime.now(timezone.utc) + timedelta(days=90)).strftime("%Y-%m-%d")
     assert super_admin.post(f"/api/customers/{org_id}/billing-exception", {"reason": "pilot courtesy month", "expires_at": ends})[0] == 200
