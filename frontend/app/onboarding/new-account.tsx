@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
 } from 'react-native';
@@ -9,13 +9,12 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
-import * as Clipboard from 'expo-clipboard';
 
-const PLANS = [
-  { id: 'starter', name: 'Starter', price: '$49/mo', desc: '1-5 users', color: '#007AFF' },
-  { id: 'pro', name: 'Professional', price: '$99/mo', desc: '6-15 users', color: '#C9A962' },
-  { id: 'enterprise', name: 'Enterprise', price: '$199/mo', desc: '16+ users', color: '#AF52DE' },
+const FALLBACK_PLANS = [
+  { key: 'pilot_store_monthly', name: 'Pilot Store', amount: 375, seats_included: 5, seat_price: 75, desc: '5 seats included, $75/mo per extra seat' },
+  { key: 'pilot_individual_monthly', name: 'Pilot Individual', amount: 100, seats_included: 1, seat_price: null, desc: 'One person, one seat' },
 ];
+const PLAN_COLOR: Record<string, string> = { pilot_store_monthly: '#C9A962', pilot_individual_monthly: '#007AFF' };
 
 const INDUSTRIES = [
   'Automotive / Dealership', 'Real Estate', 'Restaurant / Hospitality',
@@ -63,13 +62,6 @@ async function searchBusinesses(query: string): Promise<PlaceResult[]> {
   }
 }
 
-interface SuccessData {
-  business_name: string;
-  contact_name: string;
-  contact_email: string;
-  temp_password: string;
-}
-
 export default function NewAccountScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
@@ -98,11 +90,16 @@ export default function NewAccountScreen() {
   const [contactPhone, setContactPhone] = useState('');
 
   // Plan & submit
-  const [plan, setPlan] = useState('pro');
+  const [plans, setPlans] = useState<any[]>(FALLBACK_PLANS);
+  const [plan, setPlan] = useState('pilot_store_monthly');
+  const [seatsExtra, setSeatsExtra] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState<'search' | 'details' | 'success'>('search');
-  const [successData, setSuccessData] = useState<SuccessData | null>(null);
-  const [copiedPassword, setCopiedPassword] = useState(false);
+  const [step, setStep] = useState<'search' | 'details'>('search');
+
+  useEffect(() => {
+    api.get('/customers/plans').then((r) => Array.isArray(r.data) && r.data.length && setPlans(r.data)).catch(() => {});
+  }, []);
+  const selectedPlan = plans.find((p) => p.key === plan) || plans[0];
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
@@ -153,35 +150,19 @@ export default function NewAccountScreen() {
         contact_name: contactName.trim(),
         contact_email: contactEmail.trim(),
         contact_phone: contactPhone.trim(),
-        plan,
+        plan_key: plan,
+        seats_extra: selectedPlan?.seat_price ? seatsExtra : 0,
+        pilot: true,
         place_id: selectedPlace?.place_id || '',
         lat: selectedPlace?.lat || '',
         lon: selectedPlace?.lon || '',
         verified_source: selectedPlace ? 'openstreetmap' : 'manual',
-      }, { headers: { 'X-User-ID': user._id } });
-
-      setSuccessData({
-        business_name: res.data.business_name,
-        contact_name: res.data.contact_name,
-        contact_email: res.data.contact_email,
-        temp_password: res.data.temp_password,
       });
-      setStep('success');
+      router.replace(`/admin/customers/${res.data.organization_id}` as any);
     } catch (e: any) {
       showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to create account');
     }
     setSubmitting(false);
-  };
-
-  const copyPassword = async () => {
-    if (!successData?.temp_password) return;
-    try {
-      await Clipboard.setStringAsync(successData.temp_password);
-      setCopiedPassword(true);
-      setTimeout(() => setCopiedPassword(false), 2000);
-    } catch {
-      showSimpleAlert('Copied', successData.temp_password);
-    }
   };
 
   return (
@@ -191,17 +172,14 @@ export default function NewAccountScreen() {
         <TouchableOpacity
           onPress={() => {
             if (step === 'details') setStep('search');
-            else if (step === 'success') router.back();
             else router.back();
           }}
           style={{ padding: 4, marginRight: 8 }}
           data-testid="new-account-back"
         >
-          <Ionicons name={step === 'success' ? 'close' : 'chevron-back'} size={24} color={colors.accent} />
+          <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1 }}>
-          {step === 'success' ? 'Account Created' : 'Sign Up New Account'}
-        </Text>
+        <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1 }}>New Customer</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -276,7 +254,7 @@ export default function NewAccountScreen() {
               </View>
             )}
           </>
-        ) : step === 'details' ? (
+        ) : (
           <>
             {/* Verified source badge */}
             {selectedPlace && (
@@ -328,28 +306,44 @@ export default function NewAccountScreen() {
             </View>
 
             {/* Plan */}
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>PLAN</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>PLAN (PROVISIONAL PILOT PRICING)</Text>
             <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16 }}>
-              {PLANS.map(p => {
-                const sel = plan === p.id;
+              {plans.map(p => {
+                const sel = plan === p.key;
+                const color = PLAN_COLOR[p.key] || '#C9A962';
                 return (
                   <TouchableOpacity
-                    key={p.id}
-                    onPress={() => setPlan(p.id)}
+                    key={p.key}
+                    onPress={() => { setPlan(p.key); if (!p.seat_price) setSeatsExtra(0); }}
                     style={{
                       flex: 1, padding: 14, borderRadius: 12, alignItems: 'center', borderWidth: 1,
-                      backgroundColor: sel ? `${p.color}12` : colors.card,
-                      borderColor: sel ? `${p.color}40` : colors.border,
+                      backgroundColor: sel ? `${color}12` : colors.card,
+                      borderColor: sel ? `${color}40` : colors.border,
                     }}
-                    data-testid={`plan-${p.id}`}
+                    data-testid={`plan-${p.key}`}
                   >
-                    <Text style={{ fontSize: 16, fontWeight: '700', color: sel ? p.color : colors.textSecondary }}>{p.name}</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: sel ? p.color : colors.text, marginTop: 2 }}>{p.price}</Text>
-                    <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 1 }}>{p.desc}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: sel ? color : colors.textSecondary }}>{p.name}</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: sel ? color : colors.text, marginTop: 2 }}>${p.amount}/mo</Text>
+                    <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 1, textAlign: 'center' }}>{p.desc}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
+            {selectedPlan?.seat_price ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginTop: 10, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}>
+                <View>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Extra seats</Text>
+                  <Text style={{ fontSize: 13, color: colors.textTertiary }} data-testid="seats-summary">
+                    {selectedPlan.seats_included + seatsExtra} seats total · ${selectedPlan.amount + selectedPlan.seat_price * seatsExtra}/mo
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <TouchableOpacity onPress={() => setSeatsExtra(Math.max(0, seatsExtra - 1))} data-testid="seats-minus"><Ionicons name="remove-circle-outline" size={28} color={colors.accent} /></TouchableOpacity>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, minWidth: 20, textAlign: 'center' }} data-testid="seats-extra">{seatsExtra}</Text>
+                  <TouchableOpacity onPress={() => setSeatsExtra(Math.min(500, seatsExtra + 1))} data-testid="seats-plus"><Ionicons name="add-circle-outline" size={28} color={colors.accent} /></TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
 
             {/* Submit */}
             <TouchableOpacity
@@ -359,63 +353,12 @@ export default function NewAccountScreen() {
               activeOpacity={0.8}
               data-testid="start-onboarding-btn"
             >
-              {submitting ? <ActivityIndicator color="#000" /> : <Text style={{ fontSize: 18, fontWeight: '700', color: '#000' }}>Start Onboarding</Text>}
+              {submitting ? <ActivityIndicator color="#000" /> : <Text style={{ fontSize: 18, fontWeight: '700', color: '#000' }}>Create Customer</Text>}
             </TouchableOpacity>
-            <Text style={{ fontSize: 14, color: '#48484A', textAlign: 'center', padding: 8 }}>This will create the account and start the onboarding checklist</Text>
-          </>
-        ) : (
-          /* ── Success Screen ── */
-          <View style={{ paddingHorizontal: 16, paddingTop: 32, alignItems: 'center' }}>
-            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(52,199,89,0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-              <Ionicons name="checkmark-circle" size={48} color="#34C759" />
-            </View>
-            <Text style={{ fontSize: 24, fontWeight: '800', color: colors.text, textAlign: 'center' }}>Account Created!</Text>
-            <Text style={{ fontSize: 17, color: colors.textSecondary, textAlign: 'center', marginTop: 8, paddingHorizontal: 16 }}>
-              {successData?.business_name} has been set up and is ready to go.
+            <Text style={{ fontSize: 14, color: '#48484A', textAlign: 'center', padding: 8, paddingHorizontal: 24 }}>
+              Creates the company and a dormant owner account. Nobody can sign in until you activate the account and send the owner their activation link.
             </Text>
-
-            {/* Credentials Card */}
-            <View style={{ width: '100%', marginTop: 24, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
-              <View style={{ padding: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, marginBottom: 12 }}>LOGIN CREDENTIALS</Text>
-                <View style={{ gap: 10 }}>
-                  <View>
-                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>Name</Text>
-                    <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginTop: 2 }} data-testid="success-contact-name">{successData?.contact_name}</Text>
-                  </View>
-                  <View>
-                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>Email</Text>
-                    <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginTop: 2 }} data-testid="success-contact-email">{successData?.contact_email || 'Not provided'}</Text>
-                  </View>
-                  <View>
-                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>Temporary Password</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                      <Text style={{ fontSize: 17, fontWeight: '700', color: '#C9A962', fontFamily: 'monospace' }} data-testid="success-temp-password">{successData?.temp_password}</Text>
-                      <TouchableOpacity onPress={copyPassword} data-testid="copy-password-btn">
-                        <Ionicons name={copiedPassword ? 'checkmark' : 'copy-outline'} size={18} color={copiedPassword ? '#34C759' : colors.accent} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              </View>
-              <View style={{ padding: 16, backgroundColor: 'rgba(255,149,0,0.06)' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Ionicons name="information-circle" size={16} color="#FF9500" />
-                  <Text style={{ fontSize: 14, color: '#FF9500', fontWeight: '600' }}>Share these credentials with the account owner</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Action Buttons */}
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{ width: '100%', marginTop: 24, padding: 16, borderRadius: 14, backgroundColor: colors.accent, alignItems: 'center' }}
-              activeOpacity={0.8}
-              data-testid="success-done-btn"
-            >
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#000' }}>Done</Text>
-            </TouchableOpacity>
-          </View>
+          </>
         )}
       </ScrollView>
     </SafeAreaView>

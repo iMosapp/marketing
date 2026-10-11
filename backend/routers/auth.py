@@ -378,6 +378,9 @@ async def signup(user_data: UserCreate):
     ref_base = hashlib.sha256(f"{user_dict['email']}{datetime.utcnow().isoformat()}".encode()).hexdigest()[:8].upper()
     user_dict['ref_code'] = ref_base
     
+    if user_dict.get('organization_id'):
+        from services.customers import assert_seat_available
+        await assert_seat_available(get_db(), org_id=user_dict.get('organization_id'), store_id=user_dict.get('store_id'))
     result = await get_db().users.insert_one(user_dict)
     user_dict['_id'] = str(result.inserted_id)
     
@@ -514,6 +517,7 @@ async def login(credentials: dict, request: Request = None):
 
     # Success — clear any failed-attempt record for this ip:email
     await _clear_login_attempts(rl_id)
+    _refuse_dormant(user)
     
     # Auto-upgrade legacy plain-text passwords to bcrypt (always hash, even if bcrypt unavailable next deploy)
     stored_pw = user.get('password', '')
@@ -831,6 +835,13 @@ async def logout_session():
 
 # ── Shared SMS verification-code flow (password reset + account activation) ──
 _CODE_TTL_SECONDS = 600
+_DORMANT_MSG = "This account has not been activated yet. Your account manager will let you know when it is ready."
+
+
+def _refuse_dormant(user: Optional[dict]) -> None:
+    """A customer owner created through the Onboarding Hub stays locked until a super admin activates the account."""
+    if user and user.get("dormant"):
+        raise HTTPException(status_code=403, detail=_DORMANT_MSG)
 _CODE_MAX_ATTEMPTS = 5
 
 _CODE_COPY = {
@@ -951,6 +962,7 @@ async def _issue_verification_code(identifier: str, purpose: str, request: Optio
     safe_response = {"message": copy["safe_msg"], "channel": "sms"}
     if not user:
         return safe_response
+    _refuse_dormant(user)
 
     # Per-user throttle: max 3 codes per 10 minutes
     recent = await db.password_reset_tokens.count_documents({
@@ -990,6 +1002,7 @@ async def _check_verification_code(identifier: str, code: str, purpose: str, con
     user = await _find_user_by_identifier(identifier)
     if not user:
         raise HTTPException(status_code=400, detail="No matching request found")
+    _refuse_dormant(user)
 
     now_ts = datetime.utcnow().timestamp()
     token = await db.password_reset_tokens.find_one({
@@ -1102,6 +1115,11 @@ async def complete_activation(data: dict):
         asyncio.create_task(_jo.on_activated(get_db(), str(user["_id"])))
     except Exception as e:
         logger.debug(f"[Activate] onboarding hook failed: {e}")
+    try:
+        from services import customers as _cust
+        asyncio.create_task(_cust.on_owner_activated(get_db(), str(user["_id"])))
+    except Exception as e:
+        logger.debug(f"[Activate] customer hook failed: {e}")
     logger.info(f"[Activate] Account activated via SMS code for user {user['_id']}")
     return {"message": "Account activated", "email": email}
 
@@ -1120,6 +1138,7 @@ async def activate_by_link(data: dict):
     user = await db.users.find_one({"_id": ObjectId(link["user_id"])})
     if not user:
         raise HTTPException(status_code=404, detail="Account not found")
+    _refuse_dormant(user)
     if user.get("activation_pending") is False and not user.get("needs_password_change"):
         return {"already_active": True, "email": user.get("email"), "first_name": user.get("first_name") or (user.get("name") or "").split(" ")[0]}
     code = str(secrets.randbelow(900000) + 100000)

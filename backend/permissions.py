@@ -233,6 +233,20 @@ _SUPER_ADMIN_PERMISSIONS = {
 }
 
 # Map role names to their permission templates
+# Pilot customer owner (store_manager created through the Onboarding Hub "New Customer" flow): the simple set.
+# Stored as the owner's own feature_permissions, so legacy managers keep the full template above.
+PILOT_OWNER_PERMISSIONS = {
+    "my_tools": {"_enabled": True, "trade_appraisal": False, "touchpoints": True, "ask_jessi": True, "training_hub": True,
+                 "team_chat": False, "ai_followups": False, "inventory": False, "internet_leads": False, "keyword_search": False},
+    "campaigns": {"_enabled": False, "campaign_builder": False, "campaign_dashboard": False, "broadcast": False, "date_triggers": False},
+    "content": {"_enabled": True, "sms_templates": True, "email_templates": False, "card_templates": True, "manage_showcase": False, "brand_pages": False},
+    "insights": {"_enabled": True, "my_performance": True, "activity_reports": False, "email_analytics": False, "leaderboard": False, "lead_attribution": False},
+    "admin": {"_enabled": True, "users": True, "invite_team": True, "store_profile": True, "brand_kit": True, "admin_dashboard": False,
+              "review_approvals": False, "showcase_approvals": False, "review_links": True, "contact_tags": True, "lead_sources": False,
+              "integrations": False, "accounts": False},
+    "manage": {"_enabled": False, "appraisal_approvals": False, "appraisal_rules": False},
+}
+
 ROLE_PERMISSIONS = {
     "user": _USER_PERMISSIONS,
     "store_manager": _STORE_MANAGER_PERMISSIONS,

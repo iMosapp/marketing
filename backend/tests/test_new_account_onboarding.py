@@ -63,7 +63,7 @@ class TestNewAccountOnboarding:
             "state": "CO",
             "zip": "80202",
             "industry": "Automotive / Dealership",
-            "plan": "pro"
+            "plan": "pilot_store_monthly"
         }
         
         response = requests.post(
@@ -79,8 +79,8 @@ class TestNewAccountOnboarding:
         assert "organization_id" in data
         assert "store_id" in data
         assert "user_id" in data
-        assert "temp_password" in data
-        assert len(data["temp_password"]) > 0
+        assert "temp_password" not in data  # Stage 1: owner is dormant, credentials never leave the server
+        assert data["customer"]["billing_status"] == "unpaid" and data["customer"]["onboarding_status"] == "created"
         assert data["business_name"] == f"TEST_Successful_Biz_{self.timestamp}"
         assert data["contact_name"] == "John Doe"
         assert data["contact_email"] == f"test_success_{self.timestamp}@example.com"
@@ -95,7 +95,7 @@ class TestNewAccountOnboarding:
             "contact_name": "First User",
             "contact_phone": "5005551111",
             "contact_email": unique_email,
-            "plan": "starter"
+            "plan": "pilot_individual_monthly"
         }
         
         response1 = requests.post(
@@ -111,7 +111,7 @@ class TestNewAccountOnboarding:
             "contact_name": "Second User",
             "contact_phone": "5005552222",
             "contact_email": unique_email,
-            "plan": "pro"
+            "plan": "pilot_store_monthly"
         }
         
         response2 = requests.post(
@@ -181,7 +181,7 @@ class TestNewAccountOnboarding:
             "contact_name": "Phone Test",
             "contact_phone": "5005556543",  # 10 digits, Twilio test range
             "contact_email": f"test_phone10_{self.timestamp}@example.com",
-            "plan": "pro"
+            "plan": "pilot_store_monthly"
         }
         
         response = requests.post(
@@ -209,7 +209,7 @@ class TestNewAccountOnboarding:
             "contact_name": "Phone Format Test",
             "contact_phone": "(500) 555-4567",  # With formatting, Twilio test range
             "contact_email": f"test_phoneformat_{self.timestamp}@example.com",
-            "plan": "pro"
+            "plan": "pilot_store_monthly"
         }
         
         response = requests.post(
@@ -237,7 +237,7 @@ class TestNewAccountOnboarding:
             "contact_name": "Role Test",
             "contact_phone": "5005551111",
             "contact_email": f"test_role_{self.timestamp}@example.com",
-            "plan": "enterprise"
+            "plan": "pilot_store_monthly"
         }
         
         response = requests.post(
@@ -259,13 +259,13 @@ class TestNewAccountOnboarding:
         assert user_data["role"] == "store_manager", f"Expected store_manager, got {user_data['role']}"
         
     def test_created_user_needs_password_change(self):
-        """Test created user has needs_password_change=True"""
+        """Stage 1: the owner is created dormant (no temp password, so nothing to change) and cannot sign in yet"""
         payload = {
             "business_name": f"TEST_PasswordChange_{self.timestamp}",
             "contact_name": "Password Test",
             "contact_phone": "5005552222",
             "contact_email": f"test_pwd_{self.timestamp}@example.com",
-            "plan": "pro"
+            "plan": "pilot_store_monthly"
         }
         
         response = requests.post(
@@ -284,7 +284,8 @@ class TestNewAccountOnboarding:
         )
         assert user_response.status_code == 200
         user_data = user_response.json()
-        assert user_data.get("needs_password_change") is True, f"Expected needs_password_change=True, got {user_data.get('needs_password_change')}"
+        assert user_data.get("needs_password_change") is False, f"Expected needs_password_change=False, got {user_data.get('needs_password_change')}"
+        assert user_data.get("is_active") is False and user_data.get("activation_pending") is True
         
     def test_created_user_linked_to_org_and_store(self):
         """Test created user is properly linked to org and store"""
@@ -293,7 +294,7 @@ class TestNewAccountOnboarding:
             "contact_name": "Link Test",
             "contact_phone": "5005553333",
             "contact_email": f"test_links_{self.timestamp}@example.com",
-            "plan": "pro"
+            "plan": "pilot_store_monthly"
         }
         
         response = requests.post(
@@ -326,7 +327,7 @@ class TestNewAccountOnboarding:
             "business_name": f"TEST_NoEmail_{self.timestamp}",
             "contact_name": "No Email Test",
             "contact_phone": "5005554444",
-            "plan": "starter"
+            "plan": "pilot_individual_monthly"
         }
         
         response = requests.post(
@@ -342,7 +343,7 @@ class TestNewAccountOnboarding:
         
     def test_plan_selection(self):
         """Test different plans are saved correctly"""
-        for plan in ["starter", "pro", "enterprise"]:
+        for plan in ["pilot_store_monthly", "pilot_individual_monthly"]:
             payload = {
                 "business_name": f"TEST_Plan_{plan}_{self.timestamp}",
                 "contact_name": f"Plan {plan} Test",
@@ -386,7 +387,7 @@ class TestTrackingRecordCreation:
             "contact_phone": "5005556666",
             "contact_email": f"test_tracking_{self.timestamp}@example.com",
             "industry": "Real Estate",
-            "plan": "pro"
+            "plan": "pilot_store_monthly"
         }
         
         response = requests.post(

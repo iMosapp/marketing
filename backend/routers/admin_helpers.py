@@ -47,9 +47,10 @@ async def get_requesting_user(request_or_header=None) -> dict:
 
 async def send_invite_email(
     email: str, name: str, temp_password: Optional[str], role: str, inviter_name: str = None,
-    phone: str = None,
+    phone: str = None, activate_url: str = None,
 ) -> bool:
-    """Send an invite email. With temp_password=None it sends text-code activation steps instead."""
+    """Send an invite email. With temp_password=None it sends text-code activation steps instead.
+    activate_url: a single-use tokenized link (customer launch) replaces the generic activation page."""
     import base64 as b64_mod
 
     if not RESEND_API_KEY:
@@ -63,7 +64,7 @@ async def send_invite_email(
     }.get(role, 'Team Member')
 
     login_url = f"{APP_URL}/imos/login"
-    activate_url = f"{APP_URL}/auth/activate"
+    activate_url = activate_url or f"{APP_URL}/auth/activate"
     phone_hint = f" ending in <strong>{phone[-4:]}</strong>" if phone and len(phone) >= 4 else ""
 
     if temp_password:

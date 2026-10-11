@@ -226,6 +226,8 @@ async def join_team(data: TeamMemberJoin):
     store = await db.stores.find_one({"_id": _oid(invite["store_id"], "Store")})
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
+    from services.customers import assert_seat_available
+    await assert_seat_available(db, org_id=invite.get("organization_id") or store.get("organization_id"), store_id=invite["store_id"])
     
     # Generate temporary password
     temp_password = secrets.token_urlsafe(8)
@@ -959,6 +961,8 @@ async def accept_invite(data: AcceptInviteRequest):
         if len(phone_clean) == 10:
             phone_clean = '1' + phone_clean
         phone_normalized = '+' + phone_clean if phone_clean else None
+    from services.customers import assert_seat_available
+    await assert_seat_available(db, org_id=invite.get("organization_id"), store_id=invite["store_id"])
     
     # Create user account
     new_user = {

@@ -82,6 +82,8 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
     existing = await get_db().users.find_one({"email": user_data.get('email')})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
+    from services.customers import assert_seat_available
+    await assert_seat_available(get_db(), org_id=user_data.get('organization_id'), store_id=user_data.get('store_id'))
     
     user_dict = {
         "email": user_data.get('email'),
@@ -222,6 +224,8 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         digits = ''.join(c for c in phone if c.isdigit())[-10:]
         if digits and await get_db().users.find_one({"phone": {"$regex": f"{digits}$"}, "is_active": {"$ne": False}}, {"_id": 1}):
             raise HTTPException(status_code=400, detail="A user with this mobile number already exists")
+    from services.customers import assert_seat_available
+    await assert_seat_available(get_db(), org_id=organization_id, store_id=store_id)
     
     # Generate temporary password
     temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
@@ -1331,6 +1335,9 @@ async def approve_pending_user(user_id: str, data: dict):
     user = await get_db().users.find_one({"_id": ObjectId(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if user.get("status") == "pending":
+        from services.customers import assert_seat_available
+        await assert_seat_available(get_db(), org_id=data.get("organization_id") or user.get("organization_id"), store_id=data.get("store_id") or user.get("store_id"), adding=0)
     
     update_data = {
         "status": "active",
@@ -1420,6 +1427,8 @@ async def add_team_member(data: AddTeamMemberRequest):
         existing_phone = await db.users.find_one({"phone": phone})
         if existing_phone:
             raise HTTPException(status_code=400, detail="A user with this phone number already exists")
+    from services.customers import assert_seat_available
+    await assert_seat_available(db, org_id=store.get("organization_id"), store_id=data.store_id)
     
     # Generate temporary password
     temp_password = secrets.token_urlsafe(8)

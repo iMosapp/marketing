@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+import { StatusPill } from '../../components/customers/StatusPill';
 
 type Action = {
   id: string;
@@ -22,6 +23,15 @@ type Action = {
 };
 
 const ACTIONS: Action[] = [
+  {
+    id: 'new_customer',
+    icon: 'rocket',
+    title: 'New Customer',
+    desc: 'Create the company, pick a plan, activate, invite the owner. One flow, about 15 minutes.',
+    color: '#C9A962',
+    route: '/onboarding/new-account',
+    roles: ['super_admin', 'org_admin'],
+  },
   {
     id: 'org_store',
     icon: 'business',
@@ -110,6 +120,7 @@ export default function OnboardingHub() {
   const user = useAuthStore((s) => s.user);
   const role = user?.role || 'user';
   const [recentAccounts, setRecentAccounts] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -125,6 +136,10 @@ export default function OnboardingHub() {
       const users = Array.isArray(res.data) ? res.data : [];
       setRecentAccounts(users.slice(0, 5));
     } catch {}
+    try {
+      const res = await api.get('/customers');
+      setCustomers(Array.isArray(res.data) ? res.data : []);
+    } catch {}
     setLoading(false);
   };
 
@@ -139,8 +154,9 @@ export default function OnboardingHub() {
           {visibleActions.map((action) => (
             <TouchableOpacity
               key={action.id}
-              style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.surface }]}
+              style={[styles.actionCard, { backgroundColor: colors.card, borderColor: action.id === 'new_customer' ? action.color : colors.surface }]}
               onPress={() => router.push(action.route as any)}
+              data-testid={`hub-action-${action.id}`}
             >
               <View style={[styles.actionIconWrap, { backgroundColor: `${action.color}15` }]}>
                 <Ionicons name={action.icon as any} size={24} color={action.color} />
@@ -153,6 +169,33 @@ export default function OnboardingHub() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Customers (founder launch workflow) */}
+        {customers.length > 0 && (
+          <View data-testid="hub-customers">
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Customers</Text>
+            {customers.map((c: any) => (
+              <TouchableOpacity
+                key={c.organization_id}
+                style={[styles.recentRow, { backgroundColor: colors.card, borderColor: colors.surface }]}
+                onPress={() => router.push(`/admin/customers/${c.organization_id}` as any)}
+                data-testid={`hub-customer-${c.organization_id}`}
+              >
+                <View style={[styles.recentAvatar, { backgroundColor: '#C9A96220' }]}>
+                  <Ionicons name="business" size={16} color="#C9A962" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.recentName, { color: colors.text }]}>{c.name}</Text>
+                  <Text style={[styles.recentMeta, { color: colors.textSecondary }]}>
+                    {c.customer?.plan_name} · {c.seats?.used}/{c.seats?.limit} seats · {c.owner?.name || 'no owner'}
+                  </Text>
+                </View>
+                <StatusPill status={c.customer?.onboarding_status} billing={c.customer?.billing_status} />
+              </TouchableOpacity>
+            ))}
+            <View style={{ height: 16 }} />
+          </View>
+        )}
 
         {/* Quick-Reference Guide */}
         <TouchableOpacity

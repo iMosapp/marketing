@@ -129,6 +129,8 @@ async def webhook_user_created(
         }
     else:
         # Create new user
+        from services.customers import assert_seat_available
+        await assert_seat_available(db, org_id=user_data.organization_id or (str(org["_id"]) if isinstance(org, dict) and org.get("_id") else None), store_id=user_data.store_id)
         new_user = {
             "external_id": user_data.external_id,
             "email": user_data.email,

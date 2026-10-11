@@ -109,6 +109,7 @@ async def bulk_invite_team_members(data: BulkInviteRequest, me: dict = Depends(g
 
     org_id = store.get("organization_id", "")
     results = []
+    from services.customers import assert_seat_available
 
     for member in data.members:
         email = member.email.lower().strip()
@@ -122,6 +123,12 @@ async def bulk_invite_team_members(data: BulkInviteRequest, me: dict = Depends(g
                     "status": "skipped",
                     "reason": "Email already exists",
                 })
+                continue
+
+            try:
+                await assert_seat_available(db, org_id=org_id, store_id=data.store_id)
+            except HTTPException as seat_err:
+                results.append({"name": member.name, "email": email, "status": "skipped", "reason": seat_err.detail})
                 continue
 
             # Normalize phone
@@ -291,8 +298,11 @@ class NewAccountRequest(BaseModel):
     contact_email: Optional[str] = ""
     contact_phone: str
 
-    # Plan selection
-    plan: str = "pro"
+    # Plan selection (provisional pilot plans in services/customers.py; no Stripe objects yet)
+    plan: str = "pilot_store_monthly"
+    plan_key: Optional[str] = None
+    seats_extra: int = 0
+    pilot: bool = True
 
     # Location data (from Nominatim / Google Places)
     place_id: Optional[str] = ""
@@ -307,16 +317,20 @@ async def create_new_account(
     me: dict = Depends(require_account_creator),
 ):
     """
-    Streamlined new-account onboarding (super admins and partner admins):
-    1. Creates an organization
+    Founder "New Customer" flow (super admins and partner admins):
+    1. Creates an organization (inactive until a super admin activates it)
     2. Creates a store under that org
-    3. Creates a primary user (store_manager) with a temp password
-    4. Seeds all defaults for the user and store
-    5. Returns everything needed for success screen
+    3. Creates the DORMANT owner (store_manager): cannot sign in, no temporary password anywhere
+    4. Seeds all defaults for the user and store, writes organizations.customer (plan, seats, billing + onboarding status)
+    5. Returns the customer record (never credentials)
     """
+    from services import customers as cust
     db = get_db()
     import re
     x_user_id = str(me["_id"])
+    plan_key = data.plan_key or data.plan
+    customer = cust.new_customer(plan_key, data.seats_extra, "", x_user_id)  # validates plan + seats before anything is written
+    customer["pilot"] = bool(data.pilot)
 
     if not data.business_name.strip():
         raise HTTPException(status_code=400, detail="Business name is required")
@@ -347,7 +361,7 @@ async def create_new_account(
 
     now = datetime.now(timezone.utc).isoformat()
 
-    # ── 1. Create Organization ──────────────────────
+    # ── 1. Create Organization (inactive until activated by a super admin) ──
     org_slug = re.sub(r"[^a-z0-9]+", "-", data.business_name.lower()).strip("-")
     org_doc = {
         "name": data.business_name.strip(),
@@ -360,8 +374,8 @@ async def create_new_account(
         "state": data.state or "",
         "country": "US",
         "industry": data.industry or "",
-        "plan": data.plan,
-        "active": True,
+        "plan": plan_key,
+        "active": False,
         "setup_complete": False,
         "created_at": now,
     }
@@ -400,24 +414,30 @@ async def create_new_account(
     except Exception as e:
         logger.warning(f"Seed store defaults failed for {store_id}: {e}")
 
-    # ── 3. Create Primary User (store_manager) ──────
-    temp_password = secrets.token_urlsafe(8)
+    # ── 3. Create the DORMANT owner (store_manager) ──
+    # No temporary password exists: the hash below is random and unrecoverable. The owner chooses their own password
+    # through the single-use activation link sent by "Invite owner" once a super admin has activated the account.
     user_doc = {
         "name": data.contact_name.strip(),
-        "email": contact_email or f"{org_slug}-admin@placeholder.local",
+        "first_name": data.contact_name.strip().split(" ")[0],
+        "last_name": " ".join(data.contact_name.strip().split(" ")[1:]),
+        "email": contact_email or f"{org_slug}-admin{'' if not contact_phone_e164 else '-' + contact_phone_e164[-4:]}@placeholder.local",
         "phone": contact_phone_e164,
-        "password": hash_password(temp_password),
+        "password": hash_password(secrets.token_urlsafe(32)),
         "role": "store_manager",
         "organization_id": org_id,
         "store_id": store_id,
         "store_ids": [store_id],
         "mode": "rep",
-        "is_active": True,
+        "is_active": False,
+        "dormant": True,
+        "activation_pending": True,
+        "phone_verified": False,
         "status": "active",
         "onboarding_complete": False,
-        "needs_password_change": True,
+        "needs_password_change": False,
         "account_type": "org",
-        "plan": data.plan,
+        "plan": plan_key,
         "leaderboard_visible": False,
         "compare_scope": "state",
         "stats": {"contacts_added": 0, "messages_sent": 0, "calls_made": 0, "deals_closed": 0},
@@ -425,8 +445,17 @@ async def create_new_account(
         "created_at": now,
         "updated_at": now,
     }
+    if data.pilot:
+        from permissions import PILOT_OWNER_PERMISSIONS
+        user_doc["feature_permissions"] = {k: dict(v) for k, v in PILOT_OWNER_PERMISSIONS.items()}
+        user_doc["permissions_updated_at"] = now
     user_result = await db.users.insert_one(user_doc)
     user_id = str(user_result.inserted_id)
+
+    # Customer record: plan, seats, billing + onboarding status (legacy orgs never get this field)
+    customer["owner_user_id"] = user_id
+    await db.organizations.update_one({"_id": org_result.inserted_id}, {"$set": {"customer": customer}})
+    await cust.audit(db, org_id, "customer_created", me, plan_key=plan_key, seats_extra=int(data.seats_extra or 0), pilot=bool(data.pilot))
 
     # Seed user-level defaults (templates, campaigns, triggers)
     try:
@@ -441,7 +470,7 @@ async def create_new_account(
         "contact_email": contact_email,
         "contact_phone": contact_phone_e164,
         "industry": data.industry or "",
-        "plan": data.plan,
+        "plan": plan_key,
         "organization_id": org_id,
         "store_id": store_id,
         "user_id": user_id,
@@ -455,13 +484,13 @@ async def create_new_account(
                 "verified_source": data.verified_source or "manual",
             },
             "contact": {"name": data.contact_name, "email": contact_email, "phone": data.contact_phone},
-            "plan": data.plan,
+            "plan": plan_key,
         },
         "created_at": now,
         "created_by": x_user_id or "",
     })
 
-    logger.info(f"New account onboarded: org={org_id} store={store_id} user={user_id} ({data.business_name})")
+    logger.info(f"New customer created: org={org_id} store={store_id} owner={user_id} ({data.business_name}, {plan_key})")
 
     # A2P 10DLC onboarding form to the new client (text + email), per compliance settings
     from services.compliance_onboarding import auto_invite
@@ -482,8 +511,9 @@ async def create_new_account(
         "organization_id": org_id,
         "store_id": store_id,
         "user_id": user_id,
-        "temp_password": temp_password,
         "business_name": data.business_name.strip(),
         "contact_name": data.contact_name.strip(),
         "contact_email": contact_email,
+        "plan": cust.PILOT_PLANS[plan_key],
+        "customer": customer,
     }

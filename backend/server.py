@@ -137,7 +137,7 @@ import time
 
 ADMIN_PUBLIC_RE = re.compile(r"^/api/admin/(partners/by-slug/|team/shared-inboxes/[^/]+/webhook$)")
 # Routers with no public surface at all: a proven caller is required before any handler runs (defense in depth; the routes also carry their own scope checks)
-PRIVATE_PREFIXES = ("/api/setup-wizard/", "/api/onboarding-settings/", "/api/scheduler/")
+PRIVATE_PREFIXES = ("/api/setup-wizard/", "/api/onboarding-settings/", "/api/scheduler/", "/api/customers")
 
 
 async def _verified_caller_id(request: Request):
@@ -742,6 +742,8 @@ api_router.include_router(ai_campaigns.router)
 api_router.include_router(brand_assets.router)
 api_router.include_router(linkpage.router)
 api_router.include_router(setup_wizard.router)
+from routers import customers as customers_router
+api_router.include_router(customers_router.router)
 api_router.include_router(help_center.router)
 api_router.include_router(review_templates.router)
 api_router.include_router(social_templates.router)
