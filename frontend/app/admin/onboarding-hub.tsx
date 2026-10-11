@@ -193,7 +193,7 @@ export default function OnboardingHub() {
                     {c.progress ? (c.progress.complete ? 'Setup complete' : `Setup ${c.progress.done}/${c.progress.total}`) : 'Owner not signed in'}
                     {' · '}{c.last_activity ? `active ${new Date(c.last_activity).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'no activity'}
                     {c.issues_open ? ` · ${c.issues_open} open issue${c.issues_open === 1 ? '' : 's'}` : ''}
-                    {c.attention?.length ? ` · ${c.attention[0]}` : ''}
+                    {(() => { const flag = (c.attention || []).find((a: string) => !a.includes('open issue')); return flag ? ` · ${flag}` : ''; })()}
                   </Text>
                 </View>
                 <StatusPill status={c.customer?.onboarding_status} billing={c.customer?.billing_status} />
