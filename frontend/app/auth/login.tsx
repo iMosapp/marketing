@@ -344,7 +344,8 @@ export default function LoginScreen() {
           } else if (status === 402) {
             setLoginError(error?.response?.data?.detail || 'Account access issue. Please contact support.');
           } else if (status === 403) {
-            setLoginError('Your account is not active. Please contact your administrator.');
+            const detail = error?.response?.data?.detail;
+            setLoginError(typeof detail === 'string' && detail.includes('Pilot') ? detail : 'Your account is not active. Please contact your administrator.');
           } else if (status === 429) {
             // Cloudflare or server rate-limiting — common on iOS/mobile
             setLoginError('Too many login attempts. Please wait a moment and try again.');

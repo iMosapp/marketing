@@ -482,7 +482,7 @@ def owner_summary(org: dict) -> dict:
         "monthly_total": float(c.get("amount") or 0) + float(c.get("seat_price") or 0) * int(c.get("seats_extra") or 0),
         "billing_status": c.get("billing_status"), "current_period_end": c.get("current_period_end"), "cancel_at_period_end": bool(c.get("cancel_at_period_end")),
         "grace_until": c.get("grace_until"), "last_payment_at": c.get("last_payment_at"), "last_payment_amount": c.get("last_payment_amount"),
-        "portal_available": bool(c.get("stripe_customer_id")) and configured(),
+        "portal_available": bool(c.get("stripe_customer_id")) and configured() and c.get("billing_status") != "pilot",
         "checkout_url": c.get("checkout_url") if c.get("billing_status") in ("unpaid", "awaiting_payment", "canceled") else None,
         "exception": bool(c.get("billing_status") == "exception"), "exception_ends": (c.get("billing_exception") or {}).get("expires_at") if c.get("billing_status") == "exception" else None,
         "pilot": pv and {**pv, "can_continue": c.get("billing_status") == "pilot" and pv["state"] in ("active", "completed") and configured(),
