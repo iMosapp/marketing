@@ -9,7 +9,7 @@ const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 const ACTIONS = [
   { id: 'signup-customer', icon: 'rocket', title: 'Sign up a customer', sub: 'New company, Founding Partner Pilot', route: '/onboarding/new-account', color: GOLD },
-  { id: 'signup-jessi', icon: 'chatbubbles', title: 'Jessi signs them up', sub: 'She texts, calls, builds their card', route: '/admin/users?add=1&jessi=1', color: '#AF52DE' },
+  { id: 'signup-jessi', icon: 'chatbubbles', title: 'Onboard with Jessi', sub: 'She texts, calls, builds their card', route: '/admin/users?add=1&jessi=1', color: '#AF52DE' },
   { id: 'quick-wins', icon: 'trophy', title: 'Show quick wins', sub: 'Three 2-minute wins to demo live', route: '/admin/quick-wins', color: '#34C759' },
 ];
 

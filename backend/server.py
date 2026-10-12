@@ -33,7 +33,7 @@ load_dotenv(ROOT_DIR / '.env', override=False)
 # Import routers (after env is loaded)
 from routers import public_proof
 from routers import auth, contacts, tasks, messages, calls, campaigns, admin, admin_hierarchy, admin_users, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, twilio_admin, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, lead_intake, notifications, webhooks, inventory_webhooks, demo_requests, team_chat, date_triggers, app_directory, scheduler_admin, contact_events, white_label, image_router, webhook_subscriptions, public_api, user_lifecycle, docs, nda, voice_notes, contact_intel, leaderboard_v2, notifications_center, ai_campaigns, ai_reply, home_intelligence, showcase, brand_assets, linkpage, setup_wizard, help_center, review_templates, social_templates, training, engagement_signals, ai_outreach, campaign_config, permission_templates, opt_in, push_notifications, crm_timeline, tracking, account_health, messaging_channels, csv_import, sold_workflow, partner_billing, seo, geo, chat_widget, partner_invoices, training_reports, media_tracking, va_profiles, user_schedule, keyword_rules, wallet_pass, relationship_health, upcoming, website_widget
-from routers.database import get_db
+from routers.database import get_db, verify_user_access
 from websocket_manager import manager as ws_manager
 
 # Patch jsonable_encoder to append Z to naive datetime ISO strings
@@ -1260,9 +1260,12 @@ async def get_user_profile(user_id: str):
 
 
 @api_router.patch("/users/{user_id}")
-async def patch_user_profile(user_id: str, data: dict):
+async def patch_user_profile(user_id: str, data: dict, request: Request):
     """Update user profile fields. Photo updates must go through POST /profile/{user_id}/photo."""
     db = get_db()
+    caller_id = await _verified_caller_id(request)
+    if not caller_id or (caller_id != user_id and not await verify_user_access(caller_id, user_id)):
+        raise HTTPException(status_code=403, detail="Access denied — you can only update your own profile or people you manage")
     allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links',
                       'timezone', 'address', 'city', 'state', 'zip_code', 'country', 'title',
                       'notification_settings', 'ai_master_paused', 'hub_layout', 'hub_recent', 'hub_pins']
