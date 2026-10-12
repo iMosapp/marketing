@@ -63,7 +63,7 @@ export default function UsersScreen() {
   const { user } = useAuthStore();
   const styles = getStyles(colors);
   const router = useRouter();
-  const params = useLocalSearchParams<{ importName?: string; importEmail?: string; importPhone?: string; importContactId?: string }>();
+  const params = useLocalSearchParams<{ importName?: string; importEmail?: string; importPhone?: string; importContactId?: string; add?: string; jessi?: string }>();
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -98,9 +98,11 @@ export default function UsersScreen() {
       loadStores();
       api.get('/admin/onboarding-jessi/config').then(r => {
         setJessiAvailable(!!r.data?.available && !!r.data?.sender);
-        setJessiOnboard(!!r.data?.available && !!r.data?.sender && !!r.data?.default_on);
+        setJessiOnboard(!!r.data?.available && !!r.data?.sender && (!!r.data?.default_on || params.jessi === '1'));
         setJessiSender(r.data?.sender || null);
       }).catch(() => {});
+      // Founder quick action "Jessi signs them up": open the add sheet with Jessi onboarding on
+      if (params.add === '1') setShowAddModal(true);
       // Auto-open modal if coming from contact "Convert to User"
       if (params.importName) {
         setNewUserName(params.importName || '');

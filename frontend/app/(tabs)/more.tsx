@@ -36,6 +36,8 @@ import { useOwnerStore } from '../../store/ownerStore';
 import { useWindowDimensions } from 'react-native';
 import { slug as hubSlug, HubApp, HubFolderDef } from '../../components/hub/layout';
 import { GlobalQuickFab } from '../../components/common/GlobalQuickFab';
+import { PinnedStrip, PinnedItem } from '../../components/hub/PinnedStrip';
+import { FounderQuickActions } from '../../components/hub/FounderQuickActions';
 import { PilotMore } from '../../components/pilot/PilotMore';
 
 // Enable LayoutAnimation on Android
@@ -107,20 +109,22 @@ function MoreScreenFull() {
   const scrollRef = useRef<ScrollView>(null);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
-  // Recently Visited & Pinned Tools tracking
-  type HubItem = { title: string; icon: string; color: string; subtitle: string; timestamp: number };
+  // Pinned tools: ids (slug of the title) saved on the account (users.hub_pins) with a local copy; founder gets defaults
   const uid = user?._id || 'anon';
-  const PINNED_KEY = `hub_pinned_${uid}`;
-  const MAX_PINNED = 6;
-  const [pinnedTools, setPinnedTools] = useState<HubItem[]>([]);
+  const PINS_KEY = `hub_pins_v1:${uid}`;
+  const MAX_PINNED = 8;
+  const FOUNDER_DEFAULT_PINS = ['onboarding-hub', 'mystery-shops', 'jessi-onboarding'];
+  const [pins, setPins] = useState<string[]>([]);
 
-  // Load pinned tools on focus
   useFocusEffect(
     useCallback(() => {
-      AsyncStorage.getItem(PINNED_KEY).then(raw => {
-        if (raw) { try { setPinnedTools(JSON.parse(raw)); } catch {} }
+      const remote = (user as any)?.hub_pins;
+      if (Array.isArray(remote)) { setPins(remote); return; }
+      AsyncStorage.getItem(PINS_KEY).then(raw => {
+        if (raw) { try { setPins(JSON.parse(raw)); return; } catch {} }
+        setPins(user?.role === 'super_admin' ? FOUNDER_DEFAULT_PINS : []);
       });
-    }, [PINNED_KEY])
+    }, [PINS_KEY, user?.role])
   );
 
   // trackVisit is kept for compatibility — no longer persists since Recently Visited was removed
@@ -128,25 +132,21 @@ function MoreScreenFull() {
     // no-op — Recently Visited section removed, use Pin instead
   }, []);
 
-  const togglePin = useCallback(async (item: { title: string; icon: string; color: string; subtitle: string }) => {
-    try {
-      const raw = await AsyncStorage.getItem(PINNED_KEY);
-      let pins: HubItem[] = raw ? JSON.parse(raw) : [];
-      const exists = pins.some(p => p.title === item.title);
-      if (exists) {
-        pins = pins.filter(p => p.title !== item.title);
-      } else {
-        if (pins.length >= MAX_PINNED) {
-          pins.pop(); // remove oldest to make room
-        }
-        pins.unshift({ ...item, timestamp: Date.now() });
-      }
-      await AsyncStorage.setItem(PINNED_KEY, JSON.stringify(pins));
-      setPinnedTools(pins);
-    } catch {}
-  }, [PINNED_KEY]);
+  const savePins = useCallback((next: string[]) => {
+    setPins(next);
+    AsyncStorage.setItem(PINS_KEY, JSON.stringify(next)).catch(() => {});
+    if (uid !== 'anon') {
+      useAuthStore.getState().updateUser({ hub_pins: next } as any);
+      api.patch(`/users/${uid}`, { hub_pins: next }).catch(() => {});
+    }
+  }, [PINS_KEY, uid]);
 
-  const isPinned = useCallback((title: string) => pinnedTools.some(p => p.title === title), [pinnedTools]);
+  const togglePin = useCallback((id: string) => {
+    const next = pins.includes(id) ? pins.filter(p => p !== id) : [id, ...pins].slice(0, MAX_PINNED);
+    savePins(next);
+  }, [pins, savePins]);
+
+  const isPinned = useCallback((id: string) => pins.includes(id), [pins]);
   
   // Load pending count for super admins + leads waiting badge
   useFocusEffect(
@@ -645,6 +645,7 @@ function MoreScreenFull() {
       { icon: 'receipt', title: 'Create Quote', subtitle: 'Generate new quote', onPress: () => router.push('/admin/create-quote'), color: '#34C759' },
       { icon: 'ticket', title: 'Discount Codes', subtitle: 'Promo codes', onPress: () => router.push('/admin/discount-codes'), color: '#5856D6' },
       { icon: 'storefront', title: 'Mystery Shops', subtitle: 'Client stores you phone-shop: people, challenge calls, reports, billing', onPress: () => router.push('/admin/mystery-shops' as any), color: '#C9A962' },
+      { icon: 'chatbubbles', title: 'Jessi Onboarding', subtitle: 'Everyone Jessi is walking in by text, where each one sits, whose move it is', onPress: () => router.push('/admin/onboarding-jessi' as any), color: '#AF52DE' },
       { icon: 'flask', title: 'Test Lab', subtitle: 'Try new features on your account before reps see them', onPress: () => router.push('/admin/test-lab' as any), color: '#C9A962' },
       { icon: 'radio', title: 'Jessi Voice Lab', subtitle: 'Pick her live voice, energy and pacing, audition her', onPress: () => router.push('/admin/voice-lab' as any), color: '#C9A962' },
       // System
@@ -810,6 +811,12 @@ function MoreScreenFull() {
     return { id: g, ...GROUP_META[g], items: [...dirBuckets[g]].sort((a, b) => rank(a.title) - rank(b.title)) };
   });
 
+  // ── Pinned chips: resolve saved ids against everything in the hub (apps first, then directory rows) ──
+  const pinCatalog = new Map<string, PinnedItem>();
+  for (const a of hubApps) pinCatalog.set(a.id, { id: a.id, title: a.title, icon: a.icon, color: a.color, onPress: a.onPress });
+  for (const g of dirGroups) for (const r of g.items) { const id = hubSlug(r.title); if (!pinCatalog.has(id)) pinCatalog.set(id, { id, title: r.title, icon: r.icon, color: r.color, onPress: r.onPress }); }
+  const pinnedItems = pins.map(id => pinCatalog.get(id)).filter(Boolean) as PinnedItem[];
+
   // ── Rep-first Tools: salespeople (and "view as rep") get five items; managers/admins/partners keep the full hub ──
   const simpleTools = repPreview || (user?.role === 'user' && !(user as any)?.partner_id);
   let simpleApps: HubApp[] = [];
@@ -953,12 +960,12 @@ function MoreScreenFull() {
         </View>
       </View>
       <TouchableOpacity
-        onPress={(e: any) => { e?.stopPropagation?.(); togglePin({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle }); }}
+        onPress={(e: any) => { e?.stopPropagation?.(); togglePin(hubSlug(item.title)); }}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={styles.pinButton}
       >
-        <Ionicons name={isPinned(item.title) ? 'bookmark' : 'bookmark-outline'} size={16}
-          color={isPinned(item.title) ? item.color : colors.textTertiary} />
+        <Ionicons name={isPinned(hubSlug(item.title)) ? 'bookmark' : 'bookmark-outline'} size={16}
+          color={isPinned(hubSlug(item.title)) ? item.color : colors.textTertiary} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -992,16 +999,16 @@ function MoreScreenFull() {
       <TouchableOpacity
         onPress={(e) => {
           e.stopPropagation?.();
-          togglePin({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle });
+          togglePin(hubSlug(item.title));
         }}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         style={styles.pinButton}
         data-testid={`pin-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
       >
         <Ionicons
-          name={isPinned(item.title) ? 'bookmark' : 'bookmark-outline'}
+          name={isPinned(hubSlug(item.title)) ? 'bookmark' : 'bookmark-outline'}
           size={16}
-          color={isPinned(item.title) ? item.color : colors.textTertiary}
+          color={isPinned(hubSlug(item.title)) ? item.color : colors.textTertiary}
         />
       </TouchableOpacity>
       <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
@@ -1244,6 +1251,8 @@ function MoreScreenFull() {
             <Ionicons name="close" size={16} color="#C9A962" />
           </TouchableOpacity>
         )}
+        {!simpleTools && !hubQ && <PinnedStrip items={pinnedItems} colors={colors} onUnpin={togglePin} />}
+        {isSuperAdmin && !hubQ && <FounderQuickActions colors={colors} />}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginTop: -2, marginBottom: 8 }}>
           <View style={{ flexDirection: 'row', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 2 }} data-testid="tools-view-toggle">
             {(['list', 'tiles'] as const).map(v => (
@@ -1266,7 +1275,7 @@ function MoreScreenFull() {
         </View>
 
         {toolsView === 'list' ? (
-          <ToolsDirectory groups={dirGroups} colors={colors} query={hubSearch} />
+          <ToolsDirectory groups={dirGroups} colors={colors} query={hubSearch} pinnedIds={simpleTools ? undefined : pins} onTogglePin={simpleTools ? undefined : togglePin} />
         ) : hubQ ? (
           /* ── Search results ── */
           <View style={{ marginTop: 4 }} data-testid="hub-search-results">

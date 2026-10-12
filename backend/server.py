@@ -1265,12 +1265,16 @@ async def patch_user_profile(user_id: str, data: dict):
     db = get_db()
     allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links',
                       'timezone', 'address', 'city', 'state', 'zip_code', 'country', 'title',
-                      'notification_settings', 'ai_master_paused', 'hub_layout', 'hub_recent']
+                      'notification_settings', 'ai_master_paused', 'hub_layout', 'hub_recent', 'hub_pins']
     update_dict = {k: v for k, v in data.items() if k in allowed_fields}
     
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
+    if 'hub_pins' in update_dict:
+        pins = update_dict['hub_pins']
+        if not isinstance(pins, list) or len(pins) > 8 or any(not isinstance(p, str) or len(p) > 60 for p in pins):
+            raise HTTPException(status_code=400, detail="hub_pins must be a list of up to 8 tool ids")
     if 'hub_recent' in update_dict:
         rec = update_dict['hub_recent']
         if not isinstance(rec, list) or len(rec) > 12 or any(

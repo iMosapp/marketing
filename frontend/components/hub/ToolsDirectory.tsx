@@ -10,9 +10,11 @@ const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 export type ToolRow = { title: string; subtitle?: string; icon: string; color?: string; onPress: () => void; badge?: number; statusDot?: 'green' | 'red' | 'grey' };
 export type ToolGroup = { id: string; title: string; icon: string; items: ToolRow[] };
 
-type Props = { groups: ToolGroup[]; colors: any; query?: string; bottom?: React.ReactNode };
+type Props = { groups: ToolGroup[]; colors: any; query?: string; bottom?: React.ReactNode; pinnedIds?: string[]; onTogglePin?: (id: string) => void };
 
-const Row = ({ item, colors, last, detail }: { item: ToolRow; colors: any; last: boolean; detail?: boolean }) => (
+export const toolId = (title: string) => title.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+const Row = ({ item, colors, last, detail, pinned, onPin }: { item: ToolRow; colors: any; last: boolean; detail?: boolean; pinned?: boolean; onPin?: () => void }) => (
   <TouchableOpacity onPress={item.onPress} activeOpacity={0.7}
     style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: detail ? 12 : 13, borderBottomWidth: last ? 0 : 0.5, borderBottomColor: colors.border }}
     {...tid(`tool-row-${item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`)}>
@@ -23,6 +25,11 @@ const Row = ({ item, colors, last, detail }: { item: ToolRow; colors: any; last:
     </View>
     {!!item.badge && <View style={{ minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#FF3B30', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}><Text style={{ fontSize: 11, fontWeight: '800', color: '#fff' }}>{item.badge}</Text></View>}
     {!!item.statusDot && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.statusDot === 'green' ? '#34C759' : item.statusDot === 'red' ? '#FF3B30' : '#8E8E93' }} />}
+    {!!onPin && (
+      <TouchableOpacity onPress={(e: any) => { e?.stopPropagation?.(); onPin(); }} hitSlop={10} {...tid(`pin-${toolId(item.title)}`)}>
+        <Ionicons name={pinned ? 'bookmark' : 'bookmark-outline'} size={16} color={pinned ? GOLD : colors.textTertiary} />
+      </TouchableOpacity>
+    )}
     <Ionicons name="chevron-forward" size={15} color={colors.border} />
   </TouchableOpacity>
 );
@@ -31,7 +38,8 @@ const Label = ({ children }: { children: string }) => (
   <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 1.4, color: GOLD, marginBottom: 6, textTransform: 'uppercase' }}>{children}</Text>
 );
 
-export function ToolsDirectory({ groups, colors, query = '', bottom }: Props) {
+export function ToolsDirectory({ groups, colors, query = '', bottom, pinnedIds, onTogglePin }: Props) {
+  const pinProps = (it: ToolRow) => onTogglePin ? { pinned: !!pinnedIds?.includes(toolId(it.title)), onPin: () => onTogglePin(toolId(it.title)) } : {};
   const { width } = useWindowDimensions();
   const wide = width >= 900;
   const q = query.trim().toLowerCase();
@@ -62,7 +70,7 @@ export function ToolsDirectory({ groups, colors, query = '', bottom }: Props) {
                 <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 6 }}>{g.items.length}</Text>
                 <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textTertiary} style={{ marginBottom: 6 }} />
               </TouchableOpacity>
-              {open && <View style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14 }}>{g.items.map((it, i) => <Row key={it.title} item={it} colors={colors} last={i === g.items.length - 1} />)}</View>}
+              {open && <View style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14 }}>{g.items.map((it, i) => <Row key={it.title} item={it} colors={colors} last={i === g.items.length - 1} {...pinProps(it)} />)}</View>}
             </View>
           );
         })}
@@ -114,7 +122,7 @@ export function ToolsDirectory({ groups, colors, query = '', bottom }: Props) {
             <View style={{ flexDirection: 'row', gap: 28 }}>
               {cols.map((col, ci) => (
                 <View key={ci} style={{ flex: 1, minWidth: 0 }}>
-                  {col.map((it, i) => <Row key={it.title} item={it} colors={colors} last={i === col.length - 1} detail />)}
+                  {col.map((it, i) => <Row key={it.title} item={it} colors={colors} last={i === col.length - 1} detail {...pinProps(it)} />)}
                 </View>
               ))}
             </View>
