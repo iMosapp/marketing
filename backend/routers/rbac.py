@@ -63,7 +63,7 @@ async def _resolve_user_from_request(request: Request) -> Optional[dict]:
 
 async def resolve_impersonation_session(token: str) -> Optional[str]:
     """Return the impersonated user's id for a live impersonate_* token, else None."""
-    from datetime import datetime
+    from datetime import datetime, timezone
     try:
         session = await get_db().impersonation_sessions.find_one({"token": token})
     except Exception:
@@ -72,6 +72,10 @@ async def resolve_impersonation_session(token: str) -> Optional[str]:
         return None
     expires_at = session.get("expires_at")
     if expires_at and expires_at <= datetime.utcnow():
+        return None
+    from routers.auth import issued_after_cutoff
+    created = session.get("created_at")
+    if not issued_after_cutoff({"iat": created.replace(tzinfo=timezone.utc).timestamp() if isinstance(created, datetime) else None}):
         return None
     uid = session.get("impersonated_user_id") or session.get("user_id") or session.get("target_user_id")
     return str(uid) if uid else None

@@ -46,6 +46,38 @@ def create_jwt_token(user_id: str, role: str) -> str:
     return pyjwt.encode(payload, _get_jwt_secret(), algorithm=_JWT_ALGORITHM)
 
 
+def sessions_valid_after() -> Optional[float]:
+    """SESSIONS_VALID_AFTER (ISO-8601 UTC such as 2026-10-14T00:00:00Z, or Unix epoch seconds) -> epoch seconds.
+    None when unset; ValueError when malformed."""
+    raw = (os.environ.get("SESSIONS_VALID_AFTER") or "").strip()
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        pass
+    dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.timestamp()
+
+
+def issued_after_cutoff(payload: dict) -> bool:
+    """Session cutoff gate: with SESSIONS_VALID_AFTER set, a token issued before it (or without a numeric iat) is dead.
+    A malformed value fails closed: every session is rejected until the variable is fixed."""
+    try:
+        cutoff = sessions_valid_after()
+    except (ValueError, TypeError):
+        logging.getLogger(__name__).error("SESSIONS_VALID_AFTER is malformed (ISO-8601 UTC or epoch seconds expected); rejecting every session")
+        return False
+    if cutoff is None:
+        return True
+    iat = payload.get("iat")
+    if isinstance(iat, bool) or not isinstance(iat, (int, float)):
+        return False
+    return iat >= cutoff
+
+
 def verify_jwt_token(token: str) -> Optional[dict]:
     """
     Verify a JWT token and return the payload, or None if invalid/expired.
@@ -58,11 +90,20 @@ def verify_jwt_token(token: str) -> Optional[dict]:
         return None
     try:
         payload = pyjwt.decode(token, _get_jwt_secret(), algorithms=[_JWT_ALGORITHM])
-        return payload
     except pyjwt.ExpiredSignatureError:
         return None
     except pyjwt.InvalidTokenError:
         return None
+    if not issued_after_cutoff(payload):
+        return None
+    return payload
+
+
+def set_session_cookies(resp, user_id: str, token: str) -> None:
+    """Web session restore: the httponly cookie carries the signed JWT (verified like any Bearer token), never a bare user id."""
+    max_age = 60 * 60 * 24 * _JWT_EXPIRY_DAYS
+    resp.set_cookie(key="imonsocial_session", value=token, max_age=max_age, httponly=True, samesite="lax", secure=True, path="/")
+    resp.set_cookie(key="imonsocial_uid", value=str(user_id), max_age=max_age, httponly=False, samesite="lax", secure=True, path="/")
 
 
 def hash_password(plain: str) -> str:
@@ -437,9 +478,7 @@ async def signup(user_data: UserCreate):
 
     body = {**user_dict, "user": user_dict, "token": create_jwt_token(user_dict['_id'], user_dict.get('role', 'user'))}
     resp = JSONResponse(content=json_mod.loads(json_mod.dumps(body, default=_ser)))
-    for key, httponly in (("imonsocial_session", True), ("imonsocial_uid", False)):
-        resp.set_cookie(key=key, value=user_dict['_id'], max_age=60 * 60 * 24 * 365 * 10,
-                        httponly=httponly, samesite="lax", secure=True, path="/")
+    set_session_cookies(resp, user_dict['_id'], body["token"])
     return resp
 
 
@@ -635,24 +674,7 @@ async def login(credentials: dict, request: Request = None):
     import json as json_mod
 
     resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_session_json)))
-    resp.set_cookie(
-        key="imonsocial_session",
-        value=str(user['_id']),
-        max_age=60 * 60 * 24 * 365 * 10,
-        httponly=True,
-        samesite="lax",
-        secure=True,
-        path="/",
-    )
-    resp.set_cookie(
-        key="imonsocial_uid",
-        value=str(user['_id']),
-        max_age=60 * 60 * 24 * 365 * 10,
-        httponly=False,
-        samesite="lax",
-        secure=True,
-        path="/",
-    )
+    set_session_cookies(resp, str(user['_id']), response_data["token"])
 
     # ── Fire-and-forget background tasks (don't block login response) ──
     async def _post_login_tasks(uid: str, tz: str | None):
@@ -678,16 +700,21 @@ async def login(credentials: dict, request: Request = None):
 
 @router.get("/me")
 async def get_current_user(request: Request):
-    """Restore session from persistent cookie when localStorage is cleared"""
-    session_id = request.cookies.get("imonsocial_session")
-    if not session_id:
+    """Restore the session when localStorage is cleared: the httponly cookie (or a Bearer header) must hold a valid signed JWT.
+    A bare user id is never a session."""
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:] if auth.startswith("Bearer ") else ""
+    payload = verify_jwt_token(token) or verify_jwt_token(request.cookies.get("imonsocial_session") or "")
+    if not payload or not payload.get("sub"):
         raise HTTPException(status_code=401, detail="No session")
     try:
-        user = await get_db().users.find_one({"_id": ObjectId(session_id)})
+        user = await get_db().users.find_one({"_id": ObjectId(payload["sub"])})
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid session")
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    if user.get("status") in ("deactivated", "inactive") or user.get("is_active") is False:
+        raise HTTPException(status_code=401, detail="This account is no longer active")
     _refuse_blocked(user, 401)
     return await _session_response(user)
 
@@ -713,6 +740,8 @@ async def refresh_session(request: Request):
     try:
         payload = pyjwt.decode(token, _get_jwt_secret(), algorithms=[_JWT_ALGORITHM], options={"verify_exp": False})
     except Exception:
+        raise HTTPException(status_code=401, detail="Please log in with your password")
+    if not issued_after_cutoff(payload):
         raise HTTPException(status_code=401, detail="Please log in with your password")
     exp = payload.get("exp") or 0
     if datetime.now(timezone.utc).timestamp() - exp > _REFRESH_GRACE_DAYS * 86400:
@@ -829,24 +858,7 @@ async def _session_response(user: dict):
     import json as json_mod
 
     resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_session_json)))
-    resp.set_cookie(
-        key="imonsocial_session",
-        value=str(user['_id']),
-        max_age=60 * 60 * 24 * 365 * 10,
-        httponly=True,
-        samesite="lax",
-        secure=True,
-        path="/",
-    )
-    resp.set_cookie(
-        key="imonsocial_uid",
-        value=str(user['_id']),
-        max_age=60 * 60 * 24 * 365 * 10,
-        httponly=False,
-        samesite="lax",
-        secure=True,
-        path="/",
-    )
+    set_session_cookies(resp, str(user['_id']), response_data["token"])
     return resp
 
 

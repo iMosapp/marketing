@@ -216,6 +216,9 @@ DEMO_TAGS = [
 
 
 async def seed_data():
+    from services.runtime_env import is_preview_runtime
+    if not is_preview_runtime() and os.environ.get("ALLOW_DEMO_SEED") != "1":
+        raise RuntimeError("Demo seeder refuses to run against a non-local database (it deletes the demo user's data); set ALLOW_DEMO_SEED=1 on purpose")
     client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
     db_name = os.environ.get('DB_NAME')
     if not db_name:
