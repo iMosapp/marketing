@@ -119,7 +119,7 @@ async def test_policy_roundtrip_and_access():
     ob = _token(ORG_ADMIN_B)
     assert api("GET", f"/voice-controls/accounts/{org}", ob)[0] == 403
     st, body = api("GET", f"/voice-controls/accounts/{ORG_B}", ob)
-    assert st == 200 and body["org_id"] == ORG_B and body["policy"]["exists"] is False
+    assert st == 200 and body["org_id"] == ORG_B and body["policy"]["enabled"] is False  # ORG_B is forest's org: a left (disabled) pilot row may exist
     assert api("PUT", f"/voice-controls/accounts/{ORG_B}", ob, json={"enabled": True})[0] == 403
     # the rep sees their effective allowance
     st, me = api("GET", "/voice-controls/me", rep)

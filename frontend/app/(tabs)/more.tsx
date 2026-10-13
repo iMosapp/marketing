@@ -95,7 +95,7 @@ function MoreScreenFull() {
   const OWNER_KEY: Record<string, string> = {
     'Founder Command Center': 'command_center', 'Request Log': 'request_log', 'Owner Settings': 'owner_settings', 'Billing & Revenue': 'billing_revenue', 'Revenue Forecast': 'revenue_forecast', 'Partner Agreements': 'partner_agreements',
     'White Label Partners': 'white_label_partners', 'Discount Codes': 'discount_codes', 'Partner Portal': 'partner_portal', 'View Quotes': 'view_quotes', 'Create Quote': 'create_quote',
-    'Mystery Shops': 'mystery_shops', 'Test Lab': 'test_lab', 'Jessi Voice Lab': 'jessi_voice_lab', 'Texting Compliance': 'texting_compliance', 'Twilio Migration': 'twilio_migration',
+    'Mystery Shops': 'mystery_shops', 'Test Lab': 'test_lab', 'Jessi Voice Lab': 'jessi_voice_lab', 'Voice Pilot': 'voice_pilot', 'Texting Compliance': 'texting_compliance', 'Twilio Migration': 'twilio_migration',
     'Shared Inboxes': 'shared_inboxes', 'Bulk Transfer': 'bulk_transfer', 'App Directory': 'app_directory', 'Company Docs': 'company_docs', 'Brand Assets': 'brand_assets',
     'Error Reports': 'error_reports', 'Bug Reports': 'bug_reports', 'System Logs': 'system_logs', 'Fix Duplicate Campaigns': 'fix_duplicate_campaigns', 'Fix Sold Campaign Sequences': 'fix_sold_sequences',
   };
@@ -648,6 +648,7 @@ function MoreScreenFull() {
       { icon: 'chatbubbles', title: 'Jessi Onboarding', subtitle: 'Everyone Jessi is walking in by text, where each one sits, whose move it is', onPress: () => router.push('/admin/onboarding-jessi' as any), color: '#AF52DE' },
       { icon: 'flask', title: 'Test Lab', subtitle: 'Try new features on your account before reps see them', onPress: () => router.push('/admin/test-lab' as any), color: '#C9A962' },
       { icon: 'radio', title: 'Jessi Voice Lab', subtitle: 'Pick her live voice, energy and pacing, audition her', onPress: () => router.push('/admin/voice-lab' as any), color: '#C9A962' },
+      { icon: 'pulse', title: 'Voice Pilot', subtitle: 'Enrol your own account in the voice spending controls, watch usage, kill switch', onPress: () => router.push('/admin/voice-pilot' as any), color: '#C9A962' },
       // System
       { icon: 'shield-checkmark', title: 'Texting Compliance', subtitle: 'A2P 10DLC brand + campaign and Caller ID per dealership', onPress: () => router.push('/admin/compliance' as any), color: '#C9A962' },
       { icon: 'git-network', title: 'Twilio Migration', subtitle: 'Map every existing number to its organization, import into the registry, texting rules', onPress: () => router.push('/admin/twilio-migration' as any), color: '#C9A962' },

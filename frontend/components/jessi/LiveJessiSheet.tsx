@@ -11,7 +11,7 @@ const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '
 const capLabel = (leftS: number) => (leftS < 60 ? 'Under a minute left today' : `${Math.floor(leftS / 60)} min left today`);
 export const REASONS: Record<string, string> = { idle: 'Closed after a quiet spell', daily_cap: "Today's minutes are used up", voice_cap: "Today's voice minutes are used up", backup_cap: "Today's voice minutes are used up",
   premium_cap: 'Premium minutes used up', connection_lost: 'The connection dropped', close_requested: 'Conversation ended', expired: 'Session limit reached', content: 'Ended by the safety filter',
-  no_start: 'did not pick up', unmounted: 'Closed', handoff_failed: 'Could not switch the voice line', server_kill: 'Stopped by the server' };
+  no_start: 'did not pick up', unmounted: 'Closed', handoff_failed: 'Could not switch the voice line', server_kill: 'Stopped by the server', killed: 'Paused by the account owner' };
 
 export const statusText = (live: LiveJessi, who = 'Jessi') =>
   live.state === 'connecting' ? `Connecting to ${who}` : live.state === 'switching' ? "Switching to Jessi's standard voice" : live.state === 'ending' ? 'Wrapping up' : live.state === 'live' ? (live.working || 'Listening') : live.state === 'ended' ? (live.closeReason === 'no_start' ? `${who} did not pick up` : REASONS[live.closeReason] || 'Conversation ended') : 'Could not connect';

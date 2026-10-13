@@ -88,6 +88,7 @@ async def config(request: Request):
         nxt = vc.pick_engine(policy, eff)
         controls = {k: eff[k] for k in ("premium_engine", "backup_engine", "premium_left_s", "backup_left_s", "premium_allowance_s", "backup_allowance_s", "reset_at", "timezone")}
         controls["next_engine"] = nxt
+        controls["killed"] = "killed" in eff["limits"]
         usage = {"used_s": eff["premium_used_s"] + eff["backup_used_s"], "cap_s": eff["premium_allowance_s"] + eff["backup_allowance_s"], "left_s": eff["premium_left_s"] + eff["backup_left_s"],
                  "unlimited": "super_admin_uncapped" in eff["limits"], "reset_at": eff["reset_at"], "engine": nxt or policy["backup_engine"]}
     engine = usage["engine"]

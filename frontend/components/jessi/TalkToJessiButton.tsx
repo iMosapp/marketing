@@ -24,21 +24,23 @@ export const TalkToJessiButton = () => {
   const { config, reload } = useLiveConfig();
   const jessi = useLiveJessiLauncher();
   const liveOn = !!config?.available && !!config.configured;
+  const paused = liveOn && !!config!.controls?.killed;
   const capHit = liveOn && config!.usage.left_s <= 0;
   const liveReady = liveOn && !capHit && liveSupported();
   const needsKey = !!config?.available && !config.configured && config.is_super_admin;
 
   const press = () => {
-    if (needsKey || (capHit && config?.is_super_admin)) { router.push('/admin/voice-lab' as any); return; }
+    if (needsKey || (capHit && config?.is_super_admin && !paused)) { router.push('/admin/voice-lab' as any); return; }
     if (liveReady) { jessi.open({ options: { mode: 'assistant' }, onClose: reload }); return; }
     router.push('/(tabs)/jessi' as any);
   };
   const capMin = Math.round((config?.usage.cap_s || 0) / 60);
   const sub = needsKey ? 'Needs OPENAI_API_KEY on the server. Tap to open the Voice Lab.'
+    : paused ? 'Live Jessi is paused for your account by the account owner. Ask me by text instead.'
     : capHit ? `All ${capMin} live minutes for today are used. Back at ${resetLabel(config?.usage.reset_at)}.${config?.is_super_admin ? ' Tap to raise the daily cap in the Voice Lab.' : ' Until then, ask me by text or voice note.'}`
     : liveReady ? 'Who to call today, text someone, pull up a contact. Just talk.'
     : 'Ask about a customer, who to follow up with, or what to send.';
-  const title = capHit ? 'Live Jessi is resting' : liveReady ? 'Talk to Jessi' : 'Ask Jessi';
+  const title = paused ? 'Live Jessi is paused' : capHit ? 'Live Jessi is resting' : liveReady ? 'Talk to Jessi' : 'Ask Jessi';
 
   return (
     <TouchableOpacity onPress={press} activeOpacity={0.85} style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 18, padding: 14, backgroundColor: colors.card, borderWidth: 1.5, borderColor: capHit ? `${ORANGE}88` : `${GOLD}66`, flexDirection: 'row', alignItems: 'center', gap: 12 }} {...tid('talk-to-jessi-btn')}>

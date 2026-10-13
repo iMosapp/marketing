@@ -20,7 +20,7 @@ const TOOL_LABELS: Record<string, string> = {
 };
 const ROW_GAP_MS = 1500;
 // Ending because every voice pool is spent: the sheet offers the typed Ask Jessi instead.
-export const CAP_REASONS = ['voice_cap', 'backup_cap', 'daily_cap'];
+export const CAP_REASONS = ['voice_cap', 'backup_cap', 'daily_cap', 'killed'];
 export const STANDARD_VOICE_NOTE = "Switched to Jessi's standard voice";
 
 export const openLabel = (t: OpenTarget) => {

@@ -30,6 +30,7 @@ OWNER_TOOLS = [
     ("mystery_shops", "Mystery Shops", True),
     ("test_lab", "Test Lab", True),
     ("jessi_voice_lab", "Jessi Voice Lab", True),
+    ("voice_pilot", "Voice Pilot", False),
     ("texting_compliance", "Texting Compliance", True),
     ("twilio_migration", "Twilio Migration", True),
     ("shared_inboxes", "Shared Inboxes", True),

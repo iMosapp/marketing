@@ -30,7 +30,7 @@ HEARTBEAT_STALE_S = 150  # no client event for this long -> watchdog finalizes t
 GRACE_S = 30             # seconds added past the last heartbeat when finalizing an unconfirmed segment
 STOP_GRACE_S = 20        # a session told to stop that is still open after this long is closed on the provider side (kill switch)
 KILL_MAX_ATTEMPTS = 3
-CONFIRMED_CLOSE_REASONS = ("close_requested", "idle", "daily_cap", "premium_cap", "backup_cap", "voice_cap", "handoff")
+CONFIRMED_CLOSE_REASONS = ("close_requested", "idle", "daily_cap", "premium_cap", "backup_cap", "voice_cap", "handoff", "killed")
 ENGINE_ROLE = {"live": "premium", "mini": "backup"}
 TEST_EMAIL_SUFFIX = "@invalid.imonsocial.test"
 
@@ -44,14 +44,16 @@ DEFAULT_POLICY = {"enabled": False, "product": "imos", "plan_key": "standard", "
                   "per_user_daily_premium_min": 15, "per_user_daily_backup_min": 60,
                   "account_daily_premium_min": None, "account_monthly_premium_min": None,
                   "monthly_budget_usd": None, "soft_warn_pcts": [80], "hard_premium_cap_usd": None, "account_monthly_backup_usd": None,
+                  "account_monthly_hard_usd": None, "cap_super_admins": False, "killed": False,
                   "carry_over": False, "timezone": None, "notes": ""}
 GLOBAL_DEFAULTS = {"enabled": True, "max_user_daily_premium_min": 240, "max_user_daily_backup_min": 480, "pricing": PRICING}
 PLAN_CATALOG = {"standard": {"per_user_daily_premium_min": 15}, "pro": {"per_user_daily_premium_min": 30}, "unlimited": {"per_user_daily_premium_min": 240}}
 INT_FIELDS = ("per_user_daily_premium_min", "per_user_daily_backup_min", "account_daily_premium_min", "account_monthly_premium_min")
-USD_FIELDS = ("monthly_budget_usd", "hard_premium_cap_usd", "account_monthly_backup_usd")
-BOOL_FIELDS = ("enabled", "premium_enabled", "backup_enabled", "carry_over")
+USD_FIELDS = ("monthly_budget_usd", "hard_premium_cap_usd", "account_monthly_backup_usd", "account_monthly_hard_usd")
+BOOL_FIELDS = ("enabled", "premium_enabled", "backup_enabled", "carry_over", "cap_super_admins", "killed")
 DEFAULT_OVERRIDE = {"daily_premium_min": None, "daily_backup_min": None, "premium_disabled": False, "super_admin_authorized": False, "notes": "", "grants": []}
-STOP_MESSAGES = {"premium_cap": "You have used today's premium Jessi minutes.", "backup_cap": "Jessi's voice is done for today. It resets at midnight."}
+STOP_MESSAGES = {"premium_cap": "You have used today's premium Jessi minutes.", "backup_cap": "Jessi's voice is done for today. It resets at midnight.",
+                 "killed": "Live Jessi was paused by the account owner."}
 
 
 class NoAllowance(Exception):
@@ -296,7 +298,7 @@ async def resolve(db, user: dict, policy: dict) -> dict:
     aday = await db[ACCT_DAY_COLL].find_one({"_id": f"{org_id}:{day}"}) or {}
     amonth = await db[ACCT_MONTH_COLL].find_one({"_id": f"{org_id}:{month}"}) or {}
     limits = []
-
+    uncapped = _uncapped(user) and not policy["cap_super_admins"]  # the founder pilot puts super admins under the same allowances
     def used(doc, role):
         return int(doc.get(f"{role}_used_s") or 0) + int(doc.get(f"{role}_reserved_s") or 0)
 
@@ -339,25 +341,37 @@ async def resolve(db, user: dict, policy: dict) -> dict:
         v = _usd_to_s(policy["monthly_budget_usd"] - float(amonth.get("est_cost_usd") or 0), "live") - acct_reserved
         acct_prem_left = v if acct_prem_left is None else min(acct_prem_left, v)
         limits.append("monthly_budget")
-    bypass_shared = ov["super_admin_authorized"] or _uncapped(user)
+    bypass_shared = ov["super_admin_authorized"] or uncapped
     if acct_prem_left is not None and not bypass_shared:
         prem_left = min(prem_left, acct_prem_left)
     hard_left = None
+    hard_back_left = None
     if policy["hard_premium_cap_usd"] is not None:  # the hard $ cap binds everyone, authorized or not
         hard_left = _usd_to_s(policy["hard_premium_cap_usd"] - float(amonth.get("premium_cost_usd") or 0), "live") - acct_reserved
         limits.append("hard_premium_cap")
+    if policy["account_monthly_hard_usd"] is not None:  # total spend (both engines) this month; binds everyone incl. super admins
+        remaining = policy["account_monthly_hard_usd"] - float(amonth.get("est_cost_usd") or 0)
+        v = _usd_to_s(remaining, "live") - acct_reserved
+        hard_left = v if hard_left is None else min(hard_left, v)
+        hard_back_left = _usd_to_s(remaining, "mini") - int(aday.get("backup_reserved_s") or 0)
+        limits.append("account_hard_cap")
     acct_back_left = None
     if policy["account_monthly_backup_usd"] is not None:
         acct_back_left = _usd_to_s(policy["account_monthly_backup_usd"] - float(amonth.get("backup_cost_usd") or 0), "mini") - int(aday.get("backup_reserved_s") or 0)
         if not bypass_shared:
             back_left = min(back_left, acct_back_left)
         limits.append("account_monthly_backup")
-    if _uncapped(user):
+    if uncapped:
         prem_left, back_left = 24 * 3600, 24 * 3600
         user_prem_allow, user_back_allow = 24 * 3600, 24 * 3600
         limits.append("super_admin_uncapped")
     if hard_left is not None:
         prem_left = min(prem_left, hard_left)
+    if hard_back_left is not None:
+        back_left = min(back_left, hard_back_left)
+    if policy["killed"]:  # owner kill switch: nothing starts, open sessions are told to stop
+        prem_left, back_left = 0, 0
+        limits.append("killed")
     reset_at = (now_local.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)).isoformat()
     return {"org_id": org_id, "user_id": uid, "day": day, "month": month, "timezone": str(tz), "reset_at": reset_at,
             "premium_engine": policy["premium_engine"], "backup_engine": policy["backup_engine"],
@@ -368,7 +382,8 @@ async def resolve(db, user: dict, policy: dict) -> dict:
             "account": {"premium_day_used_s": used(aday, "premium"), "backup_day_used_s": used(aday, "backup"),
                         "premium_month_s": int(amonth.get("premium_s") or 0), "backup_month_s": int(amonth.get("backup_s") or 0),
                         "est_cost_month_usd": round(float(amonth.get("est_cost_usd") or 0), 4), "premium_cost_month_usd": round(float(amonth.get("premium_cost_usd") or 0), 4),
-                        "backup_cost_month_usd": round(float(amonth.get("backup_cost_usd") or 0), 4), "premium_left_s": acct_prem_left, "hard_left_s": hard_left, "backup_left_s": acct_back_left},
+                        "backup_cost_month_usd": round(float(amonth.get("backup_cost_usd") or 0), 4), "premium_left_s": acct_prem_left, "hard_left_s": hard_left, "hard_back_left_s": hard_back_left,
+                        "backup_left_s": acct_back_left},
             "limits": limits, "bypass_shared": bypass_shared,
             "override": {k: ov[k] for k in ("daily_premium_min", "daily_backup_min", "premium_disabled", "super_admin_authorized")}}
 
@@ -383,6 +398,8 @@ def pick_engine(policy: dict, eff: dict) -> Optional[str]:
 
 
 def cap_message(eff: dict) -> str:
+    if "killed" in eff["limits"]:
+        return "Live Jessi is paused for your account by the account owner."
     if eff["premium_allowance_s"] <= 0 and eff["backup_allowance_s"] <= 0:
         return "Jessi's voice is switched off for your account. Ask your manager."
     return "You have used today's Jessi voice minutes. It resets at midnight your time."
@@ -557,7 +574,13 @@ async def on_heartbeat(db, live: dict, client_seconds: Optional[int], tokens: Op
         policy = await get_policy(db, org_id)
         eff = await resolve(db, user or {"_id": uid, "role": "user"}, policy)
         role = ENGINE_ROLE[engine]
-        if headroom < SLICE_S // 2:
+        if "killed" in eff["limits"]:
+            stop = "killed"
+            sets["stop_reason"] = stop
+            if not seg.get("stop_requested_at"):
+                sets["stop_requested_at"] = now
+            out["fallback_engine"] = None
+        elif headroom < SLICE_S // 2:
             got = await reserve(db, eff, engine, SLICE_S) if user else 0
             if got:
                 sets["reserved_s"] += got
@@ -623,11 +646,31 @@ async def _finalize(db, seg: dict, billable: int, stop_reason: str, extra: Optio
     await db.live_sessions.update_one({"live_id": seg["live_id"], "status": "open"}, {"$set": {"status": "closed", "close_reason": stop_reason, "ended_at": _now(), "seconds": billable, "cost_usd": cost, "meter.stop_reason": stop_reason, "updated_at": _now()}})
 
 
+async def kill_segment(db, seg: dict, stop_reason: str = "server_kill", force: bool = False) -> bool:
+    """Close one open segment on the provider side and finalize it. Returns True when finalized (the kill either succeeded or ran out
+    of attempts; with `force` the segment is finalized even when the provider call failed)."""
+    from services import live_voice as lv
+    now = _now()
+    attempts = int(seg.get("kill_attempts") or 0)
+    if attempts >= KILL_MAX_ATTEMPTS and not force:
+        return False
+    live = await db.live_sessions.find_one({"live_id": seg["live_id"]}) or {"live_id": seg["live_id"], "engine": seg["engine"], "started_at": seg["started_at"]}
+    result = await lv.provider_close(live)
+    await db[LEDGER_COLL].update_one({"_id": seg["_id"]}, {"$inc": {"kill_attempts": 1}, "$set": {"kill_at": now, "kill_result": result}})
+    if not result.get("ok") and attempts + 1 < KILL_MAX_ATTEMPTS and not force:
+        return False
+    billable = max(int(seg.get("billable_s") or 0), int((now - _aware(live.get("started_at") or seg["started_at"])).total_seconds()))
+    basis = None
+    if result.get("provider_seconds") is not None:
+        billable, basis = max(billable, int(result["provider_seconds"])), "provider_usage"
+    await _finalize(db, seg, billable, stop_reason, {"kill_attempts": attempts + 1, "kill_at": now, "kill_result": result}, basis)
+    return True
+
+
 async def watchdog(db) -> dict:
     """Fail-safes, run every minute. (1) Sessions that stopped reporting (tab killed, app backgrounded, network drop, server restart in
     between): finalize at last heartbeat + GRACE_S, release the unspent reservation, flag unconfirmed. (2) Kill switch: a session that was
     told to stop (pool gone, hard cap) and is still open after STOP_GRACE_S is closed on the provider side and finalized as server_kill."""
-    from services import live_voice as lv
     now = _now()
     n = killed = 0
     async for seg in db[LEDGER_COLL].find({"kind": "segment", "status": "open", "heartbeat_at": {"$lt": now - timedelta(seconds=HEARTBEAT_STALE_S)}}):
@@ -636,21 +679,85 @@ async def watchdog(db) -> dict:
         await _finalize(db, seg, billable, "stale_meter", {"watchdog_at": now})
         n += 1
     async for seg in db[LEDGER_COLL].find({"kind": "segment", "status": "open", "policy_mode": "controls", "stop_requested_at": {"$lt": now - timedelta(seconds=STOP_GRACE_S)}}):
-        attempts = int(seg.get("kill_attempts") or 0)
-        if attempts >= KILL_MAX_ATTEMPTS:
-            continue
-        live = await db.live_sessions.find_one({"live_id": seg["live_id"]}) or {"live_id": seg["live_id"], "engine": seg["engine"], "started_at": seg["started_at"]}
-        result = await lv.provider_close(live)
-        await db[LEDGER_COLL].update_one({"_id": seg["_id"]}, {"$inc": {"kill_attempts": 1}, "$set": {"kill_at": now, "kill_result": result}})
-        if not result.get("ok") and attempts + 1 < KILL_MAX_ATTEMPTS:
-            continue
-        billable = max(int(seg.get("billable_s") or 0), int((now - _aware(live.get("started_at") or seg["started_at"])).total_seconds()))
-        basis = None
-        if result.get("provider_seconds") is not None:
-            billable, basis = max(billable, int(result["provider_seconds"])), "provider_usage"
-        await _finalize(db, seg, billable, "server_kill", {"kill_attempts": attempts + 1, "kill_at": now, "kill_result": result}, basis)
-        killed += 1
+        if await kill_segment(db, seg, "killed" if seg.get("stop_reason") == "killed" else "server_kill"):
+            killed += 1
     return {"finalized": n, "killed": killed}
+
+
+async def kill_open_sessions(db, org_id: str) -> int:
+    """Owner kill switch: every open metered session on the account is hung up on the provider side and finalized right now."""
+    n = 0
+    async for seg in db[LEDGER_COLL].find({"kind": "segment", "status": "open", "policy_mode": "controls", "org_id": org_id}):
+        if await kill_segment(db, seg, "killed", force=True):
+            n += 1
+    return n
+
+
+# ── founder pilot (one account, the owner's own) ───────────────────────────────
+PILOT_DEFAULTS = {"premium_min": 2, "backup_min": 10, "hard_usd": 20.0}
+
+
+async def pilot_enroll(db, me: dict, premium_min: int, backup_min: int, hard_usd: float) -> dict:
+    org_id = await org_of(db, me)
+    patch = {"enabled": True, "cap_super_admins": True, "killed": False, "per_user_daily_premium_min": premium_min, "per_user_daily_backup_min": backup_min,
+             "account_monthly_hard_usd": hard_usd, "notes": f"Founder voice pilot, enrolled by {me.get('email')}"}
+    await save_policy(db, org_id, patch, me)
+    return await pilot_status(db, me)
+
+
+async def pilot_status(db, me: dict) -> dict:
+    """Everything the founder needs on one screen: own account policy, safety flags, today's pools, month spend vs cap, open sessions,
+    recent handoffs and segments, how many OTHER accounts are enrolled (should be zero during the pilot)."""
+    from services import live_voice as lv
+    org_id = await org_of(db, me)
+    policy = await get_policy(db, org_id)
+    g = await get_global(db)
+    tz = await account_tz(db, org_id, policy, me)
+    now_local = _now().astimezone(tz)
+    day, month = day_key(now_local), month_key(now_local)
+    aday = await db[ACCT_DAY_COLL].find_one({"_id": f"{org_id}:{day}"}) or {}
+    amonth = await db[ACCT_MONTH_COLL].find_one({"_id": f"{org_id}:{month}"}) or {}
+    eff = await resolve(db, me, policy) if policy["enabled"] and g["enabled"] else None
+    others = [p["org_id"] async for p in db[POLICY_COLL].find({"enabled": True, "org_id": {"$ne": org_id}}, {"org_id": 1})]
+    names = {}
+    async for s in db[LEDGER_COLL].find({"kind": "segment", "org_id": org_id}).sort("started_at", -1).limit(40):
+        names.setdefault(s["user_id"], None)
+    async for u in db.users.find({"_id": {"$in": [o for o in (_oid(x) for x in names) if o]}}, {"email": 1, "name": 1}):
+        names[str(u["_id"])] = u.get("name") or u.get("email")
+
+    def row(s):
+        return {"live_id": s["live_id"], "user": names.get(s["user_id"]) or s["user_id"], "engine": s["engine"], "role": s.get("role"), "status": s["status"], "device_id": s.get("device_id"),
+                "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
+                "billable_s": int(s.get("billable_s") or 0), "reserved_s": int(s.get("reserved_s") or 0), "settled_s": int(s.get("settled_s") or 0), "est_cost_usd": round(float(s.get("est_cost_usd") or 0), 4),
+                "cost_basis": s.get("cost_basis"), "stop_reason": s.get("stop_reason"), "fallback_reason": s.get("fallback_reason"), "reconnect_of": s.get("reconnect_of"), "segment_no": s.get("segment_no"),
+                "unconfirmed": bool(s.get("unconfirmed")), "fake_provider": bool(s.get("fake_provider")), "kill_attempts": int(s.get("kill_attempts") or 0)}
+
+    active = [row(s) async for s in db[LEDGER_COLL].find({"kind": "segment", "status": "open", "org_id": org_id}).sort("started_at", -1).limit(20)]
+    recent = [row(s) async for s in db[LEDGER_COLL].find({"kind": "segment", "org_id": org_id}).sort("started_at", -1).limit(15)]
+    handoffs = []
+    async for s in db[LEDGER_COLL].find({"kind": "segment", "org_id": org_id, "reconnect_of": {"$ne": None}}).sort("started_at", -1).limit(15):
+        prev = await db[LEDGER_COLL].find_one({"live_id": s["reconnect_of"], "kind": "segment"}, {"engine": 1, "billable_s": 1, "stop_reason": 1})
+        handoffs.append({"at": s["started_at"].isoformat() if s.get("started_at") else None, "user": names.get(s["user_id"]) or s["user_id"], "from_live_id": s["reconnect_of"], "to_live_id": s["live_id"],
+                         "from_engine": (prev or {}).get("engine"), "to_engine": s["engine"], "reason": s.get("fallback_reason") or (prev or {}).get("stop_reason") or "reconnect",
+                         "from_billable_s": int((prev or {}).get("billable_s") or 0), "to_billable_s": int(s.get("billable_s") or 0), "to_status": s["status"]})
+    cap = policy["account_monthly_hard_usd"]
+    spent = round(float(amonth.get("est_cost_usd") or 0), 4)
+    try:
+        from server import BUILD
+    except Exception:
+        BUILD = None
+    allowance = None
+    if eff:
+        allowance = {k: eff[k] for k in ("premium_allowance_s", "backup_allowance_s", "premium_left_s", "backup_left_s", "premium_used_s", "backup_used_s", "premium_reserved_s", "backup_reserved_s", "limits", "reset_at", "timezone")}
+        allowance["next_engine"] = pick_engine(policy, eff)
+    return {"org_id": org_id, "org_name": await org_name(db, org_id), "me": {"user_id": str(me["_id"]), "email": me.get("email"), "role": me.get("role")},
+            "enrolled": bool(policy["enabled"] and g["enabled"]), "policy": policy, "global_enabled": g["enabled"], "other_enrolled_org_ids": others, "defaults": PILOT_DEFAULTS,
+            "env": {"fake_provider_allowed": fake_provider_allowed(), "openai_configured": lv.configured() is None, "openai_reason": lv.configured(), "build": BUILD},
+            "allowance": allowance,
+            "today": {k: int(aday.get(k) or 0) for k in ("premium_used_s", "premium_reserved_s", "backup_used_s", "backup_reserved_s", "sessions")} | {"day": day},
+            "month": {"month": month, "premium_s": int(amonth.get("premium_s") or 0), "backup_s": int(amonth.get("backup_s") or 0), "premium_cost_usd": round(float(amonth.get("premium_cost_usd") or 0), 4),
+                      "backup_cost_usd": round(float(amonth.get("backup_cost_usd") or 0), 4), "est_cost_usd": spent, "cap_usd": cap, "cap_left_usd": round(max(0.0, cap - spent), 4) if cap is not None else None},
+            "active": active, "handoffs": handoffs, "recent": recent}
 
 
 async def trail(db, live_id: str) -> Optional[dict]:

@@ -124,6 +124,7 @@ async def test_premium_to_backup_handoff_with_context_and_trail():
     st, ev = events(tok, s1["live_id"], [{"type": "usage", "seconds": 70}])
     assert ev["stop"] == "premium_cap" and ev["fallback_engine"] == "mini", ev
     # the app: final close for the old session FIRST, then the resume (reservation released before the next one is taken)
+    backdate(s1["live_id"], 70)
     st, ev = events(tok, s1["live_id"], [{"type": "closed", "reason": "premium_cap", "seconds": 70}])
     assert ev["status"] == "closed"
     r = res_doc(uid)

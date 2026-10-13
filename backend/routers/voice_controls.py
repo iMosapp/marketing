@@ -59,6 +59,12 @@ class GrantBody(BaseModel):
     day: Optional[str] = None
 
 
+class PilotBody(BaseModel):
+    premium_min: int = vc.PILOT_DEFAULTS["premium_min"]
+    backup_min: int = vc.PILOT_DEFAULTS["backup_min"]
+    hard_usd: float = vc.PILOT_DEFAULTS["hard_usd"]
+
+
 def _is_super(me: dict) -> bool:
     return me.get("role") == "super_admin"
 
@@ -234,3 +240,49 @@ async def session_trail(live_id: str, request: Request):
 async def run_watchdog(request: Request):
     await _super(request)
     return await vc.watchdog(get_db())
+
+
+# ── founder pilot: the caller's OWN account only ──────────────────────────────
+@router.get("/pilot")
+async def pilot(request: Request):
+    me = await _super(request)
+    return await vc.pilot_status(get_db(), me)
+
+
+@router.post("/pilot/enroll")
+async def pilot_enroll(body: PilotBody, request: Request):
+    me = await _super(request)
+    if not (1 <= body.premium_min <= 240) or not (1 <= body.backup_min <= 480):
+        raise HTTPException(status_code=400, detail="Allowances: 1 to 240 premium minutes and 1 to 480 backup minutes per day")
+    if not (0.01 <= body.hard_usd <= 1000):
+        raise HTTPException(status_code=400, detail="The monthly hard cap must be between $0.01 and $1000")
+    return await vc.pilot_enroll(get_db(), me, body.premium_min, body.backup_min, round(body.hard_usd, 2))
+
+
+@router.post("/pilot/kill")
+async def pilot_kill(request: Request):
+    """Kill switch: no new sessions on the account, every open session is hung up and finalized now."""
+    me = await _super(request)
+    db = get_db()
+    org_id = await vc.org_of(db, me)
+    await vc.save_policy(db, org_id, {"killed": True}, me)
+    killed = await vc.kill_open_sessions(db, org_id)
+    return {"killed": killed, **(await vc.pilot_status(db, me))}
+
+
+@router.post("/pilot/resume")
+async def pilot_resume(request: Request):
+    me = await _super(request)
+    db = get_db()
+    await vc.save_policy(db, await vc.org_of(db, me), {"killed": False}, me)
+    return await vc.pilot_status(db, me)
+
+
+@router.post("/pilot/leave")
+async def pilot_leave(request: Request):
+    """Back to the legacy caps for the whole account (nothing is deleted: usage, ledger and the policy row stay for the record)."""
+    me = await _super(request)
+    db = get_db()
+    org_id = await vc.org_of(db, me)
+    await vc.save_policy(db, org_id, {"enabled": False, "killed": False, "cap_super_admins": False}, me)
+    return {"killed": await vc.kill_open_sessions(db, org_id), **(await vc.pilot_status(db, me))}
