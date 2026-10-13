@@ -108,6 +108,25 @@ async def test_enroll_own_account_only():
     assert S["mongo"][vc.LEDGER_COLL].count_documents({"org_id": S["org"], "kind": "admin_policy_change", "at": {"$gte": S["t0"]}}) >= 1, "audit row"
 
 
+# ── 1b. founder engine test: Realtime Mini only, premium pool untouched, back to live-first ───────────────────────────────
+async def test_engine_mode_mini_only():
+    tok = S["forest"]
+    assert api("POST", "/voice-controls/pilot/engine-mode", tok, json={"mode": "turbo"})[0] == 400
+    assert api("POST", "/voice-controls/pilot/engine-mode", _token(REP), json={"mode": "mini_only"})[0] == 403
+    st, s = api("POST", "/voice-controls/pilot/engine-mode", tok, json={"mode": "mini_only"})
+    assert st == 200 and s["policy"]["engine_mode"] == "mini_only" and s["allowance"]["next_engine"] == "mini" and s["allowance"]["premium_left_s"] == 120
+    st, sess = start(tok, "iphone-mini-only")
+    assert st == 200 and sess["engine"] == "mini" and sess["meter"]["role"] == "backup" and sess["meter"]["fallback_reason"] == "mini_only" and sess["resumed_from"] is None
+    st, status = api("GET", "/voice-controls/pilot", tok)
+    assert status["today"]["premium_reserved_s"] == 0 and status["today"]["backup_reserved_s"] == 60 and status["allowance"]["premium_left_s"] == 120, "GPT-Live minutes untouched"
+    ev = events(tok, sess["live_id"], [{"type": "usage", "seconds": 0}])[1]
+    assert ev.get("stop") is None and ev.get("fallback_engine") is None, "no hand-off target on a mini-only session"
+    events(tok, sess["live_id"], [{"type": "closed", "reason": "close_requested", "seconds": 0}])
+    st, s = api("POST", "/voice-controls/pilot/engine-mode", tok, json={"mode": "live_first"})
+    assert st == 200 and s["policy"]["engine_mode"] == "live_first" and s["allowance"]["next_engine"] == "live" and s["active"] == []
+    assert seg_of(sess["live_id"])["fallback_reason"] == "mini_only"
+
+
 # ── 2. the pilot conversation: 2 premium minutes -> hand-off to Mini, visible in the status ──────────────────────────────
 async def test_handoff_shows_up_in_status():
     tok = S["forest"]

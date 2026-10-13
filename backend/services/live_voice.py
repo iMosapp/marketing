@@ -77,9 +77,32 @@ DELEGATE_TOOL = {"type": "function", "name": "delegate",
                  "description": "Hand the rep's request to the I'm On Social backend: people, history, texting, reminders, notes, calls, sales, appointments, screens, duplicates, numbers, app help, and every yes/no to something read back. Returns exactly what to say.",
                  "parameters": {"type": "object", "properties": {"request": {"type": "string", "description": "What the rep wants, in one plain sentence. Keep names, spellings, numbers, dates and the exact wording of any text."}}, "required": ["request"]}}
 REALTIME_RULES = ("\n\nTOOL: you have one function, delegate(request). Every case under 'Delegate to the backend when' means: call delegate with what the rep wants in one plain sentence "
-                  "(keep names, spellings, numbers, dates and the exact wording of any text). Say two or three words first ('one sec', 'pulling that up') so there is no dead air, then call it. "
+                  "(keep names, spellings, numbers, dates and the exact wording of any text). If it will take a moment, two words at most ('one sec'), then call it. "
                   "The function returns what to say: say it in your own voice, keep every name and number, add nothing. If it returns a question (which one, yes or no), ask it and wait. "
                   "Never say a text was sent, a reminder was set or anything was saved unless the function said so.")
+# One Jessi on both engines: the conversational rules every reply follows. GPT-Live and Realtime mini get the same block (Phase 2 prompt parity).
+CORE_RULES = ("How you talk (every reply):\n"
+              "- Answer the question first; add something only when it helps. For a simple question, one or two natural spoken sentences is the whole reply.\n"
+              "- No long openers, no recap of what the rep just said, no repeated confirmations, no filler ('great question', 'absolutely', 'of course', 'happy to help'), no piled-on enthusiasm.\n"
+              "- Ask a follow-up only when you need it to finish what the rep asked, one question at a time. Never end with 'anything else?'.\n"
+              "- Introduce yourself at most once per conversation and never list what you can do unless asked.\n"
+              "- Never narrate what you are doing behind the scenes or read ids, labels, tool names or technical details aloud.\n"
+              "- When the rep stops talking, answer right away; short answers and natural pauses are fine. If they interrupt, stop at once and listen.\n"
+              "- When the rep asks for detail, a story, brainstorming or coaching, open up and take the room they give you.\n"
+              "- Short is the default, not a rule against warmth: stay personable, sharp and specific.")
+# Realtime mini only: the compact model needs the length rule said again, right before the context, and told not to restart after a hand-off.
+MINI_RULES = ("\n\nLENGTH, this matters on this voice line: lead with the answer and stop. The default reply is one or two sentences, then it is the rep's turn. "
+              "After the backend returns a result, say it once in your own words and stop: no summary, no options, no offer of more. "
+              "At most one follow-up question, and only when the task cannot be finished without it. "
+              "Never greet, re-introduce yourself or restart the conversation after the first turn; if a CONVERSATION SO FAR is given below, you are already mid-conversation. "
+              "If a turn from the rep was silence, noise or unclear, do not repeat yourself: say 'Go ahead' or nothing. "
+              "Before a backend call say nothing or two words at most ('one sec'); never describe the call.")
+MINI_MAX_OUTPUT_TOKENS = 1600  # about 80 s of speech: room for a long read-back, a hard stop for a runaway monologue
+
+
+def mini_instructions(instructions: str, context: str) -> str:
+    """Realtime mini takes one instructions string: shared Jessi + tool protocol + the mini length layer + the context GPT-Live gets as a developer message."""
+    return instructions + REALTIME_RULES + MINI_RULES + "\n\n" + context
 
 
 def voice_gender(voice_id: Optional[str]) -> Optional[str]:
@@ -212,7 +235,7 @@ def focus_line(contact: Optional[dict]) -> str:
 
 
 def assistant_instructions(cfg: dict, user: dict, language: str = "English", contact: Optional[dict] = None) -> str:
-    return (personality(cfg) + "\n" + rep_line(user) + focus_line(contact) + f"\nSpeak {language} unless the rep switches.\n\n"
+    return (personality(cfg) + "\n" + rep_line(user) + focus_line(contact) + f"\nSpeak {language} unless the rep switches.\n\n" + CORE_RULES + "\n\n"
             "Backchannel policy: none. Never make thinking or listening sounds ('hmm', 'mm', 'mm-hm', 'uh-huh', 'um', 'uh', 'let's see'). "
             "Stay silent while the rep talks; when you do speak, start straight in with words, never a sound.\n\n"
             "Interruption policy: Stop speaking when the rep interrupts. Listen to what they say.\n\n"
@@ -449,8 +472,8 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
             async with httpx.AsyncClient(timeout=25.0) as client:
                 if engine == "mini":
                     voice = cfg["mini_voice"]
-                    session = {"type": "realtime", "model": MINI_MODEL, "instructions": instructions + REALTIME_RULES + "\n\n" + context,
-                               "audio": {"input": {"turn_detection": {"type": "semantic_vad", "create_response": True, "interrupt_response": True}, "transcription": {"model": "gpt-4o-mini-transcribe"}},
+                    session = {"type": "realtime", "model": MINI_MODEL, "instructions": mini_instructions(instructions, context), "max_output_tokens": MINI_MAX_OUTPUT_TOKENS,
+                               "audio": {"input": {"turn_detection": None, "transcription": {"model": "gpt-4o-mini-transcribe"}},
                                          "output": {"voice": voice}},
                                "tools": [DELEGATE_TOOL], "tool_choice": "auto"}
                     resp = await client.post(REALTIME_URL, files={"sdp": (None, sdp, "application/sdp"), "session": (None, json.dumps(session), "application/json")}, headers=headers)

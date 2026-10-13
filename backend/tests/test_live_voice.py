@@ -97,8 +97,9 @@ async def test_create_session_with_fake_openai(monkeypatch):
         import json as _json
         session = _json.loads(captured["files"]["session"][1])
         assert session["type"] == "realtime" and session["model"] == "gpt-realtime-2.1-mini" and session["audio"]["output"]["voice"] == "marin"
-        assert session["audio"]["input"]["turn_detection"]["type"] == "semantic_vad" and session["tools"][0]["name"] == "delegate" and "delegation" not in session
+        assert session["audio"]["input"]["turn_detection"] is None and session["max_output_tokens"] == lv.MINI_MAX_OUTPUT_TOKENS and session["tools"][0]["name"] == "delegate" and "delegation" not in session, "mini opens with listening off (the app switches semantic VAD on after the greeting) and a hard output cap"
         assert "TOOL: you have one function, delegate(request)" in session["instructions"] and "Right now it is" in session["instructions"]
+        assert "How you talk (every reply)" in session["instructions"] and "LENGTH, this matters on this voice line" in session["instructions"], "shared core rules + the mini layer"
         live = await lv.get_live(db, out["live_id"])
         assert live and live["status"] == "open" and live["openai_session_id"] == "rtc_abc123" and live["engine"] == "mini"
         # token usage prices the session; seconds alone do not

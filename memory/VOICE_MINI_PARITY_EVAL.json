@@ -1,0 +1,1873 @@
+{
+ "meta": {
+  "kind": "SIMULATED (text model stand-in), not a real OpenAI audio test",
+  "stand_in_model": [
+   "openai",
+   "gpt-4.1-mini"
+  ],
+  "judge_model": [
+   "openai",
+   "gpt-5.2"
+  ],
+  "prompt_chars": {
+   "live_before": 5780,
+   "live_after": 6800,
+   "mini_before": 6382,
+   "mini_after": 8079
+  },
+  "cost_assumptions": {
+   "words_per_s": 2.6,
+   "pause_s_per_turn": 1.5,
+   "audio_out_tok_per_s": 20,
+   "audio_in_tok_per_s": 10,
+   "prompt_tokens": 2600,
+   "pricing": {
+    "audio_in": 10.0,
+    "audio_in_cached": 0.3,
+    "text_in": 0.6,
+    "text_in_cached": 0.06,
+    "audio_out": 20.0,
+    "text_out": 2.4
+   },
+   "live_per_min": 0.05
+  }
+ },
+ "results": {
+  "live_before": {
+   "name": "live_before",
+   "scenarios": [
+    {
+     "title": "1 voice memo",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Save a note on Bud Carter: he's looking at the Silverado High Country, wants to trade his 2019 F-150, wife's name is Deb, and call him after the fifteenth when his bonus hits.",
+       "backend": "Saved on Bud Carter's record: Silverado High Country, trading a 2019 F-150, wife Deb, call after the 15th when his bonus hits.",
+       "jessi": "Saved on Bud Carter's record: Silverado High Country, trading a 2019 F-150, wife Deb, call after the 15th when his bonus hits.",
+       "words": 22,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 12.3,
+     "est_total_s": 28.0,
+     "est_cost_usd": 0.0233,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 5,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Accurately confirmed the saved note with all names and details, though it slightly over-repeats the backend phrasing instead of a more natural brief confirmation."
+     }
+    },
+    {
+     "title": "2 remember details",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What do I know about Sarah Mitchell?",
+       "backend": "Sarah Mitchell: bought a 2024 Tahoe from you in March, two kids, daughter starts college in the fall, last talked September 30 about a service appointment, open task: send her the referral card.",
+       "jessi": "Sarah Mitchell bought a 2024 Tahoe from you in March, has two kids with her daughter starting college this fall. You last spoke on September 30 about a service appointment, and you have an open task to send her the referral card. What do you want to do next with Sarah, Forest?",
+       "words": 52,
+       "sentences": 3,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "When did I last talk to her?",
+       "backend": null,
+       "jessi": "You last talked to Sarah Mitchell on September 30th, Forest. Need me to pull up the notes or do something with that?",
+       "words": 22,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 32.3,
+     "est_total_s": 42.2,
+     "est_cost_usd": 0.0352,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Accurate and warm with correct detail retention; minor adherence issues are the extra follow-up question and repeating Forest\u2019s name in later turns."
+     }
+    },
+    {
+     "title": "3 find a contact",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Pull up Tod Berry.",
+       "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+       "jessi": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+       "words": 13,
+       "sentences": 1,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "The Tahoe one.",
+       "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+       "jessi": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2. What\u2019s the plan with Tod today?",
+       "words": 19,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 16.2,
+     "est_total_s": 23.3,
+     "est_cost_usd": 0.0195,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Clear disambiguation and accurate details kept; the extra 'What\u2019s the plan' follow-up is only slightly unnecessary but still natural."
+     }
+    },
+    {
+     "title": "4 follow-up task",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Remind me to call Sarah Friday afternoon about the referral card.",
+       "backend": "Reminder set: call Sarah Mitchell Friday 2 PM about the referral card.",
+       "jessi": "Got it, Forest\u2014reminder set to call Sarah Mitchell Friday at 2 PM about the referral card. What\u2019s next?",
+       "words": 18,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 10.8,
+     "est_total_s": 18.0,
+     "est_cost_usd": 0.015,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Accurate and warm with correct details; could be slightly shorter and avoid \u201cWhat\u2019s next?\u201d if no follow-up is needed."
+     }
+    },
+    {
+     "title": "5 prepare for a call",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "I'm about to call Bud, give me the quick rundown.",
+       "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus lands after the 15th, last text October 9 asking about lease options.",
+       "jessi": "Bud Carter's checking out that Silverado High Country, trading in his 2019 F-150. He's got his wife Deb in the picture and mentioned bonuses landing after the 15th. Last time you texted was October 9 about lease options. Ready to dial?",
+       "words": 41,
+       "sentences": 4,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What should I open with?",
+       "backend": null,
+       "jessi": "Start with a friendly check-in like, \"Hey Bud, just wanted to catch up and see where you\u2019re at with the Silverado\u2014anything new on your end since we last talked?\" Want me to draft that?",
+       "words": 34,
+       "sentences": 2,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 32.7,
+     "est_total_s": 43.0,
+     "est_cost_usd": 0.0358,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Strong recap using all backend details and a natural opener; minor adherence slip with an extra follow-up (\u201cWant me to draft that?\u201d) after already providing the draft."
+     }
+    },
+    {
+     "title": "6 relationship history",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What's my history with the Mitchells?",
+       "backend": "Sarah Mitchell: Tahoe in March 2024; her husband Dan came in on her referral and bought a Colorado in June; two service visits; you sent a birthday text in August; she asked about trading Dan's truck next year.",
+       "jessi": "Your history with the Mitchells: Sarah Mitchell bought a Tahoe in March 2024; her husband Dan came in on her referral and bought a Colorado in June; they've had two service visits; you sent her a birthday text in August; and she asked about trading Dan's truck next year. What do you need to do with them?",
+       "words": 57,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 25.8,
+     "est_total_s": 31.1,
+     "est_cost_usd": 0.0259,
+     "judge": {
+      "quality": 5,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Clear, complete recap with all names and details kept; only minor knock for an unnecessary follow-up question that adds extra length."
+     }
+    },
+    {
+     "title": "7 campaign idea",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Give me a quick idea for a text campaign to my Harley riders before Sturgis.",
+       "backend": null,
+       "jessi": "Sure, Forest! How about: \"Hey [Name], Sturgis is almost here! Ready to gear up and ride? Check out our latest Harley deals to make it unforgettable!\" Want me to draft that out for your Harley riders?",
+       "words": 36,
+       "sentences": 5,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 17.7,
+     "est_total_s": 26.5,
+     "est_cost_usd": 0.0221,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Good, warm one-message campaign idea; the follow-up question is slightly redundant since you already provided a draft, but overall it fits the quick-idea request."
+     }
+    },
+    {
+     "title": "8 short factual",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What day is it today?",
+       "backend": null,
+       "jessi": "Today\u2019s Monday, October 13, 2026, Forest. Who's on your mind for reaching out today?",
+       "words": 14,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "And what time?",
+       "backend": null,
+       "jessi": "It\u2019s 12:01 PM right now, Forest. Who\u2019s first on your list?",
+       "words": 11,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 13.5,
+     "est_total_s": 21.0,
+     "est_cost_usd": 0.0175,
+     "judge": {
+      "quality": 3,
+      "conciseness": 3,
+      "adherence": 2,
+      "flow": 3,
+      "context_retention": 4,
+      "note": "Accurate date/time, but she adds unnecessary follow-up questions and repeats the name each turn, hurting conciseness and rule adherence."
+     }
+    },
+    {
+     "title": "9 extended brainstorm",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Let's brainstorm. I want to double my referral rate this quarter. Walk me through some ideas.",
+       "backend": null,
+       "jessi": "Love that energy, Forest! Let\u2019s start with who you already have great rapport with\u2014your warmest contacts\u2014then we can spice up how you ask for referrals. Sound good?",
+       "words": 27,
+       "sentences": 3,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Go deeper on the second one.",
+       "backend": null,
+       "jessi": "Alright! Instead of the usual \"Got anyone in mind?\" try framing it as a favor like, \"Who do you know that deserves the same great service?\" or offer a small thank you gift. Want me to draft some text scripts you can try?",
+       "words": 43,
+       "sentences": 5,
+       "questions": 3,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 30.8,
+     "est_total_s": 43.7,
+     "est_cost_usd": 0.0364,
+     "judge": {
+      "quality": 4,
+      "conciseness": 3,
+      "adherence": 3,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Strong brainstorm and followed the rep\u2019s request to go deeper, but it\u2019s a bit wordy with some filler/pep talk and ends with an extra follow-up question that isn\u2019t strictly needed."
+     }
+    },
+    {
+     "title": "10 continue after handoff",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Okay, still here, go ahead. Want me to draft that referral card text for Sarah now?",
+       "words": 16,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "So like I was saying, text her about the referral card.",
+       "backend": "Read back: 'Hi Sarah, it's Forest. Wanted to get you that referral card I promised, is this still the best number?' Send it?",
+       "jessi": "Read back: 'Hi Sarah, it's Forest. Wanted to get you that referral card I promised, is this still the best number?' Send it?",
+       "words": 23,
+       "sentences": 3,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 1,
+       "anything_else": 0
+      },
+      {
+       "rep": "Yes, send it.",
+       "backend": "Sent to Sarah Mitchell.",
+       "jessi": "Sent to Sarah Mitchell. Anything else on her while I have her up?",
+       "words": 13,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 1
+      }
+     ],
+     "est_jessi_speech_s": 20.0,
+     "est_total_s": 29.9,
+     "est_cost_usd": 0.0249,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Good accuracy and context, but Jessi redundantly echoed the backend 'Read back' line and added an extra follow-up question that wasn\u2019t necessary."
+     }
+    }
+   ],
+   "summary": {
+    "replies": 26,
+    "avg_words": 21.2,
+    "opener_words": 10.6,
+    "simple_replies_le_2_sentences_pct": 82,
+    "questions_per_reply": 1.15,
+    "regreets": 1,
+    "filler": 0,
+    "anything_else": 1,
+    "est_cost_10_scenarios_usd": 0.2556,
+    "judge": {
+     "quality": 4.0,
+     "conciseness": 3.8,
+     "adherence": 3.8,
+     "flow": 4.3,
+     "context_retention": 4.9
+    }
+   }
+  },
+  "live_after": {
+   "name": "live_after",
+   "scenarios": [
+    {
+     "title": "1 voice memo",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Save a note on Bud Carter: he's looking at the Silverado High Country, wants to trade his 2019 F-150, wife's name is Deb, and call him after the fifteenth when his bonus hits.",
+       "backend": "Saved on Bud Carter's record: Silverado High Country, trading a 2019 F-150, wife Deb, call after the 15th when his bonus hits.",
+       "jessi": "Saved on Bud Carter's record: Silverado High Country, trading a 2019 F-150, wife Deb, call after the 15th when his bonus hits.",
+       "words": 22,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 12.3,
+     "est_total_s": 28.0,
+     "est_cost_usd": 0.0233,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 5,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "She confirms the save accurately with all details and no extra filler, though she repeats the full note verbatim instead of a briefer confirmation."
+     }
+    },
+    {
+     "title": "2 remember details",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What do I know about Sarah Mitchell?",
+       "backend": "Sarah Mitchell: bought a 2024 Tahoe from you in March, two kids, daughter starts college in the fall, last talked September 30 about a service appointment, open task: send her the referral card.",
+       "jessi": "Sarah Mitchell bought a 2024 Tahoe in March, has two kids, her daughter starts college this fall, last talked on September 30 about a service appointment, and you have an open task to send her the referral card. Want me to pull up her record or handle that task now?",
+       "words": 50,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "When did I last talk to her?",
+       "backend": null,
+       "jessi": "You last talked to Sarah September 30, about a service appointment. Need anything else on her?",
+       "words": 16,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 1
+      }
+     ],
+     "est_jessi_speech_s": 29.2,
+     "est_total_s": 39.1,
+     "est_cost_usd": 0.0326,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "She accurately retained and repeated all backend details, answered each question first in a single sentence, and only asked brief follow-ups without adding filler or extra intros."
+     }
+    },
+    {
+     "title": "3 find a contact",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Pull up Tod Berry.",
+       "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+       "jessi": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+       "words": 13,
+       "sentences": 1,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "The Tahoe one.",
+       "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+       "jessi": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+       "words": 13,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 13.8,
+     "est_total_s": 21.0,
+     "est_cost_usd": 0.0175,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Clear disambiguation question was necessary, then she surfaced the correct Tod Berry with all backend details in one concise update."
+     }
+    },
+    {
+     "title": "4 follow-up task",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Remind me to call Sarah Friday afternoon about the referral card.",
+       "backend": "Reminder set: call Sarah Mitchell Friday 2 PM about the referral card.",
+       "jessi": "Got it, Forest, you\u2019ll call Sarah Mitchell Friday at 2 PM about the referral card. Anything else?",
+       "words": 17,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 1
+      }
+     ],
+     "est_jessi_speech_s": 10.4,
+     "est_total_s": 17.6,
+     "est_cost_usd": 0.0147,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Clear confirmation with exact name/time/topic from backend and a single appropriate follow-up question."
+     }
+    },
+    {
+     "title": "5 prepare for a call",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it\u2019s Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "I'm about to call Bud, give me the quick rundown.",
+       "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus lands after the 15th, last text October 9 asking about lease options.",
+       "jessi": "Bud Carter\u2019s checking out a Silverado High Country, he\u2019s trading in a 2019 F-150, got a wife named Deb, and his bonus hits after the 15th. He asked about lease options in a text on October 9. Ready to call?",
+       "words": 40,
+       "sentences": 3,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What should I open with?",
+       "backend": null,
+       "jessi": "Start by asking how Deb\u2019s doing and mention you saw his bonus lands soon\u2014hooks into timing for a deal. Want me to draft a quick opener?",
+       "words": 26,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 29.2,
+     "est_total_s": 39.5,
+     "est_cost_usd": 0.0329,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Strong, accurate rundown using all backend details and a relevant suggested opener; minor knock for ending with extra follow-up prompts ('Ready to call?' and offering to draft) when the rep asked only what to open with."
+     }
+    },
+    {
+     "title": "6 relationship history",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What's my history with the Mitchells?",
+       "backend": "Sarah Mitchell: Tahoe in March 2024; her husband Dan came in on her referral and bought a Colorado in June; two service visits; you sent a birthday text in August; she asked about trading Dan's truck next year.",
+       "jessi": "You sold Sarah Mitchell a Tahoe in March 2024, and her husband Dan bought a Colorado in June on her referral; they've had two service visits, you sent Sarah a birthday text in August, and she asked about trading Dan's truck next year.",
+       "words": 43,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 20.4,
+     "est_total_s": 25.7,
+     "est_cost_usd": 0.0214,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Clear, warm one-sentence summary that preserves all backend details and needs no follow-up."
+     }
+    },
+    {
+     "title": "7 campaign idea",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Give me a quick idea for a text campaign to my Harley riders before Sturgis.",
+       "backend": null,
+       "jessi": "Try a short, fired-up invite like, \u201cHey [Name], Sturgis is almost here! Ready to ride? Let's get you set up with gear and service before the big event.\u201d Want me to draft the full text?",
+       "words": 35,
+       "sentences": 4,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 17.3,
+     "est_total_s": 26.1,
+     "est_cost_usd": 0.0217,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Strong one-sentence campaign idea tailored to Harley riders and Sturgis, with a single optional follow-up that\u2019s relevant and not pushy."
+     }
+    },
+    {
+     "title": "8 short factual",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What day is it today?",
+       "backend": null,
+       "jessi": "It\u2019s Monday, October 13, 2026. Need me to set anything for today, Forest?",
+       "words": 13,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "And what time?",
+       "backend": null,
+       "jessi": "It\u2019s 12:01 PM right now. What\u2019s next?",
+       "words": 7,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 11.5,
+     "est_total_s": 19.1,
+     "est_cost_usd": 0.0159,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 3,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Accurate date/time and smooth flow, but she adds unnecessary follow-up questions for simple asks, slightly hurting adherence."
+     }
+    },
+    {
+     "title": "9 extended brainstorm",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Let's brainstorm. I want to double my referral rate this quarter. Walk me through some ideas.",
+       "backend": null,
+       "jessi": "Sure, Forest. Start by identifying your top referrers and thanking them personally\u2014maybe a small gift or exclusive invite. Want to explore automating a referral reward program next?",
+       "words": 27,
+       "sentences": 3,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Go deeper on the second one.",
+       "backend": null,
+       "jessi": "Automate a referral reward by setting up a simple tiered system\u2014more referrals mean bigger perks, like service discounts or branded swag. I can help draft a message to introduce it; should I?",
+       "words": 32,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 26.5,
+     "est_total_s": 39.5,
+     "est_cost_usd": 0.0329,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Strong, natural brainstorming with a good follow-up only when needed; could be slightly tighter and avoid offering to draft unless asked."
+     }
+    },
+    {
+     "title": "10 continue after handoff",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Okay, still here, go ahead. Want me to draft that referral card text for Sarah?",
+       "words": 15,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "So like I was saying, text her about the referral card.",
+       "backend": "Read back: 'Hi Sarah, it's Forest. Wanted to get you that referral card I promised, is this still the best number?' Send it?",
+       "jessi": "Hi Sarah, it\u2019s Forest. Wanted to get you that referral card I promised, is this still the best number? Send it?",
+       "words": 21,
+       "sentences": 3,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 1,
+       "anything_else": 0
+      },
+      {
+       "rep": "Yes, send it.",
+       "backend": "Sent to Sarah Mitchell.",
+       "jessi": "Sent to Sarah Mitchell. Need anything else on her?",
+       "words": 9,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 1
+      }
+     ],
+     "est_jessi_speech_s": 17.3,
+     "est_total_s": 27.2,
+     "est_cost_usd": 0.0227,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Strong, natural handoff and accurate readback; minor adherence ding for a slightly wordy opener and an extra follow-up question that wasn\u2019t strictly needed."
+     }
+    }
+   ],
+   "summary": {
+    "replies": 26,
+    "avg_words": 18.8,
+    "opener_words": 10.5,
+    "simple_replies_le_2_sentences_pct": 91,
+    "questions_per_reply": 0.96,
+    "regreets": 1,
+    "filler": 0,
+    "anything_else": 3,
+    "est_cost_10_scenarios_usd": 0.2356,
+    "judge": {
+     "quality": 4.5,
+     "conciseness": 4.5,
+     "adherence": 4.5,
+     "flow": 4.6,
+     "context_retention": 5.0
+    }
+   }
+  },
+  "mini_before": {
+   "name": "mini_before",
+   "scenarios": [
+    {
+     "title": "1 voice memo",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Save a note on Bud Carter: he's looking at the Silverado High Country, wants to trade his 2019 F-150, wife's name is Deb, and call him after the fifteenth when his bonus hits.",
+       "backend": "Saved on Bud Carter's record: Silverado High Country, trading a 2019 F-150, wife Deb, call after the 15th when his bonus hits.",
+       "jessi": "Got it, Forest. Saved on Bud Carter's record: Silverado High Country, trading a 2019 F-150, wife Deb, call after the 15th when his bonus hits. What\u2019s next?",
+       "words": 27,
+       "sentences": 3,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 14.2,
+     "est_total_s": 29.9,
+     "est_cost_usd": 0.0088,
+     "judge": {
+      "quality": 5,
+      "conciseness": 4,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Accurately confirmed the saved note with all details and only asked \u201cWhat\u2019s next?\u201d as a minimal next-step prompt."
+     }
+    },
+    {
+     "title": "2 remember details",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What do I know about Sarah Mitchell?",
+       "backend": "Sarah Mitchell: bought a 2024 Tahoe from you in March, two kids, daughter starts college in the fall, last talked September 30 about a service appointment, open task: send her the referral card.",
+       "jessi": "Sarah Mitchell bought a 2024 Tahoe from you in March, has two kids, and her daughter starts college this fall. You last talked on September 30 about a service appointment, and there's an open task to send her the referral card. What do you want to do next?",
+       "words": 48,
+       "sentences": 3,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "When did I last talk to her?",
+       "backend": null,
+       "jessi": "You last talked to Sarah on September 30 about a service appointment. Want me to help follow up?",
+       "words": 18,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 29.2,
+     "est_total_s": 39.1,
+     "est_cost_usd": 0.0143,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Accurately retained and repeated all backend details and answered the follow-up date correctly; only minor issues are an unnecessary follow-up question and a bit of extra prompting."
+     }
+    },
+    {
+     "title": "3 find a contact",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Pull up Tod Berry.",
+       "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+       "jessi": "You have Tod Berry with the Tahoe, or Todd Berry with the Silverado \u2014 which one do you want?",
+       "words": 19,
+       "sentences": 1,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "The Tahoe one.",
+       "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+       "jessi": "Tod Berry with the 2022 Tahoe is up on your screen, last text on October 2. What do you want to do with him?",
+       "words": 24,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 20.4,
+     "est_total_s": 27.6,
+     "est_cost_usd": 0.0105,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Clear disambiguation and accurate contact details with good flow, but the last follow-up question isn\u2019t necessary for a simple \u201cpull up\u201d request and adds a bit of extra talk."
+     }
+    },
+    {
+     "title": "4 follow-up task",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Remind me to call Sarah Friday afternoon about the referral card.",
+       "backend": "Reminder set: call Sarah Mitchell Friday 2 PM about the referral card.",
+       "jessi": "Got it, Forest. I've set a reminder for you to call Sarah Mitchell Friday at 2 PM about the referral card. What\u2019s next?",
+       "words": 23,
+       "sentences": 3,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 12.7,
+     "est_total_s": 19.9,
+     "est_cost_usd": 0.0073,
+     "judge": {
+      "quality": 4,
+      "conciseness": 3,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Accurate and warm, but a bit wordy for a simple reminder and the extra \u201cWhat\u2019s next?\u201d is an unnecessary follow-up."
+     }
+    },
+    {
+     "title": "5 prepare for a call",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "I'm about to call Bud, give me the quick rundown.",
+       "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus lands after the 15th, last text October 9 asking about lease options.",
+       "jessi": "Bud Carter\u2019s up next: checking out a Silverado High Country, trading his 2019 F-150, married to Deb, bonus hits after the 15th, and he asked about lease options on October 9. Ready to roll?",
+       "words": 34,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What should I open with?",
+       "backend": null,
+       "jessi": "Start with something like, \"Hey Bud, just wanted to check in before your bonus lands\u2014still interested in that Silverado High Country lease?\" Want me to draft a full opener for you?",
+       "words": 31,
+       "sentences": 2,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 28.8,
+     "est_total_s": 39.1,
+     "est_cost_usd": 0.0142,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Strong rundown with all backend details and a good opener; only knock is the extra follow-up offer to draft a full opener, which wasn\u2019t necessary unless the rep asked for more."
+     }
+    },
+    {
+     "title": "6 relationship history",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What's my history with the Mitchells?",
+       "backend": "Sarah Mitchell: Tahoe in March 2024; her husband Dan came in on her referral and bought a Colorado in June; two service visits; you sent a birthday text in August; she asked about trading Dan's truck next year.",
+       "jessi": "One sec, pulling that up. Your history with the Mitchells: Sarah Mitchell bought a Tahoe in March 2024; her husband Dan came in on her referral and bought a Colorado in June; they had two service visits; you sent Sarah a birthday text in August, and she asked about trading Dan's truck next year. What do you want to do next with them, Forest?",
+       "words": 64,
+       "sentences": 3,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 28.5,
+     "est_total_s": 33.8,
+     "est_cost_usd": 0.0136,
+     "judge": {
+      "quality": 5,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Accurate and warm with all backend details preserved, but it adds a small filler (\u201cOne sec\u201d) and an unnecessary follow-up question at the end."
+     }
+    },
+    {
+     "title": "7 campaign idea",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Give me a quick idea for a text campaign to my Harley riders before Sturgis.",
+       "backend": null,
+       "jessi": "How about something like: \"Hey [Name], Sturgis is almost here! Ready to ride? We\u2019ve got your Harley gear and service covered\u2014stop by before the rally for a smooth trip!\" Want me to draft that for your Harley riders?",
+       "words": 38,
+       "sentences": 4,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 18.5,
+     "est_total_s": 27.2,
+     "est_cost_usd": 0.0098,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Solid quick campaign idea and natural flow, but the follow-up question is slightly redundant since the rep already asked for an idea."
+     }
+    },
+    {
+     "title": "8 short factual",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What day is it today?",
+       "backend": null,
+       "jessi": "Today is Monday, October 13, 2026. What\u2019s on your agenda, Forest?",
+       "words": 11,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "And what time?",
+       "backend": null,
+       "jessi": "It\u2019s just after noon, 12:01 PM. Who should we connect with this afternoon?",
+       "words": 13,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 13.1,
+     "est_total_s": 20.7,
+     "est_cost_usd": 0.0075,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Accurate, brief answers with a small extra follow-up each time; could be slightly tighter by not adding agenda/connect prompts for simple date/time asks."
+     }
+    },
+    {
+     "title": "9 extended brainstorm",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Let's brainstorm. I want to double my referral rate this quarter. Walk me through some ideas.",
+       "backend": null,
+       "jessi": "Love the energy, Forest! First up, how about we identify your top referrers and give them a little extra love\u2014maybe a personalized thank you or a surprise gift? Want me to pull your best referral sources so we can get strategic?",
+       "words": 41,
+       "sentences": 3,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Go deeper on the second one.",
+       "backend": null,
+       "jessi": "Got it! Turning referrals into a surprise gift moment definitely spikes excitement and loyalty. We could craft a quick reminder text that hits right after a sale closes, thanking the referrer and giving them a choice between a gift card or exclusive event invite. Want me to draft a warm, energetic message for you?",
+       "words": 54,
+       "sentences": 4,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 40.4,
+     "est_total_s": 53.3,
+     "est_cost_usd": 0.0192,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Strong brainstorming that follows the rep\u2019s request to go deeper, but it adds a bit of filler/enthusiasm and ends with an extra follow-up ask that isn\u2019t strictly necessary."
+     }
+    },
+    {
+     "title": "10 continue after handoff",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Okay, still here, go ahead. Want me to set a reminder to follow up on that referral card for Sarah?",
+       "words": 20,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "So like I was saying, text her about the referral card.",
+       "backend": "Read back: 'Hi Sarah, it's Forest. Wanted to get you that referral card I promised, is this still the best number?' Send it?",
+       "jessi": "That's your text: 'Hi Sarah, it's Forest. Wanted to get you that referral card I promised, is this still the best number?' Send it?",
+       "words": 24,
+       "sentences": 3,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 1,
+       "anything_else": 0
+      },
+      {
+       "rep": "Yes, send it.",
+       "backend": "Sent to Sarah Mitchell.",
+       "jessi": "Sent to Sarah Mitchell. Anything else for her today, Forest?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 1
+      }
+     ],
+     "est_jessi_speech_s": 20.8,
+     "est_total_s": 30.7,
+     "est_cost_usd": 0.0109,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Clear confirmation and sent status with correct names; minor unnecessary opener and an extra follow-up question after sending."
+     }
+    }
+   ],
+   "summary": {
+    "replies": 26,
+    "avg_words": 22.7,
+    "opener_words": 11,
+    "simple_replies_le_2_sentences_pct": 55,
+    "questions_per_reply": 1.15,
+    "regreets": 1,
+    "filler": 0,
+    "anything_else": 1,
+    "est_cost_10_scenarios_usd": 0.1161,
+    "judge": {
+     "quality": 4.2,
+     "conciseness": 3.9,
+     "adherence": 4.1,
+     "flow": 4.6,
+     "context_retention": 5.0
+    }
+   }
+  },
+  "mini_after": {
+   "name": "mini_after",
+   "scenarios": [
+    {
+     "title": "1 voice memo",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Save a note on Bud Carter: he's looking at the Silverado High Country, wants to trade his 2019 F-150, wife's name is Deb, and call him after the fifteenth when his bonus hits.",
+       "backend": "Saved on Bud Carter's record: Silverado High Country, trading a 2019 F-150, wife Deb, call after the 15th when his bonus hits.",
+       "jessi": "Note saved on Bud Carter: Silverado High Country, trading a 2019 F-150, wife Deb, call after the 15th when his bonus hits.",
+       "words": 22,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 12.3,
+     "est_total_s": 28.0,
+     "est_cost_usd": 0.008,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Clear one-sentence confirmation that exactly matches the backend details and stays concise and natural."
+     }
+    },
+    {
+     "title": "2 remember details",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What do I know about Sarah Mitchell?",
+       "backend": "Sarah Mitchell: bought a 2024 Tahoe from you in March, two kids, daughter starts college in the fall, last talked September 30 about a service appointment, open task: send her the referral card.",
+       "jessi": "Sarah Mitchell bought a 2024 Tahoe from you in March, has two kids, her daughter starts college this fall, last talked to her September 30 about a service appointment, and you have an open task to send her the referral card.",
+       "words": 41,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "When did I last talk to her?",
+       "backend": null,
+       "jessi": "Last time was September 30 about a service appointment.",
+       "words": 9,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 23.1,
+     "est_total_s": 33.0,
+     "est_cost_usd": 0.0118,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Clear, complete first answer with all backend details preserved, and the follow-up correctly recalls September 30 without re-asking or adding filler."
+     }
+    },
+    {
+     "title": "3 find a contact",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Pull up Tod Berry.",
+       "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+       "jessi": "You have Tod Berry with the Tahoe or Todd Berry with the Silverado, which one?",
+       "words": 15,
+       "sentences": 1,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "The Tahoe one.",
+       "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+       "jessi": "Tod Berry with the 2022 Tahoe is up on your screen, last text October 2.",
+       "words": 15,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 15.4,
+     "est_total_s": 22.6,
+     "est_cost_usd": 0.0084,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Clear disambiguation question, then confirms the correct Tod Berry with the 2022 Tahoe and last text October 2 with no extra filler."
+     }
+    },
+    {
+     "title": "4 follow-up task",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Remind me to call Sarah Friday afternoon about the referral card.",
+       "backend": "Reminder set: call Sarah Mitchell Friday 2 PM about the referral card.",
+       "jessi": "Reminder set: call Sarah Mitchell Friday 2 PM about the referral card.",
+       "words": 12,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 8.5,
+     "est_total_s": 15.7,
+     "est_cost_usd": 0.0056,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "She confirmed the reminder with the exact name, time, and topic in one clear sentence with no unnecessary follow-ups."
+     }
+    },
+    {
+     "title": "5 prepare for a call",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "I'm about to call Bud, give me the quick rundown.",
+       "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus lands after the 15th, last text October 9 asking about lease options.",
+       "jessi": "Bud Carter is trading in a 2019 F-150 and looking at the Silverado High Country; his wife Deb's involved, and his bonus lands after the 15th. Last contact was October 9 about lease options.",
+       "words": 34,
+       "sentences": 2,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What should I open with?",
+       "backend": null,
+       "jessi": "Start with asking how Bud and Deb are doing, then mention you saw his bonus is coming up and want to make sure he gets a great lease deal.",
+       "words": 29,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 28.1,
+     "est_total_s": 38.3,
+     "est_cost_usd": 0.0139,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Solid, accurate rundown and keeps names/dates intact; the suggested opener is helpful but assumes budget timing language (\u201csaw his bonus\u201d) and could be tighter/less presumptive."
+     }
+    },
+    {
+     "title": "6 relationship history",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What's my history with the Mitchells?",
+       "backend": "Sarah Mitchell: Tahoe in March 2024; her husband Dan came in on her referral and bought a Colorado in June; two service visits; you sent a birthday text in August; she asked about trading Dan's truck next year.",
+       "jessi": "You sold Sarah Mitchell a Tahoe in March 2024, her husband Dan bought a Colorado in June after her referral, they had two service visits, you texted Sarah happy birthday in August, and she asked about trading Dan's truck next year.",
+       "words": 41,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 19.6,
+     "est_total_s": 24.9,
+     "est_cost_usd": 0.01,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Accurate, warm, and direct recap that preserves all names/numbers from the backend with no filler or unnecessary follow-ups."
+     }
+    },
+    {
+     "title": "7 campaign idea",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Give me a quick idea for a text campaign to my Harley riders before Sturgis.",
+       "backend": null,
+       "jessi": "How about a short, punchy invite: \"Ready for Sturgis? Swing by for a pre-ride tune-up and gear check\u2014keep your Harley roaring all weekend!\" Want me to draft it?",
+       "words": 28,
+       "sentences": 3,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 14.6,
+     "est_total_s": 23.4,
+     "est_cost_usd": 0.0083,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Strong, relevant campaign idea and natural follow-up; slightly wordier than needed for a 'quick idea' and the extra question isn't strictly necessary."
+     }
+    },
+    {
+     "title": "8 short factual",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "What day is it today?",
+       "backend": null,
+       "jessi": "Today is Monday, October 13, 2026, Forest.",
+       "words": 7,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "And what time?",
+       "backend": null,
+       "jessi": "It's 12:01 PM right now, Forest.",
+       "words": 6,
+       "sentences": 1,
+       "questions": 0,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 8.8,
+     "est_total_s": 16.4,
+     "est_cost_usd": 0.0058,
+     "judge": {
+      "quality": 5,
+      "conciseness": 5,
+      "adherence": 5,
+      "flow": 5,
+      "context_retention": 5,
+      "note": "Accurate, direct answers in one sentence each with no filler, and the initial intro happens only once."
+     }
+    },
+    {
+     "title": "9 extended brainstorm",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Hey Forest, it's Jessi. Who are we talking about today?",
+       "words": 10,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Let's brainstorm. I want to double my referral rate this quarter. Walk me through some ideas.",
+       "backend": null,
+       "jessi": "Let's do it, Forest. Start by making your loyal customers your champions\u2014offer a clear, irresistible referral reward, like a gift card or service discount. You tracking your current top referrers or the ways you ask for referrals now?",
+       "words": 38,
+       "sentences": 3,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "Go deeper on the second one.",
+       "backend": null,
+       "jessi": "Got it. How are you asking for referrals? Through texts, calls, in-person? Tailoring the ask to the right moment\u2014like right after a happy sale or service\u2014is key. Want me to pull up how your last five customers got asked and what worked best?",
+       "words": 43,
+       "sentences": 5,
+       "questions": 3,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 35.0,
+     "est_total_s": 48.0,
+     "est_cost_usd": 0.017,
+     "judge": {
+      "quality": 4,
+      "conciseness": 3,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 4,
+      "note": "Strong brainstorming and warm tone; slightly too many follow-up questions and a bit wordy for spoken delivery, but it tracks the rep\u2019s request and stays on topic."
+     }
+    },
+    {
+     "title": "10 continue after handoff",
+     "turns": [
+      {
+       "rep": "(session start)",
+       "jessi": "Okay, still here, go ahead. Want me to send that referral card to Sarah now?",
+       "words": 15,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      },
+      {
+       "rep": "So like I was saying, text her about the referral card.",
+       "backend": "Read back: 'Hi Sarah, it's Forest. Wanted to get you that referral card I promised, is this still the best number?' Send it?",
+       "jessi": "Ready to send: \"Hi Sarah, it's Forest. Wanted to get you that referral card I promised, is this still the best number?\" Should I send it?",
+       "words": 26,
+       "sentences": 3,
+       "questions": 2,
+       "filler": 0,
+       "regreet": 1,
+       "anything_else": 0
+      },
+      {
+       "rep": "Yes, send it.",
+       "backend": "Sent to Sarah Mitchell.",
+       "jessi": "Sent to Sarah Mitchell. What\u2019s next?",
+       "words": 6,
+       "sentences": 2,
+       "questions": 1,
+       "filler": 0,
+       "regreet": 0,
+       "anything_else": 0
+      }
+     ],
+     "est_jessi_speech_s": 18.1,
+     "est_total_s": 28.0,
+     "est_cost_usd": 0.0098,
+     "judge": {
+      "quality": 4,
+      "conciseness": 4,
+      "adherence": 4,
+      "flow": 4,
+      "context_retention": 5,
+      "note": "Clear confirmation and preserved the exact message and name; minor adherence hit for extra follow-up ('What\u2019s next?') and slightly wordy prompts."
+     }
+    }
+   ],
+   "summary": {
+    "replies": 26,
+    "avg_words": 18.3,
+    "opener_words": 10.5,
+    "simple_replies_le_2_sentences_pct": 91,
+    "questions_per_reply": 0.77,
+    "regreets": 1,
+    "filler": 0,
+    "anything_else": 0,
+    "est_cost_10_scenarios_usd": 0.0986,
+    "judge": {
+     "quality": 4.6,
+     "conciseness": 4.5,
+     "adherence": 4.6,
+     "flow": 4.7,
+     "context_retention": 4.9
+    }
+   }
+  }
+ }
+}

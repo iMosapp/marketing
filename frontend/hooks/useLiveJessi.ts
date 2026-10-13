@@ -22,6 +22,8 @@ const ROW_GAP_MS = 1500;
 // Ending because every voice pool is spent: the sheet offers the typed Ask Jessi instead.
 export const CAP_REASONS = ['voice_cap', 'backup_cap', 'daily_cap', 'killed'];
 export const STANDARD_VOICE_NOTE = "Switched to Jessi's standard voice";
+// Realtime mini turn taking, switched on after the greeting (see enableMiniListening). Mirrors the backend's former session default.
+const MINI_TURN_DETECTION = { type: 'semantic_vad', create_response: true, interrupt_response: true };
 
 export const openLabel = (t: OpenTarget) => {
   const who = t.first || (t.name || '').split(' ')[0];
@@ -99,11 +101,21 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   // Which voice engine the backend put this session on: GPT-Live (delegation events) or Realtime mini (function calling, token usage).
   const engineRef = useRef<'live' | 'mini'>('live');
   const tokensRef = useRef<Record<string, number>>({ audio_in: 0, audio_in_cached: 0, text_in: 0, text_in_cached: 0, audio_out: 0, text_out: 0 });
+  // Realtime mini opens with turn detection OFF so room noise or the speaker's own echo cannot start a second turn while Jessi greets; listening is switched on after the greeting.
+  const vadOn = useRef(false);
+  const vadTimer = useRef<any>(null);
   const isMini = () => engineRef.current === 'mini';
   const controlled = () => meterRef.current.policy_mode === 'controls';
 
   const send = (ev: any) => {
     if (dc.current && dc.current.readyState === 'open') dc.current.send(JSON.stringify(ev));
+  };
+  const enableMiniListening = () => {
+    if (!isMini() || vadOn.current) return;
+    vadOn.current = true;
+    if (vadTimer.current) { clearTimeout(vadTimer.current); vadTimer.current = null; }
+    send({ type: 'input_audio_buffer.clear' });
+    send({ type: 'session.update', session: { type: 'realtime', audio: { input: { turn_detection: MINI_TURN_DETECTION } } } });
   };
   // Side context for the model (never spoken as-is): a thinking note on GPT-Live, a system item on Realtime.
   const nudge = (text: string) => isMini()
@@ -127,7 +139,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   }, []);
 
   const clearTimers = () => {
-    [flushTimer, idleTimer, tick, closeTimer, startTimer].forEach(t => { if (t.current) { clearTimeout(t.current); clearInterval(t.current); t.current = null; } });
+    [flushTimer, idleTimer, tick, closeTimer, startTimer, vadTimer].forEach(t => { if (t.current) { clearTimeout(t.current); clearInterval(t.current); t.current = null; } });
   };
   // Drop the provider connection but keep the microphone (handoff); `cleanup` drops everything (end of the conversation).
   const dropTransport = () => {
@@ -252,9 +264,13 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     setState('live');
     startedAt.current = Date.now();
     applyAudioRoute();
-    const greet = greetInstruction.current || `Greet the rep immediately in English without waiting for them to speak. Say, in your own words: "${greeting.current}". Then pause and listen.`;
-    if (isMini()) send({ type: 'response.create', response: { instructions: greet } });
-    else send({ type: 'session.instructions.append', event_id: 'greet_1', delegation_id: null, content: greet });
+    const greet = greetInstruction.current || (isMini()
+      ? `Greet the rep now, before they speak. Say exactly this and nothing more: "${greeting.current}" Then stop and listen.`
+      : `Greet the rep immediately in English without waiting for them to speak. Say, in your own words: "${greeting.current}". Then pause and listen.`);
+    if (isMini()) {
+      send({ type: 'response.create', response: { instructions: greet } });
+      vadTimer.current = setTimeout(enableMiniListening, 8000); // listening comes on at the end of the greeting (response.done); this is the safety net
+    } else send({ type: 'session.instructions.append', event_id: 'greet_1', delegation_id: null, content: greet });
     if (resumedRef.current) { setNote(STANDARD_VOICE_NOTE); setWorking(''); }
     if (openAtStart.current) {
       const target = openAtStart.current; openAtStart.current = null;
@@ -318,6 +334,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
         break;
       case 'response.done': {
         addUsage(ev.response?.usage);
+        if (isMini() && !vadOn.current) enableMiniListening();
         for (const item of ev.response?.output || []) {
           if (item?.type !== 'function_call' || item.name !== 'delegate') continue;
           let request = '';
@@ -405,6 +422,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     meterRef.current = r.data.meter || {};
     resumedRef.current = !!resume;
     tokensRef.current = { audio_in: 0, audio_in_cached: 0, text_in: 0, text_in_cached: 0, audio_out: 0, text_out: 0 };
+    vadOn.current = false;
     secondsRef.current = 0;
     startedAt.current = 0;
     queuedRowId.current = '';

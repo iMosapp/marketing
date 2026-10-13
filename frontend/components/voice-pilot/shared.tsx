@@ -10,7 +10,7 @@ export type Handoff = { at?: string | null; user: string; from_live_id: string; 
 export type PilotStatus = {
   org_id: string; org_name: string; me: { user_id: string; email: string; role: string }; enrolled: boolean; global_enabled: boolean; other_enrolled_org_ids: string[];
   defaults: { premium_min: number; backup_min: number; hard_usd: number };
-  policy: { enabled: boolean; killed: boolean; cap_super_admins: boolean; per_user_daily_premium_min: number; per_user_daily_backup_min: number; account_monthly_hard_usd: number | null; premium_engine: string; backup_engine: string; timezone?: string | null; updated_at?: string | null; updated_by?: string | null };
+  policy: { enabled: boolean; killed: boolean; cap_super_admins: boolean; per_user_daily_premium_min: number; per_user_daily_backup_min: number; account_monthly_hard_usd: number | null; premium_engine: string; backup_engine: string; engine_mode?: 'live_first' | 'mini_only'; timezone?: string | null; updated_at?: string | null; updated_by?: string | null };
   env: { fake_provider_allowed: boolean; openai_configured: boolean; openai_reason?: string | null; build?: string | null };
   allowance: { premium_allowance_s: number; backup_allowance_s: number; premium_left_s: number; backup_left_s: number; premium_used_s: number; backup_used_s: number; premium_reserved_s: number; backup_reserved_s: number; limits: string[]; reset_at: string; timezone: string; next_engine: string | null } | null;
   today: { day: string; premium_used_s: number; premium_reserved_s: number; backup_used_s: number; backup_reserved_s: number; sessions: number };

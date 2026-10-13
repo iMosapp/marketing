@@ -9,6 +9,7 @@ import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { RED, tid, PilotStatus } from '../../components/voice-pilot/shared';
 import { PilotStatusCard } from '../../components/voice-pilot/PilotStatusCard';
 import { PilotEnrollCard } from '../../components/voice-pilot/PilotEnrollCard';
+import { PilotEngineCard, EngineMode } from '../../components/voice-pilot/PilotEngineCard';
 import { PilotUsageCard } from '../../components/voice-pilot/PilotUsageCard';
 import { PilotKillCard } from '../../components/voice-pilot/PilotKillCard';
 import { PilotSessionsCard } from '../../components/voice-pilot/PilotSessionsCard';
@@ -47,6 +48,7 @@ export default function VoicePilot() {
   const kill = () => act(() => api.post('/voice-controls/pilot/kill'));
   const resume = () => act(() => api.post('/voice-controls/pilot/resume'));
   const leave = () => act(() => api.post('/voice-controls/pilot/leave'));
+  const setMode = (mode: EngineMode) => act(() => api.post('/voice-controls/pilot/engine-mode', { mode }));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} {...tid('voice-pilot-screen')}>
@@ -58,6 +60,7 @@ export default function VoicePilot() {
           <>
             <PilotStatusCard s={s} />
             <PilotEnrollCard s={s} busy={busy} onEnroll={enroll} onLeave={leave} />
+            {s.enrolled && <PilotEngineCard s={s} busy={busy} onMode={setMode} />}
             {s.enrolled && <PilotKillCard s={s} busy={busy} onKill={kill} onResume={resume} />}
             <PilotUsageCard s={s} />
             <PilotSessionsCard s={s} />

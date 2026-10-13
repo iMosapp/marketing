@@ -259,6 +259,18 @@ async def pilot_enroll(body: PilotBody, request: Request):
     return await vc.pilot_enroll(get_db(), me, body.premium_min, body.backup_min, round(body.hard_usd, 2))
 
 
+class EngineModeBody(BaseModel):
+    mode: str
+
+
+@router.post("/pilot/engine-mode")
+async def pilot_engine_mode(body: EngineModeBody, request: Request):
+    me = await _super(request)
+    if body.mode not in vc.ENGINE_MODES:
+        raise HTTPException(status_code=400, detail="mode must be live_first or mini_only")
+    return await vc.pilot_engine_mode(get_db(), me, body.mode)
+
+
 @router.post("/pilot/kill")
 async def pilot_kill(request: Request):
     """Kill switch: no new sessions on the account, every open session is hung up and finalized now."""

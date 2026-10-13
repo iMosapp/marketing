@@ -32,6 +32,7 @@ STOP_GRACE_S = 20        # a session told to stop that is still open after this 
 KILL_MAX_ATTEMPTS = 3
 CONFIRMED_CLOSE_REASONS = ("close_requested", "idle", "daily_cap", "premium_cap", "backup_cap", "voice_cap", "handoff", "killed")
 ENGINE_ROLE = {"live": "premium", "mini": "backup"}
+ENGINE_MODES = ("live_first", "mini_only")  # founder test setting: premium first with automatic hand-off (default) or the backup engine for every session
 TEST_EMAIL_SUFFIX = "@invalid.imonsocial.test"
 
 PRICING = {"verified_on": "2026-10-13", "source": "developers.openai.com/api/docs/pricing",
@@ -44,7 +45,7 @@ DEFAULT_POLICY = {"enabled": False, "product": "imos", "plan_key": "standard", "
                   "per_user_daily_premium_min": 15, "per_user_daily_backup_min": 60,
                   "account_daily_premium_min": None, "account_monthly_premium_min": None,
                   "monthly_budget_usd": None, "soft_warn_pcts": [80], "hard_premium_cap_usd": None, "account_monthly_backup_usd": None,
-                  "account_monthly_hard_usd": None, "cap_super_admins": False, "killed": False,
+                  "account_monthly_hard_usd": None, "cap_super_admins": False, "killed": False, "engine_mode": "live_first",
                   "carry_over": False, "timezone": None, "notes": ""}
 GLOBAL_DEFAULTS = {"enabled": True, "max_user_daily_premium_min": 240, "max_user_daily_backup_min": 480, "pricing": PRICING}
 PLAN_CATALOG = {"standard": {"per_user_daily_premium_min": 15}, "pro": {"per_user_daily_premium_min": 30}, "unlimited": {"per_user_daily_premium_min": 240}}
@@ -176,6 +177,8 @@ def clean_policy(patch: dict, base: dict) -> dict:
         p["premium_engine"] = patch["premium_engine"]
     if patch.get("backup_engine") in ENGINE_ROLE:
         p["backup_engine"] = patch["backup_engine"]
+    if patch.get("engine_mode") in ENGINE_MODES:
+        p["engine_mode"] = patch["engine_mode"]
     if patch.get("plan_key") in PLAN_CATALOG:
         p["plan_key"] = patch["plan_key"]
     if "timezone" in patch:
@@ -390,7 +393,9 @@ async def resolve(db, user: dict, policy: dict) -> dict:
 
 
 def pick_engine(policy: dict, eff: dict) -> Optional[str]:
-    """Premium while it has at least MIN_START_S left, else backup, else None (nothing to start)."""
+    """Premium while it has at least MIN_START_S left, else backup, else None (nothing to start). mini_only: the backup engine or nothing."""
+    if policy.get("engine_mode") == "mini_only":
+        return policy["backup_engine"] if eff["backup_left_s"] >= MIN_START_S else None
     if eff["premium_left_s"] >= MIN_START_S:
         return policy["premium_engine"]
     if eff["backup_left_s"] >= MIN_START_S:
@@ -486,7 +491,7 @@ async def start(db, user: dict, policy: dict) -> dict:
         raise NoAllowance(cap_message(eff))
     fallback_reason = None
     if engine == policy["backup_engine"]:
-        fallback_reason = "premium_disabled" if "premium_disabled" in eff["limits"] else "premium_cap"
+        fallback_reason = "mini_only" if policy.get("engine_mode") == "mini_only" else "premium_disabled" if "premium_disabled" in eff["limits"] else "premium_cap"
     got = await reserve(db, eff, engine, SLICE_S)
     if got < MIN_START_S and engine == policy["premium_engine"]:
         if got:
@@ -703,6 +708,12 @@ async def pilot_enroll(db, me: dict, premium_min: int, backup_min: int, hard_usd
     patch = {"enabled": True, "cap_super_admins": True, "killed": False, "per_user_daily_premium_min": premium_min, "per_user_daily_backup_min": backup_min,
              "account_monthly_hard_usd": hard_usd, "notes": f"Founder voice pilot, enrolled by {me.get('email')}"}
     await save_policy(db, org_id, patch, me)
+    return await pilot_status(db, me)
+
+
+async def pilot_engine_mode(db, me: dict, mode: str) -> dict:
+    """Founder engine test for the caller's own account: live_first (default) or mini_only. Pools, caps, ledger and kill switch are untouched."""
+    await save_policy(db, await org_of(db, me), {"engine_mode": mode}, me)
     return await pilot_status(db, me)
 
 
