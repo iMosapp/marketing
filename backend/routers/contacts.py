@@ -10,6 +10,7 @@ import logging
 from models import Contact, ContactCreate
 from pydantic import BaseModel
 from routers.database import get_db, get_data_filter, get_user_by_id, get_accessible_user_ids, increment_user_stat
+from services import memo_nudge
 
 router = APIRouter(prefix="/contacts", tags=["Contacts"])
 logger = logging.getLogger(__name__)
@@ -69,6 +70,8 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     
     result = await get_db().contacts.insert_one(contact_dict)
     contact_dict['_id'] = str(result.inserted_id)
+    if source not in memo_nudge.SKIP_SOURCES and not contact_dict.get('date_sold'):
+        memo_nudge.schedule(user_id, contact_dict['_id'], "new_contact")
     if contact_dict.get('date_sold'):
         from services import sales as _sales
         try:

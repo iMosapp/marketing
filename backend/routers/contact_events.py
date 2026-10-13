@@ -11,6 +11,7 @@ import logging
 import time as _time
 
 from routers.database import get_db
+from services import memo_nudge
 from utils.event_types import get_event_label
 
 from cachetools import TTLCache
@@ -613,6 +614,8 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
     # Store the sharing channel if provided (e.g., sms, whatsapp, email, etc.)
     if event_data.get("channel"):
         event["channel"] = event_data["channel"]
+    if event["event_type"] in memo_nudge.CARD_EVENTS:
+        memo_nudge.schedule(user_id, contact_id, "card")
 
     # The send endpoints (/messages/twilio-send etc.) now log the touch themselves with a Twilio ref.
     # Older app screens still POST the same event right after sending: fold those into the auto-logged row.
@@ -936,31 +939,13 @@ async def get_recent_calls(user_id: str, limit: int = 50):
     return {"calls": calls}
 
 
-CARD_SHARE_EVENTS = {"digital_card_shared", "card_qr_shown", "vcf_shared"}
-CARD_MEMO_NUDGE_DELAY_S = 60
+CARD_SHARE_EVENTS = memo_nudge.CARD_EVENTS
+CARD_MEMO_NUDGE_DELAY_S = memo_nudge.DELAY_S
 
 
-def schedule_card_memo_nudge(user_id: str, contact_id: str, first_name: str, delay_s: int = CARD_MEMO_NUDGE_DELAY_S):
-    """A brand-new contact came from the rep's digital card: nudge them to record a voice memo while it is fresh."""
-    import asyncio
-    first = (first_name or "").strip() or "them"
-
-    async def _send():
-        await asyncio.sleep(delay_s)
-        try:
-            from routers.push_notifications import send_push_to_user
-            await send_push_to_user(
-                user_id,
-                f"You just met {first}. Tell me about them",
-                "Tap and talk for a minute while it is fresh: who they are, what they want, anything personal. I'll save it to their profile.",
-                f"/contact/{contact_id}?capture=true",
-                "mic",
-            )
-            logger.info(f"[CardMemoNudge] sent for contact {contact_id}")
-        except Exception as e:
-            logger.warning(f"[CardMemoNudge] failed for contact {contact_id}: {e}")
-
-    return asyncio.get_running_loop().create_task(_send())
+def schedule_card_memo_nudge(user_id: str, contact_id: str, first_name: str = "", delay_s: int = CARD_MEMO_NUDGE_DELAY_S, created: bool = True):
+    """Card shared with someone (new or existing contact): nudge the rep to record a voice memo while it is fresh."""
+    return memo_nudge.schedule(user_id, contact_id, "new_contact" if created else "card", delay_s)
 
 
 @router.post("/{user_id}/find-or-create-and-log")
@@ -1128,8 +1113,8 @@ async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
 
     contact_id = str(contact["_id"])
 
-    if created and event_type in CARD_SHARE_EVENTS:
-        schedule_card_memo_nudge(user_id, contact_id, contact.get("first_name") or "")
+    if event_type in CARD_SHARE_EVENTS:
+        schedule_card_memo_nudge(user_id, contact_id, contact.get("first_name") or "", created=created)
 
     # Log the event
     event_channel = payload.get("event_channel") or payload.get("channel")
