@@ -193,7 +193,7 @@ export default function CustomerScreen() {
         <ProgressCard row={row} colors={colors} onOpenIssues={isSuper ? () => router.push('/admin/bug-reports' as any) : undefined} />
 
         {isSuper && isPilot ? <PilotPanel orgId={orgId} row={row} colors={colors} busy={busy} act={act} onAction={setPilotAction} /> : null}
-        {isSuper && !isPilot ? <BillingPanel orgId={orgId} customer={c} colors={colors} busy={busy} act={act} /> : null}
+        {isSuper && !isPilot ? <BillingPanel orgId={orgId} customer={c} colors={colors} busy={busy} act={act} billingConfig={row.billing_config} /> : null}
 
         {isSuper ? (
           <View style={{ gap: 8 }}>

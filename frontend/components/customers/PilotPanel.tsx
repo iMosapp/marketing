@@ -5,6 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 import type { PilotAction } from './PilotSheet';
+import { BillingModeNotice, conversionOn } from './BillingModeNotice';
 
 const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 const money = (n?: number) => (typeof n === 'number' ? `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '');
@@ -48,11 +49,12 @@ export function PilotPanel({ orgId, row, colors, busy, act, onAction }: Props) {
       </TouchableOpacity>
     );
   };
-  const live = p.state === 'active' || p.state === 'completed';
+  const live = (p.state === 'active' || p.state === 'completed') && conversionOn(row.billing_config);
   return (
     <View style={{ gap: 10, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: p.state === 'ended' ? '#FF3B30' : '#C9A962', padding: 14 }} data-testid="pilot-panel">
       <Text style={{ fontSize: 13, fontWeight: '700', color: '#8E8E93', letterSpacing: 1.2 }}>FOUNDING PARTNER PILOT · {String(p.state || '').toUpperCase()}</Text>
       {lines.map((l, i) => <Text key={i} style={{ fontSize: 14, color: colors.text, lineHeight: 19 }} data-testid={`pilot-line-${i}`}>{l}</Text>)}
+      <BillingModeNotice config={row.billing_config} colors={colors} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {live ? <Btn label="Send continue link" onPress={sendLink} testID="pilot-send-link" icon="paper-plane" tone="gold" /> : null}
         {live ? <Btn label="Copy continue link" onPress={copyLink} testID="pilot-copy-link" icon="copy" /> : null}

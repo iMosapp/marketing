@@ -234,6 +234,7 @@ async def on_owner_activated(db, user_id: str) -> None:
 async def row(db, org: dict, with_issues: bool = False) -> dict:
     """One founder-facing record per customer, computed from existing collections."""
     from services import pilot
+    from services import billing as _billing
     c = dict(org.get("customer") or {})
     org_id = str(org["_id"])
     owner = None
@@ -251,7 +252,7 @@ async def row(db, org: dict, with_issues: bool = False) -> dict:
         "organization_id": org_id, "name": org.get("name"), "city": org.get("city"), "state": org.get("state"), "industry": org.get("industry"),
         "org_active": bool(org.get("active")), "created_at": org.get("created_at"),
         "customer": c,
-        "pilot_program": pilot_program.view(c), "mrr": pilot_program.mrr(c),
+        "pilot_program": pilot_program.view(c), "mrr": pilot_program.mrr(c), "billing_config": _billing.mode_info(),
         **signals,
         "owner": owner and {
             "user_id": str(owner["_id"]), "name": owner.get("name"), "email": "" if owner_email.endswith(PLACEHOLDER_EMAIL_SUFFIX) else owner_email,

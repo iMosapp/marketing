@@ -39,6 +39,33 @@ def configured() -> bool:
     return bool(os.environ.get("STRIPE_BILLING_SECRET_KEY"))
 
 
+def key_mode() -> str | None:
+    """'live' | 'test' | None, from the key prefix only (never logs or returns the key)."""
+    key = os.environ.get("STRIPE_BILLING_SECRET_KEY") or ""
+    if not key:
+        return None
+    return "live" if key.startswith(("sk_live_", "rk_live_")) else "test"
+
+
+def conversion_enabled() -> bool:
+    """Checkout / portal creation needs a LIVE key. A test key only works where BILLING_ALLOW_TEST_MODE=1 (preview, QA)."""
+    mode = key_mode()
+    return mode == "live" or (mode == "test" and os.environ.get("BILLING_ALLOW_TEST_MODE") == "1")
+
+
+TEST_MODE_MSG = "Billing is in Stripe TEST mode on this server; paid conversion is paused until live billing is configured. Complimentary pilots are not affected."
+
+
+def require_conversion():
+    client()
+    if not conversion_enabled():
+        raise HTTPException(status_code=503, detail=TEST_MODE_MSG)
+
+
+def mode_info() -> dict:
+    return {"configured": configured(), "mode": key_mode(), "conversion_enabled": conversion_enabled()}
+
+
 def client() -> stripe.StripeClient:
     global _client
     key = os.environ.get("STRIPE_BILLING_SECRET_KEY")
@@ -162,6 +189,7 @@ async def create_checkout(db, org: dict, actor: dict, base_url: str) -> dict:
     org_id = str(org["_id"])
     if c.get("stripe_subscription_id") and c.get("billing_status") in ("active", "trialing", "past_due"):
         raise HTTPException(status_code=409, detail="This customer already has a subscription. Use the billing portal to change payment details.")
+    require_conversion()
     prices = await price_ids()
     customer_id = await _ensure_stripe_customer(db, org)
     line_items = [{"price": prices[c["plan_key"]], "quantity": 1}]
@@ -373,6 +401,7 @@ async def portal_url(db, org: dict, base_url: str, return_path: str = "/settings
     c = org["customer"]
     if not c.get("stripe_customer_id"):
         raise HTTPException(status_code=409, detail="No Stripe customer yet. Send the payment link first.")
+    require_conversion()
     cfg = await _portal_configuration(db, base_url)
     session = await _run(client().v1.billing_portal.sessions.create, {"customer": c["stripe_customer_id"], "return_url": f"{base_url}{return_path}", "configuration": cfg})
     return session.url
@@ -400,6 +429,9 @@ async def handle_event(db, event: dict) -> dict:
     if typ not in HANDLED_EVENTS:
         await db.stripe_events.update_one({"_id": eid}, {"$set": {"processed": True, "ignored": True}})
         return {"received": True, "ignored": True}
+    if event.get("livemode") is False and not conversion_enabled():
+        await db.stripe_events.update_one({"_id": eid}, {"$set": {"processed": True, "ignored": True, "result": "ignored_test_event"}})
+        return {"received": True, "ignored": True, "test_event": True}
     obj = (event.get("data") or {}).get("object") or {}
     try:
         result = await _dispatch(db, typ, obj)
@@ -482,9 +514,10 @@ def owner_summary(org: dict) -> dict:
         "monthly_total": float(c.get("amount") or 0) + float(c.get("seat_price") or 0) * int(c.get("seats_extra") or 0),
         "billing_status": c.get("billing_status"), "current_period_end": c.get("current_period_end"), "cancel_at_period_end": bool(c.get("cancel_at_period_end")),
         "grace_until": c.get("grace_until"), "last_payment_at": c.get("last_payment_at"), "last_payment_amount": c.get("last_payment_amount"),
-        "portal_available": bool(c.get("stripe_customer_id")) and configured() and c.get("billing_status") != "pilot",
-        "checkout_url": c.get("checkout_url") if c.get("billing_status") in ("unpaid", "awaiting_payment", "canceled") else None,
+        "portal_available": bool(c.get("stripe_customer_id")) and conversion_enabled() and c.get("billing_status") != "pilot",
+        "checkout_url": c.get("checkout_url") if c.get("billing_status") in ("unpaid", "awaiting_payment", "canceled") and conversion_enabled() else None,
+        "billing_mode": key_mode(), "conversion_enabled": conversion_enabled(),
         "exception": bool(c.get("billing_status") == "exception"), "exception_ends": (c.get("billing_exception") or {}).get("expires_at") if c.get("billing_status") == "exception" else None,
-        "pilot": pv and {**pv, "can_continue": c.get("billing_status") == "pilot" and pv["state"] in ("active", "completed") and configured(),
+        "pilot": pv and {**pv, "can_continue": c.get("billing_status") == "pilot" and pv["state"] in ("active", "completed") and conversion_enabled(),
                          "first_charge_on": first_charge.isoformat() if first_charge else None},
     }

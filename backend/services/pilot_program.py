@@ -180,10 +180,16 @@ async def resume(db, org: dict, actor: dict, reason: str, extra_days: int = 0) -
 
 
 async def mark_converted(db, org: dict, source: str, status: str) -> None:
-    """A Stripe subscription appeared for a pilot customer: they chose to continue. Nothing here is automatic."""
+    """A Stripe subscription appeared for a pilot customer: they chose to continue. Nothing here is automatic.
+    Atomic claim on the state so two webhook deliveries (two pods, two events) record and notify exactly once."""
     org_id = str(org["_id"])
     c = org["customer"]
-    await _set_program(db, org_id, state="converted", converted_at=cust.now_iso(), converted_via=source)
+    claimed = await db.organizations.find_one_and_update(
+        {"_id": org["_id"], "customer.pilot_program.kind": "founding_partner", "customer.pilot_program.state": {"$ne": "converted"}},
+        {"$set": {"customer.pilot_program.state": "converted", "customer.pilot_program.converted_at": cust.now_iso(),
+                  "customer.pilot_program.converted_via": source, "updated_at": cust.now_iso()}})
+    if not claimed:
+        return
     await cust.audit(db, org_id, "pilot_converted", None, source=source, stripe_status=status, first_charge_on=c.get("current_period_end"))
     when = f" The first charge lands on {(c.get('current_period_end') or '')[:10]}." if status == "trialing" else ""
     await notify_founder(db, org, "customer_pilot_converted", f"{org.get('name')} chose to continue after the pilot",

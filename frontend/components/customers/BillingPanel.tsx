@@ -4,11 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { showConfirm, showSimpleAlert } from '../../services/alert';
+import { BillingModeNotice, conversionOn, BillingConfig } from './BillingModeNotice';
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 const money = (n?: number) => (typeof n === 'number' ? `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '');
 
-type Props = { orgId: string; customer: any; colors: any; busy: boolean; act: (fn: () => Promise<any>, okTitle?: string) => Promise<any> };
+type Props = { orgId: string; customer: any; colors: any; busy: boolean; act: (fn: () => Promise<any>, okTitle?: string) => Promise<any>; billingConfig?: BillingConfig | null };
 
 const openUrl = (url: string) => (Platform.OS === 'web' ? window.open(url, '_blank') : Linking.openURL(url));
 
@@ -17,7 +18,8 @@ async function copy(url: string, what: string) {
   showSimpleAlert(`${what} copied`, 'Paste it into a text or email.');
 }
 
-export function BillingPanel({ orgId, customer: c, colors, busy, act }: Props) {
+export function BillingPanel({ orgId, customer: c, colors, busy, act, billingConfig }: Props) {
+  const canConvert = conversionOn(billingConfig);
   const subscribed = !!c.stripe_subscription_id && ['active', 'trialing', 'past_due'].includes(c.billing_status);
   const sentMsg = (sent: any) => `Text ${sent?.sms_sent ? 'sent' : 'not sent'} · email ${sent?.email_sent ? 'sent' : 'not sent'}.`;
   const sendLink = () => act(async () => {
@@ -64,9 +66,10 @@ export function BillingPanel({ orgId, customer: c, colors, busy, act }: Props) {
       <Text style={{ fontSize: 13, fontWeight: '700', color: '#8E8E93', letterSpacing: 1.2 }}>STRIPE BILLING</Text>
       {lines.length ? lines.map((l, i) => <Text key={i} style={{ fontSize: 14, color: colors.text }} data-testid={`billing-line-${i}`}>{l}</Text>)
         : <Text style={{ fontSize: 14, color: colors.textSecondary }} data-testid="billing-line-0">No Stripe subscription yet. Card details are entered on Stripe's page, never in the app.</Text>}
+      <BillingModeNotice config={billingConfig} colors={colors} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {!subscribed ? <Btn label={c.billing_status === 'awaiting_payment' ? 'Resend payment link' : 'Send payment link'} onPress={sendLink} testID="billing-send-link" icon="paper-plane" tone="gold" /> : null}
-        {!subscribed ? <Btn label="Copy payment link" onPress={copyLink} testID="billing-copy-link" icon="copy" /> : null}
+        {!subscribed && canConvert ? <Btn label={c.billing_status === 'awaiting_payment' ? 'Resend payment link' : 'Send payment link'} onPress={sendLink} testID="billing-send-link" icon="paper-plane" tone="gold" /> : null}
+        {!subscribed && canConvert ? <Btn label="Copy payment link" onPress={copyLink} testID="billing-copy-link" icon="copy" /> : null}
         <Btn label={subscribed ? 'Sync with Stripe' : 'Check payment'} onPress={check} testID="billing-check" icon="refresh" />
         {c.stripe_customer_id ? <Btn label="Billing portal link" onPress={portal} testID="billing-portal-link" icon="card" /> : null}
         {subscribed && !c.cancel_at_period_end ? <Btn label="Cancel at period end" onPress={() => cancel(true)} testID="billing-cancel" icon="close-circle" tone="red" /> : null}
