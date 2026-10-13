@@ -42,7 +42,7 @@ Built and tested in PREVIEW on Oct 11 2026. Nothing deployed. Legacy customers, 
 - Web (testing agent iteration_382): pilot owner lands on `/home`, checklist/tiles/tabs/share modal/QR/feedback/More/account sheet/settings all as specified; contact step auto-completed from a real contact; founder Hub rows + customer page verified; legacy qa-manager and forest unchanged (full Home, 5 tabs, full hub, Report a Bug). One cosmetic duplicate on the Hub row was fixed after the run.
 
 ## Demo in preview
-- Pilot owner: **qa-pilot-owner-ui@invalid.imonsocial.test / PilotOwner123!** ("QA Pilot Owner Co", Paid, 0/5 done, one open Question in the founder view).
+- Pilot owner: **qa-pilot-owner-ui@invalid.imonsocial.test / (password in memory/test_credentials.md, not in the repo) ("QA Pilot Owner Co", Paid, 0/5 done, one open Question in the founder view).
 - Founder: forest@imosapp.com -> Hub -> Customers -> QA Pilot Owner Co.
 
 ## Known limits / later

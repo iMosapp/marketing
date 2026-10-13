@@ -164,5 +164,5 @@ curl -X DELETE "$API_URL/api/admin/cleanup/test-data" -H "Authorization: Bearer 
 
 ### Login Credentials Available:
 - See user table above for all temp passwords
-- Changed passwords: Manager123! (Mike Johnson), OrgAdmin123! (Sarah Mitchell), Sales123! (Alex Martinez)
+- Changed passwords: (rotated) (Mike Johnson), (rotated) (Sarah Mitchell), (rotated) (Alex Martinez)
 

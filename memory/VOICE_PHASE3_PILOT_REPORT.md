@@ -25,7 +25,7 @@ Mocked: `GET /api/live-voice/config` forced to `configured: true` (preview has n
 
 Cosmetic fixes made after the first manual run: cap text reads "Under a minute left today" below 60 s (was "0 min left today"), the total timer carries the local clock across the switch when GPT-Live sent no usage event. Naming check: no "Tok" anywhere.
 
-Demo account kept in preview: `qa-voice-ui@invalid.imonsocial.test / VoiceRep123!` (org "QA Voice UI Org", policy on). `python tests/seed_voice_ui_demo.py --scenario handoff|exhausted|refused` resets it; `tests/voice_ui_backdater.py` ages open sessions so the cap arrives in seconds. The Test Lab flag `jessi_live_voice` was put back to `lab` and `EXPO_PUBLIC_BACKEND_URL` back to production after the run.
+Demo account kept in preview: `qa-voice-ui@invalid.imonsocial.test / (password in memory/test_credentials.md, not in the repo) (org "QA Voice UI Org", policy on). `python tests/seed_voice_ui_demo.py --scenario handoff|exhausted|refused` resets it; `tests/voice_ui_backdater.py` ages open sessions so the cap arrives in seconds. The Test Lab flag `jessi_live_voice` was put back to `lab` and `EXPO_PUBLIC_BACKEND_URL` back to production after the run.
 
 ## What this does NOT prove yet
 1. **Real providers.** Preview has no `OPENAI_API_KEY`, so the GPT-Live close, the Mini reconnect and the "still here" continuation were exercised against the fake provider and a stubbed browser WebRTC stack. The server side (metering, reservations, handoff context, trail, kill switch) is provider-independent and fully tested; the ~1-2 s audio gap during the switch and how natural the continuation sounds can only be heard in production.

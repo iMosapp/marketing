@@ -237,7 +237,7 @@ MVPLine is a comprehensive mobile messaging + softphone dialer app with AI Virtu
 # Test authentication
 curl -X POST http://localhost:8001/api/auth/signup \\
   -H "Content-Type: application/json" \\
-  -d '{"email":"test@mvpline.com","password":"test123","name":"Test User","phone":"+15551234567"}'
+  -d '{"email":"test@mvpline.com","password":"<your-password>","name":"Test User","phone":"+15551234567"}'
 
 # Test AI suggestion
 curl -X POST http://localhost:8001/api/messages/ai-suggest/test_conv_id

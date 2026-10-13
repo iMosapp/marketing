@@ -2336,15 +2336,20 @@ async def shutdown_event():
 
 
 async def seed_admin_user(db):
-    """Create default admin user if no users exist in database"""
+    """Create the first super admin on an EMPTY database only, with the password from BOOTSTRAP_ADMIN_PASSWORD (hashed). No env value: nothing is seeded."""
     try:
         user_count = await db.users.count_documents({})
         if user_count == 0:
+            bootstrap_pw = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD")
+            if not bootstrap_pw:
+                logger.warning("Empty database and BOOTSTRAP_ADMIN_PASSWORD is not set: no default admin user created")
+                return
+            from routers.auth import hash_password
             logger.info("Empty database detected - creating default admin user...")
             
             admin_user = {
                 "email": "admin@imonsocial.com",
-                "password": "I'm On Social2026!",
+                "password": hash_password(bootstrap_pw),
                 "name": "Admin User",
                 "phone": "",
                 "role": "super_admin",
@@ -2372,7 +2377,7 @@ async def seed_admin_user(db):
             logger.info("=" * 50)
             logger.info("DEFAULT ADMIN USER CREATED:")
             logger.info("  Email: admin@imonsocial.com")
-            logger.info("  Password: I'm On Social2026!")
+            logger.info("  Password: the BOOTSTRAP_ADMIN_PASSWORD value (change it after the first login)")
             logger.info("=" * 50)
         else:
             logger.info(f"Database has {user_count} existing users - skipping seed")

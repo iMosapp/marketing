@@ -3,6 +3,14 @@ import os, sys, time
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
+
+def _pw(email):
+    """Password from memory/test_credentials.md (gitignored): the line "email / password" or "- Email: x" then "- Password: y"."""
+    import re as _re
+    creds = open("/app/memory/test_credentials.md").read()
+    m = _re.search(_re.escape(email) + r"\s*/\s*([^\s*`]+)", creds) or _re.search(_re.escape(email) + r".*?\n- Password:\s*(\S+)", creds, _re.S)
+    return m.group(1)
+
 ORG = "6acbea92a284f605698a9743"
 OUT = os.path.dirname(os.path.abspath(__file__))
 VIEW = {"width": 1280, "height": 900}
@@ -50,7 +58,7 @@ def founder(p):
     ctx = b.new_context(viewport=VIEW)
     page = ctx.new_page()
     page.on("dialog", lambda d: d.accept())
-    login(page, "forest@imosapp.com", "Admin123!")
+    login(page, "forest@imosapp.com", _pw("forest@imosapp.com"))
 
     goto(page, "/admin/onboarding-hub", '[data-testid="hub-customers"]', 6000)
     scroll_to(page, f'[data-testid="hub-customer-{ORG}"]')
@@ -79,7 +87,7 @@ def owner(p):
     ctx = b.new_context(viewport=PHONE, device_scale_factor=2, is_mobile=True, has_touch=True)
     page = ctx.new_page()
     page.on("dialog", lambda d: d.accept())
-    login(page, "qa-accept-owner@invalid.imonsocial.test", "AcceptOwner123!")
+    login(page, "qa-accept-owner@invalid.imonsocial.test", _pw("qa-accept-owner@invalid.imonsocial.test"))
     page.wait_for_timeout(3000)
     try:
         page.wait_for_selector('[data-testid="home-pilot"]', timeout=30000)

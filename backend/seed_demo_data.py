@@ -8,6 +8,16 @@ from datetime import datetime, timedelta
 import os
 import random
 from bson import ObjectId
+import secrets
+
+
+def _demo_password() -> str:
+    """Demo accounts get the DEMO_SEED_PASSWORD env value, or a random one that is printed once."""
+    pw = os.environ.get("DEMO_SEED_PASSWORD")
+    if not pw:
+        pw = secrets.token_urlsafe(12)
+        print(f"DEMO_SEED_PASSWORD not set: generated demo password {pw!r} (save it now)")
+    return pw
 
 # Demo data
 DEMO_CONTACTS = [
@@ -217,7 +227,7 @@ async def seed_data():
     if not superadmin:
         print("Superadmin not found! Creating...")
         import bcrypt
-        hashed_pw = bcrypt.hashpw("Admin123!".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        hashed_pw = bcrypt.hashpw(_demo_password().encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         superadmin = {
             "_id": ObjectId(),
             "email": "forest@imosapp.com",
@@ -410,7 +420,7 @@ async def seed_data():
     print(f"   - {len(DEMO_CAMPAIGNS)} campaigns")
     print(f"   - {len(DEMO_TASKS)} tasks")
     print(f"   - {len(DEMO_TAGS)} tags")
-    print(f"\nLogin as: forest@imosapp.com / Admin123!")
+    print("\nLogin as: forest@imosapp.com / the DEMO_SEED_PASSWORD you set")
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from services import command_center as cc
 from services import command_center_ai as ai
+from services.doc_access import RESTRICTED_CATEGORIES
 
 FACTS = "ck_facts"
 DOMAINS = ("strategy", "products", "technology", "customers", "commercial", "financials", "operations", "departments", "decisions", "compliance")
@@ -210,7 +211,8 @@ async def doc_passages(db, question: str, k: int = 4, cap: int = 600) -> tuple:
     if not terms:
         return "", {}
     scored = []
-    async for d in db.company_docs.find({"is_published": {"$ne": False}}, {"title": 1, "slug": 1, "content": 1}):
+    # super-admin-only documents (engineering/operations) never enter an AI prompt
+    async for d in db.company_docs.find({"is_published": {"$ne": False}, "required_role": {"$ne": "super_admin"}, "category": {"$nin": list(RESTRICTED_CATEGORIES)}}, {"title": 1, "slug": 1, "content": 1}):
         for para in re.split(r"\n\s*\n", d.get("content") or ""):
             p = para.strip()
             if len(p) < 80:

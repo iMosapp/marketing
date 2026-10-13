@@ -54,7 +54,7 @@ second pod an ended pilot's existing session can live up to 20 s longer (sign-in
 | Founder views | row `mrr {450, scheduled, first_charge_on 2027-01-09}`, Hub row trialing/converted; owner Billing: portal available, Continue gone |
 
 The converted org is left in preview for the owner to look at: **QA FP Gate Motors** 6acc107efb4f03be5b390788, owner
-qa-fp-gate-owner-1c4b@invalid.imonsocial.test / PilotOwner123! (sandbox subscription trialing until Jan 9 2027; `wipe_pilot_customers.py --prefix "QA FP Gate"` removes it and the Stripe customer).
+qa-fp-gate-owner-1c4b@invalid.imonsocial.test / (password in memory/test_credentials.md, not in the repo) (sandbox subscription trialing until Jan 9 2027; `wipe_pilot_customers.py --prefix "QA FP Gate"` removes it and the Stripe customer).
 
 ## 3. Scheduled first charge (P3)
 

@@ -12,7 +12,7 @@
 2. New customer path: create one in the Hub -> step 2 **Send payment link** (texts + emails the Stripe Checkout URL to the owner) or **Copy payment link**. Pill becomes "Payment link sent / Awaiting payment"; the step button becomes **Check payment**. The owner pays on Stripe's page (never in the app); the return page says "Payment received"; the row flips to Paid even before the webhook is wired.
 3. **Grant billing exception instead** stays as the manual path (super admin, reason + end date, audited).
 4. **Add a seat**: with a live subscription the Stripe quantity is updated and the prorated amount is invoiced immediately; without one it only raises the limit.
-5. Owner side (qa-pilot-owner-ui@invalid.imonsocial.test / PilotOwner123!): More -> Store Setup -> **Billing** -> plan, renewal, status, **Payment method, invoices and plan** (Stripe Customer Portal: card update, invoices, cancel at period end). Legacy managers see "handled by your representative".
+5. Owner side (qa-pilot-owner-ui@invalid.imonsocial.test / (password in memory/test_credentials.md, not in the repo) More -> Store Setup -> **Billing** -> plan, renewal, status, **Payment method, invoices and plan** (Stripe Customer Portal: card update, invoices, cancel at period end). Legacy managers see "handled by your representative".
 6. Founder notifications (push + Alerts): payment failed (with the grace date), payment recovered, cancellation scheduled, subscription ended.
 
 ## Failed payment policy (documented)

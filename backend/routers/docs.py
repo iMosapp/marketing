@@ -13,6 +13,7 @@ import re
 import asyncio
 
 from routers.database import get_db, get_user_by_id
+from services.doc_access import RESTRICTED_CATEGORIES, WITHHELD_NOTE, credential_hits, is_restricted
 
 router = APIRouter(prefix="/docs", tags=["Docs"])
 logger = logging.getLogger(__name__)
@@ -27,6 +28,18 @@ async def verify_admin_access(user_id: str) -> dict:
     if user.get('role') not in ['super_admin', 'org_admin', 'store_manager']:
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
+
+
+async def verify_super_admin(user_id: str) -> dict:
+    user = await verify_admin_access(user_id)
+    if user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+    return user
+
+
+def _assert_can_read(user: dict, doc: dict) -> None:
+    if is_restricted(doc) and user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="This document is restricted to super admins")
 
 
 async def _deduplicate_docs():
@@ -57,31 +70,31 @@ REPO_DOC_SOURCES = [
         "slug": "product-requirements-document",
         "title": "Product Requirements Document",
         "summary": "Complete PRD for the i'M On Social platform — vision, personas, full feature scope, and backlog.",
-        "category": "prd", "icon": "clipboard", "sort_order": 0,
+        "category": "prd", "icon": "clipboard", "sort_order": 0, "required_role": "super_admin",
     }),
     ("/app/docs/APP_SCOPE.md", {
         "slug": "imos-app-scope",
         "title": "Full App Scope & Architecture",
         "summary": "Tech stack, backend domains, API surfaces, data model, screen map, security model, and automation safety rails.",
-        "category": "prd", "icon": "layers", "sort_order": 1,
+        "category": "prd", "icon": "layers", "sort_order": 1, "required_role": "super_admin",
     }),
     ("/app/docs/TECH_STACK.md", {
         "slug": "imos-tech-stack",
         "title": "Tech Stack (What It's Written In)",
         "summary": "The plain-English one-pager: languages, frameworks, database, Twilio/OpenAI/Resend/Stripe, hosting, and a cheat sheet for talking to developers.",
-        "category": "operations", "icon": "code-slash", "sort_order": 0,
+        "category": "operations", "icon": "code-slash", "sort_order": 0, "required_role": "super_admin",
     }),
     ("/app/docs/OPERATIONS_MANUAL.md", {
         "slug": "imos-operations-manual",
         "title": "i'M On Social Platform - Complete Operations Manual",
         "summary": "Environments, release workflow, all scheduled automations, admin how-tos, and troubleshooting.",
-        "category": "operations", "icon": "book", "sort_order": 1,
+        "category": "operations", "icon": "book", "sort_order": 1, "required_role": "super_admin",
     }),
     ("/app/memory/PRD.md", {
         "slug": "imos-prd-working-log",
         "title": "PRD Working Log (Full Build History)",
         "summary": "The complete chronological engineering log — every feature, fix, and decision since day one.",
-        "category": "prd", "icon": "time", "sort_order": 2,
+        "category": "prd", "icon": "time", "sort_order": 2, "required_role": "super_admin",
     }),
     ("/app/docs/DEVELOPER_API.md", {
         "slug": "developer-api-reference",
@@ -193,10 +206,11 @@ async def sync_repo_docs() -> dict:
     """Upsert internal docs from repo markdown files into company_docs.
     Runs at startup — production docs refresh automatically on every deploy.
     Only overwrites when the repo file content actually changed (hash check),
-    so in-app PRD edits survive deploys unless the repo file was updated."""
+    so in-app PRD edits survive deploys unless the repo file was updated.
+    A file that contains anything credential-like is never published: the stored copy is replaced by a notice and unpublished."""
     import hashlib
     db = get_db()
-    synced = 0
+    synced = withheld = 0
     for path, meta in REPO_DOC_SOURCES:
         try:
             with open(path, "r") as f:
@@ -205,6 +219,14 @@ async def sync_repo_docs() -> dict:
             continue
         if meta["slug"] == "imos-prd-working-log":
             content = _newest_first(content)
+        now = datetime.utcnow()
+        hits = credential_hits(content)
+        if hits:
+            logger.error(f"[DocSync] '{meta['title']}' withheld: {hits} credential-like value(s) in {path}")
+            await db.company_docs.update_one({"slug": meta["slug"]}, {"$set": {**meta, "content": WITHHELD_NOTE, "synced_hash": "", "is_published": False, "updated_at": now},
+                                                                    "$setOnInsert": {"created_at": now}, "$unset": {"slides": ""}}, upsert=True)
+            withheld += 1
+            continue
         h = hashlib.sha256(content.encode()).hexdigest()
         existing = await db.company_docs.find_one({"slug": meta["slug"]}, {"synced_hash": 1, "content": 1})
         if existing and existing.get("synced_hash") == h:
@@ -212,7 +234,6 @@ async def sync_repo_docs() -> dict:
             if existing_hash == h:
                 await db.company_docs.update_one({"slug": meta["slug"]}, {"$set": meta, "$unset": {"slides": ""}})
                 continue
-        now = datetime.utcnow()
         await db.company_docs.update_one(
             {"slug": meta["slug"]},
             {"$set": {
@@ -229,7 +250,7 @@ async def sync_repo_docs() -> dict:
         logger.info(f"[DocSync] Updated '{meta['title']}' from {path}")
     # Repo-synced docs render their markdown; drop any legacy slide decks left over from the old in-app seed
     await db.company_docs.update_many({"slug": {"$in": [m["slug"] for _, m in REPO_DOC_SOURCES]}, "slides": {"$exists": True}}, {"$unset": {"slides": ""}})
-    return {"synced": synced}
+    return {"synced": synced, "withheld": withheld}
 
 
 @router.post("/deduplicate")
@@ -256,9 +277,12 @@ async def list_docs(
     await _deduplicate_docs()
 
     query: dict = {"is_published": True}
-    # Filter out docs that require a higher role than the user has
+    # Internal engineering/operations docs (and anything marked super_admin) never appear for org admins or store managers
     if user_role != "super_admin":
+        if category in RESTRICTED_CATEGORIES:
+            raise HTTPException(status_code=403, detail="This category is restricted to super admins")
         query["required_role"] = {"$ne": "super_admin"}
+        query["category"] = {"$nin": list(RESTRICTED_CATEGORIES)}
     if category:
         query["category"] = category
     if search:
@@ -280,8 +304,8 @@ async def list_docs(
 
 @router.get("/categories")
 async def get_categories(x_user_id: str = Header(None, alias="X-User-ID")):
-    await verify_admin_access(x_user_id)
-    return [
+    user = await verify_admin_access(x_user_id)
+    cats = [
         {"id": "prd", "name": "PRD", "icon": "clipboard", "color": "#AF52DE"},
         {"id": "operations", "name": "Operations Manual", "icon": "book", "color": "#00C7BE"},
         {"id": "signed", "name": "Signed Documents", "icon": "checkmark-done-circle", "color": "#34C759"},
@@ -291,24 +315,28 @@ async def get_categories(x_user_id: str = Header(None, alias="X-User-ID")):
         {"id": "training", "name": "Training", "icon": "school", "color": "#34C759"},
         {"id": "integrations", "name": "Integrations", "icon": "git-network", "color": "#FF9500"},
     ]
+    if user.get("role") != "super_admin":
+        cats = [c for c in cats if c["id"] not in RESTRICTED_CATEGORIES]
+    return cats
 
 
 @router.get("/prd")
 async def get_prd(x_user_id: str = Header(None, alias="X-User-ID")):
-    """Get the PRD document. Auto-seeds from PRD.md if not in DB yet."""
-    await verify_admin_access(x_user_id)
+    """Get the curated PRD document (super admins only). Seeds from docs/PRODUCT_REQUIREMENTS.md if not in DB yet."""
+    await verify_super_admin(x_user_id)
     db = get_db()
 
     doc = await db.company_docs.find_one({"slug": "product-requirements-document"}, {"_id": 0})
     if not doc:
-        # Auto-seed from PRD.md
-        prd_path = "/app/memory/PRD.md"
+        prd_path = "/app/docs/PRODUCT_REQUIREMENTS.md"
         content = ""
         try:
             with open(prd_path, "r") as f:
                 content = f.read()
         except FileNotFoundError:
             content = "# Product Requirements Document\n\nNo PRD content found. Please add your PRD here."
+        if credential_hits(content):
+            content = WITHHELD_NOTE
 
         now = datetime.utcnow()
         doc = {
@@ -320,6 +348,7 @@ async def get_prd(x_user_id: str = Header(None, alias="X-User-ID")):
             "content": content,
             "version": "1.0",
             "is_published": True,
+            "required_role": "super_admin",
             "sort_order": 0,
             "created_at": now.isoformat(),
             "updated_at": now.isoformat(),
@@ -341,13 +370,15 @@ async def update_prd(
     body: dict,
     x_user_id: str = Header(None, alias="X-User-ID"),
 ):
-    """Update the PRD document content."""
-    await verify_admin_access(x_user_id)
+    """Update the PRD document content (super admins only)."""
+    await verify_super_admin(x_user_id)
     db = get_db()
 
     content = body.get("content")
     if content is None:
         raise HTTPException(status_code=400, detail="content field is required")
+    if credential_hits(content):
+        raise HTTPException(status_code=400, detail="The text contains something that looks like a credential; remove it before saving")
 
     now = datetime.utcnow()
     result = await db.company_docs.find_one_and_update(
@@ -381,8 +412,8 @@ async def update_prd(
 
 @router.get("/prd/pdf")
 async def get_prd_pdf(x_user_id: str = Header(None, alias="X-User-ID")):
-    """Generate and return the PRD as a downloadable PDF."""
-    await verify_admin_access(x_user_id)
+    """Generate and return the PRD as a downloadable PDF (super admins only)."""
+    await verify_super_admin(x_user_id)
     db = get_db()
 
     doc = await db.company_docs.find_one({"slug": "product-requirements-document"}, {"_id": 0})
@@ -596,9 +627,7 @@ async def get_doc(doc_id: str, x_user_id: str = Header(None, alias="X-User-ID"))
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Check role-restricted docs
-    if doc.get("required_role") == "super_admin" and user.get("role") != "super_admin":
-        raise HTTPException(status_code=403, detail="Access restricted")
+    _assert_can_read(user, doc)
 
     doc["_id"] = str(doc["_id"])
     return doc

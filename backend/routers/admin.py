@@ -1436,8 +1436,9 @@ async def create_individual(
     if existing:
         raise HTTPException(status_code=400, detail="Email already exists")
     
-    # Create individual user
-    password = individual_data.get('password', 'Individual123!')
+    # Create individual user: no password given -> a random one (the person sets their own through activation / forgot-password)
+    import secrets as _secrets
+    password = individual_data.get('password') or _secrets.token_urlsafe(16)
     
     new_individual = {
         "email": individual_data['email'],
