@@ -10,6 +10,7 @@ from routers.database import get_db
 from routers.scripts import _resolve, require_user
 from services import lab
 from services import live_voice as lv
+from services import voice_controls as vc
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/live-voice", tags=["Live Jessi"], dependencies=[Depends(require_user)])
@@ -21,6 +22,8 @@ class SessionBody(BaseModel):
     overrides: Optional[dict] = None
     contact_id: Optional[str] = None
     device_id: Optional[str] = None
+    resume_from: Optional[str] = None   # handoff: the live_id this session continues (its reservation is settled first)
+    reason: Optional[str] = None        # why the app is reconnecting (premium_cap, connection_lost, ...)
 
 
 class DelegateBody(BaseModel):
@@ -76,8 +79,21 @@ async def config(request: Request):
     db = get_db()
     cfg = await lv.get_config(db)
     reason = lv.configured()
+    usage = await lv.usage_summary(db, me, cfg)
+    controls = None
+    policy = await vc.enrolled_policy(db, me)
+    if policy:
+        # enrolled account: the Home button reads the policy pools (premium first, then backup), not the global Voice Lab cap
+        eff = await vc.resolve(db, me, policy)
+        nxt = vc.pick_engine(policy, eff)
+        controls = {k: eff[k] for k in ("premium_engine", "backup_engine", "premium_left_s", "backup_left_s", "premium_allowance_s", "backup_allowance_s", "reset_at", "timezone")}
+        controls["next_engine"] = nxt
+        usage = {"used_s": eff["premium_used_s"] + eff["backup_used_s"], "cap_s": eff["premium_allowance_s"] + eff["backup_allowance_s"], "left_s": eff["premium_left_s"] + eff["backup_left_s"],
+                 "unlimited": "super_admin_uncapped" in eff["limits"], "reset_at": eff["reset_at"], "engine": nxt or policy["backup_engine"]}
+    engine = usage["engine"]
     return {"available": await _available(db, me), "is_super_admin": _is_super(me), "configured": reason is None, "reason": reason,
-            "voice": cfg["mini_voice"] if cfg["engine"] == "mini" else cfg["voice"], "engine": cfg["engine"], "greeting": lv.greeting_text(cfg, me), "idle_close_s": cfg["idle_close_s"], "usage": await lv.usage_summary(db, me, cfg)}
+            "voice": cfg["mini_voice"] if engine == "mini" else cfg["voice"], "engine": engine, "greeting": lv.greeting_text(cfg, me), "idle_close_s": cfg["idle_close_s"], "usage": usage,
+            "controls": controls}
 
 
 @router.post("/session")
@@ -95,11 +111,14 @@ async def start_session(body: SessionBody, request: Request):
     if not body.sdp.strip():
         raise HTTPException(status_code=400, detail="An SDP offer is required")
     try:
-        return await lv.create_session(db, me, body.mode, body.sdp, body.overrides, body.contact_id, (body.device_id or "")[:64] or None)
+        return await lv.create_session(db, me, body.mode, body.sdp, body.overrides, body.contact_id, (body.device_id or "")[:64] or None,
+                                       (body.resume_from or "")[:32] or None, (body.reason or "")[:40] or None)
     except lv.LiveUnavailable as e:
         raise HTTPException(status_code=503, detail=str(e))
     except lv.LiveCapReached as e:
         raise HTTPException(status_code=429, detail=str(e))
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -169,13 +188,27 @@ async def admin_sessions(request: Request, limit: int = 30, user_id: str = ""):
 @router.get("/admin/sessions/{live_id}")
 async def admin_session(live_id: str, request: Request):
     await _super(request)
-    live = await lv.get_live(get_db(), live_id)
+    db = get_db()
+    live = await lv.get_live(db, live_id)
     if not live:
         raise HTTPException(status_code=404, detail="Session not found")
-    return lv.serialize(live, full=True)
+    return {**lv.serialize(live, full=True), "trail": await vc.trail(db, live_id)}
+
+
+@router.get("/{live_id}/trail")
+async def my_trail(live_id: str, request: Request):
+    """Audit trail of the whole conversation this session belongs to: every engine segment with seconds, est. cost and why it ended."""
+    me = await _resolve(request)
+    db = get_db()
+    await _owned(db, live_id, me)
+    t = await vc.trail(db, live_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="No ledger for that session")
+    return t
 
 
 @router.get("/{live_id}")
 async def my_session(live_id: str, request: Request):
     me = await _resolve(request)
-    return lv.serialize(await _owned(get_db(), live_id, me), full=True)
+    db = get_db()
+    return {**lv.serialize(await _owned(db, live_id, me), full=True), "trail": await vc.trail(db, live_id)}

@@ -4,10 +4,11 @@ import * as Application from 'expo-application';
 import api from '../services/api';
 import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, applyAudioRoute, nativeRtcMissing, nativeRtcReason } from './liveRtc';
 
-export type LiveState = 'idle' | 'connecting' | 'live' | 'ending' | 'ended' | 'error';
+export type LiveState = 'idle' | 'connecting' | 'live' | 'switching' | 'ending' | 'ended' | 'error';
 export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
 export type LiveOptions = { mode: 'assistant' | 'lab' | 'shopper' | 'advisor'; overrides?: Record<string, any>; contactId?: string };
 export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions' | 'team_today'; id?: string; name?: string; first?: string; contact_id?: string; query?: string; days?: number | null; res?: any; rep?: string; draft?: string };
+type Meter = { policy_mode?: 'controls' | 'legacy'; role?: 'premium' | 'backup' | null; fallback_reason?: string | null; left_s?: number | null };
 
 const TOOL_LABELS: Record<string, string> = {
   who_today: 'Pulled up your people for today', find_person: 'Looked them up', recall_person: 'Read their history', send_text: 'Text ready to send',
@@ -18,6 +19,9 @@ const TOOL_LABELS: Record<string, string> = {
   update_contact: 'Record updated', book_appointment: 'Appointment ready, say yes', enroll_campaign: 'Enrollment ready, say yes', send_card: 'Text ready to send', advise: 'Advisor answered',
 };
 const ROW_GAP_MS = 1500;
+// Ending because every voice pool is spent: the sheet offers the typed Ask Jessi instead.
+export const CAP_REASONS = ['voice_cap', 'backup_cap', 'daily_cap'];
+export const STANDARD_VOICE_NOTE = "Switched to Jessi's standard voice";
 
 export const openLabel = (t: OpenTarget) => {
   const who = t.first || (t.name || '').split(' ')[0];
@@ -44,18 +48,24 @@ export const LIVE_UNSUPPORTED_BODY = Platform.OS === 'web'
 // The server answered but the voice link never came up: nearly always a network that blocks WebRTC (UDP), not Jessi.
 export const NO_PICKUP_BODY = 'Jessi did not pick up. The server answered, but the voice connection could not open on this network. Dealership and office Wi-Fi often block it: switch to cellular (or another Wi-Fi) and tap Talk again.';
 
-// One live GPT-Live-1 conversation: WebRTC for audio (browser or react-native-webrtc), data channel for events, our backend for every fact.
-// `onOpen` fires when the backend wants something on the rep's screen (a contact, a thread, a task).
+// One live Jessi conversation: WebRTC for audio (browser or react-native-webrtc), data channel for events, our backend for every fact.
+// A conversation can span several provider sessions: when the premium (GPT-Live) pool runs out the server says stop + fallback_engine and
+// `handoff` closes the old session (settling its reservation), keeps the microphone, and reconnects to the backup engine seeded with the
+// conversation so far. `onOpen` fires when the backend wants something on the rep's screen (a contact, a thread, a task).
 export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void } = {}) {
   const [state, setState] = useState<LiveState>('idle');
   const [rows, setRows] = useState<CaptionRow[]>([]);
   const [error, setError] = useState('');
-  const [seconds, setSeconds] = useState(0);
+  const [seconds, setSeconds] = useState(0);          // whole conversation, across handoffs (the timer)
+  const [segSeconds, setSegSeconds] = useState(0);    // the current provider session (what the cap applies to)
   const [working, setWorking] = useState('');
   const [capLeft, setCapLeft] = useState<number | null>(null);
   const [closeReason, setCloseReason] = useState('');
   const [voice, setVoice] = useState('');
   const [engine, setEngine] = useState<'live' | 'mini'>('live');
+  const [note, setNote] = useState('');               // one-line notice in the sheet (the switch to the standard voice)
+  const [offerText, setOfferText] = useState(false);  // every voice pool is spent: offer the typed Ask Jessi
+  const [handoffs, setHandoffs] = useState(0);
   const onOpenRef = useRef(handlers.onOpen);
   onOpenRef.current = handlers.onOpen;
 
@@ -65,25 +75,32 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   const detachAudio = useRef<(() => void) | null>(null);
   const liveId = useRef('');
   const rowsRef = useRef<CaptionRow[]>([]);
+  const queuedRowId = useRef('');
   const queue = useRef<any[]>([]);
   const flushTimer = useRef<any>(null);
   const idleTimer = useRef<any>(null);
   const idleCloseS = useRef(25);
   const secondsRef = useRef(0);
+  const carriedRef = useRef(0);
   const finalized = useRef(false);
+  const handing = useRef(false);
   const greeting = useRef('');
   const greetInstruction = useRef('');
   const openAtStart = useRef<OpenTarget | null>(null);
+  const optsRef = useRef<LiveOptions>({ mode: 'assistant' });
   const modeRef = useRef<LiveOptions['mode']>('assistant');
   const startedAt = useRef(0);
   const tick = useRef<any>(null);
   const closeTimer = useRef<any>(null);
   const startTimer = useRef<any>(null);
   const capRef = useRef<number | null>(null);
+  const meterRef = useRef<Meter>({});
+  const resumedRef = useRef(false);
   // Which voice engine the backend put this session on: GPT-Live (delegation events) or Realtime mini (function calling, token usage).
   const engineRef = useRef<'live' | 'mini'>('live');
   const tokensRef = useRef<Record<string, number>>({ audio_in: 0, audio_in_cached: 0, text_in: 0, text_in_cached: 0, audio_out: 0, text_out: 0 });
   const isMini = () => engineRef.current === 'mini';
+  const controlled = () => meterRef.current.policy_mode === 'controls';
 
   const send = (ev: any) => {
     if (dc.current && dc.current.readyState === 'open') dc.current.send(JSON.stringify(ev));
@@ -94,35 +111,57 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     : send({ type: 'session.thinking.append', event_id: `n_${Date.now()}`, delegation_id: null, content: text });
   const sinceStart = () => (startedAt.current ? Date.now() - startedAt.current : 0);
 
+  // Every batch is also the server's metering heartbeat; its answer can carry a stop directive (pool spent) with the engine to continue on.
+  const post = async (id: string, batch: any[]) => {
+    try {
+      const r = await api.post(`/live-voice/${id}/events`, { events: batch });
+      return r.data || {};
+    } catch { return {}; }
+  };
   const flush = useCallback(async () => {
     if (!liveId.current || queue.current.length === 0) return;
+    const id = liveId.current;
     const batch = queue.current.splice(0, 400);
-    try { await api.post(`/live-voice/${liveId.current}/events`, { events: batch }); } catch { /* best effort */ }
+    const r = await post(id, batch);
+    if (r.stop && id === liveId.current && !finalized.current && !handing.current) onServerStop(r.stop, r.fallback_engine || null);
   }, []);
 
-  const cleanup = useCallback(() => {
+  const clearTimers = () => {
     [flushTimer, idleTimer, tick, closeTimer, startTimer].forEach(t => { if (t.current) { clearTimeout(t.current); clearInterval(t.current); t.current = null; } });
-    mic.current?.getTracks().forEach((t: any) => t.stop());
-    mic.current = null;
+  };
+  // Drop the provider connection but keep the microphone (handoff); `cleanup` drops everything (end of the conversation).
+  const dropTransport = () => {
     try { dc.current?.close(); } catch { /* noop */ }
     try { pc.current?.close(); } catch { /* noop */ }
     dc.current = null;
     pc.current = null;
     detachAudio.current?.();
     detachAudio.current = null;
+  };
+  const cleanup = useCallback(() => {
+    clearTimers();
+    mic.current?.getTracks().forEach((t: any) => t.stop());
+    mic.current = null;
+    dropTransport();
     stopAudioSession();
   }, []);
 
-  const queueRow = (row: CaptionRow) => queue.current.push({ type: 'transcript', role: row.role, text: row.text, start_ms: row.start_ms, end_ms: row.end_ms });
+  const queueRow = (row: CaptionRow) => {
+    if (queuedRowId.current === row.id) return;
+    queuedRowId.current = row.id;
+    queue.current.push({ type: 'transcript', role: row.role, text: row.text, start_ms: row.start_ms, end_ms: row.end_ms });
+  };
 
   const finish = useCallback((reason: string, secs?: number) => {
     if (finalized.current) return;
     finalized.current = true;
+    handing.current = false;
     const last = rowsRef.current[rowsRef.current.length - 1];
     if (last) queueRow(last);
     const s = secs ?? secondsRef.current;
-    queue.current.push({ type: 'closed', reason, seconds: s, tokens: isMini() ? { ...tokensRef.current } : undefined });
+    if (liveId.current) queue.current.push({ type: 'closed', reason, seconds: s, tokens: isMini() ? { ...tokensRef.current } : undefined });
     setCloseReason(reason);
+    if (CAP_REASONS.includes(reason)) setOfferText(true);
     setState('ended');
     flush();
     cleanup();
@@ -130,6 +169,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
 
   const stop = useCallback((reason = 'close_requested') => {
     if (finalized.current) return;
+    if (handing.current) { finish(reason); return; }
     if (isMini() || !dc.current || dc.current.readyState !== 'open') { finish(reason); return; }
     setState('ending');
     setCloseReason(reason);
@@ -141,6 +181,18 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => stop('idle'), idleCloseS.current * 1000);
   }, [stop]);
+
+  // The pool for this engine is spent. Premium -> continue on the backup engine; backup (or nothing to fall back to) -> end and offer text.
+  const onServerStop = (reason: string, fallback: string | null) => {
+    if (finalized.current || handing.current) return;
+    if (fallback) { handoff(reason); return; }
+    stop(reason === 'premium_cap' ? 'voice_cap' : reason);
+  };
+  const capHit = () => {
+    if (!controlled()) { stop('daily_cap'); return; }
+    if (meterRef.current.role === 'premium') handoff('premium_cap');
+    else stop('backup_cap');
+  };
 
   const appendCaption = (role: 'rep' | 'assistant', delta: string, start_ms: number, end_ms: number) => {
     const list = rowsRef.current;
@@ -203,6 +255,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     const greet = greetInstruction.current || `Greet the rep immediately in English without waiting for them to speak. Say, in your own words: "${greeting.current}". Then pause and listen.`;
     if (isMini()) send({ type: 'response.create', response: { instructions: greet } });
     else send({ type: 'session.instructions.append', event_id: 'greet_1', delegation_id: null, content: greet });
+    if (resumedRef.current) { setNote(STANDARD_VOICE_NOTE); setWorking(''); }
     if (openAtStart.current) {
       const target = openAtStart.current; openAtStart.current = null;
       setTimeout(() => { try { onOpenRef.current?.(target); } catch { /* best effort */ } }, 1500);
@@ -211,12 +264,14 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       const s = Math.round(sinceStart() / 1000);
       if (isMini()) {
         secondsRef.current = s;
-        setSeconds(s);
-        if (capRef.current !== null && s >= capRef.current) stop('daily_cap');
-      } else if (!secondsRef.current) setSeconds(s);
+        setSegSeconds(s);
+        setSeconds(carriedRef.current + s);
+        if (capRef.current !== null && s >= capRef.current) capHit();
+      } else if (!secondsRef.current) { setSegSeconds(s); setSeconds(carriedRef.current + s); }
     }, 1000);
     flushTimer.current = setInterval(() => {
-      if (isMini()) queue.current.push({ type: 'usage', seconds: secondsRef.current, tokens: { ...tokensRef.current } });
+      // mini: seconds + tokens; GPT-Live: the last provider seconds. Either way the server gets a heartbeat and can answer with a stop.
+      queue.current.push({ type: 'usage', seconds: secondsRef.current, tokens: isMini() ? { ...tokensRef.current } : undefined });
       flush();
     }, 6000);
     resetIdle();
@@ -277,13 +332,15 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       case 'session.usage.updated': {
         const s = Number(ev.usage?.seconds || 0);
         secondsRef.current = s;
-        setSeconds(s);
+        setSegSeconds(s);
+        setSeconds(carriedRef.current + s);
         queue.current.push({ type: 'usage', seconds: s });
-        if (capRef.current !== null && s >= capRef.current) stop('daily_cap');
+        if (capRef.current !== null && s >= capRef.current) capHit();
         break;
       }
       case 'session.closed':
         if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+        if (handing.current) break; // we closed it ourselves to switch engines
         finish(ev.reason || 'close_requested', Number(ev.usage?.seconds ?? secondsRef.current));
         break;
       case 'error': {
@@ -297,74 +354,130 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     }
   };
 
+  // Open one provider session over a fresh peer connection. The mic track is reused when it already exists (handoff).
+  const connect = async (opts: LiveOptions, resume?: { from: string; reason: string }) => {
+    const rtc = getRtc();
+    if (!rtc) throw new Error(LIVE_UNSUPPORTED_BODY);
+    const connection = new rtc.PeerConnection();
+    pc.current = connection;
+    detachAudio.current = attachRemoteAudio(connection);
+    if (!mic.current) mic.current = await rtc.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } as any });
+    mic.current.getAudioTracks().forEach((t: any) => connection.addTrack(t, mic.current));
+    const channel = connection.createDataChannel('oai-events');
+    dc.current = channel;
+    channel.addEventListener('message', (e: any) => { if (dc.current === channel) onMessage(typeof e.data === 'string' ? e.data : String(e.data ?? '')); });
+    channel.addEventListener('close', () => { if (dc.current === channel && !finalized.current && !handing.current) finish('connection_lost'); });
+    connection.addEventListener('connectionstatechange', () => {
+      if (pc.current !== connection || handing.current) return;
+      if (!['failed', 'disconnected'].includes(connection.connectionState) || finalized.current) return;
+      if (!startedAt.current) {
+        queue.current.push({ type: 'error', message: `ICE ${connection.connectionState} before session.started (ice: ${connection.iceConnectionState}, gathering: ${connection.iceGatheringState})` });
+        setError(NO_PICKUP_BODY); setState('error');
+      }
+      finish(startedAt.current ? 'connection_lost' : 'no_start');
+    });
+    const offer = await connection.createOffer();
+    await connection.setLocalDescription(offer);
+    if (connection.iceGatheringState !== 'complete') {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => { connection.removeEventListener('icegatheringstatechange', onState); reject(new Error('Timed out while gathering ICE candidates')); }, 10000);
+        function onState() {
+          if (connection.iceGatheringState !== 'complete') return;
+          clearTimeout(timeout);
+          connection.removeEventListener('icegatheringstatechange', onState);
+          resolve();
+        }
+        connection.addEventListener('icegatheringstatechange', onState);
+        onState();
+      });
+    }
+    const sdp = connection.localDescription?.sdp;
+    if (!sdp) throw new Error('Missing local SDP offer');
+    const r = await api.post('/live-voice/session', { mode: opts.mode, sdp, overrides: opts.overrides || null, contact_id: opts.contactId || null, resume_from: resume?.from || null, reason: resume?.reason || null }, { timeout: 40000 });
+    if (finalized.current || pc.current !== connection) {
+      // the rep ended the conversation while this session was being set up: give its reservation straight back
+      try { connection.close(); } catch { /* noop */ }
+      post(r.data.live_id, [{ type: 'closed', reason: 'close_requested', seconds: 0 }]);
+      return;
+    }
+    liveId.current = r.data.live_id;
+    engineRef.current = r.data.engine === 'mini' ? 'mini' : 'live';
+    meterRef.current = r.data.meter || {};
+    resumedRef.current = !!resume;
+    tokensRef.current = { audio_in: 0, audio_in_cached: 0, text_in: 0, text_in_cached: 0, audio_out: 0, text_out: 0 };
+    secondsRef.current = 0;
+    startedAt.current = 0;
+    queuedRowId.current = '';
+    greeting.current = r.data.greeting || 'Hey, it is Jessi.';
+    greetInstruction.current = r.data.greet_instruction || '';
+    openAtStart.current = r.data.open?.kind ? (r.data.open as OpenTarget) : null;
+    idleCloseS.current = Number(r.data.idle_close_s || 25);
+    capRef.current = r.data.cap_left_s ?? null;
+    setCapLeft(capRef.current);
+    setVoice(r.data.voice || '');
+    setEngine(engineRef.current);
+    await connection.setRemoteDescription(rtc.answer(r.data.sdp));
+    startTimer.current = setTimeout(() => {
+      if (finalized.current || pc.current !== connection) return;
+      queue.current.push({ type: 'error', message: `no session.started after 20 s (engine: ${engineRef.current}, pc: ${connection.connectionState}, ice: ${connection.iceConnectionState}, dc: ${channel.readyState})` });
+      setError(NO_PICKUP_BODY); setState('error'); finish('no_start');
+    }, 20000);
+  };
+
+  // Server-driven engine switch: settle the old session first (its reservation is released before the new one is taken), keep the mic,
+  // reconnect to the engine the server picks, seeded with the conversation so far. Nothing left anywhere -> end and offer text.
+  const handoff = async (reason: string) => {
+    if (handing.current || finalized.current || !liveId.current) return;
+    handing.current = true;
+    const oldId = liveId.current;
+    setState('switching');
+    setWorking('Switching voice line');
+    clearTimers();
+    const last = rowsRef.current[rowsRef.current.length - 1];
+    if (last) queueRow(last);
+    queue.current.push({ type: 'closed', reason, seconds: secondsRef.current, tokens: isMini() ? { ...tokensRef.current } : undefined });
+    const batch = queue.current.splice(0, 400);
+    dropTransport();
+    await post(oldId, batch);
+    carriedRef.current += Math.max(secondsRef.current, Math.round(sinceStart() / 1000));
+    try {
+      await connect(optsRef.current, { from: oldId, reason });
+      setHandoffs(n => n + 1);
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const detail = e?.response?.data?.detail;
+      handing.current = false;
+      liveId.current = '';
+      if (status === 429) { finish('voice_cap'); return; }
+      setError(typeof detail === 'string' ? detail : (e?.message || 'Could not switch the voice line'));
+      finish('handoff_failed');
+      return;
+    }
+    handing.current = false;
+  };
+
   const start = useCallback(async (opts: LiveOptions) => {
     const rtc = getRtc();
     if (!rtc) { setError(LIVE_UNSUPPORTED_BODY); setState('error'); return; }
+    optsRef.current = opts;
     modeRef.current = opts.mode;
     finalized.current = false;
+    handing.current = false;
     rowsRef.current = [];
     queue.current = [];
     secondsRef.current = 0;
+    carriedRef.current = 0;
     startedAt.current = 0;
     liveId.current = '';
-    setRows([]); setError(''); setSeconds(0); setWorking(''); setCloseReason(''); setState('connecting');
+    meterRef.current = {};
+    setRows([]); setError(''); setSeconds(0); setSegSeconds(0); setWorking(''); setCloseReason(''); setNote(''); setOfferText(false); setHandoffs(0); setState('connecting');
     try {
       startAudioSession();
-      const connection = new rtc.PeerConnection();
-      pc.current = connection;
-      detachAudio.current = attachRemoteAudio(connection);
-      mic.current = await rtc.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } as any });
-      mic.current.getAudioTracks().forEach((t: any) => connection.addTrack(t, mic.current));
-      const channel = connection.createDataChannel('oai-events');
-      dc.current = channel;
-      channel.addEventListener('message', (e: any) => onMessage(typeof e.data === 'string' ? e.data : String(e.data ?? '')));
-      channel.addEventListener('close', () => { if (!finalized.current) finish('connection_lost'); });
-      connection.addEventListener('connectionstatechange', () => {
-        if (!['failed', 'disconnected'].includes(connection.connectionState) || finalized.current) return;
-        if (!startedAt.current) {
-          queue.current.push({ type: 'error', message: `ICE ${connection.connectionState} before session.started (ice: ${connection.iceConnectionState}, gathering: ${connection.iceGatheringState})` });
-          setError(NO_PICKUP_BODY); setState('error');
-        }
-        finish(startedAt.current ? 'connection_lost' : 'no_start');
-      });
-      const offer = await connection.createOffer();
-      await connection.setLocalDescription(offer);
-      if (connection.iceGatheringState !== 'complete') {
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => { connection.removeEventListener('icegatheringstatechange', onState); reject(new Error('Timed out while gathering ICE candidates')); }, 10000);
-          function onState() {
-            if (connection.iceGatheringState !== 'complete') return;
-            clearTimeout(timeout);
-            connection.removeEventListener('icegatheringstatechange', onState);
-            resolve();
-          }
-          connection.addEventListener('icegatheringstatechange', onState);
-          onState();
-        });
-      }
-      const sdp = connection.localDescription?.sdp;
-      if (!sdp) throw new Error('Missing local SDP offer');
-      const r = await api.post('/live-voice/session', { mode: opts.mode, sdp, overrides: opts.overrides || null, contact_id: opts.contactId || null }, { timeout: 40000 });
-      liveId.current = r.data.live_id;
-      engineRef.current = r.data.engine === 'mini' ? 'mini' : 'live';
-      tokensRef.current = { audio_in: 0, audio_in_cached: 0, text_in: 0, text_in_cached: 0, audio_out: 0, text_out: 0 };
-      greeting.current = r.data.greeting || 'Hey, it is Jessi.';
-      greetInstruction.current = r.data.greet_instruction || '';
-      openAtStart.current = r.data.open?.kind ? (r.data.open as OpenTarget) : null;
-      idleCloseS.current = Number(r.data.idle_close_s || 25);
-      capRef.current = r.data.cap_left_s ?? null;
-      setCapLeft(capRef.current);
-      setVoice(r.data.voice || '');
-      setEngine(engineRef.current);
-      await connection.setRemoteDescription(rtc.answer(r.data.sdp));
-      startTimer.current = setTimeout(() => {
-        if (finalized.current) return;
-        queue.current.push({ type: 'error', message: `no session.started after 20 s (engine: ${engineRef.current}, pc: ${connection.connectionState}, ice: ${connection.iceConnectionState}, dc: ${channel.readyState})` });
-        setError(NO_PICKUP_BODY); setState('error'); finish('no_start');
-      }, 20000);
+      await connect(opts);
     } catch (e: any) {
       const detail = e?.response?.data?.detail || e?.message || 'Could not start the conversation';
       setError(typeof detail === 'string' ? detail : JSON.stringify(detail));
+      if (e?.response?.status === 429) setOfferText(true);
       setState('error');
       finalized.current = true;
       cleanup();
@@ -373,7 +486,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
 
   useEffect(() => () => { if (!finalized.current && liveId.current) finish('unmounted'); else cleanup(); }, [cleanup, finish]);
 
-  return { state, rows, error, seconds, working, capLeft, closeReason, voice, engine, start, stop, liveId: liveId.current };
+  return { state, rows, error, seconds, segSeconds, working, capLeft, closeReason, voice, engine, note, offerText, handoffs, start, stop, liveId: liveId.current };
 }
 
 export type LiveJessi = ReturnType<typeof useLiveJessi>;

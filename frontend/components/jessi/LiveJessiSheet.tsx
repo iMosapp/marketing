@@ -5,17 +5,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GOLD, GREEN, RED, tid } from '../scripts/shared';
 import type { LiveJessi } from '../../hooks/useLiveJessi';
 
-type Props = { visible: boolean; onClose: () => void; live: LiveJessi; title?: string; who?: string; hint?: string; onRetry: () => void; onCollapse?: () => void };
+type Props = { visible: boolean; onClose: () => void; live: LiveJessi; title?: string; who?: string; hint?: string; onRetry: () => void; onCollapse?: () => void; onAskText?: () => void };
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-export const REASONS: Record<string, string> = { idle: 'Closed after a quiet spell', daily_cap: "Today's minutes are used up", connection_lost: 'The connection dropped', close_requested: 'Conversation ended', expired: 'Session limit reached', content: 'Ended by the safety filter', no_start: 'did not pick up', unmounted: 'Closed' };
+const capLabel = (leftS: number) => (leftS < 60 ? 'Under a minute left today' : `${Math.floor(leftS / 60)} min left today`);
+export const REASONS: Record<string, string> = { idle: 'Closed after a quiet spell', daily_cap: "Today's minutes are used up", voice_cap: "Today's voice minutes are used up", backup_cap: "Today's voice minutes are used up",
+  premium_cap: 'Premium minutes used up', connection_lost: 'The connection dropped', close_requested: 'Conversation ended', expired: 'Session limit reached', content: 'Ended by the safety filter',
+  no_start: 'did not pick up', unmounted: 'Closed', handoff_failed: 'Could not switch the voice line', server_kill: 'Stopped by the server' };
 
 export const statusText = (live: LiveJessi, who = 'Jessi') =>
-  live.state === 'connecting' ? `Connecting to ${who}` : live.state === 'ending' ? 'Wrapping up' : live.state === 'live' ? (live.working || 'Listening') : live.state === 'ended' ? (live.closeReason === 'no_start' ? `${who} did not pick up` : REASONS[live.closeReason] || 'Conversation ended') : 'Could not connect';
+  live.state === 'connecting' ? `Connecting to ${who}` : live.state === 'switching' ? "Switching to Jessi's standard voice" : live.state === 'ending' ? 'Wrapping up' : live.state === 'live' ? (live.working || 'Listening') : live.state === 'ended' ? (live.closeReason === 'no_start' ? `${who} did not pick up` : REASONS[live.closeReason] || 'Conversation ended') : 'Could not connect';
 
 // Full-screen live conversation: gold orb, live captions, one End button. The session itself lives in LiveJessiProvider,
 // so shrinking this sheet (chevron) keeps Jessi talking while the app navigates underneath.
-export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi', who = 'Jessi', hint, onRetry, onCollapse }: Props) => {
+export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi', who = 'Jessi', hint, onRetry, onCollapse, onAskText }: Props) => {
   const pulse = useRef(new Animated.Value(1)).current;
   const scroll = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
@@ -31,9 +34,10 @@ export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi'
   }, [live.state, pulse]);
   useEffect(() => { scroll.current?.scrollToEnd({ animated: true }); }, [live.rows]);
 
-  const end = () => { if (live.state === 'live' || live.state === 'connecting') live.stop('close_requested'); else onClose(); };
-  const busy = live.state === 'connecting' || live.state === 'ending';
-  const canCollapse = !!onCollapse && (live.state === 'live' || live.state === 'connecting');
+  const end = () => { if (live.state === 'live' || live.state === 'connecting' || live.state === 'switching') live.stop('close_requested'); else onClose(); };
+  const busy = live.state === 'connecting' || live.state === 'ending' || live.state === 'switching';
+  const canCollapse = !!onCollapse && (live.state === 'live' || live.state === 'connecting' || live.state === 'switching');
+  const talking = live.state === 'live' || live.state === 'switching';
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={canCollapse ? onCollapse : end} presentationStyle="fullScreen">
@@ -60,7 +64,8 @@ export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi'
               {busy ? <ActivityIndicator color={GOLD} /> : <Ionicons name={live.state === 'ended' || live.state === 'error' ? 'checkmark' : 'mic'} size={38} color={live.state === 'live' ? '#0B0B0D' : GOLD} />}
             </View>
           </Animated.View>
-          {live.capLeft !== null && live.state === 'live' && <Text style={{ color: '#8E8E93', fontSize: 11, marginTop: 10 }} {...tid('live-jessi-cap')}>{Math.max(0, Math.floor((live.capLeft - live.seconds) / 60))} min left today</Text>}
+          {live.capLeft !== null && live.state === 'live' && <Text style={{ color: '#8E8E93', fontSize: 11, marginTop: 10 }} {...tid('live-jessi-cap')}>{capLabel(Math.max(0, live.capLeft - live.segSeconds))}{live.engine === 'mini' && live.handoffs > 0 ? ' on the standard voice' : ''}</Text>}
+          {!!live.note && talking && <Text style={{ color: GOLD, fontSize: 11, marginTop: 6 }} {...tid('live-jessi-note')}>{live.note}</Text>}
           {canCollapse && !hint && <Text style={{ color: '#5A5A5F', fontSize: 11, marginTop: 8 }} {...tid('live-jessi-collapse-hint')}>Say "pull up Sarah" or "open her thread" and the app follows along</Text>}
         </View>
 
@@ -75,13 +80,18 @@ export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi'
         </ScrollView>
 
         <View style={{ padding: 18, paddingBottom: Math.max(30, insets.bottom + 12), gap: 10 }}>
-          {(live.state === 'error' || live.state === 'ended') && (
+          {(live.state === 'error' || live.state === 'ended') && live.offerText && onAskText && (
+            <TouchableOpacity onPress={onAskText} style={{ borderRadius: 26, paddingVertical: 14, alignItems: 'center', backgroundColor: GOLD }} {...tid('live-jessi-ask-text')}>
+              <Text style={{ color: '#0B0B0D', fontWeight: '800', fontSize: 15 }}>Ask Jessi by text</Text>
+            </TouchableOpacity>
+          )}
+          {(live.state === 'error' || live.state === 'ended') && !live.offerText && (
             <TouchableOpacity onPress={onRetry} style={{ borderRadius: 26, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: `${GOLD}66` }} {...tid('live-jessi-retry')}>
               <Text style={{ color: GOLD, fontWeight: '800', fontSize: 15 }}>Talk again</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={end} disabled={live.state === 'ending'} style={{ borderRadius: 26, paddingVertical: 15, alignItems: 'center', backgroundColor: live.state === 'live' ? RED : '#1C1C1E', opacity: live.state === 'ending' ? 0.6 : 1 }} {...tid('live-jessi-end')}>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{live.state === 'live' || live.state === 'connecting' ? 'End conversation' : 'Close'}</Text>
+          <TouchableOpacity onPress={end} disabled={live.state === 'ending'} style={{ borderRadius: 26, paddingVertical: 15, alignItems: 'center', backgroundColor: talking ? RED : '#1C1C1E', opacity: live.state === 'ending' ? 0.6 : 1 }} {...tid('live-jessi-end')}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{talking || live.state === 'connecting' ? 'End conversation' : 'Close'}</Text>
           </TouchableOpacity>
         </View>
       </View>

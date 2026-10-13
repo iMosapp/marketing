@@ -219,6 +219,17 @@ async def ledger(request: Request, org_id: str = "", user_id: str = "", limit: i
     return {"segments": await vc.list_segments(get_db(), org_id or None, user_id or None, limit)}
 
 
+@router.get("/sessions/{live_id}/trail")
+async def session_trail(live_id: str, request: Request):
+    """Conversation audit trail (every engine segment, seconds, est. cost, cost basis, totals). Super admin, or the org admin of that account."""
+    db = get_db()
+    seg = await db[vc.LEDGER_COLL].find_one({"live_id": live_id, "kind": "segment"}, {"org_id": 1})
+    if not seg:
+        raise HTTPException(status_code=404, detail="No ledger for that session")
+    await _reader(request, db, seg.get("org_id") or "")
+    return await vc.trail(db, live_id)
+
+
 @router.post("/watchdog")
 async def run_watchdog(request: Request):
     await _super(request)

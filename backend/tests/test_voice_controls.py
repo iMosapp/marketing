@@ -55,8 +55,8 @@ def events(tok, live_id, evs):
 
 
 def backdate(live_id, seconds):
-    """Pretend the session started `seconds` ago (the server meters on its own clock)."""
-    S["mongo"].live_sessions.update_one({"live_id": live_id}, {"$set": {"started_at": datetime.now(timezone.utc) - timedelta(seconds=seconds)}})
+    """Pretend the session started `seconds` ago (the server meters on its own clock; the half second absorbs request latency up to 1.5 s)."""
+    S["mongo"].live_sessions.update_one({"live_id": live_id}, {"$set": {"started_at": datetime.now(timezone.utc) - timedelta(seconds=seconds - 0.5)}})
 
 
 def res_doc(uid):
@@ -233,10 +233,10 @@ async def test_premium_cap_stops_and_backup_takes_over():
     assert me["premium_left_s"] == 0 and me["premium_reserved_s"] == 60 and me["next_engine"] == "mini", "the whole minute is held by the open session"
     # 40 s in: settled 40, 20 s headroom, no more slices available -> warning, no stop
     backdate(live_id, 40)
-    st, ev = events(tok, live_id, [{"type": "transcript", "role": "rep", "text": "Who should I call today?"}, {"type": "usage", "seconds": 38}])
-    assert st == 200 and ev["stop"] is None and ev["left_s"] == 20 and ev["seconds"] == 38, ev
+    st, ev = events(tok, live_id, [{"type": "transcript", "role": "rep", "text": "Who should I call today?"}, {"type": "usage", "seconds": 40}])
+    assert st == 200 and ev["stop"] is None and ev["left_s"] == 20 and ev["seconds"] == 40, ev
     seg = seg_of(live_id)
-    assert seg["settled_s"] == 40 and seg["billable_s"] == 40 and seg["client_s"] == 38 and seg.get("cap_warning") is True and "premium_100" in seg["thresholds_hit"] and "premium_80" in seg["thresholds_hit"]
+    assert seg["settled_s"] == 40 and seg["billable_s"] == 40 and seg["client_s"] == 40 and seg.get("cap_warning") is True and "premium_100" in seg["thresholds_hit"] and "premium_80" in seg["thresholds_hit"]
     r = res_doc(uid)
     assert r["premium_used_s"] == 40 and r["premium_reserved_s"] == 20
     # 70 s in: the reservation is exhausted and nothing is left -> stop premium_cap, backup offered, overrun counted

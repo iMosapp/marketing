@@ -28,6 +28,9 @@ SLICE_S = 60             # seconds reserved per step; a device never holds more 
 MIN_START_S = 20         # do not start an engine with less than this left
 HEARTBEAT_STALE_S = 150  # no client event for this long -> watchdog finalizes the segment (GPT-Live reports usage about once a minute)
 GRACE_S = 30             # seconds added past the last heartbeat when finalizing an unconfirmed segment
+STOP_GRACE_S = 20        # a session told to stop that is still open after this long is closed on the provider side (kill switch)
+KILL_MAX_ATTEMPTS = 3
+CONFIRMED_CLOSE_REASONS = ("close_requested", "idle", "daily_cap", "premium_cap", "backup_cap", "voice_cap", "handoff")
 ENGINE_ROLE = {"live": "premium", "mini": "backup"}
 TEST_EMAIL_SUFFIX = "@invalid.imonsocial.test"
 
@@ -321,17 +324,19 @@ async def resolve(db, user: dict, policy: dict) -> dict:
     prem_left = user_prem_allow - used(res, "premium")
     back_left = user_back_allow - used(res, "backup")
 
-    # account caps and budgets (shared pools); an override bypasses the shared minute caps / soft budget only with super-admin authorization
+    # account caps and budgets (shared pools); an override bypasses the shared minute caps / soft budget only with super-admin authorization.
+    # Seconds other sessions on this account are holding right now (reserved, not yet settled) already count against every shared pool.
+    acct_reserved = int(aday.get("premium_reserved_s") or 0)
     acct_prem_left = None
     if policy["account_daily_premium_min"] is not None:
         acct_prem_left = policy["account_daily_premium_min"] * 60 - used(aday, "premium")
         limits.append("account_daily_premium")
     if policy["account_monthly_premium_min"] is not None:
-        v = policy["account_monthly_premium_min"] * 60 - int(amonth.get("premium_s") or 0)
+        v = policy["account_monthly_premium_min"] * 60 - int(amonth.get("premium_s") or 0) - acct_reserved
         acct_prem_left = v if acct_prem_left is None else min(acct_prem_left, v)
         limits.append("account_monthly_premium")
     if policy["monthly_budget_usd"] is not None:
-        v = _usd_to_s(policy["monthly_budget_usd"] - float(amonth.get("est_cost_usd") or 0), "live")
+        v = _usd_to_s(policy["monthly_budget_usd"] - float(amonth.get("est_cost_usd") or 0), "live") - acct_reserved
         acct_prem_left = v if acct_prem_left is None else min(acct_prem_left, v)
         limits.append("monthly_budget")
     bypass_shared = ov["super_admin_authorized"] or _uncapped(user)
@@ -339,11 +344,11 @@ async def resolve(db, user: dict, policy: dict) -> dict:
         prem_left = min(prem_left, acct_prem_left)
     hard_left = None
     if policy["hard_premium_cap_usd"] is not None:  # the hard $ cap binds everyone, authorized or not
-        hard_left = _usd_to_s(policy["hard_premium_cap_usd"] - float(amonth.get("premium_cost_usd") or 0), "live")
+        hard_left = _usd_to_s(policy["hard_premium_cap_usd"] - float(amonth.get("premium_cost_usd") or 0), "live") - acct_reserved
         limits.append("hard_premium_cap")
     acct_back_left = None
     if policy["account_monthly_backup_usd"] is not None:
-        acct_back_left = _usd_to_s(policy["account_monthly_backup_usd"] - float(amonth.get("backup_cost_usd") or 0), "mini")
+        acct_back_left = _usd_to_s(policy["account_monthly_backup_usd"] - float(amonth.get("backup_cost_usd") or 0), "mini") - int(aday.get("backup_reserved_s") or 0)
         if not bypass_shared:
             back_left = min(back_left, acct_back_left)
         limits.append("account_monthly_backup")
@@ -378,7 +383,7 @@ def pick_engine(policy: dict, eff: dict) -> Optional[str]:
 
 
 def cap_message(eff: dict) -> str:
-    if "premium_disabled" in eff["limits"] and eff["backup_left_s"] < MIN_START_S:
+    if eff["premium_allowance_s"] <= 0 and eff["backup_allowance_s"] <= 0:
         return "Jessi's voice is switched off for your account. Ask your manager."
     return "You have used today's Jessi voice minutes. It resets at midnight your time."
 
@@ -481,8 +486,8 @@ async def start(db, user: dict, policy: dict) -> dict:
 
 # ── session metering (called from live_voice) ─────────────────────────────────
 async def open_segment(db, live: dict, eff: Optional[dict], engine: str, reserved_s: int, policy_mode: str, device_id: Optional[str] = None,
-                       reconnect_of: Optional[str] = None, fallback_reason: Optional[str] = None) -> dict:
-    seg = {"org_id": eff["org_id"] if eff else live.get("org_id"), "user_id": live["user_id"], "live_id": live["live_id"], "segment_no": 1, "kind": "segment",
+                       reconnect_of: Optional[str] = None, fallback_reason: Optional[str] = None, segment_no: int = 1) -> dict:
+    seg = {"org_id": eff["org_id"] if eff else live.get("org_id"), "user_id": live["user_id"], "live_id": live["live_id"], "segment_no": segment_no, "kind": "segment",
            "engine": engine, "model": live.get("model"), "role": ENGINE_ROLE.get(engine), "mode": live.get("mode"), "policy_mode": policy_mode,
            "started_at": live["started_at"], "ended_at": None, "status": "open", "billable_s": 0, "client_s": None, "tokens": None, "est_cost_usd": 0.0,
            "actual_cost_usd": None, "cost_basis": "server_clock" if engine == "live" else "client_report", "reconciled": False, "unconfirmed": True,
@@ -511,7 +516,7 @@ async def on_heartbeat(db, live: dict, client_seconds: Optional[int], tokens: Op
     tokens = tokens or seg.get("tokens")
     new_cost = est_cost(engine, elapsed, tokens)
     out = {"billable_s": elapsed, "est_cost_usd": new_cost, "policy_mode": seg.get("policy_mode")}
-    sets = {"billable_s": elapsed, "est_cost_usd": new_cost, "heartbeat_at": now, "unconfirmed": (not closing) or close_reason not in ("close_requested", "idle", "daily_cap", "premium_cap", "backup_cap")}
+    sets = {"billable_s": elapsed, "est_cost_usd": new_cost, "heartbeat_at": now, "unconfirmed": (not closing) or close_reason not in CONFIRMED_CLOSE_REASONS}
     if client_seconds is not None:
         sets["client_s"] = int(client_seconds)
     if tokens:
@@ -591,39 +596,101 @@ def _pct_hits(eff: dict, engine: str, already: list) -> list:
     return hits
 
 
+async def _finalize(db, seg: dict, billable: int, stop_reason: str, extra: Optional[dict] = None, cost_basis: Optional[str] = None):
+    """Close a segment from the server side: settle what was spoken against the reservation, release the rest, close the live_sessions row."""
+    cost = est_cost(seg["engine"], billable, seg.get("tokens"))
+    sets = {"status": "closed", "ended_at": _now(), "stop_reason": stop_reason, "billable_s": billable, "est_cost_usd": cost, "unconfirmed": cost_basis != "provider_usage", **(extra or {})}
+    if cost_basis:
+        sets["cost_basis"] = cost_basis
+    if seg.get("policy_mode") == "controls":
+        settled = int(seg.get("settled_s") or 0)
+        reserved = int(seg.get("reserved_s") or 0)
+        delta = max(0, billable - settled)
+        settle_s = min(delta, max(0, reserved - settled))
+        overrun = delta - settle_s
+        await settle(db, seg["org_id"], seg["user_id"], seg["day"], seg["month"], seg["engine"], settle_s, round(cost - float(seg.get("est_cost_usd") or 0), 4))
+        if overrun:
+            role = ENGINE_ROLE[seg["engine"]]
+            await db[RES_COLL].update_one({"_id": f"{seg['org_id']}:{seg['user_id']}:{seg['day']}"}, {"$inc": {f"{role}_used_s": overrun}})
+            await db[ACCT_DAY_COLL].update_one({"_id": f"{seg['org_id']}:{seg['day']}"}, {"$inc": {f"{role}_used_s": overrun}})
+            await db[ACCT_MONTH_COLL].update_one({"_id": f"{seg['org_id']}:{seg['month']}"}, {"$inc": {f"{role}_s": overrun}})
+            sets["overrun_s"] = int(seg.get("overrun_s") or 0) + overrun
+        released = max(0, reserved - settled - settle_s)
+        await release(db, seg["org_id"], seg["user_id"], seg["day"], seg["engine"], released)
+        sets["settled_s"] = settled + settle_s + overrun
+        sets["released_s"] = released
+    await db[LEDGER_COLL].update_one({"_id": seg["_id"]}, {"$set": sets})
+    await db.live_sessions.update_one({"live_id": seg["live_id"], "status": "open"}, {"$set": {"status": "closed", "close_reason": stop_reason, "ended_at": _now(), "seconds": billable, "cost_usd": cost, "meter.stop_reason": stop_reason, "updated_at": _now()}})
+
+
 async def watchdog(db) -> dict:
-    """Fail-safe for sessions that stopped reporting (tab killed, app backgrounded, network drop, server restart in between):
-    finalize the open segment at last heartbeat + GRACE_S, release the unspent reservation, flag it unconfirmed. Runs every minute."""
-    cutoff = _now() - timedelta(seconds=HEARTBEAT_STALE_S)
-    n = 0
-    async for seg in db[LEDGER_COLL].find({"kind": "segment", "status": "open", "heartbeat_at": {"$lt": cutoff}}):
+    """Fail-safes, run every minute. (1) Sessions that stopped reporting (tab killed, app backgrounded, network drop, server restart in
+    between): finalize at last heartbeat + GRACE_S, release the unspent reservation, flag unconfirmed. (2) Kill switch: a session that was
+    told to stop (pool gone, hard cap) and is still open after STOP_GRACE_S is closed on the provider side and finalized as server_kill."""
+    from services import live_voice as lv
+    now = _now()
+    n = killed = 0
+    async for seg in db[LEDGER_COLL].find({"kind": "segment", "status": "open", "heartbeat_at": {"$lt": now - timedelta(seconds=HEARTBEAT_STALE_S)}}):
         hb = _aware(seg.get("heartbeat_at") or seg["started_at"])
-        started = _aware(seg["started_at"])
-        billable = max(int(seg.get("billable_s") or 0), int((hb - started).total_seconds()) + GRACE_S)
-        cost = est_cost(seg["engine"], billable, seg.get("tokens"))
-        sets = {"status": "closed", "ended_at": _now(), "stop_reason": "stale_meter", "billable_s": billable, "est_cost_usd": cost, "unconfirmed": True, "watchdog_at": _now()}
-        if seg.get("policy_mode") == "controls":
-            settled = int(seg.get("settled_s") or 0)
-            reserved = int(seg.get("reserved_s") or 0)
-            delta = max(0, billable - settled)
-            settle_s = min(delta, max(0, reserved - settled))
-            await settle(db, seg["org_id"], seg["user_id"], seg["day"], seg["month"], seg["engine"], settle_s, round(cost - float(seg.get("est_cost_usd") or 0), 4))
-            await release(db, seg["org_id"], seg["user_id"], seg["day"], seg["engine"], max(0, reserved - settled - settle_s))
-            sets["settled_s"] = settled + settle_s
-            sets["released_s"] = max(0, reserved - settled - settle_s)
-        await db[LEDGER_COLL].update_one({"_id": seg["_id"]}, {"$set": sets})
-        await db.live_sessions.update_one({"live_id": seg["live_id"], "status": "open"}, {"$set": {"status": "closed", "close_reason": "stale_meter", "ended_at": _now(), "seconds": billable, "cost_usd": cost, "meter.stop_reason": "stale_meter", "updated_at": _now()}})
+        billable = max(int(seg.get("billable_s") or 0), int((hb - _aware(seg["started_at"])).total_seconds()) + GRACE_S)
+        await _finalize(db, seg, billable, "stale_meter", {"watchdog_at": now})
         n += 1
-    return {"finalized": n}
+    async for seg in db[LEDGER_COLL].find({"kind": "segment", "status": "open", "policy_mode": "controls", "stop_requested_at": {"$lt": now - timedelta(seconds=STOP_GRACE_S)}}):
+        attempts = int(seg.get("kill_attempts") or 0)
+        if attempts >= KILL_MAX_ATTEMPTS:
+            continue
+        live = await db.live_sessions.find_one({"live_id": seg["live_id"]}) or {"live_id": seg["live_id"], "engine": seg["engine"], "started_at": seg["started_at"]}
+        result = await lv.provider_close(live)
+        await db[LEDGER_COLL].update_one({"_id": seg["_id"]}, {"$inc": {"kill_attempts": 1}, "$set": {"kill_at": now, "kill_result": result}})
+        if not result.get("ok") and attempts + 1 < KILL_MAX_ATTEMPTS:
+            continue
+        billable = max(int(seg.get("billable_s") or 0), int((now - _aware(live.get("started_at") or seg["started_at"])).total_seconds()))
+        basis = None
+        if result.get("provider_seconds") is not None:
+            billable, basis = max(billable, int(result["provider_seconds"])), "provider_usage"
+        await _finalize(db, seg, billable, "server_kill", {"kill_attempts": attempts + 1, "kill_at": now, "kill_result": result}, basis)
+        killed += 1
+    return {"finalized": n, "killed": killed}
+
+
+async def trail(db, live_id: str) -> Optional[dict]:
+    """The whole conversation a session belongs to: every segment in order (engine, seconds, est. cost, cost basis, why it ended) with totals."""
+    first = await db[LEDGER_COLL].find_one({"live_id": live_id, "kind": "segment"})
+    if not first:
+        return None
+    seen = {first["live_id"]}
+    chain = [first]
+    cur = first
+    while cur.get("reconnect_of") and cur["reconnect_of"] not in seen:
+        prev = await db[LEDGER_COLL].find_one({"live_id": cur["reconnect_of"], "kind": "segment"})
+        if not prev:
+            break
+        seen.add(prev["live_id"])
+        chain.insert(0, prev)
+        cur = prev
+    cur = first
+    while True:
+        nxt = await db[LEDGER_COLL].find_one({"reconnect_of": cur["live_id"], "kind": "segment", "live_id": {"$nin": list(seen)}})
+        if not nxt:
+            break
+        seen.add(nxt["live_id"])
+        chain.append(nxt)
+        cur = nxt
+    segs = [serialize_segment(s) for s in chain]
+    totals = {"segments": len(segs), "premium_s": sum(s["billable_s"] or 0 for s in segs if s["role"] == "premium"), "backup_s": sum(s["billable_s"] or 0 for s in segs if s["role"] == "backup"),
+              "est_cost_usd": round(sum(float(s["est_cost_usd"] or 0) for s in segs), 4), "engines": sorted({s["engine"] for s in segs}), "cost_basis": sorted({s["cost_basis"] for s in segs if s["cost_basis"]}),
+              "unconfirmed": any(s["unconfirmed"] for s in segs), "handoffs": sum(1 for s in segs if s["reconnect_of"]), "started_at": segs[0]["started_at"], "ended_at": segs[-1]["ended_at"], "open": any(s["status"] == "open" for s in segs)}
+    totals["total_s"] = totals["premium_s"] + totals["backup_s"]
+    return {"conversation_id": segs[0]["live_id"], "segments": segs, "totals": totals}
 
 
 # ── reads for the API ─────────────────────────────────────────────────────────
 def serialize_segment(s: dict) -> dict:
     out = {k: s.get(k) for k in ("org_id", "user_id", "live_id", "segment_no", "engine", "model", "role", "mode", "policy_mode", "status", "billable_s", "client_s", "tokens", "est_cost_usd",
                                  "actual_cost_usd", "cost_basis", "reconciled", "unconfirmed", "reserved_s", "settled_s", "overrun_s", "released_s", "slices", "fallback_reason", "reconnect_of",
-                                 "device_id", "fake_provider", "thresholds_hit", "stop_reason", "cap_warning", "day", "month")}
+                                 "device_id", "fake_provider", "thresholds_hit", "stop_reason", "cap_warning", "kill_attempts", "kill_result", "day", "month")}
     out["id"] = str(s["_id"])
-    for k in ("started_at", "ended_at", "heartbeat_at"):
+    for k in ("started_at", "ended_at", "heartbeat_at", "stop_requested_at", "kill_at"):
         v = s.get(k)
         out[k] = v.isoformat() if hasattr(v, "isoformat") else v
     return out

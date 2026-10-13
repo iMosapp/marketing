@@ -60,13 +60,19 @@ export const LiveJessiProvider = ({ children }: { children: React.ReactNode }) =
   }, []);
 
   const open = useCallback((l: LiveLaunch) => {
-    if (launchRef.current && (live.state === 'live' || live.state === 'connecting')) { setExpanded(true); return; }
+    if (launchRef.current && (live.state === 'live' || live.state === 'connecting' || live.state === 'switching')) { setExpanded(true); return; }
     launchRef.current = l;
     setLaunch(l);
     setTarget(null);
     setExpanded(true);
     live.start(l.options);
   }, [live]);
+
+  // Every voice pool is spent for today: hand the rep to the typed Ask Jessi.
+  const askText = useCallback(() => {
+    close();
+    setTimeout(() => { try { router.push('/jessie' as any); } catch { /* route missing on this platform */ } }, 150);
+  }, [close, router]);
 
   // Ended while shrunk: leave the pill up for a moment so the rep sees why, then clear it.
   useEffect(() => {
@@ -80,9 +86,9 @@ export const LiveJessiProvider = ({ children }: { children: React.ReactNode }) =
       {children}
       {launch && (
         <LiveJessiSheet visible={expanded} live={live} title={launch.title} who={launch.who} hint={launch.hint} onClose={close} onRetry={() => live.start(launch.options)}
-          onCollapse={() => setExpanded(false)} />
+          onCollapse={() => setExpanded(false)} onAskText={askText} />
       )}
-      {launch && !expanded && <LiveJessiPill live={live} target={target} who={launch.who} onExpand={() => setExpanded(true)} onEnd={() => (live.state === 'live' || live.state === 'connecting' ? live.stop('close_requested') : close())} />}
+      {launch && !expanded && <LiveJessiPill live={live} target={target} who={launch.who} onExpand={() => setExpanded(true)} onEnd={() => (live.state === 'live' || live.state === 'connecting' || live.state === 'switching' ? live.stop('close_requested') : close())} />}
     </LiveJessiContext.Provider>
   );
 };

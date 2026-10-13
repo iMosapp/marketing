@@ -10,7 +10,9 @@ type Stats = Record<string, { sessions: number; minutes: number; cost_usd: numbe
 
 const when = (iso: string) => { const d = new Date(iso); return `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`; };
 const mins = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-const REASON: Record<string, string> = { idle: 'closed after a quiet spell', stale: 'never closed, cut off after 3 h', connection_lost: 'connection dropped', close_requested: 'ended', daily_cap: 'hit the daily cap', expired: 'session limit', unmounted: 'screen closed', no_start: 'did not pick up', content: 'safety filter' };
+const REASON: Record<string, string> = { idle: 'closed after a quiet spell', stale: 'never closed, cut off after 3 h', stale_meter: 'stopped reporting, closed by the meter', connection_lost: 'connection dropped', close_requested: 'ended', daily_cap: 'hit the daily cap',
+  premium_cap: 'premium minutes used, switched to the standard voice', handoff: 'switched to the standard voice', backup_cap: 'standard-voice minutes used', voice_cap: 'all voice minutes used', server_kill: 'closed by the server (cap)',
+  expired: 'session limit', unmounted: 'screen closed', no_start: 'did not pick up', content: 'safety filter' };
 const kindOf = (r: Row) => r.mode === 'lab' ? 'Voice Lab audition' : r.mode === 'shopper' ? 'Shopper audition' : r.walkthrough ? 'Walk my day' : r.team ? 'Team today' : r.contact_name ? `Live · ${r.contact_name}` : 'Live · Home';
 const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
 

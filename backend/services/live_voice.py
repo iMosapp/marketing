@@ -5,6 +5,7 @@ the browser forwards each delegation with the running transcript, the brain here
 send a text, set a reminder, draft, or a plain answer), runs it against the rep's real data and returns a short,
 verified result that GPT-Live paraphrases aloud. Personality (voice, energy, pacing, playfulness, brevity) lives in
 settings.jessi_voice and is edited in the admin Voice Lab."""
+import asyncio
 import json
 import logging
 import os
@@ -348,17 +349,27 @@ def mini_cost(tokens: Optional[dict]) -> float:
 
 
 # ── session creation ──────────────────────────────────────────────────────────
-async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optional[dict] = None, contact_id: Optional[str] = None, device_id: Optional[str] = None) -> dict:
+async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optional[dict] = None, contact_id: Optional[str] = None, device_id: Optional[str] = None,
+                         resume_from: Optional[str] = None, reason: Optional[str] = None) -> dict:
     fake = bool((overrides or {}).get("fake_provider")) and vc.fake_provider_allowed(user)
-    reason = None if fake else configured()
-    if reason:
-        raise LiveUnavailable(reason)
+    reason_off = None if fake else configured()
+    if reason_off:
+        raise LiveUnavailable(reason_off)
     if mode not in MODES:
         raise ValueError("Unknown mode")
     cfg = await get_config(db)
     if mode == "lab" and overrides:
         cfg = clean_config(overrides, {k: cfg[k] for k in DEFAULTS})
     uid = str(user["_id"])
+    # Handoff: the previous session of this conversation is settled and its reservation released BEFORE anything new is reserved.
+    prev = None
+    if resume_from:
+        prev = await get_live(db, resume_from)
+        if not prev or prev.get("user_id") != uid or prev.get("mode") != mode:
+            raise LookupError("Nothing to resume")
+        if prev.get("status") == "open":
+            await record_events(db, prev, [{"type": "closed", "reason": "handoff", "seconds": prev.get("seconds") or 0}])
+        contact_id = contact_id or prev.get("contact_id")
     if user.get("store_id") and not user.get("store_name"):
         try:
             store = await db.stores.find_one({"_id": ObjectId(str(user["store_id"]))}, {"name": 1})
@@ -384,13 +395,16 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
     contact = await focus_contact(db, user, contact_id)
     shop = None
     agenda = None
-    if mode == "assistant" and (overrides or {}).get("walkthrough"):
+    team = None
+    if prev is not None:
+        agenda = prev.get("agenda")
+        team = (prev.get("team") or {}).get("digest") if prev.get("team") else None
+    elif mode == "assistant" and (overrides or {}).get("walkthrough"):
         from services import day_agenda
         agenda = await day_agenda.build(db, uid)
         if agenda and agenda[0].get("contact_id"):
             contact = await focus_contact(db, user, agenda[0]["contact_id"]) or contact
-    team = None
-    if mode == "assistant" and (overrides or {}).get("team_today"):
+    if prev is None and mode == "assistant" and (overrides or {}).get("team_today"):
         from services import team_today as tt
         if tt.is_manager(user):
             team = await tt.build(db, user)
@@ -425,6 +439,9 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         context += " TEAM DIGEST already pulled; the rep is a manager and asked for it. They can say a rep's name for that rep's full list or ask to nudge a rep about a customer."
     if agenda is not None:
         context += " DAY WALKTHROUGH, the stops in order: " + ("; ".join(f"{s['n']}. {s['name']} ({s['kind']}: {s['why']})" for s in agenda) if agenda else "none, the rep is caught up") + "."
+    hctx = _handoff_context(prev) if prev is not None else None
+    if hctx:
+        context += "\n\n" + hctx
     headers = {"Authorization": f"Bearer {(os.environ.get('OPENAI_API_KEY') or '').strip()}", "OpenAI-Safety-Identifier": f"imos-{uid[-8:]}"}
     resp = None
     if not fake:
@@ -465,32 +482,41 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         openai_id = (data.get("session") or {}).get("id")
     live_id = uuid.uuid4().hex[:12]
     policy_mode = "controls" if meter else "legacy"
+    segment_no = int(((prev or {}).get("meter") or {}).get("segment_no") or 1) + 1 if prev else 1
+    carry = {k: prev.get(k) for k in ("agenda_pos", "agenda_done", "agenda_skipped", "pending", "last_choices", "last_pick", "last_question_name", "mentions") if prev and prev.get(k) is not None}
     doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "org_id": org_id, "mode": mode, "engine": engine, "model": ENGINES[engine]["model"], "openai_session_id": openai_id, "voice": voice,
            "contact_id": str(contact["_id"]) if contact else None, "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None,
            "agenda": agenda, "agenda_pos": 0 if agenda is not None else None, "agenda_done": [], "agenda_skipped": [], "team": {"digest": team} if team is not None else None,
            "config": {k: cfg[k] for k in DEFAULTS}, "status": "open", "started_at": _now(), "ended_at": None, "seconds": 0, "cost_usd": 0.0, "tokens": None, "close_reason": None,
            "advisor_conversation_id": str(advisor_convo["_id"]) if advisor_convo else None, "device_id": device_id, "fake_provider": fake,
-           "meter": {"policy_mode": policy_mode, "role": vc.ENGINE_ROLE.get(engine), "reserved_s": meter["reserved_s"] if meter else 0, "fallback_reason": meter["fallback_reason"] if meter else None, "stop_reason": None},
-           "transcript": [], "delegations": [], "pending": None, "created_at": _now(), "updated_at": _now()}
+           "resumed_from": resume_from, "handoff_reason": reason if prev else None, "handoff_to": None, "handoff_context": hctx,
+           "meter": {"policy_mode": policy_mode, "role": vc.ENGINE_ROLE.get(engine), "reserved_s": meter["reserved_s"] if meter else 0, "fallback_reason": meter["fallback_reason"] if meter else None,
+                     "stop_reason": None, "segment_no": segment_no, "reconnect_of": resume_from},
+           "transcript": [], "delegations": [], "pending": None, "created_at": _now(), "updated_at": _now(), **carry}
     await db[COLL].insert_one(doc)
+    if prev is not None:
+        await db[COLL].update_one({"_id": prev["_id"]}, {"$set": {"handoff_to": live_id, "updated_at": _now()}})
     try:
-        await vc.open_segment(db, doc, meter["eff"] if meter else None, engine, meter["reserved_s"] if meter else 0, policy_mode, device_id, None, meter["fallback_reason"] if meter else None)
+        await vc.open_segment(db, doc, meter["eff"] if meter else None, engine, meter["reserved_s"] if meter else 0, policy_mode, device_id, resume_from,
+                              (meter["fallback_reason"] if meter else None) or (reason if prev else None), segment_no)
     except Exception as e:
         logger.warning(f"[Live] ledger open failed for {live_id}: {e}")
-    logger.info(f"[Live] {mode} session {live_id} for {uid} engine={engine} voice={voice} meter={policy_mode}" + (" FAKE" if fake else "") + (f" walkthrough={len(agenda)} stops" if agenda is not None else ""))
+    logger.info(f"[Live] {mode} session {live_id} for {uid} engine={engine} voice={voice} meter={policy_mode}" + (" FAKE" if fake else "") + (f" resumed_from={resume_from}" if prev else "") + (f" walkthrough={len(agenda)} stops" if agenda is not None else ""))
     greet = shop["greet_instruction"] if shop else None
     if advisor_convo:
         greet = "Greet the founder by first name in one short sentence and ask what is on their mind. Then wait."
     opened = None
-    if agenda is not None:
+    if agenda is not None and prev is None:
         from services import day_agenda
         greet = f'Open with this, in your own words but keep every name and detail: "{day_agenda.intro(user, agenda)}" Then stop and wait for the rep.'
         opened = day_agenda.open_target(agenda[0]) if agenda else None
-    if team is not None:
+    if team is not None and prev is None:
         from services import team_today as tt
         greet = f'Open with this, in your own words but keep every name and number: "{tt.spoken(team)}" Then stop and wait for the manager.'
         opened = {"kind": "team_today"}
-    return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": answer_sdp, "greeting": greeting_text(cfg, user, contact), "greet_instruction": greet,
+    if prev is not None:
+        greet = _handoff_greet(prev)
+    return {"live_id": live_id, "session_id": doc["openai_session_id"], "sdp": answer_sdp, "greeting": "" if prev else greeting_text(cfg, user, contact), "greet_instruction": greet, "resumed_from": resume_from,
             "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None, "open": opened, "advisor_conversation_id": doc["advisor_conversation_id"],
             "agenda": [{k: s.get(k) for k in ("n", "kind", "name", "first", "why", "contact_id")} for s in agenda] if agenda is not None else None,
             "idle_close_s": SHOPPER_IDLE_S if shop else cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": voice,
@@ -508,6 +534,59 @@ async def _abort_meter(db, meter: Optional[dict]) -> None:
     if meter and meter.get("reserved_s"):
         eff = meter["eff"]
         await vc.release(db, eff["org_id"], eff["user_id"], eff["day"], meter["engine"], meter["reserved_s"])
+
+
+HANDOFF_TURNS = 40
+HANDOFF_CHARS = 6000
+
+
+def _handoff_context(prev: dict) -> str:
+    """What the new engine needs to carry the conversation on as the same Jessi: the recent transcript, the pending yes/no, the walkthrough position."""
+    lines = [f"{'Jessi' if r.get('role') == 'assistant' else 'Rep'}: {str(r.get('text') or '').strip()[:400]}" for r in (prev.get("transcript") or [])[-HANDOFF_TURNS:] if r.get("text")]
+    convo = "\n".join(lines)[-HANDOFF_CHARS:]
+    out = ("THE VOICE LINE WAS JUST SWITCHED. You are the same Jessi, mid-conversation with this rep; nothing about you, your tools or the goal of the conversation changed. "
+           "Do not greet again, do not introduce yourself, do not repeat what was already said. Continue naturally from the conversation so far.\n"
+           f"CONVERSATION SO FAR (oldest first):\n{convo or '(nothing was said yet)'}")
+    pending = prev.get("pending")
+    if pending:
+        out += f"\nPENDING: you read back '{str(pending.get('content') or '')[:300]}' ({pending.get('type')} for {pending.get('name')}) and are waiting for the rep's yes or no. Re-ask in a few words if they do not answer."
+    if prev.get("agenda") is not None:
+        out += "\n" + _walkthrough_line(prev)
+    return out
+
+
+def _handoff_greet(prev: dict) -> str:
+    pending = prev.get("pending")
+    return ("The voice line was just switched and you are back with the rep. Say one short line, like 'Okay, still here, go ahead', then continue exactly where the conversation left off. "
+            "No greeting, no introduction, do not mention voices, models or minutes." + (" Re-ask the pending yes or no in a few words." if pending else ""))
+
+
+async def provider_close(live: dict) -> dict:
+    """Kill switch: close the provider session from the server (GPT-Live sideband `session.close`, Realtime `/hangup`). Best effort, never raises.
+    UNVERIFIED against the real provider until a keyed preview session exists; fake sessions report ok without any call."""
+    sid = str(live.get("openai_session_id") or "")
+    if live.get("fake_provider") or sid.startswith("fake_"):
+        return {"ok": True, "basis": "fake", "provider_seconds": None}
+    key = (os.environ.get("OPENAI_API_KEY") or "").strip()
+    if not key or not sid:
+        return {"ok": False, "error": "no API key or provider session id"}
+    try:
+        if (live.get("engine") or "live") == "mini":
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                r = await client.post(f"{REALTIME_URL}/{sid}/hangup", headers={"Authorization": f"Bearer {key}"})
+            return {"ok": r.status_code < 300 or r.status_code == 404, "status": r.status_code, "provider_seconds": None}
+        import websockets
+        async with websockets.connect(f"wss://api.openai.com/v1/live/sessions/{sid}/attach", additional_headers={"Authorization": f"Bearer {key}"}, open_timeout=10) as ws:
+            await ws.send(json.dumps({"type": "session.close"}))
+            loop = asyncio.get_event_loop()
+            deadline = loop.time() + 12
+            while loop.time() < deadline:
+                ev = json.loads(await asyncio.wait_for(ws.recv(), timeout=max(0.1, deadline - loop.time())))
+                if ev.get("type") == "session.closed":
+                    return {"ok": True, "closed_event": True, "provider_seconds": (ev.get("usage") or {}).get("seconds"), "reason": ev.get("reason")}
+            return {"ok": True, "closed_event": False, "provider_seconds": None}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
 
 
 async def record_events(db, live: dict, events: list) -> dict:
