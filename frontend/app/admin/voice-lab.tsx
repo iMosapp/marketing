@@ -12,7 +12,7 @@ import { SessionsList } from '../../components/jessi/SessionsList';
 import { useLiveJessiLauncher } from '../../components/jessi/LiveJessiProvider';
 import { liveSupported } from '../../hooks/useLiveJessi';
 
-type Cfg = { voice: string; engine: 'live' | 'mini'; mini_voice: string; mini_daily_cap_min: number; energy: number; pacing: number; playful: number; brevity: number; daily_cap_min: number; idle_close_s: number; greeting: string; contact_greeting: string; notes: string; updated_at?: string | null; updated_by?: string | null };
+type Cfg = { voice: string; engine: 'live' | 'mini'; mini_voice: string; mini_daily_cap_min: number; mini_vad: 'server' | 'semantic'; mini_vad_threshold: number; mini_silence_ms: number; mini_noise_reduction: 'near_field' | 'far_field' | 'off'; energy: number; pacing: number; playful: number; brevity: number; daily_cap_min: number; idle_close_s: number; greeting: string; contact_greeting: string; notes: string; updated_at?: string | null; updated_by?: string | null };
 type Engine = { model: string; label: string; price_per_min: number; note: string };
 type Meta = { voices: Voice[]; mini_voices: Voice[]; engines: Record<'live' | 'mini', Engine>; labels: Record<string, Record<string, string>>; configured: boolean; reason?: string | null; price_per_min: number; model: string; lab_live: boolean };
 const LEVELS: { key: keyof Cfg; label: string }[] = [{ key: 'energy', label: 'Energy' }, { key: 'pacing', label: 'Pacing' }, { key: 'playful', label: 'Playfulness' }, { key: 'brevity', label: 'Brevity' }];
@@ -69,6 +69,18 @@ export default function VoiceLab() {
       </View>
     </View>
   );
+  const WordPill = ({ label, value, opts, onPick, testID }: { label: string; value: string; opts: { v: string; l: string }[]; onPick: (v: string) => void; testID: string }) => (
+    <View style={{ flex: 1 }} {...tid(testID)}>
+      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text, marginBottom: 6 }}>{label}</Text>
+      <View style={{ flexDirection: 'row', gap: 6 }}>
+        {opts.map(o => (
+          <TouchableOpacity key={o.v} onPress={() => onPick(o.v)} style={{ flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: 'center', backgroundColor: o.v === value ? GOLD : colors.bg, borderWidth: 1, borderColor: o.v === value ? GOLD : colors.border }} {...tid(`${testID}-${o.v}`)}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: o.v === value ? '#0B0B0D' : colors.textSecondary }}>{o.l}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -112,6 +124,25 @@ export default function VoiceLab() {
             {cfg.engine === 'mini'
               ? <VoicePicker voices={meta.mini_voices} value={cfg.mini_voice} onChange={v => set({ mini_voice: v })} />
               : <VoicePicker voices={meta.voices} value={cfg.voice} onChange={v => set({ voice: v })} />}
+          </View>
+
+          <View style={card} {...tid('voice-mini-listening')}>
+            <Text style={h}>MINI LISTENING · WHEN A TURN STARTS</Text>
+            <WordPill label="Turn detection" value={cfg.mini_vad} opts={[{ v: 'server', l: 'Loudness (server VAD)' }, { v: 'semantic', l: 'Semantic' }]} onPick={v => set({ mini_vad: v as Cfg['mini_vad'] })} testID="voice-mini-vad" />
+            {cfg.mini_vad === 'server' && (
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+                <NumPill label="Loudness needed to start a turn" value={cfg.mini_vad_threshold} opts={[0.4, 0.5, 0.6, 0.7, 0.8]} onPick={n => set({ mini_vad_threshold: n })} testID="voice-mini-threshold" />
+              </View>
+            )}
+            {cfg.mini_vad === 'server' && (
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+                <NumPill label="Quiet ms before she answers" value={cfg.mini_silence_ms} opts={[500, 700, 900, 1200]} onPick={n => set({ mini_silence_ms: n })} testID="voice-mini-silence" />
+              </View>
+            )}
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+              <WordPill label="Noise reduction" value={cfg.mini_noise_reduction} opts={[{ v: 'near_field', l: 'Phone / headset' }, { v: 'far_field', l: 'Speaker / room' }, { v: 'off', l: 'Off' }]} onPick={v => set({ mini_noise_reduction: v as Cfg['mini_noise_reduction'] })} testID="voice-mini-noise" />
+            </View>
+            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 8, lineHeight: 15 }}>Room noise or the phone's own speaker counted as you talking interrupts her and makes her answer the noise. Raise the loudness if she keeps getting cut off; lower it if she misses quiet speech. Transcription is pinned to the store's language, and a turn with no real words is dropped and its answer cancelled (counted per conversation below). Applies to the next conversation.</Text>
           </View>
 
           <View style={card}>

@@ -98,6 +98,29 @@ MINI_RULES = ("\n\nLENGTH, this matters on this voice line: lead with the answer
               "If a turn from the rep was silence, noise or unclear, do not repeat yourself: say 'Go ahead' or nothing. "
               "Before a backend call say nothing or two words at most ('one sec'); never describe the call.")
 MINI_MAX_OUTPUT_TOKENS = 1600  # about 80 s of speech: room for a long read-back, a hard stop for a runaway monologue
+# Realtime mini listening. Server VAD is the only mode with a loudness threshold, which is what keeps room noise and the phone's own
+# speaker echo from starting a turn (each false turn interrupts Jessi and makes her answer the noise). Tunable in the Voice Lab.
+MINI_VAD_MODES = ("server", "semantic")
+MINI_NOISE = ("near_field", "far_field", "off")
+MINI_TRANSCRIBE_MODEL = "gpt-4o-mini-transcribe"
+# Language-pinned transcription: without it, near-silent audio comes back as hallucinated text in a random language ("再見").
+TRANSCRIBE_PROMPT = {"en": "A salesperson talking to Jessi, their assistant, about customers, follow-ups, texts, reminders and appointments. Casual spoken English with first names.",
+                     "nl": "Een verkoper praat met Jessi, hun assistent, over klanten, opvolging, berichten, herinneringen en afspraken. Gesproken Nederlands met voornamen."}
+
+
+def mini_turn_detection(cfg: dict) -> dict:
+    """The turn_detection the app switches on after the greeting (listening starts OFF so the greeting cannot be interrupted by echo)."""
+    if cfg.get("mini_vad") == "semantic":
+        return {"type": "semantic_vad", "eagerness": "low", "create_response": True, "interrupt_response": True}
+    return {"type": "server_vad", "threshold": float(cfg.get("mini_vad_threshold", 0.6)), "prefix_padding_ms": 300,
+            "silence_duration_ms": int(cfg.get("mini_silence_ms", 700)), "create_response": True, "interrupt_response": True}
+
+
+def mini_audio_input(cfg: dict, language: str) -> dict:
+    inp = {"turn_detection": None, "transcription": {"model": MINI_TRANSCRIBE_MODEL, "language": language, "prompt": TRANSCRIBE_PROMPT.get(language, TRANSCRIBE_PROMPT["en"])}}
+    if cfg.get("mini_noise_reduction", "near_field") != "off":
+        inp["noise_reduction"] = {"type": cfg.get("mini_noise_reduction", "near_field")}
+    return inp
 
 
 def mini_instructions(instructions: str, context: str) -> str:
@@ -113,6 +136,7 @@ def voice_gender(voice_id: Optional[str]) -> Optional[str]:
 
 DEFAULTS = {"voice": "gleam", "energy": 4, "pacing": 4, "playful": 3, "brevity": 4, "daily_cap_min": 15, "idle_close_s": 25,
             "engine": "mini", "mini_voice": "marin", "mini_daily_cap_min": 60,
+            "mini_vad": "server", "mini_vad_threshold": 0.6, "mini_silence_ms": 700, "mini_noise_reduction": "near_field",
             "greeting": "Hey {first}, it's Jessi. Who are we talking about today?", "contact_greeting": "Hey {first}. {contact} is up. What do you want to know?", "notes": ""}
 SLIDERS = ("energy", "pacing", "playful", "brevity")
 ENERGY = {1: "calm and steady", 2: "relaxed and easy", 3: "warm and engaged", 4: "upbeat and energetic", 5: "high-energy and lively"}
@@ -167,6 +191,20 @@ def clean_config(patch: dict, base: Optional[dict] = None) -> dict:
     if "mini_daily_cap_min" in patch:
         try:
             cfg["mini_daily_cap_min"] = min(480, max(1, int(patch["mini_daily_cap_min"])))
+        except (TypeError, ValueError):
+            pass
+    if patch.get("mini_vad") in MINI_VAD_MODES:
+        cfg["mini_vad"] = patch["mini_vad"]
+    if patch.get("mini_noise_reduction") in MINI_NOISE:
+        cfg["mini_noise_reduction"] = patch["mini_noise_reduction"]
+    if "mini_vad_threshold" in patch:
+        try:
+            cfg["mini_vad_threshold"] = round(min(0.9, max(0.3, float(patch["mini_vad_threshold"]))), 2)
+        except (TypeError, ValueError):
+            pass
+    if "mini_silence_ms" in patch:
+        try:
+            cfg["mini_silence_ms"] = min(1500, max(300, int(patch["mini_silence_ms"])))
         except (TypeError, ValueError):
             pass
     for k in SLIDERS:
@@ -472,9 +510,10 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
             async with httpx.AsyncClient(timeout=25.0) as client:
                 if engine == "mini":
                     voice = cfg["mini_voice"]
+                    from services import locales
+                    language = locales.get(await locales.user_locale(db, user))["whisper"]
                     session = {"type": "realtime", "model": MINI_MODEL, "instructions": mini_instructions(instructions, context), "max_output_tokens": MINI_MAX_OUTPUT_TOKENS,
-                               "audio": {"input": {"turn_detection": None, "transcription": {"model": "gpt-4o-mini-transcribe"}},
-                                         "output": {"voice": voice}},
+                               "audio": {"input": mini_audio_input(cfg, language), "output": {"voice": voice}},
                                "tools": [DELEGATE_TOOL], "tool_choice": "auto"}
                     resp = await client.post(REALTIME_URL, files={"sdp": (None, sdp, "application/sdp"), "session": (None, json.dumps(session), "application/json")}, headers=headers)
                 else:
@@ -543,7 +582,7 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
             "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None, "open": opened, "advisor_conversation_id": doc["advisor_conversation_id"],
             "agenda": [{k: s.get(k) for k in ("n", "kind", "name", "first", "why", "contact_id")} for s in agenda] if agenda is not None else None,
             "idle_close_s": SHOPPER_IDLE_S if shop else cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": voice,
-            "engine": engine, "model": ENGINES[engine]["model"],
+            "engine": engine, "model": ENGINES[engine]["model"], "listening": mini_turn_detection(cfg) if engine == "mini" else None,
             "meter": {"policy_mode": policy_mode, "role": vc.ENGINE_ROLE.get(engine), "fallback_reason": meter["fallback_reason"] if meter else None,
                       "left_s": meter["left_s"] if meter else None, "reset_at": meter["eff"]["reset_at"] if meter else None, "fake_provider": fake}}
 
@@ -618,10 +657,13 @@ async def record_events(db, live: dict, events: list) -> dict:
     mini = live.get("engine") == "mini"
     tokens = live.get("tokens")
     client_seconds = None
+    noise = 0
     for ev in events or []:
         t = ev.get("type")
         if t == "transcript" and ev.get("text"):
             rows.append({"role": "assistant" if ev.get("role") == "assistant" else "rep", "text": str(ev["text"])[:2000], "start_ms": ev.get("start_ms"), "end_ms": ev.get("end_ms"), "at": _now()})
+        elif t == "noise_turn":
+            noise += 1
         elif t == "usage" and ev.get("seconds") is not None:
             sets["seconds"] = max(int(live.get("seconds") or 0), int(ev["seconds"]))
             client_seconds = sets["seconds"]
@@ -643,6 +685,8 @@ async def record_events(db, live: dict, events: list) -> dict:
     ops = {"$set": sets}
     if rows:
         ops["$push"] = {"transcript": {"$each": rows[-200:]}}
+    if noise:
+        ops["$inc"] = {"noise_turns": noise}
     await db[COLL].update_one({"_id": live["_id"]}, ops)
     if live.get("status") == "open":
         try:
@@ -662,7 +706,7 @@ async def record_events(db, live: dict, events: list) -> dict:
 def serialize(s: dict, full: bool = False) -> dict:
     out = {"live_id": s.get("live_id"), "user_id": s.get("user_id"), "user_name": s.get("user_name"), "mode": s.get("mode"), "voice": s.get("voice"), "status": s.get("status"), "contact_name": s.get("contact_name"),
            "engine": s.get("engine") or "live", "model": s.get("model") or MODEL, "tokens": s.get("tokens"), "org_id": s.get("org_id"), "meter": s.get("meter"), "fake_provider": bool(s.get("fake_provider")),
-           "shopper": s.get("shopper"), "team": bool(s.get("team")), "last_error": s.get("last_error"), "walkthrough": {"stops": len(s["agenda"]), "done": len(s.get("agenda_done") or []), "skipped": len(s.get("agenda_skipped") or [])} if s.get("agenda") is not None else None,
+           "shopper": s.get("shopper"), "team": bool(s.get("team")), "last_error": s.get("last_error"), "noise_turns": int(s.get("noise_turns") or 0), "walkthrough": {"stops": len(s["agenda"]), "done": len(s.get("agenda_done") or []), "skipped": len(s.get("agenda_skipped") or [])} if s.get("agenda") is not None else None,
            "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
            "seconds": int(s.get("seconds") or 0), "cost_usd": round(float(s.get("cost_usd") or 0), 4), "close_reason": s.get("close_reason"),
            "turns": len(s.get("transcript") or []), "delegations": len(s.get("delegations") or []), "tools": [d.get("tool") for d in (s.get("delegations") or [])]}

@@ -5,7 +5,7 @@ import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
 import { GOLD, GREEN, RED, tid } from '../scripts/shared';
 
-type Row = { live_id: string; user_id?: string; user_name?: string; mode: string; engine?: string; voice: string; status: string; started_at: string; seconds: number; cost_usd: number; close_reason?: string; turns: number; delegations: number; tools: string[]; contact_name?: string | null; walkthrough?: any; team?: any };
+type Row = { live_id: string; user_id?: string; user_name?: string; mode: string; engine?: string; voice: string; status: string; started_at: string; seconds: number; cost_usd: number; close_reason?: string; turns: number; delegations: number; tools: string[]; noise_turns?: number; contact_name?: string | null; walkthrough?: any; team?: any };
 type Stats = Record<string, { sessions: number; minutes: number; cost_usd: number; reps: number; by_engine?: Record<string, { sessions: number; minutes: number; cost_usd: number }> }> & { open?: number };
 
 const when = (iso: string) => { const d = new Date(iso); return `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`; };
@@ -66,7 +66,7 @@ export const SessionsList = ({ refreshKey, myUserId }: { refreshKey: number; myU
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 13.5, fontWeight: '700', color: colors.text }}>{r.user_name || 'Someone'} · {kindOf(r)}{r.status === 'open' ? ' · live now' : ''}</Text>
-            <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }}>{r.engine === 'mini' ? 'Realtime mini' : 'GPT-Live'} · {r.voice} · {when(r.started_at)} · {r.turns} turns · {r.delegations} tool{r.delegations === 1 ? '' : 's'}{r.tools.length ? ` (${Array.from(new Set(r.tools)).join(', ')})` : ''}{r.close_reason ? ` · ${REASON[r.close_reason] || r.close_reason}` : ''}</Text>
+            <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }}>{r.engine === 'mini' ? 'Realtime mini' : 'GPT-Live'} · {r.voice} · {when(r.started_at)} · {r.turns} turns · {r.delegations} tool{r.delegations === 1 ? '' : 's'}{r.tools.length ? ` (${Array.from(new Set(r.tools)).join(', ')})` : ''}{r.noise_turns ? ` · ${r.noise_turns} noise turn${r.noise_turns === 1 ? '' : 's'} dropped` : ''}{r.close_reason ? ` · ${REASON[r.close_reason] || r.close_reason}` : ''}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: colors.text }}>{mins(r.seconds)}</Text>

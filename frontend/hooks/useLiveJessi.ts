@@ -3,9 +3,10 @@ import { Platform } from 'react-native';
 import * as Application from 'expo-application';
 import api from '../services/api';
 import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, applyAudioRoute, nativeRtcMissing, nativeRtcReason } from './liveRtc';
+import { CaptionRow, reserveRep, applyRepTranscript, applyAssistantDelta, finishResponse, dropUnheard } from './miniCaptions';
 
 export type LiveState = 'idle' | 'connecting' | 'live' | 'switching' | 'ending' | 'ended' | 'error';
-export type CaptionRow = { id: string; role: 'rep' | 'assistant'; text: string; start_ms: number; end_ms: number };
+export type { CaptionRow };
 export type LiveOptions = { mode: 'assistant' | 'lab' | 'shopper' | 'advisor'; overrides?: Record<string, any>; contactId?: string };
 export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions' | 'team_today'; id?: string; name?: string; first?: string; contact_id?: string; query?: string; days?: number | null; res?: any; rep?: string; draft?: string };
 type Meter = { policy_mode?: 'controls' | 'legacy'; role?: 'premium' | 'backup' | null; fallback_reason?: string | null; left_s?: number | null };
@@ -22,8 +23,9 @@ const ROW_GAP_MS = 1500;
 // Ending because every voice pool is spent: the sheet offers the typed Ask Jessi instead.
 export const CAP_REASONS = ['voice_cap', 'backup_cap', 'daily_cap', 'killed'];
 export const STANDARD_VOICE_NOTE = "Switched to Jessi's standard voice";
-// Realtime mini turn taking, switched on after the greeting (see enableMiniListening). Mirrors the backend's former session default.
-const MINI_TURN_DETECTION = { type: 'semantic_vad', create_response: true, interrupt_response: true };
+// Realtime mini turn taking, switched on after the greeting (see enableMiniListening). The server sends the tuned version with the
+// session (`listening`, Voice Lab > Mini listening); this is the fallback. Server VAD: the only mode with a loudness threshold.
+const MINI_TURN_DETECTION = { type: 'server_vad', threshold: 0.6, prefix_padding_ms: 300, silence_duration_ms: 700, create_response: true, interrupt_response: true };
 
 export const openLabel = (t: OpenTarget) => {
   const who = t.first || (t.name || '').split(' ')[0];
@@ -77,7 +79,11 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   const detachAudio = useRef<(() => void) | null>(null);
   const liveId = useRef('');
   const rowsRef = useRef<CaptionRow[]>([]);
-  const queuedRowId = useRef('');
+  const queuedRows = useRef<Set<string>>(new Set());
+  // Realtime mini: the turn_detection the server tuned for this session, the response in flight, and the one we cancelled as noise.
+  const listening = useRef<any>(MINI_TURN_DETECTION);
+  const activeResponse = useRef('');
+  const noiseCancelled = useRef('');
   const queue = useRef<any[]>([]);
   const flushTimer = useRef<any>(null);
   const idleTimer = useRef<any>(null);
@@ -115,7 +121,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     vadOn.current = true;
     if (vadTimer.current) { clearTimeout(vadTimer.current); vadTimer.current = null; }
     send({ type: 'input_audio_buffer.clear' });
-    send({ type: 'session.update', session: { type: 'realtime', audio: { input: { turn_detection: MINI_TURN_DETECTION } } } });
+    send({ type: 'session.update', session: { type: 'realtime', audio: { input: { turn_detection: listening.current } } } });
   };
   // Side context for the model (never spoken as-is): a thinking note on GPT-Live, a system item on Realtime.
   const nudge = (text: string) => isMini()
@@ -159,17 +165,17 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   }, []);
 
   const queueRow = (row: CaptionRow) => {
-    if (queuedRowId.current === row.id) return;
-    queuedRowId.current = row.id;
+    if (!row.text || queuedRows.current.has(row.id)) return;
+    queuedRows.current.add(row.id);
     queue.current.push({ type: 'transcript', role: row.role, text: row.text, start_ms: row.start_ms, end_ms: row.end_ms });
   };
+  const queuePending = () => rowsRef.current.forEach(queueRow);
 
   const finish = useCallback((reason: string, secs?: number) => {
     if (finalized.current) return;
     finalized.current = true;
     handing.current = false;
-    const last = rowsRef.current[rowsRef.current.length - 1];
-    if (last) queueRow(last);
+    queuePending();
     const s = secs ?? secondsRef.current;
     if (liveId.current) queue.current.push({ type: 'closed', reason, seconds: s, tokens: isMini() ? { ...tokensRef.current } : undefined });
     setCloseReason(reason);
@@ -206,6 +212,14 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     else stop('backup_cap');
   };
 
+  // Rows with text reach the screen; a reserved rep row (speech detected, transcript still coming) stays invisible until it lands.
+  const publish = () => {
+    rowsRef.current = rowsRef.current.slice(-80);
+    setRows(rowsRef.current.filter(r => r.text));
+    resetIdle();
+  };
+
+  // GPT-Live captions carry timestamps: group by role and a 1.5 s gap.
   const appendCaption = (role: 'rep' | 'assistant', delta: string, start_ms: number, end_ms: number) => {
     const list = rowsRef.current;
     const last = list[list.length - 1];
@@ -216,9 +230,28 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       if (last) queueRow(last);
       list.push({ id: `${role}-${start_ms}-${list.length}`, role, text: delta, start_ms, end_ms });
     }
-    rowsRef.current = list.slice(-80);
-    setRows([...rowsRef.current]);
-    resetIdle();
+    publish();
+  };
+
+  // Realtime mini: rows are keyed by the conversation item (see miniCaptions.ts for why).
+  const repTurnStarted = (itemId: string) => reserveRep(rowsRef.current, itemId, sinceStart());
+  const repTranscript = (itemId: string, transcript: string) => {
+    const r = applyRepTranscript(rowsRef.current, itemId, transcript, sinceStart(), activeResponse.current);
+    r.sends.forEach(send);
+    if (r.cancelled) noiseCancelled.current = r.cancelled;
+    if (r.noise) queue.current.push({ type: 'noise_turn', text: (transcript || '').slice(0, 40), cancelled: !!r.cancelled });
+    if (r.final) queueRow(r.final);
+    publish();
+  };
+  const assistantDelta = (itemId: string, responseId: string, delta: string) => {
+    applyAssistantDelta(rowsRef.current, itemId, responseId, delta, sinceStart());
+    publish();
+  };
+  const responseDone = (response: any) => {
+    if (activeResponse.current === (response?.id || '')) activeResponse.current = '';
+    const r = finishResponse(rowsRef.current, response, noiseCancelled.current);
+    if (r.dropped) { noiseCancelled.current = ''; rowsRef.current = r.rows; publish(); }
+    r.final.forEach(queueRow);
   };
 
   // One backend round trip. GPT-Live hands us a delegation id; Realtime mini hands us a function call (call_id + what the rep asked for).
@@ -232,7 +265,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     let kind = 'commentary';
     let end = false;
     try {
-      const transcript = rowsRef.current.map(r => ({ role: r.role, text: r.text }));
+      const transcript = rowsRef.current.filter(r => r.text).map(r => ({ role: r.role, text: r.text }));
       // Realtime: the rep's words can still be in transcription when the call fires, so the model's own summary goes in as the latest line.
       const lastRep = [...transcript].reverse().find(t => t.role === 'rep');
       if (request && !(lastRep && lastRep.text.toLowerCase().includes(request.toLowerCase().slice(0, 40)))) transcript.push({ role: 'rep', text: request });
@@ -323,17 +356,26 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
         appendCaption('assistant', ev.delta || '', ev.start_ms || 0, ev.end_ms || 0);
         break;
       case 'conversation.item.input_audio_transcription.completed':
-        if (ev.transcript) appendCaption('rep', ev.transcript, sinceStart(), sinceStart());
+        repTranscript(ev.item_id || '', ev.transcript || '');
+        break;
+      case 'conversation.item.input_audio_transcription.failed':
+        dropUnheard(rowsRef.current, ev.item_id || '');
+        publish();
+        break;
+      case 'response.created':
+        activeResponse.current = ev.response?.id || '';
         break;
       case 'response.output_audio_transcript.delta':
-        appendCaption('assistant', ev.delta || '', sinceStart(), sinceStart());
+        assistantDelta(ev.item_id || '', ev.response_id || '', ev.delta || '');
         break;
       case 'input_audio_buffer.speech_started':
+        if (isMini()) repTurnStarted(ev.item_id || '');
         setWorking('');
         resetIdle();
         break;
       case 'response.done': {
         addUsage(ev.response?.usage);
+        responseDone(ev.response);
         if (isMini() && !vadOn.current) enableMiniListening();
         for (const item of ev.response?.output || []) {
           if (item?.type !== 'function_call' || item.name !== 'delegate') continue;
@@ -363,7 +405,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       case 'error': {
         const msg = ev.error?.message || 'Live session error';
         queue.current.push({ type: 'error', message: msg });
-        if (!/append|client_event|active_response|no active response|cancellation/i.test(msg)) setError(msg);
+        if (!/append|client_event|active_response|no active response|cancellation|does not exist|already.*deleted/i.test(msg)) setError(msg);
         break;
       }
       default:
@@ -423,9 +465,11 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     resumedRef.current = !!resume;
     tokensRef.current = { audio_in: 0, audio_in_cached: 0, text_in: 0, text_in_cached: 0, audio_out: 0, text_out: 0 };
     vadOn.current = false;
+    activeResponse.current = '';
+    noiseCancelled.current = '';
+    listening.current = r.data.listening || MINI_TURN_DETECTION;
     secondsRef.current = 0;
     startedAt.current = 0;
-    queuedRowId.current = '';
     greeting.current = r.data.greeting || 'Hey, it is Jessi.';
     greetInstruction.current = r.data.greet_instruction || '';
     openAtStart.current = r.data.open?.kind ? (r.data.open as OpenTarget) : null;
@@ -451,8 +495,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     setState('switching');
     setWorking('Switching voice line');
     clearTimers();
-    const last = rowsRef.current[rowsRef.current.length - 1];
-    if (last) queueRow(last);
+    queuePending();
     queue.current.push({ type: 'closed', reason, seconds: secondsRef.current, tokens: isMini() ? { ...tokensRef.current } : undefined });
     const batch = queue.current.splice(0, 400);
     dropTransport();
@@ -482,6 +525,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     finalized.current = false;
     handing.current = false;
     rowsRef.current = [];
+    queuedRows.current = new Set();
     queue.current = [];
     secondsRef.current = 0;
     carriedRef.current = 0;

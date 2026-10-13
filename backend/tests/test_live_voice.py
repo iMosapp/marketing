@@ -97,7 +97,10 @@ async def test_create_session_with_fake_openai(monkeypatch):
         import json as _json
         session = _json.loads(captured["files"]["session"][1])
         assert session["type"] == "realtime" and session["model"] == "gpt-realtime-2.1-mini" and session["audio"]["output"]["voice"] == "marin"
-        assert session["audio"]["input"]["turn_detection"] is None and session["max_output_tokens"] == lv.MINI_MAX_OUTPUT_TOKENS and session["tools"][0]["name"] == "delegate" and "delegation" not in session, "mini opens with listening off (the app switches semantic VAD on after the greeting) and a hard output cap"
+        assert session["audio"]["input"]["turn_detection"] is None and session["max_output_tokens"] == lv.MINI_MAX_OUTPUT_TOKENS and session["tools"][0]["name"] == "delegate" and "delegation" not in session, "mini opens with listening off (the app switches VAD on after the greeting) and a hard output cap"
+        assert session["audio"]["input"]["transcription"] == {"model": "gpt-4o-mini-transcribe", "language": "en", "prompt": lv.TRANSCRIBE_PROMPT["en"]}, "language-pinned transcription (no hallucinated Chinese on near-silent audio)"
+        assert session["audio"]["input"]["noise_reduction"] == {"type": "near_field"}
+        assert out["listening"] == {"type": "server_vad", "threshold": 0.6, "prefix_padding_ms": 300, "silence_duration_ms": 700, "create_response": True, "interrupt_response": True}, "the app arms this after the greeting"
         assert "TOOL: you have one function, delegate(request)" in session["instructions"] and "Right now it is" in session["instructions"]
         assert "How you talk (every reply)" in session["instructions"] and "LENGTH, this matters on this voice line" in session["instructions"], "shared core rules + the mini layer"
         live = await lv.get_live(db, out["live_id"])
@@ -418,3 +421,45 @@ async def test_focus_contact_from_ask_button(monkeypatch):
         await db[lv.COLL].delete_one({"live_id": out2["live_id"]})
     finally:
         await db[lv.COLL].delete_one({"live_id": out["live_id"]})
+
+
+def test_mini_listening_config_and_bounds():
+    """Voice Lab > Mini listening: server VAD with a loudness threshold by default, bounded knobs, language-pinned transcription."""
+    cfg = lv.clean_config({})
+    assert (cfg["mini_vad"], cfg["mini_vad_threshold"], cfg["mini_silence_ms"], cfg["mini_noise_reduction"]) == ("server", 0.6, 700, "near_field")
+    assert lv.mini_turn_detection(cfg) == {"type": "server_vad", "threshold": 0.6, "prefix_padding_ms": 300, "silence_duration_ms": 700, "create_response": True, "interrupt_response": True}
+    tuned = lv.clean_config({"mini_vad": "semantic", "mini_vad_threshold": 2, "mini_silence_ms": 50, "mini_noise_reduction": "far_field"})
+    assert tuned["mini_vad"] == "semantic" and tuned["mini_vad_threshold"] == 0.9 and tuned["mini_silence_ms"] == 300 and tuned["mini_noise_reduction"] == "far_field"
+    assert lv.mini_turn_detection(tuned) == {"type": "semantic_vad", "eagerness": "low", "create_response": True, "interrupt_response": True}
+    junk = lv.clean_config({"mini_vad": "push_to_talk", "mini_vad_threshold": "loud", "mini_silence_ms": None, "mini_noise_reduction": "max"})
+    assert (junk["mini_vad"], junk["mini_vad_threshold"], junk["mini_silence_ms"], junk["mini_noise_reduction"]) == ("server", 0.6, 700, "near_field")
+    inp = lv.mini_audio_input(cfg, "nl")
+    assert inp["turn_detection"] is None and inp["noise_reduction"] == {"type": "near_field"}
+    assert inp["transcription"] == {"model": "gpt-4o-mini-transcribe", "language": "nl", "prompt": lv.TRANSCRIBE_PROMPT["nl"]}
+    assert "noise_reduction" not in lv.mini_audio_input({**cfg, "mini_noise_reduction": "off"}, "en")
+    assert lv.mini_audio_input(cfg, "fr")["transcription"]["prompt"] == lv.TRANSCRIBE_PROMPT["en"], "unknown language still gets a domain prompt"
+
+
+async def test_noise_turns_are_counted_and_listening_round_trips(forest_h):
+    db = get_db()
+    user = await _tester(db)
+    live = await _seed_live(db, user)
+    try:
+        await lv.record_events(db, live, [{"type": "noise_turn", "text": "再見", "cancelled": True}, {"type": "transcript", "role": "rep", "text": "Tell me about Sarah."}, {"type": "noise_turn", "text": "", "cancelled": False}])
+        doc = await lv.get_live(db, live["live_id"])
+        assert doc["noise_turns"] == 2 and len(doc["transcript"]) == 1
+        assert lv.serialize(doc)["noise_turns"] == 2
+    finally:
+        await db[lv.COLL].delete_one({"live_id": live["live_id"]})
+    import requests
+    base = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
+    before = requests.get(f"{base}/api/live-voice/admin/config", headers=forest_h, timeout=30).json()["config"]
+    assert {"mini_vad", "mini_vad_threshold", "mini_silence_ms", "mini_noise_reduction"} <= set(before)
+    try:
+        r = requests.put(f"{base}/api/live-voice/admin/config", json={"mini_vad": "server", "mini_vad_threshold": 0.7, "mini_silence_ms": 900, "mini_noise_reduction": "far_field"}, headers=forest_h, timeout=30)
+        assert r.status_code == 200 and r.json()["config"]["mini_vad_threshold"] == 0.7 and r.json()["config"]["mini_silence_ms"] == 900 and r.json()["config"]["mini_noise_reduction"] == "far_field", r.text
+        assert requests.put(f"{base}/api/live-voice/admin/config", json={"mini_vad": "push_to_talk"}, headers=forest_h, timeout=30).status_code == 400
+        assert requests.put(f"{base}/api/live-voice/admin/config", json={"mini_noise_reduction": "max"}, headers=forest_h, timeout=30).status_code == 400
+    finally:
+        r = requests.put(f"{base}/api/live-voice/admin/config", json={k: before[k] for k in ("mini_vad", "mini_vad_threshold", "mini_silence_ms", "mini_noise_reduction")}, headers=forest_h, timeout=30)
+        assert r.status_code == 200 and r.json()["config"]["mini_vad_threshold"] == before["mini_vad_threshold"]

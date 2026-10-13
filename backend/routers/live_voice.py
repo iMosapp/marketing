@@ -40,6 +40,10 @@ class ConfigBody(BaseModel):
     engine: Optional[str] = None
     mini_voice: Optional[str] = None
     mini_daily_cap_min: Optional[int] = None
+    mini_vad: Optional[str] = None
+    mini_vad_threshold: Optional[float] = None
+    mini_silence_ms: Optional[int] = None
+    mini_noise_reduction: Optional[str] = None
     energy: Optional[int] = None
     pacing: Optional[int] = None
     playful: Optional[int] = None
@@ -165,6 +169,10 @@ async def admin_save(body: ConfigBody, request: Request):
         raise HTTPException(status_code=400, detail="Unknown Realtime voice")
     if patch.get("engine") and patch["engine"] not in lv.ENGINES:
         raise HTTPException(status_code=400, detail="Unknown engine")
+    if patch.get("mini_vad") and patch["mini_vad"] not in lv.MINI_VAD_MODES:
+        raise HTTPException(status_code=400, detail="Unknown listening mode")
+    if patch.get("mini_noise_reduction") and patch["mini_noise_reduction"] not in lv.MINI_NOISE:
+        raise HTTPException(status_code=400, detail="Unknown noise reduction")
     return {"config": await lv.save_config(get_db(), patch, me)}
 
 
