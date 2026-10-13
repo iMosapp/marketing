@@ -1,6 +1,9 @@
 """Living Relationship Intelligence: settings and feature flags.
-Defaults live here; a store may override windows on stores.intelligence. Flags come from the environment so production stays off until Phase 1B."""
+Defaults live here; a store may override windows on stores.intelligence. Flags come from the environment: preview honours true/1,
+production runs them ONLY when the Secret is set to the literal value `production` (a copied preview value can never switch them on)."""
 import os
+
+from services.runtime_env import opt_in_flag
 
 DEFAULTS = {
     "intent_window_days": 45,
@@ -13,7 +16,7 @@ DEFAULTS = {
 
 
 def _flag(name: str) -> bool:
-    return (os.environ.get(name) or "").strip().lower() in ("1", "true", "yes", "on")
+    return opt_in_flag(name)
 
 
 def ingest_enabled() -> bool:

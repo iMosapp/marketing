@@ -75,8 +75,9 @@ def _oid(s) -> Optional[ObjectId]:
 
 
 def fake_provider_allowed(user: Optional[dict] = None) -> bool:
-    """Preview-only switch: VOICE_FAKE_PROVIDER_ALLOWED=1 lets super admins and @invalid.imonsocial.test accounts open sessions without OpenAI."""
-    if os.environ.get("VOICE_FAKE_PROVIDER_ALLOWED") != "1":
+    """Preview-only switch: VOICE_FAKE_PROVIDER_ALLOWED=1 lets super admins and @invalid.imonsocial.test accounts open sessions without OpenAI. Inert in production."""
+    from services.runtime_env import preview_flag
+    if not preview_flag("VOICE_FAKE_PROVIDER_ALLOWED"):
         return False
     if user is None:
         return True

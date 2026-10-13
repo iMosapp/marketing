@@ -48,9 +48,10 @@ def key_mode() -> str | None:
 
 
 def conversion_enabled() -> bool:
-    """Checkout / portal creation needs a LIVE key. A test key only works where BILLING_ALLOW_TEST_MODE=1 (preview, QA)."""
+    """Checkout / portal creation needs a LIVE key. A test key only works in the preview runtime with BILLING_ALLOW_TEST_MODE=1 (never in production)."""
+    from services.runtime_env import preview_flag
     mode = key_mode()
-    return mode == "live" or (mode == "test" and os.environ.get("BILLING_ALLOW_TEST_MODE") == "1")
+    return mode == "live" or (mode == "test" and preview_flag("BILLING_ALLOW_TEST_MODE"))
 
 
 TEST_MODE_MSG = "Billing is in Stripe TEST mode on this server; paid conversion is paused until live billing is configured. Complimentary pilots are not affected."

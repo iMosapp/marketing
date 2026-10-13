@@ -115,9 +115,10 @@ async def gather_inputs(db, appr: dict) -> dict:
 
 
 def development_basis_allowed() -> bool:
-    """Mock market data may start a Suggested ACV only where APPRAISAL_ALLOW_DEV_MARKET=1 (preview/dev). Production never sets it, so without a live
+    """Mock market data may start a Suggested ACV only in the preview runtime with APPRAISAL_ALLOW_DEV_MARKET=1. Production never honours it, so without a live
     provider the number has to come from a book value or the manager."""
-    return (os.environ.get("APPRAISAL_ALLOW_DEV_MARKET") or "").strip() == "1"
+    from services.runtime_env import preview_flag
+    return preview_flag("APPRAISAL_ALLOW_DEV_MARKET")
 
 
 def run_engine(inputs: dict) -> dict:
