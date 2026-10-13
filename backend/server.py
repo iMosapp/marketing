@@ -834,6 +834,8 @@ from routers import lab as lab_router
 api_router.include_router(lab_router.router)
 from routers import live_voice as live_voice_router
 api_router.include_router(live_voice_router.router)
+from routers import voice_controls as voice_controls_router
+api_router.include_router(voice_controls_router.router)
 from routers import va as va_router
 api_router.include_router(va_router.router)
 from routers import mystery_shops as mystery_shops_router

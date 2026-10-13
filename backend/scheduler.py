@@ -1937,6 +1937,13 @@ async def run_webhook_outbox_job():
     return await run_webhook_outbox()
 
 
+async def run_voice_meter_watchdog_job():
+    """Every minute: finalize live voice segments that stopped reporting and give their unspent reservation back."""
+    from routers.database import get_db
+    from services import voice_controls
+    return await voice_controls.watchdog(get_db())
+
+
 async def run_jessi_onboarding_job():
     """Every 10 minutes: Jessi's new-user onboarding by text. Resumes intro sequences held for quiet hours, notices interview calls that failed, sends the configurable nudges."""
     from routers.database import get_db
@@ -1988,6 +1995,15 @@ def start_scheduler():
         safe_job(run_webhook_outbox_job),
         IntervalTrigger(minutes=1),
         id="webhook_outbox",
+        replace_existing=True,
+        misfire_grace_time=120,
+        coalesce=True,
+    )
+
+    scheduler.add_job(
+        safe_job(run_voice_meter_watchdog_job),
+        IntervalTrigger(minutes=1),
+        id="voice_meter_watchdog",
         replace_existing=True,
         misfire_grace_time=120,
         coalesce=True,

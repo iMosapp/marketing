@@ -18,8 +18,10 @@ import httpx
 from bson import ObjectId
 
 from utils.text_sanitize import no_em_dash, clean_ai_text
+from services import voice_controls as vc
 
 logger = logging.getLogger(__name__)
+FAKE_SDP = "v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=fake-provider\r\nt=0 0\r\n"
 
 LIVE_URL = "https://api.openai.com/v1/live/sessions"
 REALTIME_URL = "https://api.openai.com/v1/realtime/calls"
@@ -346,8 +348,9 @@ def mini_cost(tokens: Optional[dict]) -> float:
 
 
 # ── session creation ──────────────────────────────────────────────────────────
-async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optional[dict] = None, contact_id: Optional[str] = None) -> dict:
-    reason = configured()
+async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optional[dict] = None, contact_id: Optional[str] = None, device_id: Optional[str] = None) -> dict:
+    fake = bool((overrides or {}).get("fake_provider")) and vc.fake_provider_allowed(user)
+    reason = None if fake else configured()
     if reason:
         raise LiveUnavailable(reason)
     if mode not in MODES:
@@ -365,7 +368,18 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
             pass
     usage = await usage_summary(db, user, cfg, "live" if mode == "shopper" else None)
     engine = usage["engine"]
-    if mode == "assistant" and usage["left_s"] <= 0:
+    org_id = await vc.org_of(db, user)
+    # Voice AI controls: an enrolled account gets its engine, allowance and first reserved slice from the policy; everyone else keeps the legacy caps.
+    policy = await vc.enrolled_policy(db, user) if mode == "assistant" else None
+    meter = None
+    if policy:
+        try:
+            meter = await vc.start(db, user, policy)
+        except vc.NoAllowance as e:
+            raise LiveCapReached(str(e))
+        engine = meter["engine"]
+        usage = {**usage, "engine": engine, "left_s": meter["left_s"], "cap_s": meter["eff"][f"{meter['role']}_allowance_s"], "unlimited": "super_admin_uncapped" in meter["eff"]["limits"]}
+    elif mode == "assistant" and usage["left_s"] <= 0:
         raise LiveCapReached(f"You have used today's {cap_minutes(cfg, engine)} minutes of live Jessi. It resets at midnight your time.")
     contact = await focus_contact(db, user, contact_id)
     shop = None
@@ -411,30 +425,38 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         context += " TEAM DIGEST already pulled; the rep is a manager and asked for it. They can say a rep's name for that rep's full list or ask to nudge a rep about a customer."
     if agenda is not None:
         context += " DAY WALKTHROUGH, the stops in order: " + ("; ".join(f"{s['n']}. {s['name']} ({s['kind']}: {s['why']})" for s in agenda) if agenda else "none, the rep is caught up") + "."
-    headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY'].strip()}", "OpenAI-Safety-Identifier": f"imos-{uid[-8:]}"}
-    try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            if engine == "mini":
-                voice = cfg["mini_voice"]
-                session = {"type": "realtime", "model": MINI_MODEL, "instructions": instructions + REALTIME_RULES + "\n\n" + context,
-                           "audio": {"input": {"turn_detection": {"type": "semantic_vad", "create_response": True, "interrupt_response": True}, "transcription": {"model": "gpt-4o-mini-transcribe"}},
-                                     "output": {"voice": voice}},
-                           "tools": [DELEGATE_TOOL], "tool_choice": "auto"}
-                resp = await client.post(REALTIME_URL, files={"sdp": (None, sdp, "application/sdp"), "session": (None, json.dumps(session), "application/json")}, headers=headers)
-            else:
-                session = {"model": MODEL, "instructions": instructions, "audio": {"output": {"voice": voice}}, "delegation": {"type": "client"},
-                           "input": [{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": context}]}]}
-                resp = await client.post(LIVE_URL, json={"session": session, "transport": {"type": "webrtc", "sdp": sdp}}, headers={**headers, "Content-Type": "application/json"})
-    except httpx.HTTPError as e:
-        raise LiveUnavailable(f"Could not reach OpenAI: {e}")
-    if resp.status_code >= 300:
+    headers = {"Authorization": f"Bearer {(os.environ.get('OPENAI_API_KEY') or '').strip()}", "OpenAI-Safety-Identifier": f"imos-{uid[-8:]}"}
+    resp = None
+    if not fake:
         try:
-            msg = (resp.json().get("error") or {}).get("message") or resp.text[:200]
-        except Exception:
-            msg = resp.text[:200]
-        logger.warning(f"[Live] {engine} session create failed {resp.status_code}: {msg}")
-        raise LiveUnavailable(f"OpenAI refused the live session ({resp.status_code}): {msg}")
-    if engine == "mini":
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                if engine == "mini":
+                    voice = cfg["mini_voice"]
+                    session = {"type": "realtime", "model": MINI_MODEL, "instructions": instructions + REALTIME_RULES + "\n\n" + context,
+                               "audio": {"input": {"turn_detection": {"type": "semantic_vad", "create_response": True, "interrupt_response": True}, "transcription": {"model": "gpt-4o-mini-transcribe"}},
+                                         "output": {"voice": voice}},
+                               "tools": [DELEGATE_TOOL], "tool_choice": "auto"}
+                    resp = await client.post(REALTIME_URL, files={"sdp": (None, sdp, "application/sdp"), "session": (None, json.dumps(session), "application/json")}, headers=headers)
+                else:
+                    session = {"model": MODEL, "instructions": instructions, "audio": {"output": {"voice": voice}}, "delegation": {"type": "client"},
+                               "input": [{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": context}]}]}
+                    resp = await client.post(LIVE_URL, json={"session": session, "transport": {"type": "webrtc", "sdp": sdp}}, headers={**headers, "Content-Type": "application/json"})
+        except httpx.HTTPError as e:
+            await _abort_meter(db, meter)
+            raise LiveUnavailable(f"Could not reach OpenAI: {e}")
+        if resp.status_code >= 300:
+            try:
+                msg = (resp.json().get("error") or {}).get("message") or resp.text[:200]
+            except Exception:
+                msg = resp.text[:200]
+            logger.warning(f"[Live] {engine} session create failed {resp.status_code}: {msg}")
+            await _abort_meter(db, meter)
+            raise LiveUnavailable(f"OpenAI refused the live session ({resp.status_code}): {msg}")
+    if fake:
+        if engine == "mini":
+            voice = cfg["mini_voice"]
+        answer_sdp, openai_id = FAKE_SDP, f"fake_{uuid.uuid4().hex[:10]}"
+    elif engine == "mini":
         answer_sdp = resp.text
         openai_id = (resp.headers.get("Location") or "").rstrip("/").rsplit("/", 1)[-1] or None
     else:
@@ -442,14 +464,20 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
         answer_sdp = (data.get("transport") or {}).get("sdp")
         openai_id = (data.get("session") or {}).get("id")
     live_id = uuid.uuid4().hex[:12]
-    doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "mode": mode, "engine": engine, "model": ENGINES[engine]["model"], "openai_session_id": openai_id, "voice": voice,
+    policy_mode = "controls" if meter else "legacy"
+    doc = {"live_id": live_id, "user_id": uid, "user_name": user.get("name"), "org_id": org_id, "mode": mode, "engine": engine, "model": ENGINES[engine]["model"], "openai_session_id": openai_id, "voice": voice,
            "contact_id": str(contact["_id"]) if contact else None, "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None,
            "agenda": agenda, "agenda_pos": 0 if agenda is not None else None, "agenda_done": [], "agenda_skipped": [], "team": {"digest": team} if team is not None else None,
            "config": {k: cfg[k] for k in DEFAULTS}, "status": "open", "started_at": _now(), "ended_at": None, "seconds": 0, "cost_usd": 0.0, "tokens": None, "close_reason": None,
-           "advisor_conversation_id": str(advisor_convo["_id"]) if advisor_convo else None,
+           "advisor_conversation_id": str(advisor_convo["_id"]) if advisor_convo else None, "device_id": device_id, "fake_provider": fake,
+           "meter": {"policy_mode": policy_mode, "role": vc.ENGINE_ROLE.get(engine), "reserved_s": meter["reserved_s"] if meter else 0, "fallback_reason": meter["fallback_reason"] if meter else None, "stop_reason": None},
            "transcript": [], "delegations": [], "pending": None, "created_at": _now(), "updated_at": _now()}
     await db[COLL].insert_one(doc)
-    logger.info(f"[Live] {mode} session {live_id} for {uid} engine={engine} voice={voice}" + (f" walkthrough={len(agenda)} stops" if agenda is not None else ""))
+    try:
+        await vc.open_segment(db, doc, meter["eff"] if meter else None, engine, meter["reserved_s"] if meter else 0, policy_mode, device_id, None, meter["fallback_reason"] if meter else None)
+    except Exception as e:
+        logger.warning(f"[Live] ledger open failed for {live_id}: {e}")
+    logger.info(f"[Live] {mode} session {live_id} for {uid} engine={engine} voice={voice} meter={policy_mode}" + (" FAKE" if fake else "") + (f" walkthrough={len(agenda)} stops" if agenda is not None else ""))
     greet = shop["greet_instruction"] if shop else None
     if advisor_convo:
         greet = "Greet the founder by first name in one short sentence and ask what is on their mind. Then wait."
@@ -466,24 +494,35 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
             "contact_name": _first_last(contact) if contact else None, "shopper": shop["meta"] if shop else None, "open": opened, "advisor_conversation_id": doc["advisor_conversation_id"],
             "agenda": [{k: s.get(k) for k in ("n", "kind", "name", "first", "why", "contact_id")} for s in agenda] if agenda is not None else None,
             "idle_close_s": SHOPPER_IDLE_S if shop else cfg["idle_close_s"], "cap_left_s": usage["left_s"] if mode == "assistant" else None, "voice": voice,
-            "engine": engine, "model": ENGINES[engine]["model"]}
+            "engine": engine, "model": ENGINES[engine]["model"],
+            "meter": {"policy_mode": policy_mode, "role": vc.ENGINE_ROLE.get(engine), "fallback_reason": meter["fallback_reason"] if meter else None,
+                      "left_s": meter["left_s"] if meter else None, "reset_at": meter["eff"]["reset_at"] if meter else None, "fake_provider": fake}}
 
 
 async def get_live(db, live_id: str) -> Optional[dict]:
     return await db[COLL].find_one({"live_id": live_id})
 
 
+async def _abort_meter(db, meter: Optional[dict]) -> None:
+    """OpenAI refused the session after a slice was reserved: give the seconds back."""
+    if meter and meter.get("reserved_s"):
+        eff = meter["eff"]
+        await vc.release(db, eff["org_id"], eff["user_id"], eff["day"], meter["engine"], meter["reserved_s"])
+
+
 async def record_events(db, live: dict, events: list) -> dict:
-    """Transcript fragments, usage snapshots and the final close, batched by the browser."""
+    """Transcript fragments, usage snapshots and the final close, batched by the browser. Every batch is also a metering heartbeat."""
     rows, sets = [], {"updated_at": _now()}
     mini = live.get("engine") == "mini"
     tokens = live.get("tokens")
+    client_seconds = None
     for ev in events or []:
         t = ev.get("type")
         if t == "transcript" and ev.get("text"):
             rows.append({"role": "assistant" if ev.get("role") == "assistant" else "rep", "text": str(ev["text"])[:2000], "start_ms": ev.get("start_ms"), "end_ms": ev.get("end_ms"), "at": _now()})
         elif t == "usage" and ev.get("seconds") is not None:
             sets["seconds"] = max(int(live.get("seconds") or 0), int(ev["seconds"]))
+            client_seconds = sets["seconds"]
             if isinstance(ev.get("tokens"), dict):
                 tokens = {k: int(ev["tokens"].get(k) or 0) for k in MINI_PRICES}
                 sets["tokens"] = tokens
@@ -491,6 +530,7 @@ async def record_events(db, live: dict, events: list) -> dict:
                     sets["cost_usd"] = mini_cost(tokens)
         elif t == "closed":
             secs = int(ev.get("seconds") if ev.get("seconds") is not None else live.get("seconds") or 0)
+            client_seconds = secs
             if isinstance(ev.get("tokens"), dict):
                 tokens = {k: int(ev["tokens"].get(k) or 0) for k in MINI_PRICES}
                 sets["tokens"] = tokens
@@ -502,14 +542,24 @@ async def record_events(db, live: dict, events: list) -> dict:
     if rows:
         ops["$push"] = {"transcript": {"$each": rows[-200:]}}
     await db[COLL].update_one({"_id": live["_id"]}, ops)
-    if "cost_usd" in sets:
-        sets["cost_usd"] = sets["cost_usd"]
+    if live.get("status") == "open":
+        try:
+            meter = await vc.on_heartbeat(db, live, client_seconds, tokens if mini else None, closing=sets.get("status") == "closed", close_reason=sets.get("close_reason"))
+        except Exception as e:
+            logger.warning(f"[Live] meter heartbeat failed for {live.get('live_id')}: {e}")
+            meter = {}
+        if meter:
+            msets = {"meter.billable_s": meter.get("billable_s"), "meter.est_cost_usd": meter.get("est_cost_usd"), "meter.heartbeat_at": _now()}
+            if meter.get("stop"):
+                msets.update({"meter.stop_reason": meter["stop"], "meter.stop_requested_at": _now(), "meter.fallback_engine": meter.get("fallback_engine")})
+            await db[COLL].update_one({"_id": live["_id"]}, {"$set": msets})
+            sets["meter"] = meter
     return sets
 
 
 def serialize(s: dict, full: bool = False) -> dict:
     out = {"live_id": s.get("live_id"), "user_id": s.get("user_id"), "user_name": s.get("user_name"), "mode": s.get("mode"), "voice": s.get("voice"), "status": s.get("status"), "contact_name": s.get("contact_name"),
-           "engine": s.get("engine") or "live", "model": s.get("model") or MODEL, "tokens": s.get("tokens"),
+           "engine": s.get("engine") or "live", "model": s.get("model") or MODEL, "tokens": s.get("tokens"), "org_id": s.get("org_id"), "meter": s.get("meter"), "fake_provider": bool(s.get("fake_provider")),
            "shopper": s.get("shopper"), "team": bool(s.get("team")), "last_error": s.get("last_error"), "walkthrough": {"stops": len(s["agenda"]), "done": len(s.get("agenda_done") or []), "skipped": len(s.get("agenda_skipped") or [])} if s.get("agenda") is not None else None,
            "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
            "seconds": int(s.get("seconds") or 0), "cost_usd": round(float(s.get("cost_usd") or 0), 4), "close_reason": s.get("close_reason"),

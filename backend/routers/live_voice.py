@@ -20,6 +20,7 @@ class SessionBody(BaseModel):
     sdp: str
     overrides: Optional[dict] = None
     contact_id: Optional[str] = None
+    device_id: Optional[str] = None
 
 
 class DelegateBody(BaseModel):
@@ -94,7 +95,7 @@ async def start_session(body: SessionBody, request: Request):
     if not body.sdp.strip():
         raise HTTPException(status_code=400, detail="An SDP offer is required")
     try:
-        return await lv.create_session(db, me, body.mode, body.sdp, body.overrides, body.contact_id)
+        return await lv.create_session(db, me, body.mode, body.sdp, body.overrides, body.contact_id, (body.device_id or "")[:64] or None)
     except lv.LiveUnavailable as e:
         raise HTTPException(status_code=503, detail=str(e))
     except lv.LiveCapReached as e:
@@ -119,7 +120,9 @@ async def events(live_id: str, body: EventsBody, request: Request):
     db = get_db()
     live = await _owned(db, live_id, me)
     sets = await lv.record_events(db, live, body.events[:400])
-    return {"ok": True, "status": sets.get("status") or live.get("status"), "seconds": sets.get("seconds", live.get("seconds") or 0)}
+    meter = sets.get("meter") or {}
+    return {"ok": True, "status": sets.get("status") or live.get("status"), "seconds": sets.get("seconds", live.get("seconds") or 0),
+            "stop": meter.get("stop"), "message": meter.get("message"), "fallback_engine": meter.get("fallback_engine"), "left_s": meter.get("left_s"), "thresholds_hit": meter.get("thresholds_hit")}
 
 
 # ── admin: Voice Lab ─────────────────────────────────────────────────────────
