@@ -1351,9 +1351,9 @@ async def approve_pending_user(user_id: str, data: dict, request: Request):
     organizations; the role granted is strictly below the approver's own; organization / stores are inside their scope."""
     me = await get_current_user(request)
     scope = await _pending_scope(me)
-    user = await get_db().users.find_one({"_id": ObjectId(user_id), **scope}) if scope is not None and ObjectId.is_valid(user_id) else None
+    user = await get_db().users.find_one({"_id": ObjectId(user_id), "status": "pending", **scope}) if scope is not None and ObjectId.is_valid(user_id) else None
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Pending user not found")
     target_org = data.get("organization_id") or user.get("organization_id") or None
     await assert_placement(me, role=data.get("role") or None, org_id=target_org, store_id=data.get("store_id") or None)
     for sid in data.get("store_ids") or []:
