@@ -84,9 +84,7 @@ logger = logging.getLogger(__name__)
 async def verify_api_key(x_api_key: str = Header(None, alias="X-API-Key")):
     """Verify API key for webhook authentication"""
     if not x_api_key:
-        # Allow unauthenticated for demo/development
-        logger.warning("Inventory webhook received without API key - allowing for demo mode")
-        return None
+        raise HTTPException(status_code=401, detail="X-API-Key required")
     
     db = get_db()
     
@@ -437,6 +435,7 @@ async def list_inventory(
     """
     List inventory items with filtering and pagination.
     """
+    await verify_api_key(x_api_key)
     db = get_db()
     
     # Build query
@@ -492,6 +491,7 @@ async def get_inventory_item(
     x_api_key: str = Header(None, alias="X-API-Key")
 ):
     """Get a single inventory item by external_id"""
+    await verify_api_key(x_api_key)
     db = get_db()
     
     item = await db.inventory.find_one({"external_id": external_id})

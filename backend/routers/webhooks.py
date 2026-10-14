@@ -68,10 +68,26 @@ async def verify_webhook_signature(request: Request, x_webhook_secret: str = Hea
         if org:
             return org
     
-    # For demo/development, allow unauthenticated webhooks
-    # In production, you'd want to enforce authentication
-    logger.warning("Webhook received without authentication - allowing for demo mode")
-    return None
+    logger.warning("[WEBHOOK] Refused %s %s: no valid X-Webhook-Secret / X-API-Key", request.method, request.url.path)
+    raise HTTPException(status_code=401, detail="A valid X-Webhook-Secret or X-API-Key is required")
+
+
+WEBHOOK_ROLES = {"user": "user", "sales rep": "user", "sales_rep": "user", "rep": "user", "store_manager": "store_manager", "manager": "store_manager"}
+
+
+def _webhook_role(role) -> str:
+    """External systems may only create reps and store managers; admin roles are granted in the app."""
+    return WEBHOOK_ROLES.get(str(role or "user").strip().lower(), "user")
+
+
+async def _org_store_id(db, org: dict, store_id):
+    """A store_id sent by the webhook must belong to the authenticated organization."""
+    if not store_id:
+        return None
+    store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"organization_id": 1}) if ObjectId.is_valid(str(store_id)) else None
+    if not store or str(store.get("organization_id") or "") != str(org["_id"]):
+        raise HTTPException(status_code=400, detail="store_id does not belong to your organization")
+    return str(store_id)
 
 # ============= USER WEBHOOKS =============
 
@@ -88,6 +104,9 @@ async def webhook_user_created(
     """
     db = get_db()
     org = await verify_webhook_signature(request, x_webhook_secret)
+    org_id = str(org["_id"])
+    role = _webhook_role(user_data.role)
+    store_id = await _org_store_id(db, org, user_data.store_id)
     
     # Check if user already exists by external_id or email
     existing_user = await db.users.find_one({
@@ -98,22 +117,24 @@ async def webhook_user_created(
     })
     
     if existing_user:
+        if str(existing_user.get("organization_id") or "") != org_id:
+            raise HTTPException(status_code=403, detail="That account belongs to another organization")
+        if existing_user.get("role") in ("super_admin", "org_admin"):
+            raise HTTPException(status_code=403, detail="Admin accounts cannot be changed through the webhook")
         # Update existing user
         update_data = {
             "external_id": user_data.external_id,
             "name": user_data.name,
             "phone": user_data.phone or existing_user.get("phone"),
-            "role": user_data.role,
+            "role": role,
             "updated_at": datetime.utcnow(),
             "is_active": True,
             "status": "active",
             "external_metadata": user_data.metadata
         }
         
-        if user_data.store_id:
-            update_data["store_id"] = user_data.store_id
-        if user_data.organization_id:
-            update_data["organization_id"] = user_data.organization_id
+        if store_id:
+            update_data["store_id"] = store_id
             
         await db.users.update_one(
             {"_id": existing_user["_id"]},
@@ -130,15 +151,15 @@ async def webhook_user_created(
     else:
         # Create new user
         from services.customers import assert_seat_available
-        await assert_seat_available(db, org_id=user_data.organization_id or (str(org["_id"]) if isinstance(org, dict) and org.get("_id") else None), store_id=user_data.store_id)
+        await assert_seat_available(db, org_id=org_id, store_id=store_id)
         new_user = {
             "external_id": user_data.external_id,
             "email": user_data.email,
             "name": user_data.name,
             "phone": user_data.phone or "",
-            "role": user_data.role,
-            "store_id": user_data.store_id,
-            "organization_id": user_data.organization_id,
+            "role": role,
+            "store_id": store_id,
+            "organization_id": org_id,
             "password": "",  # External users don't have local passwords
             "auth_type": "external",
             "is_active": True,
@@ -180,13 +201,13 @@ async def webhook_user_deleted(
     Deactivates the user and moves their contacts to unassigned.
     """
     db = get_db()
-    await verify_webhook_signature(request, x_webhook_secret)
+    org = await verify_webhook_signature(request, x_webhook_secret)
     
     if not user_data.external_id and not user_data.email:
         raise HTTPException(status_code=400, detail="Either external_id or email must be provided")
     
-    # Find the user
-    query = {}
+    # Find the user (only inside the authenticated organization, never an admin)
+    query = {"organization_id": str(org["_id"]), "role": {"$nin": ["super_admin", "org_admin"]}}
     if user_data.external_id:
         query["external_id"] = user_data.external_id
     if user_data.email:
@@ -260,21 +281,23 @@ async def webhook_contact_created(
     Webhook endpoint for when a contact is created in an external system.
     """
     db = get_db()
-    await verify_webhook_signature(request, x_webhook_secret)
+    org = await verify_webhook_signature(request, x_webhook_secret)
+    org_id = str(org["_id"])
+    store_id = await _org_store_id(db, org, contact_data.store_id)
     
-    # Find owner if specified
+    # Find owner if specified (only a user of the authenticated organization)
     owner_id = None
     if contact_data.assigned_to_email:
-        owner = await db.users.find_one({"email": contact_data.assigned_to_email})
+        owner = await db.users.find_one({"email": contact_data.assigned_to_email, "organization_id": org_id})
         if owner:
             owner_id = str(owner["_id"])
     elif contact_data.assigned_to_external_id:
-        owner = await db.users.find_one({"external_id": contact_data.assigned_to_external_id})
+        owner = await db.users.find_one({"external_id": contact_data.assigned_to_external_id, "organization_id": org_id})
         if owner:
             owner_id = str(owner["_id"])
     
-    # Check if contact exists
-    existing = await db.contacts.find_one({"external_id": contact_data.external_id})
+    # Check if contact exists (inside this organization only)
+    existing = await db.contacts.find_one({"external_id": contact_data.external_id, "organization_id": org_id})
     
     if existing:
         # Update
@@ -287,7 +310,7 @@ async def webhook_contact_created(
                     "email": contact_data.email,
                     "owner_id": owner_id,
                     "is_unassigned": owner_id is None,
-                    "store_id": contact_data.store_id,
+                    "store_id": store_id,
                     "updated_at": datetime.utcnow(),
                     "external_metadata": contact_data.metadata
                 }
@@ -303,7 +326,8 @@ async def webhook_contact_created(
             "email": contact_data.email or "",
             "owner_id": owner_id,
             "is_unassigned": owner_id is None,
-            "store_id": contact_data.store_id,
+            "store_id": store_id,
+            "organization_id": org_id,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
             "external_metadata": contact_data.metadata,
@@ -318,16 +342,26 @@ async def webhook_contact_created(
 
 @router.get("/unassigned-contacts")
 async def get_unassigned_contacts(
+    request: Request,
     store_id: Optional[str] = None,
     organization_id: Optional[str] = None,
     limit: int = 100,
     skip: int = 0
 ):
-    """Get all unassigned contacts, optionally filtered by store or organization"""
+    """Unassigned contacts of the caller's own organization / store (managers; super admins may pick any org)."""
+    from routers.rbac import get_current_user
+    me = await get_current_user(request)
+    if me.get("role") not in ("super_admin", "org_admin", "store_manager"):
+        raise HTTPException(status_code=403, detail="Managers only")
     db = get_db()
     
     query = {"$or": [{"is_unassigned": True}, {"owner_id": None}]}
     
+    if me.get("role") == "org_admin":
+        organization_id = str(me.get("organization_id") or "")
+    elif me.get("role") == "store_manager":
+        store_id = str(me.get("store_id") or "")
+        organization_id = None
     if store_id:
         query["store_id"] = store_id
     if organization_id:
@@ -447,12 +481,14 @@ async def webhook_generic_event(
     Stores the event for processing or triggers custom actions.
     """
     db = get_db()
+    org = await verify_webhook_signature(request, x_webhook_secret)
     
     body = await request.json()
     
     event = {
         "type": body.get("type", "custom"),
         "data": body,
+        "organization_id": str(org["_id"]),
         "received_at": datetime.utcnow(),
         "processed": False,
         "source_ip": request.client.host if request.client else None

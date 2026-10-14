@@ -7,6 +7,9 @@ Tests for:
 """
 import pytest
 import requests
+from tests.live_auth import Session as _Session
+from tests import qa_creds as _qa
+AUTH_H = _Session("forest@imosapp.com", _qa.password_for("forest@imosapp.com")).headers
 import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
@@ -22,13 +25,13 @@ class TestShowcasePendingEndpoint:
     
     def test_pending_endpoint_returns_200(self):
         """Test that pending endpoint returns 200 status"""
-        response = requests.get(f"{BASE_URL}/api/showcase/pending/{USER_ID}")
+        response = requests.get(f"{BASE_URL}/api/showcase/pending/{USER_ID}", headers=AUTH_H)
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         print(f"✓ GET /api/showcase/pending/{USER_ID} returns 200")
     
     def test_pending_endpoint_returns_list(self):
         """Test that pending endpoint returns a list"""
-        response = requests.get(f"{BASE_URL}/api/showcase/pending/{USER_ID}")
+        response = requests.get(f"{BASE_URL}/api/showcase/pending/{USER_ID}", headers=AUTH_H)
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list), f"Expected list, got {type(data)}"
@@ -36,7 +39,7 @@ class TestShowcasePendingEndpoint:
     
     def test_pending_entries_have_required_fields(self):
         """Test that pending entries have required fields"""
-        response = requests.get(f"{BASE_URL}/api/showcase/pending/{USER_ID}")
+        response = requests.get(f"{BASE_URL}/api/showcase/pending/{USER_ID}", headers=AUTH_H)
         assert response.status_code == 200
         data = response.json()
         
@@ -51,7 +54,7 @@ class TestShowcasePendingEndpoint:
     
     def test_pending_entries_have_relative_photo_urls(self):
         """Test that customer_photo URLs are relative (start with /api/)"""
-        response = requests.get(f"{BASE_URL}/api/showcase/pending/{USER_ID}")
+        response = requests.get(f"{BASE_URL}/api/showcase/pending/{USER_ID}", headers=AUTH_H)
         assert response.status_code == 200
         data = response.json()
         
@@ -116,7 +119,7 @@ class TestContactPhotoDeleteEndpoint:
         contact_id = "69a1354f2c0649ac6fb7f3f1"
         
         response = requests.delete(
-            f"{BASE_URL}/api/contacts/{USER_ID}/{contact_id}/photos",
+            headers=AUTH_H, url=f"{BASE_URL}/api/contacts/{USER_ID}/{contact_id}/photos",
             json={"photo_type": "profile"}  # Missing photo_url
         )
         assert response.status_code == 400, f"Expected 400, got {response.status_code}: {response.text}"
@@ -127,7 +130,7 @@ class TestContactPhotoDeleteEndpoint:
         contact_id = "69a1354f2c0649ac6fb7f3f1"
         
         response = requests.delete(
-            f"{BASE_URL}/api/contacts/{USER_ID}/{contact_id}/photos",
+            headers=AUTH_H, url=f"{BASE_URL}/api/contacts/{USER_ID}/{contact_id}/photos",
             json={"photo_url": "/api/images/test.webp", "photo_type": "invalid_type"}
         )
         assert response.status_code == 400, f"Expected 400, got {response.status_code}: {response.text}"
@@ -140,7 +143,7 @@ class TestContactPhotoDeleteEndpoint:
         
         for photo_type in valid_types:
             response = requests.delete(
-                f"{BASE_URL}/api/contacts/{USER_ID}/{contact_id}/photos",
+                headers=AUTH_H, url=f"{BASE_URL}/api/contacts/{USER_ID}/{contact_id}/photos",
                 json={"photo_url": "/api/images/nonexistent.webp", "photo_type": photo_type}
             )
             # Should not return 400 for valid types (may return 200 or 404 depending on photo existence)
@@ -155,14 +158,14 @@ class TestShowcaseApproveRejectEndpoints:
     def test_approve_endpoint_exists(self):
         """Test that approve endpoint exists"""
         # Use a fake card_id - we just want to verify the endpoint exists
-        response = requests.post(f"{BASE_URL}/api/showcase/entry/fake_card_id/approve")
+        response = requests.post(f"{BASE_URL}/api/showcase/entry/fake_card_id/approve", headers=AUTH_H)
         # Should return 404 (card not found) not 405 (method not allowed)
         assert response.status_code in [200, 404], f"Expected 200 or 404, got {response.status_code}"
         print("✓ POST /api/showcase/entry/{card_id}/approve endpoint exists")
     
     def test_reject_endpoint_exists(self):
         """Test that reject endpoint exists"""
-        response = requests.post(f"{BASE_URL}/api/showcase/entry/fake_card_id/reject")
+        response = requests.post(f"{BASE_URL}/api/showcase/entry/fake_card_id/reject", headers=AUTH_H)
         assert response.status_code in [200, 404], f"Expected 200 or 404, got {response.status_code}"
         print("✓ POST /api/showcase/entry/{card_id}/reject endpoint exists")
 

@@ -778,6 +778,38 @@ async def _assert_can_act_as(request: Request, user_id: str) -> dict:
     raise HTTPException(status_code=403, detail="You can only send as yourself")
 
 
+async def _conv_for_caller(request: Request, conversation_id: str) -> dict:
+    """The conversation, only when the proven caller owns it, is a member of its shared inbox, or manages its owner."""
+    from routers.rbac import get_current_user, verify_user_access
+    from services.inboxes import member_inbox_ids
+    me = await get_current_user(request)
+    conv = await get_db().conversations.find_one({"_id": ObjectId(conversation_id)}) if ObjectId.is_valid(conversation_id) else None
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    mine, owner = str(me["_id"]), str(conv.get("user_id") or "")
+    if owner == mine:
+        return conv
+    if conv.get("inbox_id") and str(conv["inbox_id"]) in await member_inbox_ids(get_db(), mine):
+        return conv
+    if me.get("role") in MANAGER_ROLES and (me.get("role") == "super_admin" or (owner and await verify_user_access(me, owner))):
+        return conv
+    raise HTTPException(status_code=403, detail="This conversation is not yours")
+
+
+async def _conversation_scope(request: Request, conversation_ids: list) -> dict:
+    """Bulk filter: only the caller's conversations (plus shared-inbox and, for managers, scoped reps' conversations)."""
+    from routers.rbac import get_current_user, get_scoped_user_ids
+    from services.inboxes import member_inbox_ids
+    me = await get_current_user(request)
+    mine = str(me["_id"])
+    object_ids = [ObjectId(cid) for cid in conversation_ids if ObjectId.is_valid(str(cid))]
+    owners = [mine] if me.get("role") not in MANAGER_ROLES else await get_scoped_user_ids(me)
+    scope = {"_id": {"$in": object_ids}}
+    if me.get("role") != "super_admin":
+        scope["$or"] = [{"user_id": {"$in": owners}}, {"inbox_id": {"$in": await member_inbox_ids(get_db(), mine)}}]
+    return scope
+
+
 @router.get("/draft/{user_id}/{contact_id}")
 async def get_message_draft(user_id: str, contact_id: str, request: Request):
     """The wording Jessi parked in this thread's composer (live voice draft), or null. Cleared automatically when any text goes out."""
@@ -1183,8 +1215,9 @@ async def twilio_status():
     return await get_twilio_status()
 
 @router.put("/conversation/{conversation_id}/archive")
-async def archive_conversation(conversation_id: str):
+async def archive_conversation(conversation_id: str, request: Request):
     """Archive a conversation"""
+    await _conv_for_caller(request, conversation_id)
     result = await get_db().conversations.update_one(
         {"_id": ObjectId(conversation_id)},
         {"$set": {"status": "archived", "archived_at": datetime.now(timezone.utc)}}
@@ -1197,8 +1230,9 @@ async def archive_conversation(conversation_id: str):
 
 
 @router.put("/conversation/{conversation_id}/restore")
-async def restore_conversation(conversation_id: str):
+async def restore_conversation(conversation_id: str, request: Request):
     """Restore an archived conversation"""
+    await _conv_for_caller(request, conversation_id)
     result = await get_db().conversations.update_one(
         {"_id": ObjectId(conversation_id)},
         {"$set": {"status": "active"}, "$unset": {"archived_at": ""}}
@@ -1542,10 +1576,11 @@ async def find_duplicate_conversations(user_id: str):
 
 
 @router.put("/conversation/{conversation_id}/read")
-async def mark_conversation_read(conversation_id: str):
+async def mark_conversation_read(conversation_id: str, request: Request):
     """Mark a conversation as read"""
     if not ObjectId.is_valid(conversation_id):
         raise HTTPException(status_code=400, detail="Invalid conversation ID")
+    await _conv_for_caller(request, conversation_id)
     result = await get_db().conversations.update_one(
         {"_id": ObjectId(conversation_id)},
         {"$set": {"unread": False, "unread_count": 0}}
@@ -1558,10 +1593,11 @@ async def mark_conversation_read(conversation_id: str):
 
 
 @router.put("/conversation/{conversation_id}/unread")
-async def mark_conversation_unread(conversation_id: str):
+async def mark_conversation_unread(conversation_id: str, request: Request):
     """Mark a conversation as unread"""
     if not ObjectId.is_valid(conversation_id):
         raise HTTPException(status_code=400, detail="Invalid conversation ID")
+    await _conv_for_caller(request, conversation_id)
     result = await get_db().conversations.update_one(
         {"_id": ObjectId(conversation_id)},
         {"$set": {"unread": True, "unread_count": 1}}
@@ -1574,8 +1610,9 @@ async def mark_conversation_unread(conversation_id: str):
 
 
 @router.delete("/conversation/{conversation_id}")
-async def delete_conversation(conversation_id: str):
+async def delete_conversation(conversation_id: str, request: Request):
     """Delete a conversation and all its messages"""
+    await _conv_for_caller(request, conversation_id)
     # Delete messages
     await get_db().messages.delete_many({"conversation_id": conversation_id})
     
@@ -1591,17 +1628,17 @@ async def delete_conversation(conversation_id: str):
 # ============= BULK ACTIONS =============
 
 @router.post("/bulk/archive")
-async def bulk_archive_conversations(data: dict):
+async def bulk_archive_conversations(data: dict, request: Request):
     """Archive multiple conversations at once"""
     conversation_ids = data.get("conversation_ids", [])
     
     if not conversation_ids:
         raise HTTPException(status_code=400, detail="No conversation IDs provided")
     
-    object_ids = [ObjectId(cid) for cid in conversation_ids]
+    scope = await _conversation_scope(request, conversation_ids)
     
     result = await get_db().conversations.update_many(
-        {"_id": {"$in": object_ids}},
+        scope,
         {"$set": {"status": "archived", "archived_at": datetime.now(timezone.utc)}}
     )
     
@@ -1612,17 +1649,17 @@ async def bulk_archive_conversations(data: dict):
 
 
 @router.post("/bulk/restore")
-async def bulk_restore_conversations(data: dict):
+async def bulk_restore_conversations(data: dict, request: Request):
     """Restore multiple archived conversations at once"""
     conversation_ids = data.get("conversation_ids", [])
     
     if not conversation_ids:
         raise HTTPException(status_code=400, detail="No conversation IDs provided")
     
-    object_ids = [ObjectId(cid) for cid in conversation_ids]
+    scope = await _conversation_scope(request, conversation_ids)
     
     result = await get_db().conversations.update_many(
-        {"_id": {"$in": object_ids}},
+        scope,
         {"$set": {"status": "active"}, "$unset": {"archived_at": ""}}
     )
     
@@ -1633,17 +1670,17 @@ async def bulk_restore_conversations(data: dict):
 
 
 @router.post("/bulk/read")
-async def bulk_mark_read(data: dict):
+async def bulk_mark_read(data: dict, request: Request):
     """Mark multiple conversations as read"""
     conversation_ids = data.get("conversation_ids", [])
     
     if not conversation_ids:
         raise HTTPException(status_code=400, detail="No conversation IDs provided")
     
-    object_ids = [ObjectId(cid) for cid in conversation_ids]
+    scope = await _conversation_scope(request, conversation_ids)
     
     result = await get_db().conversations.update_many(
-        {"_id": {"$in": object_ids}},
+        scope,
         {"$set": {"unread": False, "unread_count": 0}}
     )
     
@@ -1654,17 +1691,17 @@ async def bulk_mark_read(data: dict):
 
 
 @router.post("/bulk/unread")
-async def bulk_mark_unread(data: dict):
+async def bulk_mark_unread(data: dict, request: Request):
     """Mark multiple conversations as unread"""
     conversation_ids = data.get("conversation_ids", [])
     
     if not conversation_ids:
         raise HTTPException(status_code=400, detail="No conversation IDs provided")
     
-    object_ids = [ObjectId(cid) for cid in conversation_ids]
+    scope = await _conversation_scope(request, conversation_ids)
     
     result = await get_db().conversations.update_many(
-        {"_id": {"$in": object_ids}},
+        scope,
         {"$set": {"unread": True, "unread_count": 1}}
     )
     
@@ -1675,19 +1712,20 @@ async def bulk_mark_unread(data: dict):
 
 
 @router.post("/bulk/delete")
-async def bulk_delete_conversations(data: dict):
+async def bulk_delete_conversations(data: dict, request: Request):
     """Delete multiple conversations and their messages"""
     conversation_ids = data.get("conversation_ids", [])
     
     if not conversation_ids:
         raise HTTPException(status_code=400, detail="No conversation IDs provided")
     
-    # Delete messages for all conversations
-    await get_db().messages.delete_many({"conversation_id": {"$in": conversation_ids}})
+    scope = await _conversation_scope(request, conversation_ids)
+    allowed = [str(c["_id"]) async for c in get_db().conversations.find(scope, {"_id": 1})]
+    # Delete messages for the conversations the caller may touch
+    await get_db().messages.delete_many({"conversation_id": {"$in": allowed}})
     
     # Delete conversations
-    object_ids = [ObjectId(cid) for cid in conversation_ids]
-    result = await get_db().conversations.delete_many({"_id": {"$in": object_ids}})
+    result = await get_db().conversations.delete_many({"_id": {"$in": [ObjectId(a) for a in allowed]}})
     
     return {
         "message": f"{result.deleted_count} conversations deleted",
@@ -1780,6 +1818,7 @@ async def schedule_delayed_message(request: Request):
 
     if not user_id or not to_phone or not body:
         raise HTTPException(status_code=400, detail="user_id, to, body required")
+    await _assert_can_act_as(request, user_id)
 
     db = get_db()
     now = datetime.now(timezone.utc)
@@ -1875,9 +1914,10 @@ async def get_ai_suggestion(user_id: str, conversation_id: str):
 
 
 @router.get("/conversation/{conversation_id}/info")
-async def get_conversation_info(conversation_id: str):
+async def get_conversation_info(conversation_id: str, request: Request):
     """Get conversation info including contact details and photo"""
     db = get_db()
+    await _conv_for_caller(request, conversation_id)
     
     # Find conversation
     try:
@@ -2021,7 +2061,9 @@ async def get_thread_messages(conversation_id: str, request: Request):
     messages = await db.messages.find(query).sort("timestamp", 1).limit(500).to_list(500)
 
     owner = str((conv or {}).get("user_id") or next((m.get("user_id") for m in messages if m.get("user_id")), "") or "")
-    if owner:
+    if conv:
+        await _conv_for_caller(request, conversation_id)  # owner, shared-inbox member, or the owner's manager
+    elif owner:
         await _assert_can_act_as(request, owner)
     else:
         from routers.rbac import get_current_user
@@ -2076,12 +2118,13 @@ async def get_thread_messages(conversation_id: str, request: Request):
 
 
 @router.post("/ai-suggest/{conversation_id}")
-async def get_ai_suggestion_smart(conversation_id: str, body: Optional[dict] = Body(default=None)):
+async def get_ai_suggestion_smart(conversation_id: str, request: Request, body: Optional[dict] = Body(default=None)):
     """
     Generate a contextual AI reply suggestion using the rep's VA persona +
     full conversation history. Falls back to generic suggestion on error.
     Optional body {"topic_kind": "trade_in"} makes the draft answer that topic instead of the detected one.
     """
+    await _conv_for_caller(request, conversation_id)
     import asyncio, os
     db = get_db()
     topic = None

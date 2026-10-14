@@ -135,11 +135,6 @@ logger = logging.getLogger(__name__)
 # ============= PERFORMANCE MONITORING MIDDLEWARE =============
 import time
 
-ADMIN_PUBLIC_RE = re.compile(r"^/api/admin/(partners/by-slug/|team/shared-inboxes/[^/]+/webhook$)")
-# Routers with no public surface at all: a proven caller is required before any handler runs (defense in depth; the routes also carry their own scope checks)
-PRIVATE_PREFIXES = ("/api/setup-wizard/", "/api/onboarding-settings/", "/api/scheduler/", "/api/customers")
-
-
 async def _verified_caller_id(request: Request):
     """User id proven by the Bearer token (signed JWT or live impersonation session), else None."""
     auth = request.headers.get("Authorization", "")
@@ -156,138 +151,49 @@ async def _verified_caller_id(request: Request):
     return None
 
 
+def _set_header(request: Request, name: bytes, value: str | None):
+    headers = [h for h in request.scope["headers"] if h[0] != name]
+    if value:
+        headers.append((name, value.encode()))
+    request.scope["headers"] = headers
+
+
 @app.middleware("http")
 async def bind_identity_header(request: Request, call_next):
-    """X-User-ID is never trusted on its own: it must equal the user proven by the Bearer token.
-    When it is absent it is filled in from the token, so legacy handlers always see the verified caller.
-    Every /api/admin/* route (except the public allowlist) requires a proven caller."""
+    """Default deny for /api: a request with no proven caller is refused unless services.route_guard lists the route as public
+    (webhooks, customer links, login flows, machine callers with their own credential). X-User-ID is never trusted on its own: it must
+    equal the caller proven by the Bearer token, is stripped when unproven and filled in from the token when absent. A route with a
+    {user_id} path parameter may only touch the caller's own data, or a user inside a manager's organization / stores."""
+    from services import route_guard
     path = request.url.path
-    if request.method == "OPTIONS" or path.startswith("/api/auth/"):
+    if request.method == "OPTIONS" or not path.startswith("/api/"):
         return await call_next(request)
     claimed = (request.headers.get("X-User-ID") or "").strip()
-    is_admin = (path.startswith("/api/admin/") and not ADMIN_PUBLIC_RE.match(path)) or path.startswith(PRIVATE_PREFIXES)
     caller = await _verified_caller_id(request) if request.headers.get("Authorization", "").startswith("Bearer ") else None
-    if caller:
-        from services import access_block
-        if await access_block.is_blocked(get_db(), caller):
-            logger.info(f"[ACCESS] Blocked user {caller} refused on {request.method} {path}")
-            return _JSONResponse(access_block.REFUSAL, status_code=401)
-    if not claimed and not is_admin:
+    public = route_guard.is_public(request.method, path)
+    if not caller:
+        if not public:
+            logger.warning(f"[IDENTITY] Rejected {request.method} {path} — X-User-ID={claimed or '-'} caller=-")
+            return _JSONResponse({"detail": "Authentication required"}, status_code=401)
+        if claimed:
+            _set_header(request, b"x-user-id", None)
         return await call_next(request)
-    if not caller or (claimed and claimed != caller):
-        logger.warning(f"[IDENTITY] Rejected {request.method} {path} — X-User-ID={claimed or '-'} caller={caller or '-'}")
+    from services import access_block
+    if await access_block.is_blocked(get_db(), caller):
+        logger.info(f"[ACCESS] Blocked user {caller} refused on {request.method} {path}")
+        return _JSONResponse(access_block.REFUSAL, status_code=401)
+    if claimed and claimed != caller:
+        logger.warning(f"[IDENTITY] Rejected {request.method} {path} — X-User-ID={claimed} caller={caller}")
         return _JSONResponse({"detail": "Authentication required"}, status_code=401)
     if not claimed:
-        request.scope["headers"] = [h for h in request.scope["headers"] if h[0] != b"x-user-id"] + [(b"x-user-id", caller.encode())]
+        _set_header(request, b"x-user-id", caller)
+    request.state.caller_id = caller
+    if not public:
+        target = route_guard.route_user_id(app, request.scope) or route_guard.query_user_id(request)
+        if target and target != caller and not await route_guard.manager_can_access(caller, target):
+            logger.warning(f"[BOLA] Blocked {request.method} {path} — caller={caller} tried to access user_id={target}")
+            return _JSONResponse({"detail": "Access denied — you can only access your own data"}, status_code=403)
     return await call_next(request)
-
-
-@app.middleware("http")
-async def enforce_user_ownership(request: Request, call_next):
-    """
-    Phase 2 BOLA protection — enforce that the JWT caller owns (or administers)
-    the user_id appearing in the URL path for all major data endpoints.
-
-    Protects: contacts, tasks, campaigns, voice-notes, messages/conversations,
-              tags, templates, home, activity, search, notifications-center,
-              reports, push preferences, users data endpoints.
-
-    Skips: public pages, auth, webhooks, admin routes, images, and any
-           path that doesn't contain a user_id segment.
-    """
-    import re as _re
-    from fastapi.responses import JSONResponse as _JSONResponse
-
-    path = request.url.path
-
-    # ── Paths that are always public / handled by their own auth ──────────────
-    ALWAYS_SKIP = (
-        "/api/auth/", "/api/webhooks/", "/api/public/", "/api/images/",
-        "/api/card/", "/api/l/", "/api/p/", "/api/showcase/", "/api/congrats/",
-        "/api/review/", "/api/s/", "/api/opt-in/", "/api/health",
-        "/api/admin/", "/api/imos/", "/api/birthday/", "/api/timeline/",
-        "/api/onboarding/", "/api/profile/", "/api/docs", "/openapi.json",
-        "/api/seo/sitemap", "/api/directory/", "/api/analytics/",
-        "/api/integrations/public", "/api/demo/", "/api/leads/",
-    )
-    # /api/leads/ is public intake, but the shared queue under it is per-user data
-    if any(path.startswith(p) for p in ALWAYS_SKIP) and not path.startswith("/api/leads/queue/"):
-        return await call_next(request)
-
-    # ── Routes protected: resource/{user_id}/... ──────────────────────────────
-    # The first ObjectId segment after the resource name is the user_id.
-    PROTECTED_PREFIXES = (
-        "/api/contacts/", "/api/tasks/", "/api/campaigns/", "/api/voice-notes/",
-        "/api/messages/conversations/", "/api/tags/", "/api/templates/",
-        "/api/home/", "/api/activity/", "/api/search/", "/api/notification-center/", "/api/inventory-feeds/",
-        "/api/reports/", "/api/push/preferences/", "/api/push/subscribe-native/",
-        "/api/push/status/", "/api/push/diagnose/", "/api/push/morning-brief/", "/api/leads/queue/", "/api/users/", "/api/engagement-signals/",
-        "/api/ai-outreach/", "/api/broadcast/", "/api/bug-reports/",
-        "/api/inventory/", "/api/keyword-rules/", "/api/wallet/",
-        "/api/relationship-health/", "/api/calls/", "/api/app-links/",
-    )
-
-    matched_prefix = next((p for p in PROTECTED_PREFIXES if path.startswith(p)), None)
-    if not matched_prefix:
-        return await call_next(request)
-
-    OID_RE = _re.compile(r'^[0-9a-f]{24}$')
-
-    # Scan the remainder for the FIRST ObjectId segment — that's the user_id.
-    # This covers sub-routes like /api/home/people-to-engage/{user_id} where the
-    # user_id is not the segment immediately after the prefix.
-    remainder = path[len(matched_prefix):].split("?")[0]
-    segments = [s for s in remainder.split("/") if s]
-    path_user_id = next((s for s in segments if OID_RE.match(s)), None)
-    if not path_user_id:
-        # No ObjectId in path — sub-route like /api/campaigns/scheduler
-        return await call_next(request)
-
-    # ── Resolve caller from JWT ───────────────────────────────────────────────
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        return _JSONResponse({"detail": "Authentication required"}, status_code=401)
-
-    token = auth[7:]
-    caller_id = None
-    caller_role = "user"
-
-    # JWT path
-    from routers.auth import verify_jwt_token
-    payload = verify_jwt_token(token)
-    if payload:
-        caller_id = payload.get("sub")
-        caller_role = payload.get("role", "user") or "user"
-    elif token.startswith("impersonate_"):
-        from routers.rbac import resolve_impersonation_session
-        uid = await resolve_impersonation_session(token)
-        if uid:
-            caller_id = uid
-            # Impersonating admin can access anyone
-            caller_role = "super_admin"
-
-    if not caller_id:
-        return _JSONResponse({"detail": "Authentication required"}, status_code=401)
-
-    # ── Ownership check ───────────────────────────────────────────────────────
-    if caller_id == path_user_id:
-        # Own data — always allowed
-        return await call_next(request)
-
-    if caller_role in ("super_admin", "org_admin", "store_manager"):
-        # Admins/managers may access data for users they manage
-        # Full scope check deferred to get_data_filter — allow through here
-        return await call_next(request)
-
-    # Caller is a regular user trying to access another user's data
-    logger.warning(
-        f"[BOLA] Blocked {request.method} {path} — "
-        f"caller={caller_id} tried to access user_id={path_user_id}"
-    )
-    return _JSONResponse(
-        {"detail": "Access denied — you can only access your own data"},
-        status_code=403
-    )
 
 
 @app.middleware("http")

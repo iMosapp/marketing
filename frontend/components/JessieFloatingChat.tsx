@@ -125,9 +125,10 @@ export default function JessieFloatingChat() {
       }
       setSpeaking(true);
       const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
+      const token = useAuthStore.getState().token;
       const res = await fetch(`${backendUrl}/api/jessie/tts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ text: text.slice(0, 4000) }),
       });
       if (!res.ok) throw new Error('TTS failed');

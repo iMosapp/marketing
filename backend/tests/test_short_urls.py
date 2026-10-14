@@ -3,6 +3,9 @@ Tests for URL Shortener API
 """
 import pytest
 import requests
+from tests.live_auth import Session as _Session
+from tests import qa_creds as _qa
+AUTH_H = _Session("forest@imosapp.com", _qa.password_for("forest@imosapp.com")).headers
 import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com')
@@ -13,7 +16,7 @@ class TestURLShortener:
     def test_create_short_url_success(self):
         """Test creating a short URL"""
         response = requests.post(
-            f"{BASE_URL}/api/s/create",
+            f"{BASE_URL}/api/s/create", headers=AUTH_H,
             json={
                 "original_url": "https://test-example.com/some-long-path?query=param",
                 "link_type": "test"
@@ -38,7 +41,7 @@ class TestURLShortener:
     def test_create_short_url_missing_url(self):
         """Test creating short URL without required original_url"""
         response = requests.post(
-            f"{BASE_URL}/api/s/create",
+            f"{BASE_URL}/api/s/create", headers=AUTH_H,
             json={
                 "link_type": "test"
             }
@@ -51,7 +54,7 @@ class TestURLShortener:
         """Test short URL redirect - should return 302"""
         # First create a short URL
         create_response = requests.post(
-            f"{BASE_URL}/api/s/create",
+            f"{BASE_URL}/api/s/create", headers=AUTH_H,
             json={
                 "original_url": "https://example.com/redirect-test",
                 "link_type": "test"
@@ -67,9 +70,13 @@ class TestURLShortener:
             allow_redirects=False
         )
         
-        assert redirect_response.status_code == 302
-        assert redirect_response.headers.get("location") == "https://example.com/redirect-test"
-        print(f"PASS: Short URL redirects to correct location")
+        # The short link answers an HTML page with OG tags + an instant client-side redirect (link previewers need the markup)
+        assert redirect_response.status_code in (200, 302)
+        if redirect_response.status_code == 302:
+            assert redirect_response.headers.get("location") == "https://example.com/redirect-test"
+        else:
+            assert "https://example.com/redirect-test" in redirect_response.text
+        print(f"PASS: Short URL resolves to the original location")
     
     def test_redirect_nonexistent_short_url(self):
         """Test redirect with non-existent short code"""
@@ -85,7 +92,7 @@ class TestURLShortener:
         """Test getting stats for a short URL"""
         # First create a short URL
         create_response = requests.post(
-            f"{BASE_URL}/api/s/create",
+            f"{BASE_URL}/api/s/create", headers=AUTH_H,
             json={
                 "original_url": "https://example.com/stats-test",
                 "link_type": "test_stats"
@@ -97,7 +104,7 @@ class TestURLShortener:
         
         # Get stats
         stats_response = requests.get(
-            f"{BASE_URL}/api/s/stats/{short_code}"
+            f"{BASE_URL}/api/s/stats/{short_code}", headers=AUTH_H
         )
         
         assert stats_response.status_code == 200
@@ -118,7 +125,7 @@ class TestURLShortener:
         
         # Create first short URL
         response1 = requests.post(
-            f"{BASE_URL}/api/s/create",
+            f"{BASE_URL}/api/s/create", headers=AUTH_H,
             json={
                 "original_url": unique_url,
                 "link_type": "test_dedup"
@@ -130,7 +137,7 @@ class TestURLShortener:
         
         # Create second short URL with same parameters
         response2 = requests.post(
-            f"{BASE_URL}/api/s/create",
+            f"{BASE_URL}/api/s/create", headers=AUTH_H,
             json={
                 "original_url": unique_url,
                 "link_type": "test_dedup"

@@ -1,7 +1,8 @@
 """
 Authentication router - handles login, signup, forgot password
 """
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from routers.rbac import require_user_access
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -484,51 +485,8 @@ async def signup(user_data: UserCreate):
 
 @router.post("/test-login")
 async def test_login(credentials: dict):
-    """Lightweight login test — just verifies credentials, returns pass/fail with diagnostics.
-    No enrichment, no cookies, no background tasks. Used for debugging mobile login issues."""
-    import re
-    raw_email = credentials.get('email', '')
-    raw_password = credentials.get('password', '')
-    email = (raw_email or '').strip().lower()
-    password = raw_password or ''
-
-    # Log the raw bytes for debugging character encoding issues
-    diagnostics = {
-        "email_length": len(email),
-        "email_bytes": [ord(c) for c in email],
-        "password_length": len(password),
-        "password_bytes": [ord(c) for c in password],
-        "raw_email_length": len(raw_email),
-        "raw_password_length": len(raw_password),
-    }
-
-    if not email or not password:
-        return {"status": "fail", "reason": "empty_credentials", "diagnostics": diagnostics}
-
-    escaped_email = re.escape(email)
-    user = await get_db().users.find_one({"email": {"$regex": f"^{escaped_email}$", "$options": "i"}})
-    if not user:
-        return {"status": "fail", "reason": "user_not_found", "diagnostics": diagnostics}
-
-    stored_pw = user.get('password', '')
-    is_hashed = stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")
-    pw_match = verify_password(password, stored_pw)
-
-    diagnostics["user_found"] = True
-    diagnostics["user_name"] = user.get("name", "")
-    diagnostics["user_email"] = user.get("email", "")
-    diagnostics["password_is_hashed"] = is_hashed
-    diagnostics["password_match"] = pw_match
-    diagnostics["bcrypt_available"] = BCRYPT_AVAILABLE
-    diagnostics["user_status"] = user.get("status", "")
-    diagnostics["is_active"] = user.get("is_active", True)
-    diagnostics["has_store_id"] = bool(user.get("store_id"))
-    diagnostics["has_org_id"] = bool(user.get("organization_id") or user.get("org_id"))
-
-    if not pw_match:
-        return {"status": "fail", "reason": "wrong_password", "diagnostics": diagnostics}
-
-    return {"status": "pass", "reason": "credentials_valid", "diagnostics": diagnostics}
+    """DISABLED — an unauthenticated password oracle with no lockout and account diagnostics. Use /auth/login."""
+    raise HTTPException(status_code=410, detail="This endpoint has been permanently disabled.")
 
 
 @router.post("/login")
@@ -1186,14 +1144,18 @@ async def activate_by_link(data: dict):
             "first_name": user.get("first_name") or (user.get("name") or "").split(" ")[0]}
 
 @router.post("/change-password")
-async def change_password(data: dict):
-    """Change password for logged-in user"""
-    user_id = data.get('user_id')
+async def change_password(data: dict, request: Request):
+    """Change password for the logged-in user: the proven caller, with their current password."""
+    from routers.rbac import get_current_user
+    me = await get_current_user(request)
+    user_id = str(me["_id"])
+    if data.get('user_id') and str(data['user_id']) != user_id:
+        raise HTTPException(status_code=403, detail="You can only change your own password")
     current_password = data.get('current_password')
     new_password = data.get('new_password')
     
-    if not all([user_id, current_password, new_password]):
-        raise HTTPException(status_code=400, detail="User ID, current password, and new password are required")
+    if not all([current_password, new_password]):
+        raise HTTPException(status_code=400, detail="Current password and new password are required")
     
     if len(new_password) < 6:
         raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
@@ -1239,7 +1201,7 @@ async def admin_password_reset(data: dict):
 
 
 @router.post("/persona/{user_id}")
-async def save_persona(user_id: str, persona: UserPersona):
+async def save_persona(user_id: str, persona: UserPersona, me: dict = Depends(require_user_access())):
     """Save the full profile/persona settings for a user.
     Auto-marks onboarding_complete=True once photo + bio are present.
     """
@@ -1261,7 +1223,7 @@ async def save_persona(user_id: str, persona: UserPersona):
 
 
 @router.get("/persona/{user_id}/ai-prompt")
-async def get_ai_system_prompt(user_id: str):
+async def get_ai_system_prompt(user_id: str, me: dict = Depends(require_user_access())):
     """Build the full AI clone system prompt from the user's saved profile.
     Used internally by Jessi and all AI features.
     """
@@ -1279,7 +1241,7 @@ async def get_ai_system_prompt(user_id: str):
 
 
 @router.post("/persona/{user_id}/sample-message")
-async def generate_va_sample_message(user_id: str, data: dict):
+async def generate_va_sample_message(user_id: str, data: dict, me: dict = Depends(require_user_access())):
     """
     Generate a sample reply in the user's VA voice for a given scenario.
     Used by the Virtual Assistant preview page so users can see how their VA sounds.
@@ -1391,13 +1353,17 @@ def _build_ai_clone_prompt(name: str, first: str, persona: dict, user: dict) -> 
 
 
 @router.post("/complete-onboarding")
-async def complete_onboarding(data: dict):
+async def complete_onboarding(data: dict, request: Request):
     """
     Complete the onboarding process for a new user.
     Saves profile data, AI preferences, persona data, and notifies admins/managers.
     """
     db = get_db()
-    user_id = data.get("user_id")
+    from routers.rbac import get_current_user
+    from services.route_guard import assert_self_or_scoped_manager
+    me = await get_current_user(request)
+    user_id = str(data.get("user_id") or me["_id"])
+    await assert_self_or_scoped_manager(str(me["_id"]), user_id)
     
     # Profile verification data
     updated_name = data.get("name")
@@ -1577,17 +1543,8 @@ async def send_onboarding_notification_sms(manager: dict, user_name: str):
         logger.warning(f"Twilio SMS failed: {e}")
 
 @router.get("/user/{user_id}")
-async def get_user(user_id: str, request: Request):
-    """Get user profile — requires valid JWT; users can only fetch their own profile."""
-    from routers.rbac import _resolve_user_from_request
-    caller = await _resolve_user_from_request(request)
-    if not caller:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    # Users can only read their own profile; admins can read any
-    caller_role = caller.get("role", "user")
-    caller_id = str(caller.get("_id", ""))
-    if caller_id != user_id and caller_role not in ("super_admin", "org_admin", "store_manager"):
-        raise HTTPException(status_code=403, detail="You can only access your own profile")
+async def get_user(user_id: str, me: dict = Depends(require_user_access())):
+    """Get user profile — the caller themselves, or a manager scoped to that user."""
 
     user = await get_db().users.find_one({"_id": ObjectId(user_id)})
     if not user:
@@ -1615,8 +1572,8 @@ async def get_user(user_id: str, request: Request):
     return user
 
 @router.put("/user/{user_id}")
-async def update_user(user_id: str, user_data: dict):
-    """Update user profile"""
+async def update_user(user_id: str, user_data: dict, me: dict = Depends(require_user_access())):
+    """Update user profile — the caller themselves, or a manager scoped to that user."""
     allowed_fields = ['name', 'phone', 'persona', 'settings', 'timezone']
     update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}
     
@@ -1635,8 +1592,8 @@ async def update_user(user_id: str, user_data: dict):
 
 
 @router.patch("/users/{user_id}")
-async def patch_user(user_id: str, user_data: dict):
-    """Update user profile fields including photo"""
+async def patch_user(user_id: str, user_data: dict, me: dict = Depends(require_user_access())):
+    """Update user profile fields including photo — the caller themselves, or a manager scoped to that user."""
     allowed_fields = ['name', 'phone', 'email', 'persona', 'settings', 'photo_url', 'bio', 'social_links', 'timezone',
                       'address', 'city', 'state', 'zip_code', 'country', 'title', 'ai_master_paused']
     update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}
@@ -1679,7 +1636,7 @@ async def patch_user(user_id: str, user_data: dict):
 
 
 @router.get("/users/{user_id}/review-links")
-async def get_review_links(user_id: str):
+async def get_review_links(user_id: str, me: dict = Depends(require_user_access())):
     """Get user's review links for quick sharing"""
     user = await get_db().users.find_one(
         {"_id": ObjectId(user_id)},
@@ -1696,7 +1653,7 @@ async def get_review_links(user_id: str):
 
 
 @router.put("/users/{user_id}/review-links")
-async def update_review_links(user_id: str, data: dict):
+async def update_review_links(user_id: str, data: dict, me: dict = Depends(require_user_access())):
     """Save user's review links"""
     result = await get_db().users.update_one(
         {"_id": ObjectId(user_id)},

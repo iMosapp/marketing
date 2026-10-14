@@ -26,10 +26,11 @@ def admin_user(api_client):
     """Login as super admin"""
     response = api_client.post(f"{BASE_URL}/api/auth/login", json={
         "email": "forest@imosapp.com",
-        "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
+        "password": os.environ.get("TEST_ADMIN_PASS") or __import__("tests.qa_creds", fromlist=["x"]).password_for("forest@imosapp.com")
     })
     assert response.status_code == 200, f"Login failed: {response.text}"
     data = response.json()
+    api_client.headers.update({"Authorization": f"Bearer {data['token']}"})  # every later call is made as this admin
     return data.get("user", data)
 
 class TestNotificationCenterAPI:

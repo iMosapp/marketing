@@ -922,7 +922,7 @@ async def get_congrats_card(card_id: str, request: Request):
                     review_links = store_doc.get("review_links", {})
                     store_data = {
                         "name": store_doc.get("name") or card.get("store_name"),
-                        "logo": card.get("store_logo") if card.get("store_logo", "").startswith("/api/") else resolve_store_logo({"logo_path": None, "logo_url": card.get("store_logo"), "_id": card.get("store_id")}),
+                        "logo": card.get("store_logo") if (card.get("store_logo") or "").startswith("/api/") else resolve_store_logo({"logo_path": None, "logo_url": card.get("store_logo"), "_id": card.get("store_id")}),
                         "website": store_doc.get("website", ""),
                         "google_review_url": review_links.get("google", ""),
                         "slug": store_doc.get("slug", ""),
@@ -933,15 +933,21 @@ async def get_congrats_card(card_id: str, request: Request):
     if not store_data and card.get("show_store_logo") and card.get("store_name"):
         store_data = {
             "name": card.get("store_name"),
-            "logo": card.get("store_logo") if card.get("store_logo", "").startswith("/api/") else resolve_store_logo({"logo_path": None, "logo_url": card.get("store_logo"), "_id": card.get("store_id")}),
+            "logo": card.get("store_logo") if (card.get("store_logo") or "").startswith("/api/") else resolve_store_logo({"logo_path": None, "logo_url": card.get("store_logo"), "_id": card.get("store_id")}),
             "website": "",
             "google_review_url": "",
             "slug": "",
         }
 
+    linkpage_username = None
+    if salesman_id:
+        lp = await db.link_pages.find_one({"user_id": str(salesman_id)}, {"username": 1})
+        linkpage_username = (lp or {}).get("username") or None
+
     return {
         "card_id": card_id,
         "salesman_id": card.get("salesman_id"),
+        "linkpage_username": linkpage_username,
         "customer_name": card.get("customer_name"),
         "customer_phone": card.get("customer_phone"),
         "customer_photo": card_photo,
@@ -951,7 +957,7 @@ async def get_congrats_card(card_id: str, request: Request):
         "footer_text": card.get("footer_text"),
         "salesman": {
             "name": card.get("salesman_name"),
-            "photo": card.get("salesman_photo") if card.get("salesman_photo", "").startswith("/api/") else resolve_user_photo({"photo_path": None, "photo_url": card.get("salesman_photo"), "_id": card.get("salesman_id")}),
+            "photo": card.get("salesman_photo") if (card.get("salesman_photo") or "").startswith("/api/") else resolve_user_photo({"photo_path": None, "photo_url": card.get("salesman_photo"), "_id": card.get("salesman_id")}),
             "title": card.get("salesman_title"),
             "phone": card.get("salesman_phone"),
             "email": card.get("salesman_email"),

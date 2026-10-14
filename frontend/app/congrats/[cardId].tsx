@@ -46,7 +46,9 @@ interface CongratsCardData {
   store?: {
     name: string;
     logo?: string;
+    slug?: string;
   };
+  linkpage_username?: string | null;
   style: {
     background_color: string;
     accent_color: string;
@@ -116,17 +118,9 @@ export default function CongratsCardPage() {
         store: d.store ? { ...d.store, logo: resolvePhotoUrl(d.store.logo) || d.store.logo } : d.store,
         salesman: d.salesman ? { ...d.salesman, photo: resolvePhotoUrl(d.salesman.photo) || d.salesman.photo } : d.salesman,
       });
-      // Pre-fetch store slug for the review link
-      if (response.data?.salesman_id) {
-        try {
-          const userResp = await api.get(`/auth/user/${response.data.salesman_id}`);
-          setStoreSlug(userResp.data?.store?.slug || null);
-        } catch {}
-        try {
-          const lpResp = await api.get(`/linkpage/user/${response.data.salesman_id}`);
-          setLinkPageUsername(lpResp.data?.username || null);
-        } catch {}
-      }
+      // Store slug + link page come with the card: this page is viewed by customers without a session
+      setStoreSlug(d.store?.slug || null);
+      setLinkPageUsername(d.linkpage_username || null);
     } catch (err: any) {
       console.error('Error loading card:', err);
       setError(err.response?.data?.detail || 'Card not found');
@@ -151,18 +145,17 @@ export default function CongratsCardPage() {
     setSubmittingReview(true);
     track('internal_review_submitted', { metadata: { rating: reviewRating } });
     try {
-      // Get the store slug to submit review
-      const userResp = await api.get(`/auth/user/${cardData.salesman_id}`);
-      const slug = userResp.data?.store?.slug;
-      setStoreSlug(slug || null);
+      const slug = storeSlug || cardData.store?.slug;
       if (slug) {
         await api.post(`/review/submit/${slug}`, {
           customer_name: reviewName.trim() || cardData.customer_name || 'Anonymous',
           rating: reviewRating,
           text_review: reviewText.trim() || null,
         });
+        setReviewSubmitted(true);
+      } else {
+        console.warn('Review submit skipped: store has no slug');
       }
-      setReviewSubmitted(true);
     } catch (e) {
       console.error('Review submit error:', e);
     } finally {

@@ -312,10 +312,8 @@ export default function InboxScreen() {
       const allTeamConversations: any[] = [];
 
       try {
-        const chatRes = await fetch(
-          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/chat/leads?user_id=${user._id}`
-        );
-        const chatData = await chatRes.json();
+        const chatRes = await api.get('/chat/leads', { params: { user_id: user._id } });
+        const chatData = chatRes.data || {};
         if (chatData.conversations) {
           allTeamConversations.push(...chatData.conversations.map((c: any) => ({
             ...c,
@@ -327,19 +325,15 @@ export default function InboxScreen() {
       }
 
       try {
-        const teamsResponse = await fetch(
-          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/admin/team/shared-inboxes?user_id=${user._id}`
-        );
-        const teamsData = await teamsResponse.json();
+        const teamsResponse = await api.get('/admin/team/shared-inboxes', { params: { user_id: user._id } });
+        const teamsData = teamsResponse.data;
         const teams = Array.isArray(teamsData) ? teamsData : (teamsData.inboxes || []);
         
         for (const team of teams) {
           const teamId = team._id || team.id;
           try {
-            const convResponse = await fetch(
-              `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/lead-sources/team-inbox/${teamId}?include_claimed=true`
-            );
-            const convData = await convResponse.json();
+            const convResponse = await api.get(`/lead-sources/team-inbox/${teamId}`, { params: { include_claimed: true } });
+            const convData = convResponse.data || {};
             if (convData.conversations) {
               allTeamConversations.push(...convData.conversations.map((c: any) => ({
                 ...c,
@@ -1402,20 +1396,18 @@ export default function InboxScreen() {
       try {
         // Use chat widget claim endpoint for Jessi leads, lead-sources for others
         const isJessiLead = item.lead_source_name && item.lead_source_name.startsWith('Jessi Chat');
-        const claimUrl = isJessiLead
-          ? `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/chat/claim/${item.id}?user_id=${user._id}`
-          : `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/lead-sources/claim/${item.id}?user_id=${user._id}`;
-        const response = await fetch(claimUrl, { method: 'POST' });
-        const data = await response.json();
+        const claimUrl = isJessiLead ? `/chat/claim/${item.id}` : `/lead-sources/claim/${item.id}`;
+        const response = await api.post(claimUrl, null, { params: { user_id: user._id } });
+        const data = response.data || {};
         if (data.success) {
           showToast('Lead claimed!', 'success', 2000);
           loadTeamConversations();
         } else {
           showToast(data.detail || 'Could not claim lead', 'error', 2500);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error claiming lead:', error);
-        showToast('Failed to claim lead', 'error', 2500);
+        showToast(error?.response?.data?.detail || 'Failed to claim lead', 'error', 2500);
       }
     };
 

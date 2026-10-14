@@ -20,7 +20,7 @@ def resolve_user_photo(user: dict) -> str | None:
         return f"/api/images/{user['photo_path']}"
     if user.get("photo_avatar_path"):
         return f"/api/images/{user['photo_avatar_path']}"
-    url = user.get("photo_url", "")
+    url = user.get("photo_url") or ""
     if not url:
         return None
     if url.startswith("/api/images/"):
@@ -40,7 +40,7 @@ def resolve_store_logo(store: dict) -> str | None:
     """
     if not store:
         return None
-    url = store.get("logo_url", "")
+    url = store.get("logo_url") or ""
     if url.startswith("/api/images/"):
         return url
     if url.startswith("http") and len(url) < 500:
@@ -62,7 +62,7 @@ def resolve_card_photo(card: dict) -> str | None:
         return None
     if card.get("photo_path"):
         return f"/api/images/{card['photo_path']}"
-    url = card.get("customer_photo", "") or card.get("photo_url", "")
+    url = card.get("customer_photo") or card.get("photo_url") or ""
     if not url:
         return None
     if url.startswith("/api/images/"):

@@ -1188,8 +1188,19 @@ setTimeout(function(){{
     return HTMLResponse(content=html)
 
 
+async def _bound_user_id(request: Request, claimed) -> str:
+    """Short links are minted on behalf of the signed-in caller (or someone a manager is scoped to): never for a stranger."""
+    from services.route_guard import assert_self_or_scoped_manager
+    caller = getattr(request.state, "caller_id", None)
+    if not caller:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    user_id = str(claimed or caller)
+    await assert_self_or_scoped_manager(caller, user_id)
+    return user_id
+
+
 @router.post("/create")
-async def create_short_url_endpoint(data: dict):
+async def create_short_url_endpoint(data: dict, request: Request):
     """
     API endpoint to create a short URL.
     
@@ -1202,12 +1213,13 @@ async def create_short_url_endpoint(data: dict):
     original_url = data.get("original_url")
     if not original_url:
         raise HTTPException(status_code=400, detail="original_url is required")
+    user_id = await _bound_user_id(request, data.get("user_id"))
     
     result = await create_short_url(
         original_url=original_url,
         link_type=data.get("link_type", "custom"),
         reference_id=data.get("reference_id"),
-        user_id=data.get("user_id"),
+        user_id=user_id,
         metadata=data.get("metadata")
     )
     
@@ -1224,7 +1236,7 @@ async def get_stats(short_code: str):
 
 
 @router.post("/wrap")
-async def wrap_url(data: dict):
+async def wrap_url(data: dict, request: Request):
     """
     Universal URL wrapper — pass any URL, get back a tracked short URL.
     Auto-detects link type (YouTube → training_video, review → review_request, etc.).
@@ -1248,9 +1260,7 @@ async def wrap_url(data: dict):
     url = (data.get("url") or "").strip()
     if not url:
         raise HTTPException(status_code=400, detail="url is required")
-    user_id = data.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id is required")
+    user_id = await _bound_user_id(request, data.get("user_id"))
 
     # Auto-detect link type
     if "youtube.com" in url or "youtu.be" in url:
@@ -1278,7 +1288,7 @@ async def wrap_url(data: dict):
 
 
 @router.post("/wrap-bulk")
-async def wrap_urls_bulk(data: dict):
+async def wrap_urls_bulk(data: dict, request: Request):
     """
     Bulk URL wrapper — pass multiple URLs, get back tracked short URLs.
     
@@ -1292,11 +1302,9 @@ async def wrap_urls_bulk(data: dict):
         results: List of {original_url, short_url, short_code, link_type}
     """
     urls = data.get("urls", [])
-    user_id = data.get("user_id")
     if not urls:
         raise HTTPException(status_code=400, detail="urls list is required")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id is required")
+    user_id = await _bound_user_id(request, data.get("user_id"))
 
     context = data.get("context", "manual_wrap")
     reference_id = data.get("reference_id")

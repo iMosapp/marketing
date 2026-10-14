@@ -40,8 +40,8 @@ class Session:
     def patch(self, path, body=None):
         return call("PATCH", path, body if body is not None else {}, self.headers)
 
-    def delete(self, path):
-        return call("DELETE", path, headers=self.headers)
+    def delete(self, path, body=None):
+        return call("DELETE", path, body, self.headers)
 
 
 def anon(method, path, body=None):
@@ -76,3 +76,19 @@ def mongo():
 
 def oid(value):
     return ObjectId(value)
+
+
+def ensure_qa_user(mongo, email, role, org_id, store_id, name):
+    """A QA account that exists only in preview; its password lives in the gitignored credentials file. Returns (email, password)."""
+    from datetime import datetime
+    from routers.auth import hash_password
+    from tests import qa_creds
+    pw = qa_creds.password_for(email)
+    base = {"email": email, "name": name, "role": role, "organization_id": org_id, "store_id": store_id, "status": "active",
+            "is_active": True, "onboarding_complete": True, "password": hash_password(pw)}
+    doc = mongo.users.find_one({"email": email})
+    if not doc:
+        mongo.users.insert_one({**base, "created_at": datetime.utcnow()})
+    else:
+        mongo.users.update_one({"_id": doc["_id"]}, {"$set": base})
+    return email, pw

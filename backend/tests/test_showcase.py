@@ -28,8 +28,9 @@ def auth_token():
 @pytest.fixture
 def api_client():
     """Shared requests session"""
+    from tests.live_auth import Session
     session = requests.Session()
-    session.headers.update({"Content-Type": "application/json"})
+    session.headers.update({"Content-Type": "application/json", **Session("forest@imosapp.com", __import__("tests.qa_creds", fromlist=["x"]).password_for("forest@imosapp.com")).headers})
     return session
 
 

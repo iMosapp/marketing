@@ -5,10 +5,17 @@ Tests: GET profile, PUT profile, POST generate-bio
 import pytest
 import requests
 import os
+from pymongo import MongoClient
+from tests.live_auth import STORE_A, Session as _Session, ensure_qa_user
+
+# A disposable rep: this module overwrites name / phone / title / bio, so it must never run against a real account.
+_mongo = MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
+_TESTER = _Session(*ensure_qa_user(_mongo, "qa-profile-tester@invalid.imonsocial.test", "user", "org_001", STORE_A, "QA Profile Tester"))
+AUTH_H = _TESTER.headers
 import time
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com")
-TEST_USER_ID = "69963e636d8473ba25695a34"
+TEST_USER_ID = _TESTER.user_id
 
 
 class TestProfileGet:
@@ -16,7 +23,7 @@ class TestProfileGet:
     
     def test_get_profile_success(self):
         """Test getting profile data successfully"""
-        response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}")
+        response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}", headers=AUTH_H)
         
         assert response.status_code == 200
         data = response.json()
@@ -45,7 +52,7 @@ class TestProfileGet:
         
         # Verify specific values
         assert user["id"] == TEST_USER_ID
-        assert user["email"] == "superadmin@mvpline.com"
+        assert user["email"] == "qa-profile-tester@invalid.imonsocial.test"
         assert isinstance(user["hobbies"], list)
         assert isinstance(user["fun_facts"], list)
         assert isinstance(user["social_links"], dict)
@@ -54,7 +61,7 @@ class TestProfileGet:
     
     def test_get_profile_invalid_id(self):
         """Test getting profile with invalid user ID"""
-        response = requests.get(f"{BASE_URL}/api/profile/invalid_id_123")
+        response = requests.get(f"{BASE_URL}/api/profile/invalid_id_123", headers=AUTH_H)
         
         assert response.status_code == 404
         data = response.json()
@@ -63,7 +70,7 @@ class TestProfileGet:
     
     def test_get_profile_nonexistent_user(self):
         """Test getting profile for non-existent user"""
-        response = requests.get(f"{BASE_URL}/api/profile/000000000000000000000000")
+        response = requests.get(f"{BASE_URL}/api/profile/000000000000000000000000", headers=AUTH_H)
         
         assert response.status_code == 404
         print("Non-existent user returns 404 as expected")
@@ -75,7 +82,7 @@ class TestProfileUpdate:
     def test_update_basic_info(self):
         """Test updating basic profile info (name, phone, title)"""
         # Get current profile
-        get_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}")
+        get_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}", headers=AUTH_H)
         original_data = get_response.json()["user"]
         
         # Update basic fields
@@ -87,6 +94,7 @@ class TestProfileUpdate:
         
         response = requests.put(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}",
+            headers=AUTH_H,
             json=update_data
         )
         
@@ -95,7 +103,7 @@ class TestProfileUpdate:
         assert data["success"] == True
         
         # Verify changes persisted
-        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}")
+        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}", headers=AUTH_H)
         updated_user = verify_response.json()["user"]
         
         assert updated_user["name"] == update_data["name"]
@@ -112,13 +120,14 @@ class TestProfileUpdate:
         
         response = requests.put(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}",
+            headers=AUTH_H,
             json=update_data
         )
         
         assert response.status_code == 200
         
         # Verify persistence
-        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}")
+        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}", headers=AUTH_H)
         user = verify_response.json()["user"]
         assert user["years_experience"] == "8 years"
         
@@ -134,13 +143,14 @@ class TestProfileUpdate:
         
         response = requests.put(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}",
+            headers=AUTH_H,
             json=update_data
         )
         
         assert response.status_code == 200
         
         # Verify persistence
-        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}")
+        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}", headers=AUTH_H)
         user = verify_response.json()["user"]
         
         assert user["hometown"] == update_data["hometown"]
@@ -157,13 +167,14 @@ class TestProfileUpdate:
         
         response = requests.put(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}",
+            headers=AUTH_H,
             json=update_data
         )
         
         assert response.status_code == 200
         
         # Verify persistence
-        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}")
+        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}", headers=AUTH_H)
         user = verify_response.json()["user"]
         
         assert isinstance(user["hobbies"], list)
@@ -181,13 +192,14 @@ class TestProfileUpdate:
         
         response = requests.put(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}",
+            headers=AUTH_H,
             json=update_data
         )
         
         assert response.status_code == 200
         
         # Verify persistence
-        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}")
+        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}", headers=AUTH_H)
         user = verify_response.json()["user"]
         
         assert isinstance(user["fun_facts"], list)
@@ -207,13 +219,14 @@ class TestProfileUpdate:
         
         response = requests.put(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}",
+            headers=AUTH_H,
             json=update_data
         )
         
         assert response.status_code == 200
         
         # Verify persistence
-        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}")
+        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}", headers=AUTH_H)
         user = verify_response.json()["user"]
         
         assert isinstance(user["social_links"], dict)
@@ -231,13 +244,14 @@ class TestProfileUpdate:
         
         response = requests.put(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}",
+            headers=AUTH_H,
             json=update_data
         )
         
         assert response.status_code == 200
         
         # Verify persistence
-        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}")
+        verify_response = requests.get(f"{BASE_URL}/api/profile/{TEST_USER_ID}", headers=AUTH_H)
         user = verify_response.json()["user"]
         
         assert user["bio"] == test_bio
@@ -263,6 +277,7 @@ class TestAIBioGeneration:
         
         response = requests.post(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}/generate-bio",
+            headers=AUTH_H,
             json=bio_data
         )
         
@@ -297,6 +312,7 @@ class TestAIBioGeneration:
         
         response = requests.post(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}/generate-bio",
+            headers=AUTH_H,
             json=bio_data
         )
         
@@ -315,6 +331,7 @@ class TestAIBioGeneration:
         
         response = requests.post(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}/generate-bio",
+            headers=AUTH_H,
             json=bio_data
         )
         
@@ -336,6 +353,7 @@ class TestAIBioGeneration:
         
         response = requests.post(
             f"{BASE_URL}/api/profile/000000000000000000000000/generate-bio",
+            headers=AUTH_H,
             json=bio_data
         )
         
@@ -358,6 +376,7 @@ class TestDigitalCardIntegration:
         
         gen_response = requests.post(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}/generate-bio",
+            headers=AUTH_H,
             json=bio_data
         )
         
@@ -367,12 +386,13 @@ class TestDigitalCardIntegration:
         # Now save the bio
         save_response = requests.put(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}",
+            headers=AUTH_H,
             json={"bio": generated_bio}
         )
         assert save_response.status_code == 200
         
         # Check card data endpoint
-        card_response = requests.get(f"{BASE_URL}/api/card/data/{TEST_USER_ID}")
+        card_response = requests.get(f"{BASE_URL}/api/card/data/{TEST_USER_ID}", headers=AUTH_H)
         
         assert card_response.status_code == 200
         card_data = card_response.json()
@@ -394,12 +414,13 @@ class TestDigitalCardIntegration:
         
         update_response = requests.put(
             f"{BASE_URL}/api/profile/{TEST_USER_ID}",
+            headers=AUTH_H,
             json={"social_links": social_links}
         )
         assert update_response.status_code == 200
         
         # Check card data
-        card_response = requests.get(f"{BASE_URL}/api/card/data/{TEST_USER_ID}")
+        card_response = requests.get(f"{BASE_URL}/api/card/data/{TEST_USER_ID}", headers=AUTH_H)
         card_data = card_response.json()
         
         assert "social_links" in card_data["user"]

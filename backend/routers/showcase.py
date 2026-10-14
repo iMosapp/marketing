@@ -291,6 +291,7 @@ async def get_user_showcase(user_id: str, cid: str = None):
         "store": {
             "id": str(store["_id"]) if store else None,
             "name": store.get("name", "") if store else None,
+            "slug": store.get("slug", "") if store else None,
             "logo_url": store_logo_url,
             "primary_color": store.get("primary_color", "#C9A962") if store else "#C9A962",
         } if store else None,
@@ -349,6 +350,7 @@ async def get_store_showcase(store_id: str):
         "store": {
             "id": str(store["_id"]),
             "name": store.get("name", ""),
+            "slug": store.get("slug", ""),
             "logo_url": store_logo_url,
             "primary_color": store.get("primary_color", "#C9A962"),
         },

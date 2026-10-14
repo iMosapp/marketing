@@ -1,7 +1,7 @@
 """
 Profile router - handles salesperson profile, photo upload, AI bio generation
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime
@@ -248,6 +248,8 @@ async def update_profile(user_id: str, data: dict):
     # Update regular fields
     for field in allowed_fields:
         if field in data:
+            if field == 'social_links' and isinstance(data[field], dict):
+                continue  # expanded per key below; setting the whole object AND its keys in one $set is a Mongo path conflict
             if field in social_map:
                 update_dict[social_map[field]] = data[field]
             else:
@@ -528,9 +530,16 @@ Write ONLY the bio text, nothing else. No quotes around it."""
 
 
 @router.post("/reviews/{review_id}/portfolio")
-async def toggle_portfolio(review_id: str, data: dict):
-    """Add or remove a review from the salesperson's portfolio"""
+async def toggle_portfolio(review_id: str, data: dict, request: Request):
+    """Add or remove a review from the salesperson's portfolio — the salesperson it was written for, or their manager."""
+    from routers.rbac import get_current_user
+    from services.route_guard import assert_self_or_scoped_manager
     db = get_db()
+    me = await get_current_user(request)
+    review = await db.customer_feedback.find_one({"_id": ObjectId(review_id)}, {"salesperson_id": 1, "user_id": 1}) if ObjectId.is_valid(review_id) else None
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    await assert_self_or_scoped_manager(str(me["_id"]), str(review.get("salesperson_id") or review.get("user_id") or ""))
     
     in_portfolio = data.get("in_portfolio", True)
     

@@ -4,12 +4,16 @@ Tests: GET/PUT /api/linkpage/*, username availability check, click tracking
 """
 import pytest
 import requests
+from tests.live_auth import Session as _Session
+from tests import qa_creds as _qa
+_ADMIN = _Session("forest@imosapp.com", _qa.password_for("forest@imosapp.com"))
+AUTH_H = _ADMIN.headers
 import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
-TEST_USER_ID = "69a0b7095fddcede09591667"
+TEST_USER_ID = _ADMIN.user_id
 TEST_USERNAME = "forestward"
 
 
@@ -18,7 +22,7 @@ class TestLinkPagePublicEndpoints:
 
     def test_get_public_page_valid_username(self):
         """Test GET /api/linkpage/public/{username} - valid username"""
-        response = requests.get(f"{BASE_URL}/api/linkpage/public/{TEST_USERNAME}")
+        response = requests.get(f"{BASE_URL}/api/linkpage/public/{TEST_USERNAME}", headers=AUTH_H)
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         
         data = response.json()
@@ -31,7 +35,7 @@ class TestLinkPagePublicEndpoints:
 
     def test_get_public_page_nonexistent_username(self):
         """Test GET /api/linkpage/public/{username} - 404 for non-existent"""
-        response = requests.get(f"{BASE_URL}/api/linkpage/public/nonexistent_user_xyz123")
+        response = requests.get(f"{BASE_URL}/api/linkpage/public/nonexistent_user_xyz123", headers=AUTH_H)
         assert response.status_code == 404, f"Expected 404, got {response.status_code}"
         
         data = response.json()
@@ -41,7 +45,7 @@ class TestLinkPagePublicEndpoints:
 
     def test_get_public_page_has_required_fields(self):
         """Test public page response has all required display fields"""
-        response = requests.get(f"{BASE_URL}/api/linkpage/public/{TEST_USERNAME}")
+        response = requests.get(f"{BASE_URL}/api/linkpage/public/{TEST_USERNAME}", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -57,7 +61,7 @@ class TestLinkPageUserEndpoints:
 
     def test_get_user_link_page(self):
         """Test GET /api/linkpage/user/{user_id} - returns or creates link page"""
-        response = requests.get(f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}")
+        response = requests.get(f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}", headers=AUTH_H)
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         
         data = response.json()
@@ -69,14 +73,14 @@ class TestLinkPageUserEndpoints:
 
     def test_get_user_link_page_invalid_user(self):
         """Test GET /api/linkpage/user/{user_id} - invalid user returns 404"""
-        response = requests.get(f"{BASE_URL}/api/linkpage/user/000000000000000000000000")
+        response = requests.get(f"{BASE_URL}/api/linkpage/user/000000000000000000000000", headers=AUTH_H)
         assert response.status_code == 404, f"Expected 404, got {response.status_code}"
         print("PASS: Invalid user_id returns 404")
 
     def test_update_link_page(self):
         """Test PUT /api/linkpage/user/{user_id} - update settings"""
         # First, get current state
-        get_response = requests.get(f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}")
+        get_response = requests.get(f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}", headers=AUTH_H)
         assert get_response.status_code == 200
         original_data = get_response.json()
         original_bio = original_data.get("bio", "")
@@ -85,18 +89,20 @@ class TestLinkPageUserEndpoints:
         test_bio = "Test Bio - Updated via pytest"
         update_response = requests.put(
             f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}",
+            headers=AUTH_H,
             json={"bio": test_bio}
         )
         assert update_response.status_code == 200, f"Expected 200, got {update_response.status_code}"
         
         # Verify update
-        verify_response = requests.get(f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}")
+        verify_response = requests.get(f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}", headers=AUTH_H)
         verify_data = verify_response.json()
         assert verify_data["bio"] == test_bio, f"Bio not updated correctly"
         
         # Restore original bio
         requests.put(
             f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}",
+            headers=AUTH_H,
             json={"bio": original_bio}
         )
         
@@ -110,6 +116,7 @@ class TestUsernameAvailability:
         """Test POST /api/linkpage/user/{user_id}/check-username - taken username"""
         response = requests.post(
             f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}/check-username",
+            headers=AUTH_H,
             json={"username": TEST_USERNAME}
         )
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
@@ -124,6 +131,7 @@ class TestUsernameAvailability:
         """Test POST /api/linkpage/user/{user_id}/check-username - available username"""
         response = requests.post(
             f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}/check-username",
+            headers=AUTH_H,
             json={"username": "completely_unique_test_username_12345"}
         )
         assert response.status_code == 200
@@ -136,6 +144,7 @@ class TestUsernameAvailability:
         """Test POST /api/linkpage/user/{user_id}/check-username - too short"""
         response = requests.post(
             f"{BASE_URL}/api/linkpage/user/{TEST_USER_ID}/check-username",
+            headers=AUTH_H,
             json={"username": "ab"}
         )
         assert response.status_code == 200
@@ -153,6 +162,7 @@ class TestClickTracking:
         """Test POST /api/linkpage/public/{username}/click - track click"""
         response = requests.post(
             f"{BASE_URL}/api/linkpage/public/{TEST_USERNAME}/click",
+            headers=AUTH_H,
             json={"link_id": "test_link"}
         )
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"

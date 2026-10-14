@@ -12,10 +12,14 @@ Tests:
 
 import pytest
 import requests
+from tests.live_auth import Session as _Session
+from tests import qa_creds as _qa
+_ADMIN = _Session("forest@imosapp.com", _qa.password_for("forest@imosapp.com"))
+AUTH_H = _ADMIN.headers
 import os
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
-TEST_USER_ID = "69a0b7095fddcede09591667"
+TEST_USER_ID = _ADMIN.user_id
 
 
 class TestNotificationCenterAPI:
@@ -23,7 +27,7 @@ class TestNotificationCenterAPI:
     
     def test_get_notifications_returns_data(self):
         """GET /api/notification-center/{user_id} returns notifications structure"""
-        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}")
+        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -45,7 +49,7 @@ class TestNotificationCenterAPI:
             
     def test_get_notifications_filter_by_category(self):
         """GET /api/notification-center/{user_id}?category=activity filters correctly"""
-        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}?category=activity")
+        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}?category=activity", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -57,7 +61,7 @@ class TestNotificationCenterAPI:
             
     def test_get_notifications_filter_by_leads(self):
         """GET /api/notification-center/{user_id}?category=leads filters correctly"""
-        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}?category=leads")
+        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}?category=leads", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -69,7 +73,7 @@ class TestNotificationCenterAPI:
             
     def test_get_notifications_filter_by_tasks(self):
         """GET /api/notification-center/{user_id}?category=tasks filters correctly"""
-        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}?category=tasks")
+        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}?category=tasks", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -80,7 +84,7 @@ class TestNotificationCenterAPI:
 
     def test_get_unread_count(self):
         """GET /api/notification-center/{user_id}/unread-count returns count"""
-        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}/unread-count")
+        response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}/unread-count", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -91,7 +95,7 @@ class TestNotificationCenterAPI:
     def test_mark_notifications_read(self):
         """POST /api/notification-center/{user_id}/read marks as read"""
         # First get some notification IDs
-        get_response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}")
+        get_response = requests.get(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}", headers=AUTH_H)
         notifs = get_response.json().get("notifications", [])
         
         if len(notifs) > 0:
@@ -99,6 +103,7 @@ class TestNotificationCenterAPI:
             
             response = requests.post(
                 f"{BASE_URL}/api/notification-center/{TEST_USER_ID}/read",
+                headers=AUTH_H,
                 json={"ids": test_ids}
             )
             assert response.status_code == 200
@@ -112,7 +117,7 @@ class TestNotificationCenterAPI:
     
     def test_mark_all_read(self):
         """POST /api/notification-center/{user_id}/read-all marks all as read"""
-        response = requests.post(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}/read-all")
+        response = requests.post(f"{BASE_URL}/api/notification-center/{TEST_USER_ID}/read-all", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -127,7 +132,7 @@ class TestAnalyticsDashboardAPI:
     
     def test_dashboard_30_days(self):
         """GET /api/reports/dashboard/{user_id}?days=30 returns comprehensive data"""
-        response = requests.get(f"{BASE_URL}/api/reports/dashboard/{TEST_USER_ID}?days=30")
+        response = requests.get(f"{BASE_URL}/api/reports/dashboard/{TEST_USER_ID}?days=30", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -174,7 +179,7 @@ class TestAnalyticsDashboardAPI:
     
     def test_dashboard_7_days(self):
         """GET /api/reports/dashboard/{user_id}?days=7 works with different period"""
-        response = requests.get(f"{BASE_URL}/api/reports/dashboard/{TEST_USER_ID}?days=7")
+        response = requests.get(f"{BASE_URL}/api/reports/dashboard/{TEST_USER_ID}?days=7", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -185,7 +190,7 @@ class TestAnalyticsDashboardAPI:
         
     def test_dashboard_90_days(self):
         """GET /api/reports/dashboard/{user_id}?days=90 works for longer period"""
-        response = requests.get(f"{BASE_URL}/api/reports/dashboard/{TEST_USER_ID}?days=90")
+        response = requests.get(f"{BASE_URL}/api/reports/dashboard/{TEST_USER_ID}?days=90", headers=AUTH_H)
         assert response.status_code == 200
         
         data = response.json()
@@ -195,7 +200,7 @@ class TestAnalyticsDashboardAPI:
         
     def test_dashboard_invalid_user(self):
         """GET /api/reports/dashboard/{user_id} with invalid user returns 404"""
-        response = requests.get(f"{BASE_URL}/api/reports/dashboard/000000000000000000000000?days=30")
+        response = requests.get(f"{BASE_URL}/api/reports/dashboard/000000000000000000000000?days=30", headers=AUTH_H)
         assert response.status_code == 404
         
         data = response.json()

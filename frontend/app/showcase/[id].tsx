@@ -150,18 +150,13 @@ export default function ShowcasePage() {
     if (reviewRating === 0) return;
     setSubmittingReview(true);
     try {
-      // Try to get store slug from the showcase data
-      const storeId = data?.store?.id;
-      if (storeId) {
-        const storeResp = await api.get(`/stores/${storeId}`);
-        const slug = storeResp.data?.slug;
-        if (slug) {
-          await api.post(`/review/submit/${slug}`, {
-            customer_name: reviewName.trim() || 'Anonymous',
-            rating: reviewRating,
-            text_review: reviewText.trim() || null,
-          });
-        }
+      const slug = data?.store?.slug;
+      if (slug) {
+        await api.post(`/review/submit/${slug}`, {
+          customer_name: reviewName.trim() || 'Anonymous',
+          rating: reviewRating,
+          text_review: reviewText.trim() || null,
+        });
       }
       setReviewSubmitted(true);
     } catch (e) {

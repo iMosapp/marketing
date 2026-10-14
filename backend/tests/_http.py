@@ -14,7 +14,12 @@ def call(method, path, body=None, headers=None, raw=False):
     try:
         with urllib.request.urlopen(req, timeout=40) as r:
             data = r.read().decode()
-            return r.status, (data if raw else json.loads(data or "null"))
+            if raw:
+                return r.status, data
+            try:
+                return r.status, json.loads(data or "null")
+            except json.JSONDecodeError:
+                return r.status, data[:200]
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode()[:200]
 

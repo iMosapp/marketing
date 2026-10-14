@@ -16,7 +16,7 @@ import { useAuthStore } from '../../store/authStore';
 import * as Haptics from 'expo-haptics';
 
 import { useThemeStore } from '../../store/themeStore';
-const API_URL = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com');
+import api from '../../services/api';
 
 interface LeadNotification {
   id: string;
@@ -84,11 +84,8 @@ export const LeadNotificationModal: React.FC<LeadNotificationModalProps> = ({
     triggerHaptic('medium');
     
     try {
-      const response = await fetch(
-        `${API_URL}/api/notifications/${notification.id}/action?action=${action}&user_id=${user._id}`,
-        { method: 'POST' }
-      );
-      const data = await response.json();
+      const response = await api.post(`/notifications/${notification.id}/action`, null, { params: { action, user_id: user._id } });
+      const data = response.data || {};
       
       if (data.success) {
         // Perform the action
@@ -129,10 +126,7 @@ export const LeadNotificationModal: React.FC<LeadNotificationModalProps> = ({
     triggerHaptic('light');
     
     try {
-      await fetch(
-        `${API_URL}/api/notifications/${notification.id}/action?action=dismissed&user_id=${user._id}`,
-        { method: 'POST' }
-      );
+      await api.post(`/notifications/${notification.id}/action`, null, { params: { action: 'dismissed', user_id: user._id } });
     } catch (error) {
       console.error('Error dismissing notification:', error);
     }
