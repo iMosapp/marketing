@@ -24,6 +24,7 @@ unsaved recording is pending; backend verifies the contact belongs to the rep (4
 blocked upload -> failed bar -> Record refused with toast -> Retry -> saved sheet; live recording + logout -> bar gone.
 
 ## 2. Test evidence (preview, Oct 14 2026)
+- Independent testing agent (`/app/test_reports/iteration_386.json`): every probe in §1 re-run adversarially (anonymous / cross-rep / cross-org / authorized, Mongo asserted) -> no unauthorized 2xx, no documents created; one finding fixed: `_PROCESS_STARTED_AT` floored to whole seconds so a login in the first second after boot is not rejected under a clamped cutoff.
 - `tests/test_security_hotfix4.py` **12/12** (anonymous / other rep / foreign manager / own manager / org admin / super admin).
 - Regression batch: hotfix3 authz 19 + adversarial 21 + webhook scope 1, session cutoff 12, twilio tenant 7, bola middleware, profile -> green (`/tmp/hotfix4_final.log`).
 - `python tests/prod_smoke_hotfix3.py <preview>` -> 58/58, build `2026-10-14.security-hotfix4`.

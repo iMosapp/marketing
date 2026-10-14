@@ -47,7 +47,7 @@ def create_jwt_token(user_id: str, role: str) -> str:
     return pyjwt.encode(payload, _get_jwt_secret(), algorithm=_JWT_ALGORITHM)
 
 
-_PROCESS_STARTED_AT = datetime.now(timezone.utc).timestamp()
+_PROCESS_STARTED_AT = float(int(datetime.now(timezone.utc).timestamp()))
 
 
 def sessions_valid_after() -> Optional[float]:
