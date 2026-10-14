@@ -34,7 +34,7 @@ const HELP_ARTICLES: HelpArticle[] = [
   },
   {
     id: 'jessi-handoff', icon: 'sparkles-outline', title: 'Jessi replied to my customer. Now what?', category: 'Jessi (AI)',
-    steps: ['Nothing, if the thread is in the AI filter. Jessi answers inbound texts within seconds, in your voice, 24/7', 'When she hands off you get a You\'re Needed alert and the thread shows a red WAITING badge', 'Open the thread. The gold banner has two buttons: Take Over (you reply, she stays quiet) and All Good (customer just said thanks, clear the flag)', 'After Take Over, tap Resume AI when you are done so she picks the customer back up', 'To pause her for everyone, tap AI ON at the top of Home. Tap again to resume'],
+    steps: ['Nothing, if the thread is in the AI filter. Jessi answers inbound texts within seconds, in your voice, 24/7', 'When she hands off you get a You\'re Needed alert and the thread shows a red WAITING badge', 'Open the thread. The gold banner has two buttons: Take Over (you reply, she stays quiet) and Mark Handled (you looked, nothing more needed, clear the flag)', 'After Take Over, tap Resume AI when you are done so she picks the customer back up', 'To pause her for everyone, tap AI ON at the top of Home. Tap again to resume'],
     tip: 'Teach her how you talk under Tools > Settings > My VA, then tap Hear Your VA in Action.', navPath: '/settings/virtual-assistant',
   },
   {

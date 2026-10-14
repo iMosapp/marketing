@@ -174,9 +174,10 @@ def _line(m: dict, first: str, ts: datetime) -> Optional[str]:
         return f"[call {_clock(ts)}] {content[:200]}" if content else None
     if sender in ("user", "ai", "ai_draft"):
         return f"Me: {content[:300]}" if content else ("Me: [sent a photo]" if m.get("media_urls") else None)
+    photo = "[sent a photo you cannot see]" if (m.get("media_urls") or m.get("has_media")) else ""
     if not content:
-        return f"{first}: [sent a photo]" if m.get("media_urls") or m.get("has_media") else None
-    return f"{first}: {content[:300]}"
+        return f"{first}: {photo}" if photo else None
+    return f"{first}: {photo + ' ' if photo else ''}{content[:300]}"
 
 
 def _trigger(m: dict, first: str, vehicles: dict) -> Optional[tuple]:

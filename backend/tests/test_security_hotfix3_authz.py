@@ -9,7 +9,7 @@ import requests
 from bson import ObjectId
 
 from tests._http import API, call
-from tests.live_auth import ORG_B, REP, STORE_A, STORE_B, Session, anon, ensure_qa_user
+from tests.live_auth import ORG_B, REP, STORE_A, STORE_B, Session, anon, ensure_qa_user, unsigned_twilio_codes
 
 BASE = API
 QA_ORG_A = "org_001"  # STORE_A's organization
@@ -181,11 +181,11 @@ def test_public_flows_still_answer_without_a_session(victim):
               ("GET", f"/api/p/{victim.user_id}", 200), ("GET", "/api/subscriptions/plans", 200), ("GET", "/api/auth/ref/nope", 200),
               ("POST", "/api/auth/login", 401), ("POST", "/api/auth/refresh", 401), ("GET", "/api/auth/me", 401),
               ("POST", "/api/auth/forgot-password/request", 400), ("POST", "/api/demo-requests", 200), ("POST", "/api/app-installs/first-open", 400),
-              ("POST", "/api/cron/pilot-reminders", 401), ("GET", "/api/v1/contacts", 401), ("POST", "/api/webhooks/twilio/sms", 403),  # public route, but unsigned Twilio callbacks are refused (hotfix 4)
-              ("POST", "/api/messages/webhook/inbound", 403), ("POST", "/api/leads/adf", 400), ("GET", "/api/public/platform-stats", 200)]
+              ("POST", "/api/cron/pilot-reminders", 401), ("GET", "/api/v1/contacts", 401), ("POST", "/api/webhooks/twilio/sms", unsigned_twilio_codes()),  # public route, but unsigned Twilio callbacks are refused in enforce mode (hotfix 4)
+              ("POST", "/api/messages/webhook/inbound", unsigned_twilio_codes()), ("POST", "/api/leads/adf", 400), ("GET", "/api/public/platform-stats", 200)]
     for method, path, want in checks:
         st, body = anon(method, path, {} if method == "POST" else None)
-        assert st == want, (method, path, st, str(body)[:120])
+        assert st in (want if isinstance(want, set) else {want}), (method, path, st, str(body)[:120])
 
 
 def test_private_reads_are_closed_to_strangers():

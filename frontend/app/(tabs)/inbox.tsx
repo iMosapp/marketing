@@ -942,7 +942,7 @@ export default function InboxScreen() {
     }
   };
   
-  // "All Good" — clear the Waiting state without touching AI or taking over
+  // "Mark Handled" — clear the Waiting state without touching AI or taking over
   const handleClearWaiting = async (conversationId: string) => {
     setConversations(prev => prev.map(c =>
       c._id === conversationId ? { ...c, needs_assistance: false, unanswered_customer_replies: 0 } : c
@@ -1247,7 +1247,7 @@ export default function InboxScreen() {
                     <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: info.color, marginLeft: 2 }} />
                   )}
                 </View>
-                {/* All Good: acknowledge + clear waiting without touching AI */}
+                {/* Mark Handled: acknowledge + clear waiting without touching AI */}
                 {item.needs_assistance && (
                   <TouchableOpacity
                     onPress={async (e: any) => {
@@ -1260,7 +1260,7 @@ export default function InboxScreen() {
                     dataSet={{ testid: `all-good-btn-${item._id}` } as any}
                   >
                     <Ionicons name="checkmark" size={11} color="#000" />
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#000' }}>All Good</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#000' }}>Mark Handled</Text>
                   </TouchableOpacity>
                 )}
               </View>

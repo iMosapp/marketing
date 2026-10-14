@@ -79,7 +79,7 @@ async def download_and_store_media(media_url: str, media_type: str) -> Optional[
 _TWILIO_MEDIA_PATH = re.compile(
     r"^/2010-04-01/Accounts/AC[0-9a-fA-F]{32}/(Messages/[MS]M[0-9a-fA-F]{32}/Media/ME[0-9a-fA-F]{32}|Recordings/RE[0-9a-fA-F]{32})(\.(mp3|wav|json))?$"
 )
-_TWILIO_CDN_HOSTS = ("media.twiliocdn.com",)
+_TWILIO_CDN_HOSTS = ("media.twiliocdn.com", "mms.twiliocdn.com")  # recordings redirect to media.*, MMS images to mms.* (verified Oct 14 2026)
 
 
 def allowed_media_url(raw: str) -> str | None:
@@ -100,7 +100,7 @@ def allowed_media_url(raw: str) -> str | None:
 
 
 def allowed_redirect(location: str) -> bool:
-    """Twilio answers media fetches with a 307 to a pre-signed media.twiliocdn.com URL; nothing else may be followed."""
+    """Twilio answers media fetches with a 307 to a pre-signed *.twiliocdn.com URL (exact hosts listed above); nothing else may be followed."""
     try:
         parts = urllib.parse.urlsplit(location)
     except ValueError:
@@ -833,6 +833,7 @@ async def incoming_message(
                                         campaign_id=default_camp_id,
                                         assigned_user_id=rep_user_id,
                                         incoming_message=Body,
+                                        attachments=len(media_urls),
                                         ai_assist_mode=ai_mode,
                                         escalation_threshold=int(campaign.get("escalation_threshold", 3)),
                                         escalation_timeout_minutes=int(campaign.get("escalation_timeout_minutes", 15)),
@@ -961,6 +962,7 @@ async def incoming_message(
                             campaign_id=enroll.get("campaign_id", ""),
                             assigned_user_id=user_id or enroll.get("user_id", ""),
                             incoming_message=Body,
+                            attachments=len(media_urls),
                             ai_assist_mode=ai_mode,
                             escalation_threshold=int((camp or {}).get("escalation_threshold", 2)),
                             escalation_timeout_minutes=int((camp or {}).get("escalation_timeout_minutes", 15)),
@@ -991,6 +993,7 @@ async def incoming_message(
                             campaign_id="",
                             assigned_user_id=user_id or rep_user_id or "",
                             incoming_message=Body,
+                            attachments=len(media_urls),
                             ai_assist_mode=mode,
                             escalation_threshold=3,
                             escalation_timeout_minutes=15,

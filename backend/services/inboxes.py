@@ -569,12 +569,12 @@ async def handle_inbound(db, inbox: dict, from_phone: str, body: str, media_urls
     mode = conv_mode if conv_mode in ("auto_reply", "auto_with_approval", "draft_only", "off") else inbox_mode
     if (conv or {}).get("ai_enabled") is False and conv_mode not in ("auto_reply", "auto_with_approval", "draft_only"):
         mode = "off"
-    if not is_new and not is_stop and mode != "off" and (body or "").strip():
+    if not is_new and not is_stop and mode != "off" and ((body or "").strip() or media_urls):   # photo-only texts still reach Jessi (she flags a human)
         try:
             from routers.ai_reply import queue_ai_reply
             asyncio.create_task(queue_ai_reply(
                 contact_id=str(contact_id or ""), conversation_id=conv_id, enrollment_id="conversation_direct", campaign_id="",
-                assigned_user_id=None, incoming_message=body, ai_assist_mode=mode))
+                assigned_user_id=None, incoming_message=body, ai_assist_mode=mode, attachments=len(media_urls or [])))
         except Exception as e:
             logger.warning(f"[Inbox] VA reply failed to queue: {e}")
     return {"handled": True}

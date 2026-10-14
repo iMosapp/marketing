@@ -2169,6 +2169,13 @@ async def get_ai_suggestion_smart(conversation_id: str, request: Request, body: 
         lead_inquiry = view.inquiry_for_prompt(lead_inquiry)
         topic = view.summary()
         system_prompt += inquiry_prompt_block(lead_inquiry)
+        # Photos/files on the latest customer text: the model is text-only, so it is told it cannot see them (Stage 1 fallback)
+        _last_in = await db.messages.find_one(
+            {"conversation_id": conversation_id, "sender": "contact"}, {"media_urls": 1, "num_media": 1, "content": 1},
+            sort=[("timestamp", -1)])
+        if _last_in and (_last_in.get("media_urls") or _last_in.get("num_media")):
+            from routers.ai_reply import attachment_notice
+            system_prompt += attachment_notice(len(_last_in.get("media_urls") or []) or int(_last_in.get("num_media") or 1), _last_in.get("content") or "")
         vehicle_ok = is_vehicle_inquiry(lead_inquiry) and not (view.current and view.current.kind in ("software", "billing"))
 
         # Get contact context

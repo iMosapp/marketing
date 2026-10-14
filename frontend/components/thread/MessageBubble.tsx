@@ -6,6 +6,42 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { API_BASE_URL } from '../../services/api';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
+import { useMediaTokenStore } from '../../store/mediaTokenStore';
+
+// One MMS image: tokenized URL, tap opens full size, a failed load shows "tap to retry" instead of a silent gray box.
+const MediaImage = ({ url, styles }: { url: string; styles: any }) => {
+  const token = useMediaTokenStore(s => s.token);            // re-resolve the URL when the media token arrives/refreshes
+  const ensure = useMediaTokenStore(s => s.ensure);
+  const userId = useMediaTokenStore(s => s.userId);
+  const [failed, setFailed] = React.useState(false);
+  const [attempt, setAttempt] = React.useState(0);
+  const mediaUrl = React.useMemo(() => resolvePhotoUrl(url) || url, [url, token, attempt]);
+  const retry = () => { setFailed(false); setAttempt(a => a + 1); if (userId) ensure(userId); };
+  if (failed) {
+    return (
+      <TouchableOpacity activeOpacity={0.8} onPress={retry} style={[styles.mediaImageWrapper, { alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 120, backgroundColor: 'rgba(120,120,128,0.18)' }]} testID="mms-image-retry" dataSet={{ testid: 'mms-image-retry' } as any}>
+        <Ionicons name="image-outline" size={26} color="#8E8E93" />
+        <Text style={{ fontSize: 12, color: '#8E8E93' }}>Couldn't load this photo</Text>
+        <Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '700' }}>Tap to retry</Text>
+      </TouchableOpacity>
+    );
+  }
+  return (
+    <TouchableOpacity activeOpacity={0.9} onPress={() => openUrl(mediaUrl)} testID="mms-image" dataSet={{ testid: 'mms-image' } as any}>
+      <View style={styles.mediaImageWrapper}>
+        <Image
+          key={`${attempt}-${token ? 1 : 0}`}
+          source={{ uri: mediaUrl }}
+          style={styles.mediaImage}
+          contentFit="cover"
+          cachePolicy="none"
+          transition={300}
+          onError={(e) => { console.log('[Media] Load error:', e); setFailed(true); }}
+        />
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const URL_RE = /(https?:\/\/[^\s<>"')\]]+)/g;
 const openUrl = (url: string) => { if (Platform.OS === 'web') window.open(url, '_blank'); else Linking.openURL(url); };
@@ -208,27 +244,7 @@ export const MessageBubble = ({
                   );
                 }
 
-                return (
-                  <TouchableOpacity
-                    key={mediaIdx}
-                    activeOpacity={0.9}
-                    onPress={() => {
-                      if (Platform.OS === 'web') { window.open(mediaUrl, '_blank'); }
-                      else { Linking.openURL(mediaUrl); }
-                    }}
-                  >
-                    <View style={styles.mediaImageWrapper}>
-                      <Image
-                        source={{ uri: mediaUrl }}
-                        style={styles.mediaImage}
-                        contentFit="cover"
-                        cachePolicy="none"
-                        transition={300}
-                        onError={(e) => console.log('[Media] Load error:', mediaUrl, e)}
-                      />
-                    </View>
-                  </TouchableOpacity>
-                );
+                return <MediaImage key={mediaIdx} url={absUrl} styles={styles} />;
               })}
             </View>
           )}

@@ -2731,7 +2731,7 @@ function ThreadScreen() {
               dataSet={{ testid: 'clear-waiting-thread-btn' } as any}
             >
               <Ionicons name="checkmark" size={12} color="#000" />
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>All Good</Text>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>Mark Handled</Text>
             </TouchableOpacity>
           )}
           <View style={{ backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: kbOpen ? 9 : 10, paddingVertical: kbOpen ? 3 : 4 }}>

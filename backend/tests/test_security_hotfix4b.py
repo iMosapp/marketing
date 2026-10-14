@@ -13,7 +13,7 @@ import pytest
 from bson import ObjectId
 
 from tests._http import API, UA, call
-from tests.live_auth import ORG_B, STORE_A, STORE_B, Session, anon, ensure_qa_user
+from tests.live_auth import ORG_B, STORE_A, STORE_B, Session, anon, ensure_qa_user, unsigned_twilio_codes
 
 QA_ORG_A = "org_001"
 ZERO = "0" * 24
@@ -150,7 +150,8 @@ def test_media_url_allowlist_unit():
     for bad in BAD_URLS:
         assert allowed_media_url(bad) is None, bad
     assert allowed_redirect("https://media.twiliocdn.com/AC" + "a" * 32 + "/x?Signature=abc")
-    for bad in ("http://media.twiliocdn.com/x", "https://media.twiliocdn.com.evil.net/x", "https://evil.net/x", "https://media.twiliocdn.com:8443/x", "https://u@media.twiliocdn.com/x", "", "https://api.twilio.com/x"):
+    assert allowed_redirect("https://mms.twiliocdn.com/AC" + "a" * 32 + "/x?Signature=abc")   # MMS images redirect here (Stage 1 fix)
+    for bad in ("http://media.twiliocdn.com/x", "https://media.twiliocdn.com.evil.net/x", "https://mms.twiliocdn.com.evil.net/x", "https://evil.net/x", "https://media.twiliocdn.com:8443/x", "https://u@media.twiliocdn.com/x", "", "https://api.twilio.com/x"):
         assert not allowed_redirect(bad), bad
 
 
@@ -252,9 +253,9 @@ def test_lead_call_webhooks_require_a_twilio_signature():
     form = {"CallSid": "CAqa", "AccountSid": os.environ.get("TWILIO_ACCOUNT_SID", ""), "Digits": "1", "CallStatus": "completed"}
     for path in ("/api/webhooks/twilio/lead-call/answer?job=x", "/api/webhooks/twilio/lead-call/claim?job=x", "/api/webhooks/twilio/lead-call/status?job=x"):
         st, body = _form_post(path, form)
-        assert st == 403, (path, st, body)
+        assert st in unsigned_twilio_codes(), (path, st, body)
         st, body = _form_post(path, form, {"X-Twilio-Signature": "bm90LXRoZS1yZWFsLXNpZ25hdHVyZQ=="})
-        assert st == 403, (path, st, body)
+        assert st in unsigned_twilio_codes(), (path, st, body)
 
 
 def test_stripe_mystery_shop_webhook_fails_closed(monkeypatch):

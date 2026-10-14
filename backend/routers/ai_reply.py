@@ -257,6 +257,32 @@ async def _search_inventory_context(db, user_id: str, message: str, contact_id: 
 
 # ── Core queue function — called by inbound webhook ──────────────────────────
 
+def attachment_notice(attachments: int, text: str) -> str:
+    """Prompt block for an inbound message that carries photos/files Jessi cannot see (text-only model path).
+    Empty when there is no attachment. This is the temporary fallback until AI Vision ships."""
+    if not attachments:
+        return ""
+    n = "a photo or file" if attachments == 1 else f"{attachments} photos or files"
+    return (
+        f"\n\nATTACHMENT NOTICE: The customer just attached {n} that you CANNOT open or see. "
+        "Never describe, read or assume what it shows, and never say you looked at it. "
+        + ("Their message had no text, so the attachment IS the message. " if not (text or "").strip() else "")
+        + "If the thread makes it obvious what they are sending (an email address, a photo of their car, a document), keep the "
+        "conversation going and ask them to type the one detail you need. Otherwise say plainly that you can't open images or "
+        "attachments on your end and ask what they sent. Never say that YOU will send, email or deliver anything (no \"I'll send it "
+        "right over\"): a person on the team looks at the attachment and follows up, so say it will get to them once you have the "
+        "detail. One short message, no apology spiral."
+    )
+
+
+def attachment_preview(attachments: int, text: str) -> str:
+    """What the rep sees in previews/alerts for a media-only inbound: never an empty string."""
+    t = (text or "").strip()
+    if t:
+        return t
+    return "[sent a photo]" if attachments == 1 else f"[sent {attachments} photos]" if attachments else ""
+
+
 async def queue_ai_reply(
     contact_id: str,
     conversation_id: str,
@@ -269,12 +295,16 @@ async def queue_ai_reply(
     escalation_timeout_minutes: int = 15,
     escalation_manager_id: Optional[str] = None,
     reply_count: int = 1,
+    attachments: int = 0,
 ) -> Optional[dict]:
     """
     Generate an AI draft and add it to the queue.
     Returns the queue document or None if mode is off/draft_only with no send.
+    `attachments` = number of photos/files on the inbound message (Jessi cannot see them yet; see attachment_notice).
     """
     db = get_db()
+    incoming_message = incoming_message or ""
+    media_only = attachments > 0 and not incoming_message.strip()
 
     # Master AI switch — rep can pause ALL AI replies from the Home screen
     try:
@@ -331,7 +361,7 @@ async def queue_ai_reply(
             {"_id": ObjectId(conversation_id)},
             {"ai_paused_for_human": 1, "needs_assistance": 1, "is_internet_lead": 1, "inquiry": 1,
              "inbound_lead_id": 1, "lead_source_id": 1, "lead_source_name": 1, "attribution": 1, "inventory_narrowing": 1,
-             "inbox_id": 1, "graduated_at": 1, "assigned_to": 1, "contact_name": 1}
+             "inbox_id": 1, "graduated_at": 1, "assigned_to": 1, "contact_name": 1, "attachment_prompted_at": 1}
         )
         if _conv_pause and _conv_pause.get("ai_paused_for_human"):
             logger.info(f"[AIReply] Conversation {conversation_id} paused for human — skipping AI reply")
@@ -385,6 +415,51 @@ async def queue_ai_reply(
             logger.debug(f"[AIReply] inbox team alert failed: {_ie}")
     # Jessi asked "what budget / what kind?" last turn - the answer is an inventory turn, whatever words they use.
     narrow_pending = vehicle_ok and bool((_narrowing_pending(_conv_pause) or {}).get("asked"))
+
+    # ── Attachment Jessi can't see (no AI Vision yet): a human must look, and Jessi never nags twice ──
+    if attachments:
+        _att_now = datetime.utcnow()
+        _last_att = (_conv_pause or {}).get("attachment_prompted_at")
+        try:
+            await db.conversations.update_one(
+                {"_id": ObjectId(conversation_id)},
+                {"$set": {"needs_assistance": True, "you_are_needed_at": _att_now, "attachment_prompted_at": _att_now}}
+            )
+        except Exception:
+            pass
+        _recently_asked = bool(_last_att) and (_att_now - _last_att) < timedelta(minutes=30)
+        if not _recently_asked:
+            _cname_att = (_conv_pause or {}).get("contact_name") or "A customer"
+            _what = "a photo" if attachments == 1 else f"{attachments} photos"
+            if assigned_user_id:
+                try:
+                    await db.notifications.insert_one({
+                        "user_id":         assigned_user_id,
+                        "type":            "you_are_needed",
+                        "priority":        "urgent",
+                        "title":           f"{_cname_att} sent {_what} - Jessi can't see it",
+                        "message":         "Open the thread to look at it. Jessi asked them to type the key detail; take over if the photo is the answer.",
+                        "contact_id":      contact_id,
+                        "conversation_id": conversation_id,
+                        "read":            False,
+                        "dismissed":       False,
+                        "created_at":      _att_now,
+                    })
+                    from routers.push_notifications import send_push_to_user
+                    asyncio.create_task(send_push_to_user(
+                        assigned_user_id,
+                        f"{_cname_att} sent {_what}",
+                        "Jessi can't see photos yet - tap to look at it.",
+                        f"/thread/{conversation_id}",
+                        "image",
+                    ))
+                except Exception:
+                    pass
+            elif _inbox_team:
+                await _alert_inbox_team(f"{_cname_att} sent {_what}", "Jessi can't see photos yet - claim the thread to look at it.")
+        if media_only and _recently_asked:
+            logger.info(f"[AIReply] Another photo-only message within 30 min for {conversation_id} - already asked, human flagged, no second AI reply")
+            return None
 
     # ── Content-based routing ───────────────────────────────────────────────
     # Three buckets decide what Jessi does with this message:
@@ -753,6 +828,7 @@ async def queue_ai_reply(
             _rep = await db.users.find_one({"_id": ObjectId(assigned_user_id)}, {"store_id": 1}) if ObjectId.is_valid(str(assigned_user_id or "")) else None
             system_prompt += "\n\n" + loc.language_rule(await loc.user_locale(db, _rep))
         system_prompt += inquiry_prompt_block(lead_inquiry)
+        system_prompt += attachment_notice(attachments, incoming_message)
         if (_conv_for_inbox or {}).get("lead_source_id") and ObjectId.is_valid(str(_conv_for_inbox["lead_source_id"])):
             _src = await db.lead_sources.find_one({"_id": ObjectId(str(_conv_for_inbox["lead_source_id"]))}, {"va_prompt_override": 1, "name": 1})
             if (_src or {}).get("va_prompt_override"):
@@ -793,7 +869,8 @@ async def queue_ai_reply(
             f"{topic_block + nl if topic_block else ''}"
             f"{inv_block}"
             f"{'The thread so far (oldest first):' + nl + conv_lines + nl if conv_lines else ''}"
-            f"Customer just said: \"{incoming_message}\"\n\n"
+            + (f"Customer just said: \"{incoming_message}\"\n\n" if incoming_message.strip()
+               else f"Customer just sent: {attachment_preview(attachments, '')} - no text, and you cannot see it.\n\n") +
             "Reply naturally and briefly as me. Just the reply text, nothing else."
         )
 
@@ -908,7 +985,8 @@ async def queue_ai_reply(
         "delay_seconds":               delay,
         "ai_mode_used":                ai_assist_mode,
         "reply_count_at_creation":     reply_count,
-        "incoming_message_preview":    incoming_message[:200],
+        "incoming_message_preview":    attachment_preview(attachments, incoming_message)[:200],
+        "attachments":                 attachments,
         "media_urls":                  inventory_media or [],
         "topic":                       thread_view.summary(),
         "intel_rationale":             intel_rationale,

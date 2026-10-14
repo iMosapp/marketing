@@ -12,7 +12,7 @@ import requests
 from bson import ObjectId
 
 from tests._http import API, call
-from tests.live_auth import ORG_B, STORE_A, STORE_B, Session, anon, ensure_qa_user
+from tests.live_auth import ORG_B, STORE_A, STORE_B, Session, anon, ensure_qa_user, unsigned_twilio_codes
 
 QA_ORG_A = "org_001"
 ZERO = "0" * 24
@@ -199,9 +199,9 @@ def test_twilio_callbacks_reject_unsigned_and_forged_requests():
     form = {"MessageSid": "SMqahotfix4", "MessageStatus": "delivered", "AccountSid": os.environ.get("TWILIO_ACCOUNT_SID", ""), "From": "+15005550006", "To": "+15005550006", "Body": "forged"}
     for path in TWILIO_CALLBACKS:
         st, body = _form_post(path, form)
-        assert st == 403, (path, st, body)
+        assert st in unsigned_twilio_codes(), (path, st, body)
         st, body = _form_post(path, form, {"X-Twilio-Signature": "bm90LXRoZS1yZWFsLXNpZ25hdHVyZQ=="})
-        assert st == 403, (path, st, body)
+        assert st in unsigned_twilio_codes(), (path, st, body)
 
 
 def test_a_properly_signed_twilio_callback_is_processed():
@@ -222,7 +222,7 @@ def test_a_properly_signed_twilio_callback_is_processed():
     assert st == 200, (st, body)
     # same signature on a different body is a forgery
     st, body = _form_post(path, {**form, "MessageStatus": "failed"}, {"X-Twilio-Signature": good})
-    assert st == 403, (st, body)
+    assert st in unsigned_twilio_codes(), (st, body)
 
 
 def test_app_call_routes_under_the_twilio_prefix_need_a_session(victim, other_rep, foreign_manager):

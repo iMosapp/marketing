@@ -93,3 +93,17 @@ def ensure_qa_user(mongo, email, role, org_id, store_id, name):
     else:
         mongo.users.update_one({"_id": doc["_id"]}, {"$set": base})
     return email, pw
+
+
+_PREVIEW_TWILIO_MODE = (os.environ.get("TWILIO_WEBHOOK_VALIDATION") or "enforce").strip().lower()  # captured at import: unit tests mutate the env later
+
+
+def twilio_validation_mode() -> str:
+    """The preview backend's TWILIO_WEBHOOK_VALIDATION (loaded from backend/.env at import): enforce (default) / log / off."""
+    return _PREVIEW_TWILIO_MODE
+
+
+def unsigned_twilio_codes() -> set:
+    """What an unsigned / forged Twilio callback must answer on THIS preview: 403 in enforce mode; in log mode the callback is
+    accepted (200/204) or fails validation of its own body (422) — the production build runs enforce."""
+    return {403} if twilio_validation_mode() == "enforce" else {200, 204, 422}

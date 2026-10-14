@@ -197,6 +197,7 @@ def test_signature_validation_modes(loop, world):
     assert loop.run_until_complete(sig.check(req(good), form, db)) == (True, "ok"), "public URL shape validates even when the ingress hands us http://"
     ok, why = loop.run_until_complete(sig.check(req("bad"), form, db))
     assert not ok and why == "signature mismatch"
+    _saved_mode = os.environ.get("TWILIO_WEBHOOK_VALIDATION")
     os.environ["TWILIO_WEBHOOK_VALIDATION"] = "log"
     assert loop.run_until_complete(sig.guard(req("bad"), form, db, "test")) is None, "log mode never blocks"
     os.environ["TWILIO_WEBHOOK_VALIDATION"] = "enforce"
@@ -205,6 +206,8 @@ def test_signature_validation_modes(loop, world):
     assert loop.run_until_complete(sig.guard(req(good), form, db, "test")) is None
     os.environ.pop("TWILIO_WEBHOOK_VALIDATION", None)
     assert sig.mode() == "enforce", "enforce is the default since hotfix 4"
+    if _saved_mode is not None:
+        os.environ["TWILIO_WEBHOOK_VALIDATION"] = _saved_mode   # the preview may deliberately run in log mode
 
 
 def _signed(path: str, form: dict) -> dict:
@@ -221,7 +224,20 @@ def test_inbound_webhook_routes_registry_number_and_help(loop, world):
     base = LOCAL
     with httpx.Client(timeout=30) as c:
         form = {"From": "+15005550031", "To": "+14355550199", "Body": "Hi, is the Tahoe still there?", "MessageSid": "SMqa_tenant_1", "NumMedia": "0", "AccountSid": tenant.parent_sid()}
-        assert c.post(f"{base}/api/webhooks/twilio/sms", data=form).status_code == 403, "unsigned callback is refused"
+        from tests.live_auth import unsigned_twilio_codes
+        # unsigned probe on its own From number: in log mode the server processes it, so whatever it created is wiped right after
+        probe = {**form, "From": "+15005550030", "MessageSid": "SMqa_tenant_0"}
+        assert c.post(f"{base}/api/webhooks/twilio/sms", data=probe).status_code in unsigned_twilio_codes(), "unsigned callback is refused (enforce mode)"
+        _probe_convs = loop.run_until_complete(db.conversations.find({"rep_phone": "+14355550199", "contact_phone": "+15005550030"}, {"_id": 1, "user_id": 1}).to_list(10))
+        loop.run_until_complete(db.messages.delete_many({"$or": [{"twilio_sid": "SMqa_tenant_0"}, {"conversation_id": {"$in": [str(x["_id"]) for x in _probe_convs]}}]}))
+        loop.run_until_complete(db.contacts.delete_many({"phone": {"$regex": "5005550030$"}, "user_id": {"$in": [x.get("user_id") for x in _probe_convs]}}))
+        loop.run_until_complete(db.conversations.delete_many({"_id": {"$in": [x["_id"] for x in _probe_convs]}}))
+        # stale threads from earlier runs must not swallow the routed one
+        _stale = loop.run_until_complete(db.conversations.find({"rep_phone": "+14355550199", "contact_phone": "+15005550031", "user_id": {"$ne": str(mgr["_id"])}}, {"_id": 1, "user_id": 1}).to_list(10))
+        loop.run_until_complete(db.messages.delete_many({"conversation_id": {"$in": [str(x["_id"]) for x in _stale]}}))
+        loop.run_until_complete(db.contacts.delete_many({"phone": {"$regex": "5005550031$"}, "user_id": {"$in": [x.get("user_id") for x in _stale]}}))
+        loop.run_until_complete(db.conversations.delete_many({"_id": {"$in": [x["_id"] for x in _stale]}}))
+        loop.run_until_complete(db.inbound_message_dedup.delete_many({"message_sid": {"$regex": "^SMqa_tenant"}}))
         r = c.post(f"{base}/api/webhooks/twilio/sms", data=form, headers=_signed("/api/webhooks/twilio/sms", form))
         assert r.status_code == 200, r.text
     conv = loop.run_until_complete(db.conversations.find_one({"rep_phone": "+14355550199", "contact_phone": "+15005550031"}))
