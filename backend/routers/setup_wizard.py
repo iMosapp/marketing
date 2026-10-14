@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from routers.database import get_db
 from routers.auth import hash_password
-from routers.rbac import get_current_user, require_role, require_org_access, require_account_creator, assert_store_manager
+from routers.rbac import get_current_user, require_role, require_org_access, require_account_creator, assert_store_manager, assert_role_grant
 import secrets
 import logging
 
@@ -101,6 +101,8 @@ async def bulk_invite_team_members(data: BulkInviteRequest, me: dict = Depends(g
     bad_roles = sorted({m.role for m in data.members if m.role not in BULK_INVITE_ROLES})
     if bad_roles:
         raise HTTPException(status_code=400, detail=f"Role not allowed here: {', '.join(bad_roles)}")
+    for r in sorted({m.role for m in data.members}):
+        assert_role_grant(me, r)  # strictly below the caller's own role (a store manager creates reps only)
 
     # Verify store exists
     store = await db.stores.find_one({"_id": ObjectId(data.store_id)}) if ObjectId.is_valid(data.store_id) else None

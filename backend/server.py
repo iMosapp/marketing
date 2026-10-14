@@ -53,7 +53,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-BUILD = "2026-10-14.security-hotfix4b"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
+BUILD = "2026-10-14.security-hotfix4c"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
 app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix
@@ -495,6 +495,34 @@ async def api_health_security_config(request: Request):
         "sessions": {"jwt_secret_set": bool(env.get("JWT_SECRET")), "sessions_valid_after_set": bool((env.get("SESSIONS_VALID_AFTER") or "").strip()),
                      "effective_cutoff_epoch": int(cutoff) if cutoff else None},
         "google_calendar": {"client_configured": bool(env.get("GOOGLE_CLIENT_ID") and env.get("GOOGLE_CLIENT_SECRET"))},
+    }
+
+
+@api_router.get("/health/webhook-enforcement")
+async def api_health_webhook_enforcement(request: Request):
+    """Super-admin read-only list of the inbound integrations whose callers must change their configuration under hotfix 4B:
+    shared-inbox web forms (now need the per-inbox key in the URL) and ADF lead sources that carry an API key (header now
+    mandatory). Names and ids only, never keys."""
+    from routers.rbac import get_current_user
+    me = await get_current_user(request)
+    if me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+    db = get_db()
+    inboxes = await db.shared_inboxes.find({}, {"name": 1, "organization_id": 1, "store_id": 1, "webhook_key": 1, "created_at": 1}).to_list(500)
+    sources = await db.lead_sources.find({"api_key": {"$nin": [None, ""]}}, {"name": 1, "organization_id": 1, "store_id": 1, "is_active": 1, "created_at": 1}).to_list(500)
+    org_ids = {str(d.get("organization_id")) for d in inboxes + sources if d.get("organization_id")}
+    orgs = {str(o["_id"]): o.get("name") for o in await db.organizations.find({"_id": {"$in": [ObjectId(o) for o in org_ids if ObjectId.is_valid(o)]}}, {"name": 1}).to_list(500)}
+    def row(d):
+        return {"id": str(d["_id"]), "name": d.get("name"), "organization_id": str(d.get("organization_id") or ""),
+                "organization_name": orgs.get(str(d.get("organization_id") or "")), "store_id": str(d.get("store_id") or ""), "created_at": d.get("created_at")}
+    return {
+        "build": BUILD,
+        "shared_inboxes": {"total": len(inboxes), "with_key": sum(1 for d in inboxes if d.get("webhook_key")),
+                           "action": "Open Team > inbox > webhook info once (generates the key) and re-copy the URL into the web-form provider",
+                           "items": [{**row(d), "has_key": bool(d.get("webhook_key"))} for d in inboxes]},
+        "adf_sources_with_api_key": {"total": len(sources),
+                                     "action": "The vendor must send X-API-Key (or ?api_key=) — without it posts answer 401; unkeyed sources are unaffected",
+                                     "items": [{**row(d), "is_active": d.get("is_active", True)} for d in sources]},
     }
 
 

@@ -1101,8 +1101,8 @@ async def receive_adf_lead(request: Request):
             {"name": {"$regex": vendor_name, "$options": "i"}}
         )
         if source is None:
-            # Use first active source as fallback
-            source = await db.lead_sources.find_one({"is_active": True}) or {
+            # Use the first active source WITHOUT an API key as fallback (keyed sources are only reached on purpose)
+            source = await db.lead_sources.find_one({"is_active": True, "api_key": {"$in": [None, ""]}}) or {
                 "name": vendor_name, "assignment_method": "jump_ball",
                 "_id": None, "store_id": None
             }

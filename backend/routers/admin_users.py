@@ -22,6 +22,8 @@ from routers.rbac import (
     get_scoped_store_ids,
     get_scoped_organization_ids,
     assert_recovery_editable,
+    assert_placement,
+    get_current_user,
     verify_user_access,
     require_role,
     require_store_access,
@@ -34,13 +36,29 @@ router = APIRouter(prefix="/admin", tags=["Admin - Users"])
 logger = logging.getLogger(__name__)
 
 
+async def _creator(request: Request) -> dict:
+    """Who is creating / approving an account: a signed-in manager (store manager and above)."""
+    me = await get_current_user(request)
+    if me.get('role') not in ('super_admin', 'org_admin', 'store_manager'):
+        raise HTTPException(status_code=403, detail="Only admins can create users")
+    return me
+
+
+async def _pending_scope(me: dict) -> Optional[dict]:
+    """Pending signups a manager may see / approve / reject: those applying to one of their organizations."""
+    if me.get('role') == 'super_admin':
+        return {}
+    scoped = [str(o) for o in await get_scoped_organization_ids(me)]
+    return {"organization_id": {"$in": scoped}} if scoped else None
+
+
 class AddTeamMemberRequest(BaseModel):
     name: str
     email: str
     phone: str
     role: str = "user"
     store_id: str
-    added_by: str
+    added_by: str = ""  # ignored: the creator is always the signed-in caller
 
 
 ACTIVATE_URL = f"{APP_URL}/auth/activate"
@@ -56,29 +74,17 @@ ACTIVATION_SMS = (
 
 # ============= USER MANAGEMENT ENDPOINTS =============
 @router.post("/users")
-async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
-    """Create a user with specific role - admins only"""
-    requesting_user = await get_requesting_user(x_user_id)
-    
-    if requesting_user:
-        role = requesting_user.get('role', 'user')
-        if role not in ['super_admin', 'org_admin', 'store_manager']:
-            raise HTTPException(status_code=403, detail="Only admins can create users")
-        
-        # Org admins can only create users in their orgs (partner-scoped)
-        if role == 'org_admin':
-            from routers.rbac import get_scoped_organization_ids
-            allowed_orgs = await get_scoped_organization_ids(requesting_user)
-            if user_data.get('organization_id') and user_data.get('organization_id') not in allowed_orgs:
-                raise HTTPException(status_code=403, detail="You can only create users in your organizations")
-        
-        # Store managers can only create users in their stores
-        if role == 'store_manager':
-            allowed_stores = await get_scoped_store_ids(requesting_user)
-            if user_data.get('store_id') not in allowed_stores:
-                raise HTTPException(status_code=403, detail="You can only create users in your assigned stores")
-            # Copy org from manager
-            user_data['organization_id'] = requesting_user.get('organization_id')
+async def create_admin_user(user_data: dict, request: Request):
+    """Create a user with specific role - admins only. The role is strictly below the creator's own and the organization /
+    store must be ones the creator manages (super admins: anything)."""
+    requesting_user = await _creator(request)
+    role = requesting_user.get('role', 'user')
+    new_role = user_data.get('role') or 'user'
+    if role != 'super_admin':
+        user_data['organization_id'] = user_data.get('organization_id') or requesting_user.get('organization_id')
+    store = await assert_placement(requesting_user, role=new_role, org_id=user_data.get('organization_id') or None, store_id=user_data.get('store_id') or None)
+    if not user_data.get('organization_id') and store and store.get('organization_id'):
+        user_data['organization_id'] = str(store['organization_id'])  # a store always carries its dealership
     
     # Check if email exists
     existing = await get_db().users.find_one({"email": user_data.get('email')})
@@ -92,7 +98,7 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
         "password": hash_password(user_data.get('password', '')),
         "name": user_data.get('name'),
         "phone": user_data.get('phone', ''),
-        "role": user_data.get('role', 'user'),
+        "role": new_role,
         "organization_id": user_data.get('organization_id'),
         "store_id": user_data.get('store_id'),
         "state": user_data.get('state', ''),
@@ -150,23 +156,20 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
 
 
 @router.post("/users/create")
-async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
-    """Create a user and optionally send invite email/SMS - admins only"""
+async def create_user_with_invite(data: dict, request: Request):
+    """Create a user and optionally send invite email/SMS - admins only. Role strictly below the creator's own; organization /
+    store inside the creator's scope (store managers always into one of their stores)."""
     import string
     
-    requesting_user = await get_requesting_user(x_user_id)
-    
-    if requesting_user:
-        role = requesting_user.get('role', 'user')
-        if role not in ['super_admin', 'org_admin', 'store_manager']:
-            raise HTTPException(status_code=403, detail="Only admins can create users")
+    requesting_user = await _creator(request)
+    x_user_id = str(requesting_user['_id'])
     
     first_name = data.get('first_name', '').strip()
     last_name = data.get('last_name', '').strip()
     name = data.get('name', '').strip() or f"{first_name} {last_name}".strip()
     email = data.get('email', '').strip().lower()
     phone = data.get('phone', '').strip()
-    user_role = data.get('role', 'user')
+    user_role = data.get('role') or 'user'
     # Jessi onboarding: she texts, interviews and activates them herself, so no invite email / activation text from us
     jessi_onboarding = bool(data.get('jessi_onboarding'))
     if jessi_onboarding:
@@ -193,17 +196,13 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
             social_links[key] = val
     
     # Get org and store from request, or fall back to requesting user's
-    organization_id = data.get('organization_id')
-    store_id = data.get('store_id')
-    
-    # Non-super admins can only create users in their own org (partner-scoped)
-    if requesting_user and requesting_user.get('role') != 'super_admin':
-        from routers.rbac import get_scoped_organization_ids
-        allowed_orgs = await get_scoped_organization_ids(requesting_user)
-        if organization_id and organization_id not in allowed_orgs:
-            raise HTTPException(status_code=403, detail="You can only create users in your organizations")
-        if not organization_id:
-            organization_id = requesting_user.get('organization_id')
+    organization_id = data.get('organization_id') or None
+    store_id = data.get('store_id') or None
+    if requesting_user.get('role') != 'super_admin' and not organization_id:
+        organization_id = requesting_user.get('organization_id')
+    store = await assert_placement(requesting_user, role=user_role, org_id=organization_id, store_id=store_id)
+    if not organization_id and store and store.get('organization_id'):
+        organization_id = str(store['organization_id'])  # a store always carries its dealership
     
     if not first_name:
         raise HTTPException(status_code=400, detail="First name is required")
@@ -1294,10 +1293,13 @@ async def impersonate_user(user_id: str, request: Request):
 
 # ============= PENDING USERS =============
 @router.get("/pending-users", dependencies=[Depends(require_role("org_admin"))])
-async def get_pending_users():
-    """Get all users with pending status"""
+async def get_pending_users(request: Request):
+    """Pending signups the caller may approve (org admins: their own organizations only)"""
+    scope = await _pending_scope(await get_current_user(request))
+    if scope is None:
+        return []
     users = await get_db().users.find(
-        {"status": "pending"},
+        {"status": "pending", **scope},
         {"password": 0}
     ).sort("created_at", -1).limit(500).to_list(500)
     
@@ -1306,7 +1308,7 @@ async def get_pending_users():
     orgs = {}
     if org_ids:
         org_docs = await get_db().organizations.find(
-            {"_id": {"$in": [ObjectId(oid) for oid in org_ids if oid]}}
+            {"_id": {"$in": [ObjectId(oid) for oid in org_ids if oid and ObjectId.is_valid(str(oid))]}}
         ).to_list(100)
         orgs = {str(o["_id"]): o.get("name") for o in org_docs}
     
@@ -1327,9 +1329,13 @@ async def get_pending_users():
     return result
 
 @router.get("/pending-users/count", dependencies=[Depends(require_role("org_admin"))])
-async def get_pending_users_count():
-    """Get count of pending users (for notification badge). Cached 60s."""
+async def get_pending_users_count(request: Request):
+    """Get count of pending users (for notification badge). Cached 60s for super admins; org admins see their own orgs only."""
     import time as _t
+    me = await get_current_user(request)
+    if me.get('role') != 'super_admin':
+        scope = await _pending_scope(me)
+        return {"count": await get_db().users.count_documents({"status": "pending", **scope}) if scope is not None else 0}
     if not hasattr(get_pending_users_count, "_cache"):
         get_pending_users_count._cache = (0, 0.0)
     count, ts = get_pending_users_count._cache
@@ -1340,11 +1346,18 @@ async def get_pending_users_count():
     return {"count": count}
 
 @router.put("/pending-users/{user_id}/approve", dependencies=[Depends(require_role("org_admin"))])
-async def approve_pending_user(user_id: str, data: dict):
-    """Approve a pending user and configure their access"""
-    user = await get_db().users.find_one({"_id": ObjectId(user_id)})
+async def approve_pending_user(user_id: str, data: dict, request: Request):
+    """Approve a pending user and configure their access. The applicant must have applied to one of the approver's
+    organizations; the role granted is strictly below the approver's own; organization / stores are inside their scope."""
+    me = await get_current_user(request)
+    scope = await _pending_scope(me)
+    user = await get_db().users.find_one({"_id": ObjectId(user_id), **scope}) if scope is not None and ObjectId.is_valid(user_id) else None
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    target_org = data.get("organization_id") or user.get("organization_id") or None
+    await assert_placement(me, role=data.get("role") or None, org_id=target_org, store_id=data.get("store_id") or None)
+    for sid in data.get("store_ids") or []:
+        await assert_placement(me, org_id=target_org, store_id=sid)
     if user.get("status") == "pending":
         from services.customers import assert_seat_available
         await assert_seat_available(get_db(), org_id=data.get("organization_id") or user.get("organization_id"), store_id=data.get("store_id") or user.get("store_id"), adding=0)
@@ -1376,15 +1389,19 @@ async def approve_pending_user(user_id: str, data: dict):
     return {"message": "User approved", "user_id": user_id}
 
 @router.put("/pending-users/{user_id}/reject", dependencies=[Depends(require_role("org_admin"))])
-async def reject_pending_user(user_id: str, data: dict = None):
-    """Reject/delete a pending user"""
+async def reject_pending_user(user_id: str, request: Request, data: dict = None):
+    """Reject/delete a pending user (one who applied to the caller's organizations)"""
     data = data or {}
     reason = data.get("reason", "Application rejected")
+    scope = await _pending_scope(await get_current_user(request))
+    if scope is None or not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=404, detail="Pending user not found")
     
     # Option: Could mark as rejected instead of deleting
     result = await get_db().users.delete_one({
         "_id": ObjectId(user_id),
-        "status": "pending"
+        "status": "pending",
+        **scope,
     })
     
     if result.deleted_count == 0:
@@ -1395,28 +1412,18 @@ async def reject_pending_user(user_id: str, data: dict = None):
 
 
 @router.post("/users/add-team-member", dependencies=[Depends(require_role("store_manager"))])
-async def add_team_member(data: AddTeamMemberRequest):
+async def add_team_member(data: AddTeamMemberRequest, request: Request):
     """
-    Add a new team member to a store.
-    This is used by store managers to add users to their team.
-    Triggers onboarding flow and sends welcome SMS.
+    Add a new team member to a store the caller manages (the caller is the signed-in user, never `added_by` from the body).
+    Roles strictly below the caller's own. Triggers onboarding flow and sends welcome SMS.
     """
     
     db = get_db()
-    
-    # Verify the store exists
-    store = await db.stores.find_one({"_id": ObjectId(data.store_id)})
-    if not store:
-        raise HTTPException(status_code=404, detail="Store not found")
-    
-    # Verify the adding user has permission
-    adding_user = await db.users.find_one({"_id": ObjectId(data.added_by)})
-    if not adding_user:
-        raise HTTPException(status_code=404, detail="Adding user not found")
-    
-    # Check if adding user is a manager of this store
-    if adding_user.get("role") not in ["super_admin", "org_admin", "store_manager"]:
-        raise HTTPException(status_code=403, detail="You don't have permission to add team members")
+    adding_user = await get_current_user(request)
+    data.added_by = str(adding_user["_id"])
+    role = data.role if data.role in ["user", "store_manager"] else "user"
+    store = await assert_placement(adding_user, role=role, store_id=data.store_id)
+    store = await db.stores.find_one({"_id": store["_id"]})
     
     # Normalize email
     email = data.email.lower().strip()
@@ -1448,8 +1455,8 @@ async def add_team_member(data: AddTeamMemberRequest):
         "name": data.name.strip(),
         "email": email,
         "phone": phone,
-        "password": temp_password,  # Should be hashed in production
-        "role": data.role if data.role in ["user", "store_manager"] else "user",
+        "password": hash_password(temp_password),
+        "role": role,
         "store_id": data.store_id,
         "store_ids": [data.store_id],
         "organization_id": store.get("organization_id"),
@@ -1524,7 +1531,7 @@ async def add_team_member(data: AddTeamMemberRequest):
     # Queue welcome SMS
     sms_sent = False
     sms_error = None
-    if settings and settings.get("auto_send_welcome_sms", True):
+    if phone and settings and settings.get("auto_send_welcome_sms", True):
         try:
             from services.twilio_service import send_sms
             result_sms = await send_sms(phone, message)

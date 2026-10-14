@@ -16,7 +16,7 @@ export const useMediaTokenStore = create<S>((set, get) => ({
     if (s.token && s.userId === userId && s.expiresAt - Date.now() > 15 * 60 * 1000) return;
     if (inflight) return inflight;
     inflight = api.get('/calls/recording-token')
-      .then(r => set({ token: r.data.token, expiresAt: Date.now() + (r.data.expires_in || 7200) * 1000, userId }))
+      .then(r => { if (typeof r.data?.token === 'string' && r.data.token) set({ token: r.data.token, expiresAt: Date.now() + (r.data.expires_in || 7200) * 1000, userId }); })  // older backends answer this path differently: no token, URLs stay plain
       .catch(() => {})
       .finally(() => { inflight = null; });
     return inflight;

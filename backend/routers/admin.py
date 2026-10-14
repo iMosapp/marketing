@@ -1415,7 +1415,7 @@ async def get_individuals():
     } for u in individuals]
 
 
-@router.post("/individuals")
+@router.post("/individuals", dependencies=[Depends(require_role("super_admin"))])
 async def create_individual(
     individual_data: dict,
     x_user_id: str = Header(None, alias="X-User-ID")

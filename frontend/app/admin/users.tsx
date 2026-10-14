@@ -57,6 +57,9 @@ const ROLE_GROUP_MAP: Record<string, string> = {
 };
 
 const ROLE_ORDER = ['super_admin', 'org_admin', 'store_manager', 'user'];
+const ROLE_RANK: Record<string, number> = { super_admin: 4, org_admin: 3, store_manager: 2, user: 1 };
+// Roles the signed-in admin may grant: strictly below their own (super admins: all) — mirrors the server rule
+const grantableRoles = (myRole?: string) => myRole === 'super_admin' ? ROLE_ORDER : ROLE_ORDER.filter((r) => ROLE_RANK[r] < (ROLE_RANK[myRole || 'user'] || 1));
 
 export default function UsersScreen() {
   const { colors } = useThemeStore();
@@ -618,7 +621,7 @@ export default function UsersScreen() {
 
             <Text style={styles.inputLabel}>Role</Text>
             <View style={styles.roleSelector}>
-              {ROLE_ORDER.map((role) => (
+              {grantableRoles(user?.role).map((role) => (
                 <TouchableOpacity
                   key={role}
                   style={[
@@ -847,7 +850,7 @@ export default function UsersScreen() {
 
             <Text style={styles.inputLabel}>Role</Text>
             <View style={styles.roleSelector}>
-              {ROLE_ORDER.map((role) => (
+              {grantableRoles(user?.role).map((role) => (
                 <TouchableOpacity
                   key={role}
                   style={[

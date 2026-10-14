@@ -10,7 +10,8 @@ import urllib.error
 import urllib.request
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "https://app.imonsocial.com").rstrip("/")
-EXPECTED_BUILD = sys.argv[2] if len(sys.argv) > 2 else "2026-10-14.security-hotfix4b"
+DEFAULT_BUILD = "2026-10-14.security-hotfix4c"
+EXPECTED_BUILD = sys.argv[2] if __name__ == "__main__" and len(sys.argv) > 2 else DEFAULT_BUILD
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Content-Type": "application/json"}
 ZERO = "0" * 24
 
@@ -97,6 +98,18 @@ CHECKS = [
     ("POST", "/api/stripe/webhook", {}, None, {400, 503}),
     ("POST", f"/api/admin/team/shared-inboxes/{ZERO}/webhook", {}, None, {401, 404}),
     ("POST", "/api/webhooks/inventory/update", {}, None, {401}),
+    # hotfix 4c: account creation / approval surfaces are never anonymous
+    ("POST", "/api/admin/users", {}, None, {401}),
+    ("POST", "/api/admin/users/create", {}, None, {401}),
+    ("POST", "/api/admin/users/add-team-member", {}, None, {401}),
+    ("PUT", f"/api/admin/pending-users/{ZERO}/approve", {}, None, {401}),
+    ("PUT", f"/api/admin/pending-users/{ZERO}/reject", {}, None, {401}),
+    ("GET", "/api/admin/pending-users", None, None, {401}),
+    ("POST", "/api/admin/individuals", {}, None, {401}),
+    ("POST", "/api/setup-wizard/bulk-invite", {}, None, {401}),
+    ("POST", f"/api/permission-templates/org_admin/apply/{ZERO}", {}, None, {401}),
+    ("POST", "/api/permission-templates/", {}, None, {401}),
+    ("GET", "/api/health/webhook-enforcement", None, None, {401}),
     # public surface must stay open
     ("GET", "/api/health", None, None, {200}),
     ("GET", "/api/legal/terms", None, None, {200}),

@@ -215,6 +215,30 @@ def assert_role_grant(me: dict, role: str) -> None:
         raise HTTPException(status_code=403, detail="You can only grant roles below your own")
 
 
+ASSIGNABLE_ROLES = ("user", "account_manager", "store_manager", "org_admin", "super_admin")
+
+
+async def assert_placement(me: dict, *, role: str | None = None, org_id: str | None = None, store_id: str | None = None) -> Optional[dict]:
+    """Creating or approving an account: the role is strictly below the caller's own, the organization and store are inside the
+    caller's scope, the store belongs to that organization, and a store manager always places people into one of their stores.
+    Returns the store document when a store was named."""
+    if role is not None:
+        if role not in ASSIGNABLE_ROLES:
+            raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(ASSIGNABLE_ROLES)}")
+        assert_role_grant(me, role)
+    if me.get('role') == 'store_manager' and not store_id:
+        raise HTTPException(status_code=400, detail="Pick one of your stores for this person")
+    await assert_in_scope(me, org_id=org_id or None, store_id=store_id or None)
+    if not store_id:
+        return None
+    store = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"organization_id": 1, "name": 1}) if ObjectId.is_valid(str(store_id)) else None
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    if org_id and str(store.get("organization_id") or "") != str(org_id):
+        raise HTTPException(status_code=403, detail="That store belongs to another organization")
+    return store
+
+
 async def assert_store_manager(user: dict, store_id: str, min_role: str = "store_manager") -> None:
     """Body- or query-supplied store_id: caller must hold min_role and be scoped to that store."""
     _at_least(user, min_role)

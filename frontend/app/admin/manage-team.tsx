@@ -445,6 +445,7 @@ export default function ManageTeamScreen() {
                       newUser.role === 'user' && styles.roleOptionTextSelected
                     ]}>Sales Rep</Text>
                   </TouchableOpacity>
+                  {(user?.role === 'org_admin' || user?.role === 'super_admin') && (
                   <TouchableOpacity
                     style={[styles.roleOption, newUser.role === 'store_manager' && styles.roleOptionSelected]}
                     onPress={() => setNewUser(prev => ({ ...prev, role: 'store_manager' }))}
@@ -459,6 +460,7 @@ export default function ManageTeamScreen() {
                       newUser.role === 'store_manager' && styles.roleOptionTextSelected
                     ]}>Manager</Text>
                   </TouchableOpacity>
+                  )}
                 </View>
               </View>
               

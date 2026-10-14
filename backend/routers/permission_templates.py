@@ -3,12 +3,13 @@ Permission Templates Router
 Pre-defined and custom permission sets that can be applied to users in one click.
 Templates combine a role assignment + feature permissions.
 """
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends, Request
 from bson import ObjectId
 from datetime import datetime, timezone
 import logging
 
 from routers.database import get_db, get_user_by_id
+from routers.rbac import get_current_user, get_scoped_organization_ids, require_hierarchy_admin, assert_role_grant, ASSIGNABLE_ROLES
 from permissions import DEFAULT_PERMISSIONS, merge_permissions
 
 router = APIRouter(prefix="/permission-templates", tags=["Permission Templates"])
@@ -159,15 +160,20 @@ async def get_template(template_id: str):
 
 
 @router.post("/")
-async def create_template(data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
-    """Create a custom permission template."""
-    requesting = await get_user_by_id(x_user_id) if x_user_id else None
-    if not requesting or requesting.get("role") not in ("super_admin", "org_admin", "store_manager"):
+async def create_template(data: dict, request: Request):
+    """Create a custom permission template (its role must be one the creator could grant)."""
+    requesting = await get_current_user(request)
+    x_user_id = str(requesting["_id"])
+    if requesting.get("role") not in ("super_admin", "org_admin", "store_manager"):
         raise HTTPException(status_code=403, detail="Only admins can create templates")
 
     name = data.get("name", "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="Template name is required")
+    role = data.get("role") or "user"
+    if role not in ASSIGNABLE_ROLES:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    assert_role_grant(requesting, role)
 
     db = get_db()
     now = datetime.now(timezone.utc)
@@ -175,7 +181,7 @@ async def create_template(data: dict, x_user_id: str = Header(None, alias="X-Use
     template = {
         "name": name,
         "description": data.get("description", ""),
-        "role": data.get("role", "user"),
+        "role": role,
         "icon": data.get("icon", "people"),
         "color": data.get("color", "#007AFF"),
         "permissions": data.get("permissions", DEFAULT_PERMISSIONS),
@@ -201,15 +207,20 @@ async def create_template(data: dict, x_user_id: str = Header(None, alias="X-Use
 
 
 @router.put("/{template_id}")
-async def update_template(template_id: str, data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
-    """Update a custom permission template. Cannot edit prebuilt templates."""
+async def update_template(template_id: str, data: dict, request: Request):
+    """Update a custom permission template. Cannot edit prebuilt templates; a role change must be grantable by the editor."""
     for t in PREBUILT_TEMPLATES:
         if t["id"] == template_id:
             raise HTTPException(status_code=400, detail="Cannot edit prebuilt templates")
 
-    requesting = await get_user_by_id(x_user_id) if x_user_id else None
-    if not requesting or requesting.get("role") not in ("super_admin", "org_admin", "store_manager"):
+    requesting = await get_current_user(request)
+    x_user_id = str(requesting["_id"])
+    if requesting.get("role") not in ("super_admin", "org_admin", "store_manager"):
         raise HTTPException(status_code=403, detail="Only admins can edit templates")
+    if "role" in data:
+        if data["role"] not in ASSIGNABLE_ROLES:
+            raise HTTPException(status_code=400, detail="Invalid role")
+        assert_role_grant(requesting, data["role"])
 
     db = get_db()
     update = {"updated_at": datetime.now(timezone.utc)}
@@ -218,7 +229,7 @@ async def update_template(template_id: str, data: dict, x_user_id: str = Header(
             update[field] = data[field]
 
     result = await db.permission_templates.update_one(
-        {"_id": ObjectId(template_id)},
+        {"_id": ObjectId(template_id)} if ObjectId.is_valid(template_id) else {"_id": None},
         {"$set": update}
     )
     if result.matched_count == 0:
@@ -257,11 +268,10 @@ async def delete_template(template_id: str, x_user_id: str = Header(None, alias=
 
 
 @router.post("/{template_id}/apply/{user_id}")
-async def apply_template(template_id: str, user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
-    """Apply a permission template to a user. Sets both role and feature permissions."""
-    requesting = await get_user_by_id(x_user_id) if x_user_id else None
-    if not requesting or requesting.get("role") not in ("super_admin", "org_admin", "store_manager"):
-        raise HTTPException(status_code=403, detail="Only admins can apply templates")
+async def apply_template(template_id: str, user_id: str, requesting: dict = Depends(require_hierarchy_admin("store_manager"))):
+    """Apply a permission template to a user. Sets both role and feature permissions — never to yourself, only to accounts
+    inside your scope that don't outrank you, and only when the template's role is strictly below your own."""
+    x_user_id = str(requesting["_id"])
 
     # Find the template
     template = None
@@ -272,15 +282,15 @@ async def apply_template(template_id: str, user_id: str, x_user_id: str = Header
 
     if not template:
         db = get_db()
-        try:
-            doc = await db.permission_templates.find_one({"_id": ObjectId(template_id)})
-            if doc:
-                template = doc
-        except Exception:
-            pass
+        doc = await db.permission_templates.find_one({"_id": ObjectId(template_id)}) if ObjectId.is_valid(template_id) else None
+        if doc and requesting.get("role") != "super_admin" and doc.get("org_id") and str(doc["org_id"]) not in {str(o) for o in await get_scoped_organization_ids(requesting)}:
+            doc = None  # another organization's custom template
+        if doc:
+            template = doc
 
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
+    assert_role_grant(requesting, template.get("role", "user"))
 
     db = get_db()
     target = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 1, "name": 1, "role": 1})
