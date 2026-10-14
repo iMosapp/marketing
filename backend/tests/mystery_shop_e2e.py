@@ -12,6 +12,7 @@ import requests
 import websockets
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
@@ -37,8 +38,8 @@ async def main():
         await db.shop_clients.delete_many({"name": {"$regex": "^QA Jeep"}})
         print("wiped", len(cids), "QA clients")
         return
-    admin = login("forest@imosapp.com", "Admin123!")
-    rep = login("activation-tester@invalid.imonsocial.test", "NewPass123!")
+    admin = login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+    rep = login("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
     H = {"Authorization": f"Bearer {admin}"}
     assert requests.get(f"{API}/api/shop-clients", headers={"Authorization": f"Bearer {rep}"}, timeout=30).status_code == 403
     print("rep 403 ok")

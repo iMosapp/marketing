@@ -7,14 +7,15 @@ from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 
 from dotenv import load_dotenv
+from tests import qa_creds
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from routers.database import get_db  # noqa: E402
 from services import live_voice as lv  # noqa: E402
 
 BASE = open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0].rstrip("/")
-FOREST = {"email": "forest@imosapp.com", "password": "Admin123!"}
-TESTER = {"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}
+FOREST = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+TESTER = {"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}
 pytestmark = pytest.mark.asyncio
 
 
@@ -319,7 +320,7 @@ async def test_events_and_admin_api(forest_h, tester_h):
                                            {"type": "usage", "seconds": 42}]})
         assert r.status_code == 200 and r.json()["seconds"] == 42
         # someone else cannot touch it
-        other = {"Authorization": f"Bearer {_token({'email': 'qa-manager@invalid.imonsocial.test', 'password': 'Manager123!'})}"}
+        other = {"Authorization": f"Bearer {_token({'email': 'qa-manager@invalid.imonsocial.test', 'password': qa_creds.password_for('qa-manager@invalid.imonsocial.test')})}"}
         assert requests.post(f"{BASE}/api/live-voice/{live['live_id']}/events", headers=other, json={"events": []}, timeout=30).status_code == 404
         # close
         r = requests.post(f"{BASE}/api/live-voice/{live['live_id']}/events", headers=tester_h, json={"events": [{"type": "closed", "reason": "idle", "seconds": 90}]}, timeout=30)

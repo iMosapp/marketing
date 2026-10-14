@@ -1,5 +1,5 @@
 """Seed two Founding Partner Pilot demo customers in preview (idempotent: wipes "QA FP Demo *" first, `--wipe` only removes).
-  QA FP Demo Motors  : pilot ACTIVE, owner activated (qa-fp-demo-owner@invalid.imonsocial.test / PilotOwner123!)
+  QA FP Demo Motors  : pilot ACTIVE, owner activated (qa-fp-demo-owner@invalid.imonsocial.test / <password in memory/test_credentials.md>)
   QA FP Demo Fresh   : pilot PENDING, created only (for the founder's Activate -> Invite click-through)
 Run: cd /app/backend && set -a && . ./.env && . ../frontend/.env && set +a && python tests/seed_founding_pilot_demo.py"""
 import os
@@ -10,10 +10,11 @@ from pymongo import MongoClient
 
 from tests.live_auth import SUPER_ADMIN, Session, anon, oid
 from tests.wipe_pilot_customers import wipe
+from tests import qa_creds
 
 PREFIX = "QA FP Demo"
 OWNER_EMAIL = "qa-fp-demo-owner@invalid.imonsocial.test"
-OWNER_PASSWORD = "PilotOwner123!"
+OWNER_PASSWORD = qa_creds.password_for("qa-pilot-owner-ui@invalid.imonsocial.test")
 
 
 def main():

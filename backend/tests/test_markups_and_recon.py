@@ -10,6 +10,7 @@ import pytest
 from bson import ObjectId
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
@@ -19,8 +20,8 @@ from services.appraisals import engine  # noqa: E402
 from services.appraisals.rules import DEFAULT_RULES  # noqa: E402
 from test_appraisal_engine import MARKET, VEHICLE, GOOD, BOOKS  # noqa: E402
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 SARAH = "6aa413008f0d53e3f2261853"
 FIX = "/app/backend/tests/fixtures/appraisal/"
 CREATED = []

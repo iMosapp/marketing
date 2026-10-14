@@ -5,6 +5,7 @@ Verifies PATCH /push/preferences/{user_id}, PATCH /users/{user_id}, and GET /aut
 import pytest
 import requests
 import os
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 USER_ID = "69a0b7095fddcede09591667"
@@ -14,7 +15,7 @@ USER_ID = "69a0b7095fddcede09591667"
 def auth_token():
     resp = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "forest@imosapp.com",
-        "password": "Admin123!"
+        "password": qa_creds.password_for("forest@imosapp.com")
     })
     assert resp.status_code == 200, f"Login failed: {resp.text}"
     data = resp.json()
@@ -51,7 +52,7 @@ def test_patch_preferences_persists_to_db(session):
     # Use GET /api/users/{user_id} or login response
     resp2 = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "forest@imosapp.com",
-        "password": "Admin123!"
+        "password": qa_creds.password_for("forest@imosapp.com")
     })
     assert resp2.status_code == 200
     user = resp2.json().get("user", {})
@@ -81,7 +82,7 @@ def test_patch_preferences_set_both_and_verify(session):
 
     resp2 = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "forest@imosapp.com",
-        "password": "Admin123!"
+        "password": qa_creds.password_for("forest@imosapp.com")
     })
     assert resp2.status_code == 200
     user = resp2.json().get("user", {})
@@ -111,7 +112,7 @@ def test_patch_user_notification_settings_persists(session):
 
     resp2 = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "forest@imosapp.com",
-        "password": "Admin123!"
+        "password": qa_creds.password_for("forest@imosapp.com")
     })
     assert resp2.status_code == 200
     user = resp2.json().get("user", {})
@@ -127,7 +128,7 @@ def test_auth_me_returns_notification_mode(session):
     s2 = requests.Session()
     login_resp = s2.post(f"{BASE_URL}/api/auth/login", json={
         "email": "forest@imosapp.com",
-        "password": "Admin123!"
+        "password": qa_creds.password_for("forest@imosapp.com")
     })
     assert login_resp.status_code == 200
     # Set cookie from login
@@ -153,7 +154,7 @@ def test_full_roundtrip_push_mode(session):
 
     # Step 2: verify via fresh login
     r2 = requests.post(f"{BASE_URL}/api/auth/login", json={
-        "email": "forest@imosapp.com", "password": "Admin123!"
+        "email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")
     })
     assert r2.status_code == 200
     assert r2.json().get("user", {}).get("notification_mode") == "push"

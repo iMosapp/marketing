@@ -4,7 +4,7 @@ Twilio Webhooks Router - Handle incoming SMS/MMS messages
 import asyncio
 import json
 import secrets
-from fastapi import APIRouter, Request, Form, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Request, Form, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime, timezone
@@ -47,7 +47,9 @@ def _is_satisfied_reply(text: str) -> bool:
         return False
     return bool(words & _SAT_WORDS) or any(p in t for p in _SAT_PHRASES)
 
-router = APIRouter(prefix="/webhooks/twilio", tags=["Twilio Webhooks"])
+from services.twilio_signature import require_signed_callback
+
+router = APIRouter(prefix="/webhooks/twilio", tags=["Twilio Webhooks"], dependencies=[Depends(require_signed_callback)])
 logger = logging.getLogger(__name__)
 
 # Inbound calls to a rep's business number: ring their cell this long (carrier voicemail usually answers at ~20 s),
@@ -83,8 +85,11 @@ async def proxy_twilio_media(url: str):
     twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
     if not twilio_sid or not twilio_token:
         raise HTTPException(status_code=500, detail="Twilio credentials not configured")
+    decoded_url = urllib.parse.unquote(url)
+    host = (urllib.parse.urlsplit(decoded_url).hostname or "").lower()
+    if not decoded_url.startswith("https://") or not (host == "twilio.com" or host.endswith(".twilio.com") or host.endswith(".twiliocdn.com")):
+        raise HTTPException(status_code=400, detail="Only Twilio media can be proxied")
     try:
-        decoded_url = urllib.parse.unquote(url)
         async with httpx.AsyncClient() as client:
             resp = await client.get(
                 decoded_url,
@@ -154,13 +159,8 @@ async def incoming_message(
     
     logger.info(f"Incoming message from {From} to {To}: {Body[:50]}...")
 
-    # ── Signature check (TWILIO_WEBHOOK_VALIDATION: off | log | enforce) ─────
-    raw_form = dict(await request.form())
-    from services.twilio_signature import guard as _sig_guard
-    _blocked = await _sig_guard(request, raw_form, db, "incoming")
-    if _blocked:
-        return _blocked
-    
+    raw_form = dict(await request.form())  # signature already verified by the router dependency
+
     # Normalize phone numbers
     from_phone = normalize_phone(From)
     to_phone   = normalize_phone(To)
@@ -1154,11 +1154,6 @@ async def message_status_callback(
     Status values: queued, sent, delivered, undelivered, failed
     """
     db = get_db()
-    from services.twilio_signature import guard as _sig_guard
-    _blocked = await _sig_guard(request, dict(await request.form()), db, "status")
-    if _blocked:
-        return _blocked
-    
     logger.info(f"Status update for {MessageSid}: {MessageStatus}")
     
     try:
@@ -1294,7 +1289,33 @@ async def initiate_outbound_call(request: Request):
     Body: { rep_user_id, customer_phone, contact_id (optional), conversation_id (optional) }
     """
     body = await request.json()
+    await _caller_can_act_as(request, body.get("rep_user_id", ""))
+    if body.get("contact_id"):
+        from services.contact_scope import owned_contact
+        await owned_contact(get_db(), body.get("rep_user_id", ""), body.get("contact_id"), {"_id": 1}, shared_thread=True)
     return await place_click_to_call(body.get("rep_user_id", ""), body.get("customer_phone", ""), body.get("contact_id", ""), body.get("conversation_id", ""), body.get("task_id", ""))
+
+
+async def _caller_can_act_as(request: Request, rep_user_id: str) -> dict:
+    """The app's own routes under this prefix: the session must be the rep, or a manager scoped to that rep."""
+    from routers.rbac import get_current_user, verify_user_access
+    me = await get_current_user(request)
+    if str(me.get("_id")) == str(rep_user_id) or me.get("role") == "super_admin":
+        return me
+    if me.get("role") in ("org_admin", "store_manager") and rep_user_id and await verify_user_access(me, str(rep_user_id)):
+        return me
+    raise HTTPException(status_code=403, detail="You can only place calls as yourself")
+
+
+async def _caller_owns_call(request: Request, call_sid: str) -> dict:
+    from routers.rbac import get_current_user
+    me = await get_current_user(request)
+    pending = await get_db().pending_calls.find_one({"call_sid": call_sid}, {"rep_user_id": 1, "user_id": 1}) if call_sid else None
+    if not pending:
+        raise HTTPException(status_code=404, detail="Call not found")
+    owner = str(pending.get("rep_user_id") or pending.get("user_id") or "")
+    await _caller_can_act_as(request, owner)
+    return pending
 
 
 async def place_click_to_call(rep_user_id: str, customer_phone: str, contact_id: str = "", conversation_id: str = "", task_id: str = "") -> dict:
@@ -1901,6 +1922,7 @@ async def cancel_call(request: Request):
     call_sid = body.get("call_sid", "")
     if not call_sid:
         return {"success": False, "detail": "No call_sid provided"}
+    await _caller_owns_call(request, call_sid)
     try:
         tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
         tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
@@ -2160,6 +2182,7 @@ async def cancel_click_to_call(request: Request):
     call_sid = body.get("call_sid", "")
     if not call_sid:
         raise HTTPException(status_code=400, detail="call_sid required")
+    await _caller_owns_call(request, call_sid)
     tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
     tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
     if not tw_sid or not tw_token:
@@ -2178,9 +2201,10 @@ async def cancel_click_to_call(request: Request):
 
 
 @router.get("/call-progress/{call_sid}")
-async def call_progress(call_sid: str):
+async def call_progress(call_sid: str, request: Request):
     """Live status for the dialer in-call UI (fed by the status callback webhook)."""
     db = get_db()
+    await _caller_owns_call(request, call_sid)
     doc = await db.pending_calls.find_one({"call_sid": call_sid}, {"status": 1, "dial_status": 1, "dial_duration_s": 1})
     doc = doc or {}
     return {"status": doc.get("status", "unknown"), "dial_status": doc.get("dial_status"), "dial_duration_s": doc.get("dial_duration_s")}

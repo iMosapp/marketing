@@ -19,7 +19,7 @@ from tests.live_auth import (
 VICTIM = ("qa-hotfix3-victim@invalid.imonsocial.test", qa_creds.password_for("qa-hotfix3-victim@invalid.imonsocial.test"))
 REP_B = ("qa-hotfix3-rep@invalid.imonsocial.test", qa_creds.password_for("qa-hotfix3-rep@invalid.imonsocial.test"))
 PROFILE_TESTER = ("qa-profile-tester@invalid.imonsocial.test", qa_creds.password_for("qa-profile-tester@invalid.imonsocial.test"))
-PLAIN_REP = ("mjeast1985@gmail.com", "NavyBean1!")
+PLAIN_REP = ("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com"))
 
 
 def H(tok):

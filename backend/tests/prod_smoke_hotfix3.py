@@ -1,12 +1,16 @@
-"""Anonymous, read-only production smoke for security hotfix 3. Nothing is created or changed: every write probe is refused before any handler runs.
-python tests/prod_smoke_hotfix3.py [base_url] [expected_build]"""
+"""Anonymous, read-only production smoke for security hotfix 3/4.
+python tests/prod_smoke_hotfix3.py [base_url] [expected_build]
+
+Safety: the build label is checked FIRST and the script exits (code 2) before a single probe when it is missing or different,
+because on an older backend the write probes would reach their handlers. Every write probe below also carries an inert body
+(empty or an id that cannot exist), so even a mis-targeted run creates nothing."""
 import json
 import sys
 import urllib.error
 import urllib.request
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "https://app.imonsocial.com").rstrip("/")
-EXPECTED_BUILD = sys.argv[2] if len(sys.argv) > 2 else "2026-10-14.security-hotfix3"
+EXPECTED_BUILD = sys.argv[2] if len(sys.argv) > 2 else "2026-10-14.security-hotfix4"
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Content-Type": "application/json"}
 ZERO = "0" * 24
 
@@ -20,36 +24,64 @@ def call(method, path, body=None, headers=None):
         return e.code, e.read().decode()[:160]
 
 
+def preflight(expected: str = EXPECTED_BUILD, fetch=None) -> tuple[bool, str]:
+    """(ok, build). ok only when /api/health answers 200 with exactly the expected build label."""
+    st, body = (fetch or call)("GET", "/api/health")
+    try:
+        build = json.loads(body).get("build", "") if st == 200 else ""
+    except (ValueError, AttributeError):
+        build = ""
+    return (st == 200 and bool(expected) and build == expected), build
+
+
+# (method, path, body, headers, accepted statuses). Bodies are inert: {} or ids that cannot exist.
 CHECKS = [
-    # the holes
-    ("POST", "/api/webhooks/user-created", {"external_id": "probe", "email": "probe@example.com", "name": "probe", "role": "super_admin"}, None, {401}),
-    ("POST", "/api/webhooks/user-deleted", {"email": "probe@example.com"}, None, {401}),
-    ("POST", "/api/webhooks/contact-created", {"external_id": "probe", "name": "probe"}, None, {401}),
-    ("POST", "/api/webhooks/event", {"type": "probe"}, None, {401}),
-    ("POST", "/api/webhooks/inventory/add", {"external_id": "probe", "name": "probe"}, None, {401}),
+    # hotfix 3: the holes
+    ("POST", "/api/webhooks/user-created", {}, None, {401}),
+    ("POST", "/api/webhooks/user-deleted", {}, None, {401}),
+    ("POST", "/api/webhooks/contact-created", {}, None, {401}),
+    ("POST", "/api/webhooks/event", {}, None, {401}),
+    ("POST", "/api/webhooks/inventory/add", {}, None, {401}),
     ("GET", "/api/webhooks/inventory", None, None, {401}),
-    ("PATCH", f"/api/auth/users/{ZERO}", {"email": "probe@example.com"}, None, {401}),
-    ("PATCH", f"/api/auth/users/{ZERO}", {"email": "probe@example.com"}, {"X-User-ID": ZERO}, {401}),
-    ("PUT", f"/api/auth/user/{ZERO}", {"phone": "+15550000000"}, None, {401}),
-    ("POST", f"/api/auth/persona/{ZERO}", {"bio": "probe"}, None, {401}),
+    ("PATCH", f"/api/auth/users/{ZERO}", {}, None, {401}),
+    ("PATCH", f"/api/auth/users/{ZERO}", {}, {"X-User-ID": ZERO}, {401}),
+    ("PUT", f"/api/auth/user/{ZERO}", {}, None, {401}),
+    ("POST", f"/api/auth/persona/{ZERO}", {}, None, {401}),
     ("GET", f"/api/auth/persona/{ZERO}/ai-prompt", None, None, {401}),
-    ("PUT", f"/api/auth/users/{ZERO}/review-links", {"review_links": {}}, None, {401}),
+    ("PUT", f"/api/auth/users/{ZERO}/review-links", {}, None, {401}),
     ("GET", f"/api/auth/user/{ZERO}", None, None, {401}),
-    ("POST", "/api/auth/change-password", {"user_id": ZERO, "current_password": "x", "new_password": "Probe123!"}, None, {401}),
-    ("POST", "/api/auth/complete-onboarding", {"user_id": ZERO}, None, {401}),
-    ("POST", "/api/auth/test-login", {"email": "probe@example.com", "password": "probe"}, None, {410}),
-    ("POST", f"/api/messages/send/{ZERO}", {"conversation_id": ZERO, "content": "probe"}, None, {401}),
-    ("POST", "/api/messages/twilio-send", {"user_id": ZERO, "to": "+15005550006", "body": "probe"}, None, {401}),
-    ("PUT", f"/api/profile/{ZERO}", {"bio": "probe"}, None, {401}),
+    ("POST", "/api/auth/change-password", {}, None, {401}),
+    ("POST", "/api/auth/complete-onboarding", {}, None, {401}),
+    ("POST", "/api/auth/test-login", {}, None, {410}),
+    ("POST", f"/api/messages/send/{ZERO}", {}, None, {401}),
+    ("POST", "/api/messages/twilio-send", {}, None, {401}),
+    ("PUT", f"/api/profile/{ZERO}", {}, None, {401}),
     ("POST", f"/api/profile/{ZERO}/generate-bio", {}, None, {401}),
     ("GET", f"/api/notifications/?user_id={ZERO}", None, None, {401}),
     ("GET", f"/api/chat/leads?user_id={ZERO}", None, None, {401}),
-    ("POST", "/api/s/create", {"original_url": "https://example.com", "link_type": "probe"}, None, {401}),
-    ("POST", "/api/s/wrap", {"url": "https://example.com", "user_id": ZERO}, None, {401}),
+    ("POST", "/api/s/create", {}, None, {401}),
+    ("POST", "/api/s/wrap", {}, None, {401}),
     ("GET", "/api/s/stats/probe", None, None, {401}),
     ("GET", "/api/directory/members", None, None, {401}),
     ("GET", "/api/webhooks/unassigned-contacts", None, None, {401}),
     ("GET", "/api/setup-wizard/clients", None, None, {401}),
+    # hotfix 4
+    ("POST", f"/api/messages/conversations/{ZERO}", {}, None, {401}),
+    ("POST", f"/api/voice-notes/{ZERO}/{ZERO}/chunk", {}, None, {401}),
+    ("POST", "/api/webhooks/twilio/call", {}, None, {401}),
+    ("POST", "/api/webhooks/twilio/call-cancel", {}, None, {401}),
+    ("GET", "/api/webhooks/twilio/call-progress/CA0", None, None, {401}),
+    ("POST", "/api/webhooks/twilio/incoming", {}, None, {403}),       # unsigned Twilio callback
+    ("POST", "/api/webhooks/twilio/status", {}, None, {403}),
+    ("POST", "/api/webhooks/twilio/voice", {}, None, {403}),
+    ("POST", "/api/webhooks/twilio/recording-complete", {}, None, {403}),
+    ("POST", "/api/webhooks/twilio/trusthub-status", {}, None, {403}),
+    ("POST", "/api/messages/webhook/inbound", {}, None, {403}),
+    ("POST", "/api/webhooks/dialer/rep/status", {}, None, {403}),
+    ("GET", "/api/webhooks/twilio/media-proxy?url=https%3A%2F%2Fexample.com%2Fx", None, None, {400}),
+    ("POST", "/api/webhooks/resend/inbound", {}, None, {401, 503}),
+    ("POST", f"/api/card/save/{ZERO}", {"contact_id": ZERO, "campaign_id": ZERO}, None, {404}),
+    ("PUT", f"/api/admin/users/{ZERO}", {}, None, {401}),
     # public surface must stay open
     ("GET", "/api/health", None, None, {200}),
     ("GET", "/api/legal/terms", None, None, {200}),
@@ -59,7 +91,7 @@ CHECKS = [
     ("GET", "/api/webhooks/inventory/config/endpoints", None, None, {200}),
     ("GET", f"/api/congrats/card/{ZERO}", None, None, {404}),
     ("GET", "/api/s/probe-does-not-exist", None, None, {404}),
-    ("POST", "/api/auth/login", {"email": "probe@example.com", "password": "probe"}, None, {401, 429}),
+    ("POST", "/api/auth/login", {}, None, {400, 401, 422, 429}),
     ("GET", "/api/auth/me", None, None, {401}),
     ("POST", "/api/auth/refresh", {}, None, {401}),
     ("POST", "/api/auth/forgot-password/request", {}, None, {400, 422}),
@@ -69,21 +101,18 @@ CHECKS = [
 
 
 def main():
+    ok, build = preflight()
+    print(f"health build={build!r} expected={EXPECTED_BUILD!r} -> {'OK' if ok else 'MISMATCH'}")
+    if not ok:
+        print("ABORT: build label missing or different; no probe was sent (an older backend would execute the write probes).")
+        sys.exit(2)
     fails = 0
-    st, body = call("GET", "/api/health")
-    build = ""
-    try:
-        build = json.loads(body).get("build", "")
-    except (ValueError, AttributeError):
-        build = ""
-    print(f"health {st} build={build!r} expected={EXPECTED_BUILD!r} -> {'OK' if build == EXPECTED_BUILD else 'MISMATCH'}")
-    fails += build != EXPECTED_BUILD
     for method, path, body, headers, want in CHECKS:
         st, text = call(method, path, body, headers)
-        ok = st in want
-        fails += not ok
-        print(f"{'OK  ' if ok else 'FAIL'} {method:<6} {path:<60} {st} (want {sorted(want)}) {'' if ok else text}")
-    print(f"\n{len(CHECKS) + 1 - fails}/{len(CHECKS) + 1} checks passed")
+        good = st in want
+        fails += not good
+        print(f"{'OK  ' if good else 'FAIL'} {method:<6} {path:<66} {st} (want {sorted(want)}) {'' if good else text}")
+    print(f"\n{len(CHECKS) - fails}/{len(CHECKS)} checks passed")
     sys.exit(1 if fails else 0)
 
 

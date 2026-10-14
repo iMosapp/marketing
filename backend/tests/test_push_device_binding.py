@@ -7,13 +7,14 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 from dotenv import load_dotenv
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
 load_dotenv("/app/backend/.env")
 from _http import API, call, login, auth  # noqa: E402
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 REP_ID = "6a978d68b8673c29063aa8b9"
 OTHER_ID = "000000000000000000000abc"
 TOKEN = "ExponentPushToken[qa-one-device-one-person]"

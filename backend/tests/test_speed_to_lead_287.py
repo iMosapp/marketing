@@ -11,6 +11,7 @@ from datetime import datetime
 import pytest
 import requests
 from dotenv import dotenv_values
+from tests import qa_creds
 
 frontend_env = dotenv_values("/app/frontend/.env")
 base_url = os.environ.get("REACT_APP_BACKEND_URL") or frontend_env.get("REACT_APP_BACKEND_URL")
@@ -21,7 +22,7 @@ BASE_URL = base_url.rstrip("/")
 USER_ID = "69a0b7095fddcede09591667"
 TEST_CONV = "6a948a5b94f43a817b73d510"
 EMAIL = "forest@imosapp.com"
-PASSWORD = "Admin123!"
+PASSWORD = qa_creds.password_for("forest@imosapp.com")
 
 
 @pytest.fixture(scope="module")

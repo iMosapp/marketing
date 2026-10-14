@@ -6,6 +6,7 @@ Tests for two SOLD wizard bug fixes:
 import pytest
 import requests
 import os
+from tests import qa_creds
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 USER_ID = "69a0b7095fddcede09591667"
@@ -14,7 +15,7 @@ USER_ID = "69a0b7095fddcede09591667"
 def auth_token():
     resp = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "forest@imosapp.com",
-        "password": "Admin123!"
+        "password": qa_creds.password_for("forest@imosapp.com")
     })
     assert resp.status_code == 200, f"Login failed: {resp.text}"
     data = resp.json()

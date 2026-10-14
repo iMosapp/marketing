@@ -11,6 +11,7 @@ import pytest
 import requests
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from seed_channel_mix import main as seed  # noqa: E402
@@ -94,7 +95,7 @@ def test_scorecard_digest_and_shops_list_name_the_channel(seeded):
     html = mail.digest_html(client, rows, "line", "this week", "https://x", "")
     assert "Text Shop" in html and "Email Shop" in html and "calls, texts, emails and coaching" in html
     # admin Shops list: lead-shop children excluded, channel present
-    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30).json()
+    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30).json()
     tok = r.get("token") or r.get("access_token")
     lst = requests.get(f"{API}/shop-clients/{CID}/calls", headers={"Authorization": f"Bearer {tok}"}, timeout=30).json()
     calls = lst.get("calls") if isinstance(lst, dict) else lst

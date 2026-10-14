@@ -10,14 +10,15 @@ import requests
 from bson import ObjectId
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from tests import qa_creds
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from services import voice_controls as vc  # noqa: E402
 
 BASE = open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0].rstrip("/")
-FOREST = {"email": "forest@imosapp.com", "password": "Admin123!"}
-REP = {"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}
+FOREST = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+REP = {"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}
 pytestmark = pytest.mark.asyncio
 S = {}
 

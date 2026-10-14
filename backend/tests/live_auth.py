@@ -7,11 +7,12 @@ from bson import ObjectId
 from pymongo import MongoClient
 
 from tests._http import API, auth, call, login
+from tests import qa_creds
 
-SUPER_ADMIN = ("forest@imosapp.com", "Admin123!")
-STORE_MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")      # store_manager on STORE_A
-ORG_ADMIN = ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!")        # org_admin on ORG_B / STORE_B
-REP = ("mjeast1985@gmail.com", "NavyBean1!")                               # role user, no store
+SUPER_ADMIN = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+STORE_MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))      # store_manager on STORE_A
+ORG_ADMIN = ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test"))        # org_admin on ORG_B / STORE_B
+REP = ("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com"))                               # role user, no store
 
 STORE_A = "69a0b7095fddcede09591668"
 ORG_B = "69a907033b77512d1d8d8a08"

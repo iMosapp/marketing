@@ -7,6 +7,7 @@ import os
 import pytest
 import requests
 from dotenv import dotenv_values
+from tests import qa_creds
 
 fe = dotenv_values("/app/frontend/.env")
 BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or fe.get("REACT_APP_BACKEND_URL")).rstrip("/")
@@ -29,7 +30,7 @@ def _login(email, password):
 
 @pytest.fixture(scope="session")
 def forest():
-    tok, uid = _login("forest@imosapp.com", "Admin123!")
+    tok, uid = _login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     s = requests.Session()
     s.headers.update({"Authorization": f"Bearer {tok}", "Content-Type": "application/json"})
     return {"s": s, "id": uid or FOREST_ID, "token": tok}
@@ -37,7 +38,7 @@ def forest():
 
 @pytest.fixture(scope="session")
 def plain():
-    tok, uid = _login("mjeast1985@gmail.com", "NavyBean1!")
+    tok, uid = _login("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com"))
     s = requests.Session()
     s.headers.update({"Authorization": f"Bearer {tok}", "Content-Type": "application/json"})
     return {"s": s, "id": uid, "token": tok}

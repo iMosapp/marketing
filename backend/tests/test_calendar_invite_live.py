@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 load_dotenv("/app/backend/.env")
@@ -26,7 +27,7 @@ async def main():
     db = AsyncIOMotorClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
     from services.calendar_invite import send_customer_appointment_reminders, should_auto_invite, invite_eligible
     async with httpx.AsyncClient(timeout=60, follow_redirects=False) as c:
-        r = await c.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"})
+        r = await c.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")})
         ok("login forest", r.status_code == 200, r.text[:100])
         tok = r.json()["token"]; uid = r.json()["user"].get("id") or r.json()["user"].get("_id")
         H = {"Authorization": f"Bearer {tok}"}

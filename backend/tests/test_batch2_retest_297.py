@@ -5,6 +5,7 @@ import sys
 import asyncio
 import pytest
 import requests
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/")
 
@@ -15,7 +16,7 @@ PHONE_GREETING_RE = re.compile(r"\b(Hi|Hey|Hello)\s+\+?\d[\d\s().-]{6,}\d\b")
 def forest_auth():
     r = requests.post(
         f"{BASE_URL}/api/auth/login",
-        json={"email": "forest@imosapp.com", "password": "Admin123!"},
+        json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")},
         timeout=30,
     )
     assert r.status_code == 200, r.text

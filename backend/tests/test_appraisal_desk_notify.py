@@ -8,6 +8,7 @@ import pytest
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from bson import ObjectId
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
@@ -15,8 +16,8 @@ load_dotenv("/app/backend/.env")
 from _http import call, login, auth  # noqa: E402
 from routers.auth import hash_password  # noqa: E402
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 SARAH = "6aa413008f0d53e3f2261853"
 OUTCOMES = {"sent", "no_device", "sms_only", "quiet_hours", "failed"}
 CREATED, TEMP_USERS, TEMP_CONTACTS = [], [], []

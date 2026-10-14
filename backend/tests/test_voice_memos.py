@@ -8,14 +8,15 @@ import wave
 
 import pytest
 import requests
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 API = f"{BASE_URL}/api"
 
 FOREST_EMAIL = "forest@imosapp.com"
-FOREST_PASS = "Admin123!"
+FOREST_PASS = qa_creds.password_for("forest@imosapp.com")
 OTHER_EMAIL = "qa-manager@invalid.imonsocial.test"
-OTHER_PASS = "Manager123!"
+OTHER_PASS = qa_creds.password_for("qa-manager@invalid.imonsocial.test")
 
 
 def _login(email, password):

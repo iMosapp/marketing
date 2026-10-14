@@ -11,6 +11,7 @@ import pytest
 import requests
 import os
 import re
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 USER_ID = "69a0b7095fddcede09591667"  # forest@imosapp.com
@@ -79,7 +80,7 @@ class TestPushPreferencesEndpoint:
         # (We don't have a GET preferences endpoint, so we use login to get user data)
         resp = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "forest@imosapp.com", "password": "Admin123!"},
+            json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")},
             timeout=10,
         )
         if resp.status_code == 200:
@@ -99,7 +100,7 @@ class TestPushPreferencesEndpoint:
         )
         resp = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "forest@imosapp.com", "password": "Admin123!"},
+            json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")},
             timeout=10,
         )
         if resp.status_code == 200:
@@ -135,7 +136,7 @@ class TestAuthMeNotificationMode:
         # Login to get session cookie
         login_resp = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "forest@imosapp.com", "password": "Admin123!"},
+            json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")},
             timeout=10,
         )
         if login_resp.status_code != 200:

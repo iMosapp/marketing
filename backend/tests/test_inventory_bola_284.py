@@ -2,6 +2,7 @@
 import os
 import requests
 from dotenv import dotenv_values
+from tests import qa_creds
 
 BASE = (os.environ.get("REACT_APP_BACKEND_URL") or dotenv_values("/app/frontend/.env")["REACT_APP_BACKEND_URL"]).rstrip("/")
 API = f"{BASE}/api"
@@ -18,8 +19,8 @@ def H(t, u):
 
 
 def test_cross_user_update_delete_scoping():
-    admin_id, admin_tok = login("forest@imosapp.com", "Admin123!")
-    other_id, other_tok = login("mjeast1985@gmail.com", "NavyBean1!")
+    admin_id, admin_tok = login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+    other_id, other_tok = login("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com"))
     r = requests.post(f"{API}/inventory/{admin_id}", json={"year": "2000", "make": "TESTBOLA", "model": "X"},
                       headers=H(admin_tok, admin_id), timeout=30)
     item_id = r.json()["item"]["_id"]

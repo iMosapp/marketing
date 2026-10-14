@@ -7,6 +7,7 @@ import pytest
 import requests
 import os
 import json
+from tests import qa_creds
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
@@ -14,7 +15,7 @@ if not BASE_URL:
 
 LOGIN_URL = f"{BASE_URL}/api/auth/login"
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASS = "Admin123!"
+SUPER_ADMIN_PASS = qa_creds.password_for("forest@imosapp.com")
 
 
 @pytest.fixture(scope="module")

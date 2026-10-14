@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, timedelta
 
 import pytest
+from tests import qa_creds
 
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -13,7 +14,7 @@ from _http import call, login, auth  # noqa: E402
 
 @pytest.fixture(scope="module")
 def who():
-    return {"sa": login("forest@imosapp.com", "Admin123!"), "us": login("mjeast1985@gmail.com", "NavyBean1!")}
+    return {"sa": login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com")), "us": login("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com"))}
 
 
 @pytest.fixture(scope="module")

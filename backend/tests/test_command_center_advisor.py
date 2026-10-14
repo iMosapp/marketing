@@ -11,6 +11,7 @@ import pytest
 import requests
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 load_dotenv("/app/backend/.env")
@@ -19,8 +20,8 @@ from services import command_center_ai as ai  # noqa: E402
 
 API = os.environ.get("REACT_APP_BACKEND_URL") or open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split("\n")[0].strip()
 API += "/api"
-OWNER = ("forest@imosapp.com", "Admin123!")
-OTHER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
+OWNER = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+OTHER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 ME = {"_id": "000000000000000000000001", "name": "Test Founder", "first_name": "Test", "role": "super_admin", "is_owner": True}
 TEST_DB = (os.environ["DB_NAME"] + "_cc_advisor_test")
 

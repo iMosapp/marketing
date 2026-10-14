@@ -15,15 +15,16 @@ import os
 import sys
 
 import pytest
+from tests import qa_creds
 
 sys.path.insert(0, os.path.dirname(__file__))
 from _http import call, login, auth  # noqa: E402
 
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-ORGADMIN = ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!")
-SUPER = ("forest@imosapp.com", "Admin123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+ORGADMIN = ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test"))
+SUPER = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
 
 STORE_ID = "69a0b7095fddcede09591668"
 SARAH_CONTACT_ID = "6aa413008f0d53e3f2261853"

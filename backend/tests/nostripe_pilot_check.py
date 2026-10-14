@@ -8,9 +8,10 @@ from pymongo import MongoClient
 
 from tests.live_auth import SUPER_ADMIN, Session, anon, oid
 from tests.wipe_pilot_customers import wipe
+from tests import qa_creds
 
 PREFIX = "QA FP NoStripe"
-PW = "PilotOwner123!"
+PW = qa_creds.password_for("qa-pilot-owner-ui@invalid.imonsocial.test")
 out = []
 
 

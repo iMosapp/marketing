@@ -11,6 +11,7 @@ import requests
 from bson import ObjectId
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from tests import qa_creds
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
@@ -19,10 +20,10 @@ from routers.database import get_db  # noqa: E402
 from services import voice_controls as vc  # noqa: E402
 
 BASE = open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0].rstrip("/")
-FOREST = {"email": "forest@imosapp.com", "password": "Admin123!"}
-ORG_ADMIN_B = {"email": "qa-orgadmin@invalid.imonsocial.test", "password": "OrgAdmin123!"}
+FOREST = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+ORG_ADMIN_B = {"email": "qa-orgadmin@invalid.imonsocial.test", "password": qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test")}
 ORG_B = "69a907033b77512d1d8d8a08"
-PW = "VoiceRep123!"
+PW = qa_creds.password_for("qa-voice-ui@invalid.imonsocial.test")
 REPS = {"a": "qa-voice-rep-a@invalid.imonsocial.test", "b": "qa-voice-rep-b@invalid.imonsocial.test", "c": "qa-voice-rep-c@invalid.imonsocial.test"}
 pytestmark = pytest.mark.asyncio
 S = {}  # module state shared between the ordered tests

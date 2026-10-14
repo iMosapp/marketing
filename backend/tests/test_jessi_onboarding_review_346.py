@@ -5,10 +5,11 @@ import os
 import time
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
-ADMIN = ("forest@imosapp.com", "Admin123!")
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
+ADMIN = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 
 QUINN_PHONE = "+15005550077"
 RILEY_PHONE = "+15005550078"

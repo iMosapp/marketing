@@ -11,6 +11,7 @@ from urllib.parse import unquote
 from bson import ObjectId
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 API = "http://127.0.0.1:8001/api"
@@ -104,7 +105,7 @@ class TestVehicleLink:
         assert "opened 2 times" in notif["message"]
 
     def test_alert_center_shows_text_action_now(self, seed):
-        r = requests.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}, timeout=30)
+        r = requests.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}, timeout=30)
         assert r.status_code == 200, r.text
         token = r.json()["token"]
         r = requests.get(f"{API}/notification-center/{seed['uid']}?feed=for_you", headers={"Authorization": f"Bearer {token}"}, timeout=30)

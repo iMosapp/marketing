@@ -5,6 +5,7 @@ Uses TEST_Lead_Source_VA_Picker (never Website source). Cleans up all created fl
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 def _load_base():
     v = os.environ.get("REACT_APP_BACKEND_URL")
@@ -23,9 +24,9 @@ BASE_URL = _load_base()
 API = f"{BASE_URL}/api"
 
 QA_EMAIL = "qa-manager@invalid.imonsocial.test"
-QA_PASS = "Manager123!"
+QA_PASS = qa_creds.password_for("qa-manager@invalid.imonsocial.test")
 REP_EMAIL = "activation-tester@invalid.imonsocial.test"
-REP_PASS = "NewPass123!"
+REP_PASS = qa_creds.password_for("activation-tester@invalid.imonsocial.test")
 
 TEST_SOURCE = "6a165970ac830a1c833af189"  # TEST_Lead_Source_VA_Picker (SAFE)
 TESTER_ID = "6a978d68b8673c29063aa8b9"    # Activation Tester (Twilio test number)

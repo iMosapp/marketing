@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 load_dotenv("/app/backend/.env")
@@ -25,7 +26,7 @@ async def main():
     db = AsyncIOMotorClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
     from services.appointment_changes import detect_appointment_change, CHANGE_HINT
     async with httpx.AsyncClient(timeout=90) as c:
-        r = await c.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"})
+        r = await c.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")})
         tok = r.json()["token"]; uid = r.json()["user"].get("id") or r.json()["user"].get("_id")
         H = {"Authorization": f"Bearer {tok}"}
         rep_num = (await db.users.find_one({"_id": ObjectId(uid)}, {"twilio_number": 1}))["twilio_number"]

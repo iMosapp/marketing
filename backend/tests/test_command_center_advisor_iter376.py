@@ -14,12 +14,13 @@ import time
 
 import pytest
 import requests
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 assert BASE_URL, "REACT_APP_BACKEND_URL must be set"
 
-OWNER = {"email": "forest@imosapp.com", "password": "Admin123!"}
-MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
+OWNER = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
 IDEA_ID = "6ac90cfb86c8162c83b03551"
 
 

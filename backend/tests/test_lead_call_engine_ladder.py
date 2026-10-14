@@ -16,6 +16,7 @@ import requests
 from bson import ObjectId
 from dotenv import dotenv_values
 from pymongo import MongoClient
+from tests import qa_creds
 
 fe = dotenv_values("/app/frontend/.env")
 BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or fe.get("REACT_APP_BACKEND_URL")).rstrip("/")
@@ -81,7 +82,7 @@ def clean_slate():
 @pytest.fixture(scope="module")
 def s():
     sess = requests.Session()
-    r = sess.post(f"{BASE_URL}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30)
+    r = sess.post(f"{BASE_URL}/api/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30)
     assert r.status_code == 200, f"login failed {r.status_code} {r.text[:300]}"
     tok = r.json().get("token") or r.json().get("access_token")
     assert tok

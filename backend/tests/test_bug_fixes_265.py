@@ -10,11 +10,12 @@ import requests
 import asyncio
 import sys
 import os
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_EMAIL = "forest@imosapp.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = qa_creds.password_for("forest@imosapp.com")
 
 
 @pytest.fixture(scope="module")

@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from bson import ObjectId
 
 from routers.database import get_db
+from services.contact_scope import owned_contact
 from utils.image_storage import put_object
 
 logger = logging.getLogger(__name__)
@@ -311,6 +312,7 @@ async def create_voice_note(
 ):
     """Upload a voice memo (or a recorded in-person conversation) for a contact. Stores audio, transcribes, logs event."""
     db = get_db()
+    await owned_contact(db, user_id, contact_id, {"_id": 1})
     kind = "conversation" if kind == "conversation" else "memo"
     _check_duration(duration, kind)
     audio_bytes = await audio.read()
@@ -334,6 +336,7 @@ async def upload_voice_chunk(user_id: str, contact_id: str, chunk: AudioChunk):
     """Long recordings arrive as base64 pieces (<= ~600KB each) so proxies never see one huge request; assembled on the last piece."""
     import re as _re
     db = get_db()
+    await owned_contact(db, user_id, contact_id, {"_id": 1})
     if chunk.total < 1 or chunk.total > 200 or not (0 <= chunk.index < chunk.total) or len(chunk.data) > 900_000:
         raise HTTPException(status_code=400, detail="Bad chunk")
     upload_id = _re.sub(r"[^A-Za-z0-9_-]", "", chunk.upload_id)[:64]
@@ -449,6 +452,7 @@ async def schedule_capture_reminder(user_id: str, contact_id: str, data: dict = 
     """
     import asyncio
     db = get_db()
+    await owned_contact(db, user_id, contact_id, {"_id": 1})
     data = data or {}
     contact_name = data.get("contact_name", "your customer")
     first_name = contact_name.split()[0] if contact_name else "your customer"

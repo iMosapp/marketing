@@ -7,13 +7,14 @@ These features allow:
 import pytest
 import requests
 import os
+from tests import qa_creds
 
 BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', '').rstrip('/')
 
 # Test credentials from provided data
 TEST_USER_ID = "69963e636d8473ba25695a34"
 TEST_EMAIL = "superadmin@mvpline.com"
-TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "Admin123!")
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", qa_creds.password_for("forest@imosapp.com"))
 
 
 @pytest.fixture(scope="module")

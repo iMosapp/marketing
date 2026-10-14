@@ -19,6 +19,7 @@ from datetime import datetime, timezone, timedelta
 import pytest
 import requests
 from dotenv import dotenv_values, load_dotenv
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 FE = dotenv_values("/app/frontend/.env")
@@ -28,8 +29,8 @@ LOCAL = "http://localhost:8001"
 SRC_ID = "69a787ca70ae63ea0ac69251"          # Website lead source
 STORE_ID = "69a0b7095fddcede09591668"
 TESTER_ID = "6a978d68b8673c29063aa8b9"       # Activation Tester, +15005550006
-ADMIN = {"email": "forest@imosapp.com", "password": "Admin123!"}
-NONMGR = {"email": "mjeast1985@gmail.com", "password": "NavyBean1!"}
+ADMIN = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+NONMGR = {"email": "mjeast1985@gmail.com", "password": qa_creds.password_for("mjeast1985@gmail.com")}
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36"}
 DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 

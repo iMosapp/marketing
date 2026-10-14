@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import httpx
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 API = os.environ.get("TEST_API_URL", "http://localhost:8001").rstrip("/")
 QA_STORE = "69a0b7095fddcede09591668"
@@ -31,7 +32,7 @@ async def _run():
                                             "is_active": True, "created_at": now, "qa_flow_reps": True})
     try:
         async with httpx.AsyncClient(timeout=30) as c:
-            h = await _login(c, "forest@imosapp.com", "Admin123!")
+            h = await _login(c, "forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
             r = await c.get(f"{API}/api/lead-flows/{flow.inserted_id}", headers=h)
             assert r.status_code == 200, r.text
             reps = r.json()["reps"]

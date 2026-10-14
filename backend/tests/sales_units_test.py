@@ -10,6 +10,7 @@ import requests
 from bson import ObjectId
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 load_dotenv("/app/frontend/.env")
@@ -19,7 +20,7 @@ from services import sales  # noqa: E402
 
 
 def login():
-    r = requests.post(f"{API}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30).json()
+    r = requests.post(f"{API}/api/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30).json()
     return r.get("token") or r.get("access_token"), r["user"]["_id"] if "user" in r else r.get("user_id")
 
 

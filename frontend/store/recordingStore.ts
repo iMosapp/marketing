@@ -6,6 +6,7 @@ import api from '../services/api';
 // contact page, opening a thread or switching tabs never orphans a live mic. RecordingOverlay (mounted in _layout) shows it.
 export type RecordingSession = { userId: string; contactId: string; contactFirst: string; startedAt: number };
 export type SavedNote = { contactId: string; contactFirst: string; note: any; at: number };
+export type FailedUpload = { uri: string; duration: number; session: RecordingSession; reason: string };
 export type StartResult = 'started' | 'denied' | 'failed' | 'busy';
 
 type S = {
@@ -14,10 +15,14 @@ type S = {
   seconds: number;
   saving: string | null;
   result: SavedNote | null;
+  failed: FailedUpload | null;
   lastSaved: SavedNote | null;
   error: string | null;
   start: (s: Omit<RecordingSession, 'startedAt'>) => Promise<StartResult>;
   stop: () => Promise<void>;
+  retry: () => Promise<void>;
+  discard: () => Promise<void>;
+  abandon: () => Promise<void>;
   dismissResult: () => void;
   clearError: () => void;
 };
@@ -48,17 +53,38 @@ const readBase64 = async (uri: string): Promise<{ b64: string; contentType: stri
   return { b64: await new ExpoFile(uri).base64(), contentType: 'audio/mp4' };
 };
 
+const dropFile = async (uri: string) => {
+  try {
+    if (Platform.OS === 'web') { URL.revokeObjectURL(uri); return; }
+    const { File: ExpoFile } = await import('expo-file-system');
+    new ExpoFile(uri).delete();
+  } catch { /* already gone */ }
+};
+
+// Stops the timer, releases keep-awake and unloads the native recorder; returns its file uri (if any). Never throws.
+const releaseMic = async (): Promise<string | null> => {
+  if (timer) { clearInterval(timer); timer = null; }
+  releaseKeepAwake?.(); releaseKeepAwake = null;
+  const current = rec; rec = null;
+  if (!current) return null;
+  try { await current.stopAndUnloadAsync(); } catch { /* already stopped */ }
+  try { return current.getURI() || null; } catch { return null; }
+};
+
+const reasonOf = (e: any) => (e?.response?.status === 404 ? 'That contact is not in your book' : e?.response?.data?.detail || (e?.message?.includes('Network') ? 'No connection' : 'Could not save the recording'));
+
 export const useRecordingStore = create<S>((set, get) => ({
   session: null,
   recording: false,
   seconds: 0,
   saving: null,
   result: null,
+  failed: null,
   lastSaved: null,
   error: null,
 
   start: async ({ userId, contactId, contactFirst }) => {
-    if (get().recording || get().saving) return 'busy';
+    if (get().recording || get().saving || get().failed) return 'busy';
     try {
       const { Audio } = await import('expo-av');
       const { status } = await Audio.requestPermissionsAsync();
@@ -81,44 +107,69 @@ export const useRecordingStore = create<S>((set, get) => ({
       }, 1000);
       return 'started';
     } catch {
+      const uri = await releaseMic();  // a half-created recorder must not keep the mic open
+      if (uri) dropFile(uri);
       return 'failed';
     }
   },
 
   stop: async () => {
-    if (timer) { clearInterval(timer); timer = null; }
-    releaseKeepAwake?.(); releaseKeepAwake = null;
-    const current = rec; rec = null;
     const { session } = get();
     set({ recording: false });
-    if (!current || !session) { set({ session: null }); return; }
+    const uri = await releaseMic();
+    if (!uri || !session) { set({ session: null }); return; }
     const duration = Math.min(MAX_SECONDS, Math.floor((Date.now() - session.startedAt) / 1000));
-    try {
-      await current.stopAndUnloadAsync();
-      const uri = current.getURI();
-      if (!uri) { set({ session: null, error: 'Nothing was recorded' }); return; }
-      if (duration < MIN_SECONDS) { set({ session: null, error: 'Too short to save' }); return; }
-      set({ saving: 'Uploading…' });
-      const { b64, contentType } = await readBase64(uri);
-      const total = Math.max(1, Math.ceil(b64.length / PIECE));
-      const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-      let last: any = null;
-      for (let i = 0; i < total; i++) {
-        set({ saving: i === total - 1 ? 'Transcribing…' : `Uploading ${Math.round(((i + 1) / total) * 100)}%` });
-        const res = await api.post(`/voice-notes/${session.userId}/${session.contactId}/chunk`, {
-          upload_id: uploadId, index: i, total, data: b64.slice(i * PIECE, (i + 1) * PIECE), content_type: contentType, duration, kind: 'conversation',
-        }, { timeout: 180000 });
-        last = res.data;
-      }
-      const saved: SavedNote = { contactId: session.contactId, contactFirst: session.contactFirst, note: last, at: Date.now() };
-      set({ saving: null, session: null, result: saved, lastSaved: saved });
-    } catch (e: any) {
-      set({ saving: null, session: null, error: e?.response?.data?.detail || 'Could not save the recording' });
-    }
+    if (duration < MIN_SECONDS) { dropFile(uri); set({ session: null, error: 'Too short to save' }); return; }
+    await upload(uri, duration, session, set);
+  },
+
+  retry: async () => {
+    const f = get().failed;
+    if (!f || get().saving) return;
+    set({ failed: null, session: f.session });
+    await upload(f.uri, f.duration, f.session, set);
+  },
+
+  discard: async () => {
+    const f = get().failed;
+    set({ failed: null, session: null });
+    if (f) dropFile(f.uri);
+  },
+
+  // Logout / account switch: nothing of this person's recording may survive, and the mic must be free.
+  abandon: async () => {
+    const f = get().failed;
+    const uri = await releaseMic();
+    if (uri) dropFile(uri);
+    if (f) dropFile(f.uri);
+    set({ session: null, recording: false, seconds: 0, saving: null, result: null, failed: null, lastSaved: null, error: null });
   },
 
   dismissResult: () => set({ result: null }),
   clearError: () => set({ error: null }),
 }));
+
+async function upload(uri: string, duration: number, session: RecordingSession, set: (p: Partial<S>) => void) {
+  try {
+    set({ saving: 'Uploading…' });
+    const { b64, contentType } = await readBase64(uri);
+    const total = Math.max(1, Math.ceil(b64.length / PIECE));
+    const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+    let last: any = null;
+    for (let i = 0; i < total; i++) {
+      set({ saving: i === total - 1 ? 'Transcribing…' : `Uploading ${Math.round(((i + 1) / total) * 100)}%` });
+      const res = await api.post(`/voice-notes/${session.userId}/${session.contactId}/chunk`, {
+        upload_id: uploadId, index: i, total, data: b64.slice(i * PIECE, (i + 1) * PIECE), content_type: contentType, duration, kind: 'conversation',
+      }, { timeout: 180000 });
+      last = res.data;
+    }
+    const saved: SavedNote = { contactId: session.contactId, contactFirst: session.contactFirst, note: last, at: Date.now() };
+    dropFile(uri);
+    set({ saving: null, session: null, result: saved, lastSaved: saved });
+  } catch (e: any) {
+    // The file stays on the device: the bar offers Retry / Discard instead of losing a 40-minute conversation.
+    set({ saving: null, session: null, failed: { uri, duration, session, reason: reasonOf(e) } });
+  }
+}
 
 export const fmtClock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;

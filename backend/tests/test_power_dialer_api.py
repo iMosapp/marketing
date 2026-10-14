@@ -9,12 +9,13 @@ import time
 import uuid
 import pytest
 import requests
+from tests import qa_creds
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com').rstrip('/')
 
-FOREST = {"email": "forest@imosapp.com", "password": "Admin123!"}
-REP = {"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}
-MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
+FOREST = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+REP = {"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}
+MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
 
 
 def _login(email, password):

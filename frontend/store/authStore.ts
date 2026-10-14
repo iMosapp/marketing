@@ -316,6 +316,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   logout: async () => {
+    // A live or unsaved conversation recording belongs to the person leaving: free the mic and drop the file first
+    try {
+      const { useRecordingStore } = await import('./recordingStore');
+      await useRecordingStore.getState().abandon();
+    } catch {}
     // This phone stops belonging to this person before anything else is cleared
     try {
       const { user: leaving } = get();

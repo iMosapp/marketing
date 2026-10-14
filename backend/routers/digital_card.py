@@ -241,91 +241,24 @@ async def get_card_data(user_id: str, request: Request, cid: str = None):
 
 
 @router.post("/save/{user_id}")
-async def track_card_save(
-    user_id: str, 
-    data: dict
-):
-    """
-    Track when a customer saves the digital card
-    Optionally enrolls the contact in a campaign
-    """
+async def track_card_save(user_id: str, data: dict):
+    """Track when a customer saves the digital card. Anonymous by design (the customer has no session), so it only records an
+    event for a contact that really belongs to this rep. It never enrolls anyone in a texting campaign: campaign enrollment
+    is a rep action behind a session (routers/campaigns), and customer consent lives in the opt-in flow."""
     db = get_db()
-    
-    contact_id = data.get("contact_id")
-    campaign_id = data.get("campaign_id")
-    
-    # Log the card save event
-    event = {
-        "type": "card_save",
-        "user_id": user_id,
-        "contact_id": contact_id,
-        "campaign_id": campaign_id,
-        "created_at": datetime.utcnow()
-    }
-    await db.card_events.insert_one(event)
-
-    # Fire engagement signal — "Customer saved your contact"
-    try:
-        from routers.engagement_signals import record_signal
-        await record_signal(
-            signal_type="contact_saved",
-            user_id=user_id,
-            contact_id=contact_id,
-            metadata={"source": "digital_card"},
-        )
-    except Exception:
-        pass
-    
-    # If campaign_id provided, enroll the contact
-    if campaign_id and contact_id:
+    if not ObjectId.is_valid(user_id) or not await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Card not found")
+    contact_id = str(data.get("contact_id") or "")
+    if contact_id:
+        if not ObjectId.is_valid(contact_id) or not await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"_id": 1}):
+            raise HTTPException(status_code=404, detail="Contact not found")
+    await db.card_events.insert_one({"type": "card_save", "user_id": user_id, "contact_id": contact_id or None, "created_at": datetime.utcnow()})
+    if contact_id:
         try:
-            # Get contact info
-            contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
-            if not contact:
-                return {"success": True, "enrolled": False, "message": "Contact not found"}
-            
-            # Get campaign info
-            campaign = await db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-            if not campaign:
-                return {"success": True, "enrolled": False, "message": "Campaign not found"}
-            
-            # Check if already enrolled
-            existing = await db.campaign_enrollments.find_one({
-                "campaign_id": campaign_id,
-                "contact_id": contact_id,
-                "status": "active"
-            })
-            
-            if existing:
-                return {"success": True, "enrolled": False, "message": "Already enrolled"}
-            
-            # Create enrollment
-            enrollment = {
-                "user_id": user_id,
-                "campaign_id": campaign_id,
-                "contact_id": contact_id,
-                "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
-                "contact_phone": contact.get("phone", ""),
-                "current_step": 1,
-                "status": "active",
-                "enrolled_at": datetime.utcnow(),
-                "next_send_at": datetime.utcnow(),  # Start immediately
-                "messages_sent": [],
-                "source": "digital_card"
-            }
-            
-            await db.campaign_enrollments.insert_one(enrollment)
-            
-            return {
-                "success": True, 
-                "enrolled": True, 
-                "campaign_name": campaign.get("name"),
-                "message": f"Enrolled in {campaign.get('name')}"
-            }
-            
-        except Exception as e:
-            return {"success": True, "enrolled": False, "message": str(e)}
-    
+            from routers.engagement_signals import record_signal
+            await record_signal(signal_type="contact_saved", user_id=user_id, contact_id=contact_id, metadata={"source": "digital_card"})
+        except Exception:
+            pass
     return {"success": True, "enrolled": False}
 
 

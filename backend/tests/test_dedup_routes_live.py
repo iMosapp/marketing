@@ -5,10 +5,11 @@ import httpx
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 API = open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].splitlines()[0].strip() + "/api"
-MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
+MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
 PHONE_RAW = "(500) 555-0142"
 PHONE_E164 = "+15005550142"
 

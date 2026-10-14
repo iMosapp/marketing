@@ -2,6 +2,7 @@
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com').rstrip('/')
 UID = '6a978d68b8673c29063aa8b9'
@@ -15,7 +16,7 @@ UN_TRADE = '6ac56248b0694990705a353a'
 def token():
     r = requests.post(f"{BASE_URL}/api/auth/login",
                       json={"email": "activation-tester@invalid.imonsocial.test",
-                            "password": "NewPass123!"})
+                            "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")})
     assert r.status_code == 200, r.text
     return r.json()["token"]
 
@@ -24,7 +25,7 @@ def token():
 def token2():
     r = requests.post(f"{BASE_URL}/api/auth/login",
                       json={"email": "qa-manager@invalid.imonsocial.test",
-                            "password": "Manager123!"})
+                            "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")})
     assert r.status_code == 200, r.text
     return r.json()["token"]
 

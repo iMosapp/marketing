@@ -25,6 +25,7 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
   const storeRecording = useRecordingStore(s => s.recording);
   const seconds = useRecordingStore(s => s.seconds);
   const saving = useRecordingStore(s => s.saving);
+  const failed = useRecordingStore(s => s.failed);
   const lastSaved = useRecordingStore(s => s.lastSaved);
   const startStore = useRecordingStore(s => s.start);
   const stop = useRecordingStore(s => s.stop);
@@ -49,7 +50,10 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
     const r = await startStore({ userId, contactId, contactFirst });
     if (r === 'denied') showToast('Mic access needed', 'error');
     else if (r === 'failed') showToast('Could not start recording', 'error');
-    else if (r === 'busy') showToast(`Still recording with ${useRecordingStore.getState().session?.contactFirst || 'someone else'}. Stop & save that first.`, 'warning');
+    else if (r === 'busy') {
+      const st = useRecordingStore.getState();
+      showToast(st.failed ? 'Retry or discard the unsaved recording on the bar first.' : `Still recording with ${st.session?.contactFirst || 'someone else'}. Stop & save that first.`, 'warning');
+    }
   };
 
   const live = recording || !!memoRecording;
@@ -57,6 +61,7 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
     if (busy) return;
     if (recording) stop();
     else if (memoRecording) onStopMemo?.();
+    else if (failed) showToast('Retry or discard the unsaved recording on the bar first.', 'warning');
     else if (otherActive) showToast(`Still recording with ${session?.contactFirst || 'someone else'}. Tap Stop & save on the red bar first.`, 'warning');
     else setChooser(true);
   };

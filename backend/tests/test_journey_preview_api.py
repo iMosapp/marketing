@@ -18,6 +18,7 @@ import pytest
 import requests
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 BASE_URL = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 API = BASE_URL + "/api"
@@ -48,13 +49,13 @@ def _login(email, pw):
 
 @pytest.fixture(scope="module")
 def admin():
-    return {"Authorization": f"Bearer {_login('forest@imosapp.com', 'Admin123!')}"}
+    return {"Authorization": f"Bearer {_login('forest@imosapp.com', qa_creds.password_for('forest@imosapp.com'))}"}
 
 
 @pytest.fixture(scope="module")
 def manager():
     try:
-        return {"Authorization": f"Bearer {_login('qa-manager@invalid.imonsocial.test', 'Manager123!')}"}
+        return {"Authorization": f"Bearer {_login('qa-manager@invalid.imonsocial.test', qa_creds.password_for('qa-manager@invalid.imonsocial.test'))}"}
     except Exception:
         pytest.skip("qa-manager account not available")
 

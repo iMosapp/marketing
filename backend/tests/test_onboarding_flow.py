@@ -11,13 +11,14 @@ import os
 import pytest
 import requests
 import uuid
+from tests import qa_creds
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test user credentials from main agent
 TEST_USER_ID = "69bf845d9135c4567c2bc614"
 TEST_USER_EMAIL = "onboard_flow_test@test.com"
-TEST_USER_PASSWORD = os.environ.get("TEST_USER_PASS", "Admin123!")
+TEST_USER_PASSWORD = os.environ.get("TEST_USER_PASS", qa_creds.password_for("forest@imosapp.com"))
 
 # Super admin for creating test users
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"

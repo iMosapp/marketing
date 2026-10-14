@@ -11,10 +11,11 @@ import os
 import re
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
-OWNER = {"email": "forest@imosapp.com", "password": "Admin123!"}
-NONOWNER = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
+OWNER = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+NONOWNER = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_CRON_SECRET", "")
 DECIDED_RT = "6ac92360a9cf5a18a65339cf"
 

@@ -9,13 +9,14 @@ import os
 import pytest
 import requests
 from dotenv import dotenv_values
+from tests import qa_creds
 
 frontend_env = dotenv_values("/app/frontend/.env")
 BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or frontend_env.get("REACT_APP_BACKEND_URL")).rstrip("/")
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "forest@imosapp.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = qa_creds.password_for("forest@imosapp.com")
 STORE_ID = "69a0b7095fddcede09591668"
 
 

@@ -20,6 +20,7 @@ from routers.admin_helpers import (
 )
 from routers.rbac import (
     get_scoped_store_ids,
+    get_scoped_organization_ids,
     verify_user_access,
     require_role,
     require_store_access,
@@ -572,10 +573,10 @@ async def admin_reset_password(
     data: dict,
     x_user_id: str = Header(None, alias="X-User-ID")
 ):
-    """Admin resets a user's password"""
+    """Admin resets a user's password (super admin only: it bypasses the account's own recovery flow)."""
     requesting_user = await get_requesting_user(x_user_id)
-    if not requesting_user or requesting_user.get('role') not in ('super_admin', 'admin', 'manager'):
-        raise HTTPException(status_code=403, detail="Only admins can reset passwords")
+    if not requesting_user or requesting_user.get('role') != 'super_admin':
+        raise HTTPException(status_code=403, detail="Only super admins can reset passwords")
     
     new_password = data.get('new_password', '').strip()
     if not new_password or len(new_password) < 4:
@@ -603,16 +604,23 @@ async def update_admin_user(
 ):
     """Update a user - with RBAC enforcement"""
     requesting_user = await get_requesting_user(x_user_id)
-    
-    if requesting_user:
-        if requesting_user.get('role') != 'super_admin':
-            has_access = await verify_user_access(requesting_user, user_id)
-            if not has_access:
-                raise HTTPException(status_code=403, detail="Access denied to this user")
-        
-        # Prevent privilege escalation - only super_admin can set super_admin role
-        if user_data.get('role') == 'super_admin' and requesting_user.get('role') != 'super_admin':
-            raise HTTPException(status_code=403, detail="Only super admins can grant super admin role")
+    if not requesting_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    from services.route_guard import RANK, outranked
+    my_role = requesting_user.get('role')
+    if my_role != 'super_admin':
+        if not await verify_user_access(requesting_user, user_id):
+            raise HTTPException(status_code=403, detail="Access denied to this user")
+        target = await get_db().users.find_one({"_id": ObjectId(user_id)}, {"role": 1}) if ObjectId.is_valid(user_id) else None
+        if target and outranked(my_role, target.get('role')):
+            raise HTTPException(status_code=403, detail="You can't modify an account with more privileges than yours")
+        # Role grants stay strictly below the caller: a store manager can't make managers, an org admin can't make org admins.
+        if 'role' in user_data and RANK.get(user_data.get('role') or "", 99) >= RANK.get(my_role or "user", 1):
+            raise HTTPException(status_code=403, detail="You can only grant roles below your own")
+        if 'organization_id' in user_data and str(user_data.get('organization_id') or "") not in {str(o) for o in await get_scoped_organization_ids(requesting_user)}:
+            raise HTTPException(status_code=403, detail="Access denied to this organization")
+        if 'store_id' in user_data and str(user_data.get('store_id') or "") not in {str(s) for s in await get_scoped_store_ids(requesting_user)}:
+            raise HTTPException(status_code=403, detail="Access denied to this store")
     
     allowed_fields = ['name', 'phone', 'email', 'role', 'organization_id', 'store_id', 'state', 'settings', 'is_active', 'onboarding_complete', 'title', 'bio', 'photo_url', 'social_links', 'social_instagram', 'social_facebook', 'social_linkedin']
     update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}

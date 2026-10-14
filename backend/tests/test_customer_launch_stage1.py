@@ -9,9 +9,10 @@ import pytest
 
 from tests.live_auth import ORG_B, STORE_A, STORE_B, Session, anon, oid
 from tests.wipe_pilot_customers import wipe
+from tests import qa_creds
 
 PREFIX = "QA Pilot Co"
-OWNER_PASSWORD = "PilotOwner123!"
+OWNER_PASSWORD = qa_creds.password_for("qa-pilot-owner-ui@invalid.imonsocial.test")
 
 
 def _phone():

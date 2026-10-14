@@ -8,6 +8,7 @@ import sys
 from datetime import datetime, timezone
 import pytest
 import requests
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 
@@ -53,7 +54,7 @@ async def db():
 
 @pytest.fixture(scope="module")
 def forest_tok():
-    r = requests.post(f"{BASE_URL}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=15).json()
+    r = requests.post(f"{BASE_URL}/api/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=15).json()
     return r.get("access_token") or r.get("token")
 
 

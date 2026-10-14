@@ -2,11 +2,12 @@
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/") or open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0].rstrip("/")
 
-FOREST = {"email": "forest@imosapp.com", "password": "Admin123!"}
-TESTER = {"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}
+FOREST = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+TESTER = {"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}
 
 
 def _token(creds):

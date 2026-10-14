@@ -16,6 +16,7 @@ import requests
 from bson import ObjectId
 from dotenv import dotenv_values
 from pymongo import MongoClient
+from tests import qa_creds
 
 fe = dotenv_values("/app/frontend/.env")
 be = dotenv_values("/app/backend/.env")
@@ -23,7 +24,7 @@ BASE = (os.environ.get("REACT_APP_BACKEND_URL") or fe.get("REACT_APP_BACKEND_URL
 API = f"{BASE}/api"
 
 ADMIN_EMAIL = "forest@imosapp.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = qa_creds.password_for("forest@imosapp.com")
 ADMIN_ID = "69a0b7095fddcede09591667"
 TARGET_ID = "69c75782e051d06491e6fa9f"  # Matthew Easton
 ACTIVATION_TESTER_EMAIL = "activation-tester@invalid.imonsocial.test"
@@ -204,7 +205,7 @@ class TestActivationFlow:
     def test_activate_complete_success(self):
         r = requests.post(
             f"{API}/auth/activate/complete",
-            json={"phone": self.NEW_PHONE_E164, "code": STATE["act_code"], "new_password": "NewPass123!"},
+            json={"phone": self.NEW_PHONE_E164, "code": STATE["act_code"], "new_password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")},
             timeout=60,
         )
         assert r.status_code == 200, f"{r.status_code} {r.text[:300]}"
@@ -215,14 +216,14 @@ class TestActivationFlow:
     def test_code_cannot_be_reused(self):
         r = requests.post(
             f"{API}/auth/activate/complete",
-            json={"phone": self.NEW_PHONE_E164, "code": STATE["act_code"], "new_password": "NewPass123!"},
+            json={"phone": self.NEW_PHONE_E164, "code": STATE["act_code"], "new_password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")},
             timeout=60,
         )
         assert r.status_code == 400, f"consumed code reused! {r.status_code} {r.text[:200]}"
 
     def test_login_after_activation(self):
         r = requests.post(
-            f"{API}/auth/login", json={"email": STATE["new_email"], "password": "NewPass123!"}, timeout=60
+            f"{API}/auth/login", json={"email": STATE["new_email"], "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=60
         )
         assert r.status_code == 200, f"{r.status_code} {r.text[:300]}"
         u = r.json().get("user") or {}
@@ -306,7 +307,7 @@ class TestForgotPassword:
         self._reset_password_to("Reset456!", "fp1")
         # restore documented credential
         self._clear_codes()
-        self._reset_password_to("NewPass123!", "fp2")
+        self._reset_password_to(qa_creds.password_for("activation-tester@invalid.imonsocial.test"), "fp2")
 
     def test_phone_lookup_digits_only(self, tester_user):
         self._clear_codes()

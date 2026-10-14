@@ -13,6 +13,7 @@ import websockets
 from bson import ObjectId
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 API = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
@@ -97,7 +98,7 @@ async def main():
     assert evs == 1, evs
     print("graded once ok: score", s.get("score_pct"), "adherence", s.get("adherence_pct"), "end_reason", s.get("end_reason"))
 
-    tok = requests.post(f"{API}/api/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}, timeout=30).json()["token"]
+    tok = requests.post(f"{API}/api/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=30).json()["token"]
     g = requests.get(f"{API}/api/scripts/roleplay/{sid}", headers={"Authorization": f"Bearer {tok}"}, timeout=30).json()
     assert g["mode"] == "phone" and g["status"] == "completed" and g["result"] and len(g["turns"]) >= 8, (g["mode"], g["status"], len(g["turns"]))
     print("GET session ok:", g["mode"], g["status"], g["call_status"], "turns", len(g["turns"]))

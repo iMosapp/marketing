@@ -12,6 +12,7 @@ import uuid
 import pytest
 import requests
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv("/app/frontend/.env")
 load_dotenv("/app/backend/.env")
@@ -20,9 +21,9 @@ BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") + "/api"
 ORG = "69a907033b77512d1d8d8a08"
 OTHER_ORG = "69a9071244e985a2b4184d4b"
 
-SUPER = {"email": "forest@imosapp.com", "password": "Admin123!"}
-ORG_ADMIN = {"email": "qa-orgadmin@invalid.imonsocial.test", "password": "OrgAdmin123!"}
-MGR = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
+SUPER = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+ORG_ADMIN = {"email": "qa-orgadmin@invalid.imonsocial.test", "password": qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test")}
+MGR = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
 
 
 # ─── auth helpers ──────────────────────────────────────────────────────────

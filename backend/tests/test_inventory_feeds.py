@@ -12,6 +12,7 @@ import requests
 from bson import ObjectId
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 API = "http://127.0.0.1:8001/api"
@@ -72,7 +73,7 @@ def server():
 
 @pytest.fixture(scope="module")
 def manager():
-    r = requests.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}, timeout=30)
+    r = requests.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}, timeout=30)
     assert r.status_code == 200, r.text
     d = r.json(); u = d["user"]
     return str(u.get("_id") or u.get("id")), d["token"]
@@ -80,7 +81,7 @@ def manager():
 
 @pytest.fixture(scope="module")
 def rep():
-    r = requests.post(f"{API}/auth/login", json={"email": "mjeast1985@gmail.com", "password": "NavyBean1!"}, timeout=30)
+    r = requests.post(f"{API}/auth/login", json={"email": "mjeast1985@gmail.com", "password": qa_creds.password_for("mjeast1985@gmail.com")}, timeout=30)
     assert r.status_code == 200, r.text
     d = r.json(); u = d["user"]
     return str(u.get("_id") or u.get("id")), d["token"]

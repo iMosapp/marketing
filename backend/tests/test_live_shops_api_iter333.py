@@ -2,6 +2,7 @@
 import os
 import requests
 import pytest
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/") or "http://localhost:8001"
 CLIENT_ID = "6aa6d7dfb4c41decb2734ec4"  # QA Jeep 979a (English demo)
@@ -10,7 +11,7 @@ CLIENT_ID = "6aa6d7dfb4c41decb2734ec4"  # QA Jeep 979a (English demo)
 @pytest.fixture(scope="module")
 def forest_token():
     r = requests.post(f"{BASE}/api/auth/login",
-                      json={"email": "forest@imosapp.com", "password": "Admin123!"},
+                      json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")},
                       timeout=15)
     assert r.status_code == 200, r.text
     tok = r.json().get("access_token") or r.json().get("token")

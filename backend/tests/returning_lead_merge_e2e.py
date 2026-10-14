@@ -7,6 +7,7 @@ import httpx
 from dotenv import load_dotenv
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 sys.path.insert(0, "/app/backend")
@@ -42,8 +43,8 @@ async def main():
         async def login(email, pw):
             r = await c.post(f"{API}/auth/login", json={"email": email, "password": pw})
             return {"Authorization": f"Bearer {r.json().get('token') or r.json().get('access_token')}"}
-        HQ = await login("qa-manager@invalid.imonsocial.test", "Manager123!")
-        HT = await login("activation-tester@invalid.imonsocial.test", "NewPass123!")
+        HQ = await login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+        HT = await login("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
         try:
             # 1. returning customer lead merges into the existing thread
             r = await c.post(f"{API}/lead-sources/{WEBSITE}/test-lead", json={"phone": PHONE[2:], "first_name": "Merge", "last_name": "Tester", "include_ladder": False}, headers=HQ)

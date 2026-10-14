@@ -5,6 +5,7 @@ import time
 
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 WID = "6ab72996c248f5420bf0a14a"
@@ -19,7 +20,7 @@ def _tok(email, pw):
 
 @pytest.fixture(scope="module")
 def mgr():
-    return {"Authorization": f"Bearer {_tok('qa-manager@invalid.imonsocial.test', 'Manager123!')}"}
+    return {"Authorization": f"Bearer {_tok('qa-manager@invalid.imonsocial.test', qa_creds.password_for('qa-manager@invalid.imonsocial.test'))}"}
 
 
 @pytest.fixture(scope="module", autouse=True)

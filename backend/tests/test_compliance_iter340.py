@@ -13,6 +13,7 @@ import time
 import pytest
 import requests
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv("/app/frontend/.env")
 load_dotenv("/app/backend/.env")
@@ -20,9 +21,9 @@ load_dotenv("/app/backend/.env")
 BASE = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/") + "/api"
 QA_STORE = "69a0b7095fddcede09591668"
 
-SUPER = {"email": "forest@imosapp.com", "password": "Admin123!"}
-USER = {"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}
-MGR = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
+SUPER = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+USER = {"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}
+MGR = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
 
 QA_EMAIL = "qa-a2p@invalid.imonsocial.test"
 QA_PHONE = "+15005550123"

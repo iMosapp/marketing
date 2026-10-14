@@ -13,6 +13,7 @@ import time
 
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = (os.environ.get("REACT_APP_BACKEND_URL") or open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0]).rstrip("/")
 WID = "6ab72996c248f5420bf0a14a"
@@ -28,13 +29,13 @@ def _tok(email, pw):
 
 @pytest.fixture(scope="module")
 def admin_h():
-    t, uid = _tok("forest@imosapp.com", "Admin123!")
+    t, uid = _tok("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     return {"Authorization": f"Bearer {t}", "X-User-ID": uid, **UA}
 
 
 @pytest.fixture(scope="module")
 def mgr_h():
-    t, uid = _tok("qa-manager@invalid.imonsocial.test", "Manager123!")
+    t, uid = _tok("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
     return {"Authorization": f"Bearer {t}", "X-User-ID": uid, **UA}
 
 
@@ -43,7 +44,7 @@ def _cleanup():
     yield
     # Restore preview widget to defaults so the demo iframe looks classic again.
     try:
-        t, uid = _tok("forest@imosapp.com", "Admin123!")
+        t, uid = _tok("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
         requests.put(f"{BASE}/api/widgets/{WID}",
                      headers={"Authorization": f"Bearer {t}", "X-User-ID": uid, **UA},
                      json={"appearance": {"launcher": "bubble"}, "persona": {"on": False}},

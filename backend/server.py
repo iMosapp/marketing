@@ -53,7 +53,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-BUILD = "2026-10-14.security-hotfix3"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
+BUILD = "2026-10-14.security-hotfix4"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
 app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix
@@ -190,7 +190,7 @@ async def bind_identity_header(request: Request, call_next):
     request.state.caller_id = caller
     if not public:
         target = route_guard.route_user_id(app, request.scope) or route_guard.query_user_id(request)
-        if target and target != caller and not await route_guard.manager_can_access(caller, target):
+        if target and target != caller and not await route_guard.manager_can_access(caller, target, write=request.method not in ("GET", "HEAD")):
             logger.warning(f"[BOLA] Blocked {request.method} {path} — caller={caller} tried to access user_id={target}")
             return _JSONResponse({"detail": "Access denied — you can only access your own data"}, status_code=403)
     return await call_next(request)

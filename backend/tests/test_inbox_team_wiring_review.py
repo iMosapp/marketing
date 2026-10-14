@@ -13,6 +13,7 @@ Covers:
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 def _read_env(path, key):
     try:
@@ -35,9 +36,9 @@ SOURCE_ID = "6a165970ac830a1c833af189"       # TEST_Lead_Source_VA_Picker
 WEBSITE_SOURCE = "69a787ca70ae63ea0ac69251"  # DO NOT point
 FOREST_ID = "69a0b7095fddcede09591667"
 
-QA = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-FOREST = ("forest@imosapp.com", "Admin123!")
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
+QA = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+FOREST = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 
 
 def _login(email, password):

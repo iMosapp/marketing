@@ -2,10 +2,11 @@
 import os
 import requests
 import pytest
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 ADMIN_EMAIL = "forest@imosapp.com"
-ADMIN_PASS = "Admin123!"
+ADMIN_PASS = qa_creds.password_for("forest@imosapp.com")
 
 UK_CLIENT_ID = "6aa8b13f2c2d5fb494b1532e"
 UK_PROPOSAL_TOKEN = "08fb4ad374b049a387e6ada59227a80e"

@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from bson import ObjectId
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 API = "http://127.0.0.1:8001/api"
@@ -20,7 +21,7 @@ TAG = f"alerts-qa-{ObjectId()}"
 
 @pytest.fixture(scope="module")
 def admin():
-    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30)
+    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30)
     assert r.status_code == 200, r.text
     d = r.json()
     return str(d["user"]["_id"] if "_id" in d["user"] else d["user"]["id"]), d["token"]
@@ -28,7 +29,7 @@ def admin():
 
 @pytest.fixture(scope="module")
 def other():
-    r = requests.post(f"{API}/auth/login", json={"email": "mjeast1985@gmail.com", "password": "NavyBean1!"}, timeout=30)
+    r = requests.post(f"{API}/auth/login", json={"email": "mjeast1985@gmail.com", "password": qa_creds.password_for("mjeast1985@gmail.com")}, timeout=30)
     assert r.status_code == 200, r.text
     d = r.json()
     return str(d["user"]["_id"] if "_id" in d["user"] else d["user"]["id"]), d["token"]

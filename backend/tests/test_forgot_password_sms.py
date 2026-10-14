@@ -9,6 +9,7 @@ import requests
 import os
 from datetime import datetime
 from pymongo import MongoClient
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 MONGO_URL = os.environ.get("MONGO_URL", "")
@@ -160,7 +161,7 @@ def test_reset_with_correct_code_updates_password_and_marks_used(session, mongo_
     resp = session.post(f"{BASE_URL}/api/auth/forgot-password/reset", json={
         "email": TEST_EMAIL,
         "code": token["code"],
-        "new_password": "Admin123!"  # reset back to original
+        "new_password": qa_creds.password_for("forest@imosapp.com")  # reset back to original
     })
     assert resp.status_code == 200
     data = resp.json()
@@ -183,14 +184,14 @@ def test_reset_with_already_used_token_returns_400(session, mongo_db):
     session.post(f"{BASE_URL}/api/auth/forgot-password/reset", json={
         "email": TEST_EMAIL,
         "code": token["code"],
-        "new_password": "Admin123!"
+        "new_password": qa_creds.password_for("forest@imosapp.com")
     })
 
     # Second reset with same code
     resp = session.post(f"{BASE_URL}/api/auth/forgot-password/reset", json={
         "email": TEST_EMAIL,
         "code": token["code"],
-        "new_password": "Admin123!"
+        "new_password": qa_creds.password_for("forest@imosapp.com")
     })
     assert resp.status_code == 400, f"Expected 400 for used token, got {resp.status_code}: {resp.text}"
     print("PASS: Used token returns 400")

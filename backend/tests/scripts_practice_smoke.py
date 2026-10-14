@@ -4,6 +4,7 @@ import sys
 import time
 
 import requests
+from tests import qa_creds
 
 API = os.environ.get("API_URL") or [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0]
 API = API.rstrip("/") + "/api"
@@ -17,8 +18,8 @@ def login(email, pw):
 
 
 def main():
-    rep_tok, rep = login("activation-tester@invalid.imonsocial.test", "NewPass123!")
-    mgr_tok, mgr = login("qa-manager@invalid.imonsocial.test", "Manager123!")
+    rep_tok, rep = login("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+    mgr_tok, mgr = login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
     H = lambda t: {"Authorization": f"Bearer {t}"}
 
     lib = requests.get(f"{API}/scripts", headers=H(rep_tok), timeout=30).json()

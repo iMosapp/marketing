@@ -14,6 +14,7 @@ from bson import ObjectId
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
+from tests import qa_creds
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from routers.database import get_db  # noqa: E402
@@ -28,7 +29,7 @@ API = f"{BACKEND}/api"
 LOCAL_API = "http://localhost:8001/api"  # webhook posts are internal
 
 SUPER_EMAIL = "forest@imosapp.com"
-SUPER_PASS = "Admin123!"
+SUPER_PASS = qa_creds.password_for("forest@imosapp.com")
 REP_EMAIL = "activation-tester@invalid.imonsocial.test"
 
 

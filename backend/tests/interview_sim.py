@@ -13,6 +13,7 @@ import requests
 import websockets
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 API = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
@@ -112,7 +113,7 @@ async def main():
         if not before["title"]:
             assert u.get("title") == ex["professional_identity"], u.get("title")
         # the auth'd status endpoint shows it
-        login = requests.post(f"{API}/api/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}, timeout=30).json()
+        login = requests.post(f"{API}/api/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=30).json()
         h = {"Authorization": f"Bearer {login['token']}"}
         st = requests.get(f"{API}/api/interview/status", headers=h, timeout=30).json()
         assert st["session"]["id"] == sid and st["session"]["status"] == "completed" and st["persona_filled"] >= 6 and st["voice"]["status"] in ("none", "not_configured"), st
@@ -147,7 +148,7 @@ async def main():
         assert u["persona"]["hometown"] == d["extracted"]["hometown"] != marker
         print("dry run ok: nothing applied until /apply, then persona updated")
         # --- Test Lab flags
-        adm = requests.post(f"{API}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30).json()
+        adm = requests.post(f"{API}/api/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30).json()
         ah = {"Authorization": f"Bearer {adm['token']}"}
         feats = requests.get(f"{API}/api/lab/features", headers=ah, timeout=30).json()["features"]
         vi = next(f for f in feats if f["key"] == "voice_interview")

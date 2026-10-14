@@ -10,11 +10,12 @@ import wave
 import pytest
 import requests
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 BASE = [l.split("=",1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 API = BASE + "/api"
 OTHER_EMAIL = "cc-qa-other@qa.test"
-OWNER = ("forest@imosapp.com", "Admin123!")
+OWNER = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
 
 
 def _db():

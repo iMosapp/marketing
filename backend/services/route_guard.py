@@ -57,9 +57,14 @@ PUBLIC_GET_PATTERNS = (
     re.compile(r"^/api/partners/agreements/[^/]+(/pdf|/payment-status)?$"),
 )
 PUBLIC_POST_EXACT = {"/api/demo-requests"}
+# Under a public prefix but called by the app with a session (not by the provider): never anonymous.
+PRIVATE_EXACT = {"/api/webhooks/twilio/call", "/api/webhooks/twilio/call-cancel"}
+PRIVATE_PATTERNS = (re.compile(r"^/api/webhooks/twilio/call-progress/"),)
 
 
 def is_public(method: str, path: str) -> bool:
+    if path in PRIVATE_EXACT or any(p.match(path) for p in PRIVATE_PATTERNS):
+        return False
     if path.startswith(PUBLIC_PREFIXES) or any(p.match(path) for p in PUBLIC_PATTERNS):
         return True
     if method == "GET" and any(p.match(path) for p in PUBLIC_GET_PATTERNS):
@@ -91,13 +96,22 @@ def query_user_id(request) -> str | None:
     return value if _OID.match(value) else None
 
 
-async def manager_can_access(caller_id: str, target_id: str) -> bool:
-    """A manager may touch another user only inside their own organization / stores. Anyone else: no."""
+RANK = {"super_admin": 4, "org_admin": 3, "store_manager": 2, "user": 1}
+
+
+def outranked(caller_role: str, target_role: str) -> bool:
+    """True when the target holds more privilege than the caller (a store manager vs an org admin)."""
+    return RANK.get(target_role or "user", 1) > RANK.get(caller_role or "user", 1)
+
+
+async def manager_can_access(caller_id: str, target_id: str, write: bool = False) -> bool:
+    """A manager may touch another user only inside their own organization / stores, and may never modify an account that
+    outranks them (phone, email, password, persona and recovery details included). Anyone else: no."""
     from routers.rbac import get_scoped_organization_ids, get_scoped_store_ids
     db = get_db()
     try:
         caller = await db.users.find_one({"_id": ObjectId(caller_id)}, {"role": 1, "organization_id": 1, "store_id": 1, "store_ids": 1, "partner_id": 1})
-        target = await db.users.find_one({"_id": ObjectId(target_id)}, {"organization_id": 1, "store_id": 1, "store_ids": 1})
+        target = await db.users.find_one({"_id": ObjectId(target_id)}, {"role": 1, "organization_id": 1, "store_id": 1, "store_ids": 1})
     except Exception:
         return False
     if not caller:
@@ -107,6 +121,8 @@ async def manager_can_access(caller_id: str, target_id: str) -> bool:
         return True
     if not target:
         return True  # let the handler answer 404
+    if write and outranked(role, target.get("role")):
+        return False
     if role == "org_admin":
         return str(target.get("organization_id") or "") in {str(o) for o in await get_scoped_organization_ids(caller)}
     if role == "store_manager":
@@ -115,7 +131,7 @@ async def manager_can_access(caller_id: str, target_id: str) -> bool:
     return False
 
 
-async def assert_self_or_scoped_manager(caller_id: str, target_id: str) -> None:
-    if str(caller_id) == str(target_id) or await manager_can_access(str(caller_id), str(target_id)):
+async def assert_self_or_scoped_manager(caller_id: str, target_id: str, write: bool = True) -> None:
+    if str(caller_id) == str(target_id) or await manager_can_access(str(caller_id), str(target_id), write=write):
         return
     raise HTTPException(status_code=403, detail="Access denied — you can only access your own data")

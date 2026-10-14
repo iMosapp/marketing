@@ -146,7 +146,8 @@ def require_org_access(min_role: str = "org_admin"):
 
 
 def require_user_access(min_role: str = "store_manager"):
-    """Route dependency for /.../{user_id}/... paths: self is always allowed, otherwise min_role + scope."""
+    """Route dependency for /.../{user_id}/... paths: self is always allowed, otherwise min_role + scope, and a write never
+    reaches an account that outranks the caller."""
     async def check(request: Request, user_id: str):
         user = await get_current_user(request)
         if str(user.get('_id')) == user_id:
@@ -154,6 +155,11 @@ def require_user_access(min_role: str = "store_manager"):
         _at_least(user, min_role)
         if user.get('role') != 'super_admin' and not await verify_user_access(user, user_id):
             raise HTTPException(status_code=403, detail="Access denied to this user")
+        if user.get('role') != 'super_admin' and request.method not in ("GET", "HEAD"):
+            from services.route_guard import outranked
+            target = await get_db().users.find_one({"_id": ObjectId(user_id)}, {"role": 1}) if ObjectId.is_valid(user_id) else None
+            if target and outranked(user.get('role'), target.get('role')):
+                raise HTTPException(status_code=403, detail="You can't modify an account with more privileges than yours")
         return user
     return check
 
@@ -332,9 +338,8 @@ async def get_scoped_user_ids(user: dict) -> List[str]:
         org_ids = await get_scoped_organization_ids(user)
         if not org_ids:
             return [user_id]
-        valid_oids = [ObjectId(oid) for oid in org_ids if oid]
         users = await db.users.find(
-            {"organization_id": {"$in": [str(o) for o in valid_oids] + org_ids}},
+            {"organization_id": {"$in": [str(o) for o in org_ids]}},
             {"_id": 1}
         ).to_list(500)
         user_ids = [str(u["_id"]) for u in users]

@@ -7,6 +7,7 @@ Endpoints:
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 def _load_backend_url():
     v = os.environ.get("REACT_APP_BACKEND_URL")
@@ -30,11 +31,11 @@ SAM_ID = "6aca90147e9b715d761b6078"
 SARAH_ID = "6aa413008f0d53e3f2261853"
 
 REP_EMAIL = "activation-tester@invalid.imonsocial.test"
-REP_PASS = "NewPass123!"
+REP_PASS = qa_creds.password_for("activation-tester@invalid.imonsocial.test")
 MGR_EMAIL = "qa-manager@invalid.imonsocial.test"
-MGR_PASS = "Manager123!"
+MGR_PASS = qa_creds.password_for("qa-manager@invalid.imonsocial.test")
 OADM_EMAIL = "qa-orgadmin@invalid.imonsocial.test"
-OADM_PASS = "OrgAdmin123!"
+OADM_PASS = qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test")
 
 
 def _login(email, password):

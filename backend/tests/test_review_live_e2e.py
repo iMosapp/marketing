@@ -14,15 +14,16 @@ import pytest
 import requests
 from bson import ObjectId
 from dotenv import load_dotenv
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
 load_dotenv("/app/backend/.env")
 from _http import API, call, login, auth  # noqa: E402
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-ORGADMIN = ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+ORGADMIN = ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test"))
 SARAH = "6aa413008f0d53e3f2261853"
 SEEDED = "6ac80f67a2136477f78ca87d"
 FIX = "/app/backend/tests/fixtures/appraisal/"

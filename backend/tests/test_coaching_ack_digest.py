@@ -13,6 +13,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from services import coaching_digest as cd
 from services import scorecards as sc
+from tests import qa_creds
 
 BASE_URL = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 API = BASE_URL + "/api"
@@ -33,12 +34,12 @@ def _login(email, pw):
 
 @pytest.fixture(scope="module")
 def rep():
-    return _login("activation-tester@invalid.imonsocial.test", "NewPass123!")
+    return _login("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 
 
 @pytest.fixture(scope="module")
 def mgr():
-    return _login("qa-manager@invalid.imonsocial.test", "Manager123!")
+    return _login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 
 
 @pytest.fixture(scope="module")
@@ -170,6 +171,6 @@ def test_digest_api_settings_toggle_and_send_guard(mgr, rep):
     # reps never see the manager settings
     assert requests.get(f"{API}/scorecards/digest", headers=rep[0], timeout=30).status_code == 403
     # a super admin with no store cannot send
-    fh, _ = _login("forest@imosapp.com", "Admin123!")
+    fh, _ = _login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     r = requests.post(f"{API}/scorecards/digest/send", headers=fh, timeout=30)
     assert r.status_code == 400 and "store" in r.json()["detail"].lower()

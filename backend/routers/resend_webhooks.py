@@ -37,10 +37,15 @@ def reply_to_address(conversation_id: str) -> str | None:
     return f"reply+{conversation_id}@{domain}" if domain else None
 
 
+def _secret() -> str:
+    return os.environ.get("RESEND_WEBHOOK_SECRET", "").strip()
+
+
 def _verify_svix(headers, body: bytes) -> bool:
-    secret = os.environ.get("RESEND_WEBHOOK_SECRET", "").strip()
+    """Svix signature over `id.timestamp.body`. No configured secret means nothing can be verified: fail closed (never True)."""
+    secret = _secret()
     if not secret:
-        return True
+        return False
     msg_id, ts, sigs = headers.get("svix-id"), headers.get("svix-timestamp"), headers.get("svix-signature", "")
     if not (msg_id and ts and sigs):
         return False
@@ -174,6 +179,9 @@ async def ingest_received_email(db, email: dict, email_id: str) -> dict:
 
 @router.post("/inbound")
 async def resend_inbound(request: Request):
+    if not _secret():
+        logger.error("[ResendInbound] RESEND_WEBHOOK_SECRET is not set: inbound email is disabled until it is (Resend > Webhooks > signing secret)")
+        return Response(status_code=503, content="inbound email webhook not configured")
     body = await request.body()
     if not _verify_svix(request.headers, body):
         logger.warning("[ResendInbound] bad signature")

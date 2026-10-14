@@ -10,10 +10,11 @@ import pytest
 import requests
 import os
 import jwt as pyjwt
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 TEST_EMAIL = "forest@imosapp.com"
-TEST_PASS = "Admin123!"
+TEST_PASS = qa_creds.password_for("forest@imosapp.com")
 
 
 @pytest.fixture(scope="module")

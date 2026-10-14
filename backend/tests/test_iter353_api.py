@@ -1,13 +1,14 @@
 """Iter 353 - HTTP-level tests for weekly leaderboard, public leaderboard, public score history, guide editor."""
 import os, requests, pytest
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 CID = "6ab983f954b9cb9243f0ba00"
 REPORT_TOKEN = "6c5cdb8560b14de2a86579da265b85b3"
 SCORE_TOKEN = "e4792e3c7bef452eabec3b5066ba4dd2"
 
-ADMIN = ("forest@imosapp.com", "Admin123!")
-MGR = ("qa-manager@invalid.imonsocial.test", "Manager123!")
+ADMIN = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+MGR = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 
 
 def _login(email, password):

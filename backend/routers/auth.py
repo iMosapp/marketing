@@ -47,6 +47,9 @@ def create_jwt_token(user_id: str, role: str) -> str:
     return pyjwt.encode(payload, _get_jwt_secret(), algorithm=_JWT_ALGORITHM)
 
 
+_PROCESS_STARTED_AT = datetime.now(timezone.utc).timestamp()
+
+
 def sessions_valid_after() -> Optional[float]:
     """SESSIONS_VALID_AFTER (ISO-8601 UTC such as 2026-10-14T00:00:00Z, or Unix epoch seconds) -> epoch seconds.
     None when unset; ValueError when malformed."""
@@ -63,14 +66,26 @@ def sessions_valid_after() -> Optional[float]:
     return dt.timestamp()
 
 
-def issued_after_cutoff(payload: dict) -> bool:
-    """Session cutoff gate: with SESSIONS_VALID_AFTER set, a token issued before it (or without a numeric iat) is dead.
-    A malformed value fails closed: every session is rejected until the variable is fixed."""
+def effective_cutoff(now: Optional[float] = None) -> Optional[float]:
+    """The cutoff actually applied. A value in the future (or one that can't be parsed) would reject every token including
+    brand-new logins; it is clamped to this process's start time, which still kills every pre-deploy session, and logged."""
+    log = logging.getLogger(__name__)
     try:
         cutoff = sessions_valid_after()
     except (ValueError, TypeError):
-        logging.getLogger(__name__).error("SESSIONS_VALID_AFTER is malformed (ISO-8601 UTC or epoch seconds expected); rejecting every session")
-        return False
+        log.error("SESSIONS_VALID_AFTER is malformed (ISO-8601 UTC or epoch seconds expected); applying the process start time instead")
+        return _PROCESS_STARTED_AT
+    if cutoff is None:
+        return None
+    if cutoff > (now if now is not None else datetime.now(timezone.utc).timestamp()):
+        log.error(f"SESSIONS_VALID_AFTER={cutoff:.0f} is in the future; applying the process start time {_PROCESS_STARTED_AT:.0f} instead so logins keep working")
+        return _PROCESS_STARTED_AT
+    return cutoff
+
+
+def issued_after_cutoff(payload: dict) -> bool:
+    """Session cutoff gate: with SESSIONS_VALID_AFTER set, a token issued before it (or without a numeric iat) is dead."""
+    cutoff = effective_cutoff()
     if cutoff is None:
         return True
     iat = payload.get("iat")

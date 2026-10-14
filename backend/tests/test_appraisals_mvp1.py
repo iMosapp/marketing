@@ -10,16 +10,17 @@ import uuid
 import pytest
 from bson import ObjectId
 from pymongo import MongoClient
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
 from _http import call, login, auth  # noqa: E402
 from utils import vin as vinlib  # noqa: E402
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-OTHER_ORG_ADMIN = ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!")
-NO_PERM_REP = ("mjeast1985@gmail.com", "NavyBean1!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+OTHER_ORG_ADMIN = ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test"))
+NO_PERM_REP = ("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com"))
 SARAH = "6aa413008f0d53e3f2261853"
 VIN = "1HGCM82633A004352"  # 2003 Honda Accord, valid check digit
 

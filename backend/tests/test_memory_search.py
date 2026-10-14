@@ -7,6 +7,7 @@ from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 
 from dotenv import load_dotenv
+from tests import qa_creds
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from routers.database import get_db  # noqa: E402
@@ -180,7 +181,7 @@ async def test_brain_and_api():
     try:
         r = await lv.delegate(db, live, forest, [{"role": "rep", "text": "Hey, about a month ago somebody asked me about a twenty thousand dollar Tesla Model 3 and I can't remember who it was."}], "d1")
         assert r["tool"] == "find_mentions" and r["open"]["kind"] == "mentions" and "Dana QA-Cole" in r["content"], r
-        tok = subprocess.run(["curl", "-s", "-X", "POST", f"{API}/api/auth/login", "-H", "Content-Type: application/json", "-d", json.dumps({"email": "forest@imosapp.com", "password": "Admin123!"})], capture_output=True, text=True).stdout
+        tok = subprocess.run(["curl", "-s", "-X", "POST", f"{API}/api/auth/login", "-H", "Content-Type: application/json", "-d", json.dumps({"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")})], capture_output=True, text=True).stdout
         token = json.loads(tok).get("token") or json.loads(tok).get("access_token")
         out = subprocess.run(["curl", "-s", "-m", "90", "-X", "POST", f"{API}/api/memory/search", "-H", "Content-Type: application/json", "-H", f"Authorization: Bearer {token}", "-d", json.dumps({"query": "who wanted a Model 3 around 20k"})], capture_output=True, text=True).stdout
         data = json.loads(out)

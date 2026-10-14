@@ -2,6 +2,7 @@
 import os
 import requests
 import pytest
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 SEARCH = f"{BASE_URL}/api/admin/search"
@@ -25,14 +26,14 @@ def _login(email, password):
 
 @pytest.fixture(scope="module", autouse=True)
 def _sessions():
-    _login("forest@imosapp.com", "Admin123!")
-    _login("qa-manager@invalid.imonsocial.test", "Manager123!")
+    _login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+    _login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 
 
 @pytest.fixture(scope="module")
 def activation_id():
     try:
-        data = _login("activation-tester@invalid.imonsocial.test", "NewPass123!")
+        data = _login("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
         u = data.get("user", {})
         return u.get("id") or u.get("_id") or data.get("user_id")
     except Exception:

@@ -15,6 +15,7 @@ import pytest
 import requests
 from dotenv import dotenv_values
 from pymongo import MongoClient
+from tests import qa_creds
 
 frontend_env = dotenv_values("/app/frontend/.env")
 base_url = os.environ.get("REACT_APP_BACKEND_URL") or frontend_env.get("REACT_APP_BACKEND_URL")
@@ -27,7 +28,7 @@ MONGO_URL = backend_env.get("MONGO_URL")
 DB_NAME = backend_env.get("DB_NAME")
 
 ADMIN_EMAIL = "forest@imosapp.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = qa_creds.password_for("forest@imosapp.com")
 TARGET_USER_ID = "69c75782e051d06491e6fa9f"  # Matthew Easton
 TARGET_EMAIL = "mjeast1985@gmail.com"
 
@@ -201,19 +202,19 @@ class TestActivation:
         assert r.status_code == 400, f"short password accepted: {r.status_code}"
 
         r = requests.post(f"{BASE_URL}/api/auth/activate/complete",
-                          json={"phone": "500-555-0123", "code": code, "new_password": "NewPass123!"}, timeout=60)
+                          json={"phone": "500-555-0123", "code": code, "new_password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=60)
         assert r.status_code == 200, f"{r.status_code}: {r.text[:300]}"
         assert r.json().get("message") == "Account activated"
         assert r.json().get("email") == pending_user["email"].lower()
 
         # reuse rejected
         r = requests.post(f"{BASE_URL}/api/auth/activate/complete",
-                          json={"phone": "500-555-0123", "code": code, "new_password": "NewPass123!"}, timeout=60)
+                          json={"phone": "500-555-0123", "code": code, "new_password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=60)
         assert r.status_code == 400, f"code reuse allowed: {r.status_code}"
 
         # login with new password
         r = requests.post(f"{BASE_URL}/api/auth/login",
-                          json={"email": pending_user["email"], "password": "NewPass123!"}, timeout=60)
+                          json={"email": pending_user["email"], "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=60)
         assert r.status_code == 200, f"login failed {r.status_code}: {r.text[:300]}"
         u = r.json()["user"]
         assert u.get("needs_password_change") in (False, None), u.get("needs_password_change")
@@ -263,11 +264,11 @@ class TestForgotPassword:
         assert r.json().get("verified") is True
 
         r = requests.post(f"{BASE_URL}/api/auth/forgot-password/reset",
-                          json={"email": self.EMAIL, "code": code, "new_password": "NewPass123!"}, timeout=60)
+                          json={"email": self.EMAIL, "code": code, "new_password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=60)
         assert r.status_code == 200, f"{r.status_code}: {r.text[:300]}"
 
         r = requests.post(f"{BASE_URL}/api/auth/login",
-                          json={"email": self.EMAIL, "password": "NewPass123!"}, timeout=60)
+                          json={"email": self.EMAIL, "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=60)
         assert r.status_code == 200, f"login after reset failed {r.status_code}: {r.text[:300]}"
 
     def test_request_by_digits_only_phone_finds_same_user(self, db, tester_id):

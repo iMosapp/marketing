@@ -5,6 +5,7 @@ from PIL import Image
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 load_dotenv("/app/backend/.env")
@@ -25,7 +26,7 @@ def jpeg(px: int) -> bytes:
 async def main():
     db = AsyncIOMotorClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
     async with httpx.AsyncClient(timeout=120) as c:
-        r = await c.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"})
+        r = await c.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")})
         tok = r.json()["token"]; uid = r.json()["user"].get("id") or r.json()["user"].get("_id")
         H = {"Authorization": f"Bearer {tok}"}
         before = await db.users.find_one({"_id": ObjectId(uid)}, {"photo_url": 1, "photo_path": 1, "photo_thumb_path": 1, "photo_avatar_path": 1})

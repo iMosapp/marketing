@@ -7,6 +7,7 @@ import sys
 
 import pytest
 import requests
+from tests import qa_creds
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -24,9 +25,9 @@ def _login(email, pw):
 
 @pytest.fixture(scope="module")
 def who():
-    sa = _login("forest@imosapp.com", "Admin123!")
-    mg = _login("qa-manager@invalid.imonsocial.test", "Manager123!")
-    us = _login("mjeast1985@gmail.com", "NavyBean1!")
+    sa = _login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+    mg = _login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+    us = _login("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com"))
     return {"sa": sa, "mg": mg, "us": us}
 
 

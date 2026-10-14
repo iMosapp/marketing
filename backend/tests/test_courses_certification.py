@@ -6,6 +6,7 @@ import uuid
 import pytest
 import requests
 from bson import ObjectId
+from tests import qa_creds
 
 BASE_URL = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 API = BASE_URL + "/api"
@@ -23,21 +24,21 @@ def _login(email, pw):
 @pytest.fixture(scope="module")
 def admin():
     try:
-        tok, u = _login("forest@imosapp.com", "Admin123!")
+        tok, u = _login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     except Exception:
-        tok, u = _login("forest@imonsocial.com", "Admin123!")
+        tok, u = _login("forest@imonsocial.com", qa_creds.password_for("forest@imosapp.com"))
     return {"tok": tok, "user": u, "H": {"Authorization": f"Bearer {tok}"}}
 
 
 @pytest.fixture(scope="module")
 def rep():
-    tok, u = _login("activation-tester@invalid.imonsocial.test", "NewPass123!")
+    tok, u = _login("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
     return {"tok": tok, "user": u, "H": {"Authorization": f"Bearer {tok}"}}
 
 
 @pytest.fixture(scope="module")
 def mgr():
-    tok, u = _login("qa-manager@invalid.imonsocial.test", "Manager123!")
+    tok, u = _login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
     return {"tok": tok, "user": u, "H": {"Authorization": f"Bearer {tok}"}}
 
 

@@ -14,6 +14,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from services import interview as svc
 from services import voice_id
 from tests.voice_id_check import ENROLL, tts
+from tests import qa_creds
 
 BASE_URL = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 API = BASE_URL + "/api"
@@ -54,7 +55,7 @@ def test_reenroll_from_kept_recording():
         return user, prev_voice, sid
     user, prev_voice, sid = _run(setup())
     try:
-        r = requests.post(f"{API}/auth/login", json={"email": TESTER, "password": "NewPass123!"}, timeout=30)
+        r = requests.post(f"{API}/auth/login", json={"email": TESTER, "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=30)
         r.raise_for_status()
         headers = {"Authorization": f"Bearer {r.json().get('token') or r.json().get('access_token')}"}
         st = requests.get(f"{API}/interview/status", headers=headers, timeout=60).json()

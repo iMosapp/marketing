@@ -4,6 +4,7 @@ import os
 import sys
 
 import httpx
+from tests import qa_creds
 
 API = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") + "/api"
 WID = "6ab72996c248f5420bf0a14a"
@@ -11,7 +12,7 @@ WID = "6ab72996c248f5420bf0a14a"
 
 async def main():
     async with httpx.AsyncClient(timeout=90) as c:
-        tok = (await c.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"})).json()
+        tok = (await c.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")})).json()
         H = {"Authorization": f"Bearer {tok.get('token') or tok.get('access_token')}"}
         d = (await c.get(f"{API}/widgets/{WID}", headers=H)).json()
         key = d["widget"]["key"]

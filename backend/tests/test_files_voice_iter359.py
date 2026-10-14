@@ -3,17 +3,18 @@ import os
 import re
 import requests
 import pytest
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 API = f"{BASE}/api"
 
 REP_EMAIL = "activation-tester@invalid.imonsocial.test"
-REP_PASS = "NewPass123!"
+REP_PASS = qa_creds.password_for("activation-tester@invalid.imonsocial.test")
 REP_UID = "6a978d68b8673c29063aa8b9"
 SARAH_CID = "6aa413008f0d53e3f2261853"
 
 ADMIN_EMAIL = "forest@imosapp.com"
-ADMIN_PASS = "Admin123!"
+ADMIN_PASS = qa_creds.password_for("forest@imosapp.com")
 
 
 def _login(email, password):

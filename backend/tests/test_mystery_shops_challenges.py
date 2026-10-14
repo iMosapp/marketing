@@ -5,10 +5,11 @@ Covers GET/POST /api/shop-clients/challenges, generate endpoint, PUT/DELETE.
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 EMAIL = "forest@imosapp.com"
-PASSWORD = "Admin123!"
+PASSWORD = qa_creds.password_for("forest@imosapp.com")
 
 
 @pytest.fixture(scope="module")

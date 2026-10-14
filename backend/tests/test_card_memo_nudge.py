@@ -11,6 +11,7 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from tests._http import auth, call, login
+from tests import qa_creds
 
 LOOP = asyncio.new_event_loop()
 MONGO = AsyncIOMotorClient(os.environ["MONGO_URL"], io_loop=LOOP)
@@ -23,7 +24,7 @@ def run(coro):
 
 @pytest.fixture(scope="module")
 def rep():
-    tok, uid = login("forest@imosapp.com", "Admin123!")
+    tok, uid = login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     return tok, uid
 
 

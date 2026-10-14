@@ -11,12 +11,13 @@ import requests
 from bson import ObjectId
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 sys.path.insert(0, "/app/backend")
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
-MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
+MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
 REP_ID = "6a978d68b8673c29063aa8b9"  # activation-tester
 LOOP = asyncio.new_event_loop()
 

@@ -4,15 +4,16 @@ Tests permission gate, tenant isolation, and validation.
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 
 CREDS = {
-    "rep_perm_on": ("activation-tester@invalid.imonsocial.test", "NewPass123!"),
-    "manager": ("qa-manager@invalid.imonsocial.test", "Manager123!"),
-    "orgadmin_other": ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!"),
-    "rep_perm_off": ("mjeast1985@gmail.com", "NavyBean1!"),
-    "super_admin": ("forest@imosapp.com", "Admin123!"),
+    "rep_perm_on": ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test")),
+    "manager": ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test")),
+    "orgadmin_other": ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test")),
+    "rep_perm_off": ("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com")),
+    "super_admin": ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com")),
 }
 
 SARAH_CONTACT_ID = "6aa413008f0d53e3f2261853"

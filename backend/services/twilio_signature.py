@@ -1,21 +1,26 @@
 """Twilio webhook signature validation for every public Twilio callback.
-Mode via TWILIO_WEBHOOK_VALIDATION: off | log (default: record mismatches, never block) | enforce (403 on a bad signature).
+Mode via TWILIO_WEBHOOK_VALIDATION: enforce (default: 403 on a missing or bad signature) | log (record mismatches, never
+block: the emergency lever, set it in production secrets to loosen without a code change) | off.
 The signing token is the auth token of the account that owns the number (subaccount when provisioned, else the parent)."""
 import logging
 import os
 from typing import Optional
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 from fastapi.responses import Response
 
 from services import twilio_tenant as tenant
 
 logger = logging.getLogger(__name__)
 
+# Under the Twilio prefix but called by the app with a session, never by Twilio.
+APP_ROUTES = ("/call", "/call-cancel")
+APP_ROUTE_PREFIXES = ("/call-progress/",)
+
 
 def mode() -> str:
-    m = (os.environ.get("TWILIO_WEBHOOK_VALIDATION") or "log").strip().lower()
-    return m if m in ("off", "log", "enforce") else "log"
+    m = (os.environ.get("TWILIO_WEBHOOK_VALIDATION") or "enforce").strip().lower()
+    return m if m in ("off", "log", "enforce") else "enforce"
 
 
 def candidate_urls(request: Request) -> list:
@@ -49,10 +54,7 @@ async def check(request: Request, form: dict, db) -> tuple[bool, str]:
     token = await tenant.token_for_account(db, form.get("AccountSid") or "")
     if not token:
         return False, "no auth token for this account"
-    try:
-        from twilio.request_validator import RequestValidator
-    except ImportError:
-        return True, "validator unavailable"
+    from twilio.request_validator import RequestValidator
     v = RequestValidator(token)
     params = {k: str(val) for k, val in form.items()}
     for url in candidate_urls(request):
@@ -74,3 +76,20 @@ async def guard(request: Request, form: dict, db, where: str) -> Optional[Respon
     if m == "enforce":
         return Response(content="forbidden", status_code=403, media_type="text/plain")
     return None
+
+
+def is_app_route(path: str) -> bool:
+    tail = path.split("/webhooks/twilio", 1)[-1]
+    return tail in APP_ROUTES or tail.startswith(APP_ROUTE_PREFIXES)
+
+
+async def require_signed_callback(request: Request) -> None:
+    """Router dependency: every POST Twilio callback must carry a valid signature before its handler runs.
+    GET fetches (TwiML <Play> media, greeting mp3, media proxy) and the app's own session routes are not Twilio callbacks."""
+    if request.method != "POST" or is_app_route(request.url.path):
+        return
+    from routers.database import get_db
+    form = dict(await request.form())
+    blocked = await guard(request, form, get_db(), request.url.path.split("/webhooks/twilio", 1)[-1].strip("/") or "root")
+    if blocked is not None:
+        raise HTTPException(status_code=403, detail="forbidden")

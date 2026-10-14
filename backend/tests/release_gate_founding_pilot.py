@@ -22,9 +22,10 @@ from services import billing, pilot_program
 from tests._http import API, UA, call
 from tests.live_auth import STORE_MANAGER, SUPER_ADMIN, Session, anon, oid
 from tests.wipe_pilot_customers import wipe
+from tests import qa_creds
 
 PREFIX = "QA FP Gate"
-OWNER_PASSWORD = "PilotOwner123!"
+OWNER_PASSWORD = qa_creds.password_for("qa-pilot-owner-ui@invalid.imonsocial.test")
 REPORT: list[tuple[str, str, str]] = []
 loop = asyncio.new_event_loop()
 

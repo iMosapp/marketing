@@ -3,6 +3,7 @@ import os
 import requests
 import pytest
 from pathlib import Path
+from tests import qa_creds
 
 def _load_env():
     p = Path("/app/frontend/.env")
@@ -22,17 +23,17 @@ def _login(email, password):
 
 @pytest.fixture(scope="module")
 def forest_token():
-    return _login("forest@imosapp.com", "Admin123!")
+    return _login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
 
 
 @pytest.fixture(scope="module")
 def mgr_token():
-    return _login("qa-manager@invalid.imonsocial.test", "Manager123!")
+    return _login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 
 
 @pytest.fixture(scope="module")
 def rep_token():
-    return _login("activation-tester@invalid.imonsocial.test", "NewPass123!")
+    return _login("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 
 
 def _h(t):

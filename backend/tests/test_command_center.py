@@ -12,6 +12,7 @@ import requests
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from services import command_center as cc
+from tests import qa_creds
 
 BASE_URL = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 API = BASE_URL + "/api"
@@ -53,7 +54,7 @@ def world():
         await db.settings.update_one({"_id": "owner_visibility"}, {"$unset": {"visible.command_center": ""}})
         return snap
     snap = _run(setup())
-    owner = _login("forest@imosapp.com", "Admin123!")
+    owner = _login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     other = _login(OTHER_EMAIL, "Other123!")
     yield {"owner": owner, "other": other}
 

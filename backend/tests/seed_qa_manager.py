@@ -1,6 +1,7 @@
 """Idempotent seed: preview-only store manager on Forest's store for UI testing of manager screens."""
 import asyncio, os, sys
 from datetime import datetime, timezone
+from tests import qa_creds
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
@@ -8,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from routers.auth import hash_password
 
 EMAIL = "qa-manager@invalid.imonsocial.test"
-PASSWORD = "Manager123!"
+PASSWORD = qa_creds.password_for("qa-manager@invalid.imonsocial.test")
 STORE_ID = "69a0b7095fddcede09591668"
 
 

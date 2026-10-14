@@ -8,6 +8,7 @@ import httpx
 import pytest
 from bson import ObjectId
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 from routers.database import get_db  # noqa: E402
@@ -185,7 +186,7 @@ async def test_in_app_key_and_webhook_management_requires_admin():
     async with httpx.AsyncClient(base_url=API, timeout=30) as c:
         assert (await c.post(f"/api/integrations/api-keys?store_id={STORE}", json={"name": "x"})).status_code == 401
         assert (await c.get(f"/api/integrations/webhooks?store_id={STORE}")).status_code == 401
-        login = await c.post("/api/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"})
+        login = await c.post("/api/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")})
         assert login.status_code == 200, login.text
         tok = login.json()["token"]
         h = {"Authorization": f"Bearer {tok}"}

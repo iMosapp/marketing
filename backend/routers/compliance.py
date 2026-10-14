@@ -15,6 +15,7 @@ from routers.scripts import _resolve, require_user
 from services import compliance_onboarding as ob
 from services import compliance_preflight as pf
 from services import twilio_compliance as tc
+from services.twilio_signature import require_signed_callback
 
 logger = logging.getLogger(__name__)
 
@@ -373,20 +374,9 @@ async def public_portout(token: str):
     return ob.portout_packet(store, store.get("compliance") or {}, await ob.settings(db), view["numbers"])
 
 
-@webhook_router.post("/trusthub-status")
+@webhook_router.post("/trusthub-status", dependencies=[Depends(require_signed_callback)])
 async def trusthub_status(request: Request):
     form = dict(await request.form())
-    token = os.environ.get("TWILIO_AUTH_TOKEN", "")
-    if token:
-        try:
-            from twilio.request_validator import RequestValidator
-            sig = request.headers.get("X-Twilio-Signature", "")
-            url = str(request.url).replace("http://", "https://", 1) if request.headers.get("x-forwarded-proto") == "https" else str(request.url)
-            if not RequestValidator(token).validate(url, form, sig):
-                logger.warning("[Compliance] trusthub-status: bad Twilio signature")
-                return PlainTextResponse("forbidden", status_code=403)
-        except ImportError:
-            pass
     sid = await tc.on_status_callback(get_db(), form)
     logger.info(f"[Compliance] trusthub-status {form.get('BundleSid')} -> {form.get('Status')} store={sid}")
     return PlainTextResponse("ok")

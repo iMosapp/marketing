@@ -17,9 +17,10 @@ from services import billing, pilot_program
 from tests._http import API, UA
 from tests.live_auth import ORG_B, Session, anon, oid
 from tests.wipe_pilot_customers import wipe
+from tests import qa_creds
 
 PREFIX = "QA FP Pilot"
-OWNER_PASSWORD = "PilotOwner123!"
+OWNER_PASSWORD = qa_creds.password_for("qa-pilot-owner-ui@invalid.imonsocial.test")
 PAID_ORG = "6acbea92a284f605698a9743"  # QA Accept Motors: paid through Stripe (founder acceptance run)
 
 loop = asyncio.new_event_loop()

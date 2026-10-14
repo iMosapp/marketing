@@ -5,15 +5,16 @@ Tests that the middleware blocks cross-user data access while allowing own data 
 import pytest
 import requests
 import os
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = qa_creds.password_for("forest@imosapp.com")
 SUPER_ADMIN_ID = "69a0b7095fddcede09591667"
 
 REGULAR_USER_EMAIL = "mjeast1985@gmail.com"
-REGULAR_USER_PASSWORD = "NavyBean1!"
+REGULAR_USER_PASSWORD = qa_creds.password_for("mjeast1985@gmail.com")
 
 
 def get_token(email, password):

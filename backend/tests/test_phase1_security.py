@@ -10,11 +10,12 @@ import pytest
 import requests
 import os
 import sys
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = qa_creds.password_for("forest@imosapp.com")
 SUPER_ADMIN_ID = "69a0b7095fddcede09591667"
 
 # ── Helper ────────────────────────────────────────────────────────────────────
@@ -117,7 +118,7 @@ class TestGetUserOwnership:
         # Login as the test user (role: user)
         resp = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": qa_creds.password_for("mjeast1985@gmail.com")
         })
         if resp.status_code != 200:
             pytest.skip(f"Test user login failed: {resp.status_code}")
@@ -138,7 +139,7 @@ class TestGetUserOwnership:
         # Fetch the test user's profile using super admin token
         resp = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": qa_creds.password_for("mjeast1985@gmail.com")
         })
         if resp.status_code != 200:
             pytest.skip("Test user not available")
@@ -186,7 +187,7 @@ class TestRefBackfillAuth:
         """POST /auth/ref/backfill with non-super_admin JWT must return 403."""
         resp = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": qa_creds.password_for("mjeast1985@gmail.com")
         })
         if resp.status_code != 200:
             pytest.skip("Test user login failed")

@@ -17,6 +17,7 @@ import requests
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 load_dotenv("/app/frontend/.env")
@@ -28,9 +29,9 @@ DB_NAME = os.environ["DB_NAME"]
 ACT_USER_ID = "6a978d68b8673c29063aa8b9"
 ACT_CONTACT_ID = "6aa413008f0d53e3f2261853"
 ACT_EMAIL = "activation-tester@invalid.imonsocial.test"
-ACT_PASSWORD = "NewPass123!"
+ACT_PASSWORD = qa_creds.password_for("activation-tester@invalid.imonsocial.test")
 OTHER_EMAIL = "mjeast1985@gmail.com"
-OTHER_PASSWORD = "NavyBean1!"
+OTHER_PASSWORD = qa_creds.password_for("mjeast1985@gmail.com")
 
 
 def _login(email, password):

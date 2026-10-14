@@ -6,6 +6,7 @@ import pytest
 import requests
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 API = "http://127.0.0.1:8001/api"
@@ -22,13 +23,13 @@ def login(email, password):
 
 @pytest.fixture(scope="module")
 def owner():
-    token, uid = login("forest@imosapp.com", "Admin123!")
+    token, uid = login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     yield {"token": token, "uid": uid, "h": {"Authorization": f"Bearer {token}"}}
 
 
 @pytest.fixture(scope="module")
 def joiner():
-    token, uid = login("qa-manager@invalid.imonsocial.test", "Manager123!")
+    token, uid = login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
     return {"token": token, "uid": uid, "h": {"Authorization": f"Bearer {token}"}}
 
 

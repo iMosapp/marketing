@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from tests import qa_creds
 
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 API = "http://127.0.0.1:8001/api"
@@ -23,7 +24,7 @@ def login(email, pw):
 
 @pytest.fixture(scope="module")
 def seed():
-    uid, tok = login("qa-manager@invalid.imonsocial.test", "Manager123!")
+    uid, tok = login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
     store = str(DB.users.find_one({"_id": ObjectId(uid)})["store_id"])
     now = datetime.now(timezone.utc)
     v1 = DB.inventory.insert_one({"name": "2024 Toyota Tacoma HOTQA", "status": "available", "price": 42995.0, "store_id": store, "created_by_user_id": uid,

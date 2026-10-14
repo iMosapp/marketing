@@ -16,13 +16,14 @@ import pytest_asyncio
 import requests
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from intel_journey_seed import REP_ID, STORE_ID, TAG, draft as _draft, seed as _seed, wipe as _wipe  # noqa: E402
 
 BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or "http://localhost:8001").rstrip("/")
 MONGO, DB_NAME = os.environ["MONGO_URL"], os.environ["DB_NAME"]
-REP_EMAIL, REP_PASS = "activation-tester@invalid.imonsocial.test", "NewPass123!"
+REP_EMAIL, REP_PASS = "activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test")
 S: dict = {}                                 # state shared across the ordered steps
 
 

@@ -10,10 +10,11 @@ import pytest
 import requests
 import os
 import time
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 USER_ID = "69a0b7095fddcede09591667"
-CREDS = {"email": "forest@imosapp.com", "password": "Admin123!"}
+CREDS = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
 
 
 @pytest.fixture(scope="module")

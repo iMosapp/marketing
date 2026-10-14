@@ -2,11 +2,12 @@
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001').rstrip('/')
 CLIENT_ID = "6aa6d7dfb4c41decb2734ec4"
 ADMIN_EMAIL = "forest@imosapp.com"
-ADMIN_PASS = "Admin123!"
+ADMIN_PASS = qa_creds.password_for("forest@imosapp.com")
 
 
 @pytest.fixture(scope="module")

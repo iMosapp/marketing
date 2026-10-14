@@ -4,6 +4,7 @@ import time
 
 import pytest
 import requests
+from tests import qa_creds
 
 def _load_env():
     try:
@@ -19,9 +20,9 @@ def _load_env():
 BASE_URL = _load_env().rstrip("/")
 API = f"{BASE_URL}/api"
 
-SUPER = {"email": "forest@imosapp.com", "password": "Admin123!"}
-MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
-USER = {"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}
+SUPER = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
+USER = {"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}
 
 WIDGET_ID = "6ab72996c248f5420bf0a14a"
 MANAGER_STORE_ID = "69a0b7095fddcede09591668"

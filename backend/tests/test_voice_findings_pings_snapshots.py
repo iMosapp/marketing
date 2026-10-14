@@ -14,6 +14,7 @@ import uuid
 import pytest
 from bson import ObjectId
 from dotenv import load_dotenv
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
@@ -23,7 +24,7 @@ from routers.database import get_db  # noqa: E402
 from services.appraisals import core, inspection, intake, voice, voice_findings  # noqa: E402
 
 pytestmark = pytest.mark.asyncio
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 SARAH = "6aa413008f0d53e3f2261853"
 FIX = "/app/backend/tests/fixtures/appraisal/"
 TRANSCRIPT = "The AC blows warm when it idles, there is a dent in the passenger rear door and I think the brakes might be squealing a little. Runs great otherwise."

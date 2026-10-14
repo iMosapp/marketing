@@ -8,6 +8,7 @@ from bson import ObjectId
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
+from tests import qa_creds
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from routers.database import get_db  # noqa: E402
@@ -57,7 +58,7 @@ def _restore_adapter():
 
 async def _login():
     async with httpx.AsyncClient(timeout=20) as c:
-        r = await c.post(f"{BASE}/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"})
+        r = await c.post(f"{BASE}/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")})
     d = r.json()
     return {"Authorization": f"Bearer {d.get('token') or d.get('access_token')}"}
 
@@ -245,7 +246,7 @@ async def test_admin_api_roundtrip():
             assert r.json()["record"]["business"]["ein"] == "" and r.json()["record"]["business"]["has_ein"]
         # a rep (non-admin) is refused
         async with httpx.AsyncClient(timeout=20) as c:
-            r = await c.post(f"{BASE}/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"})
+            r = await c.post(f"{BASE}/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")})
             tok = r.json().get("token") or r.json().get("access_token")
             r = await c.get(f"{BASE}/admin/compliance", headers={"Authorization": f"Bearer {tok}"})
             assert r.status_code == 403

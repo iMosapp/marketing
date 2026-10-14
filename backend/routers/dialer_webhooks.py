@@ -1,12 +1,13 @@
 """Twilio voice webhooks for the power dialer. Every URL carries the session / attempt id plus its secret token."""
 import logging
-from fastapi import APIRouter, Request, Response, Form
+from fastapi import APIRouter, Depends, Request, Response, Form
 from bson import ObjectId
 
 from routers.database import get_db
 from services import dialer as eng
+from services.twilio_signature import require_signed_callback
 
-router = APIRouter(prefix="/webhooks/dialer", tags=["Power Dialer webhooks"])
+router = APIRouter(prefix="/webhooks/dialer", tags=["Power Dialer webhooks"], dependencies=[Depends(require_signed_callback)])
 logger = logging.getLogger(__name__)
 
 

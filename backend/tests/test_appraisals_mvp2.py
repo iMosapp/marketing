@@ -11,6 +11,7 @@ import uuid
 import pytest
 from bson import ObjectId
 from dotenv import load_dotenv
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
@@ -21,9 +22,9 @@ from services.appraisals import inspection, frames as fx  # noqa: E402
 
 pytestmark = pytest.mark.asyncio
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-OTHER_ORG_ADMIN = ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+OTHER_ORG_ADMIN = ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test"))
 SARAH = "6aa413008f0d53e3f2261853"
 FIX = "/app/backend/tests/fixtures/appraisal/"
 PHOTOS = ["front_driver.jpg", "passenger_rear_dent.jpg", "wheel_curb_rash.jpg", "rear_bumper_scratches.jpg", "windshield_chip.jpg", "interior_seats.jpg"]

@@ -17,10 +17,11 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from PIL import Image
 
 from services import jessi_onboarding as jo
+from tests import qa_creds
 
 BASE_URL = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 API = BASE_URL + "/api"
-ADMIN = ("forest@imosapp.com", "Admin123!")
+ADMIN = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
 PHONE = "+15005550077"
 PHONE_API = "+15005550078"
 
@@ -378,7 +379,7 @@ def test_admin_api_and_public_pages():
         mk = requests.post(f"{API}/admin/onboarding-jessi/{uid}/mark/INTERVIEW_INVITED", headers=H, timeout=30)
         assert mk.status_code == 200 and mk.json()["state_index"] >= jo.ORDER["INTERVIEW_INVITED"]
         # a rep cannot see the admin list
-        rep_tok, _ = _login("activation-tester@invalid.imonsocial.test", "NewPass123!")
+        rep_tok, _ = _login("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
         assert requests.get(f"{API}/admin/onboarding-jessi", headers={"Authorization": f"Bearer {rep_tok}"}, timeout=30).status_code == 403
         # duplicate mobile is refused
         r2 = requests.post(f"{API}/admin/users/create", json={"first_name": "Riley", "last_name": "Again", "phone": PHONE_API, "role": "user", "jessi_onboarding": True}, headers=H, timeout=60)

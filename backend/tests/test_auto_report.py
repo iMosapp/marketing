@@ -7,6 +7,7 @@ import httpx
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from services import shop_report_mail as srm
+from tests import qa_creds
 
 API = os.environ.get("TEST_API_URL", "http://localhost:8001").rstrip("/")
 DENVER = {"timezone": "America/Denver", "active": True, "auto_report": {"enabled": True, "to": "gm@example.com"}}
@@ -56,7 +57,7 @@ def test_weekly_digest_logic():
 
 
 async def _login(c):
-    r = await c.post(f"{API}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"})
+    r = await c.post(f"{API}/api/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")})
     d = r.json()
     u = d.get("user") or {}
     return {"Authorization": f"Bearer {d.get('token') or d.get('access_token')}", "X-User-ID": str(u.get("_id") or u.get("id") or d.get("user_id"))}

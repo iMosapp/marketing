@@ -11,7 +11,7 @@ Features tested:
 
 Test Credentials:
 - Super Admin: forest@mvpline.com / (see TEST_ADMIN_PASS env var) (ID: 69975a8b6ff748b1f9da6b57)
-- Manager: manager@mvpline.com / Manager123! (ID: 699783e741097acc0e570b8d)
+- Manager: manager@mvpline.com / <password in memory/test_credentials.md> (ID: 699783e741097acc0e570b8d)
 """
 import pytest
 import requests

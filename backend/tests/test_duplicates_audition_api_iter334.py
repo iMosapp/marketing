@@ -16,6 +16,7 @@ from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 
 from dotenv import load_dotenv
+from tests import qa_creds
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", ".env"))
 
@@ -23,8 +24,8 @@ from routers.database import get_db  # noqa: E402
 
 BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 
-FOREST = ("forest@imosapp.com", "Admin123!")
-TESTER = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
+FOREST = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+TESTER = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 
 
 def _login(email, password):

@@ -7,6 +7,7 @@ import requests
 import os
 import re
 import base64
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 
@@ -27,7 +28,7 @@ def get_user_id_from_login(email, password):
 
 @pytest.fixture(scope="module")
 def admin_token():
-    token = login("forest@imosapp.com", "Admin123!")
+    token = login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     if not token:
         pytest.skip("Admin login failed")
     return token
@@ -35,7 +36,7 @@ def admin_token():
 
 @pytest.fixture(scope="module")
 def admin_user_id():
-    uid = get_user_id_from_login("forest@imosapp.com", "Admin123!")
+    uid = get_user_id_from_login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     if not uid:
         pytest.skip("Could not get admin user id")
     return uid
@@ -44,7 +45,7 @@ def admin_user_id():
 @pytest.fixture(scope="module")
 def test_user_id_no_photo():
     """Use the mjeast test user which has no photo"""
-    uid = get_user_id_from_login("mjeast1985@gmail.com", "NavyBean1!")
+    uid = get_user_id_from_login("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com"))
     if not uid:
         pytest.skip("Could not get test user id")
     return uid

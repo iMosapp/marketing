@@ -3,7 +3,7 @@
 set -e
 cd /app
 API=$(grep REACT_APP_BACKEND_URL frontend/.env | cut -d '=' -f2)
-TOKEN=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d '{"email":"forest@imosapp.com","password":"Admin123!"}' | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('token') or d.get('access_token'))")
+TOKEN=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"forest@imosapp.com\",\"password\":\"$(python3 -c 'from tests import qa_creds;print(qa_creds.password_for(\"forest@imosapp.com\"))')\"}" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('token') or d.get('access_token'))")
 U=69a0b7095fddcede09591667
 echo "--- workflows list ---"
 curl -s "$API/api/workflows/$U" -H "Authorization: Bearer $TOKEN" | python3 -c "

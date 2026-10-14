@@ -203,15 +203,26 @@ def test_signature_validation_modes(loop, world):
     resp = loop.run_until_complete(sig.guard(req("bad"), form, db, "test"))
     assert resp is not None and resp.status_code == 403
     assert loop.run_until_complete(sig.guard(req(good), form, db, "test")) is None
-    os.environ["TWILIO_WEBHOOK_VALIDATION"] = "log"
+    os.environ.pop("TWILIO_WEBHOOK_VALIDATION", None)
+    assert sig.mode() == "enforce", "enforce is the default since hotfix 4"
+
+
+def _signed(path: str, form: dict) -> dict:
+    """Headers Twilio would send: the signature over the public URL (PUBLIC_FACING_URL + path) and the form, with the parent token."""
+    from twilio.request_validator import RequestValidator
+    base = (os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL") or "").rstrip("/")
+    return {"X-Twilio-Signature": RequestValidator(tenant.parent_token()).compute_signature(base + path, form)}
 
 
 def test_inbound_webhook_routes_registry_number_and_help(loop, world):
-    """Real webhook on the running backend: a text to the STORE number lands on the store manager; HELP gets the compliant reply."""
+    """Real webhook on the running backend: a text to the STORE number lands on the store manager; HELP gets the compliant reply.
+    Requests are signed like Twilio's (validation is enforced by default since hotfix 4); an unsigned one is refused."""
     db, org, store, mgr = world["db"], world["org"], world["store"], world["mgr"]
     base = LOCAL
     with httpx.Client(timeout=30) as c:
-        r = c.post(f"{base}/api/webhooks/twilio/sms", data={"From": "+15005550031", "To": "+14355550199", "Body": "Hi, is the Tahoe still there?", "MessageSid": "SMqa_tenant_1", "NumMedia": "0", "AccountSid": tenant.parent_sid()})
+        form = {"From": "+15005550031", "To": "+14355550199", "Body": "Hi, is the Tahoe still there?", "MessageSid": "SMqa_tenant_1", "NumMedia": "0", "AccountSid": tenant.parent_sid()}
+        assert c.post(f"{base}/api/webhooks/twilio/sms", data=form).status_code == 403, "unsigned callback is refused"
+        r = c.post(f"{base}/api/webhooks/twilio/sms", data=form, headers=_signed("/api/webhooks/twilio/sms", form))
         assert r.status_code == 200, r.text
     conv = loop.run_until_complete(db.conversations.find_one({"rep_phone": "+14355550199", "contact_phone": "+15005550031"}))
     assert conv and conv["user_id"] == str(mgr["_id"]), "store number with no assigned user routes to the location's manager"
@@ -220,9 +231,11 @@ def test_inbound_webhook_routes_registry_number_and_help(loop, world):
     usage = loop.run_until_complete(pn.usage_summary(db, str(org["_id"])))
     assert usage["totals"]["sms_in"] >= 1
     with httpx.Client(timeout=30) as c:
-        r = c.post(f"{base}/api/webhooks/twilio/incoming", data={"From": "+15005550031", "To": "+14355550199", "Body": "HELP", "MessageSid": "SMqa_tenant_2", "NumMedia": "0", "AccountSid": tenant.parent_sid()})
+        form = {"From": "+15005550031", "To": "+14355550199", "Body": "HELP", "MessageSid": "SMqa_tenant_2", "NumMedia": "0", "AccountSid": tenant.parent_sid()}
+        r = c.post(f"{base}/api/webhooks/twilio/incoming", data=form, headers=_signed("/api/webhooks/twilio/incoming", form))
         assert r.status_code == 200 and "<Message>" in r.text and "STOP" in r.text and "QA Tenant Salt Lake" in r.text, r.text
-        r = c.post(f"{base}/api/webhooks/twilio/incoming", data={"From": "+15005550031", "To": "+14355550199", "Body": "STOP", "MessageSid": "SMqa_tenant_3", "NumMedia": "0", "AccountSid": tenant.parent_sid()})
+        form = {"From": "+15005550031", "To": "+14355550199", "Body": "STOP", "MessageSid": "SMqa_tenant_3", "NumMedia": "0", "AccountSid": tenant.parent_sid()}
+        r = c.post(f"{base}/api/webhooks/twilio/incoming", data=form, headers=_signed("/api/webhooks/twilio/incoming", form))
         assert r.status_code == 200 and "unsubscribed" in r.text
     contact = loop.run_until_complete(db.contacts.find_one({"user_id": str(mgr["_id"]), "phone": {"$regex": "5550031"}}))
     assert contact and contact.get("opted_out") is True and contact.get("sms_opt_out") is True, "both opt-out fields set"

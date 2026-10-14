@@ -5,6 +5,7 @@ Covers /api/va/config, PUT /api/va/industry, GET/POST/PUT/DELETE /api/va/facts.
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 def _read_frontend_env():
     try:
@@ -19,9 +20,9 @@ def _read_frontend_env():
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL") or _read_frontend_env()
 assert BASE_URL, "REACT_APP_BACKEND_URL missing"
 
-FOREST = ("forest@imosapp.com", "Admin123!")
-QAMGR = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-TESTER = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
+FOREST = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+QAMGR = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+TESTER = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 QA_STORE_ID = "69a0b7095fddcede09591668"
 
 

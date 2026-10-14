@@ -9,6 +9,7 @@ import wave
 
 import pytest
 from bson import ObjectId
+from tests import qa_creds
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services import kubota_pack as kp  # noqa: E402
@@ -113,7 +114,7 @@ def test_get_or_make_records_five_seconds_then_serves_from_cache():
 
 
 def test_api_voices_and_sample_guard():
-    tok, uid = login("forest@imosapp.com", "Admin123!")
+    tok, uid = login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     st, b = call("GET", "/api/shop-clients/voices", headers=auth(tok, uid))
     assert st == 200 and [v["id"] for v in b["female"]] == list(ls.FEMININE) and [v["id"] for v in b["male"]] == list(ls.MASCULINE)
     assert all(v["tone"] == "masculine" for v in b["male"]) and "configured" in b
@@ -142,7 +143,7 @@ def test_script_voice_resolves_pin_or_pool_and_a_concrete_master_persona():
 
 
 def test_api_challenge_voice_sample_guards():
-    tok, uid = login("forest@imosapp.com", "Admin123!")
+    tok, uid = login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     st, b = call("POST", f"/api/shop-clients/challenges/{ObjectId()}/voice-sample", {}, headers=auth(tok, uid))
     assert st == 404
     st, lib = call("GET", "/api/shop-clients/challenges?industry=equipment", headers=auth(tok, uid))
@@ -156,7 +157,7 @@ def test_api_challenge_voice_sample_guards():
 
 
 def test_api_challenge_keeps_a_matching_pin_and_drops_a_mismatch():
-    tok, uid = login("forest@imosapp.com", "Admin123!")
+    tok, uid = login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
     body = {"title": "QA voice pin", "department": "sales", "body": "Answer and book.", "persona": {"name": "Bill Harmon", "gender": "male", "voice": "older", "live_voice": "cinder", "opening_line": "Hi, is the Wrangler still there?"}}
     st, c = call("POST", "/api/shop-clients/challenges", body, headers=auth(tok, uid))
     assert st == 200, c

@@ -11,6 +11,7 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from services import thread_context as tc
+from tests import qa_creds
 
 BASE_URL = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 API = BASE_URL + "/api"
@@ -112,7 +113,7 @@ def test_lead_marker_and_unsent_drafts():
 
 def test_live_suggest_and_brief_use_the_thread_reader():
     """Against the running server: Ask Jessi returns the topic, honours an override, and the draft about the trade-in does not drag the widget in."""
-    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30)
+    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30)
     r.raise_for_status()
     token = r.json().get("token") or r.json().get("access_token")
     headers = {"Authorization": f"Bearer {token}"}

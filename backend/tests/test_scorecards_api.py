@@ -2,10 +2,11 @@
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
-MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
-REP = {"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}
+MANAGER = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
+REP = {"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}
 REP_ID = "6a978d68b8673c29063aa8b9"
 DEMO_SIDS = ["CA_scdemo_good_001", "CA_scdemo_miss_002", "CA_scdemo_mid_003"]
 

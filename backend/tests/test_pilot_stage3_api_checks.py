@@ -2,19 +2,20 @@
 import os
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 
 PILOT_EMAIL = "qa-pilot-owner-ui@invalid.imonsocial.test"
-PILOT_PASS = "PilotOwner123!"
+PILOT_PASS = qa_creds.password_for("qa-pilot-owner-ui@invalid.imonsocial.test")
 PILOT_USER_ID = "6acbcb1fe4b243ca9cc2a230"
 PILOT_ORG_ID = "6acbcb1fe4b243ca9cc2a21e"
 
 MGR_EMAIL = "qa-manager@invalid.imonsocial.test"
-MGR_PASS = "Manager123!"
+MGR_PASS = qa_creds.password_for("qa-manager@invalid.imonsocial.test")
 
 FOREST_EMAIL = "forest@imosapp.com"
-FOREST_PASS = "Admin123!"
+FOREST_PASS = qa_creds.password_for("forest@imosapp.com")
 
 
 def _login(email, pw):

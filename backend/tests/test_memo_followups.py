@@ -7,13 +7,14 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import requests
 from bson import ObjectId
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 FOREST_EMAIL = "forest@imosapp.com"
-FOREST_PASSWORD = "Admin123!"
+FOREST_PASSWORD = qa_creds.password_for("forest@imosapp.com")
 FOREST_ID = "69a0b7095fddcede09591667"
 TESTER_EMAIL = "activation-tester@invalid.imonsocial.test"
-TESTER_PASSWORD = "NewPass123!"
+TESTER_PASSWORD = qa_creds.password_for("activation-tester@invalid.imonsocial.test")
 
 sys.path.insert(0, "/app/backend")
 

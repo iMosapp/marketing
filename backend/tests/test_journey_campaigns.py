@@ -15,6 +15,7 @@ from services import text_shops as tx
 from services import email_shops as ems
 from services.journey import campaigns as jc
 from services.journey import identities as ids
+from tests import qa_creds
 
 BASE_URL = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 API = BASE_URL + "/api"
@@ -38,7 +39,7 @@ def _run(coro):
 
 @pytest.fixture(scope="module")
 def admin():
-    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30)
+    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30)
     r.raise_for_status()
     return {"Authorization": f"Bearer {r.json().get('token') or r.json().get('access_token')}"}
 
@@ -193,7 +194,7 @@ def test_campaign_lifecycle(fakes):
 
 
 def _admin_headers():
-    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30)
+    r = requests.post(f"{API}/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30)
     return {"Authorization": f"Bearer {r.json().get('token') or r.json().get('access_token')}"}
 
 

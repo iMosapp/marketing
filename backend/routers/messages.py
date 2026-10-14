@@ -1,7 +1,7 @@
 """
 Messages router - handles conversations and messages
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, Response, Body
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request, Response, Body
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
@@ -17,6 +17,7 @@ import asyncio
 from models import Message, MessageCreate
 from routers.database import get_db, get_data_filter, increment_user_stat
 from services.tag_workflows import initial_ai_state
+from services.twilio_signature import require_signed_callback
 from services.llm_models import CUSTOMER_TEXT_MODEL
 from utils.text_sanitize import no_em_dash, clean_ai_text
 from services.call_summary import clean as _clean_summary
@@ -343,6 +344,9 @@ async def create_conversation(user_id: str, data: dict):
     db = get_db()
     contact_id    = data.get('contact_id')
     contact_phone = data.get('contact_phone')
+    if contact_id:
+        from services.contact_scope import owned_contact
+        await owned_contact(db, user_id, contact_id, {"_id": 1}, shared_thread=True)
 
     # Look up the rep's Twilio number — this becomes the permanent routing key
     rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1})
@@ -933,6 +937,9 @@ async def send_via_twilio(request: Request):
     if not to_phone or not body:
         raise HTTPException(status_code=400, detail="to and body are required")
     await _assert_can_act_as(request, user_id)
+    if contact_id:
+        from services.contact_scope import owned_contact
+        await owned_contact(db, user_id, contact_id, {"_id": 1}, shared_thread=True)
     # Always use the rep's dedicated Twilio number
     rep_twilio_number = None
     try:
@@ -1043,9 +1050,10 @@ async def send_mms_message(
             "contact_id": conversation_id
         })
         
-        # If still not found, try to create conversation from contact
+        # If still not found, try to create conversation from contact (only one this rep may text)
         if not conv:
-            contact = await db.contacts.find_one({"_id": ObjectId(conversation_id)})
+            from services.contact_scope import owned_contact
+            contact = await owned_contact(db, user_id, conversation_id, shared_thread=True)
             if contact:
                 # Look up rep's Twilio number for proper routing key
                 rep_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1})
@@ -2221,8 +2229,10 @@ async def send_message_simple(user_id: str, message_data: dict):
     
     db = get_db()
     
-    # If no conversation_id but we have contact_id, create/find conversation
+    # If no conversation_id but we have contact_id, create/find conversation (the contact must be this rep's)
     if not conversation_id and contact_id:
+        from services.contact_scope import owned_contact
+        contact = await owned_contact(db, user_id, contact_id, shared_thread=True)
         existing = await db.conversations.find_one({
             "user_id": user_id,
             "contact_id": contact_id
@@ -2231,10 +2241,6 @@ async def send_message_simple(user_id: str, message_data: dict):
         if existing:
             conversation_id = str(existing["_id"])
         else:
-            contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
-            if not contact:
-                raise HTTPException(status_code=404, detail="Contact not found")
-            
             conv = {
                 "user_id": user_id,
                 "contact_id": contact_id,
@@ -2662,7 +2668,7 @@ async def find_inbox_owner(db, to_phone: str) -> dict:
     return None
 
 
-@router.post("/webhook/inbound")
+@router.post("/webhook/inbound", dependencies=[Depends(require_signed_callback)])
 async def twilio_inbound_webhook(request: Request):
     """
     Receive inbound SMS/MMS from Twilio.

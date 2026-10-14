@@ -13,12 +13,13 @@ import os
 import pytest
 import requests
 import time
+from tests import qa_creds
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 assert BASE_URL, "REACT_APP_BACKEND_URL must be set"
 
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = qa_creds.password_for("forest@imosapp.com")
 
 # Store manager test user - will be created if not found
 STORE_MANAGER_EMAIL = "TEST_mgr_campcheck@imonsocial.com"

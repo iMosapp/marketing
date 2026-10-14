@@ -20,10 +20,11 @@ import time
 
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
-OWNER = {"email": "forest@imosapp.com", "password": "Admin123!"}
-NONOWNER = {"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"}
+OWNER = {"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}
+NONOWNER = {"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")}
 
 TEAM_ROUTES = [
     ("GET", "/roster"),

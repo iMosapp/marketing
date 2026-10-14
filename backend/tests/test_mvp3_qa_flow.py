@@ -1,12 +1,13 @@
 """QA flow for Trade Appraisal MVP3: creates appraisal through market step, tests tenant isolation and provider endpoint, then cleans up."""
 import os, time, requests, pytest
+from tests import qa_creds
 
 BASE = (os.environ.get('REACT_APP_BACKEND_URL') or open('/app/frontend/.env').read().split('REACT_APP_BACKEND_URL=')[1].splitlines()[0]).rstrip('/')
 API = f"{BASE}/api"
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MGR = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-ORG = ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MGR = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+ORG = ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test"))
 CONTACT = "6aa413008f0d53e3f2261853"
 
 

@@ -18,9 +18,10 @@ from services import billing
 from tests._http import API, UA
 from tests.live_auth import Session, anon, oid
 from tests.wipe_pilot_customers import wipe
+from tests import qa_creds
 
 PREFIX = "QA Pilot Billing"
-OWNER_PASSWORD = "PilotOwner123!"
+OWNER_PASSWORD = qa_creds.password_for("qa-pilot-owner-ui@invalid.imonsocial.test")
 WEBHOOK = "/api/billing/stripe/webhook"
 
 loop = asyncio.new_event_loop()

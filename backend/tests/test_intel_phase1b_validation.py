@@ -5,6 +5,7 @@ import pytest
 import requests
 from pymongo import MongoClient
 from datetime import datetime, timezone
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
@@ -16,10 +17,10 @@ REP_ID = "6a978d68b8673c29063aa8b9"
 LEAD_SOURCE_WEBHOOK = "69a787ca70ae63ea0ac69251"
 
 CREDS = {
-    "forest": ("forest@imosapp.com", "Admin123!"),
-    "manager": ("qa-manager@invalid.imonsocial.test", "Manager123!"),
-    "rep": ("activation-tester@invalid.imonsocial.test", "NewPass123!"),
-    "orgadmin": ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!"),
+    "forest": ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com")),
+    "manager": ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test")),
+    "rep": ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test")),
+    "orgadmin": ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test")),
 }
 
 _tokens = {}

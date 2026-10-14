@@ -81,13 +81,35 @@ def test_malformed_iat_is_rejected(monkeypatch):
     assert auth.issued_after_cutoff({}) is False
 
 
-def test_malformed_env_value_fails_closed(monkeypatch, caplog):
+def test_malformed_env_value_clamps_to_process_start(monkeypatch, caplog):
+    """A value that can't be parsed must not lock every account out: it applies the process start time instead (pre-deploy
+    sessions still die) and logs loudly."""
     for raw in ("tomorrow", "2026-13-45", "14/10/2026", "1e999x"):
         monkeypatch.setenv("SESSIONS_VALID_AFTER", raw)
         with pytest.raises(ValueError):
             auth.sessions_valid_after()
-        assert auth.verify_jwt_token(_token()) is None, raw
+        assert auth.effective_cutoff() == auth._PROCESS_STARTED_AT, raw
+        assert auth.verify_jwt_token(_token()) is not None, raw                       # fresh login keeps working
+        assert auth.verify_jwt_token(_token(iat=int(auth._PROCESS_STARTED_AT) - 5)) is None, raw  # pre-start token is dead
     assert "SESSIONS_VALID_AFTER is malformed" in caplog.text
+
+
+def test_future_cutoff_cannot_lock_everyone_out(monkeypatch, caplog):
+    """A fat-fingered future date would reject every token, including the ones minted right now. It is clamped to the process
+    start time: new logins work, sessions from before this boot are rejected, and the mistake is logged."""
+    monkeypatch.setenv("SESSIONS_VALID_AFTER", _iso(time.time() + 86400))
+    assert auth.sessions_valid_after() > time.time()
+    assert auth.effective_cutoff() == auth._PROCESS_STARTED_AT
+    assert auth.verify_jwt_token(_token()) is not None
+    assert auth.verify_jwt_token(_token(iat=int(auth._PROCESS_STARTED_AT) - 5)) is None
+    assert "is in the future" in caplog.text
+    monkeypatch.setenv("SESSIONS_VALID_AFTER", str(int(time.time() + 3600)))
+    assert auth.effective_cutoff() == auth._PROCESS_STARTED_AT
+    assert auth.verify_jwt_token(_token()) is not None
+    # a past value is applied exactly as given
+    past = time.time() - 60
+    monkeypatch.setenv("SESSIONS_VALID_AFTER", _iso(past))
+    assert abs(auth.effective_cutoff() - past) < 1.5
 
 
 def test_signature_and_expiry_still_enforced(monkeypatch):
@@ -152,14 +174,14 @@ def test_impersonation_session_honours_cutoff(monkeypatch):
             both = (await resolve_impersonation_session(tokens["old"]), await resolve_impersonation_session(tokens["new"]))
             monkeypatch.setenv("SESSIONS_VALID_AFTER", _iso(time.time() - 600))
             gated = (await resolve_impersonation_session(tokens["old"]), await resolve_impersonation_session(tokens["new"]))
-            monkeypatch.setenv("SESSIONS_VALID_AFTER", "garbage")
-            closed = await resolve_impersonation_session(tokens["new"])
+            monkeypatch.setenv("SESSIONS_VALID_AFTER", "garbage")  # malformed -> process start applies: the fresh session lives, the old one is dead
+            closed = (await resolve_impersonation_session(tokens["old"]), await resolve_impersonation_session(tokens["new"]))
             return both, gated, closed
 
         both, gated, closed = asyncio.run(run())
         assert both == ("507f1f77bcf86cd799439011", "507f1f77bcf86cd799439011")
         assert gated == (None, "507f1f77bcf86cd799439011")
-        assert closed is None
+        assert closed == (None, "507f1f77bcf86cd799439011")
     finally:
         db.impersonation_sessions.delete_many({"token": {"$in": list(tokens.values())}})
         database._client, database._db = None, None

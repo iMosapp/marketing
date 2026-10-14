@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 import httpx
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 from services.intelligence import brief, ingest  # noqa: E402
@@ -18,7 +19,7 @@ from services.intelligence import facts as F  # noqa: E402
 
 API = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 STORE = "69a0b7095fddcede09591668"
-REP_EMAIL, REP_PW = "activation-tester@invalid.imonsocial.test", "NewPass123!"
+REP_EMAIL, REP_PW = "activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test")
 WEBSITE_SOURCE = "69a787ca70ae63ea0ac69251"
 TAG = "QA Intel 1B"
 UTC = timezone.utc

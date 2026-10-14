@@ -3,6 +3,7 @@ import os
 import time
 import pytest
 import requests
+from tests import qa_creds
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 API = f"{BASE_URL}/api"
@@ -10,9 +11,9 @@ API = f"{BASE_URL}/api"
 USER_ID = "6a978d68b8673c29063aa8b9"  # activation-tester
 CONTACT_ID = "6aa413008f0d53e3f2261853"  # Sarah Tester
 
-TESTER = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-OTHER = ("mjeast1985@gmail.com", "NavyBean1!")
-ADMIN = ("forest@imosapp.com", "Admin123!")
+TESTER = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+OTHER = ("mjeast1985@gmail.com", qa_creds.password_for("mjeast1985@gmail.com"))
+ADMIN = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
 
 
 def _login(email, pwd):

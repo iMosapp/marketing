@@ -6,13 +6,14 @@ import pytest
 import requests
 from pymongo import MongoClient
 from bson import ObjectId
+from tests import qa_creds
 
 BASE_URL = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL=")][0].rstrip("/")
 MONGO_URL = os.environ.get("MONGO_URL") or [l.split("=", 1)[1].strip().strip('"') for l in open("/app/backend/.env") if l.startswith("MONGO_URL=")][0]
 DB_NAME = os.environ.get("DB_NAME") or [l.split("=", 1)[1].strip().strip('"') for l in open("/app/backend/.env") if l.startswith("DB_NAME=")][0]
 
 REP_EMAIL = "activation-tester@invalid.imonsocial.test"
-REP_PASS = "NewPass123!"
+REP_PASS = qa_creds.password_for("activation-tester@invalid.imonsocial.test")
 
 
 @pytest.fixture(scope="session")

@@ -1,6 +1,7 @@
 """Idempotent seed: preview-only org admin on the TEST_Store_Org (69a907033b77512d1d8d8a08) for the Communications screen tests."""
 import asyncio, os, sys
 from datetime import datetime, timezone
+from tests import qa_creds
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
@@ -8,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from routers.auth import hash_password
 
 EMAIL = "qa-orgadmin@invalid.imonsocial.test"
-PASSWORD = "OrgAdmin123!"
+PASSWORD = qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test")
 ORG_ID = "69a907033b77512d1d8d8a08"
 STORE_ID = "69a907033b77512d1d8d8a4a"
 

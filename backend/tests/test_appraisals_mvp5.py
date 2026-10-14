@@ -10,15 +10,16 @@ import pytest
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from bson import ObjectId
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
 load_dotenv("/app/backend/.env")
 from _http import call, login, auth  # noqa: E402
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-OTHER_ORG_ADMIN = ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+OTHER_ORG_ADMIN = ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test"))
 SARAH = "6aa413008f0d53e3f2261853"
 QA_STORE = "69a0b7095fddcede09591668"
 VIN = "1FTEW1EP8KFA00005"  # valid check digit; fixed so the reappraisal lands on the same vehicles doc
@@ -144,7 +145,7 @@ def test_first_appraisal_wants_more_creates_tasks_and_intent(rep, manager):
                                        "sequences": [{"message_template": "Hi {first_name}, still thinking about the {trade_vehicle}? We offered {trade_approved_value}.", "delay_days": 1, "action_type": "message"}],
                                        "created_at": datetime.utcnow()}).inserted_id)
     STATE["campaign_id"] = cid
-    su = auth(*login("forest@imosapp.com", "Admin123!"))
+    su = auth(*login("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com")))
     st, c = call("POST", f"/api/campaigns/{su['X-User-ID']}", {"name": "QA MVP5 sanitise", "type": "custom", "trigger_events": ["trade_appraisal.accepted", "bogus.event"], "active": False, "sequences": [], "scope": "personal"}, su)
     assert st == 200, (st, c)
     scid = c.get("_id") or c.get("id")

@@ -5,6 +5,7 @@ import httpx
 from dotenv import load_dotenv
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests import qa_creds
 
 load_dotenv("/app/backend/.env")
 API = [l.split("=", 1)[1].strip() for l in open("/app/frontend/.env") if l.startswith("REACT_APP_BACKEND_URL")][0] + "/api"
@@ -28,7 +29,7 @@ async def main():
     saved = {k: original.get(k) for k in FLOW_KEYS}
     created_convs, created_contacts = [], []
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": "Manager123!"})
+        r = await c.post(f"{API}/auth/login", json={"email": "qa-manager@invalid.imonsocial.test", "password": qa_creds.password_for("qa-manager@invalid.imonsocial.test")})
         H = {"Authorization": f"Bearer {r.json().get('token') or r.json().get('access_token')}"}
         # clean template flow created during smoke test
         await db.lead_flows.delete_many({"template_key": "ring_all_then_manager", "name": "Ring everyone, then the manager"})
@@ -103,7 +104,7 @@ async def main():
             r = await c.delete(f"{API}/lead-flows/{fid}", headers=H)
             check("delete after detach", r.status_code == 200)
             # 10. rep cannot access
-            r2 = await c.post(f"{API}/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"})
+            r2 = await c.post(f"{API}/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")})
             tok = r2.json().get("token") or r2.json().get("access_token")
             r = await c.get(f"{API}/lead-flows", headers={"Authorization": f"Bearer {tok}"})
             check("rep gets 403", r.status_code == 403, str(r.status_code))

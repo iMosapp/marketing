@@ -5,6 +5,7 @@ import requests
 from dotenv import dotenv_values
 from pymongo import MongoClient
 from bson import ObjectId
+from tests import qa_creds
 
 fe = dotenv_values("/app/frontend/.env")
 be = dotenv_values("/app/backend/.env")
@@ -13,7 +14,7 @@ db = MongoClient(be["MONGO_URL"])[be["DB_NAME"]]
 
 
 def admin():
-    r = requests.post(f"{BASE}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=60)
+    r = requests.post(f"{BASE}/api/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=60)
     r.raise_for_status()
     d = r.json()
     t = d.get("token") or d.get("access_token")

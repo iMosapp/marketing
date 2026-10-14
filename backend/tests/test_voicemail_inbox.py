@@ -7,6 +7,7 @@ import time
 
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001").rstrip("/")
 FOREST_LINE = "+14352203414"
@@ -15,7 +16,7 @@ RUN = str(int(time.time()))
 
 @pytest.fixture(scope="module")
 def admin_headers():
-    r = requests.post(f"{BASE}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30)
+    r = requests.post(f"{BASE}/api/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30)
     r.raise_for_status()
     tok = r.json().get("token") or r.json().get("access_token")
     return {"Authorization": f"Bearer {tok}"}
@@ -23,7 +24,7 @@ def admin_headers():
 
 @pytest.fixture(scope="module")
 def rep_headers():
-    r = requests.post(f"{BASE}/api/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}, timeout=30)
+    r = requests.post(f"{BASE}/api/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": qa_creds.password_for("activation-tester@invalid.imonsocial.test")}, timeout=30)
     if r.status_code != 200:
         pytest.skip("rep test account unavailable")
     tok = r.json().get("token") or r.json().get("access_token")

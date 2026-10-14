@@ -11,15 +11,16 @@ import time
 import pytest
 import requests
 from dotenv import load_dotenv
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
 load_dotenv("/app/backend/.env")
 from _http import API, call, login, auth  # noqa: E402
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MGR = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-OTHER_ORG = ("qa-orgadmin@invalid.imonsocial.test", "OrgAdmin123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MGR = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+OTHER_ORG = ("qa-orgadmin@invalid.imonsocial.test", qa_creds.password_for("qa-orgadmin@invalid.imonsocial.test"))
 SARAH = "6aa413008f0d53e3f2261853"
 REP_UID = "6a978d68b8673c29063aa8b9"
 STORE_ID = "69a0b7095fddcede09591668"

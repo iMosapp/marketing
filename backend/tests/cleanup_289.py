@@ -1,11 +1,12 @@
 """Cleanup of iteration 289 test data: test contacts, tags, broadcast drafts."""
 import requests
 from dotenv import dotenv_values
+from tests import qa_creds
 
 BASE = dotenv_values("/app/frontend/.env")["REACT_APP_BACKEND_URL"].rstrip("/")
 UID = "69a0b7095fddcede09591667"
 s = requests.Session()
-r = s.post(f"{BASE}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30)
+r = s.post(f"{BASE}/api/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30)
 tok = r.json().get("token") or r.json().get("access_token")
 if tok:
     s.headers.update({"Authorization": f"Bearer {tok}"})

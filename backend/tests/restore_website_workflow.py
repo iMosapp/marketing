@@ -1,11 +1,12 @@
 """Restore the Website lead source workflow to its pre-test intake_text wording."""
 import requests
 from dotenv import dotenv_values
+from tests import qa_creds
 
 fe = dotenv_values("/app/frontend/.env")
 BASE = fe["REACT_APP_BACKEND_URL"].rstrip("/")
 s = requests.Session()
-r = s.post(f"{BASE}/api/auth/login", json={"email": "forest@imosapp.com", "password": "Admin123!"}, timeout=30)
+r = s.post(f"{BASE}/api/auth/login", json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")}, timeout=30)
 tok = r.json().get("token") or r.json().get("access_token")
 s.headers.update({"Authorization": f"Bearer {tok}", "X-User-ID": "69a0b7095fddcede09591667"})
 cfg = {

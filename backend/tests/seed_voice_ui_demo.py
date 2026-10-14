@@ -1,6 +1,6 @@
 """Preview-only demo account for the Live Jessi fallback UI (Phase 3). Idempotent.
 
-  python tests/seed_voice_ui_demo.py                       # org "QA Voice UI Org" + qa-voice-ui@invalid.imonsocial.test / VoiceRep123!, policy on (1 min premium, 60 min mini)
+  python tests/seed_voice_ui_demo.py                       # org "QA Voice UI Org" + qa-voice-ui@invalid.imonsocial.test / <password in memory/test_credentials.md>, policy on (1 min premium, 60 min mini)
   python tests/seed_voice_ui_demo.py --scenario exhausted  # premium off + 1 min of mini (the stop has no fallback -> "Ask Jessi by text")
   python tests/seed_voice_ui_demo.py --scenario refused    # every pool spent today (POST /live-voice/session -> 429)
   python tests/seed_voice_ui_demo.py --reset               # forget today's usage for the user (keeps the scenario)
@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from tests import qa_creds
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -24,7 +25,7 @@ from services import voice_controls as vc  # noqa: E402
 
 ORG_NAME = "QA Voice UI Org"
 EMAIL = "qa-voice-ui@invalid.imonsocial.test"
-PW = "VoiceRep123!"
+PW = qa_creds.password_for("qa-voice-ui@invalid.imonsocial.test")
 SCENARIOS = {
     "handoff": {"daily_premium_min": 1, "daily_backup_min": None, "premium_disabled": False},
     "exhausted": {"daily_premium_min": None, "daily_backup_min": 1, "premium_disabled": True},

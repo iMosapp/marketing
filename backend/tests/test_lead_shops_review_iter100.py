@@ -6,6 +6,7 @@ import pytest
 import requests
 from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
+from tests import qa_creds
 
 _BURL = os.environ.get('REACT_APP_BACKEND_URL')
 if not _BURL:
@@ -14,8 +15,8 @@ if not _BURL:
             if _l.startswith('REACT_APP_BACKEND_URL='):
                 _BURL = _l.split('=', 1)[1].strip()
 BASE = _BURL.rstrip('/') + '/api'
-ADMIN = ("forest@imosapp.com", "Admin123!")
-MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
+ADMIN = ("forest@imosapp.com", qa_creds.password_for("forest@imosapp.com"))
+MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 CLIENT_ID = "6aa6d7dfb4c41decb2734ec4"  # QA Jeep 979a
 
 

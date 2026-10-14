@@ -9,6 +9,7 @@ import requests
 import os
 import sys
 import asyncio
+from tests import qa_creds
 
 
 def _init():
@@ -42,7 +43,7 @@ HEADERS = None
 
 def get_headers():
     r = requests.post(f"{BASE_URL}/api/auth/login",
-                      json={"email": "forest@imosapp.com", "password": "Admin123!"})
+                      json={"email": "forest@imosapp.com", "password": qa_creds.password_for("forest@imosapp.com")})
     if r.status_code == 200:
         token = r.json().get("token") or r.json().get("access_token")
         if token:

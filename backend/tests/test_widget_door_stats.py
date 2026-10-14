@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001").rstrip("/")
 STORE = "69a0b7095fddcede09591668"
@@ -31,7 +32,7 @@ def _login(email, pw):
 
 @pytest.fixture(scope="module")
 def mgr():
-    return _login("qa-manager@invalid.imonsocial.test", "Manager123!")
+    return _login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 
 
 @pytest.fixture(scope="module")
@@ -128,7 +129,7 @@ def test_door_stats_windows_and_pages(mgr, widget):
     assert requests.get(f"{BASE}/api/widgets/{real}/door-stats", params={"days": 3}, headers=mgr, timeout=30).json()["days"] == 7
     d = requests.get(f"{BASE}/api/widgets/{real}", headers=mgr, timeout=30).json()
     assert d["door_stats"]["days"] == 7 and "doors" in d["door_stats"]
-    rep = _login("activation-tester@invalid.imonsocial.test", "NewPass123!")
+    rep = _login("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
     assert requests.get(f"{BASE}/api/widgets/{real}/door-stats", headers=rep, timeout=30).status_code == 200
     assert requests.get(f"{BASE}/api/widgets/{real}/door-stats", timeout=30).status_code in (401, 403)
 

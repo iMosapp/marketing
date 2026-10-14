@@ -8,14 +8,15 @@ import sys
 import pytest
 import requests
 from dotenv import load_dotenv
+from tests import qa_creds
 
 sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/tests")
 load_dotenv("/app/backend/.env")
 from _http import API, call, login, auth  # noqa: E402
 
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
-MANAGER = ("qa-manager@invalid.imonsocial.test", "Manager123!")
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
+MANAGER = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 SARAH = "6aa413008f0d53e3f2261853"
 REP_LINE = "The rear bumper has a dent and the front tires are worn. New brakes last month."
 CUSTOMER_LINE = "The check engine light has been on for two weeks and the sunroof leaks when it rains."

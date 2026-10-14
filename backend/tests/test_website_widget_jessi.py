@@ -14,12 +14,13 @@ import time
 import re
 import pytest
 import requests
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001").rstrip("/")
 STORE = "69a0b7095fddcede09591668"
 WID = "6ab72996c248f5420bf0a14a"
-MGR = ("qa-manager@invalid.imonsocial.test", "Manager123!")
-REP = ("activation-tester@invalid.imonsocial.test", "NewPass123!")
+MGR = ("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
+REP = ("activation-tester@invalid.imonsocial.test", qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 PRESERVED_FACT = "We take walk-ins weekdays until 6 pm"
 RUN = str(int(time.time()))[-6:]
 

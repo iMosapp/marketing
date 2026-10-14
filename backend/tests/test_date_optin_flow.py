@@ -1,6 +1,7 @@
 import asyncio, os, sys
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
+from tests import qa_creds
 load_dotenv('/app/backend/.env')
 sys.path.insert(0, '/app/backend')
 
@@ -35,7 +36,7 @@ async def main():
     # call the actual API endpoint
     import requests
     API = os.environ.get('TEST_API', 'http://localhost:8001')
-    login = requests.post(f'{API}/api/auth/login', json={'email': 'forest@imosapp.com', 'password': 'Admin123!'}).json()
+    login = requests.post(f'{API}/api/auth/login', json={'email': 'forest@imosapp.com', 'password': qa_creds.password_for("forest@imosapp.com")}).json()
     tok = {'Authorization': f"Bearer {login['token']}"}
     bday_this_year = now.replace(year=1990).isoformat()
     r = requests.post(f'{API}/api/contacts/{uid}', json={

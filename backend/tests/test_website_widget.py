@@ -14,6 +14,7 @@ import time
 import pytest
 import requests
 from bson import ObjectId
+from tests import qa_creds
 
 BASE = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001").rstrip("/")
 STORE = "69a0b7095fddcede09591668"
@@ -32,12 +33,12 @@ def _login(email, pw):
 
 @pytest.fixture(scope="module")
 def mgr():
-    return _login("qa-manager@invalid.imonsocial.test", "Manager123!")
+    return _login("qa-manager@invalid.imonsocial.test", qa_creds.password_for("qa-manager@invalid.imonsocial.test"))
 
 
 @pytest.fixture(scope="module")
 def rep():
-    return _login(REP, "NewPass123!")
+    return _login(REP, qa_creds.password_for("activation-tester@invalid.imonsocial.test"))
 
 
 @pytest.fixture(scope="module")

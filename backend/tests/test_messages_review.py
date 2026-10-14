@@ -5,6 +5,7 @@ Tests: Thread messages, AI suggestions, and Review Links endpoints
 import pytest
 import requests
 import os
+from tests import qa_creds
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com')
 if BASE_URL and not BASE_URL.endswith('/api'):
@@ -12,7 +13,7 @@ if BASE_URL and not BASE_URL.endswith('/api'):
 
 # Test credentials
 SUPERADMIN_EMAIL = "superadmin@mvpline.com"
-SUPERADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "Admin123!")
+SUPERADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", qa_creds.password_for("forest@imosapp.com"))
 
 
 class TestAuth:
