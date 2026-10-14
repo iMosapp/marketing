@@ -26,7 +26,7 @@ PUBLIC_PREFIXES = (
     "/api/nda/sign/", "/api/team-invite/", "/api/crm/timeline/", "/api/contact-files/open/", "/api/share/", "/api/wallet/download/",
     "/api/linkpage/public/", "/api/help-center/ask", "/api/push/vapid-key", "/api/push/log-error", "/api/errors/report",
     "/api/tracking/event", "/api/subscriptions/plans", "/api/subscriptions/discount-codes/validate/", "/api/subscriptions/checkout",
-    "/api/subscriptions/w9/", "/api/calendar/oauth/", "/api/media/view/", "/api/appraisals/intake/", "/api/chat/start",
+    "/api/subscriptions/w9/", "/api/calendar/oauth/callback", "/api/media/view/", "/api/appraisals/intake/", "/api/chat/start",
     "/api/chat/message", "/api/chat/capture", "/api/seo/robots.txt", "/api/seo/sitemap", "/api/seo/meta/", "/api/seo/store-directory/",
     "/api/seo/user-by-slug/", "/api/seo/track-visit", "/api/review/page/", "/api/review/track-click", "/api/review/submit",
     "/api/review/check-hours/", "/api/showcase/user/", "/api/showcase/store/", "/api/showcase/org/", "/api/showcase/photo/",

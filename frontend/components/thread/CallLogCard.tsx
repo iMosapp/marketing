@@ -8,6 +8,7 @@ import { ScorePill } from '../scorecards/ScoreRing';
 import { EvaluationSheet } from '../scorecards/EvaluationSheet';
 import { VoiceIdBadge } from '../calls/VoiceIdBadge';
 import { CallSummaryView } from '../calls/CallSummaryView';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
 export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date }) => {
   const [showEval, setShowEval] = useState(false);
@@ -71,9 +72,9 @@ export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date })
         {hasRecording && (item.call_sid || item.recording_url) && (
           <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E5E5EA' }}>
             <CallRecordingPlayer
-              url={item.call_sid
+              url={resolvePhotoUrl(item.call_sid
                 ? `${api.defaults.baseURL}/calls/recording/${item.call_sid}`
-                : `${api.defaults.baseURL}/webhooks/twilio/media-proxy?url=${encodeURIComponent(item.recording_url)}`}
+                : `${api.defaults.baseURL}/webhooks/twilio/media-proxy?url=${encodeURIComponent(item.recording_url)}`)!}
               tint={callColor}
             />
           </View>

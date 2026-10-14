@@ -239,12 +239,16 @@ def test_app_call_routes_under_the_twilio_prefix_need_a_session(victim, other_re
     assert st not in (401, 403), (st, body)
 
 
-def test_media_proxy_only_fetches_twilio_hosts():
+def test_media_proxy_only_fetches_twilio_hosts(victim):
+    """Hotfix 4B tightened this further (media token + exact resource allowlist); see test_security_hotfix4b.py."""
+    tok = victim.get("/api/calls/recording-token")[1]["token"]
     for url in ("https://example.com/x.jpg", "http://api.twilio.com/x", "https://api.twilio.com.evil.net/x", "https://169.254.169.254/latest/meta-data"):
-        st, body = call("GET", "/api/webhooks/twilio/media-proxy?url=" + urllib.parse.quote(url, safe=""))
+        assert call("GET", "/api/webhooks/twilio/media-proxy?url=" + urllib.parse.quote(url, safe=""))[0] == 401, url   # no token: nothing is even parsed
+        st, body = call("GET", "/api/webhooks/twilio/media-proxy?url=" + urllib.parse.quote(url, safe="") + "&t=" + tok)
         assert st == 400, (url, st, body)
-    st, _ = call("GET", "/api/webhooks/twilio/media-proxy?url=" + urllib.parse.quote("https://api.twilio.com/2010-04-01/Accounts/ACqa/Recordings/REqa.mp3", safe=""))
-    assert st != 400
+    good = "https://api.twilio.com/2010-04-01/Accounts/AC" + "a" * 32 + "/Recordings/RE" + "b" * 32 + ".mp3"
+    st, _ = call("GET", "/api/webhooks/twilio/media-proxy?url=" + urllib.parse.quote(good, safe="") + "&t=" + tok)
+    assert st not in (400, 401)
 
 
 def test_resend_inbound_fails_closed(monkeypatch):

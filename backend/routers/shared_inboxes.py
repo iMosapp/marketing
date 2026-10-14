@@ -267,11 +267,17 @@ async def inbox_webhook(inbox_id: str, request: Request):
     Accepts JSON: { first_name, last_name, phone, email, message, vehicle, source }
     """
     import asyncio as _aio
+    import hmac as _hmac
     db = get_db()
 
-    inbox = await db.shared_inboxes.find_one({"_id": ObjectId(inbox_id)})
+    inbox = await db.shared_inboxes.find_one({"_id": ObjectId(inbox_id)}) if ObjectId.is_valid(inbox_id) else None
     if not inbox or inbox.get('is_active') is False:
         raise HTTPException(status_code=404, detail="Inbox not found or inactive")
+    # Anonymous by nature (web forms), so the inbox's own key must travel with the request (?key= or X-Webhook-Key).
+    presented = request.query_params.get("key") or request.headers.get("X-Webhook-Key") or ""
+    expected = inbox.get("webhook_key") or ""
+    if not expected or not presented or not _hmac.compare_digest(presented, expected):
+        raise HTTPException(status_code=401, detail="Webhook key required — copy the URL from the inbox's webhook info")
 
     try:
         data = await request.json()
@@ -363,12 +369,24 @@ async def inbox_webhook(inbox_id: str, request: Request):
 async def get_webhook_info(inbox_id: str, user_id: str):
     """Return the webhook URL and example payload for this inbox."""
     db = get_db()
-    inbox = await db.shared_inboxes.find_one({"_id": ObjectId(inbox_id)})
+    inbox = await db.shared_inboxes.find_one({"_id": ObjectId(inbox_id)}) if ObjectId.is_valid(inbox_id) else None
     if not inbox:
         raise HTTPException(status_code=404, detail="Inbox not found")
+    me = await get_user_by_id(user_id)
+    if not me or me.get('role') not in ('super_admin', 'org_admin', 'store_manager'):
+        raise HTTPException(status_code=403, detail="Managers only")
+    if me.get('role') == 'org_admin' and str(inbox.get('organization_id') or '') != str(me.get('organization_id') or ''):
+        raise HTTPException(status_code=403, detail="Access denied to this inbox")
+    if me.get('role') == 'store_manager' and str(inbox.get('store_id') or '') not in {str(s) for s in [me.get('store_id'), *(me.get('store_ids') or [])] if s}:
+        raise HTTPException(status_code=403, detail="Access denied to this inbox")
     import os
+    import secrets as _secrets
+    key = inbox.get("webhook_key")
+    if not key:
+        key = _secrets.token_urlsafe(24)
+        await db.shared_inboxes.update_one({"_id": inbox["_id"]}, {"$set": {"webhook_key": key}})
     base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-    webhook_url = f"{base}/api/admin/team/shared-inboxes/{inbox_id}/webhook"
+    webhook_url = f"{base}/api/admin/team/shared-inboxes/{inbox_id}/webhook?key={key}"
     return {
         "webhook_url": webhook_url,
         "method": "POST",

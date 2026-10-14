@@ -12,13 +12,14 @@ import logging
 from routers.database import get_db
 from routers.admin_helpers import safe_objectid, get_requesting_user
 from routers.rbac import (
-    get_scoped_organization_ids,
-    get_scoped_store_ids,
-    get_scoped_user_ids,
     require_store_access,
     require_org_access,
-    require_user_access,
+    require_hierarchy_admin,
+    assert_in_scope,
+    assert_role_grant,
 )
+
+VALID_ROLES = ("user", "account_manager", "store_manager", "org_admin", "super_admin")
 
 router = APIRouter(prefix="/admin", tags=["Admin - Hierarchy"])
 logger = logging.getLogger(__name__)
@@ -341,186 +342,119 @@ async def get_all_users_hierarchy(
     }
 
 
-@router.put("/hierarchy/users/{user_id}/assign-org", dependencies=[Depends(require_user_access("org_admin"))])
-async def assign_user_to_org(user_id: str, data: dict):
-    """Assign or change a user's organization"""
+@router.put("/hierarchy/users/{user_id}/assign-org")
+async def assign_user_to_org(user_id: str, data: dict, me: dict = Depends(require_hierarchy_admin("org_admin"))):
+    """Assign or change a user's organization (and role). Org admins only inside their own organizations, roles below their own."""
     org_id = data.get("organization_id")
     role = data.get("role", "user")
-    
-    # Validate org exists if assigning
+    if role not in VALID_ROLES:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(VALID_ROLES)}")
+    assert_role_grant(me, role)
     if org_id:
-        org = await get_db().organizations.find_one({"_id": ObjectId(org_id)})
-        if not org:
+        if not ObjectId.is_valid(str(org_id)) or not await get_db().organizations.find_one({"_id": ObjectId(org_id)}, {"_id": 1}):
             raise HTTPException(status_code=404, detail="Organization not found")
-    
-    update_data = {
-        "organization_id": org_id,
-        "role": role,
-        "updated_at": datetime.utcnow()
-    }
-    
-    # If removing from org, also remove store assignments
+        await assert_in_scope(me, org_id=org_id)
+    elif me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only a super admin can remove someone from their organization")
+
+    update_data = {"organization_id": org_id, "role": role, "updated_at": datetime.utcnow()}
     if not org_id:
         update_data["store_id"] = None
         update_data["store_ids"] = []
-    
-    result = await get_db().users.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": update_data}
-    )
-    
+    result = await get_db().users.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
-    
     return {"message": "User organization updated", "organization_id": org_id, "role": role}
 
 
-@router.put("/hierarchy/users/{user_id}/assign-store", dependencies=[Depends(require_user_access("store_manager"))])
-async def assign_user_to_store(user_id: str, data: dict):
-    """Add a user to a store (supports multi-store assignment)"""
+@router.put("/hierarchy/users/{user_id}/assign-store")
+async def assign_user_to_store(user_id: str, data: dict, me: dict = Depends(require_hierarchy_admin("store_manager"))):
+    """Add a user to a store the caller manages (multi-store supported); the store must belong to the user's organization."""
     store_id = data.get("store_id")
-    
     if not store_id:
         raise HTTPException(status_code=400, detail="store_id is required")
-    
-    # Validate store exists
-    store = await get_db().stores.find_one({"_id": ObjectId(store_id)})
+    store = await get_db().stores.find_one({"_id": ObjectId(store_id)}) if ObjectId.is_valid(str(store_id)) else None
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
-    
-    # Get user
+    await assert_in_scope(me, store_id=store_id)
     user = await get_db().users.find_one({"_id": ObjectId(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    # Auto-assign to org if not already assigned
+    store_org = str(store.get("organization_id") or "")
+    if user.get("organization_id") and store_org and str(user["organization_id"]) != store_org:
+        raise HTTPException(status_code=403, detail="That store belongs to another organization")
+
     org_update = {}
-    if not user.get("organization_id") and store.get("organization_id"):
-        org_update["organization_id"] = store["organization_id"]
-    
-    # Add to store_ids array (and set store_id for backward compatibility)
+    if not user.get("organization_id") and store_org:
+        org_update["organization_id"] = store_org
     current_stores = user.get("store_ids", [])
     if store_id not in current_stores:
         current_stores.append(store_id)
-    
-    result = await get_db().users.update_one(
+    await get_db().users.update_one(
         {"_id": ObjectId(user_id)},
-        {"$set": {
-            "store_id": current_stores[0] if current_stores else None,  # Primary store
-            "store_ids": current_stores,
-            "updated_at": datetime.utcnow(),
-            **org_update
-        }}
+        {"$set": {"store_id": current_stores[0] if current_stores else None, "store_ids": current_stores, "updated_at": datetime.utcnow(), **org_update}},
     )
-    
     return {"message": "User added to store", "store_ids": current_stores}
 
 
-@router.put("/hierarchy/users/{user_id}/remove-store", dependencies=[Depends(require_user_access("store_manager"))])
-async def remove_user_from_store(user_id: str, data: dict):
-    """Remove a user from a store"""
+@router.put("/hierarchy/users/{user_id}/remove-store")
+async def remove_user_from_store(user_id: str, data: dict, me: dict = Depends(require_hierarchy_admin("store_manager"))):
+    """Remove a user from a store the caller manages."""
     store_id = data.get("store_id")
-    
     if not store_id:
         raise HTTPException(status_code=400, detail="store_id is required")
-    
+    await assert_in_scope(me, store_id=store_id)
     user = await get_db().users.find_one({"_id": ObjectId(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
     current_stores = user.get("store_ids", [])
     if store_id in current_stores:
         current_stores.remove(store_id)
-    
-    # Update store_id (primary) if it was removed
     new_primary = current_stores[0] if current_stores else None
-    if user.get("store_id") == store_id:
-        new_primary = current_stores[0] if current_stores else None
-    
-    result = await get_db().users.update_one(
+    await get_db().users.update_one(
         {"_id": ObjectId(user_id)},
-        {"$set": {
-            "store_id": new_primary,
-            "store_ids": current_stores,
-            "updated_at": datetime.utcnow()
-        }}
+        {"$set": {"store_id": new_primary, "store_ids": current_stores, "updated_at": datetime.utcnow()}},
     )
-    
     return {"message": "User removed from store", "store_ids": current_stores}
 
 
 @router.put("/hierarchy/users/{user_id}/role")
-async def update_user_role(user_id: str, data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
-    """Update a user's role"""
-    requesting = await get_requesting_user(x_user_id)
-    if not requesting:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    req_role = requesting.get("role", "user")
-    if req_role not in ("super_admin", "org_admin", "store_manager"):
-        raise HTTPException(status_code=403, detail="Only admins can change user roles")
-
+async def update_user_role(user_id: str, data: dict, me: dict = Depends(require_hierarchy_admin("store_manager"))):
+    """Update a user's role: strictly below the caller's own, never your own."""
     role = data.get("role")
-    valid_roles = ["user", "account_manager", "store_manager", "org_admin", "super_admin"]
-    if not role or role not in valid_roles:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}")
-
-    # Only a super_admin can promote someone to super_admin
-    if role == "super_admin" and req_role != "super_admin":
-        raise HTTPException(status_code=403, detail="Only a Super Admin can promote someone to Super Admin")
-
+    if not role or role not in VALID_ROLES:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(VALID_ROLES)}")
+    assert_role_grant(me, role)
     db = get_db()
     target = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 1})
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
-
-    await db.users.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": {"role": role, "role_updated_at": datetime.utcnow()}}
-    )
+    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"role": role, "role_updated_at": datetime.utcnow()}})
     return {"status": "ok", "role": role}
 
 
 # ============= DATA ENDPOINTS =============
 
 
-@router.put("/hierarchy/users/{user_id}/change-organization", dependencies=[Depends(require_user_access("org_admin"))])
-async def change_user_organization(user_id: str, data: dict):
-    """Move a user to a different organization"""
+@router.put("/hierarchy/users/{user_id}/change-organization")
+async def change_user_organization(user_id: str, data: dict, me: dict = Depends(require_hierarchy_admin("org_admin"))):
+    """Move a user to a different organization the caller administers (store assignments are cleared)."""
     db = get_db()
     new_org_id = data.get("organization_id")
-    
     if not new_org_id:
         raise HTTPException(status_code=400, detail="organization_id is required")
-    
-    # Verify the organization exists
-    org = await db.organizations.find_one({"_id": ObjectId(new_org_id)})
+    org = await db.organizations.find_one({"_id": ObjectId(new_org_id)}) if ObjectId.is_valid(str(new_org_id)) else None
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
-    
-    # Get the user
+    await assert_in_scope(me, org_id=new_org_id)
     user = await db.users.find_one({"_id": ObjectId(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    # Update the user - clear store assignments since they're moving to a new org
-    result = await db.users.update_one(
+    await db.users.update_one(
         {"_id": ObjectId(user_id)},
-        {"$set": {
-            "organization_id": new_org_id,
-            "store_id": None,
-            "store_ids": [],
-            "updated_at": datetime.utcnow()
-        }}
+        {"$set": {"organization_id": new_org_id, "store_id": None, "store_ids": [], "updated_at": datetime.utcnow()}},
     )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {
-        "message": f"User moved to {org.get('name', 'new organization')}",
-        "organization_id": new_org_id,
-        "organization_name": org.get('name')
-    }
+    return {"message": f"User moved to {org.get('name', 'new organization')}", "organization_id": new_org_id, "organization_name": org.get('name')}
 
 
 @router.get("/roles")

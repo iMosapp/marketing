@@ -43,6 +43,15 @@ async def create_call_log(user_id: str, call_data: CallCreate):
     
     return Call(**call_dict)
 
+@router.get("/recording-token")
+async def recording_token(request: Request):
+    """Short-lived token the app appends as ?t= when a player fetches a recording or proxied media by URL."""
+    from routers.rbac import get_current_user
+    from services import media_tokens
+    me = await get_current_user(request)
+    return {"token": media_tokens.mint(str(me["_id"])), "expires_in": media_tokens.TTL_SECONDS}
+
+
 @router.get("/{user_id}")
 async def get_call_logs(user_id: str, call_type: Optional[str] = None):
     """Get call logs with role-based access"""
@@ -393,18 +402,38 @@ async def retry_transcription(call_sid: str, x_user_id: str = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+async def _listener(request: Request, t: str) -> dict:
+    """Who is asking for audio: a Bearer session, or a media token minted for a signed-in user."""
+    from routers.rbac import get_current_user
+    from services import media_tokens
+    if request.headers.get("authorization", "").lower().startswith("bearer "):
+        return await get_current_user(request)
+    uid = media_tokens.verify(t)
+    user = await get_db().users.find_one({"_id": ObjectId(uid)}) if uid and ObjectId.is_valid(uid) else None
+    if not user:
+        raise HTTPException(status_code=401, detail="Media token required")
+    return user
+
+
 @router.get("/recording/{call_sid}")
-async def stream_recording(call_sid: str, request: Request):
-    """Stream a call recording through the backend (Twilio auth server-side).
-    Supports HTTP Range so iOS/web players can seek and change speed smoothly."""
+async def stream_recording(call_sid: str, request: Request, t: str = ""):
+    """Stream a call recording through the backend (Twilio auth server-side) for someone allowed to hear it: the rep on
+    the call, a manager scoped to that rep, or a super admin. Supports HTTP Range so iOS/web players can seek."""
     import os as _os
     import re as _re
     import httpx as _httpx
 
     db = get_db()
-    log = await db.call_logs.find_one({"call_sid": call_sid}, {"recording_url": 1, "recording_sid": 1})
+    me = await _listener(request, t)
+    log = await db.call_logs.find_one({"call_sid": call_sid}, {"recording_url": 1, "recording_sid": 1, "user_id": 1, "rep_user_id": 1})
     if not log or not log.get("recording_url"):
         raise HTTPException(status_code=404, detail="Recording not found")
+    owner = str(log.get("user_id") or log.get("rep_user_id") or "")
+    if me.get("role") != "super_admin":
+        uid = (await get_data_filter(str(me["_id"]))).get("user_id")
+        allowed = {str(a) for a in uid["$in"]} if isinstance(uid, dict) else {str(uid)}
+        if owner not in allowed:
+            raise HTTPException(status_code=404, detail="Recording not found")
 
     tw_sid = _os.environ.get("TWILIO_ACCOUNT_SID")
     tw_token = _os.environ.get("TWILIO_AUTH_TOKEN")

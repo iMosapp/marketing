@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "https://app.imonsocial.com").rstrip("/")
-EXPECTED_BUILD = sys.argv[2] if len(sys.argv) > 2 else "2026-10-14.security-hotfix4"
+EXPECTED_BUILD = sys.argv[2] if len(sys.argv) > 2 else "2026-10-14.security-hotfix4b"
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Content-Type": "application/json"}
 ZERO = "0" * 24
 
@@ -78,10 +78,25 @@ CHECKS = [
     ("POST", "/api/webhooks/twilio/trusthub-status", {}, None, {403}),
     ("POST", "/api/messages/webhook/inbound", {}, None, {403}),
     ("POST", "/api/webhooks/dialer/rep/status", {}, None, {403}),
-    ("GET", "/api/webhooks/twilio/media-proxy?url=https%3A%2F%2Fexample.com%2Fx", None, None, {400}),
+    ("GET", "/api/webhooks/twilio/media-proxy?url=https%3A%2F%2Fexample.com%2Fx", None, None, {401}),  # media token first
     ("POST", "/api/webhooks/resend/inbound", {}, None, {401, 503}),
     ("POST", f"/api/card/save/{ZERO}", {"contact_id": ZERO, "campaign_id": ZERO}, None, {404}),
     ("PUT", f"/api/admin/users/{ZERO}", {}, None, {401}),
+    # hotfix 4b
+    ("PUT", f"/api/admin/hierarchy/users/{ZERO}/assign-org", {}, None, {401}),
+    ("PUT", f"/api/admin/hierarchy/users/{ZERO}/assign-store", {}, None, {401}),
+    ("PUT", f"/api/admin/hierarchy/users/{ZERO}/change-organization", {}, None, {401}),
+    ("PUT", f"/api/admin/hierarchy/users/{ZERO}/role", {}, None, {401}),
+    ("POST", "/api/partners/portal/assign-org", {}, None, {401}),
+    ("GET", f"/api/partners/portal/orgs/{ZERO}/users", None, None, {401}),
+    ("GET", "/api/calls/recording/CA0", None, None, {401}),
+    ("GET", "/api/calls/recording-token", None, None, {401}),
+    ("GET", f"/api/calendar/oauth/login/{ZERO}", None, None, {401}),
+    ("GET", "/api/calendar/oauth/callback?code=x&state=" + ZERO, None, None, {400}),
+    ("POST", "/api/webhooks/twilio/lead-call/status", {}, None, {403}),
+    ("POST", "/api/stripe/webhook", {}, None, {400, 503}),
+    ("POST", f"/api/admin/team/shared-inboxes/{ZERO}/webhook", {}, None, {401, 404}),
+    ("POST", "/api/webhooks/inventory/update", {}, None, {401}),
     # public surface must stay open
     ("GET", "/api/health", None, None, {200}),
     ("GET", "/api/legal/terms", None, None, {200}),

@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import api from '../services/api';
 
@@ -23,6 +24,7 @@ type S = {
   retry: () => Promise<void>;
   discard: () => Promise<void>;
   abandon: () => Promise<void>;
+  restorePending: (userId: string) => Promise<void>;
   dismissResult: () => void;
   clearError: () => void;
 };
@@ -30,6 +32,7 @@ type S = {
 export const MAX_SECONDS = 45 * 60;
 const MIN_SECONDS = 5;
 const PIECE = 500_000;
+const PENDING_KEY = 'recording.pending.';
 
 let rec: any = null;
 let timer: any = null;
@@ -136,13 +139,28 @@ export const useRecordingStore = create<S>((set, get) => ({
     if (f) dropFile(f.uri);
   },
 
-  // Logout / account switch: nothing of this person's recording may survive, and the mic must be free.
+  // Logout / account switch (including a forced 401 logout mid-conversation): free the mic, keep the audio on this phone
+  // under the owner's id, and show nothing to the next person. The owner gets Retry / Discard back when they sign in again.
   abandon: async () => {
-    const f = get().failed;
+    const { failed, session, recording } = get();
     const uri = await releaseMic();
-    if (uri) dropFile(uri);
-    if (f) dropFile(f.uri);
     set({ session: null, recording: false, seconds: 0, saving: null, result: null, failed: null, lastSaved: null, error: null });
+    const keep: FailedUpload | null = uri && session && recording
+      ? { uri, duration: Math.min(MAX_SECONDS, Math.floor((Date.now() - session.startedAt) / 1000)), session, reason: 'You were signed out before it could be saved' }
+      : failed;
+    if (!keep) { if (uri) dropFile(uri); return; }
+    if (Platform.OS === 'web' || keep.duration < MIN_SECONDS) { dropFile(keep.uri); return; }  // blob URLs do not survive a reload
+    try { await AsyncStorage.setItem(`${PENDING_KEY}${keep.session.userId}`, JSON.stringify(keep)); } catch { dropFile(keep.uri); }
+  },
+
+  restorePending: async (userId) => {
+    try {
+      const raw = await AsyncStorage.getItem(`${PENDING_KEY}${userId}`);
+      if (!raw) return;
+      await AsyncStorage.removeItem(`${PENDING_KEY}${userId}`);
+      const keep = JSON.parse(raw) as FailedUpload;
+      if (keep?.uri && keep.session?.userId === userId && !get().recording && !get().saving && !get().failed) set({ failed: keep });
+    } catch { /* nothing to restore */ }
   },
 
   dismissResult: () => set({ result: null }),

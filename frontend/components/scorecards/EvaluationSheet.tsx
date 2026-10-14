@@ -10,6 +10,7 @@ import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { ScoreRing } from './ScoreRing';
 import { CriteriaChecklist } from './CriteriaChecklist';
 import { GOLD, GREEN, RED, AMBER, tid, fmtDur, fmtWhen, passedCount, type Evaluation, type Scorecard } from './shared';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
 type Props = {
   visible: boolean; onClose: () => void;
@@ -176,7 +177,7 @@ export const EvaluationSheet = ({ visible, onClose, evaluationId, callSid, hasRe
 
                 {hasRecording && sid && (
                   <View><H t="RECORDING" /><View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 10 }}>
-                    <CallRecordingPlayer url={`${api.defaults.baseURL}/calls/recording/${sid}`} tint={GOLD} textColor={colors.text} subColor={colors.textSecondary} trackColor={colors.border} />
+                    <CallRecordingPlayer url={resolvePhotoUrl(`${api.defaults.baseURL}/calls/recording/${sid}`)!} tint={GOLD} textColor={colors.text} subColor={colors.textSecondary} trackColor={colors.border} />
                   </View></View>
                 )}
 

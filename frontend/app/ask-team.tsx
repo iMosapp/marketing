@@ -9,6 +9,7 @@ import { useToast } from '../components/common/Toast';
 import { ScreenHeader } from '../components/common/ScreenHeader';
 import { CallRecordingPlayer } from '../components/CallRecordingPlayer';
 import { AnswerText, type Citation } from '../components/ask/AnswerText';
+import { resolvePhotoUrl } from '../utils/photoUrl';
 
 const GOLD = '#C9A962';
 const DAYS = [7, 14, 30];
@@ -90,7 +91,7 @@ export default function AskTeam() {
   const onCite = (c: Citation) => {
     if (c.kind === 'thread' && c.conversation_id) { router.push(`/thread/${c.conversation_id}` as any); return; }
     if (c.kind === 'call') {
-      if (c.has_recording && c.call_sid) { setPlayer({ url: `${api.defaults.baseURL}/calls/recording/${c.call_sid}`, label: c.label }); return; }
+      if (c.has_recording && c.call_sid) { setPlayer({ url: resolvePhotoUrl(`${api.defaults.baseURL}/calls/recording/${c.call_sid}`)!, label: c.label }); return; }
       if (c.conversation_id) { router.push(`/thread/${c.conversation_id}` as any); return; }
     }
     showToast(c.snippet ? `${c.label}: ${c.snippet}` : c.label, 'info');

@@ -21,6 +21,7 @@ from routers.admin_helpers import (
 from routers.rbac import (
     get_scoped_store_ids,
     get_scoped_organization_ids,
+    assert_recovery_editable,
     verify_user_access,
     require_role,
     require_store_access,
@@ -617,6 +618,7 @@ async def update_admin_user(
         # Role grants stay strictly below the caller: a store manager can't make managers, an org admin can't make org admins.
         if 'role' in user_data and RANK.get(user_data.get('role') or "", 99) >= RANK.get(my_role or "user", 1):
             raise HTTPException(status_code=403, detail="You can only grant roles below your own")
+        await assert_recovery_editable(requesting_user, user_id, user_data.keys())
         if 'organization_id' in user_data and str(user_data.get('organization_id') or "") not in {str(o) for o in await get_scoped_organization_ids(requesting_user)}:
             raise HTTPException(status_code=403, detail="Access denied to this organization")
         if 'store_id' in user_data and str(user_data.get('store_id') or "") not in {str(s) for s in await get_scoped_store_ids(requesting_user)}:

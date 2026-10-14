@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { API_BASE_URL } from '../../services/api';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
 const URL_RE = /(https?:\/\/[^\s<>"')\]]+)/g;
 const openUrl = (url: string) => { if (Platform.OS === 'web') window.open(url, '_blank'); else Linking.openURL(url); };
@@ -174,6 +175,7 @@ export const MessageBubble = ({
                   ? url
                   : url ? `https://app.imonsocial.com${url.startsWith('/') ? '' : '/'}${url}` : '';
                 if (!absUrl) return null;
+                const mediaUrl = resolvePhotoUrl(absUrl) || absUrl;
 
                 // Contact card (.vcf) — render a contact-card tile instead of an image
                 const lower = absUrl.toLowerCase();
@@ -185,8 +187,8 @@ export const MessageBubble = ({
                       activeOpacity={0.9}
                       data-testid="vcard-media-tile"
                       onPress={() => {
-                        if (Platform.OS === 'web') { window.open(absUrl, '_blank'); }
-                        else { Linking.openURL(absUrl); }
+                        if (Platform.OS === 'web') { window.open(mediaUrl, '_blank'); }
+                        else { Linking.openURL(mediaUrl); }
                       }}
                       style={styles.vcardTile}
                     >
@@ -211,18 +213,18 @@ export const MessageBubble = ({
                     key={mediaIdx}
                     activeOpacity={0.9}
                     onPress={() => {
-                      if (Platform.OS === 'web') { window.open(absUrl, '_blank'); }
-                      else { Linking.openURL(absUrl); }
+                      if (Platform.OS === 'web') { window.open(mediaUrl, '_blank'); }
+                      else { Linking.openURL(mediaUrl); }
                     }}
                   >
                     <View style={styles.mediaImageWrapper}>
                       <Image
-                        source={{ uri: absUrl }}
+                        source={{ uri: mediaUrl }}
                         style={styles.mediaImage}
                         contentFit="cover"
                         cachePolicy="none"
                         transition={300}
-                        onError={(e) => console.log('[Media] Load error:', absUrl, e)}
+                        onError={(e) => console.log('[Media] Load error:', mediaUrl, e)}
                       />
                     </View>
                   </TouchableOpacity>

@@ -2,7 +2,7 @@
 Authentication router - handles login, signup, forgot password
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
-from routers.rbac import require_user_access
+from routers.rbac import require_user_access, assert_recovery_editable
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -1591,6 +1591,7 @@ async def update_user(user_id: str, user_data: dict, me: dict = Depends(require_
     """Update user profile — the caller themselves, or a manager scoped to that user."""
     allowed_fields = ['name', 'phone', 'persona', 'settings', 'timezone']
     update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}
+    await assert_recovery_editable(me, user_id, update_dict.keys())
     
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
@@ -1615,6 +1616,7 @@ async def patch_user(user_id: str, user_data: dict, me: dict = Depends(require_u
 
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
+    await assert_recovery_editable(me, user_id, update_dict.keys())
 
     # Email uniqueness check
     if 'email' in update_dict:

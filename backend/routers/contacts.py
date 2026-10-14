@@ -863,13 +863,16 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
         low = photo_url.lower()
         if "media-proxy" in low or "api.twilio.com" in low:
             import httpx as _httpx, os as _os, urllib.parse as _urllib
-            fetch_url = photo_url
-            # For raw twilio URLs, route through our proxy so auth is applied
-            if "api.twilio.com" in low and "media-proxy" not in low:
-                _public = _os.environ.get("PUBLIC_FACING_URL", _os.environ.get("APP_URL", "https://app.imonsocial.com"))
-                fetch_url = f"{_public}/api/webhooks/twilio/media-proxy?url={_urllib.quote(photo_url, safe='')}"
+            from routers.twilio_webhooks import allowed_media_url
+            # Proxied URLs carry the real Twilio URL in ?url=; fetch Twilio directly with our credentials (allowlisted path only)
+            raw_twilio = photo_url
+            if "media-proxy" in low:
+                raw_twilio = _urllib.parse_qs(_urllib.urlsplit(photo_url).query).get("url", [""])[0]
+            fetch_url = allowed_media_url(_urllib.unquote(raw_twilio))
+            if not fetch_url:
+                raise HTTPException(status_code=400, detail="Unsupported photo source")
             async with _httpx.AsyncClient(timeout=25.0, follow_redirects=True) as _client:
-                _resp = await _client.get(fetch_url)
+                _resp = await _client.get(fetch_url, auth=(_os.environ.get("TWILIO_ACCOUNT_SID", ""), _os.environ.get("TWILIO_AUTH_TOKEN", "")))
             if _resp.status_code == 200 and _resp.content:
                 import base64 as _b64
                 _ctype = _resp.headers.get("content-type", "image/jpeg")

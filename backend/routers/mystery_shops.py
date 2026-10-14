@@ -2046,8 +2046,11 @@ async def stripe_webhook(request: Request):
     import stripe
     payload = await request.body()
     secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    if not secret:
+        logging.getLogger(__name__).error("[StripeWebhook] STRIPE_WEBHOOK_SECRET is not set: refusing unsigned events until it is")
+        raise HTTPException(status_code=503, detail="Stripe webhook not configured")
     try:
-        event = stripe.Webhook.construct_event(payload, request.headers.get("stripe-signature", ""), secret) if secret else stripe.Event.construct_from(__import__("json").loads(payload), stripe.api_key)
+        event = stripe.Webhook.construct_event(payload, request.headers.get("stripe-signature", ""), secret)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid signature")
     obj, kind = event["data"]["object"], event["type"]

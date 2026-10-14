@@ -4,6 +4,7 @@ Twilio Webhooks Router - Handle incoming SMS/MMS messages
 import asyncio
 import json
 import secrets
+import urllib.parse
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response
 from bson import ObjectId
@@ -74,41 +75,73 @@ async def download_and_store_media(media_url: str, media_type: str) -> Optional[
     return f"{public_url}/api/webhooks/twilio/media-proxy?url={encoded}"
 
 
-@router.get("/media-proxy")
-async def proxy_twilio_media(url: str):
-    """
-    Proxy endpoint for Twilio media — fetches with Twilio auth and returns to client.
-    This lets the app display inbound MMS photos without needing Twilio credentials client-side.
-    """
-    import urllib.parse
-    twilio_sid   = os.environ.get("TWILIO_ACCOUNT_SID")
-    twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
-    if not twilio_sid or not twilio_token:
-        raise HTTPException(status_code=500, detail="Twilio credentials not configured")
-    decoded_url = urllib.parse.unquote(url)
-    host = (urllib.parse.urlsplit(decoded_url).hostname or "").lower()
-    if not decoded_url.startswith("https://") or not (host == "twilio.com" or host.endswith(".twilio.com") or host.endswith(".twiliocdn.com")):
-        raise HTTPException(status_code=400, detail="Only Twilio media can be proxied")
+# Exactly the two Twilio resources the app ever needs to play back: an MMS media body or a call recording.
+_TWILIO_MEDIA_PATH = re.compile(
+    r"^/2010-04-01/Accounts/AC[0-9a-fA-F]{32}/(Messages/[MS]M[0-9a-fA-F]{32}/Media/ME[0-9a-fA-F]{32}|Recordings/RE[0-9a-fA-F]{32})(\.(mp3|wav|json))?$"
+)
+_TWILIO_CDN_HOSTS = ("media.twiliocdn.com",)
+
+
+def allowed_media_url(raw: str) -> str | None:
+    """The canonical https://api.twilio.com/... URL when `raw` names a permitted media/recording resource, else None.
+    Rejects other hosts, look-alike hosts, userinfo tricks, ports, query strings, fragments, dot segments and encodings."""
+    if not raw or len(raw) > 400 or any(ch in raw for ch in ("\\", "#", "?", "@", " ")):
+        return None
     try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                decoded_url,
-                auth=(twilio_sid, twilio_token),
-                follow_redirects=True,
-                timeout=20.0,
-            )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail="Media fetch failed")
-        content_type = resp.headers.get("content-type", "image/jpeg")
-        from fastapi.responses import Response as FastAPIResponse
-        return FastAPIResponse(
-            content=resp.content,
-            media_type=content_type,
-            headers={"Cache-Control": "public, max-age=86400"},
-        )
+        parts = urllib.parse.urlsplit(raw)
+    except ValueError:
+        return None
+    if parts.scheme.lower() != "https" or parts.netloc.lower() != "api.twilio.com" or parts.username or parts.password or parts.port:
+        return None
+    path = parts.path
+    if "%" in path or ".." in path or "//" in path or not _TWILIO_MEDIA_PATH.match(path):
+        return None
+    return "https://api.twilio.com" + path
+
+
+def allowed_redirect(location: str) -> bool:
+    """Twilio answers media fetches with a 307 to a pre-signed media.twiliocdn.com URL; nothing else may be followed."""
+    try:
+        parts = urllib.parse.urlsplit(location)
+    except ValueError:
+        return False
+    return parts.scheme.lower() == "https" and (parts.hostname or "").lower() in _TWILIO_CDN_HOSTS and not parts.username and not parts.port
+
+
+@router.get("/media-proxy")
+async def proxy_twilio_media(url: str, t: str = ""):
+    """Stream one Twilio media/recording resource for a signed-in user. The URL is validated against an exact allowlist,
+    account credentials only ever go to api.twilio.com, and redirects are followed only to Twilio's media CDN (without
+    credentials). `t` is a short-lived media token minted for the signed-in user (GET /api/calls/recording-token)."""
+    from services import media_tokens
+    if not media_tokens.verify(t):
+        raise HTTPException(status_code=401, detail="Media token required")
+    target = allowed_media_url(url or "")  # FastAPI already decoded the query value once; never decode again
+    if not target:
+        raise HTTPException(status_code=400, detail="Only Twilio message media and call recordings can be proxied")
+    twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    twilio_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    if not twilio_sid or not twilio_token:
+        raise HTTPException(status_code=503, detail="Twilio not configured")
+    try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=False) as client:
+            resp = await client.get(target, auth=(twilio_sid, twilio_token))
+            hops = 0
+            while resp.status_code in (301, 302, 303, 307, 308) and hops < 2:
+                location = resp.headers.get("location", "")
+                if not allowed_redirect(location):
+                    raise HTTPException(status_code=502, detail="Unexpected redirect from Twilio")
+                resp = await client.get(location)  # pre-signed CDN URL: no credentials
+                hops += 1
+            if resp.status_code != 200:
+                raise HTTPException(status_code=404 if resp.status_code in (401, 403, 404) else 502, detail="Media not available")
+            return Response(content=resp.content, media_type=resp.headers.get("content-type", "application/octet-stream"),
+                            headers={"Cache-Control": "private, max-age=3600"})
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"[MediaProxy] Error: {e}")
-        raise HTTPException(status_code=500, detail="Media proxy error")
+        logger.error(f"Media proxy error: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch media")
 
 
 def _xml_escape(s: str) -> str:

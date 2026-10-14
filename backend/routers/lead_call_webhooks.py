@@ -4,13 +4,14 @@ URLs carry job id + per-job secret token so they can't be spoofed.
 """
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Request, Response, Form
+from fastapi import APIRouter, Depends, Request, Response, Form
 from bson import ObjectId
 
 from routers.database import get_db
 from services import lead_call_engine as eng
+from services.twilio_signature import require_signed_callback
 
-router = APIRouter(prefix="/webhooks/twilio/lead-call", tags=["Lead Call Engine"])
+router = APIRouter(prefix="/webhooks/twilio/lead-call", tags=["Lead Call Engine"], dependencies=[Depends(require_signed_callback)])
 logger = logging.getLogger(__name__)
 
 

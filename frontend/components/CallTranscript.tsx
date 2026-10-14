@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { CallRecordingPlayer } from './CallRecordingPlayer';
 import api from '../services/api';
+import { resolvePhotoUrl } from '../utils/photoUrl';
 
 type Props = {
   call: any;
@@ -19,9 +20,9 @@ export const CallTranscript = ({ call, colors, isInbound = false }: Props) => {
   const canSync = hasRecording && segs.length > 0 && segs.some((s: any) => s.start != null);
 
   const recUrl = hasRecording
-    ? (call.call_sid
+    ? (resolvePhotoUrl(call.call_sid
         ? `${api.defaults.baseURL}/calls/recording/${call.call_sid}`
-        : `${api.defaults.baseURL}/webhooks/twilio/media-proxy?url=${encodeURIComponent(call.recording_url)}`)
+        : `${api.defaults.baseURL}/webhooks/twilio/media-proxy?url=${encodeURIComponent(call.recording_url)}`) || '')
     : '';
 
   // The segment currently being spoken

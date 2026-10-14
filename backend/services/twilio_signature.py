@@ -7,6 +7,7 @@ import os
 from typing import Optional
 
 from fastapi import HTTPException, Request
+from starlette.requests import HTTPConnection
 from fastapi.responses import Response
 
 from services import twilio_tenant as tenant
@@ -83,11 +84,13 @@ def is_app_route(path: str) -> bool:
     return tail in APP_ROUTES or tail.startswith(APP_ROUTE_PREFIXES)
 
 
-async def require_signed_callback(request: Request) -> None:
+async def require_signed_callback(conn: HTTPConnection) -> None:
     """Router dependency: every POST Twilio callback must carry a valid signature before its handler runs.
-    GET fetches (TwiML <Play> media, greeting mp3, media proxy) and the app's own session routes are not Twilio callbacks."""
-    if request.method != "POST" or is_app_route(request.url.path):
+    WebSocket upgrades (Media Streams are not signed by Twilio; they carry a per-call token in the path), GET fetches
+    (TwiML <Play> media, greeting mp3, media proxy) and the app's own session routes are not Twilio callbacks."""
+    if conn.scope.get("type") != "http" or conn.scope.get("method") != "POST" or is_app_route(conn.url.path):
         return
+    request: Request = conn  # type: ignore[assignment]  # FastAPI hands the live Request object for http scopes
     from routers.database import get_db
     form = dict(await request.form())
     blocked = await guard(request, form, get_db(), request.url.path.split("/webhooks/twilio", 1)[-1].strip("/") or "root")

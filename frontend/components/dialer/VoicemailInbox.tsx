@@ -7,6 +7,7 @@ import { showAlert } from '../../services/alert';
 import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { GOLD, tid } from '../ui/tokens';
 import { GreetingCard } from './GreetingSheet';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
 type Line = { phone: string; display: string; label: string; unheard: number; total: number };
 export type Voicemail = {
@@ -123,7 +124,7 @@ export const VoicemailInbox = ({ user, colors, active, onCall, onUnheard }: {
                 <View style={{ paddingBottom: 14, gap: 12 }} {...tid(`voicemail-detail-${i}`)}>
                   {!missed ? (
                     <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 12 }}>
-                      {v.play_url ? <CallRecordingPlayer url={v.play_url} tint={GOLD} textColor={colors.text} subColor={colors.textSecondary} trackColor={colors.border} /> : null}
+                      {v.play_url ? <CallRecordingPlayer url={resolvePhotoUrl(v.play_url)!} tint={GOLD} textColor={colors.text} subColor={colors.textSecondary} trackColor={colors.border} /> : null}
                       <Text style={{ fontSize: 15, lineHeight: 22, color: v.transcript ? colors.text : colors.textSecondary, marginTop: 10, fontStyle: v.transcript ? 'normal' : 'italic' }} {...tid(`voicemail-transcript-${i}`)}>
                         {v.transcript || (v.transcript_status === 'pending' ? 'Transcribing…' : 'No transcript for this one. Tap play to listen.')}
                       </Text>

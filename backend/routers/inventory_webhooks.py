@@ -112,6 +112,28 @@ def serialize_item(item: dict) -> dict:
     return item
 
 
+def tenant_scope(auth: dict) -> dict:
+    """Mongo filter for the tenant behind the API key: an organization key sees its organization, a store key its store."""
+    return {"organization_id": auth["id"]} if auth["type"] == "organization" else {"store_id": auth["id"]}
+
+
+async def stamp_tenant(db, auth: dict, data: dict) -> dict:
+    """Written items carry the key's tenant, never the body's. A store named by an organization key must be that org's."""
+    if auth["type"] == "organization":
+        data["organization_id"] = auth["id"]
+        sid = data.get("store_id")
+        if sid:
+            store = await db.stores.find_one({"_id": ObjectId(str(sid))}, {"organization_id": 1}) if ObjectId.is_valid(str(sid)) else None
+            if not store or str(store.get("organization_id") or "") != auth["id"]:
+                raise HTTPException(status_code=400, detail="store_id is not in your organization")
+    else:
+        data["store_id"] = auth["id"]
+        store = await db.stores.find_one({"_id": ObjectId(auth["id"])}, {"organization_id": 1}) if ObjectId.is_valid(auth["id"]) else None
+        if store and store.get("organization_id"):
+            data["organization_id"] = str(store["organization_id"])
+    return data
+
+
 # ============= WEBHOOK ENDPOINTS =============
 
 @router.post("/add")
@@ -145,15 +167,16 @@ async def webhook_inventory_add(
     }
     """
     db = get_db()
+    scope = tenant_scope(_auth)
     
-    # Check if item exists
-    existing = await db.inventory.find_one({"external_id": item.external_id})
+    # Check if item exists (inside this tenant only)
+    existing = await db.inventory.find_one({"external_id": item.external_id, **scope})
     
     now = datetime.utcnow()
     
     if existing:
         # Update existing item
-        update_data = item.model_dump(exclude_unset=True)
+        update_data = await stamp_tenant(db, _auth, item.model_dump(exclude_unset=True))
         update_data["updated_at"] = now
         
         await db.inventory.update_one(
@@ -170,7 +193,7 @@ async def webhook_inventory_add(
         }
     else:
         # Create new item
-        new_item = item.model_dump()
+        new_item = await stamp_tenant(db, _auth, item.model_dump())
         new_item["created_at"] = now
         new_item["updated_at"] = now
         new_item["created_via"] = "webhook"
@@ -205,8 +228,8 @@ async def webhook_inventory_update(
     """
     db = get_db()
     
-    # Find existing item
-    existing = await db.inventory.find_one({"external_id": item.external_id})
+    # Find existing item (inside this tenant only)
+    existing = await db.inventory.find_one({"external_id": item.external_id, **tenant_scope(_auth)})
     
     if not existing:
         raise HTTPException(
@@ -214,8 +237,8 @@ async def webhook_inventory_update(
             detail=f"Inventory item with external_id '{item.external_id}' not found"
         )
     
-    # Build update dict with only provided fields
-    update_data = item.model_dump(exclude_unset=True, exclude={"external_id"})
+    # Build update dict with only provided fields (tenant fields come from the key)
+    update_data = await stamp_tenant(db, _auth, item.model_dump(exclude_unset=True, exclude={"external_id"}))
     update_data["updated_at"] = datetime.utcnow()
     
     # Track status changes
@@ -268,7 +291,7 @@ async def webhook_inventory_delete(
     """
     db = get_db()
     
-    existing = await db.inventory.find_one({"external_id": item.external_id})
+    existing = await db.inventory.find_one({"external_id": item.external_id, **tenant_scope(_auth)})
     
     if not existing:
         return {
@@ -314,7 +337,7 @@ async def webhook_inventory_delete(
 @router.post("/bulk")
 async def webhook_inventory_bulk(
     request: Request,
-    x_api_key: str = Header(None, alias="X-API-Key")
+    _auth: dict = Depends(verify_api_key),
 ):
     """
     Bulk operations for inventory items.
@@ -329,8 +352,8 @@ async def webhook_inventory_bulk(
         ]
     }
     """
-    await verify_api_key(x_api_key)
     db = get_db()
+    scope = tenant_scope(_auth)
     
     body = await request.json()
     operations = body.get("operations", [])
@@ -352,16 +375,16 @@ async def webhook_inventory_bulk(
                 item_data = op.get("item", {})
                 item = InventoryItemCreate(**item_data)
                 
-                existing = await db.inventory.find_one({"external_id": item.external_id})
+                existing = await db.inventory.find_one({"external_id": item.external_id, **scope})
                 now = datetime.utcnow()
                 
                 if existing:
-                    update_data = item.model_dump(exclude_unset=True)
+                    update_data = await stamp_tenant(db, _auth, item.model_dump(exclude_unset=True))
                     update_data["updated_at"] = now
                     await db.inventory.update_one({"_id": existing["_id"]}, {"$set": update_data})
                     results["details"].append({"action": "add", "external_id": item.external_id, "result": "updated"})
                 else:
-                    new_item = item.model_dump()
+                    new_item = await stamp_tenant(db, _auth, item.model_dump())
                     new_item["created_at"] = now
                     new_item["updated_at"] = now
                     new_item["created_via"] = "webhook"
@@ -374,9 +397,9 @@ async def webhook_inventory_bulk(
                 item_data = op.get("item", {})
                 item = InventoryItemUpdate(**item_data)
                 
-                existing = await db.inventory.find_one({"external_id": item.external_id})
+                existing = await db.inventory.find_one({"external_id": item.external_id, **scope})
                 if existing:
-                    update_data = item.model_dump(exclude_unset=True, exclude={"external_id"})
+                    update_data = await stamp_tenant(db, _auth, item.model_dump(exclude_unset=True, exclude={"external_id"}))
                     update_data["updated_at"] = datetime.utcnow()
                     await db.inventory.update_one({"_id": existing["_id"]}, {"$set": update_data})
                     results["details"].append({"action": "update", "external_id": item.external_id, "result": "updated"})
@@ -387,7 +410,7 @@ async def webhook_inventory_bulk(
                     
             elif action == "delete":
                 external_id = op.get("external_id")
-                existing = await db.inventory.find_one({"external_id": external_id})
+                existing = await db.inventory.find_one({"external_id": external_id, **scope})
                 if existing:
                     await db.inventory.update_one(
                         {"_id": existing["_id"]},
@@ -427,16 +450,15 @@ async def list_inventory(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     include_hidden: bool = Query(False, description="Include hidden/archived items"),
-    x_api_key: str = Header(None, alias="X-API-Key")
+    _auth: dict = Depends(verify_api_key),
 ):
     """
-    List inventory items with filtering and pagination.
+    List inventory items with filtering and pagination (this tenant's items only).
     """
-    await verify_api_key(x_api_key)
     db = get_db()
     
     # Build query
-    query = {}
+    query = dict(tenant_scope(_auth))
     
     if not include_hidden:
         query["is_visible"] = {"$ne": False}
@@ -445,7 +467,7 @@ async def list_inventory(
         query["category"] = category
     if status:
         query["status"] = status
-    if store_id:
+    if store_id and _auth["type"] == "organization":
         query["store_id"] = store_id
     if tag:
         query["tags"] = tag
@@ -485,13 +507,12 @@ async def list_inventory(
 @router.get("/{external_id}")
 async def get_inventory_item(
     external_id: str,
-    x_api_key: str = Header(None, alias="X-API-Key")
+    _auth: dict = Depends(verify_api_key),
 ):
-    """Get a single inventory item by external_id"""
-    await verify_api_key(x_api_key)
+    """Get a single inventory item by external_id (this tenant's only)"""
     db = get_db()
     
-    item = await db.inventory.find_one({"external_id": external_id})
+    item = await db.inventory.find_one({"external_id": external_id, **tenant_scope(_auth)})
     
     if not item:
         raise HTTPException(status_code=404, detail="Inventory item not found")

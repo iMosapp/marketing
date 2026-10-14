@@ -1107,10 +1107,12 @@ async def receive_adf_lead(request: Request):
                 "_id": None, "store_id": None
             }
 
-    # Optional API key validation (skip if no key configured)
-    api_key = request.headers.get("X-API-Key")
-    if source.get("api_key") and api_key and api_key != source["api_key"]:
-        return PlainTextResponse("ERROR: Invalid API key", status_code=401)
+    # When the lead source has an API key, every post must carry it (omitting the header is not a bypass).
+    if source.get("api_key"):
+        import hmac as _hmac
+        api_key = request.headers.get("X-API-Key") or request.query_params.get("api_key") or ""
+        if not api_key or not _hmac.compare_digest(api_key, str(source["api_key"])):
+            return PlainTextResponse("ERROR: Invalid API key", status_code=401)
 
     if not normalized.get("source_name") and source.get("name"):
         normalized["source_name"] = source["name"]

@@ -10,6 +10,7 @@
  */
 
 import { Platform } from 'react-native';
+import { withMediaToken } from '../store/mediaTokenStore';
 
 const BACKEND_URL =
   Platform.OS === 'web'
@@ -23,9 +24,9 @@ const BACKEND_URL =
 export function resolvePhotoUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   if (url.startsWith('data:')) return url;           // base64 — pass through
-  if (url.startsWith('http://') || url.startsWith('https://')) return url; // absolute
-  if (url.startsWith('/')) return `${BACKEND_URL}${url}`; // relative path
-  return `${BACKEND_URL}/${url}`;                    // bare path — prepend base
+  if (url.startsWith('http://') || url.startsWith('https://')) return withMediaToken(url); // absolute
+  if (url.startsWith('/')) return withMediaToken(`${BACKEND_URL}${url}`); // relative path
+  return withMediaToken(`${BACKEND_URL}/${url}`);    // bare path — prepend base
 }
 
 /**

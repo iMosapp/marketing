@@ -1973,20 +1973,11 @@ async def get_user_agreement(user_id: str):
 
 # ============= PARTNER PORTAL ENDPOINTS =============
 
-@router.get("/portal/orgs")
-async def get_partner_orgs(request: Request):
-    """Get organizations managed by this partner (via partner_id or user's agreement)"""
-    db = get_db()
-    user_id = request.headers.get("X-User-ID")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Find orgs where this user is linked as a partner
-    # Option 1: User has a partner_agreement_id
+async def _portal_orgs_for(db, user_id: str) -> list:
+    """Organizations this signed-in partner manages: via their agreement, partner markers on the org, or their own org."""
     user = await db.users.find_one({"_id": ObjectId(user_id)}, {"partner_agreement_id": 1, "email": 1, "role": 1, "organization_id": 1})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
     orgs = []
     
     # Check if user has a partner agreement
@@ -2024,14 +2015,33 @@ async def get_partner_orgs(request: Request):
                     orgs.append(own_org)
         except Exception:
             pass  # Skip invalid ObjectIds
-    
     return orgs
 
 
+async def _portal_caller(request: Request) -> dict:
+    from routers.rbac import get_current_user
+    return await get_current_user(request)
+
+
+async def _assert_partner_manages(db, me: dict, org_id: str) -> None:
+    if me.get("role") == "super_admin":
+        return
+    if org_id not in {o.get("_id") for o in await _portal_orgs_for(db, str(me["_id"]))}:
+        raise HTTPException(status_code=403, detail="Access denied to this organization")
+
+
+@router.get("/portal/orgs")
+async def get_partner_orgs(request: Request):
+    """Get organizations managed by this partner (via partner_id or user's agreement)"""
+    me = await _portal_caller(request)
+    return await _portal_orgs_for(get_db(), str(me["_id"]))
+
+
 @router.get("/portal/orgs/{org_id}/stores")
-async def get_partner_org_stores(org_id: str):
+async def get_partner_org_stores(org_id: str, request: Request):
     """Get stores under an org that a partner manages"""
     db = get_db()
+    await _assert_partner_manages(db, await _portal_caller(request), org_id)
     stores = await db.stores.find({"organization_id": org_id}).to_list(200)
     for s in stores:
         s["_id"] = str(s["_id"])
@@ -2039,12 +2049,13 @@ async def get_partner_org_stores(org_id: str):
 
 
 @router.get("/portal/orgs/{org_id}/users")
-async def get_partner_org_users(org_id: str):
+async def get_partner_org_users(org_id: str, request: Request):
     """Get users under an org that a partner manages"""
     db = get_db()
+    await _assert_partner_manages(db, await _portal_caller(request), org_id)
     users = await db.users.find(
         {"organization_id": org_id},
-        {"password": 0}
+        {"password": 0, "password_hash": 0, "reset_token": 0, "refresh_tokens": 0}
     ).to_list(500)
     for u in users:
         u["_id"] = str(u["_id"])
@@ -2054,6 +2065,9 @@ async def get_partner_org_users(org_id: str):
 @router.post("/portal/assign-org")
 async def assign_org_to_partner(request: Request):
     """Super admin assigns an org to a partner agreement"""
+    me = await _portal_caller(request)
+    if me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
     db = get_db()
     data = await request.json()
     agreement_id = data.get("agreement_id")

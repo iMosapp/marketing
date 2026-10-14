@@ -12,6 +12,7 @@ import JessieFloatingChat, { JESSI_BAR_HEIGHT } from '../components/JessieFloati
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { HomeFab } from '../components/common/HomeFab';
 import { RecordingOverlay } from '../components/recording/RecordingOverlay';
+import { MediaTokenGate } from '../components/common/MediaTokenGate';
 import { initGlobalErrorHandlers } from '../services/errorReporter';
 import { playLeadChime, isLeadPush } from '../utils/leadChime';
 
@@ -340,6 +341,7 @@ export default function RootLayout() {
               </Stack>
               {showJessi && <HomeFab />}
               <RecordingOverlay />
+              <MediaTokenGate />
             </View>
             </LiveJessiProvider>
             {/* Jessi floating chat hidden — causes keyboard offset issues */}

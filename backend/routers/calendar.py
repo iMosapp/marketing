@@ -30,9 +30,34 @@ REDIRECT_URI = os.environ.get('GOOGLE_CALENDAR_REDIRECT_URI',
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 
+def _oauth_state(user_id: str) -> str:
+    """Signed, single-purpose, 10-minute state: the callback trusts only a user id we minted for a signed-in caller."""
+    import secrets
+    import jwt as pyjwt
+    from routers.auth import _get_jwt_secret, _JWT_ALGORITHM
+    now = datetime.now(timezone.utc)
+    return pyjwt.encode({"sub": user_id, "purpose": "gcal_oauth", "nonce": secrets.token_hex(8), "iat": now, "exp": now + timedelta(minutes=10)}, _get_jwt_secret(), algorithm=_JWT_ALGORITHM)
+
+
+def _user_from_state(state: str) -> Optional[str]:
+    import jwt as pyjwt
+    from routers.auth import _get_jwt_secret, _JWT_ALGORITHM
+    try:
+        payload = pyjwt.decode(state or "", _get_jwt_secret(), algorithms=[_JWT_ALGORITHM])
+    except Exception:
+        return None
+    if payload.get("purpose") != "gcal_oauth" or not payload.get("sub") or not ObjectId.is_valid(str(payload["sub"])):
+        return None
+    return str(payload["sub"])
+
+
 @router.get("/oauth/login/{user_id}")
-async def google_calendar_login(user_id: str):
-    """Start Google Calendar OAuth flow"""
+async def google_calendar_login(user_id: str, request: Request):
+    """Start Google Calendar OAuth flow (signed-in caller only; the identity gate binds {user_id} to the session)."""
+    from routers.rbac import get_current_user
+    me = await get_current_user(request)
+    if str(me.get("_id")) != user_id and me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="You can only connect your own calendar")
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
         raise HTTPException(
             status_code=503, 
@@ -48,7 +73,7 @@ async def google_calendar_login(user_id: str):
         f"scope={'%20'.join(SCOPES)}&"
         "access_type=offline&"
         "prompt=consent&"
-        f"state={user_id}"
+        f"state={_oauth_state(user_id)}"
     )
     
     return {"authorization_url": auth_url}
@@ -56,8 +81,10 @@ async def google_calendar_login(user_id: str):
 
 @router.get("/oauth/callback")
 async def google_calendar_callback(code: str, state: str):
-    """Handle Google OAuth callback"""
-    user_id = state
+    """Handle Google OAuth callback: tokens are stored only on the account that started the flow (signed state)."""
+    user_id = _user_from_state(state)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid or expired OAuth state — start the connection again from the app")
     
     try:
         # Exchange code for tokens — use async httpx so we don't block the event loop

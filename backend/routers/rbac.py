@@ -164,6 +164,57 @@ def require_user_access(min_role: str = "store_manager"):
     return check
 
 
+def require_hierarchy_admin(min_role: str = "store_manager"):
+    """Placement routes (organization / store / role of {user_id}): never self-service, caller >= min_role, target inside the
+    caller's scope and not outranking them. Super admins may do anything, including to themselves."""
+    async def check(request: Request, user_id: str):
+        me = await get_current_user(request)
+        if me.get('role') == 'super_admin':
+            return me
+        _at_least(me, min_role)
+        if str(me.get('_id')) == user_id:
+            raise HTTPException(status_code=403, detail="You can't change your own organization, store or role")
+        if not await verify_user_access(me, user_id):
+            raise HTTPException(status_code=403, detail="Access denied to this user")
+        from services.route_guard import outranked
+        target = await get_db().users.find_one({"_id": ObjectId(user_id)}, {"role": 1}) if ObjectId.is_valid(user_id) else None
+        if target and outranked(me.get('role'), target.get('role')):
+            raise HTTPException(status_code=403, detail="You can't modify an account with more privileges than yours")
+        return me
+    return check
+
+
+RECOVERY_FIELDS = ("email", "phone", "password", "new_password")
+
+
+async def assert_recovery_editable(me: dict, user_id: str, fields) -> None:
+    """Account-recovery details (email, phone, password) of ANOTHER account may only be changed by someone who strictly
+    outranks it: a store manager can't repoint a fellow store manager's phone, an org admin can't take over another org admin."""
+    if str(me.get('_id')) == str(user_id) or me.get('role') == 'super_admin' or not set(fields) & set(RECOVERY_FIELDS):
+        return
+    target = await get_db().users.find_one({"_id": ObjectId(user_id)}, {"role": 1}) if ObjectId.is_valid(str(user_id)) else None
+    if target and ROLE_HIERARCHY.get(target.get('role', 'user'), 0) >= ROLE_HIERARCHY.get(me.get('role', 'user'), 0):
+        raise HTTPException(status_code=403, detail="Only someone above this account's role can change its email, phone or password")
+
+
+async def assert_in_scope(me: dict, *, org_id: str | None = None, store_id: str | None = None) -> None:
+    """A manager may only place people into organizations / stores they themselves manage."""
+    if me.get('role') == 'super_admin':
+        return
+    if org_id is not None and str(org_id) not in {str(o) for o in await get_scoped_organization_ids(me)}:
+        raise HTTPException(status_code=403, detail="Access denied to this organization")
+    if store_id is not None and str(store_id) not in {str(s) for s in await get_scoped_store_ids(me)}:
+        raise HTTPException(status_code=403, detail="Access denied to this store")
+
+
+def assert_role_grant(me: dict, role: str) -> None:
+    """Roles are granted strictly below your own (super admins excepted)."""
+    if me.get('role') == 'super_admin':
+        return
+    if ROLE_HIERARCHY.get(role, 99 if role not in ROLE_HIERARCHY else 0) >= ROLE_HIERARCHY.get(me.get('role', 'user'), 0):
+        raise HTTPException(status_code=403, detail="You can only grant roles below your own")
+
+
 async def assert_store_manager(user: dict, store_id: str, min_role: str = "store_manager") -> None:
     """Body- or query-supplied store_id: caller must hold min_role and be scoped to that store."""
     _at_least(user, min_role)

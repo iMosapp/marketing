@@ -11,6 +11,7 @@ import { showAlert } from '../../services/alert';
 import { liveSupported, LIVE_UNSUPPORTED_TITLE, LIVE_UNSUPPORTED_BODY } from '../../hooks/useLiveJessi';
 import { useLiveJessiLauncher } from '../jessi/LiveJessiProvider';
 import { useLiveConfig } from '../jessi/useLiveConfig';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -142,7 +143,7 @@ export const AskJessiSheet = ({ visible, onClose, contactId, intel }: { visible:
     }
     if (c.kind === 'call') {
       if (!c.has_recording || !c.call_sid) { showToast(c.snippet ? `No recording. ${c.snippet}` : 'No recording saved for this call', 'info'); return; }
-      setPlayer({ url: `${api.defaults.baseURL}/calls/recording/${c.call_sid}`, label: `${c.label}${c.seek_seconds != null ? ` · ${Math.floor(c.seek_seconds / 60)}:${String(c.seek_seconds % 60).padStart(2, '0')}` : ''}`, seek: c.seek_seconds });
+      setPlayer({ url: resolvePhotoUrl(`${api.defaults.baseURL}/calls/recording/${c.call_sid}`)!, label: `${c.label}${c.seek_seconds != null ? ` · ${Math.floor(c.seek_seconds / 60)}:${String(c.seek_seconds % 60).padStart(2, '0')}` : ''}`, seek: c.seek_seconds });
       setTimeout(() => { if (c.seek_seconds != null) seekRef.current?.(c.seek_seconds * 1000); }, 900);
       return;
     }

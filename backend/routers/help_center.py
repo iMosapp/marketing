@@ -1,5 +1,6 @@
 """Help Center AI - An intelligent assistant that knows I'm On Social inside and out."""
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from services.ratelimit import throttle
 from pydantic import BaseModel
 import os
 import logging
@@ -22,8 +23,9 @@ class HelpQuery(BaseModel):
     user_id: str = ""
 
 @router.post("/ask")
-async def ask_help_ai(data: HelpQuery):
+async def ask_help_ai(data: HelpQuery, request: Request):
     """Ask the Help Center AI a question about I'm On Social."""
+    throttle(request, "help-ask", per_minute=10, per_day=100)
     try:
         api_key = os.getenv("EMERGENT_LLM_KEY")
         if not api_key:

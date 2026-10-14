@@ -10,6 +10,7 @@ import uuid
 import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
+from services.ratelimit import throttle
 from bson import ObjectId
 
 from routers.database import get_db
@@ -55,6 +56,7 @@ IMPORTANT:
 @router.post("/start")
 async def start_session(request: Request):
     """Start an anonymous chat session."""
+    throttle(request, "chat-start", per_minute=10, per_day=100)
     data = await request.json()
     page = data.get("page", "website")
     session_id = str(uuid.uuid4())
@@ -104,6 +106,7 @@ async def start_session(request: Request):
 @router.post("/message")
 async def send_message(request: Request):
     """Send a visitor message and get Jessi's AI response."""
+    throttle(request, "chat-message", per_minute=20, per_day=300)
     data = await request.json()
     session_id = data.get("session_id")
     message = (data.get("message") or "").strip()
@@ -168,6 +171,7 @@ async def send_message(request: Request):
 @router.post("/capture")
 async def capture_lead(request: Request):
     """Manually capture contact info from the widget form."""
+    throttle(request, "chat-capture", per_minute=10, per_day=50)
     data = await request.json()
     session_id = data.get("session_id")
 

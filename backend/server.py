@@ -53,7 +53,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-BUILD = "2026-10-14.security-hotfix4"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
+BUILD = "2026-10-14.security-hotfix4b"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
 app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix
@@ -472,6 +472,30 @@ async def backfill_user_contact_links(request: Request):
         linked += r.modified_count
 
     return {"success": True, "contacts_linked": linked, "users_scanned": len(users)}
+
+
+@api_router.get("/health/security-config")
+async def api_health_security_config(request: Request):
+    """Super-admin read-only checklist of the production variables the security hotfixes depend on: presence only, never
+    values (the public URL and the effective Twilio mode are not secrets). Lets the owner confirm production after a deploy."""
+    from routers.rbac import get_current_user
+    from services import twilio_signature
+    from routers.auth import effective_cutoff
+    me = await get_current_user(request)
+    if me.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+    env = os.environ
+    cutoff = effective_cutoff()
+    return {
+        "build": BUILD,
+        "twilio": {"account_sid_set": bool(env.get("TWILIO_ACCOUNT_SID")), "auth_token_set": bool(env.get("TWILIO_AUTH_TOKEN")),
+                   "webhook_validation_mode": twilio_signature.mode(), "public_facing_url": env.get("PUBLIC_FACING_URL") or env.get("APP_URL") or ""},
+        "resend": {"webhook_secret_set": bool((env.get("RESEND_WEBHOOK_SECRET") or "").strip())},
+        "stripe": {"webhook_secret_set": bool(env.get("STRIPE_WEBHOOK_SECRET")), "billing_webhook_secret_set": bool(env.get("STRIPE_BILLING_WEBHOOK_SECRET"))},
+        "sessions": {"jwt_secret_set": bool(env.get("JWT_SECRET")), "sessions_valid_after_set": bool((env.get("SESSIONS_VALID_AFTER") or "").strip()),
+                     "effective_cutoff_epoch": int(cutoff) if cutoff else None},
+        "google_calendar": {"client_configured": bool(env.get("GOOGLE_CLIENT_ID") and env.get("GOOGLE_CLIENT_SECRET"))},
+    }
 
 
 @api_router.get("/health/deep")
