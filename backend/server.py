@@ -53,7 +53,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-BUILD = "2026-10-13.voice-pilot"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
+BUILD = "2026-10-14.security-hotfix3"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
 app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix

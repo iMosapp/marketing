@@ -2663,7 +2663,6 @@ function ContactDetailScreen() {
               contactId={id as string}
               contactFirst={(contact.first_name || fullName || 'the customer').split(' ')[0]}
               colors={{ ...colors, textPrimary: colors.text, surface: colors.card, background: colors.bg }}
-              inline
               memoRecording={isRecording}
               onStartMemo={startRecording}
               onStopMemo={stopRecording}

@@ -11,6 +11,7 @@ import { LiveJessiProvider } from '../components/jessi/LiveJessiProvider';
 import JessieFloatingChat, { JESSI_BAR_HEIGHT } from '../components/JessieFloatingChat';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { HomeFab } from '../components/common/HomeFab';
+import { RecordingOverlay } from '../components/recording/RecordingOverlay';
 import { initGlobalErrorHandlers } from '../services/errorReporter';
 import { playLeadChime, isLeadPush } from '../utils/leadChime';
 
@@ -338,6 +339,7 @@ export default function RootLayout() {
                 <Stack.Screen name="l/[username]" />
               </Stack>
               {showJessi && <HomeFab />}
+              <RecordingOverlay />
             </View>
             </LiveJessiProvider>
             {/* Jessi floating chat hidden — causes keyboard offset issues */}

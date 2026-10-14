@@ -2,7 +2,7 @@
 Webhooks router - handles incoming webhooks from external RMS platforms/systems
 Supports user sync, contact sync, and custom event triggers
 """
-from fastapi import APIRouter, HTTPException, Header, Request, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, BackgroundTasks
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -96,14 +96,13 @@ async def webhook_user_created(
     user_data: WebhookUserCreate,
     request: Request,
     background_tasks: BackgroundTasks,
-    x_webhook_secret: str = Header(None)
+    org: dict = Depends(verify_webhook_signature),
 ):
     """
     Webhook endpoint for when a user is created in an external system.
     Creates or updates the user in our system.
     """
     db = get_db()
-    org = await verify_webhook_signature(request, x_webhook_secret)
     org_id = str(org["_id"])
     role = _webhook_role(user_data.role)
     store_id = await _org_store_id(db, org, user_data.store_id)
@@ -194,14 +193,13 @@ async def webhook_user_deleted(
     user_data: WebhookUserDelete,
     request: Request,
     background_tasks: BackgroundTasks,
-    x_webhook_secret: str = Header(None)
+    org: dict = Depends(verify_webhook_signature),
 ):
     """
     Webhook endpoint for when a user is deleted in an external system.
     Deactivates the user and moves their contacts to unassigned.
     """
     db = get_db()
-    org = await verify_webhook_signature(request, x_webhook_secret)
     
     if not user_data.external_id and not user_data.email:
         raise HTTPException(status_code=400, detail="Either external_id or email must be provided")
@@ -275,13 +273,12 @@ async def webhook_user_deleted(
 async def webhook_contact_created(
     contact_data: WebhookContactCreate,
     request: Request,
-    x_webhook_secret: str = Header(None)
+    org: dict = Depends(verify_webhook_signature),
 ):
     """
     Webhook endpoint for when a contact is created in an external system.
     """
     db = get_db()
-    org = await verify_webhook_signature(request, x_webhook_secret)
     org_id = str(org["_id"])
     store_id = await _org_store_id(db, org, contact_data.store_id)
     

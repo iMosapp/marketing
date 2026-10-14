@@ -10,7 +10,7 @@ Webhook endpoints:
 - GET /api/webhooks/inventory - List all inventory
 - GET /api/webhooks/inventory/{external_id} - Get single item
 """
-from fastapi import APIRouter, HTTPException, Header, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, Query
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from bson import ObjectId
@@ -118,7 +118,7 @@ def serialize_item(item: dict) -> dict:
 async def webhook_inventory_add(
     item: InventoryItemCreate,
     request: Request,
-    x_api_key: str = Header(None, alias="X-API-Key")
+    _auth: dict = Depends(verify_api_key),
 ):
     """
     Add a new inventory item from external system.
@@ -144,7 +144,6 @@ async def webhook_inventory_add(
         "tags": ["new", "sedan", "honda"]
     }
     """
-    await verify_api_key(x_api_key)
     db = get_db()
     
     # Check if item exists
@@ -191,7 +190,7 @@ async def webhook_inventory_add(
 async def webhook_inventory_update(
     item: InventoryItemUpdate,
     request: Request,
-    x_api_key: str = Header(None, alias="X-API-Key")
+    _auth: dict = Depends(verify_api_key),
 ):
     """
     Update an existing inventory item.
@@ -204,7 +203,6 @@ async def webhook_inventory_update(
         "price": 24500
     }
     """
-    await verify_api_key(x_api_key)
     db = get_db()
     
     # Find existing item
@@ -255,8 +253,8 @@ async def webhook_inventory_update(
 async def webhook_inventory_delete(
     item: InventoryItemDelete,
     request: Request,
-    x_api_key: str = Header(None, alias="X-API-Key"),
-    hard_delete: bool = Query(False, description="Permanently remove item (default: soft delete)")
+    hard_delete: bool = Query(False, description="Permanently remove item (default: soft delete)"),
+    _auth: dict = Depends(verify_api_key),
 ):
     """
     Delete/archive an inventory item.
@@ -268,7 +266,6 @@ async def webhook_inventory_delete(
         "external_id": "VIN123456789"
     }
     """
-    await verify_api_key(x_api_key)
     db = get_db()
     
     existing = await db.inventory.find_one({"external_id": item.external_id})
