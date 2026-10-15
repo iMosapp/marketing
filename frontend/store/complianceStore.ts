@@ -8,6 +8,7 @@ type Pending = ConsentAsk & { resolve: (ok: boolean) => void };
 type ComplianceState = {
   ask: Pending | null;
   lock: BillingLock | null;
+  consentRev: number;  // bumps whenever consent is recorded from the sheet, so open consent cards reload
   requestConsent: (a: ConsentAsk) => Promise<boolean>;
   settle: (ok: boolean) => void;
   setLock: (l: BillingLock | null) => void;
@@ -23,6 +24,7 @@ export const quieted = (a: ConsentAsk) => !a.manual && (declinedUntil.get(askKey
 export const useCompliance = create<ComplianceState>((set, get) => ({
   ask: null,
   lock: null,
+  consentRev: 0,
   // One sheet per number: parallel refused sends share it, and a "Not now" quiets repeats for 30 s (one tap never spawns five sheets).
   requestConsent: (a) => {
     const key = askKey(a);
@@ -37,7 +39,7 @@ export const useCompliance = create<ComplianceState>((set, get) => ({
   },
   settle: (ok) => {
     const a = get().ask;
-    set({ ask: null });
+    set({ ask: null, ...(ok ? { consentRev: get().consentRev + 1 } : {}) });
     a?.resolve(ok);
   },
   setLock: (lock) => set({ lock }),

@@ -1626,10 +1626,16 @@ function ContactDetailScreen() {
           }
         }
 
-        // No Twilio number (or fallback): fire-and-forget logging then open native SMS
-        messagesAPI.send(user._id, sendPayload).catch((logErr: any) => {
+        // No Twilio number (or fallback): log first; only a compliance refusal (STOP) stops the phone's messaging app, other logging failures never do
+        try {
+          await messagesAPI.send(user._id, sendPayload);
+        } catch (logErr: any) {
+          if (logErr?.compliance) {
+            if (!logErr.consentDeclined) showToast(logErr.complianceMessage || 'This text was not sent.', 'error');
+            return;
+          }
           console.warn('[Send] Backend logging failed (non-fatal):', logErr?.message);
-        });
+        }
         
         // Fetch user's enabled channels
         let userChannels: any[] = [];

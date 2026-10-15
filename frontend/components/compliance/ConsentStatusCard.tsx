@@ -18,15 +18,15 @@ const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(und
 export function ConsentStatusCard({ contactId, name }: { contactId: string; name?: string }) {
   const { colors } = useThemeStore();
   const requestConsent = useCompliance(s => s.requestConsent);
+  const consentRev = useCompliance(s => s.consentRev);
   const [data, setData] = useState<any>(null);
   const load = useCallback(() => { api.get(`/consent/contact/${contactId}`).then(r => setData(r.data)).catch(() => setData(null)); }, [contactId]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, consentRev]);
   if (!data) return null;
 
   const record = async () => {
     const unknown = Object.keys(SCOPE_LABEL).filter(s => s !== 'marketing' && data.state?.[s]?.status !== 'granted');
     await requestConsent({ code: 'manual', manual: true, needs: unknown, contact_id: contactId, phone: undefined, name });
-    load();
   };
 
   return (

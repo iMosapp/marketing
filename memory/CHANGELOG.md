@@ -1,5 +1,16 @@
 # CHANGELOG — iMOs App
 
+## Oct 15 2026 — Launch compliance batch: verification, fixes, deploy plan (PREVIEW ONLY; pytest 82 pass / 1 skip; testing agent 390-393)
+- Startup indexes: new `services/index_setup.py` (`ensure` / `summarize`). All 84 startup specs go through it. Boot log: `N ok, M unresolved option mismatch, K failed`; each mismatch names `collection.index`, requested vs existing options, "existing index kept". `tests/test_startup_indexes.py` (3).
+- My Team: a store manager without `organization_id` is scoped to their store (was 403). More: "My Team" is the first item of the Team folder/group (outside the admin permission).
+- STOP: `outbound_gate.stop_or_raise` + `messages.py` `sms_personal` branches return 409 `opted_out`. The contact-page composer awaits the log call and never opens the messaging app on a compliance refusal. The thread restores the draft.
+- UX: the consent card refreshes when consent is recorded anywhere (`complianceStore.consentRev`). Inside the 30 s "Not now" quiet window the caller explains the refusal (`quieted()`). The 403 lock merge keeps `reason_text`. AccessPaused is seeded from the sign-in `billing_lock`. Opt-in link URL is shown (`consent-optin-link-url`). Hint when no scope is ticked. FAB "SOLD!" -> "Share Photo"; help steps and "Photo (MMS)" label updated.
+- Tests: launch suites share one event loop (were failing only when run together). New: ledger sweep test, store-manager scope test. Testing-agent suites `test_launch_compliance_api.py`, `test_launch_compliance_stop.py` (+ personal-path assertions).
+- Seeds: `seed_launch_locked_demo.py` (QA Launch Locked Co, fake subscription, `--state`), `seed_consent_rep_demo.py` (rep with a test-range number for the provider-path composer).
+- Docs: `/app/memory/LAUNCH_DEPLOY_ROLLBACK_PLAN.md`, `/app/memory/TS_BASELINE.md` (+ raw `ts_baseline_tsc.txt`).
+- During testing only: `SMS_SEND_ONLY_TO` was temporarily `+10000000000` so every send was mocked. It is restored to `+1500555,+18016349122`.
+
+
 ## Sep 26 2026 — Jessi web chat "Business mode" + humanized typing delay (COMPLETED; pytest widget 7/7 + jessi 9/9 + door-stats 4/4 + live-booking 17/17; demo page + admin Jessi tab screenshot-verified; live chat against 38 crawled imonsocial.com pages answers pricing/feature questions in 1.4-2.7 s)
 - User: "Jessi isn't very knowledgeable on the marketing site... she responds way too fast. Show text bubbles, have it take her a few seconds to reply."
 - KB mode `kb.mode = dealership | business` (`services/widgets.py` DEFAULTS + `normalize_config`; public JS gets `chat_mode`). Editor Jessi tab (`JessiTab.tsx`): "What kind of site is this?" chips `widget-kb-mode-dealership|business`; business copy everywhere (Company facts, Current offers, business placeholder, no listed-prices toggle).

@@ -201,6 +201,21 @@ def test_send_ledger_claims_once():
     assert run(send_ledger.claim(db, "qa-launch:1", to=PHONE))
 
 
+def test_send_ledger_sweep_marks_crashed_sends_and_never_resends():
+    from datetime import datetime, timedelta, timezone
+    db = adb()
+    key = f"qa-launch:crash:{ObjectId()}"
+    assert run(send_ledger.claim(db, key, to=PHONE))
+    run(db.send_ledger.update_one({"_id": key}, {"$set": {"claimed_at": datetime.now(timezone.utc) - timedelta(seconds=send_ledger.STALE_S + 60)}}))
+    try:
+        assert run(send_ledger.sweep(db)) >= 1
+        assert run(db.send_ledger.find_one({"_id": key}))["status"] == "unknown_outcome"
+        assert not run(send_ledger.claim(db, key, to=PHONE))  # a crashed send is never re-sent automatically
+    finally:
+        run(db.send_ledger.delete_one({"_id": key}))
+
+
+
 def test_broadcast_queues_each_recipient_once_across_replicas():
     db = adb()
     uid, cid, bid = ObjectId(), ObjectId(), ObjectId()
