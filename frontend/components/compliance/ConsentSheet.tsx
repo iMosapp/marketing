@@ -85,6 +85,7 @@ function ConsentSheet() {
                   </Text>
                 )}
                 {ask.contact_id ? <OptInLinkBox contactId={ask.contact_id} colors={colors} /> : null}
+                {scopes.length === 0 ? <Text style={{ fontSize: TYPE.sub, color: colors.textSecondary }} {...tid('consent-sheet-pick-scope')}>Tick at least one type of text they agreed to.</Text> : null}
                 {err ? <Text style={{ fontSize: TYPE.sub, color: RED }} {...tid('consent-sheet-error')}>{err}</Text> : null}
                 <TouchableOpacity onPress={record} disabled={!canRecord} {...tid('consent-record-btn')}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: GOLD, borderRadius: RADIUS.md, paddingVertical: 15, opacity: canRecord ? 1 : 0.45 }}>

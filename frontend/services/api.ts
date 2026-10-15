@@ -115,7 +115,8 @@ api.interceptors.response.use(
     const detail = data?.detail;
     if (status === 403 && data?.reason === 'billing_locked') {
       const { useCompliance } = await import('../store/complianceStore');
-      useCompliance.getState().setLock({ locked: true, owner: !!data.owner, message: typeof detail === 'string' ? detail : '' });
+      const prev = useCompliance.getState().lock;  // keep reason_text / state from the sign-in or /billing/access copy
+      useCompliance.getState().setLock({ ...(prev || {}), locked: true, owner: !!data.owner, message: typeof detail === 'string' ? detail : prev?.message });
     }
     if (status === 409 && detail && typeof detail === 'object' && typeof detail.code === 'string' && 'needs' in detail) {
       const { useCompliance, CONSENT_CODES } = await import('../store/complianceStore');

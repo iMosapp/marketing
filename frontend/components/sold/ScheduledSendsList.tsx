@@ -29,7 +29,7 @@ export const describeSend = (s: ScheduledSend) => {
   if (s.event_type === 'review_request_sent') return { icon: 'star-outline', color: '#FF9500', label: 'Review request' };
   if (s.event_type === 'congrats_card_sent') {
     return s.has_media
-      ? { icon: 'image-outline', color: '#34C759', label: 'Delivery photo (MMS)' }
+      ? { icon: 'image-outline', color: '#34C759', label: 'Photo (MMS)' }
       : { icon: 'gift-outline', color: ACCENT, label: 'Digital card link' };
   }
   return { icon: 'chatbubble-outline', color: '#5AC8FA', label: 'Text' };

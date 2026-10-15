@@ -79,6 +79,7 @@ export function OptInLinkBox({ contactId, colors }: { contactId: string; colors:
   return (
     <View style={{ alignItems: 'center', gap: SPACE.sm, padding: SPACE.md, borderRadius: RADIUS.sm, backgroundColor: tint(GREEN, 0.08) }} {...tid('consent-optin-link-box')}>
       <View style={{ padding: 8, backgroundColor: '#FFF', borderRadius: 8 }}><QRCode value={link} size={140} /></View>
+      <Text selectable style={{ fontSize: TYPE.caption, color: colors.text, textAlign: 'center' }} {...tid('consent-optin-link-url')}>{link}</Text>
       <Text style={{ fontSize: TYPE.caption, color: colors.textSecondary, textAlign: 'center' }}>They scan this and agree on their own phone. Nothing is checked for them. The link works once, for 7 days.</Text>
       <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
         <TouchableOpacity onPress={() => copyToClipboard(link)} {...tid('consent-optin-link-copy')} style={{ paddingVertical: 8, paddingHorizontal: 14, borderRadius: 16, backgroundColor: colors.card }}>

@@ -576,6 +576,8 @@ function MoreScreenFull() {
   // SECTION 5: SETUP (Admin/Manager tools for their accounts)
   // Only visible to admins, store managers, partners
   // ============================================================
+  const isTeamManager = !repPreview && (user?.role === 'store_manager' || user?.role === 'org_admin');
+  const myTeamItem: MenuItem = { icon: 'people' as any, title: 'My Team', subtitle: 'Setup, texting readiness and this week\'s activity per team member', onPress: () => router.push('/my-team' as any), color: '#34C759' };
   if (isAdmin && perm('admin')) {
     const items: (MenuItem & { permKey?: string })[] = [
       { permKey: 'store_profile', icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address & store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
@@ -584,7 +586,7 @@ function MoreScreenFull() {
       { permKey: 'accounts', icon: 'call', title: 'Phone Numbers', subtitle: 'Twilio inventory & billing', onPress: () => router.push('/admin/twilio-numbers'), color: '#34C759' },
       ...((!repPreview && (user?.role === 'store_manager' || user?.role === 'org_admin')) ? [
         { icon: 'card' as any, title: 'Billing', subtitle: 'Your plan, invoices and payment method', onPress: () => router.push('/settings/billing' as any), color: '#C9A962' },
-        { icon: 'people' as any, title: 'My Team', subtitle: 'Setup, texting readiness and this week\'s activity per team member', onPress: () => router.push('/my-team' as any), color: '#34C759' },
+        myTeamItem,
       ] : []),
       ...((!repPreview && user?.role === 'org_admin') ? [
         { permKey: 'accounts', icon: 'chatbubbles' as any, title: 'Communications', subtitle: 'Your texting numbers, who holds them, compliance and messaging status', onPress: () => router.push(`/admin/org-twilio/${user?.organization_id}` as any), color: '#C9A962' },
@@ -594,6 +596,10 @@ function MoreScreenFull() {
     ];
     const filtered = items.filter(i => !i.permKey || perm('admin', i.permKey));
     if (filtered.length > 0) sections.push({ id: 'setup_manage', title: 'Set Up', icon: 'construct', color: '#FF9500', items: filtered });
+  }
+  // My Team is a manager view, not an admin permission: managers without the Set Up section still get it
+  if (isTeamManager && !sections.some(sec => sec.id === 'setup_manage')) {
+    sections.push({ id: 'my_team', title: 'My Team', icon: 'people', color: '#34C759', items: [myTeamItem] });
   }
 
   // ============================================================
