@@ -2,3 +2,4 @@
 {"label": "baseline_boot", "warm_import_wall_s": 4.74, "warm_import_cpu_s": 4.75, "cold_import_wall_s": 5.62, "cold_import_cpu_s": 5.67, "boot_to_health_s": [7.2, 7.42, 7.53], "boot_to_health_median_s": 7.42}
 {"label": "after_lazy_imports_and_single_mount", "warm_import_wall_s": 2.08, "warm_import_cpu_s": 2.07, "cold_import_wall_s": 2.82, "cold_import_cpu_s": 2.81}
 {"label": "after_boot", "warm_import_wall_s": 2.09, "warm_import_cpu_s": 2.08, "cold_import_wall_s": 2.85, "cold_import_cpu_s": 2.84, "boot_to_health_s": [3.58, 3.32, 3.39], "boot_to_health_median_s": 3.39}
+{"label": "run", "warm_import_wall_s": 2.17, "warm_import_cpu_s": 2.15, "cold_import_wall_s": 2.84, "cold_import_cpu_s": 2.83}
