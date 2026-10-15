@@ -481,6 +481,12 @@ async def destroy_original(db, m: dict, reason: str):
 
 
 async def run(db, ins_id: str, actor: dict):
+    from services.work_owner import heartbeat
+    async with heartbeat(db, INS, ObjectId(ins_id)):
+        await _run_inspection(db, ins_id, actor)
+
+
+async def _run_inspection(db, ins_id: str, actor: dict):
     ins = await db[INS].find_one({"_id": ObjectId(ins_id)})
     appr = await db[A].find_one({"_id": ObjectId(ins["appraisal_id"])})
     run_id = ins.get("run_id")
@@ -535,10 +541,12 @@ async def run(db, ins_id: str, actor: dict):
 
 
 async def recover_interrupted(db) -> int:
-    """Startup: a run that was queued/processing when the process stopped can never finish; mark it failed so the rep can retry."""
+    """Boot + periodic sweep: a run whose heartbeat stopped (its replica died) can never finish; mark it failed so the rep can retry.
+    A run another replica is still working on keeps a fresh heartbeat and is left alone."""
+    from services.work_owner import stale
     now = _now()
     n = 0
-    async for ins in db[INS].find({"status": {"$in": ["queued", "processing"]}}):
+    async for ins in db[INS].find(stale(["queued", "processing"])):
         await db[INS].update_one({"_id": ins["_id"]}, {"$set": {"status": "failed", "stage": "failed", "last_error": "Interrupted by a server restart — tap analyze to retry", "finished_at": now, "updated_at": now}})
         await db[A].update_one({"_id": _oid(ins["appraisal_id"]), "status": "analyzing"}, {"$set": {"status": ins.get("prev_status") or "draft", "updated_at": now}})
         n += 1

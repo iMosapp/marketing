@@ -9,8 +9,10 @@ from bson import ObjectId
 
 from services import team_view
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
+loop = asyncio.get_event_loop_policy().get_event_loop()  # shared with the other launch suites: get_db() caches one Motor client per process
+if loop.is_closed():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 SUB = "AC" + "6" * 32
 MS = "MG" + "8" * 32
 

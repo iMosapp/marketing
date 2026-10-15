@@ -299,7 +299,7 @@ async def thank_advocate(user_id: str, contact_id: str, body: dict):
     sent_via = "native"
     sid = None
     if rep_number:
-        result = await send_sms(phone, sms_body, from_phone=rep_number)
+        result = await send_sms(phone, sms_body, from_phone=rep_number, purpose="conversational", user_id=user_id, contact_id=contact_id)
         if not result.get("success"):
             raise HTTPException(status_code=502, detail=result.get("error") or "Text failed to send")
         sent_via, sid = ("mock" if result.get("mock") else "twilio"), result.get("message_sid")

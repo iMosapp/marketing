@@ -339,7 +339,7 @@ async def _draft(store: dict, pages: list, business: bool = False) -> dict:
 
 
 def _stale(job: dict) -> bool:
-    last = (job.get("updated_at") or job.get("created_at"))
+    last = max([t for t in (job.get("heartbeat_at"), job.get("updated_at"), job.get("created_at")) if t], default=None, key=lambda t: t.replace(tzinfo=timezone.utc))
     return job.get("status") == "running" and bool(last) and (_now() - last.replace(tzinfo=timezone.utc)).total_seconds() > STALE_S
 
 
@@ -349,8 +349,9 @@ async def _fail(db, job: dict, error: str) -> dict:
 
 
 async def fail_interrupted(db) -> int:
-    """Startup: every crawl still 'running' belonged to the process that just died, so nothing will ever finish it."""
-    r = await db[COLL].update_many({"status": "running"}, {"$set": {"status": "failed", "error": INTERRUPTED, "updated_at": _now()}})
+    """Boot + periodic sweep: fail only crawls whose heartbeat stopped (their replica died); another replica's live crawl is left alone."""
+    from services.work_owner import stale
+    r = await db[COLL].update_many(stale(["running"]), {"$set": {"status": "failed", "error": INTERRUPTED, "updated_at": _now()}})
     return r.modified_count
 
 
@@ -381,6 +382,12 @@ async def run(job_id: str):
     async def progress(n: int):
         await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"pages_read": n, "updated_at": _now()}})
 
+    from services.work_owner import heartbeat
+    async with heartbeat(db, COLL, job["_id"]):
+        await _run_job(db, job, progress)
+
+
+async def _run_job(db, job: dict, progress):
     try:
         w = await db[W.COLL].find_one({"_id": ObjectId(job["widget_id"])})
         store = await W.store_of(db, w or {})

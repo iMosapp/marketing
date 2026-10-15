@@ -21,6 +21,9 @@ export function pilotRows(user: any): Row[] {
       { key: 'billing', icon: 'card', title: 'Billing', subtitle: billingSub, color: '#34C759', route: '/settings/billing' },
       { key: 'team', icon: 'person-add', title: 'Invite Your Team', subtitle: 'Add a teammate to one of your seats', color: '#007AFF', route: '/settings/invite-team' },
     ] : []),
+    ...(owner || ['org_admin', 'store_manager', 'admin', 'manager'].includes(user?.role) ? [
+      { key: 'my_team', icon: 'people', title: 'My Team', subtitle: 'Setup, texting readiness and this week\'s activity', color: '#34C759', route: '/my-team' },
+    ] : []),
     { key: 'notifications', icon: 'notifications', title: 'Notifications', subtitle: 'Push, text alerts and quiet times', color: '#FF9F0A', route: '/settings/notifications' },
     { key: 'settings', icon: 'settings', title: 'Settings', subtitle: 'Password, Face ID, dark mode', color: '#8E8E93', route: '/settings' },
     { key: 'feedback', icon: 'chatbox-ellipses', title: 'Send Feedback', subtitle: 'A question, a problem or a suggestion', color: '#5856D6', route: '/report-bug?from=more' },

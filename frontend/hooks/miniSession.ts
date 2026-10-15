@@ -65,3 +65,17 @@ export const routeEvent = (g: SessionGuards, ev: any, t: number): Routed => {
   }
   return { kind: 'pass' };
 };
+
+export const RESUME_LINE = 'The voice line just switched mid-conversation. Do not greet the rep or introduce yourself again. Say one short sentence that you are still here, then listen.';
+
+// What the client sends when a provider session starts: the greeting for a new conversation, or a no-greeting line after a
+// handoff/reconnect (the same conversation continues on another engine, so the rep hears the greeting once per conversation).
+export const openingEvent = (o: { mini: boolean; resumed: boolean; greeting: string; greetInstruction?: string }) => {
+  const text = o.resumed ? RESUME_LINE : (o.greetInstruction || (o.mini
+    ? `Greet the rep now, before they speak. Say exactly this and nothing more: "${o.greeting}" Then stop and listen.`
+    : `Greet the rep immediately in English without waiting for them to speak. Say, in your own words: "${o.greeting}". Then pause and listen.`));
+  const event = o.mini
+    ? { type: 'response.create', response: { instructions: text } }
+    : { type: 'session.instructions.append', event_id: o.resumed ? 'resume_1' : 'greet_1', delegation_id: null, content: text };
+  return { greeting: !o.resumed, event };
+};

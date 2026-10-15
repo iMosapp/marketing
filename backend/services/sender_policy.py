@@ -19,15 +19,15 @@ LOG = "sms_send_log"
 PAUSE_KEY = "pause_dealership_texting"
 
 REASONS = {
-    "paused": "Texting is paused for dealership accounts right now. Inbound texts still arrive.",
+    "paused": "Texting is paused for business accounts right now. Inbound texts still arrive.",
     "no_number": "No texting number is assigned to you yet. Ask your manager to set one up.",
-    "unregistered_number": "This number is not registered to your dealership in I'm On Social, so it cannot text.",
+    "unregistered_number": "This number is not registered to your organization in I'm On Social, so it cannot text.",
     "wrong_org": "This number belongs to a different organization, so it cannot text for you.",
     "not_your_number": "This number is assigned to someone else on your team.",
-    "no_subaccount": "Your dealership's Twilio account is not set up yet, so texting is not available.",
-    "wrong_account": "This number is not in your dealership's Twilio account, so it cannot text.",
-    "not_ready": "Texting is not active yet: your dealership's A2P registration is still pending approval.",
-    "not_associated": "This number is not attached to your dealership's approved texting registration yet.",
+    "no_subaccount": "Your organization's texting account is not set up yet, so texting is not available.",
+    "wrong_account": "This number is not in your organization's texting account, so it cannot text.",
+    "not_ready": "Texting is not active yet: your organization's texting registration (A2P 10DLC) is still pending approval.",
+    "not_associated": "This number is not attached to your organization's approved texting registration yet.",
     "unknown_sender": "We could not confirm who owns this sending number, so the text was not sent.",
     "unattributed": "We could not confirm who is sending this text, so it was not sent.",
 }

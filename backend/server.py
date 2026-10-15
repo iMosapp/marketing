@@ -182,6 +182,10 @@ async def bind_identity_header(request: Request, call_next):
     if await access_block.is_blocked(get_db(), caller):
         logger.info(f"[ACCESS] Blocked user {caller} refused on {request.method} {path}")
         return _JSONResponse(access_block.REFUSAL, status_code=401)
+    from services import billing_lock
+    lock = await billing_lock.for_caller(get_db(), caller)
+    if lock and lock.get("locked") and not billing_lock.path_allowed(path, lock):
+        return _JSONResponse({"detail": lock["message"], "reason": "billing_locked", "owner": bool(lock.get("owner"))}, status_code=403)
     if claimed and claimed != caller:
         logger.warning(f"[IDENTITY] Rejected {request.method} {path} — X-User-ID={claimed} caller={caller}")
         return _JSONResponse({"detail": "Authentication required"}, status_code=401)
@@ -776,6 +780,10 @@ from routers import memory_search as memory_search_router
 api_router.include_router(memory_search_router.router)
 from routers import team_today as team_today_router
 api_router.include_router(team_today_router.router)
+from routers import consent as consent_router, team_view as team_view_router
+api_router.include_router(consent_router.router)
+api_router.include_router(consent_router.public_router)
+api_router.include_router(team_view_router.router)
 from routers import owner as owner_router
 api_router.include_router(owner_router.router)
 from routers import scripts as scripts_router
@@ -1637,7 +1645,7 @@ async def startup_event():
         from services.leadership import roster as _lt_roster
         await _lt_roster.seed_templates(get_db())
         await _lt_kn.seed(get_db(), "imos")
-        _n = await _lt_rt.fail_interrupted(get_db(), all_running=True)
+        _n = await _lt_rt.fail_interrupted(get_db())  # stale heartbeats only: another replica's live roundtable is left alone
         if _n:
             logger.info(f"[Leadership] marked {_n} roundtable(s) interrupted by the restart")
     except Exception as _e:
@@ -2026,152 +2034,139 @@ async def startup_event():
             db = get_db()
             if db is not None:
                 # Give index creation 15 seconds max, don't block startup
+                from services.index_setup import ensure as _ensure_idx, summarize as _idx_summary
                 try:
-                    await asyncio.wait_for(asyncio.gather(
+                    _idx_results = await asyncio.wait_for(asyncio.gather(
                         # Contacts - core queries
-                        db.contacts.create_index("user_id"),
-                        db.contacts.create_index([("first_name", 1)]),
-                        db.contacts.create_index([("user_id", 1), ("first_name", 1)]),
-                        db.contacts.create_index([("user_id", 1), ("status", 1)]),
-                        db.contacts.create_index([("user_id", 1), ("ownership_type", 1), ("status", 1)]),
-                        db.contacts.create_index([("user_id", 1), ("updated_at", -1)]),
+                        _ensure_idx(db.contacts, "user_id"),
+                        _ensure_idx(db.contacts, [("first_name", 1)]),
+                        _ensure_idx(db.contacts, [("user_id", 1), ("first_name", 1)]),
+                        _ensure_idx(db.contacts, [("user_id", 1), ("status", 1)]),
+                        _ensure_idx(db.contacts, [("user_id", 1), ("ownership_type", 1), ("status", 1)]),
+                        _ensure_idx(db.contacts, [("user_id", 1), ("updated_at", -1)]),
                         # Users
-                        db.users.create_index("email", unique=True, sparse=True),
-                        db.users.create_index("role"),
-                        db.users.create_index([("store_id", 1)]),
+                        _ensure_idx(db.users, "email", unique=True, sparse=True),
+                        _ensure_idx(db.users, "role"),
+                        _ensure_idx(db.users, [("store_id", 1)]),
                         # Conversations - inbox queries
-                        db.conversations.create_index([("user_id", 1), ("last_message_at", -1)]),
-                        db.conversations.create_index([("contact_id", 1)]),
-                        db.conversations.create_index([("user_id", 1), ("status", 1)]),
+                        _ensure_idx(db.conversations, [("user_id", 1), ("last_message_at", -1)]),
+                        _ensure_idx(db.conversations, [("contact_id", 1)]),
+                        _ensure_idx(db.conversations, [("user_id", 1), ("status", 1)]),
                         # Messages - thread loading
-                        db.messages.create_index([("conversation_id", 1), ("timestamp", -1)]),
+                        _ensure_idx(db.messages, [("conversation_id", 1), ("timestamp", -1)]),
                         # Contact events & photos
-                        db.contact_photos.create_index("contact_id", unique=True),
-                        db.contact_events.create_index([("user_id", 1), ("timestamp", -1)]),
-                        db.contact_events.create_index([("contact_id", 1), ("timestamp", -1)]),
-                        db.contact_facts.create_index("fingerprint", unique=True),
-                        db.contact_facts.create_index([("contact_id", 1), ("status", 1), ("layer", 1)]),
-                        db.contact_facts.create_index([("contact_id", 1), ("key", 1), ("occurred_at", -1)]),
-                        db.contact_fact_events.create_index([("fact_id", 1), ("at", 1)]),
-                        db.contact_events.create_index([("contact_id", 1), ("event_type", 1)]),
+                        _ensure_idx(db.contact_photos, "contact_id", unique=True),
+                        _ensure_idx(db.contact_events, [("user_id", 1), ("timestamp", -1)]),
+                        _ensure_idx(db.contact_events, [("contact_id", 1), ("timestamp", -1)]),
+                        _ensure_idx(db.contact_facts, "fingerprint", unique=True),
+                        _ensure_idx(db.contact_facts, [("contact_id", 1), ("status", 1), ("layer", 1)]),
+                        _ensure_idx(db.contact_facts, [("contact_id", 1), ("key", 1), ("occurred_at", -1)]),
+                        _ensure_idx(db.contact_fact_events, [("fact_id", 1), ("at", 1)]),
+                        _ensure_idx(db.contact_events, [("contact_id", 1), ("event_type", 1)]),
                         # Link pages — was missing, caused 60s timeout on full collection scan
-                        db.link_pages.create_index("user_id", unique=True, sparse=True),
-                        db.link_pages.create_index("username", sparse=True),
+                        _ensure_idx(db.link_pages, "user_id", unique=True, sparse=True),
+                        _ensure_idx(db.link_pages, "username", sparse=True),
                         # Campaign system
-                        db.campaign_enrollments.create_index([("campaign_id", 1), ("contact_id", 1), ("status", 1)]),
-                        db.campaign_enrollments.create_index([("user_id", 1), ("status", 1)]),
-                        db.campaign_enrollments.create_index([("contact_id", 1)]),
-                        db.campaign_enrollments.create_index([("user_id", 1), ("status", 1), ("next_send_at", 1)]),
-                        db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1)]),
+                        _ensure_idx(db.campaign_enrollments, [("campaign_id", 1), ("contact_id", 1), ("status", 1)]),
+                        _ensure_idx(db.campaign_enrollments, [("user_id", 1), ("status", 1)]),
+                        _ensure_idx(db.campaign_enrollments, [("contact_id", 1)]),
+                        _ensure_idx(db.campaign_enrollments, [("user_id", 1), ("status", 1), ("next_send_at", 1)]),
+                        _ensure_idx(db.campaign_pending_sends, [("user_id", 1), ("status", 1)]),
                         # Compound index for catchup query: (user_id, status, send_at) — prevents collection scan
-                        db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1), ("send_at", 1)]),
-                        db.campaign_pending_sends.create_index([("campaign_id", 1), ("contact_id", 1), ("step", 1), ("status", 1)]),
+                        _ensure_idx(db.campaign_pending_sends, [("user_id", 1), ("status", 1), ("send_at", 1)]),
+                        _ensure_idx(db.campaign_pending_sends, [("campaign_id", 1), ("contact_id", 1), ("step", 1), ("status", 1)]),
                         # Tasks
-                        db.tasks.create_index([("user_id", 1), ("status", 1), ("due_date", 1)]),
-                        db.tasks.create_index("idempotency_key", unique=True, partialFilterExpression={"idempotency_key": {"$type": "string"}}),
+                        _ensure_idx(db.tasks, [("user_id", 1), ("status", 1), ("due_date", 1)]),
+                        _ensure_idx(db.tasks, "idempotency_key", unique=True, partialFilterExpression={"idempotency_key": {"$type": "string"}}),
                         # Date triggers & notifications
-                        db.date_trigger_configs.create_index([("user_id", 1), ("trigger_type", 1)]),
-                        db.notifications.create_index([("user_id", 1), ("read", 1), ("created_at", -1)]),
+                        _ensure_idx(db.date_trigger_configs, [("user_id", 1), ("trigger_type", 1)]),
+                        _ensure_idx(db.notifications, [("user_id", 1), ("read", 1), ("created_at", -1)]),
                         # Tags
-                        db.tags.create_index([("user_id", 1)]),
+                        _ensure_idx(db.tags, [("user_id", 1)]),
                         # Short URL click dedup index
-                        db.short_url_clicks.create_index([("short_code", 1), ("ip", 1), ("clicked_at", -1)]),
+                        _ensure_idx(db.short_url_clicks, [("short_code", 1), ("ip", 1), ("clicked_at", -1)]),
                         # Performance: compound indexes for contact page queries
-                        db.campaign_enrollments.create_index([("contact_id", 1), ("user_id", 1), ("status", 1)]),
-                        db.campaign_pending_sends.create_index([("contact_id", 1), ("user_id", 1)]),
+                        _ensure_idx(db.campaign_enrollments, [("contact_id", 1), ("user_id", 1), ("status", 1)]),
+                        _ensure_idx(db.campaign_pending_sends, [("contact_id", 1), ("user_id", 1)]),
                         # New pre-scheduled queue index — powers the scheduler's primary query
-                        db.campaign_pending_sends.create_index([("status", 1), ("send_at", 1)]),
-                        db.campaign_pending_sends.create_index([("enrollment_id", 1), ("status", 1)]),
-                        db.tasks.create_index([("contact_id", 1), ("user_id", 1), ("type", 1)]),
-                        db.congrats_cards_sent.create_index([("contact_id", 1), ("user_id", 1)]),
-                        db.messages.create_index([("_id", 1)]),  # Ensures batch message lookups are instant
-                        db.contacts.create_index([("user_id", 1), ("phone", 1)]),  # For phone dedup
-                        db.contacts.create_index([("user_id", 1), ("email", 1)]),  # For email dedup
+                        _ensure_idx(db.campaign_pending_sends, [("status", 1), ("send_at", 1)]),
+                        _ensure_idx(db.campaign_pending_sends, [("enrollment_id", 1), ("status", 1)]),
+                        _ensure_idx(db.tasks, [("contact_id", 1), ("user_id", 1), ("type", 1)]),
+                        _ensure_idx(db.congrats_cards_sent, [("contact_id", 1), ("user_id", 1)]),
+                        _ensure_idx(db.messages, [("_id", 1)]),  # Ensures batch message lookups are instant
+                        _ensure_idx(db.contacts, [("user_id", 1), ("phone", 1)]),  # For phone dedup
+                        _ensure_idx(db.contacts, [("user_id", 1), ("email", 1)]),  # For email dedup
                         # Login brute-force tracking — TTL auto-cleans stale records after 1 day
-                        db.login_attempts.create_index("updated_at", expireAfterSeconds=86400),
-                        db.photo_upload_chunks.create_index("created_at", expireAfterSeconds=3600),
+                        _ensure_idx(db.login_attempts, "updated_at", expireAfterSeconds=86400),
+                        _ensure_idx(db.photo_upload_chunks, "created_at", expireAfterSeconds=3600),
                         # last_activity_at — powers "recent" sort without in-memory aggregation
-                        db.contacts.create_index([("user_id", 1), ("last_activity_at", -1)]),
-                        db.contacts.create_index([("user_id", 1), ("last_activity_at", -1), ("status", 1)]),
+                        _ensure_idx(db.contacts, [("user_id", 1), ("last_activity_at", -1)]),
+                        _ensure_idx(db.contacts, [("user_id", 1), ("last_activity_at", -1), ("status", 1)]),
                         # Short URLs — user's link listing and cleanup
-                        db.short_urls.create_index([("user_id", 1), ("created_at", -1)]),
-                        db.short_urls.create_index([("short_code", 1)]),
+                        _ensure_idx(db.short_urls, [("user_id", 1), ("created_at", -1)]),
+                        _ensure_idx(db.short_urls, [("short_code", 1)], unique=True),  # matches the live unique index (IndexKeySpecsConflict otherwise)
                         # Notifications — user reads (also has TTL applied separately)
-                        db.notifications.create_index([("user_id", 1), ("created_at", -1)]),
-                        db.notifications.create_index([("idempotency_key", 1)], unique=False, sparse=True),  # Notification dedup
+                        _ensure_idx(db.notifications, [("user_id", 1), ("created_at", -1)]),
+                        _ensure_idx(db.notifications, [("idempotency_key", 1)], unique=False, sparse=True),  # Notification dedup
                         # Congrats cards — tracking and reporting
-                        db.congrats_cards_sent.create_index([("user_id", 1), ("sent_at", -1)]),
-                        db.congrats_cards_sent.create_index([("salesman_id", 1), ("sent_at", -1)]),
+                        _ensure_idx(db.congrats_cards_sent, [("user_id", 1), ("sent_at", -1)]),
+                        _ensure_idx(db.congrats_cards_sent, [("salesman_id", 1), ("sent_at", -1)]),
                         # Notification center — compound indexes for all 8 section queries
                         # Section 6: contact_events by user + timestamp + event_type (was doing full collection scan)
-                        db.contact_events.create_index([("user_id", 1), ("event_type", 1), ("timestamp", -1)]),
+                        _ensure_idx(db.contact_events, [("user_id", 1), ("event_type", 1), ("timestamp", -1)]),
                         # Section 4/5: conversations by participants
-                        db.conversations.create_index([("participants", 1), ("unread", 1), ("updated_at", -1)]),
-                        db.conversations.create_index([("participants", 1), ("flagged", 1), ("updated_at", -1)]),
+                        _ensure_idx(db.conversations, [("participants", 1), ("unread", 1), ("updated_at", -1)]),
+                        _ensure_idx(db.conversations, [("participants", 1), ("flagged", 1), ("updated_at", -1)]),
                         # Section 8: engagement signals by user + type + date
-                        db.notifications.create_index([("user_id", 1), ("type", 1), ("created_at", -1)]),
+                        _ensure_idx(db.notifications, [("user_id", 1), ("type", 1), ("created_at", -1)]),
                         # customer_feedback — Review Center queries
-                        db.customer_feedback.create_index([("salesperson_id", 1), ("approved", 1), ("created_at", -1)]),
-                        db.customer_feedback.create_index([("salesperson_id", 1), ("created_at", -1)]),
+                        _ensure_idx(db.customer_feedback, [("salesperson_id", 1), ("approved", 1), ("created_at", -1)]),
+                        _ensure_idx(db.customer_feedback, [("salesperson_id", 1), ("created_at", -1)]),
                         # ai_reply_queue — scheduler lookup: status + send_at (runs every 60s)
-                        db.ai_reply_queue.create_index([("status", 1), ("send_at", 1)]),
-                        db.ai_reply_queue.create_index([("contact_id", 1), ("status", 1)]),
-                        db.ai_reply_queue.create_index([("assigned_user_id", 1), ("status", 1), ("requires_approval", 1)]),
+                        _ensure_idx(db.ai_reply_queue, [("status", 1), ("send_at", 1)]),
+                        _ensure_idx(db.ai_reply_queue, [("contact_id", 1), ("status", 1)]),
+                        _ensure_idx(db.ai_reply_queue, [("assigned_user_id", 1), ("status", 1), ("requires_approval", 1)]),
                         # Trade appraisal (MVP5): vehicles as relationship records, history, reporting, campaign triggers
-                        db.vehicles.create_index([("contact_id", 1), ("deleted", 1)]),
-                        db.vehicles.create_index([("user_id", 1), ("ownership_status", 1), ("last_appraisal.status", 1), ("last_appraisal.closed_at", 1)]),
-                        db.vehicle_appraisals.create_index([("vehicle_id", 1), ("created_at", -1)]),
-                        db.vehicle_appraisals.create_index([("user_id", 1), ("status", 1), ("updated_at", -1)]),
-                        db.vehicle_appraisals.create_index([("store_id", 1), ("created_at", -1)]),
-                        db.vehicle_appraisals.create_index([("user_id", 1), ("created_at", -1)]),
-                        db.appraisal_decisions.create_index([("appraisal_id", 1), ("decided_at", 1)]),
-                        db.appraisal_events.create_index([("contact_id", 1), ("created_at", -1)]),
-                        db.campaigns.create_index([("trigger_events", 1), ("active", 1)]),
-                        db.tasks.create_index([("appraisal_id", 1), ("task_kind", 1)]),
+                        _ensure_idx(db.vehicles, [("contact_id", 1), ("deleted", 1)]),
+                        _ensure_idx(db.vehicles, [("user_id", 1), ("ownership_status", 1), ("last_appraisal.status", 1), ("last_appraisal.closed_at", 1)]),
+                        _ensure_idx(db.vehicle_appraisals, [("vehicle_id", 1), ("created_at", -1)]),
+                        _ensure_idx(db.vehicle_appraisals, [("user_id", 1), ("status", 1), ("updated_at", -1)]),
+                        _ensure_idx(db.vehicle_appraisals, [("store_id", 1), ("created_at", -1)]),
+                        _ensure_idx(db.vehicle_appraisals, [("user_id", 1), ("created_at", -1)]),
+                        _ensure_idx(db.appraisal_decisions, [("appraisal_id", 1), ("decided_at", 1)]),
+                        _ensure_idx(db.appraisal_events, [("contact_id", 1), ("created_at", -1)]),
+                        _ensure_idx(db.campaigns, [("trigger_events", 1), ("active", 1)]),
+                        _ensure_idx(db.tasks, [("appraisal_id", 1), ("task_kind", 1)]),
+                        # Launch compliance + duplicate-send protection (new collections / new field: nothing existing can conflict)
+                        _ensure_idx(db.campaign_pending_sends, "dedupe_key", unique=True, partialFilterExpression={"dedupe_key": {"$exists": True}}),
+                        _ensure_idx(db.consent_records, [("org_id", 1), ("phone", 1), ("at", -1)]),
+                        _ensure_idx(db.consent_state, [("org_id", 1), ("phone", 1), ("status", 1)]),
+                        _ensure_idx(db.sms_suppressions, [("phone", 1), ("active", 1)]),
+                        _ensure_idx(db.sms_optout_events, [("phone", 1), ("at", -1)]),
+                        _ensure_idx(db.sms_disclosure_events, "message_sid"),
+                        _ensure_idx(db.sms_disclosure_state, "last_message_sid"),
+                        _ensure_idx(db.sms_inbound_index, [("org_id", 1), ("last_at", -1)]),
+                        _ensure_idx(db.send_ledger, [("status", 1), ("claimed_at", 1)]),
+                        _ensure_idx(db.sms_send_log, [("org_id", 1), ("at", -1)]),
+                        return_exceptions=True,
                     ), timeout=15)
-                    logger.info("Database indexes created/verified (production-ready)")
+                    _idx_ok, _idx_mismatch, _idx_failed = _idx_summary(_idx_results)
+                    for _m in _idx_mismatch:
+                        logger.warning(f"[Indexes] UNRESOLVED option mismatch: {_m}")
+                    for _r in _idx_failed:
+                        logger.warning(f"[Indexes] one index spec failed (the others were still created): {type(_r).__name__}: {str(_r)[:300]}")
+                    logger.info(f"Database indexes created/verified: {_idx_ok} ok, {len(_idx_mismatch)} unresolved option mismatch, {len(_idx_failed)} failed")
 
-                    # TTL indexes — run separately so a failure doesn't block all indexes
-                    # These auto-expire old data to prevent unbounded collection growth
+                    # Retention TTLs (notifications 90 d, short_url_clicks 1 y, contact_events 2 y) are intentionally NOT created:
+                    # they would delete existing history and need an owner retention decision first (COMMERCIAL_LAUNCH_MASTER_AUDIT A3).
+                    # Twilio retry dedup: unique message_sid in its own step, only when no duplicates exist (no TTL, nothing is deleted).
                     try:
-                        import pymongo
-                        one_year_secs   = 365 * 24 * 3600
-                        two_year_secs   = 2 * one_year_secs
-                        ninety_day_secs = 90 * 24 * 3600
-
-                        # short_url_clicks: keep 1 year of click analytics
-                        await db.short_url_clicks.create_index(
-                            [("clicked_at", pymongo.ASCENDING)],
-                            expireAfterSeconds=one_year_secs,
-                            background=True,
-                        )
-                        # notifications: expire after 90 days (users rarely read old ones)
-                        await db.notifications.create_index(
-                            [("created_at", pymongo.ASCENDING)],
-                            expireAfterSeconds=ninety_day_secs,
-                            background=True,
-                        )
-                        # contact_events: archive after 2 years (compliance-safe retention)
-                        await db.contact_events.create_index(
-                            [("timestamp", pymongo.ASCENDING)],
-                            expireAfterSeconds=two_year_secs,
-                            background=True,
-                        )
-                        logger.info("TTL indexes created — data auto-expires to prevent unbounded growth")
-                    except Exception as ttl_err:
-                        logger.warning(f"TTL index creation failed (non-critical): {ttl_err}")
-
-                    # Unique index on inbound_message_dedup.message_sid — enables atomic Twilio retry dedup
-                    try:
-                        await db.inbound_message_dedup.create_index(
-                            "message_sid", unique=True, background=True
-                        )
-                        await db.inbound_message_dedup.create_index(
-                            "created_at",
-                            expireAfterSeconds=3600,  # Auto-clean dedup records after 1 hour
-                            background=True,
-                        )
-                        logger.info("inbound_message_dedup index created — Twilio retry dedup active")
+                        _dups = await db.inbound_message_dedup.aggregate([{"$group": {"_id": "$message_sid", "n": {"$sum": 1}}}, {"$match": {"n": {"$gt": 1}}}, {"$limit": 5}]).to_list(5)
+                        if _dups:
+                            logger.warning(f"[Indexes] inbound_message_dedup has duplicate message_sid rows ({len(_dups)}+): unique index NOT created, review manually")
+                        else:
+                            await db.inbound_message_dedup.create_index("message_sid", unique=True)
+                            logger.info("inbound_message_dedup unique message_sid index verified — Twilio retry dedup enforced by the database")
                     except Exception as dedup_idx_err:
                         logger.warning(f"inbound_message_dedup index skipped: {dedup_idx_err}")
                 except asyncio.TimeoutError:

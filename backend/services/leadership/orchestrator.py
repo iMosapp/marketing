@@ -194,6 +194,12 @@ async def _alive(db, rid) -> dict | None:
 
 
 async def _run(db, rid):
+    from services.work_owner import heartbeat
+    async with heartbeat(db, RT, rid):
+        await _run_steps(db, rid)
+
+
+async def _run_steps(db, rid):
     try:
         for step in STEPS:
             rt = await _alive(db, rid)

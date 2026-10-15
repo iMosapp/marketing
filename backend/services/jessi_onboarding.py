@@ -215,7 +215,7 @@ async def _say(db, doc: dict, body: str, media: Optional[list] = None, kind: str
     from services.twilio_service import send_sms
     body = no_em_dash(body)
     try:
-        r = await send_sms(doc["phone"], body, media_urls=media, from_phone=doc["from_number"], user_id=doc.get("sender_user_id"))
+        r = await send_sms(doc["phone"], body, media_urls=media, from_phone=doc["from_number"], user_id=doc.get("sender_user_id"), purpose="system", system_kind="account_setup")
     except Exception as e:
         r = {"success": False, "error": str(e)[:200]}
     line = {"role": "jessi", "text": body, "at": _now(), "ok": bool(r.get("success")), "sid": r.get("message_sid") or r.get("sid"), "error": r.get("error"), "kind": kind}
@@ -610,7 +610,7 @@ async def send_digest(db, me: dict, cfg: Optional[dict] = None, force: bool = Fa
         return {"sent": False, "reason": "nothing stuck", "count": 0}
     body = digest_text(_first(me.get("name")) if not me.get("first_name") else me["first_name"], rows)
     try:
-        r = await send_sms(phone, body, from_phone=sender_number(snd), user_id=str(snd["_id"]))
+        r = await send_sms(phone, body, from_phone=sender_number(snd), user_id=str(snd["_id"]), purpose="system", system_kind="team_alert")
     except Exception as e:
         r = {"success": False, "error": str(e)[:200]}
     today = _local_now(cfg).strftime("%Y-%m-%d")

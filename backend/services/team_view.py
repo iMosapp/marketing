@@ -21,7 +21,7 @@ def _iso(v) -> Optional[str]:
 
 def scope_query(viewer: dict, org_id: Optional[str] = None) -> dict:
     """Which users the viewer may see. Raises PermissionError for anyone who is not a manager of that scope."""
-    role = viewer.get("role")
+    role = {"admin": "org_admin", "manager": "store_manager"}.get(viewer.get("role"), viewer.get("role"))
     if role not in MANAGER_ROLES:
         raise PermissionError("Only owners and managers can see My Team")
     if role == "super_admin":

@@ -998,9 +998,9 @@ async def send_contact_cards(db, client: dict, targets: list, me: dict) -> list:
     out = []
     for t in targets:
         body = contact_sms(card, client, t, sender, page)
-        r = await send_sms(t["phone"], body, media_urls=[vcf] if country in MMS_COUNTRIES else None, from_phone=frm or None)
+        r = await send_sms(t["phone"], body, media_urls=[vcf] if country in MMS_COUNTRIES else None, from_phone=frm or None, purpose="system", system_kind="client_staff")
         if not r.get("success") and country in MMS_COUNTRIES:
-            r = await send_sms(t["phone"], body, from_phone=frm or None)
+            r = await send_sms(t["phone"], body, from_phone=frm or None, purpose="system", system_kind="client_staff")
         ok = bool(r.get("success"))
         rec = {"sent_at": datetime.now(timezone.utc), "ok": ok, "error": None if ok else (r.get("error") or "Could not send"), "sid": r.get("sid"), "by": str(me.get("_id"))}
         await db.shop_targets.update_one({"_id": t["_id"]}, {"$set": {"contact_card": rec}})
@@ -1083,7 +1083,7 @@ async def text_guide(db, client: dict, target: dict, by: Optional[str] = None, c
         if uid and ObjectId.is_valid(str(uid)):
             u = await db.users.find_one({"_id": ObjectId(str(uid))}, {"first_name": 1, "name": 1})
             sender = ((u or {}).get("first_name") or (u or {}).get("name") or sender).split(" ")[0]
-        r = await send_sms(target["phone"], cg.guide_sms(client, target, g, sender, url=url, when=when), from_phone=(await from_number(db, client)) or None)
+        r = await send_sms(target["phone"], cg.guide_sms(client, target, g, sender, url=url, when=when), from_phone=(await from_number(db, client)) or None, purpose="system", system_kind="client_staff")
         ok = bool(r.get("success"))
         rec = {"sent_at": _now(), "ok": ok, "error": None if ok else (r.get("error") or "Could not send"), "by": by, "url": url}
     await db.shop_targets.update_one({"_id": target["_id"]}, {"$set": {"guide_text": rec}})
@@ -2306,7 +2306,7 @@ async def after_graded(db, sid: str):
         from services.twilio_service import send_sms
         lang = loc.dialect(s.get("locale") or loc.key_of(client))
         try:
-            r = await send_sms(s["rep_phone"], scorecard_sms(s, ev, url, await _course_line(db, s, ev.get("score_pct"), lang), lang), from_phone=(s.get("from_number") or await from_number(db, client)) or None)
+            r = await send_sms(s["rep_phone"], scorecard_sms(s, ev, url, await _course_line(db, s, ev.get("score_pct"), lang), lang), from_phone=(s.get("from_number") or await from_number(db, client)) or None, purpose="system", system_kind="client_staff")
             await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"score_sms_sent_at": _now(), "score_sms_sid": (r or {}).get("sid") or (r or {}).get("message_sid"), "score_sms_status": (r or {}).get("status") or "sent"}})
         except Exception as e:
             logger.warning(f"[MysteryShop] scorecard text failed for {sid}: {e}")

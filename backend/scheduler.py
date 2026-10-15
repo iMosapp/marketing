@@ -821,7 +821,7 @@ async def send_date_preview_digests():
             if phone:
                 try:
                     from services.twilio_service import send_sms
-                    await send_sms(phone, body, from_phone=user.get("twilio_number") or user.get("mvpline_number"))
+                    await send_sms(phone, body, from_phone=user.get("twilio_number") or user.get("mvpline_number"), purpose="system", system_kind="team_alert", user_id=str(user.get("_id") or "") or None)
                     sent += 1
                 except Exception as e:
                     logger.warning(f"[Digest] SMS failed for {user_id}: {e}")
@@ -925,7 +925,7 @@ async def send_weekly_keyword_digests():
             if phone:
                 try:
                     from services.twilio_service import send_sms
-                    await send_sms(phone, body, from_phone=user.get("twilio_number") or user.get("mvpline_number"))
+                    await send_sms(phone, body, from_phone=user.get("twilio_number") or user.get("mvpline_number"), purpose="system", system_kind="team_alert", user_id=str(user.get("_id") or "") or None)
                     sent += 1
                 except Exception as e:
                     logger.warning(f"[KwDigest] SMS failed for {user_id}: {e}")
@@ -1106,7 +1106,7 @@ async def process_pending_campaign_steps():
                 campaign_doc = {}
                 try:
                     if send_doc.get("campaign_id") and ObjectId.is_valid(str(send_doc["campaign_id"])):
-                        campaign_doc = await db.campaigns.find_one({"_id": ObjectId(send_doc["campaign_id"])}, {"sequences": 1, "repeat_every_months": 1, "repeat_step": 1, "name": 1, "active": 1}) or {}
+                        campaign_doc = await db.campaigns.find_one({"_id": ObjectId(send_doc["campaign_id"])}, {"sequences": 1, "repeat_every_months": 1, "repeat_step": 1, "name": 1, "active": 1, "message_purpose": 1}) or {}
                 except Exception as ce:
                     logger.debug(f"[Scheduler] campaign lookup failed: {ce}")
                 try:
@@ -1258,11 +1258,26 @@ async def process_pending_campaign_steps():
                     if contact_phone and channel in ("sms", "mms"):
                         try:
                             from services.twilio_service import send_sms
+                            send_purpose = send_doc.get("purpose") or campaign_doc.get("message_purpose") or "marketing"
+                            program = f"broadcast:{send_doc['broadcast_id']}" if send_doc.get("broadcast_id") else f"campaign:{send_doc.get('campaign_id') or 'none'}"
                             sms_result = await send_sms(
                                 contact_phone, message_content,
                                 media_urls=media_urls if media_urls else None,
-                                from_phone=rep_number
+                                from_phone=rep_number, purpose=send_purpose, user_id=user_id, contact_id=str(contact_id),
+                                campaign_key=program, idempotency_key=f"pending:{send_id}",
                             )
+                            if sms_result.get("error_code") == "billing_locked":
+                                await send_ledger_release(db, f"pending:{send_id}")
+                                await db.campaign_pending_sends.update_one({"_id": send_id}, {"$set": {"status": "pending", "send_at": now_naive + timedelta(hours=6), "deferred_reason": "billing_locked"}})
+                                logger.info(f"[Scheduler] Paused send {send_id}: organization billing is locked")
+                                continue
+                            if sms_result.get("blocked") or sms_result.get("duplicate"):
+                                await db.campaign_pending_sends.update_one({"_id": send_id}, {"$set": {"status": "skipped", "skip_reason": sms_result.get("error_code") or "refused", "processed_at": now_naive}})
+                                if send_doc.get("broadcast_id"):
+                                    await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=False, skipped=True)
+                                logger.info(f"[Scheduler] Skipped send {send_id}: {sms_result.get('error_code')}")
+                                processed += 1
+                                continue
                             if not sms_result.get("success"):
                                 twilio_failed = True
                                 twilio_error = str(sms_result.get("error", "Twilio send failed"))
@@ -2579,6 +2594,25 @@ def start_scheduler():
         misfire_grace_time=120,
     )
 
+    # Every 2 minutes — crash recovery: sends that died mid-call (never re-sent), stale crawls / roundtables / inspections, half-queued broadcasts
+    async def _run_reliability_sweep():
+        from routers.database import get_db
+        from services import broadcast_queue, send_ledger, work_owner
+        db = get_db()
+        await send_ledger.sweep(db)
+        await broadcast_queue.recover_stale(db)
+        n = await work_owner.sweep_all(db)
+        if any(n.values()):
+            logger.warning(f"[Reliability] stale in-progress work marked interrupted: {n}")
+
+    scheduler.add_job(
+        safe_job(_run_reliability_sweep),
+        IntervalTrigger(minutes=2),
+        id="reliability_sweep",
+        replace_existing=True,
+        misfire_grace_time=120,
+    )
+
     from services.job_lease import guard_jobs
     guard_jobs(scheduler)  # both replicas keep their scheduler; each shared job runs on one replica per tick
     scheduler.start()
@@ -2596,20 +2630,25 @@ def start_scheduler():
         logger.info(f"[Scheduler] Started with {job_count} jobs including daily silence follow-ups")
 
 
-async def _update_broadcast_progress(db, broadcast_id: str, failed: bool):
-    """Increment broadcast sent/failed counters; finalize status when the queue drains."""
+async def send_ledger_release(db, key: str):
+    from services.send_ledger import release
+    await release(db, key)
+
+
+async def _update_broadcast_progress(db, broadcast_id: str, failed: bool, skipped: bool = False):
+    """Increment broadcast sent/failed/skipped counters; finalize status when the queue drains."""
     try:
         oid = ObjectId(broadcast_id)
     except Exception:
         return
-    inc_field = "failed_count" if failed else "sent_count"
+    inc_field = "skipped_count" if skipped else ("failed_count" if failed else "sent_count")
     await db.broadcasts.update_one({"_id": oid}, {"$inc": {inc_field: 1}})
     remaining = await db.campaign_pending_sends.count_documents({
         "broadcast_id": broadcast_id, "status": {"$in": ["pending", "processing"]}
     })
     if remaining == 0:
-        b = await db.broadcasts.find_one({"_id": oid}, {"sent_count": 1})
-        final = "sent" if (b or {}).get("sent_count", 0) > 0 else "failed"
+        b = await db.broadcasts.find_one({"_id": oid}, {"sent_count": 1, "skipped_count": 1}) or {}
+        final = "sent" if b.get("sent_count", 0) > 0 else ("skipped" if b.get("skipped_count", 0) > 0 else "failed")
         await db.broadcasts.update_one({"_id": oid}, {"$set": {
             "status": final,
             "completed_at": datetime.now(timezone.utc).isoformat(),
@@ -2629,6 +2668,8 @@ async def process_scheduled_broadcasts():
     now = datetime.now(timezone.utc)
     now_naive = datetime.utcnow()
     try:
+        from services.broadcast_queue import recover_stale
+        await recover_stale(db)
         due = await db.broadcasts.find(
             {"status": "scheduled", "scheduled_at": {"$lte": now.isoformat()}}
         ).to_list(20)
@@ -2638,86 +2679,15 @@ async def process_scheduled_broadcasts():
 
         logger.info(f"[Scheduler] Processing {len(due)} scheduled broadcasts")
 
+        from services.broadcast_queue import queue as _queue
         for broadcast in due:
             broadcast_id = str(broadcast["_id"])
-            user_id = broadcast.get("created_by", "")
             try:
-                from services.twilio_service import get_rep_twilio_number
-                rep_twilio_number = await get_rep_twilio_number(user_id)
-
-                stagger = int(broadcast.get("stagger_seconds", 10))
-                jessi_on = broadcast.get("jessi_replies", False)
-                message_template = broadcast.get("message", "")
-                media_urls = broadcast.get("media_urls", [])
-
-                recipient_ids = broadcast.get("recipients", [])
-                contacts = await db.contacts.find(
-                    {"_id": {"$in": [ObjectId(rid) for rid in recipient_ids]}},
-                    {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1}
-                ).to_list(5000)
-
-                pending_docs = []
-                for i, contact in enumerate(contacts):
-                    phone = contact.get("phone", "")
-                    if not phone:
-                        continue
-                    first_name = contact.get("first_name", "there")
-                    personalised = message_template.replace("{first_name}", first_name).replace("{name}", first_name)
-                    contact_id = str(contact["_id"])
-                    send_at = now_naive + timedelta(seconds=i * stagger)
-                    pending_docs.append({
-                        "user_id": user_id,
-                        "contact_id": contact_id,
-                        "contact_name": f"{contact.get('first_name','')} {contact.get('last_name','')}".strip(),
-                        "contact_phone": phone,
-                        "rep_phone": rep_twilio_number,
-                        "message_template": personalised,
-                        "media_urls": media_urls,
-                        "channel": "sms",
-                        "delivery_mode": "auto",
-                        "send_at": send_at,
-                        "status": "pending",
-                        "step": 0,
-                        "enrollment_id": "",
-                        "campaign_id": "",
-                        "campaign_name": broadcast.get("name", "Broadcast"),
-                        "broadcast_id": broadcast_id,
-                        "type": "broadcast",
-                        "created_at": now_naive,
-                    })
-
-                if pending_docs:
-                    await db.campaign_pending_sends.insert_many(pending_docs)
-
-                # Enable Jessi for all recipients if requested
-                if jessi_on:
-                    for contact in contacts:
-                        if not contact.get("phone"):
-                            continue
-                        conv = await db.conversations.find_one({
-                            "$or": [
-                                {"rep_phone": rep_twilio_number, "contact_phone": contact["phone"]},
-                                {"user_id": user_id, "contact_id": str(contact["_id"])},
-                            ]
-                        })
-                        if conv:
-                            await db.conversations.update_one(
-                                {"_id": conv["_id"]},
-                                {"$set": {"ai_enabled": True, "ai_mode": "auto"}}
-                            )
-
-                await db.broadcasts.update_one(
-                    {"_id": broadcast["_id"]},
-                    {"$set": {"status": "sending", "sent_at": now.isoformat(), "queued_count": len(pending_docs)}}
-                )
-                logger.info(f"[Scheduler] Broadcast '{broadcast.get('name')}' queued {len(pending_docs)} sends")
-
+                res = await _queue(db, broadcast_id, ("scheduled",))
+                if not res["claimed"]:
+                    logger.info(f"[Scheduler] Broadcast {broadcast_id} already claimed by another replica")
             except Exception as e:
                 logger.error(f"[Scheduler] Failed to send scheduled broadcast {broadcast_id}: {e}")
-                await db.broadcasts.update_one(
-                    {"_id": broadcast["_id"]},
-                    {"$set": {"status": "failed", "error": str(e)}}
-                )
     except Exception as e:
         logger.error(f"[Scheduler] Broadcast processor error: {e}")
 

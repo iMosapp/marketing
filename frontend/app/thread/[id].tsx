@@ -1282,7 +1282,13 @@ function ThreadScreen() {
       
     } catch (error: any) {
       console.error('Failed to send message:', error);
-      showAlert('Error', 'Failed to send message. Please try again.');
+      if (error?.compliance) {
+        // Refused by texting compliance (no consent, STOP, paused texting): nothing was sent; keep the draft
+        if (!error.consentDeclined) showAlert('Text not sent', error.complianceMessage || 'This text was not sent.');
+        setMessage(contentToSend);
+      } else {
+        showAlert('Error', 'Failed to send message. Please try again.');
+      }
       // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => !m._id.startsWith('temp_')));
     } finally {

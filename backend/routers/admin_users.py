@@ -344,7 +344,7 @@ async def create_user_with_invite(data: dict, request: Request):
         try:
             sms_body = ACTIVATION_SMS.format(first_name=first_name)
             from services.twilio_service import send_sms as send_sms_func
-            sms_result = await send_sms_func(phone, sms_body)
+            sms_result = await send_sms_func(phone, sms_body, purpose="system", system_kind="account_invite")
             sms_sent = bool(sms_result.get("success"))
             if sms_sent:
                 logger.info(f"Activation SMS sent to {phone}")
@@ -1534,7 +1534,7 @@ async def add_team_member(data: AddTeamMemberRequest, request: Request):
     if phone and settings and settings.get("auto_send_welcome_sms", True):
         try:
             from services.twilio_service import send_sms
-            result_sms = await send_sms(phone, message)
+            result_sms = await send_sms(phone, message, purpose="system", system_kind="account_invite")
             if result_sms.get("success"):
                 sms_sent = True
         except Exception as e:

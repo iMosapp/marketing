@@ -252,6 +252,15 @@ async def incoming_message(
             media_type="application/xml"
         )
 
+    # ── Central opt-out / re-enrollment and customer-initiated evidence, before any route below (inboxes, onboarding, reps) ──
+    try:
+        from services import consent as _consent, suppression as _sup
+        _kw = await _sup.on_inbound(db, from_phone=from_phone, to_phone=to_phone, body=Body or "", message_sid=MessageSid)
+        if _kw not in ("stop", "stop_request"):
+            await _consent.note_inbound(db, await _sup.scope_for_number(db, to_phone), from_phone, to_phone, MessageSid)
+    except Exception as comp_err:
+        logger.error(f"[Webhook] central opt-out handling failed: {comp_err}")
+
     # ── A lead-shop shopper number? The store is texting the AI persona back. ──
     try:
         from services.lead_shops import inbound_text as _lead_shop_text
@@ -741,21 +750,19 @@ async def incoming_message(
                         if throttled:
                             logger.debug(f"[Webhook] Active SMS throttled for {conversation_id} ({throttle_minutes}m window)")
                         else:
-                            tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
-                            tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
-                            if not tw_sid or not tw_token:
-                                logger.warning("[Webhook] Active SMS skipped — TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN not set")
-                            else:
+                            if True:
                                 preview_text = (Body or "").strip()[:60]
                                 notif_msg = (
                                     f"I'm On Social: {contact_display} replied to you.\n"
                                     f'"{preview_text}{"..." if len((Body or "")) > 60 else ""}"\n\n'
                                     f"Open conversation:\n{conv_link}"
                                 )
-                                async def _send_active_sms(to=rep_cell, frm=rep_twilio_number, body=notif_msg, sid=tw_sid, tok=tw_token, conv_id=conversation_id):
+                                async def _send_active_sms(to=rep_cell, frm=rep_twilio_number, body=notif_msg, conv_id=conversation_id, rid=str(rep_user["_id"])):
                                     try:
-                                        from twilio.rest import Client as _TC
-                                        _TC(sid, tok).messages.create(to=to, from_=frm, body=body)
+                                        from services.twilio_service import send_sms as _ss
+                                        r = await _ss(to, body, from_phone=frm, purpose="system", system_kind="team_alert", user_id=rid)
+                                        if not r.get("success"):
+                                            raise RuntimeError(r.get("error_code") or r.get("error"))
                                         await db.conversations.update_one(
                                             {"_id": ObjectId(conv_id)},
                                             {"$set": {"rep_sms_notified_at": datetime.utcnow()}}
@@ -1089,9 +1096,7 @@ async def incoming_message(
                     rep_personal_phone = normalize_phone((rep_user.get("phone") or "").strip()) if rep_user else ""
                     rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or conversation.get("rep_phone") or "").strip() if rep_user else ""
                     if sms_urn_enabled and rep_personal_phone and rep_twilio_number:
-                        tw_sid2   = os.environ.get("TWILIO_ACCOUNT_SID", "")
-                        tw_token2 = os.environ.get("TWILIO_AUTH_TOKEN", "")
-                        if tw_sid2 and tw_token2:
+                        if True:
                             app_url2  = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
                             deep_link2 = f"imos://thread/{conversation_id}"
                             web_link2  = f"{app_url2}/thread/{conversation_id}"
@@ -1104,11 +1109,11 @@ async def incoming_message(
                                 f"Open app: {deep_link2}\n"
                                 f"Or web: {web_link2}"
                             )
-                            async def _send_urgent_sms(to=urgent_to, frm=urgent_frm, body=urgent_body, sid=tw_sid2, tok=tw_token2):
+                            async def _send_urgent_sms(to=urgent_to, frm=urgent_frm, body=urgent_body, rid=str(rep_user["_id"])):
                                 try:
-                                    from twilio.rest import Client as _TC2
-                                    _TC2(sid, tok).messages.create(to=to, from_=frm, body=body)
-                                    logger.info(f"[Webhook] Sent YOU'RE NEEDED SMS to {to}")
+                                    from services.twilio_service import send_sms as _ss
+                                    r = await _ss(to, body, from_phone=frm, purpose="system", system_kind="team_alert", user_id=rid)
+                                    logger.info(f"[Webhook] YOU'RE NEEDED SMS to {to}: {r.get('success')}")
                                 except Exception as _ue:
                                     logger.warning(f"[Webhook] Urgent SMS failed: {_ue}")
                             asyncio.create_task(_send_urgent_sms())
@@ -1229,6 +1234,13 @@ async def message_status_callback(
 
         if MessageStatus in ("failed", "undelivered"):
             await _handle_failed_outbound(db, MessageSid, From, ErrorCode or "", ErrorMessage or "")
+        try:
+            from services import disclosure as _disc, suppression as _sup
+            await _disc.on_status(db, MessageSid, MessageStatus)
+            if ErrorCode and To:
+                await _sup.on_provider_error(db, to_phone=normalize_phone(To), from_phone=normalize_phone(From) if From else None, error_code=ErrorCode)
+        except Exception as comp_err:
+            logger.warning(f"[Webhook] disclosure/opt-out receipt skipped: {comp_err}")
         
     except Exception as e:
         logger.error(f"Error updating message status: {str(e)}")
@@ -1275,7 +1287,7 @@ async def _handle_failed_outbound(db, sid: str, from_number: str, code: str, err
     resent = False
     if msg.get("has_media") and code in MEDIA_ERROR_CODES and phone and msg.get("content") and not msg.get("retry_of"):
         from services.twilio_service import send_sms
-        r = await send_sms(phone, msg["content"], from_phone=from_number or None)
+        r = await send_sms(phone, msg["content"], from_phone=from_number or None, purpose="conversational", user_id=user_id or None, contact_id=contact_id or None)
         if r.get("success"):
             resent = True
             now = datetime.now(timezone.utc)

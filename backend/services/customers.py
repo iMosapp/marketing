@@ -179,7 +179,7 @@ async def invite_owner(db, org: dict, actor: dict) -> dict:
             from services.twilio_service import send_sms
             body = (f"Welcome to I'm On Social, {first}! Your {org.get('name', 'company')} account is ready. "
                     f"Tap to activate and choose your password (this link works once and expires in {INVITE_TTL_HOURS} hours): {link}")
-            res = await send_sms(owner["phone"], body)
+            res = await send_sms(owner["phone"], body, purpose="system", system_kind="account_invite")
             sms_sent = bool(res.get("success"))
         except Exception as e:
             logger.warning(f"[Customers] owner invite text failed for {org_id}: {e}")

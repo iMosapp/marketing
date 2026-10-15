@@ -13,6 +13,8 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { HomeFab } from '../components/common/HomeFab';
 import { RecordingOverlay } from '../components/recording/RecordingOverlay';
 import { MediaTokenGate } from '../components/common/MediaTokenGate';
+import { ConsentSheetHost } from '../components/compliance/ConsentSheet';
+import { AccessPausedGate } from '../components/compliance/AccessPaused';
 import { initGlobalErrorHandlers } from '../services/errorReporter';
 import { playLeadChime, isLeadPush } from '../utils/leadChime';
 
@@ -206,7 +208,7 @@ export default function RootLayout() {
   
   // Hide Jessi on auth/public/customer-facing screens
   // These are ALL routes where a customer/public visitor could land
-  const publicRoutes = ['auth', 'index', 'onboarding', 'p', 'card', 'proof', 'congrats', 'opt-in', 'review', 'showcase', 'l', 'birthday', 'timeline', 'imos', 'import-guide', 'cs-login', 'proposal', 'shop-report', 'shop-kickoff', 'shop-score', 'certificate', 'jessi-call', 'guide', 'billing'];
+  const publicRoutes = ['auth', 'index', 'onboarding', 'p', 'card', 'proof', 'congrats', 'opt-in', 'review', 'showcase', 'l', 'birthday', 'timeline', 'imos', 'import-guide', 'cs-login', 'proposal', 'shop-report', 'shop-kickoff', 'shop-score', 'certificate', 'jessi-call', 'guide', 'billing', 'consent'];
   const isPublicScreen = !segments.length || publicRoutes.includes(segments[0]);
   // Double-check with pathname for routes that sometimes resolve differently
   const pathname = segments.join('/');
@@ -342,6 +344,8 @@ export default function RootLayout() {
               {showJessi && <HomeFab />}
               <RecordingOverlay />
               <MediaTokenGate />
+              {isAuthenticated && !isPublicScreen && <AccessPausedGate />}
+              {isAuthenticated && <ConsentSheetHost />}
             </View>
             </LiveJessiProvider>
             {/* Jessi floating chat hidden — causes keyboard offset issues */}

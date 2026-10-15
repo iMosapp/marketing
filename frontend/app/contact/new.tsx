@@ -34,6 +34,7 @@ import { PrimaryButton } from '../../components/ui/PrimaryButton';
 import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint } from '../../components/ui/tokens';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
 import { MemoKindPicker, MemoKind } from '../../components/memos/MemoKindPicker';
+import { NewContactConsent } from '../../components/compliance/NewContactConsent';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -65,6 +66,7 @@ export default function NewContactScreen() {
   // ── Contact form state ────────────────────────────────────────────────────
   const [contact, setContact] = useState({ ...EMPTY_CONTACT, first_name: String(params.first_name || ''), last_name: String(params.last_name || ''), employer: String(params.employer || '') });
   const [saving, setSaving] = useState(false);
+  const [consentScopes, setConsentScopes] = useState<string[]>([]);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [duplicateMatches, setDuplicateMatches] = useState<any[]>([]);
   const dupCheckTimer = useRef<any>(null);
@@ -361,6 +363,16 @@ export default function NewContactScreen() {
       showToast('Contact saved!', 'success');
       const newId = result?._id || result?.id;
 
+      // Optional verbal consent captured on this screen (nothing checked = consent stays unknown)
+      if (newId && contact.phone && consentScopes.length) {
+        try {
+          await api.post(`/consent/contact/${newId}`, { scopes: consentScopes, method: 'verbal_in_person', source: 'add_contact' });
+        } catch (e: any) {
+          const d = e?.response?.data?.detail;
+          showToast((d && typeof d === 'object' ? d.message : d) || 'Contact saved, but the texting permission was not recorded.', 'error', 4000);
+        }
+      }
+
       // Upload the voice recording if one was made
       if (newId && ncVoiceAudioBlob.current) {
         try {
@@ -469,6 +481,8 @@ export default function NewContactScreen() {
             </View>
           </View>
 
+          {!!contact.phone && <NewContactConsent value={consentScopes} onChange={setConsentScopes} colors={colors} />}
+
           {!IS_WEB && (
             <TouchableOpacity onPress={loadDeviceContacts} disabled={loadingDeviceContacts}
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: SPACE.lg, marginTop: -4, marginBottom: SPACE.md, paddingVertical: 6 }}
@@ -527,14 +541,14 @@ export default function NewContactScreen() {
             )}
           </View>
 
-          {/* More details: email, vehicle, referral, notes, tags, photo, address, dates */}
+          {/* More details: email, purchase, referral, notes, tags, photo, address, dates */}
           <TouchableOpacity
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: SPACE.md, marginHorizontal: SPACE.lg, marginBottom: SPACE.md }}
             onPress={() => setShowMoreDetails(v => !v)} data-testid="new-contact-more-details"
           >
             <Ionicons name={showMoreDetails ? 'chevron-up-circle-outline' : 'add-circle-outline'} size={18} color={GOLD} />
             <Text style={{ fontSize: 16, color: GOLD, fontWeight: '700' }}>{showMoreDetails ? 'Fewer details' : 'More details'}</Text>
-            {!showMoreDetails && <Text style={{ fontSize: TYPE.caption, color: colors.textTertiary }}>email, vehicle, tags, address, dates</Text>}
+            {!showMoreDetails && <Text style={{ fontSize: TYPE.caption, color: colors.textTertiary }}>email, purchase, tags, address, dates</Text>}
           </TouchableOpacity>
 
           {showMoreDetails && (
@@ -566,7 +580,7 @@ export default function NewContactScreen() {
                 <View style={ncs.cardDivider} />
                 <View style={ncs.cardRow}>
                   <Ionicons name="car-outline" size={20} color={colors.textSecondary} style={ncs.cardRowIcon} />
-                  <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Vehicle (e.g., 2023 Toyota RAV4)"
+                  <TextInput style={[ncs.cardInput, { flex: 1 }]} placeholder="Purchase or interest (e.g., product, service, vehicle)"
                     placeholderTextColor={colors.textTertiary} value={contact.vehicle}
                     onChangeText={t => setContact(p => ({ ...p, vehicle: t }))} data-testid="input-vehicle" />
                 </View>
@@ -646,7 +660,7 @@ export default function NewContactScreen() {
                 {[
                   { field: 'birthday', label: 'Birthday', icon: 'gift' },
                   { field: 'anniversary', label: 'Anniversary', icon: 'heart' },
-                  { field: 'date_sold', label: 'Date Sold', icon: 'car' },
+                  { field: 'date_sold', label: 'Purchase date', icon: 'bag-check' },
                 ].map((d, idx) => (
                   <React.Fragment key={d.field}>
                     {idx > 0 && <View style={[ncs.cardDivider, { marginLeft: 40 }]} />}

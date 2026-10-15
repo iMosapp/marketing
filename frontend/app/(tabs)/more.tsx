@@ -584,6 +584,7 @@ function MoreScreenFull() {
       { permKey: 'accounts', icon: 'call', title: 'Phone Numbers', subtitle: 'Twilio inventory & billing', onPress: () => router.push('/admin/twilio-numbers'), color: '#34C759' },
       ...((!repPreview && (user?.role === 'store_manager' || user?.role === 'org_admin')) ? [
         { icon: 'card' as any, title: 'Billing', subtitle: 'Your plan, invoices and payment method', onPress: () => router.push('/settings/billing' as any), color: '#C9A962' },
+        { icon: 'people' as any, title: 'My Team', subtitle: 'Setup, texting readiness and this week\'s activity per team member', onPress: () => router.push('/my-team' as any), color: '#34C759' },
       ] : []),
       ...((!repPreview && user?.role === 'org_admin') ? [
         { permKey: 'accounts', icon: 'chatbubbles' as any, title: 'Communications', subtitle: 'Your texting numbers, who holds them, compliance and messaging status', onPress: () => router.push(`/admin/org-twilio/${user?.organization_id}` as any), color: '#C9A962' },
@@ -617,7 +618,7 @@ function MoreScreenFull() {
       { icon: 'podium', title: 'Leaderboard', subtitle: 'Performance across all accounts', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
       { icon: 'pulse', title: 'Activity Feed', subtitle: 'Team activity across accounts', onPress: () => router.push('/(tabs)/activity-feed' as any), color: '#5856D6' },
       ...(isSuperAdmin ? [
-        { icon: 'analytics', title: 'Website Leads', subtitle: "Demo requests and referrals for i'M On Social itself, not dealership leads", onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
+        { icon: 'analytics', title: 'Website Leads', subtitle: "Demo requests and referrals for i'M On Social itself, not customer organizations' leads", onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
         { icon: 'flame', title: 'Hot Leads', subtitle: "New demo requests from the i'M On Social website", onPress: () => router.push('/admin/hot-leads'), color: '#FF3B30' },
         { icon: 'qr-code', title: 'Print QR Codes', subtitle: 'Tracked QR links for cards, flyers & signs', onPress: () => router.push('/admin/print-qr' as any), color: '#C9A962' },
       ] : []),
@@ -650,7 +651,7 @@ function MoreScreenFull() {
       { icon: 'radio', title: 'Jessi Voice Lab', subtitle: 'Pick her live voice, energy and pacing, audition her', onPress: () => router.push('/admin/voice-lab' as any), color: '#C9A962' },
       { icon: 'pulse', title: 'Voice Pilot', subtitle: 'Enrol your own account in the voice spending controls, watch usage, kill switch', onPress: () => router.push('/admin/voice-pilot' as any), color: '#C9A962' },
       // System
-      { icon: 'shield-checkmark', title: 'Texting Compliance', subtitle: 'A2P 10DLC brand + campaign and Caller ID per dealership', onPress: () => router.push('/admin/compliance' as any), color: '#C9A962' },
+      { icon: 'shield-checkmark', title: 'Texting Compliance', subtitle: 'A2P 10DLC brand + campaign and Caller ID per organization', onPress: () => router.push('/admin/compliance' as any), color: '#C9A962' },
       { icon: 'git-network', title: 'Twilio Migration', subtitle: 'Map every existing number to its organization, import into the registry, texting rules', onPress: () => router.push('/admin/twilio-migration' as any), color: '#C9A962' },
       { icon: 'mail', title: 'Shared Inboxes', subtitle: 'Department numbers, members, routing', onPress: () => router.push('/inboxes' as any), color: '#007AFF' },
       { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts between users', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },

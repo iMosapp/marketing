@@ -598,7 +598,7 @@ async def share_invite_via_sms(data: ShareInviteViaSMS, me: dict = Depends(get_c
     sms_error = None
     try:
         from services.twilio_service import send_sms
-        result = await send_sms(recipient_phone, message)
+        result = await send_sms(recipient_phone, message, purpose="system", system_kind="account_invite")
         if result.get("success"):
             sms_sent = True
             await db.sms_queue.update_one(

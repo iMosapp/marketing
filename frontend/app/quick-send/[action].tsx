@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api, { smartSendSMS } from '../../services/api';
+import { showSimpleAlert } from '../../services/alert';
 import { FirstWinCelebration } from '../../components/onboarding-jessi/FirstWinCelebration';
 
 const IS_WEB = Platform.OS === 'web';
@@ -361,6 +362,7 @@ export default function QuickSendPage() {
         // Try Twilio first (dedicated business number) — fall back to native SMS only if needed
         const repTwilioNumber = (user as any)?.twilio_number || (user as any)?.mvpline_number;
         let sentViaTwilio = false;
+        let refused = '';
         if (repTwilioNumber && phone) {
           try {
             const result = await smartSendSMS({
@@ -373,8 +375,10 @@ export default function QuickSendPage() {
               platform:    Platform.OS,
             });
             sentViaTwilio = result.usedTwilio;
+            if (result.refused) { refused = result.refused; showSimpleAlert('Text not sent', result.message || 'This text was not sent.'); }
           } catch {}
         }
+        if (refused) throw new Error(`Text refused: ${refused}`);
 
         if (!sentViaTwilio) {
           // No Twilio number or send failed — open native SMS as fallback

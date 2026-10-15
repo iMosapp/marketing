@@ -130,7 +130,7 @@ const QUICK_WIN_REVIEW_PAGE: OnboardingSlide = {
 const QUICK_WIN_SHOWROOM: OnboardingSlide = {
   id: 'qw_showroom',
   type: 'quick_win',
-  title: 'Your Showroom Page',
+  title: 'Your Showcase Page',
   subtitle: 'Quick Win #5',
   description: "A landing page that showcases your work  - congrats cards, featured vehicles, happy customers. Edit what shows up. Perfect to text or email while a customer is waiting in your office.",
   icon: 'images',
@@ -138,7 +138,7 @@ const QUICK_WIN_SHOWROOM: OnboardingSlide = {
   bgGradient: ['#FFFFFF', '#F0F5FF'],
   demoComponent: 'ShowroomDemo',
   tryItRoute: '/showroom-manage',
-  tryItLabel: 'Manage My Showroom',
+  tryItLabel: 'Manage My Showcase',
   quickWinNumber: 5,
   benefits: [
     'Showcase your best work to new customers',
@@ -267,7 +267,7 @@ const QUICK_WIN_USER_MANAGEMENT: OnboardingSlide = {
   tryItLabel: 'Manage Users',
   benefits: [
     'Create accounts & send invite links',
-    'Assign roles: Admin, Manager, Salesperson',
+    'Assign roles: Admin, Manager, Team Member',
     'Manage multiple store locations',
     'Deactivate users without losing data',
   ],
@@ -310,7 +310,7 @@ const SALESPERSON_CHECKLIST: OnboardingSlide = {
     { id: 'digital_card', label: 'Set up your Digital Business Card', description: 'Add your photo, bio, and social links', route: '/settings/store-profile', icon: 'card', iconColor: '#5856D6' },
     { id: 'congrats_card', label: 'Create your first Congrats Card', description: 'Celebrate a recent sale', route: '/settings/create-congrats', icon: 'gift', iconColor: '#007AFF' },
     { id: 'birthday_card', label: 'Create a Birthday Card', description: 'Send a personal touch', route: '/settings/create-birthday-card', icon: 'gift', iconColor: '#FF6B8A' },
-    { id: 'showroom', label: 'Customize your Showroom', description: 'Choose what customers see', route: '/showroom-manage', icon: 'images', iconColor: '#007AFF' },
+    { id: 'showroom', label: 'Customize your Showcase', description: 'Choose what customers see', route: '/showroom-manage', icon: 'images', iconColor: '#007AFF' },
     { id: 'import_contacts', label: 'Import your contacts via CSV', description: 'Bring in your customer list', route: '/settings/import-contacts', icon: 'cloud-upload', iconColor: '#34C759' },
     { id: 'send_message', label: 'Send your first message', description: 'Text or email a customer', route: '/(tabs)/inbox', icon: 'chatbubble', iconColor: '#FF9500' },
   ],
@@ -356,14 +356,14 @@ const SALESPERSON_COMPLETE: OnboardingSlide = {
   type: 'complete',
   title: "You're Ready to Win!",
   subtitle: 'Your Sales Toolkit is Live',
-  description: "Everything is set up. Your digital card, review page, showroom, and quick actions are all ready to go. Start building relationships!",
+  description: "Everything is set up. Your digital card, review page, showcase, and quick actions are all ready to go. Start building relationships!",
   icon: 'checkmark-done',
   iconColor: '#34C759',
   bgGradient: ['#FFFFFF', '#F0FFF5'],
   benefits: [
     'Digital Business Card  - ready to share',
     'Congrats & Birthday Cards  - create anytime',
-    'Review Page & Showroom  - live now',
+    'Review Page & Showcase  - live now',
     'Inbox  - start conversations today',
   ],
 };
@@ -378,7 +378,7 @@ const MANAGER_COMPLETE: OnboardingSlide = {
   iconColor: '#34C759',
   bgGradient: ['#FFFFFF', '#F0FFF5'],
   benefits: [
-    'All salesperson tools  - ready for your team',
+    'All team member tools  - ready for your team',
     'Leaderboards & Reports  - track performance',
     'Automated Campaigns  - set and forget',
     'Team Invites  - onboard your people',
@@ -445,7 +445,7 @@ export const STORE_MANAGER_SLIDES: OnboardingSlide[] = [
     bgGradient: ['#FFFFFF', '#F0FFF5'],
     interactiveType: 'team_invite' as const,
     inviteRole: 'user' as const,
-    inviteTitle: 'Salesperson',
+    inviteTitle: 'Team Member',
     skipable: true,
     benefits: [
       "They'll get their own quick-wins walkthrough",

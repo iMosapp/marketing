@@ -100,6 +100,10 @@ async def send_sms(
     org_id: Optional[str] = None,
     user_id: Optional[str] = None,
     contact_id: Optional[str] = None,
+    purpose: Optional[str] = None,
+    system_kind: Optional[str] = None,
+    campaign_key: Optional[str] = None,
+    idempotency_key: Optional[str] = None,
 ) -> dict:
     """
     Send an SMS or MMS message via Twilio.
@@ -114,10 +118,35 @@ async def send_sms(
         media_urls: Optional media URLs for MMS (images, PDFs)
         from_phone: Rep's dedicated Twilio number — ALWAYS pass this for rep-to-customer sends
         org_id / user_id / contact_id: optional attribution for usage tracking (resolved from from_phone when omitted)
+        purpose:    conversational | requested_info | transactional | marketing | system (services/outbound_gate.py)
+        system_kind: required when purpose == "system" (outbound_gate.SYSTEM_KINDS)
+        campaign_key: the marketing program (broadcast / campaign id) for disclosure tracking
+        idempotency_key: at most one provider call per key, across replicas and retries (services/send_ledger.py)
     """
     to_phone = normalize_phone(to_phone)
     from services.twilio_errors import vcard_media_to_link
     message, media_urls = vcard_media_to_link(message, mms_safe_media(media_urls))
+    if from_phone:
+        from_phone = normalize_phone(from_phone)
+    from routers.database import get_db
+    from services import disclosure, outbound_gate, send_ledger
+    db = get_db()
+    if not purpose:
+        logger.warning(f"[SMS] unclassified send to {to_phone[-4:]}: treated as conversational")
+    try:
+        decision = await outbound_gate.evaluate(db, to_phone=to_phone, from_phone=from_phone, purpose=purpose, system_kind=system_kind,
+                                                user_id=user_id, org_id=org_id, contact_id=contact_id)
+    except Exception as e:
+        logger.error(f"[SMS] compliance check failed, not sending to {to_phone[-4:]}: {e}")
+        return {"success": False, "blocked": True, "error": "The texting compliance check is unavailable right now. Try again shortly.", "error_code": "gate_unavailable", "mock": False}
+    if not decision["allowed"]:
+        logger.info(f"[SMS] refused {decision['purpose']} text to {to_phone[-4:]}: {decision['code']}")
+        await outbound_gate.log(db, decision, to_phone=to_phone, from_phone=from_phone)
+        return outbound_gate.refusal(decision)
+    if decision.get("shadow"):
+        logger.warning(f"[SMS] shadow mode would block text to {to_phone[-4:]}: {decision['shadow']}")
+    org_id = org_id or decision.get("org_id")
+    user_id = user_id or decision.get("user_id")
 
     if from_phone:
         try:
@@ -131,6 +160,50 @@ async def send_sms(
             logger.warning(f"[SMS] blocked from {from_phone}: {blocked}")
             return {"success": False, "error": blocked, "error_code": "not_ready", "mock": False}
 
+    if idempotency_key and not await send_ledger.claim(db, idempotency_key, to=to_phone, purpose=decision["purpose"], org_id=org_id):
+        logger.info(f"[SMS] duplicate suppressed for key {idempotency_key}")
+        return {"success": False, "duplicate": True, "error": "Already sent", "error_code": "duplicate", "mock": False}
+    plan = await _disclosure_plan(db, decision, from_phone, to_phone, message, campaign_key)
+    message = disclosure.apply(message, plan) if plan else message
+    result = await _deliver(to_phone, message, media_urls, from_phone, org_id, user_id)
+    if idempotency_key:
+        await send_ledger.done(db, idempotency_key, result)
+    if result.get("success") and plan:
+        await disclosure.record(db, plan, phone=to_phone, contact_id=contact_id, message_sid=result.get("message_sid"), text=message)
+    elif not result.get("success"):
+        try:
+            from services.suppression import on_provider_error
+            await on_provider_error(db, to_phone=to_phone, from_phone=from_phone, error_code=result.get("error_code"))
+        except Exception as e:
+            logger.warning(f"[SMS] provider opt-out sync failed: {e}")
+    await outbound_gate.log(db, decision, to_phone=to_phone, from_phone=from_phone, result=result, disclosure=plan)
+    if plan and plan.get("reason"):
+        result["disclosure"] = plan["reason"]
+    if plan and plan.get("append"):
+        result["sent_body"] = message
+    return result
+
+
+async def _disclosure_plan(db, decision: dict, from_phone, to_phone, message, campaign_key) -> Optional[dict]:
+    from services import disclosure
+    try:
+        org = None
+        if decision.get("org_id"):
+            from bson import ObjectId
+            org = await db.organizations.find_one({"_id": ObjectId(decision["org_id"])}, {"name": 1, "messaging_disclosure": 1})
+        business = (org or {}).get("name") or ""
+        if decision.get("location_id"):
+            from bson import ObjectId
+            store = await db.stores.find_one({"_id": ObjectId(decision["location_id"])}, {"name": 1})
+            business = (store or {}).get("name") or business
+        return await disclosure.plan(db, org=org, purpose=decision["purpose"], from_number=from_phone or TWILIO_MESSAGING_SERVICE_SID or TWILIO_PHONE_NUMBER,
+                                     phone=to_phone, body=message, campaign_key=campaign_key, business=business)
+    except Exception as e:
+        logger.warning(f"[SMS] disclosure plan failed: {e}")
+        return None
+
+
+async def _deliver(to_phone: str, message: str, media_urls, from_phone, org_id, user_id) -> dict:
     if _held_by_preview_guard(to_phone):
         logger.info(f"[SMS] preview guard: not sending to {to_phone} | {message[:60]}...")
         return {"success": True, "message_sid": "GUARD_" + str(abs(hash(message + to_phone)))[:8], "sid": "GUARD_" + str(abs(hash(message + to_phone)))[:8], "mock": True, "guarded": True}

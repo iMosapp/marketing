@@ -1,0 +1,318 @@
+app/(tabs)/_layout.tsx(118,9): error TS2353: Object literal may only specify known properties, and 'sceneContainerStyle' does not exist in type 'BottomTabNavigationOptions | ((props: { route: RouteProp<ParamListBase, string>; navigation: BottomTabNavigationProp<ParamListBase, string, undefined>; theme: Theme; }) => BottomTabNavigationOptions)'.
+app/(tabs)/home.tsx(380,19): error TS2339: Property 'themeMode' does not exist on type 'ThemeState'.
+app/(tabs)/home.tsx(385,108): error TS2339: Property 'feature_permissions' does not exist on type 'User'.
+app/(tabs)/home.tsx(385,157): error TS2339: Property 'feature_permissions' does not exist on type 'User'.
+app/(tabs)/home.tsx(570,19): error TS2339: Property 'store_slug' does not exist on type 'User'.
+app/(tabs)/home.tsx(570,51): error TS2339: Property 'store_slug' does not exist on type 'User'.
+app/(tabs)/home.tsx(893,145): error TS2339: Property 'first_name' does not exist on type 'User'.
+app/(tabs)/home.tsx(893,168): error TS2339: Property 'first_name' does not exist on type 'User'.
+app/(tabs)/inbox.tsx(576,7): error TS2322: Type '`/thread/${any}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+app/(tabs)/inbox.tsx(591,7): error TS2322: Type '"/thread/new"' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+app/(tabs)/inbox.tsx(985,11): error TS2322: Type '`/thread/${any}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+app/(tabs)/inbox.tsx(1027,68): error TS2339: Property 'text' does not exist on type '{ background: string; surface: string; elevated: string; accent: string; success: string; warning: string; danger: string; gold: string; textPrimary: string; textSecondary: string; textTertiary: string; border: string; borderFocus: string; }'.
+app/(tabs)/inbox.tsx(1062,66): error TS2339: Property 'text' does not exist on type '{ background: string; surface: string; elevated: string; accent: string; success: string; warning: string; danger: string; gold: string; textPrimary: string; textSecondary: string; textTertiary: string; border: string; borderFocus: string; }'.
+app/(tabs)/inbox.tsx(1067,78): error TS2339: Property 'text' does not exist on type '{ background: string; surface: string; elevated: string; accent: string; success: string; warning: string; danger: string; gold: string; textPrimary: string; textSecondary: string; textTertiary: string; border: string; borderFocus: string; }'.
+app/(tabs)/inbox.tsx(1334,39): error TS2339: Property 'card' does not exist on type '{ background: string; surface: string; elevated: string; accent: string; success: string; warning: string; danger: string; gold: string; textPrimary: string; textSecondary: string; textTertiary: string; border: string; borderFocus: string; }'.
+app/(tabs)/inbox.tsx(1383,9): error TS2322: Type '`/thread/${any}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+app/(tabs)/inbox.tsx(1446,62): error TS2339: Property 'text' does not exist on type '{ background: string; surface: string; elevated: string; accent: string; success: string; warning: string; danger: string; gold: string; textPrimary: string; textSecondary: string; textTertiary: string; border: string; borderFocus: string; }'.
+app/(tabs)/inbox.tsx(1519,66): error TS2339: Property 'text' does not exist on type '{ background: string; surface: string; elevated: string; accent: string; success: string; warning: string; danger: string; gold: string; textPrimary: string; textSecondary: string; textTertiary: string; border: string; borderFocus: string; }'.
+app/(tabs)/inbox.tsx(1545,228): error TS2339: Property 'card' does not exist on type '{ background: string; surface: string; elevated: string; accent: string; success: string; warning: string; danger: string; gold: string; textPrimary: string; textSecondary: string; textTertiary: string; border: string; borderFocus: string; }'.
+app/(tabs)/inbox.tsx(1950,62): error TS2339: Property 'text' does not exist on type '{ background: string; surface: string; elevated: string; accent: string; success: string; warning: string; danger: string; gold: string; textPrimary: string; textSecondary: string; textTertiary: string; border: string; borderFocus: string; }'.
+app/(tabs)/more.tsx(162,17): error TS2339: Property 'store_slug' does not exist on type 'User'.
+app/(tabs)/more.tsx(163,27): error TS2339: Property 'store_slug' does not exist on type 'User'.
+app/(tabs)/more.tsx(167,47): error TS2339: Property 'store_slug' does not exist on type 'User'.
+app/(tabs)/more.tsx(196,28): error TS2339: Property 'ref_code' does not exist on type 'User'.
+app/(tabs)/more.tsx(196,73): error TS2339: Property 'ref_code' does not exist on type 'User'.
+app/(tabs)/more.tsx(305,23): error TS2339: Property 'feature_permissions' does not exist on type 'User'.
+app/(tabs)/more.tsx(322,46): error TS2339: Property 'partner_id' does not exist on type 'User'.
+app/(tabs)/more.tsx(720,22): error TS2367: This comparison appears to be unintentional because the types '"default" | "unsupported"' and '"denied"' have no overlap.
+app/(tabs)/more.tsx(1113,37): error TS2339: Property 'photo_url' does not exist on type 'User'.
+app/(tabs)/team.tsx(153,7): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+app/(tabs)/team.tsx(865,13): error TS2322: Type 'number' is not assignable to type '"medium" | "small" | "large" | undefined'.
+app/_layout.tsx(140,43): error TS2322: Type 'Promise<{ shouldShowAlert: true; shouldPlaySound: true; shouldSetBadge: true; }>' is not assignable to type 'Promise<NotificationBehavior>'.
+  Type '{ shouldShowAlert: true; shouldPlaySound: true; shouldSetBadge: true; }' is missing the following properties from type 'NotificationBehavior': shouldShowBanner, shouldShowList
+app/admin/brand-assets.tsx(103,13): error TS2339: Property 'photo_url' does not exist on type 'User'.
+app/admin/brand-assets.tsx(104,126): error TS2339: Property 'photo_url' does not exist on type 'User'.
+app/admin/index.tsx(302,22): error TS2345: Argument of type '"/(tabs)"' is not assignable to parameter of type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 1530 more ... | { ...; }'.
+app/admin/index.tsx(548,11): error TS2353: Object literal may only specify known properties, and 'managerOnly' does not exist in type 'MenuItem'.
+app/admin/index.tsx(577,11): error TS2353: Object literal may only specify known properties, and 'indent' does not exist in type 'MenuItem'.
+app/admin/lead-tracking.tsx(257,23): error TS2339: Property 'by_referrer' does not exist on type 'Analytics'.
+app/admin/lead-tracking.tsx(257,43): error TS2339: Property 'by_referrer' does not exist on type 'Analytics'.
+app/admin/lead-tracking.tsx(264,23): error TS2339: Property 'by_referrer' does not exist on type 'Analytics'.
+app/admin/lead-tracking.tsx(264,43): error TS2339: Property 'by_referrer' does not exist on type 'Analytics'.
+app/admin/lead-tracking.tsx(268,19): error TS2339: Property 'by_referrer' does not exist on type 'Analytics'.
+app/admin/lead-tracking.tsx(268,39): error TS2339: Property 'by_referrer' does not exist on type 'Analytics'.
+app/admin/lead-tracking.tsx(268,69): error TS2339: Property 'by_referrer' does not exist on type 'Analytics'.
+app/admin/manage-team.tsx(67,30): error TS2551: Property 'store_ids' does not exist on type 'User'. Did you mean 'store_id'?
+app/admin/nda/create.tsx(24,54): error TS2339: Property 'first_name' does not exist on type 'User'.
+app/admin/nda/create.tsx(24,75): error TS2339: Property 'first_name' does not exist on type 'User'.
+app/admin/nda/create.tsx(24,94): error TS2339: Property 'last_name' does not exist on type 'User'.
+app/admin/organizations.tsx(298,16): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, style, textStyle
+app/admin/organizations.tsx(306,16): error TS2739: Type '{ children: Element; onPress: () => Promise<void>; disabled: boolean; loading: boolean; variant: string; testID: string; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, style, textStyle
+app/admin/organizations.tsx(321,18): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; style: { flex: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/admin/organizations.tsx(332,18): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; style: { flex: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/admin/partner-billing.tsx(452,78): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ draft: string; sent: string; paid: string; overdue: string; cancelled: string; }'.
+app/admin/partner-billing.tsx(453,68): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ draft: string; sent: string; paid: string; overdue: string; cancelled: string; }'.
+app/admin/sop/index.tsx(133,13): error TS2322: Type 'string' is not assignable to type '"card" | "star" | "share-social" | "image" | "rocket" | "chatbubble-ellipses" | "sparkles" | "trophy" | "business" | "person" | "car-sport" | "briefcase" | "school" | "help-circle" | ... 1343 more ... | undefined'.
+app/admin/sop/index.tsx(181,11): error TS2322: Type 'string' is not assignable to type '"card" | "star" | "share-social" | "image" | "rocket" | "chatbubble-ellipses" | "sparkles" | "trophy" | "business" | "person" | "car-sport" | "briefcase" | "school" | "help-circle" | ... 1343 more ... | undefined'.
+app/admin/stores.tsx(277,14): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, style, textStyle
+app/admin/stores.tsx(285,14): error TS2739: Type '{ children: Element; onPress: () => Promise<void>; disabled: boolean; loading: boolean; variant: string; testID: string; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, style, textStyle
+app/admin/stores/[id].tsx(533,25): error TS2322: Type 'string' is not assignable to type '"#FFFFFF"'.
+app/admin/training-reports.tsx(45,19): error TS7006: Parameter 'url' implicitly has an 'any' type.
+app/admin/training-reports.tsx(72,23): error TS2322: Type 'string' is not assignable to type '"card" | "star" | "share-social" | "image" | "rocket" | "chatbubble-ellipses" | "sparkles" | "trophy" | "business" | "person" | "car-sport" | "briefcase" | "school" | "help-circle" | ... 1343 more ... | undefined'.
+app/admin/training-reports.tsx(93,49): error TS2339: Property 'total_videos_tracked' does not exist on type '{}'.
+app/admin/training-reports.tsx(98,49): error TS2339: Property 'total_clicks' does not exist on type '{}'.
+app/admin/training-reports.tsx(109,24): error TS2339: Property 'videos' does not exist on type '{}'.
+app/admin/training-reports.tsx(116,25): error TS2339: Property 'videos' does not exist on type '{}'.
+app/admin/training-reports.tsx(116,44): error TS7006: Parameter 'v' implicitly has an 'any' type.
+app/admin/training-reports.tsx(116,47): error TS7006: Parameter 'i' implicitly has an 'any' type.
+app/admin/training-reports.tsx(144,22): error TS2339: Property 'recent_activity' does not exist on type '{}'.
+app/admin/training-reports.tsx(150,26): error TS2339: Property 'recent_activity' does not exist on type '{}'.
+app/admin/training-reports.tsx(150,67): error TS7006: Parameter 'a' implicitly has an 'any' type.
+app/admin/training-reports.tsx(150,70): error TS7006: Parameter 'i' implicitly has an 'any' type.
+app/admin/training-reports.tsx(180,39): error TS2339: Property 'user_id' does not exist on type 'never'.
+app/admin/training-reports.tsx(185,60): error TS2339: Property 'name' does not exist on type 'never'.
+app/admin/training-reports.tsx(187,35): error TS2339: Property 'videos_sent' does not exist on type 'never'.
+app/admin/training-reports.tsx(187,61): error TS2339: Property 'videos_sent' does not exist on type 'never'.
+app/admin/training-reports.tsx(187,106): error TS2339: Property 'total_clicks' does not exist on type 'never'.
+app/admin/training-reports.tsx(187,133): error TS2339: Property 'total_clicks' does not exist on type 'never'.
+app/admin/training-reports.tsx(189,34): error TS2339: Property 'top_videos' does not exist on type 'never'.
+app/admin/training-reports.tsx(189,69): error TS7006: Parameter 'v' implicitly has an 'any' type.
+app/admin/training-reports.tsx(189,72): error TS7006: Parameter 'j' implicitly has an 'any' type.
+app/admin/training-reports.tsx(217,30): error TS2339: Property 'youtube_url' does not exist on type 'never'.
+app/admin/training-reports.tsx(219,47): error TS2339: Property 'youtube_url' does not exist on type 'never'.
+app/admin/training-reports.tsx(222,26): error TS2339: Property 'thumbnail' does not exist on type 'never'.
+app/admin/training-reports.tsx(223,49): error TS2339: Property 'thumbnail' does not exist on type 'never'.
+app/admin/training-reports.tsx(230,55): error TS2339: Property 'title' does not exist on type 'never'.
+app/admin/training-reports.tsx(234,62): error TS2339: Property 'total_clicks' does not exist on type 'never'.
+app/admin/training-reports.tsx(238,62): error TS2339: Property 'times_sent' does not exist on type 'never'.
+app/admin/training-reports.tsx(242,62): error TS2339: Property 'unique_senders' does not exist on type 'never'.
+app/admin/training-reports.tsx(289,39): error TS2339: Property 'senderAvatar' does not exist on type '{ container: { flex: number; backgroundColor: any; }; header: { flexDirection: "row"; alignItems: "center"; paddingHorizontal: number; paddingVertical: number; borderBottomWidth: number; borderBottomColor: any; }; ... 37 more ...; videoStatText: { ...; }; }'.
+app/admin/training-reports.tsx(290,41): error TS2339: Property 'senderInitials' does not exist on type '{ container: { flex: number; backgroundColor: any; }; header: { flexDirection: "row"; alignItems: "center"; paddingHorizontal: number; paddingVertical: number; borderBottomWidth: number; borderBottomColor: any; }; ... 37 more ...; videoStatText: { ...; }; }'.
+app/admin/training-reports.tsx(296,40): error TS2339: Property 'senderSub' does not exist on type '{ container: { flex: number; backgroundColor: any; }; header: { flexDirection: "row"; alignItems: "center"; paddingHorizontal: number; paddingVertical: number; borderBottomWidth: number; borderBottomColor: any; }; ... 37 more ...; videoStatText: { ...; }; }'.
+app/admin/training-reports.tsx(315,41): error TS2339: Property 'senderAvatar' does not exist on type '{ container: { flex: number; backgroundColor: any; }; header: { flexDirection: "row"; alignItems: "center"; paddingHorizontal: number; paddingVertical: number; borderBottomWidth: number; borderBottomColor: any; }; ... 37 more ...; videoStatText: { ...; }; }'.
+app/admin/training-reports.tsx(320,42): error TS2339: Property 'senderSub' does not exist on type '{ container: { flex: number; backgroundColor: any; }; header: { flexDirection: "row"; alignItems: "center"; paddingHorizontal: number; paddingVertical: number; borderBottomWidth: number; borderBottomColor: any; }; ... 37 more ...; videoStatText: { ...; }; }'.
+app/admin/training-reports.tsx(339,15): error TS7006: Parameter 'colors' implicitly has an 'any' type.
+app/admin/users.tsx(464,48): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type '{ maxWidth: number; maxHeight: "85vh"; borderRadius: number; overflow: "hidden"; }' is not assignable to type 'ViewStyle | Falsy | RegisteredStyle<ViewStyle> | RecursiveArray<ViewStyle | Falsy | RegisteredStyle<ViewStyle>> | readonly (ViewStyle | ... 1 more ... | RegisteredStyle<...>)[]'.
+      Types of property 'maxHeight' are incompatible.
+        Type '"85vh"' is not assignable to type 'DimensionValue | undefined'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type '{ maxWidth: number; maxHeight: "85vh"; borderRadius: number; overflow: "hidden"; }' is not assignable to type 'ViewStyle | Falsy | RegisteredStyle<ViewStyle> | RecursiveArray<ViewStyle | Falsy | RegisteredStyle<ViewStyle>> | readonly (ViewStyle | ... 1 more ... | RegisteredStyle<...>)[]'.
+      Types of property 'maxHeight' are incompatible.
+        Type '"85vh"' is not assignable to type 'DimensionValue | undefined'.
+app/admin/users.tsx(466,14): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, style, textStyle
+app/admin/users.tsx(474,14): error TS2739: Type '{ children: Element; onPress: () => Promise<void>; disabled: boolean; loading: boolean; variant: string; testID: string; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, style, textStyle
+app/admin/users.tsx(695,14): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, style, textStyle
+app/admin/users.tsx(703,14): error TS2739: Type '{ children: Element; onPress: () => Promise<void>; disabled: boolean; loading: boolean; variant: string; testID: string; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, style, textStyle
+app/admin/users.tsx(960,18): error TS2739: Type '{ children: Element; onPress: () => Promise<void>; variant: string; testID: string; style: { flex: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/admin/users.tsx(972,18): error TS2739: Type '{ children: Element; onPress: () => Promise<void>; variant: string; testID: string; style: { flex: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/admin/users.tsx(986,14): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; style: { marginTop: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/admin/users.tsx(1034,18): error TS2739: Type '{ children: Element; onPress: () => Promise<void>; variant: string; testID: string; style: { flex: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/admin/users.tsx(1046,18): error TS2739: Type '{ children: Element; onPress: () => Promise<void>; variant: string; testID: string; style: { flex: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/admin/users.tsx(1060,14): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; style: { marginTop: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/admin/users/[id].tsx(550,16): error TS2367: This comparison appears to be unintentional because the types '"email" | "phone" | null' and '"title"' have no overlap.
+app/admin/users/[id].tsx(1030,29): error TS2339: Property 'org_name' does not exist on type 'StoreInfo'.
+app/admin/users/[id].tsx(1030,48): error TS2339: Property 'org_name' does not exist on type 'StoreInfo'.
+app/admin/white-label.tsx(140,80): error TS2339: Property 'sold_workflow_enabled' does not exist on type '{ name: string; slug: string; primary_color: string; secondary_color: string; accent_color: string; powered_by_text: string; company_name: string; company_address: string; company_phone: string; company_email: string; company_website: string; commission_notes: string; }'.
+app/auth/change-password.tsx(129,16): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; style: { padding: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/auth/change-password.tsx(155,16): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; style: { padding: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/auth/change-password.tsx(181,16): error TS2739: Type '{ children: Element; onPress: () => void; variant: string; testID: string; style: { padding: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/auth/change-password.tsx(204,14): error TS2739: Type '{ children: Element; onPress: () => Promise<void>; variant: string; loading: boolean; disabled: boolean; testID: string; style: { marginTop: number; paddingVertical: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': title, textStyle
+app/auth/complete-profile.tsx(39,50): error TS2339: Property 'photo_url' does not exist on type 'User'.
+app/auth/complete-profile.tsx(144,38): error TS2339: Property 'first_name' does not exist on type 'User'.
+app/auth/complete-profile.tsx(144,64): error TS2339: Property 'last_name' does not exist on type 'User'.
+app/auth/complete-profile.tsx(410,71): error TS2339: Property 'first_name' does not exist on type 'User'.
+app/auth/complete-profile.tsx(410,97): error TS2339: Property 'last_name' does not exist on type 'User'.
+app/auth/login.tsx(288,43): error TS2339: Property 'photo_url' does not exist on type 'User'.
+app/auth/login.tsx(507,48): error TS2345: Argument of type 'RefObject<TextInput | null>' is not assignable to parameter of type 'RefObject<TextInput>'.
+  Type 'TextInput | null' is not assignable to type 'TextInput'.
+    Type 'null' is not assignable to type 'TextInput'.
+app/auth/login.tsx(508,51): error TS2345: Argument of type 'RefObject<TextInput | null>' is not assignable to parameter of type 'RefObject<TextInput>'.
+  Type 'TextInput | null' is not assignable to type 'TextInput'.
+    Type 'null' is not assignable to type 'TextInput'.
+app/auth/login.tsx(535,50): error TS2345: Argument of type 'RefObject<TextInput | null>' is not assignable to parameter of type 'RefObject<TextInput>'.
+  Type 'TextInput | null' is not assignable to type 'TextInput'.
+    Type 'null' is not assignable to type 'TextInput'.
+app/auth/login.tsx(573,16): error TS2739: Type '{ onPress: () => Promise<void>; title: string; loading: boolean; disabled: boolean; variant: string; size: string; fullWidth: true; testID: string; style: { marginTop: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': children, textStyle
+app/auth/login.tsx(667,18): error TS2739: Type '{ onPress: () => void; title: string; variant: string; size: string; fullWidth: true; testID: string; style: { marginTop: number; }; }' is missing the following properties from type '{ onPress: any; title: any; children: any; disabled?: boolean | undefined; loading?: boolean | undefined; variant?: string | undefined; size?: string | undefined; style: any; textStyle: any; testID: any; fullWidth?: boolean | undefined; }': children, textStyle
+app/campaigns/pending-send/[id].tsx(43,47): error TS18047: 'user' is possibly 'null'.
+app/congrats/[cardId].tsx(308,32): error TS2339: Property 'short_url' does not exist on type 'CongratsCardData'.
+app/congrats/[cardId].tsx(310,114): error TS2339: Property 'store_name' does not exist on type 'CongratsCardData'.
+app/congrats/[cardId].tsx(382,44): error TS2339: Property 'website' does not exist on type '{ name: string; logo?: string | undefined; slug?: string | undefined; }'.
+app/congrats/[cardId].tsx(382,86): error TS2339: Property 'website' does not exist on type '{ name: string; logo?: string | undefined; slug?: string | undefined; }'.
+app/congrats/[cardId].tsx(383,40): error TS2339: Property 'website' does not exist on type '{ name: string; logo?: string | undefined; slug?: string | undefined; }'.
+app/contact/[id].tsx(384,16): error TS2345: Argument of type '(prev: { first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }) => { ...; }' is not assignable to parameter of type 'SetStateAction<{ first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }>'.
+  Type '(prev: { first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }) => { ...; }' is not assignable to type '(prevState: { first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }) => { ...; }'.
+    Call signature return types '{ first_name: string; last_name: string; phone: string; email: string; address: any; city: any; state: any; zip_code: any; birthday: string | Date | null; photo: string | null; ownership_type: string; ... 26 more ...; linked_role: string | null; }' and '{ first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }' are incompatible.
+      The types of 'birthday' are incompatible between these types.
+        Type 'string | Date | null' is not assignable to type 'Date | null'.
+          Type 'string' is not assignable to type 'Date'.
+app/contact/[id].tsx(390,37): error TS2339: Property 'address' does not exist on type '{ first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }'.
+app/contact/[id].tsx(391,32): error TS2339: Property 'city' does not exist on type '{ first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }'.
+app/contact/[id].tsx(392,35): error TS2339: Property 'state' does not exist on type '{ first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }'.
+app/contact/[id].tsx(393,42): error TS2339: Property 'zip_code' does not exist on type '{ first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }'.
+app/contact/[id].tsx(425,66): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/[id].tsx(434,53): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/[id].tsx(434,84): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/[id].tsx(460,47): error TS18047: 'user' is possibly 'null'.
+app/contact/[id].tsx(592,18): error TS2345: Argument of type '{ first_name: any; last_name: any; phone: any; email: any; photo: any; photo_thumbnail: any; notes: any; vehicle: any; tags: any; occupation: any; employer: any; organization_name: any; phones: any; emails: any; ... 18 more ...; linked_role: any; }' is not assignable to parameter of type 'SetStateAction<{ first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }>'.
+  Property 'ownership_type' is missing in type '{ first_name: any; last_name: any; phone: any; email: any; photo: any; photo_thumbnail: any; notes: any; vehicle: any; tags: any; occupation: any; employer: any; organization_name: any; phones: any; emails: any; ... 18 more ...; linked_role: any; }' but required in type '{ first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }'.
+app/contact/[id].tsx(760,35): error TS18047: 'user' is possibly 'null'.
+app/contact/[id].tsx(1474,51): error TS2339: Property 'email_work' does not exist on type '{ first_name: string; last_name: string; phone: string; email: string; photo: string | null; photo_thumbnail: string | null; notes: string; vehicle: string; tags: string[]; occupation: string; ... 23 more ...; linked_role: string | null; }'.
+app/contact/[id].tsx(1980,46): error TS18047: 'user' is possibly 'null'.
+app/contact/[id].tsx(2392,57): error TS2322: Type 'Date | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+app/contact/[id].tsx(2406,57): error TS2322: Type 'Date | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+app/contact/new.tsx(298,59): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(306,53): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(306,84): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(813,112): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(813,143): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(818,40): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(820,37): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(820,67): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(823,67): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(823,95): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(824,41): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(824,70): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/contact/new.tsx(826,53): error TS2339: Property 'id' does not exist on type 'Contact'.
+app/help.tsx(201,68): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): SafeAreaView', gave the following error.
+    Type '{ children: Element[]; style: ({ flex: number; } | { backgroundColor: "#000000"; })[]; edges: string[]; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<SafeAreaView> & Readonly<ViewProps>'.
+      Property 'edges' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<SafeAreaView> & Readonly<ViewProps>'.
+  Overload 2 of 2, '(props: ViewProps, context: any): SafeAreaView', gave the following error.
+    Type '{ children: Element[]; style: ({ flex: number; } | { backgroundColor: "#000000"; })[]; edges: string[]; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<SafeAreaView> & Readonly<ViewProps>'.
+      Property 'edges' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<SafeAreaView> & Readonly<ViewProps>'.
+app/imos/pricing.tsx(112,119): error TS2339: Property 'price' does not exist on type '{ name: string; price: number; interval: string; description: string; features: string[]; badge?: undefined; } | { name: string; price: number; interval: string; description: string; badge: string; features: string[]; } | { ...; } | { ...; } | { ...; }'.
+  Property 'price' does not exist on type '{ name: string; pricePerUser: number; minUsers: number; interval: string; description: string; features: string[]; badge?: undefined; }'.
+app/imos/pricing.tsx(113,99): error TS2339: Property 'price' does not exist on type '{ name: string; price: number; interval: string; description: string; features: string[]; badge?: undefined; } | { name: string; price: number; interval: string; description: string; badge: string; features: string[]; } | { ...; } | { ...; } | { ...; }'.
+  Property 'price' does not exist on type '{ name: string; pricePerUser: number; minUsers: number; interval: string; description: string; features: string[]; badge?: undefined; }'.
+app/jessie.tsx(238,7): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+app/jessie.tsx(245,7): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+app/jessie.tsx(253,5): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+app/jessie.tsx(280,13): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+app/jessie.tsx(511,22): error TS2345: Argument of type '"/(tabs)"' is not assignable to parameter of type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 1530 more ... | { ...; }'.
+app/join/[code].tsx(112,17): error TS2554: Expected 2 arguments, but got 1.
+app/l/[username].tsx(81,34): error TS2339: Property 'primary_color' does not exist on type 'PageData'.
+app/my-account.tsx(131,67): error TS2339: Property 'store_slug' does not exist on type 'User'.
+app/my-account.tsx(132,67): error TS2339: Property 'store_name' does not exist on type 'User'.
+app/my-account.tsx(169,70): error TS2339: Property 'bio' does not exist on type 'User'.
+app/quick-send/[action].tsx(139,27): error TS2339: Property 'store_slug' does not exist on type 'User'.
+app/quick-send/[action].tsx(139,47): error TS2339: Property 'storeSlug' does not exist on type 'User'.
+app/search.tsx(82,7): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+app/search.tsx(118,11): error TS2322: Type '`/thread/${string}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+app/seo-guide.tsx(178,25): error TS2339: Property 'route' does not exist on type '{ text: string; } | { text: string; route: string; btn: string; } | { text: string; route?: undefined; btn?: undefined; }'.
+  Property 'route' does not exist on type '{ text: string; }'.
+app/seo-guide.tsx(181,55): error TS2339: Property 'route' does not exist on type '{ text: string; } | { text: string; route: string; btn: string; } | { text: string; route?: undefined; btn?: undefined; }'.
+  Property 'route' does not exist on type '{ text: string; }'.
+app/seo-guide.tsx(183,87): error TS2339: Property 'btn' does not exist on type '{ text: string; } | { text: string; route: string; btn: string; } | { text: string; route?: undefined; btn?: undefined; }'.
+  Property 'btn' does not exist on type '{ text: string; }'.
+app/settings/create-card.tsx(39,20): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ congrats: { label: string; icon: string; accent: string; headline: string; message: string; }; birthday: { label: string; icon: string; accent: string; headline: string; message: string; }; anniversary: { ...; }; thankyou: { ...; }; welcome: { ...; }; holiday: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ congrats: { label: string; icon: string; accent: string; headline: string; message: string; }; birthday: { label: string; icon: string; accent: string; headline: string; message: string; }; anniversary: { ...; }; thankyou: { ...; }; welcome: { ...; }; holiday: { ...; }; }'.
+app/settings/create-card.tsx(56,16): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ congrats: { label: string; icon: string; accent: string; headline: string; message: string; }; birthday: { label: string; icon: string; accent: string; headline: string; message: string; }; anniversary: { ...; }; thankyou: { ...; }; welcome: { ...; }; holiday: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ congrats: { label: string; icon: string; accent: string; headline: string; message: string; }; birthday: { label: string; icon: string; accent: string; headline: string; message: string; }; anniversary: { ...; }; thankyou: { ...; }; welcome: { ...; }; holiday: { ...; }; }'.
+app/settings/create-card.tsx(74,48): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ congrats: { label: string; icon: string; accent: string; headline: string; message: string; }; birthday: { label: string; icon: string; accent: string; headline: string; message: string; }; anniversary: { ...; }; thankyou: { ...; }; welcome: { ...; }; holiday: { ...; }; }'.
+app/settings/create-card.tsx(111,28): error TS2339: Property 'accent_color' does not exist on type 'never'.
+app/settings/create-card.tsx(112,30): error TS2339: Property 'headline' does not exist on type 'never'.
+app/settings/create-card.tsx(113,29): error TS2339: Property 'message' does not exist on type 'never'.
+app/settings/create-card.tsx(114,35): error TS2339: Property 'headline' does not exist on type 'never'.
+app/settings/create-card.tsx(214,86): error TS2339: Property 'ref_code' does not exist on type 'User'.
+app/settings/create-card.tsx(214,110): error TS2339: Property 'ref_code' does not exist on type 'User'.
+app/settings/create-card.tsx(252,24): error TS2353: Object literal may only specify known properties, and 'card_id' does not exist in type '(prevState: null) => null'.
+app/settings/create-card.tsx(262,69): error TS2339: Property 'share_url' does not exist on type 'never'.
+app/settings/create-card.tsx(263,86): error TS2339: Property 'share_url' does not exist on type 'never'.
+app/settings/create-card.tsx(282,29): error TS2339: Property 'share_url' does not exist on type 'never'.
+app/settings/create-card.tsx(311,35): error TS2345: Argument of type '"sms" | "email"' is not assignable to parameter of type 'SetStateAction<null>'.
+  Type '"sms"' is not assignable to type 'SetStateAction<null>'.
+app/settings/create-card.tsx(388,37): error TS2339: Property 'card_id' does not exist on type 'never'.
+app/settings/create-card.tsx(430,29): error TS2339: Property 'share_url' does not exist on type 'never'.
+app/settings/create-card.tsx(523,34): error TS2339: Property 'share_url' does not exist on type 'never'.
+app/settings/create-card.tsx(601,121): error TS2339: Property 'card_id' does not exist on type 'never'.
+app/settings/create-card.tsx(601,204): error TS2339: Property 'card_id' does not exist on type 'never'.
+app/settings/create-card.tsx(634,133): error TS2339: Property 'existing_name' does not exist on type 'never'.
+app/settings/create-card.tsx(634,165): error TS2339: Property 'phone' does not exist on type 'never'.
+app/settings/create-card.tsx(634,214): error TS2339: Property 'phone' does not exist on type 'never'.
+app/settings/create-card.tsx(636,128): error TS2339: Property 'provided_name' does not exist on type 'never'.
+app/settings/create-card.tsx(637,208): error TS2339: Property 'provided_name' does not exist on type 'never'.
+app/settings/create-card.tsx(669,78): error TS2339: Property 'title' does not exist on type 'User'.
+app/settings/create-card.tsx(686,124): error TS2339: Property 'color' does not exist on type 'never'.
+app/settings/create-card.tsx(687,99): error TS2339: Property 'color' does not exist on type 'never'.
+app/settings/create-card.tsx(688,65): error TS2339: Property 'color' does not exist on type 'never'.
+app/settings/create-card.tsx(953,131): error TS2339: Property 'existing_name' does not exist on type 'never'.
+app/settings/create-card.tsx(953,163): error TS2339: Property 'phone' does not exist on type 'never'.
+app/settings/create-card.tsx(953,212): error TS2339: Property 'phone' does not exist on type 'never'.
+app/settings/create-card.tsx(955,126): error TS2339: Property 'provided_name' does not exist on type 'never'.
+app/settings/create-card.tsx(956,206): error TS2339: Property 'provided_name' does not exist on type 'never'.
+app/settings/integrations.tsx(467,30): error TS2339: Property 'input' does not exist on type '{ container: { flex: number; backgroundColor: any; }; loadingContainer: { flex: number; backgroundColor: any; justifyContent: "center"; alignItems: "center"; }; tabBar: { flexGrow: number; borderBottomWidth: number; borderBottomColor: any; }; ... 118 more ...; eventDesc: { ...; }; }'.
+app/settings/integrations.tsx(696,25): error TS2339: Property 'params' does not exist on type '{ method: string; path: string; desc: string; params: string; body?: undefined; } | { method: string; path: string; desc: string; params?: undefined; body?: undefined; } | { method: string; path: string; desc: string; body: string; params?: undefined; } | ... 5 more ... | { ...; }'.
+  Property 'params' does not exist on type '{ method: string; path: string; desc: string; }'.
+app/settings/integrations.tsx(696,83): error TS2339: Property 'params' does not exist on type '{ method: string; path: string; desc: string; params: string; body?: undefined; } | { method: string; path: string; desc: string; params?: undefined; body?: undefined; } | { method: string; path: string; desc: string; body: string; params?: undefined; } | ... 5 more ... | { ...; }'.
+  Property 'params' does not exist on type '{ method: string; path: string; desc: string; }'.
+app/settings/integrations.tsx(697,25): error TS2339: Property 'body' does not exist on type '{ method: string; path: string; desc: string; params: string; body?: undefined; } | { method: string; path: string; desc: string; params?: undefined; body?: undefined; } | { method: string; path: string; desc: string; body: string; params?: undefined; } | ... 5 more ... | { ...; }'.
+  Property 'body' does not exist on type '{ method: string; path: string; desc: string; params: string; }'.
+app/settings/integrations.tsx(697,77): error TS2339: Property 'body' does not exist on type '{ method: string; path: string; desc: string; params: string; body?: undefined; } | { method: string; path: string; desc: string; params?: undefined; body?: undefined; } | { method: string; path: string; desc: string; body: string; params?: undefined; } | ... 5 more ... | { ...; }'.
+  Property 'body' does not exist on type '{ method: string; path: string; desc: string; params: string; }'.
+app/settings/persona.tsx(176,21): error TS2339: Property 'title' does not exist on type 'User'.
+app/settings/review-approvals.tsx(91,78): error TS2345: Argument of type '() => Promise<void>' is not assignable to parameter of type 'AlertButton[]'.
+app/settings/schedule.tsx(30,34): error TS2352: Conversion of type '{ [k: string]: never[]; }' to type 'WeekSchedule' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ [k: string]: never[]; }' is missing the following properties from type 'WeekSchedule': sunday, monday, tuesday, wednesday, and 3 more.
+app/showcase/[id].tsx(153,33): error TS2339: Property 'slug' does not exist on type '{ id?: string | undefined; name: string | null; logo_url: string | null; primary_color: string; }'.
+app/showcase/[id].tsx(233,23): error TS2339: Property 'brand_kit' does not exist on type 'ShowcaseData'.
+app/tasks/index.tsx(149,13): error TS2322: Type '`/contact/${any}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+app/tasks/index.tsx(164,13): error TS2322: Type '`/thread/${any}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+app/tasks/index.tsx(182,13): error TS2322: Type '`/contact/${any}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+app/tasks/index.tsx(194,13): error TS2322: Type '`/contact/${any}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+app/thread/[id].tsx(2123,48): error TS18047: 'user' is possibly 'null'.
+app/thread/[id].tsx(2856,38): error TS2339: Property 'borderLight' does not exist on type '{ text: string; userBubbleBg: string; userBubbleBorder: string; userBubbleText: string; contactBubbleBg: string; contactBubbleBorder: string; contactBubbleText: string; background: string; ... 6 more ...; border: string; }'.
+app/thread/[id].tsx(2992,32): error TS2339: Property 'borderLight' does not exist on type '{ text: string; userBubbleBg: string; userBubbleBorder: string; userBubbleText: string; contactBubbleBg: string; contactBubbleBorder: string; contactBubbleText: string; background: string; ... 6 more ...; border: string; }'.
+components/UniversalShareModal.tsx(106,5): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+components/VoicemailRecorder.tsx(100,7): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+components/appraisal/IdentityStep.tsx(31,125): error TS2554: Expected 1-2 arguments, but got 3.
+components/appraisal/MileageStep.tsx(32,119): error TS2554: Expected 1-2 arguments, but got 3.
+components/contact/FeedTab.tsx(450,15): error TS2322: Type '`/thread/${any}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+components/contact/FeedTab.tsx(460,15): error TS2322: Type '`/thread/${any}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+components/contact/HeroSection.tsx(34,22): error TS2322: Type '{ uri: string | null; }' is not assignable to type 'string | number | string[] | ImageSource | ImageSource[] | SharedRef<"image", Record<never, never>> | null | undefined'.
+  Types of property 'uri' are incompatible.
+    Type 'string | null' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.
+components/notifications/LeadNotificationModal.tsx(98,13): error TS2322: Type '`/thread/${string}`' is not assignable to type '"/imos/digital-card" | "/imos/reviews" | "/imos/showcase" | "/imos/congrats-template" | "/imos/date-triggers" | "/imos/inbox" | "/imos/jessi" | "/imos/leaderboard" | "/imos/organizations" | ... 383 more ... | "/consent/[token]"'.
+components/scorecards/RepScores.tsx(114,123): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type '{ width: `${number}%` | "null%"; height: number; backgroundColor: string; }' is not assignable to type 'StyleProp<ViewStyle>'.
+      Types of property 'width' are incompatible.
+        Type '`${number}%` | "null%"' is not assignable to type 'DimensionValue | undefined'.
+          Type '"null%"' is not assignable to type 'DimensionValue | undefined'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type '{ width: `${number}%` | "null%"; height: number; backgroundColor: string; }' is not assignable to type 'StyleProp<ViewStyle>'.
+      Types of property 'width' are incompatible.
+        Type '`${number}%` | "null%"' is not assignable to type 'DimensionValue | undefined'.
+          Type '"null%"' is not assignable to type 'DimensionValue | undefined'.
+contexts/ContactContext.tsx(63,3): error TS2300: Duplicate identifier 'generateIntel'.
+contexts/ContactContext.tsx(203,3): error TS2300: Duplicate identifier 'generateIntel'.
+hooks/usePushNotifications.ts(117,13): error TS2322: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'string | BufferSource | null | undefined'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+hooks/useWebSocket.ts(32,22): error TS2554: Expected 1 arguments, but got 0.
+src/utils/calendar.ts(163,7): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+store/authStore.ts(38,3): error TS2322: Type 'Promise<unknown>' is not assignable to type 'Promise<void>'.
+  Type 'unknown' is not assignable to type 'void'.
+store/authStore.ts(41,41): error TS2794: Expected 1 arguments, but got 0. Did you forget to include 'void' in your type argument to 'Promise'?
+store/authStore.ts(236,29): error TS2339: Property 'ready' does not exist on type 'ServiceWorkerRegistration'.
+store/themeStore.ts(77,17): error TS2322: Type '{ readonly bg: "#000000"; readonly card: "#1C1C1E"; readonly cardAlt: "#1A1A1E"; readonly surface: "#2C2C2E"; readonly border: "#2C2C2E"; readonly borderLight: "#3A3A3C"; readonly text: "#FFFFFF"; ... 17 more ...; readonly skeleton: "#2C2C2E"; } | { ...; }' is not assignable to type '{ readonly bg: "#000000"; readonly card: "#1C1C1E"; readonly cardAlt: "#1A1A1E"; readonly surface: "#2C2C2E"; readonly border: "#2C2C2E"; readonly borderLight: "#3A3A3C"; readonly text: "#FFFFFF"; ... 17 more ...; readonly skeleton: "#2C2C2E"; } | undefined'.
+  Type '{ readonly bg: "#F2F2F7"; readonly card: "#FFFFFF"; readonly cardAlt: "#FFFFFF"; readonly surface: "#E5E5EA"; readonly border: "#D1D1D6"; readonly borderLight: "#E5E5EA"; readonly text: "#000000"; ... 17 more ...; readonly skeleton: "#E5E5EA"; }' is not assignable to type '{ readonly bg: "#000000"; readonly card: "#1C1C1E"; readonly cardAlt: "#1A1A1E"; readonly surface: "#2C2C2E"; readonly border: "#2C2C2E"; readonly borderLight: "#3A3A3C"; readonly text: "#FFFFFF"; ... 17 more ...; readonly skeleton: "#2C2C2E"; }'.
+    Types of property 'bg' are incompatible.
+      Type '"#F2F2F7"' is not assignable to type '"#000000"'.
+store/themeStore.ts(82,23): error TS2322: Type '{ readonly bg: "#000000"; readonly card: "#1C1C1E"; readonly cardAlt: "#1A1A1E"; readonly surface: "#2C2C2E"; readonly border: "#2C2C2E"; readonly borderLight: "#3A3A3C"; readonly text: "#FFFFFF"; ... 17 more ...; readonly skeleton: "#2C2C2E"; } | { ...; }' is not assignable to type '{ readonly bg: "#000000"; readonly card: "#1C1C1E"; readonly cardAlt: "#1A1A1E"; readonly surface: "#2C2C2E"; readonly border: "#2C2C2E"; readonly borderLight: "#3A3A3C"; readonly text: "#FFFFFF"; ... 17 more ...; readonly skeleton: "#2C2C2E"; } | undefined'.
+  Type '{ readonly bg: "#F2F2F7"; readonly card: "#FFFFFF"; readonly cardAlt: "#FFFFFF"; readonly surface: "#E5E5EA"; readonly border: "#D1D1D6"; readonly borderLight: "#E5E5EA"; readonly text: "#000000"; ... 17 more ...; readonly skeleton: "#E5E5EA"; }' is not assignable to type '{ readonly bg: "#000000"; readonly card: "#1C1C1E"; readonly cardAlt: "#1A1A1E"; readonly surface: "#2C2C2E"; readonly border: "#2C2C2E"; readonly borderLight: "#3A3A3C"; readonly text: "#FFFFFF"; ... 17 more ...; readonly skeleton: "#2C2C2E"; }'.
+    Types of property 'bg' are incompatible.
+      Type '"#F2F2F7"' is not assignable to type '"#000000"'.
+store/themeStore.ts(88,26): error TS2322: Type '{ readonly bg: "#000000"; readonly card: "#1C1C1E"; readonly cardAlt: "#1A1A1E"; readonly surface: "#2C2C2E"; readonly border: "#2C2C2E"; readonly borderLight: "#3A3A3C"; readonly text: "#FFFFFF"; ... 17 more ...; readonly skeleton: "#2C2C2E"; } | { ...; }' is not assignable to type '{ readonly bg: "#000000"; readonly card: "#1C1C1E"; readonly cardAlt: "#1A1A1E"; readonly surface: "#2C2C2E"; readonly border: "#2C2C2E"; readonly borderLight: "#3A3A3C"; readonly text: "#FFFFFF"; ... 17 more ...; readonly skeleton: "#2C2C2E"; } | undefined'.
+  Type '{ readonly bg: "#F2F2F7"; readonly card: "#FFFFFF"; readonly cardAlt: "#FFFFFF"; readonly surface: "#E5E5EA"; readonly border: "#D1D1D6"; readonly borderLight: "#E5E5EA"; readonly text: "#000000"; ... 17 more ...; readonly skeleton: "#E5E5EA"; }' is not assignable to type '{ readonly bg: "#000000"; readonly card: "#1C1C1E"; readonly cardAlt: "#1A1A1E"; readonly surface: "#2C2C2E"; readonly border: "#2C2C2E"; readonly borderLight: "#3A3A3C"; readonly text: "#FFFFFF"; ... 17 more ...; readonly skeleton: "#2C2C2E"; }'.
+    Types of property 'bg' are incompatible.
+      Type '"#F2F2F7"' is not assignable to type '"#000000"'.

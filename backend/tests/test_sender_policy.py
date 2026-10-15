@@ -10,8 +10,10 @@ from bson import ObjectId
 
 from services import sender_policy as sp
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
+loop = asyncio.get_event_loop_policy().get_event_loop()  # shared with the other launch suites: get_db() caches one Motor client per process
+if loop.is_closed():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 PARENT = os.environ.get("TWILIO_ACCOUNT_SID") or "ACparent000"
 SUB = "AC" + "5" * 32
 MS = "MG" + "7" * 32

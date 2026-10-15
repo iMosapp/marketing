@@ -163,7 +163,7 @@ async def _sms(to: str, body: str) -> dict:
         return {"ok": False, "error": "No cell number"}
     from services.twilio_service import send_sms
     try:
-        r = await send_sms(to, no_em_dash(body))
+        r = await send_sms(to, no_em_dash(body), purpose="system", system_kind="account_setup")
         return {"ok": bool(r.get("success")), "error": r.get("error"), "sid": r.get("message_sid") or r.get("sid")}
     except Exception as e:
         return {"ok": False, "error": str(e)[:200]}

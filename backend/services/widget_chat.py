@@ -704,7 +704,7 @@ async def _text_booked(db, session: dict, uid: Optional[str], phone: str, body: 
             await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"rep_phone": frm}})
     else:
         from services.twilio_service import send_sms
-        res = await send_sms(phone, body, from_phone=frm or None)
+        res = await send_sms(phone, body, from_phone=frm or None, purpose="transactional")
     if not res.get("success"):
         logger.warning(f"[WidgetChat] {session['sid']} booking text failed: {res.get('error')}")
     return bool(res.get("success"))

@@ -427,7 +427,7 @@ async def on_ladder_exhausted(db, job: dict, source: dict) -> list:
             body = hydrate_intake_text(source["no_answer_text"], lead_data, source.get("name") or "", lang=loc.language(locale))
             if from_phone and body and not already:
                 from services.twilio_service import send_sms
-                res = await send_sms(job["customer_phone"], body, from_phone=from_phone)
+                res = await send_sms(job["customer_phone"], body, from_phone=from_phone, purpose="requested_info")
                 actions.append(f"no-answer text {'sent' if res.get('success') else 'failed'}")
                 if res.get("success"):
                     now = datetime.now(timezone.utc)

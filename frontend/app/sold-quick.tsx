@@ -16,6 +16,7 @@ import api from '../services/api';
 import { showSimpleAlert } from '../services/alert';
 import { ScheduledSendRow, useScheduledSends } from '../components/sold/ScheduledSendsList';
 import { tid } from '../components/scripts/shared';
+import { VERBAL_SCOPES } from '../components/compliance/NewContactConsent';
 
 const IS_WEB = Platform.OS === 'web';
 const ACCENT = '#C9A962';
@@ -35,6 +36,7 @@ export default function SoldQuickScreen() {
   const [saleDate, setSaleDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [sending, setSending] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [done, setDone] = useState(false);
   const [soldContactId, setSoldContactId] = useState('');
   const scheduledSends = useScheduledSends(user?._id, soldContactId, done);
@@ -137,10 +139,10 @@ export default function SoldQuickScreen() {
 
   const handleSend = async () => {
     if (!user?._id) return;
-    if (!customerPhone.trim()) { showSimpleAlert('Phone Required', 'Enter the customer\'s phone number.'); return; }
-    if (!customerName.trim()) { showSimpleAlert('Name Required', 'Enter the customer\'s name.'); return; }
+    if (!customerPhone.trim()) { showSimpleAlert('Phone Required', 'Enter the contact\'s phone number.'); return; }
+    if (!customerName.trim()) { showSimpleAlert('Name Required', 'Enter the contact\'s name.'); return; }
     if (sendType === 'photo' && !photo) {
-      showSimpleAlert('Photo Required', 'Please take a photo or choose from your camera roll to use the Delivery Photo option. Or switch to Digital Card.');
+      showSimpleAlert('Photo Required', 'Please take a photo or choose from your camera roll to use the Photo option. Or switch to Digital Card.');
       return;
     }
     // Normalize to E.164 — prevents duplicate conversations from format mismatches
@@ -165,7 +167,7 @@ export default function SoldQuickScreen() {
           date: fmtDateLocal(saleDate),
           ...(vehiclePurchased.trim() ? { title: vehiclePurchased.trim(), category: 'vehicle' } : {}),
         }).catch(() => {
-          showSimpleAlert('Sale Not Saved', 'The sale could not be recorded. You can add it under Purchase History on the contact page.');
+          showSimpleAlert('Date Not Saved', 'The date could not be recorded. You can add it under Purchase History on the contact page.');
         });
       }
 
@@ -185,9 +187,15 @@ export default function SoldQuickScreen() {
       const rlRes = await api.get(`/users/${user._id}/review-links`).catch(() => ({ data: {} }));
       const reviewUrl = (rlRes.data as any)?.imos_review_url || (rlRes.data as any)?.review_url || '';
 
-      // Step 4: VCF immediately
+      // Texting permission confirmed on this screen (verbal, in person): requested info + transactional updates, never marketing
+      if (agreed && contactId) {
+        await api.post(`/consent/contact/${contactId}`, { scopes: VERBAL_SCOPES, method: 'verbal_in_person', source: 'share_photo' }).catch(() => {});
+      }
+
+      // Step 4: VCF immediately (a refusal here means no consent / opted out / texting paused: nothing else is queued)
       const vcfUrl = `${APP_URL}/api/profile/${user._id}/vcard.vcf`;
       const firstName = customerName.trim().split(' ')[0];
+      let refusal: any = null;
       await api.post('/messages/twilio-send', {
         to: normalizedPhone,
         body: `Hi ${firstName}! This is ${user.name}, tap to save my number so you always have it.`,
@@ -195,7 +203,13 @@ export default function SoldQuickScreen() {
         contact_id: contactId,
         media_urls: [vcfUrl],
         event_type: 'vcf_sent',
-      }).catch(() => {});
+        purpose: 'requested_info',
+      }).catch((e: any) => { if (e?.compliance) refusal = e; });
+      if (refusal) {
+        if (!refusal.consentDeclined) showSimpleAlert('Nothing was texted', refusal.complianceMessage || 'This contact cannot be texted right now.');
+        else showSimpleAlert('Nothing was texted', `${firstName} and the details were saved. Record their texting permission to share the photo.`);
+        return;
+      }
 
       // Step 5: Congrats — 2 minutes
       // Photo: upload native photo and send as MMS (no overlay processing)
@@ -240,6 +254,7 @@ export default function SoldQuickScreen() {
           delay_seconds: 120,
           ...(photoMediaUrl ? { media_urls: [photoMediaUrl] } : {}),
           event_type: 'congrats_card_sent',
+          purpose: 'requested_info',
         }).catch(() => {});
       } else {
         // Digital Card link
@@ -251,6 +266,7 @@ export default function SoldQuickScreen() {
           contact_name: customerName.trim(),
           delay_seconds: 120,
           event_type: 'congrats_card_sent',
+          purpose: 'requested_info',
         }).catch(() => {});
       }
 
@@ -264,6 +280,7 @@ export default function SoldQuickScreen() {
           contact_name: customerName.trim(),
           delay_seconds: 420,
           event_type: 'review_request_sent',
+          purpose: 'transactional',
         }).catch(() => {});
       }
 
@@ -298,13 +315,13 @@ export default function SoldQuickScreen() {
     const immediateSteps = [
       { icon: 'card-outline',    color: '#007AFF', label: 'Contact card (VCF)',      time: 'Sent ✓',  done: true },
       ...(sendType === 'photo' && photo
-        ? [{ icon: 'image-outline',  color: '#34C759', label: 'Delivery photo (MMS)',   time: '~2 min',   done: false }]
+        ? [{ icon: 'image-outline',  color: '#34C759', label: 'Photo (MMS)',   time: '~2 min',   done: false }]
         : [{ icon: 'gift-outline',   color: ACCENT,    label: 'Digital card link',      time: '~4 min',   done: false }]
       ),
       { icon: 'star-outline',    color: '#FF9500', label: 'Review request',           time: '~7 min',   done: false },
     ];
 
-    const campaignName = (soldWorkflow?.campaigns || []).map((c: any) => c.name).join(', ') || 'Sold follow-up';
+    const campaignName = (soldWorkflow?.campaigns || []).map((c: any) => c.name).join(', ') || 'Follow-up';
 
     return (
       <SafeAreaView style={s.container} edges={['top', 'bottom']}>
@@ -312,8 +329,8 @@ export default function SoldQuickScreen() {
           <Animated.View style={[s.successCircle, { transform: [{ scale: checkAnim }] }]}>
             <Ionicons name="checkmark" size={56} color="#FFF" />
           </Animated.View>
-          <Text style={s.successTitle}>SOLD!</Text>
-          <Text style={s.successSub}>Sequence started for {customerName.split(' ')[0]}</Text>
+          <Text style={s.successTitle} {...tid('share-photo-success-title')}>Shared!</Text>
+          <Text style={s.successSub}>Follow-up started for {customerName.split(' ')[0]}</Text>
 
           {/* Immediate sends — what actually fires in the next few minutes */}
           <View style={s.timeline}>
@@ -389,7 +406,7 @@ export default function SoldQuickScreen() {
         <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home' as any))} {...tid("sold-quick-back")}>
           <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>New Sale</Text>
+        <Text style={s.headerTitle} {...tid('share-photo-title')}>Share Photo</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -415,7 +432,7 @@ export default function SoldQuickScreen() {
             <TouchableOpacity style={s.photoBtnPrimary} onPress={takePhoto} {...tid("sold-camera")}>
               <Ionicons name="camera" size={28} color="#000" />
               <Text style={s.photoBtnPrimaryText}>Take Photo</Text>
-              <Text style={s.photoBtnSub}>Delivery shot</Text>
+              <Text style={s.photoBtnSub}>New photo</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.photoBtnSecondary} onPress={pickFromLibrary} {...tid("sold-library")}>
               <Ionicons name="images-outline" size={26} color={ACCENT} />
@@ -426,7 +443,7 @@ export default function SoldQuickScreen() {
         )}
 
         {/* Name */}
-        <Text style={s.fieldLabel}>CUSTOMER NAME</Text>
+        <Text style={s.fieldLabel}>CONTACT NAME</Text>
         <TextInput
           style={s.input}
           placeholder="First and last name"
@@ -453,10 +470,10 @@ export default function SoldQuickScreen() {
         </View>
 
         {/* What did they purchase? */}
-        <Text style={s.fieldLabel}>WHAT DID THEY PURCHASE?</Text>
+        <Text style={s.fieldLabel}>WHAT IS IT FOR? <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(optional)</Text></Text>
         <TextInput
           style={s.input}
-          placeholder="e.g. 2024 Ford F-150, Samsung TV, Health Plan..."
+          placeholder="e.g. a purchase, service, policy or project"
           placeholderTextColor={colors.textSecondary}
           value={vehiclePurchased}
           onChangeText={setVehiclePurchased}
@@ -466,7 +483,7 @@ export default function SoldQuickScreen() {
         />
 
         {/* Sale date (backdate support) */}
-        <Text style={s.fieldLabel}>SALE DATE</Text>
+        <Text style={s.fieldLabel}>DATE</Text>
         {IS_WEB ? (
           <input
             type="date"
@@ -556,7 +573,7 @@ export default function SoldQuickScreen() {
 
         {/* ── Send Type Selector ── */}
         <View style={{ marginTop: 24 }}>
-          <Text style={s.fieldLabel}>CONGRATS FORMAT</Text>
+          <Text style={s.fieldLabel}>SEND AS</Text>
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
             <TouchableOpacity
               style={[s.typeBtn, sendType === 'photo' && s.typeBtnActive]}
@@ -564,7 +581,7 @@ export default function SoldQuickScreen() {
               {...tid("send-type-photo")}
             >
               <Ionicons name="image-outline" size={22} color={sendType === 'photo' ? '#000' : ACCENT} />
-              <Text style={[s.typeBtnLabel, sendType === 'photo' && { color: '#000' }]}>Delivery Photo</Text>
+              <Text style={[s.typeBtnLabel, sendType === 'photo' && { color: '#000' }]}>Photo</Text>
               <Text style={[s.typeBtnSub, sendType === 'photo' && { color: '#00000099' }]}>Send the actual photo as MMS</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -601,7 +618,7 @@ export default function SoldQuickScreen() {
           {[
             { label: 'Your contact card (VCF)', time: 'Immediately', color: '#007AFF' },
             {
-              label: sendType === 'photo' ? 'Delivery photo (MMS)' : 'Congrats card link',
+              label: sendType === 'photo' ? 'Photo (MMS)' : 'Card link',
               time: '~2 minutes', color: ACCENT,
             },
             { label: 'Review request', time: '~7 minutes', color: '#FF9500' },
@@ -624,7 +641,7 @@ export default function SoldQuickScreen() {
           </View>
           <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, gap: 10 }}>
             {!soldWorkflow ? (
-              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Loading your store's Sold workflow…</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Loading your follow-up workflow…</Text>
             ) : (
               <>
                 {(soldWorkflow.stop_tags?.length > 0 || soldWorkflow.clear_hot) && (
@@ -636,7 +653,7 @@ export default function SoldQuickScreen() {
                 {(soldWorkflow.campaigns || []).length === 0 ? (
                   <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
                     <Ionicons name="alert-circle-outline" size={18} color="#FF3B30" style={{ marginTop: 1 }} />
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>No Sold campaign attached yet. A manager can attach one in Workflows.</Text>
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>No follow-up campaign attached yet. A manager can attach one in Workflows.</Text>
                   </View>
                 ) : soldWorkflow.campaigns.map((c: any) => (
                   <View key={c.id} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
@@ -655,6 +672,16 @@ export default function SoldQuickScreen() {
           </View>
         </View>
 
+        {/* Texting permission (verbal, in person): requested info + transactional updates only */}
+        <TouchableOpacity onPress={() => setAgreed(a => !a)} activeOpacity={0.85} {...tid('share-photo-consent-toggle')}
+          style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 24, padding: 14, borderRadius: 14, borderWidth: 1.5, borderColor: agreed ? ACCENT : colors.surface, backgroundColor: agreed ? ACCENT + '14' : colors.card }}>
+          <Ionicons name={agreed ? 'checkbox' : 'square-outline'} size={24} color={agreed ? ACCENT : colors.textSecondary} />
+          <View style={{ flex: 1, gap: 3 }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>{customerName.split(' ')[0] || 'They'} agreed to get this by text</Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>Verbal, in person: the photo, your card and updates about this purchase or service. Not marketing. Reply STOP opts them out.</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* Send button */}
         <TouchableOpacity
           style={[s.sendBtn, sending && { opacity: 0.6 }]}
@@ -666,7 +693,7 @@ export default function SoldQuickScreen() {
             ? <ActivityIndicator size="small" color="#000" />
             : <>
                 <Ionicons name="checkmark-circle" size={24} color="#000" />
-                <Text style={s.sendBtnText}>SEND SOLD SEQUENCE</Text>
+                <Text style={s.sendBtnText}>SHARE NOW</Text>
               </>
           }
         </TouchableOpacity>

@@ -686,6 +686,18 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
             {"_id": ObjectId(contact_id)},
             {"$set": {"sms_consent": True, "sms_consent_at": now, "sms_consent_source": (normalized.get("attribution") or {}).get("kind") or "lead_form"}},
         )
+    # Consent: every inquiry documents that the contact asked to hear back (requested info); a form opt-in adds transactional
+    try:
+        from services import consent as _consent
+        _org_id = str(store.get("organization_id") or "") if store else ""
+        if _org_id and phone_e164:
+            await _consent.record(db, org_id=_org_id, phone=phone_e164, scopes=["requested_info", "transactional"] if sms_opt_in else ["requested_info"],
+                                  method="web_form" if sms_opt_in else "lead_inquiry", source=f"lead:{(normalized.get('attribution') or {}).get('kind') or 'inquiry'}",
+                                  location_id=str(store.get("_id")) if store.get("_id") else None, contact_id=contact_id, business=store.get("name") or "",
+                                  statement_version="external_form",
+                                  evidence={"lead_source_id": str(source.get("_id") or ""), "attribution": normalized.get("attribution") or None, "form_opt_in": sms_opt_in})
+    except Exception as _ce:
+        logger.info(f"[LeadIntake] consent not recorded: {_ce}")
     if is_test:
         await db.contacts.update_one({"_id": ObjectId(contact_id)}, {"$addToSet": {"tags": "Test Lead"}, "$set": {"is_test": True}})
 
@@ -997,7 +1009,7 @@ async def process_queued_leads():
                         rep_twilio_num = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
                     except Exception:
                         pass
-                result = await send_sms(phone, message, from_phone=rep_twilio_num, media_urls=lead.get("media_urls") or None)
+                result = await send_sms(phone, message, from_phone=rep_twilio_num, media_urls=lead.get("media_urls") or None, purpose="requested_info", user_id=rep_uid or None)
                 mocked = result.get("mock", True)
             else:
                 mocked = True
@@ -2643,7 +2655,7 @@ async def _get_on_shift_reps(user_ids: list, fallback_all: bool = True) -> list:
 async def _send_intake_sms(db, conv_id: str, to_phone: str, from_number: str, body: str) -> dict:
     """Send the intake text and log it on the thread. Returns the twilio_service result."""
     from services.twilio_service import send_sms
-    result = await send_sms(to_phone, body, from_phone=from_number or None)
+    result = await send_sms(to_phone, body, from_phone=from_number or None, purpose="requested_info")
     if result.get("success"):
         now = datetime.now(timezone.utc)
         await db.messages.insert_one({
@@ -2843,23 +2855,20 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
 
                     if rep_phone and rep_twilio and sms_enabled:
                         try:
-                            from twilio.rest import Client as _TC2
-                            tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
-                            tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
-                            if tw_sid and tw_token:
-                                sms_body = (
-                                    f"I'm On Social: New Lead! {full_name}"
-                                    + (f" — {vehicle}" if vehicle else "")
-                                    + f"\n\nSource: {source_name}"
-                                    + f"\n\nClaim it: {conv_link}"
-                                )
-                                import asyncio as _aio3
-                                async def _sms(to=rep_phone, frm=rep_twilio, body=sms_body, sid=tw_sid, tok=tw_token):
-                                    try:
-                                        _TC2(sid, tok).messages.create(to=to, from_=frm, body=body)
-                                    except Exception as _e:
-                                        logger.debug(f"[IntakeWorkflow] Rep SMS failed: {_e}")
-                                _aio3.create_task(_sms())
+                            sms_body = (
+                                f"I'm On Social: New Lead! {full_name}"
+                                + (f" — {vehicle}" if vehicle else "")
+                                + f"\n\nSource: {source_name}"
+                                + f"\n\nClaim it: {conv_link}"
+                            )
+                            import asyncio as _aio3
+                            async def _sms(to=rep_phone, frm=rep_twilio, body=sms_body, rid=str(uid)):
+                                try:
+                                    from services.twilio_service import send_sms as _ss
+                                    await _ss(to, body, from_phone=frm, purpose="system", system_kind="team_alert", user_id=rid)
+                                except Exception as _e:
+                                    logger.debug(f"[IntakeWorkflow] Rep SMS failed: {_e}")
+                            _aio3.create_task(_sms())
                         except Exception:
                             pass
                 except Exception as notif_err:

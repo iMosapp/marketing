@@ -1251,12 +1251,12 @@ async def process_ai_reply_queue():
                         rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
                     except Exception:
                         pass
-            result = await send_sms(phone, item["body"], from_phone=rep_twilio_number, media_urls=item.get("media_urls") or None)
+            result = await send_sms(phone, item["body"], from_phone=rep_twilio_number, media_urls=item.get("media_urls") or None, purpose="conversational", user_id=item.get("assigned_user_id") or None, contact_id=str(item.get("contact_id") or "") or None)
             media_dropped = False
             if not result.get("success") and item.get("media_urls"):
                 # Photo rejected up front (bad URL / type) - the answer still matters more than the picture
                 logger.warning(f"[AIReply] MMS rejected for queue {qid} ({result.get('error')}), retrying text-only")
-                result = await send_sms(phone, item["body"], from_phone=rep_twilio_number)
+                result = await send_sms(phone, item["body"], from_phone=rep_twilio_number, purpose="conversational", user_id=item.get("assigned_user_id") or None, contact_id=str(item.get("contact_id") or "") or None)
                 media_dropped = result.get("success", False)
             if not result.get("success"):
                 err = f"[{result.get('error_code', '')}] {result.get('error', 'send failed')}".strip()
@@ -1514,7 +1514,7 @@ async def approve_ai_reply(queue_id: str, request: Request):
             rep_twilio_number = await _resolve_from(db, rep_uid, conversation=_conv_num)
     except Exception:
         pass
-    result = await send_sms(phone, body, from_phone=rep_twilio_number)
+    result = await send_sms(phone, body, from_phone=rep_twilio_number, purpose="conversational", user_id=item.get("assigned_user_id") or user_id, contact_id=str(item.get("contact_id") or "") or None)
 
     await db.ai_reply_queue.update_one(
         {"_id": ObjectId(queue_id)},

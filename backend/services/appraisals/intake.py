@@ -172,7 +172,7 @@ async def create_link(db, appr: dict, me: dict, *, channel: str = "copy") -> dic
         msg = (f"Hi {_first(appr.get('contact_name'))}, it's {_first(_name(me))} at {store}. Tap this link to send me your {veh or 'vehicle'}'s VIN, mileage and a few photos "
                f"so I can work up a real number for your trade: {intake['short_url']} Takes about 3 minutes.")
         rep_number = await get_rep_twilio_number(str(me["_id"]))
-        res = await send_sms(phone, msg, from_phone=rep_number, org_id=appr.get("organization_id"), user_id=str(me["_id"]), contact_id=appr.get("contact_id")) or {}
+        res = await send_sms(phone, msg, from_phone=rep_number, org_id=appr.get("organization_id"), user_id=str(me["_id"]), contact_id=appr.get("contact_id"), purpose="requested_info") or {}
         if not res.get("success", True) and res.get("error"):
             raise ValueError(f"Text failed: {res['error']}")
         await _thread_log(db, appr, me, phone=phone, body=msg, res=res, rep_number=rep_number)

@@ -4,6 +4,7 @@ import * as Application from 'expo-application';
 import api from '../services/api';
 import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, applyAudioRoute, nativeRtcMissing, nativeRtcReason } from './liveRtc';
 import { CaptionRow, reserveRep, applyRepTranscript, applyAssistantDelta, finishResponse, dropUnheard } from './miniCaptions';
+import { newGuards, routeEvent, traceSend, openingEvent } from './miniSession';
 
 export type LiveState = 'idle' | 'connecting' | 'live' | 'switching' | 'ending' | 'ended' | 'error';
 export type { CaptionRow };
@@ -110,12 +111,18 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   // Realtime mini opens with turn detection OFF so room noise or the speaker's own echo cannot start a second turn while Jessi greets; listening is switched on after the greeting.
   const vadOn = useRef(false);
   const vadTimer = useRef<any>(null);
+  // Per-connection guards (miniSession.ts): one start, each provider event and each tool call acted on once, plus a short trace.
+  const guards = useRef(newGuards());
+  const greetings = useRef(0);   // greetings sent in this conversation (handoffs continue without one)
   const isMini = () => engineRef.current === 'mini';
   const controlled = () => meterRef.current.policy_mode === 'controls';
 
   const send = (ev: any) => {
-    if (dc.current && dc.current.readyState === 'open') dc.current.send(JSON.stringify(ev));
+    if (!dc.current || dc.current.readyState !== 'open') return;
+    if (ev?.type === 'response.create' || ev?.type === 'session.instructions.append') traceSend(guards.current, ev.type, sinceStart());
+    dc.current.send(JSON.stringify(ev));
   };
+  const traceEvent = () => ({ type: 'trace', rows: guards.current.trace, dups: guards.current.dups, greetings: greetings.current });
   const enableMiniListening = () => {
     if (!isMini() || vadOn.current) return;
     vadOn.current = true;
@@ -177,7 +184,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     handing.current = false;
     queuePending();
     const s = secs ?? secondsRef.current;
-    if (liveId.current) queue.current.push({ type: 'closed', reason, seconds: s, tokens: isMini() ? { ...tokensRef.current } : undefined });
+    if (liveId.current) queue.current.push(traceEvent(), { type: 'closed', reason, seconds: s, tokens: isMini() ? { ...tokensRef.current } : undefined });
     setCloseReason(reason);
     if (CAP_REASONS.includes(reason)) setOfferText(true);
     setState('ended');
@@ -297,13 +304,10 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     setState('live');
     startedAt.current = Date.now();
     applyAudioRoute();
-    const greet = greetInstruction.current || (isMini()
-      ? `Greet the rep now, before they speak. Say exactly this and nothing more: "${greeting.current}" Then stop and listen.`
-      : `Greet the rep immediately in English without waiting for them to speak. Say, in your own words: "${greeting.current}". Then pause and listen.`);
-    if (isMini()) {
-      send({ type: 'response.create', response: { instructions: greet } });
-      vadTimer.current = setTimeout(enableMiniListening, 8000); // listening comes on at the end of the greeting (response.done); this is the safety net
-    } else send({ type: 'session.instructions.append', event_id: 'greet_1', delegation_id: null, content: greet });
+    const opening = openingEvent({ mini: isMini(), resumed: resumedRef.current, greeting: greeting.current, greetInstruction: greetInstruction.current });
+    send(opening.event);
+    if (opening.greeting) greetings.current += 1;
+    if (isMini()) vadTimer.current = setTimeout(enableMiniListening, 8000); // listening comes on at the end of the greeting (response.done); this is the safety net
     if (resumedRef.current) { setNote(STANDARD_VOICE_NOTE); setWorking(''); }
     if (openAtStart.current) {
       const target = openAtStart.current; openAtStart.current = null;
@@ -320,7 +324,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     }, 1000);
     flushTimer.current = setInterval(() => {
       // mini: seconds + tokens; GPT-Live: the last provider seconds. Either way the server gets a heartbeat and can answer with a stop.
-      queue.current.push({ type: 'usage', seconds: secondsRef.current, tokens: isMini() ? { ...tokensRef.current } : undefined });
+      queue.current.push({ type: 'usage', seconds: secondsRef.current, tokens: isMini() ? { ...tokensRef.current } : undefined }, traceEvent());
       flush();
     }, 6000);
     resetIdle();
@@ -344,10 +348,13 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   const onMessage = (raw: string) => {
     let ev: any;
     try { ev = JSON.parse(raw); } catch { return; }
+    // A repeated provider event, a second start event or an already-answered tool call is counted in the trace and never acted on
+    const routed = routeEvent(guards.current, ev, sinceStart());
+    if (routed.kind === 'skip') return;
     switch (ev.type) {
       case 'session.started':
       case 'session.created':
-        onStarted();
+        if (routed.kind === 'start') onStarted();
         break;
       case 'session.input_transcript.delta':
         appendCaption('rep', ev.delta || '', ev.start_ms || 0, ev.end_ms || 0);
@@ -377,16 +384,11 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
         addUsage(ev.response?.usage);
         responseDone(ev.response);
         if (isMini() && !vadOn.current) enableMiniListening();
-        for (const item of ev.response?.output || []) {
-          if (item?.type !== 'function_call' || item.name !== 'delegate') continue;
-          let request = '';
-          try { request = String(JSON.parse(item.arguments || '{}').request || ''); } catch { /* keep empty */ }
-          handleDelegation(item.call_id, request);
-        }
+        if (routed.kind === 'calls') routed.calls.forEach(c => handleDelegation(c.callId, c.request));
         break;
       }
       case 'session.delegation.created':
-        if (ev.delegation?.id && ev.delegation?.target !== 'responses') handleDelegation(ev.delegation.id);
+        if (routed.kind === 'delegation') handleDelegation(routed.id);
         break;
       case 'session.usage.updated': {
         const s = Number(ev.usage?.seconds || 0);
@@ -419,6 +421,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     if (!rtc) throw new Error(LIVE_UNSUPPORTED_BODY);
     const connection = new rtc.PeerConnection();
     pc.current = connection;
+    guards.current = newGuards();
     detachAudio.current = attachRemoteAudio(connection);
     if (!mic.current) mic.current = await rtc.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } as any });
     mic.current.getAudioTracks().forEach((t: any) => connection.addTrack(t, mic.current));
@@ -496,7 +499,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     setWorking('Switching voice line');
     clearTimers();
     queuePending();
-    queue.current.push({ type: 'closed', reason, seconds: secondsRef.current, tokens: isMini() ? { ...tokensRef.current } : undefined });
+    queue.current.push(traceEvent(), { type: 'closed', reason, seconds: secondsRef.current, tokens: isMini() ? { ...tokensRef.current } : undefined });
     const batch = queue.current.splice(0, 400);
     dropTransport();
     await post(oldId, batch);
@@ -524,6 +527,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     modeRef.current = opts.mode;
     finalized.current = false;
     handing.current = false;
+    greetings.current = 0;
     rowsRef.current = [];
     queuedRows.current = new Set();
     queue.current = [];

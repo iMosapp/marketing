@@ -47,6 +47,7 @@ import {
 import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
 import PersonalIntelSection from '../../components/PersonalIntelSection';
 import PurchaseHistorySection from '../../components/contact/PurchaseHistorySection';
+import { ConsentStatusCard } from '../../components/compliance/ConsentStatusCard';
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
 import { ContactProvider } from '../../components/contact/ContactContext';
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
@@ -1610,6 +1611,10 @@ function ContactDetailScreen() {
               platform:    Platform.OS,
               mediaUrls,   // ← native photo, not a URL in text
             });
+            if (result.refused) {
+              showToast(result.message || 'This text was not sent.', 'error');
+              return;
+            }
             if (result.usedTwilio) {
               showToast(`Sent from ${twilioNumber}`, 'success');
               setComposerMessage('');
@@ -2826,6 +2831,9 @@ function ContactDetailScreen() {
           />
 
           {/* ===== PROFILE TAB ===== */}
+          {!isNewContact && !isEditing && contactTab === 'profile' && !!contact.phone && (
+            <ConsentStatusCard contactId={id as string} name={contact.first_name} />
+          )}
           {!isNewContact && !isEditing && contactTab === 'profile' && (
             <DetailsTab
               s={s}

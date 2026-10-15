@@ -67,7 +67,7 @@ async def ask(db, session: dict) -> Optional[dict]:
            "status": "open", "nudges": 0, "failures": 0, "replies": [], "asked_at": now, "expires_at": now + timedelta(hours=OPEN_HOURS), "created_at": now, "updated_at": now}
     body = text(lang, "ask_replace" if had_photo else "ask", first=_first(user.get("name")))
     try:
-        r = await send_sms(to, body, from_phone=frm)
+        r = await send_sms(to, body, from_phone=frm, purpose="system", system_kind="team_alert")
     except Exception as e:
         r = {"success": False, "error": str(e)[:200]}
     doc["sms"] = {"ok": bool(r.get("success")), "sid": r.get("message_sid") or r.get("sid"), "error": r.get("error"), "body": body}
@@ -109,7 +109,7 @@ async def card_link(db, user_id: str) -> str:
 async def _reply(db, req: dict, body: str) -> dict:
     from services.twilio_service import send_sms
     try:
-        r = await send_sms(req["to_phone"], body, from_phone=req["from_number"])
+        r = await send_sms(req["to_phone"], body, from_phone=req["from_number"], purpose="system", system_kind="team_alert")
     except Exception as e:
         r = {"success": False, "error": str(e)[:200]}
     await db[COLL].update_one({"_id": req["_id"]}, {"$push": {"replies": {"at": _now(), "body": body, "ok": bool(r.get("success")), "error": r.get("error")}}, "$set": {"updated_at": _now()}})

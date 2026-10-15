@@ -294,7 +294,9 @@ async def _missed(db, req: dict, w: Optional[dict], reason: str, text: bool = Tr
     if text and req.get("phone") and req.get("from_number"):
         try:
             from services.twilio_service import send_sms
-            await send_sms(req["phone"], _hydrate(cfg["routing"]["missed_text"], req["first"], store_name), from_phone=req["from_number"], contact_id=req.get("contact_id"))
+            from services import consent as _consent, suppression as _sup
+            await _consent.note_inbound(db, await _sup.scope_for_number(db, req["from_number"]), req["phone"], req["from_number"], f"call:{req.get('_id')}")
+            await send_sms(req["phone"], _hydrate(cfg["routing"]["missed_text"], req["first"], store_name), from_phone=req["from_number"], contact_id=req.get("contact_id"), purpose="conversational")
         except Exception as e:
             logger.warning(f"[WidgetCall] missed text failed: {e}")
     # somebody owns the callback: the lead's assignee, else the first group member

@@ -878,7 +878,7 @@ async def graduate_conversation(db, conv: dict, actor_id: Optional[str] = None, 
         text = bridge.replace("{first_name}", first).replace("{rep_name}", _first(rep)).replace("{inbox_name}", (inbox or {}).get("name") or "the team")
         try:
             from services.twilio_service import send_sms
-            res = await send_sms(conv["contact_phone"], text, from_phone=rep_number)
+            res = await send_sms(conv["contact_phone"], text, from_phone=rep_number, purpose="conversational", user_id=owner, contact_id=str(conv.get("contact_id") or "") or None)
             await db.messages.insert_one({"conversation_id": str(conv["_id"]), "content": text, "sender": "user", "auto_sent": True,
                                           "is_bridge_text": True, "timestamp": datetime.utcnow(), "status": "sent" if res.get("success") else "failed",
                                           "twilio_sid": res.get("message_sid") or res.get("sid"), "from_phone": rep_number, "to_phone": conv["contact_phone"]})

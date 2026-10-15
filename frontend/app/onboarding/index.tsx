@@ -85,7 +85,7 @@ const CongratsCardDemo = () => {
         </Text>
         <View style={demoStyles.salesmanInfo}>
           <Text style={demoStyles.salesmanName}> - John Smith</Text>
-          <Text style={demoStyles.dealership}>Premier Auto Group</Text>
+          <Text style={demoStyles.dealership}>Premier Services Group</Text>
         </View>
         <View style={demoStyles.shareIcons}>
           <Ionicons name="logo-facebook" size={20} color="#4267B2" />

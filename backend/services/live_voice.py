@@ -682,6 +682,11 @@ async def record_events(db, live: dict, events: list) -> dict:
             sets.update({"status": "closed", "ended_at": _now(), "seconds": secs, "cost_usd": cost, "close_reason": ev.get("reason") or "close_requested"})
         elif t == "error":
             sets["last_error"] = str(ev.get("message") or "")[:300]
+        elif t == "trace" and isinstance(ev.get("rows"), list):
+            # per-connection guard trace (hooks/miniSession.ts): first provider events + every response.create, and the duplicates it dropped
+            sets["trace"] = [{k: str(r.get(k))[:60] for k in ("t", "type", "id", "rid", "item") if r.get(k) is not None} for r in ev["rows"][:60] if isinstance(r, dict)]
+            sets["dup_events"] = max(int(live.get("dup_events") or 0), int(ev.get("dups") or 0))
+            sets["greetings_sent"] = max(int(live.get("greetings_sent") or 0), int(ev.get("greetings") or 0))
     ops = {"$set": sets}
     if rows:
         ops["$push"] = {"transcript": {"$each": rows[-200:]}}

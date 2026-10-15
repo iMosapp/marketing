@@ -119,7 +119,7 @@ async def share_page(data: SharePageRequest, x_user_id: str = Header(None, alias
 
         try:
             from services.twilio_service import send_sms
-            result = await send_sms(data.recipient_phone, sms_body)
+            result = await send_sms(data.recipient_phone, sms_body, purpose="requested_info", user_id=x_user_id or None)
             if result.get("success"):
                 return {
                     "success": True,

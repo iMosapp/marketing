@@ -150,7 +150,7 @@ async def start_text_shop(db, call: dict) -> bool:
         return True
     text = await opening_text(db, call, client)
     await db.roleplay_sessions.update_one({"_id": call["_id"]}, {"$set": {"status": "live", "started_at": now, "last_attempt_at": now, "from_number": frm, "expires_at": now + timedelta(hours=MAX_HOURS), "turns": [], "updated_at": now}, "$inc": {"attempts": 1}})
-    r = await send_sms(call["rep_phone"], text, from_phone=frm)
+    r = await send_sms(call["rep_phone"], text, from_phone=frm, purpose="system", system_kind="client_staff")
     if not r.get("success"):
         logger.warning(f"[TextShop] could not send opening text for {call['_id']}: {r.get('error')}")
         await ms.record_outcome(db, {**call, "attempts": int(call.get("attempts") or 0) + 1, "from_number": frm}, "failed", "The text could not be sent")
@@ -220,7 +220,7 @@ async def reply_if_due(db, sid: str) -> bool:
         if not turns or turns[-1]["role"] != "rep":
             return False
         data = await _customer_reply(db, s)
-        r = await send_sms(s["rep_phone"], data["say"], from_phone=s.get("from_number"))
+        r = await send_sms(s["rep_phone"], data["say"], from_phone=s.get("from_number"), purpose="system", system_kind="client_staff")
         if not r.get("success"):
             logger.warning(f"[TextShop] reply send failed for {sid}: {r.get('error')}")
             return False

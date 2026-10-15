@@ -95,7 +95,7 @@ const SLIDES = [
     key: 'reply',
     eyebrow: 'CARD 3',
     title: 'Needs a Reply',
-    body: 'Jessi, your AI assistant, answers texts for you 24/7. When a customer needs a real person you see a red WAITING badge. Tap it, reply, done. Sold a car? Hit the gold + and SOLD!',
+    body: 'Jessi, your AI assistant, answers texts for you 24/7. When a customer needs a real person you see a red WAITING badge. Tap it, reply, done. Just helped a customer? Hit the gold + and Share Photo.',
     mock: (
       <MockCard>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>

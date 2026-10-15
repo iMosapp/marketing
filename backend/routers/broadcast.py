@@ -444,129 +444,21 @@ async def send_broadcast(broadcast_id: str, user_id: str):
         raise HTTPException(status_code=400, detail="Invalid broadcast ID")
     if not broadcast:
         raise HTTPException(status_code=404, detail="Broadcast not found")
-    if broadcast.get("status") in ["sending", "sent"]:
+    if broadcast.get("status") in ["sending", "sent", "queuing"]:
         raise HTTPException(status_code=400, detail="Broadcast has already been sent")
 
-    # Get rep's Twilio number
-    from services.twilio_service import get_rep_twilio_number
-    rep_twilio_number = await get_rep_twilio_number(user_id)
-
-    now = datetime.now(timezone.utc)
-    stagger = int(broadcast.get("stagger_seconds", 10))  # seconds between each send
-    jessi_on = broadcast.get("jessi_replies", False)
-    message_template = broadcast.get("message", "")
-
-    # Sanitize media URLs — Twilio MMS requires PUBLIC https URLs.
-    # Local device paths (file://) or data URIs can never be fetched by Twilio (error 21620).
-    public_base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-    media_urls = []
-    for u in (broadcast.get("media_urls") or []):
-        if not isinstance(u, str):
-            continue
-        if u.startswith("http://") or u.startswith("https://"):
-            media_urls.append(u)
-        elif u.startswith("/api/"):
-            media_urls.append(f"{public_base}{u}")
-        else:
-            logger.warning(f"[Broadcast] Dropping invalid media URL (not publicly fetchable): {u[:100]}")
-
-    recipient_ids = broadcast.get("recipients", [])
-    contacts = await db.contacts.find(
-        {"_id": {"$in": [ObjectId(rid) for rid in recipient_ids]}},
-        {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1}
-    ).to_list(5000)
-
-    # Pre-schedule all sends into campaign_pending_sends with staggered send_at
-    pending_docs = []
-    for i, contact in enumerate(contacts):
-        phone = contact.get("phone", "")
-        if not phone:
-            continue
-        first_name = contact.get("first_name", "there")
-        # Personalise {first_name} / {name} variables
-        personalised = message_template.replace("{first_name}", first_name).replace("{name}", first_name)
-        contact_id = str(contact["_id"])
-        send_at = (now + timedelta(seconds=i * stagger)).replace(tzinfo=None)
-        pending_docs.append({
-            "user_id": user_id,
-            "contact_id": contact_id,
-            "contact_name": f"{contact.get('first_name','')} {contact.get('last_name','')}".strip(),
-            "contact_phone": phone,
-            "rep_phone": rep_twilio_number,
-            "message_template": personalised,
-            "media_urls": media_urls,
-            "channel": "sms",
-            "delivery_mode": "auto",
-            "send_at": send_at,
-            "status": "pending",
-            "step": 0,
-            "enrollment_id": "",
-            "campaign_id": "",
-            "campaign_name": broadcast.get("name", "Broadcast"),
-            "broadcast_id": broadcast_id,
-            "type": "broadcast",
-            "created_at": now.replace(tzinfo=None),
-        })
-
-    queued = 0
-    if pending_docs:
-        result = await db.campaign_pending_sends.insert_many(pending_docs)
-        queued = len(result.inserted_ids)
-
-    # Enable Jessi for all recipient conversations (if requested)
-    jessi_enabled_count = 0
-    if jessi_on:
-        for contact in contacts:
-            if not contact.get("phone"):
-                continue
-            contact_id = str(contact["_id"])
-            phone = contact["phone"]
-            # Find or create conversation
-            conv = await db.conversations.find_one({
-                "$or": [
-                    {"rep_phone": rep_twilio_number, "contact_phone": phone},
-                    {"user_id": user_id, "contact_id": contact_id},
-                ]
-            })
-            if not conv:
-                conv_doc = {
-                    "user_id": user_id,
-                    "rep_phone": rep_twilio_number,
-                    "contact_id": contact_id,
-                    "contact_phone": phone,
-                    "contact_name": f"{contact.get('first_name','')} {contact.get('last_name','')}".strip(),
-                    "status": "active",
-                    "ai_enabled": True,
-                    "ai_mode": "auto",
-                    "created_at": now,
-                    "last_message_at": now,
-                }
-                await db.conversations.insert_one(conv_doc)
-            else:
-                await db.conversations.update_one(
-                    {"_id": conv["_id"]},
-                    {"$set": {"ai_enabled": True, "ai_mode": "auto"}}
-                )
-            jessi_enabled_count += 1
-
-    # Mark broadcast as sending (scheduler will update to sent as messages go out)
-    last_send_at = (now + timedelta(seconds=len(pending_docs) * stagger)).isoformat()
-    await db.broadcasts.update_one(
-        {"_id": ObjectId(broadcast_id)},
-        {"$set": {
-            "status": "sending",
-            "sent_at": now.isoformat(),
-            "queued_count": queued,
-            "estimated_completion": last_send_at,
-        }}
-    )
-    logger.info(f"[Broadcast] Queued {queued} messages for '{broadcast.get('name')}', stagger={stagger}s, jessi={jessi_on}")
+    from services.broadcast_queue import queue as _queue
+    res = await _queue(db, broadcast_id, ("draft", "scheduled", "failed", "paused"), owner_id=user_id)
+    if not res["claimed"]:
+        raise HTTPException(status_code=409, detail="This broadcast is already being sent")
+    queued, stagger = res["queued"], res["stagger"]
+    logger.info(f"[Broadcast] Queued {queued} messages for '{broadcast.get('name')}', stagger={stagger}s")
     return {
         "success": True,
         "message": f"Broadcast queued — {queued} messages will go out over ~{round(queued * stagger / 60, 1)} minutes",
         "queued": queued,
-        "jessi_enabled": jessi_enabled_count,
-        "estimated_completion": last_send_at,
+        "jessi_enabled": res["jessi_enabled"],
+        "estimated_completion": res["estimated_completion"],
     }
 
 

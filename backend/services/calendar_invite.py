@@ -194,13 +194,17 @@ async def _conversation(db, ctx: dict) -> dict | None:
     return doc
 
 
-async def _text_customer(db, ctx: dict, body: str, kind: str) -> dict:
-    """Send from the rep's number and log the bubble in the thread + activity feed."""
+async def _text_customer(db, ctx: dict, body: str, kind: str, key: str | None = None) -> dict:
+    """Send from the rep's number and log the bubble in the thread + activity feed (nothing is logged when the text was refused or already sent)."""
     if not ctx["phone"]:
         return {"success": False, "error": "no_phone"}
     if not ctx["rep_number"]:
         return {"success": False, "error": "no_rep_number"}
-    res = await send_sms(ctx["phone"], body, from_phone=ctx["rep_number"])
+    res = await send_sms(ctx["phone"], body, from_phone=ctx["rep_number"], purpose="transactional", user_id=str(ctx["task"]["user_id"]),
+                         contact_id=str(ctx["task"]["contact_id"]), idempotency_key=key)
+    if res.get("blocked") or res.get("duplicate"):
+        return res
+    body = res.get("sent_body") or body
     now = datetime.now(timezone.utc)
     conv = await _conversation(db, ctx)
     sid = res.get("message_sid") or res.get("sid")
@@ -358,7 +362,16 @@ async def send_customer_appointment_reminders() -> int:
             where = f" at {ctx['store_name']}" if ctx["store_name"] else ""
             body = (f"Good morning {ctx['first']}, quick reminder from {ctx['rep_first']}: you're set for {when_label(ctx, with_day=False)} today{where}. "
                     f"Reply here if anything has changed. See you then.")
-            res = await _text_customer(db, ctx, body, "appointment_reminder")
+            from services.job_lease import INSTANCE_ID
+            won = await db.tasks.find_one_and_update(
+                {"_id": task["_id"], "customer_reminder_sent_at": {"$exists": False}, "customer_reminder_claim": {"$exists": False}},
+                {"$set": {"customer_reminder_claim": {"owner": INSTANCE_ID, "at": now}}})
+            if not won:
+                continue  # another replica (or an earlier tick) owns this reminder
+            res = await _text_customer(db, ctx, body, "appointment_reminder", key=f"appt_reminder:{task['_id']}")
+            if res.get("blocked") or res.get("duplicate"):
+                await db.tasks.update_one({"_id": task["_id"]}, {"$set": {"customer_reminder_sent_at": None, "customer_reminder_skipped": res.get("error_code") or "refused"}})
+                continue
             await db.tasks.update_one({"_id": task["_id"]}, {"$set": {
                 "customer_reminder_sent_at": now, "customer_reminder_status": "sent" if res.get("success") else str(res.get("error") or "failed")}})
             sent += int(bool(res.get("success")))

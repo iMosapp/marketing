@@ -1,7 +1,7 @@
 // Replays provider event sequences through the live-voice guards (hooks/miniSession.ts) and checks that the greeting, every event and
 // every tool call are acted on once. Run: cp scripts/check-mini-opening.ts + hooks/miniSession.ts to a temp dir, sucrase, node (same
 // recipe as check-mini-captions).
-import { newGuards, routeEvent, traceSend } from '../hooks/miniSession';
+import { newGuards, routeEvent, traceSend, openingEvent, RESUME_LINE } from '../hooks/miniSession';
 
 let failed = 0;
 const check = (name: string, ok: boolean) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}`); if (!ok) failed += 1; };
@@ -82,6 +82,26 @@ const call = (id: string, request = 'who should I call today') => ({ type: 'func
   routeEvent(g, { type: 'session.created', event_id: 'e1', response: undefined }, 5);
   routeEvent(g, { type: 'response.done', event_id: 'e2', response: { id: 'r1', output: [] } }, 9);
   check('trace keeps type, event id and response id', g.trace[1].type === 'response.done' && g.trace[1].id === 'e2' && g.trace[1].rid === 'r1');
+}
+
+{
+  // Reconnect / handoff: each provider connection gets fresh guards (one start each) and the resumed one never greets again
+  const first = replay([{ type: 'session.created', event_id: 'a1' }, { type: 'session.created', event_id: 'a2' }]);
+  const second = replay([{ type: 'session.created', event_id: 'b1' }, { type: 'session.started', event_id: 'b2' }]);
+  const greet = openingEvent({ mini: true, resumed: false, greeting: 'Hey, it is Jessi.' });
+  const resume = openingEvent({ mini: true, resumed: true, greeting: '' });
+  const greetings = (first.starts ? (greet.greeting ? 1 : 0) : 0) + (second.starts ? (resume.greeting ? 1 : 0) : 0);
+  check('reconnect: one start per connection, exactly one greeting per conversation', first.starts === 1 && second.starts === 1 && greetings === 1);
+  check('resumed mini session says it is still there, never the greeting', (resume.event as any).response.instructions === RESUME_LINE && !(resume.event as any).response.instructions.includes('Hey, it is Jessi'));
+}
+{
+  const live = openingEvent({ mini: false, resumed: false, greeting: 'Hi' });
+  const liveResume = openingEvent({ mini: false, resumed: true, greeting: '' });
+  check('GPT-Live greeting keeps the fixed greet_1 event id; resume uses its own id', (live.event as any).event_id === 'greet_1' && (liveResume.event as any).event_id === 'resume_1' && !liveResume.greeting);
+}
+{
+  const shop = openingEvent({ mini: true, resumed: false, greeting: '', greetInstruction: 'Open as the shopper' });
+  check('shopper opening instruction is used as-is on a new conversation', (shop.event as any).response.instructions === 'Open as the shopper' && shop.greeting);
 }
 
 console.log(failed ? `\n${failed} mini opening check(s) FAILED` : '\nall mini opening checks passed');

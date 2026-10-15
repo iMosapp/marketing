@@ -431,6 +431,7 @@ class MessageCreate(BaseModel):
     channel: Optional[str] = None  # 'sms' or 'email' - defaults to sms
     event_type: Optional[str] = None  # Explicit event type for activity tracking (e.g., digital_card_sent, review_request_sent)
     event_title: Optional[str] = None  # Human-readable title override (e.g., "'Before' Card Sent" for custom cards)
+    purpose: Optional[str] = None  # conversational | requested_info | transactional | marketing (services/outbound_gate.py)
 
 # Call Models
 class Call(BaseModel):

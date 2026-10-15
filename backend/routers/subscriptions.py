@@ -581,7 +581,7 @@ async def _email_accepted_quote(quote: dict, quote_id: str, stripe_url: str | No
                     rep_twilio_num = (owner or {}).get("twilio_number") or (owner or {}).get("mvpline_number")
             except Exception:
                 pass
-            result = await send_sms(to_phone, sms_body, from_phone=rep_twilio_num)
+            result = await send_sms(to_phone, sms_body, from_phone=rep_twilio_num, purpose="transactional")
             logger.info(f"[Quotes] Payment SMS sent to {to_phone}: {result}")
         except Exception as e:
             logger.warning(f"[Quotes] SMS send failed (non-fatal): {e}")

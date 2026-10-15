@@ -104,6 +104,36 @@ api.interceptors.request.use(
   }
 );
 
+// Texting compliance: a send refused for missing consent opens the inline consent sheet and, once recorded, retries the same
+// request; an opt-out opens the explanation; a paused subscription (403 billing_locked) switches the app to Access Paused.
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const cfg: any = error.config || {};
+    const status = error.response?.status;
+    const data = error.response?.data;
+    const detail = data?.detail;
+    if (status === 403 && data?.reason === 'billing_locked') {
+      const { useCompliance } = await import('../store/complianceStore');
+      useCompliance.getState().setLock({ locked: true, owner: !!data.owner, message: typeof detail === 'string' ? detail : '' });
+    }
+    if (status === 409 && detail && typeof detail === 'object' && typeof detail.code === 'string' && 'needs' in detail) {
+      const { useCompliance, CONSENT_CODES } = await import('../store/complianceStore');
+      error.compliance = detail.code;
+      error.complianceMessage = detail.message;
+      if (!cfg.skipConsentPrompt && !cfg._consentAsked && (CONSENT_CODES.includes(detail.code) || detail.code === 'opted_out')) {
+        cfg._consentAsked = true;
+        const ok = await useCompliance.getState().requestConsent(detail);
+        if (ok && detail.code !== 'opted_out') return api(cfg);
+        error.consentDeclined = true;  // the sheet already explained it
+      }
+      // Callers that print `detail` get the readable reason, not an object
+      error.response.data = { ...data, detail: detail.message || detail.code, compliance: detail };
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Response interceptor: auto-restore session from cookie on 401
 let isRestoringSession = false;
 const _authHealth = { deadSessionStrikes: 0 };
@@ -1131,7 +1161,7 @@ export async function smartSendSMS(params: {
   eventType?: string;
   platform: string;        // Platform.OS
   mediaUrls?: string[];    // optional MMS photo attachments
-}): Promise<{ sent: boolean; usedTwilio: boolean; mock?: boolean }> {
+}): Promise<{ sent: boolean; usedTwilio: boolean; mock?: boolean; refused?: string; message?: string }> {
   const { to, body, userId, twilioNumber, contactId, eventType, platform, mediaUrls } = params;
   const phone = to.replace(/\D/g, '');
   const e164  = phone.length === 10 ? `+1${phone}` : `+${phone}`;
@@ -1152,7 +1182,9 @@ export async function smartSendSMS(params: {
       }
       const res = await api.post('/messages/twilio-send', payload);
       return { sent: true, usedTwilio: true, mock: res.data.mock };
-    } catch (err) {
+    } catch (err: any) {
+      // A compliance refusal (no consent, STOP, paused texting) must never be routed around through the phone's own SMS app
+      if (err?.compliance) return { sent: false, usedTwilio: true, refused: err.compliance, message: err.complianceMessage };
       // If Twilio fails, fall through to native SMS so message still goes
       console.warn('[smartSendSMS] Twilio failed, falling back to native:', err);
     }

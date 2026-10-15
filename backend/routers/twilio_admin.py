@@ -275,7 +275,7 @@ async def send_test_sms(request: Request):
     if not to_phone:
         raise HTTPException(status_code=400, detail="to_phone required")
     from services.twilio_service import send_sms
-    result = await send_sms(to_phone, "I'm On Social test SMS — Twilio is live and working!")
+    result = await send_sms(to_phone, "I'm On Social test SMS — Twilio is live and working!", purpose="system", system_kind="platform_test")
     return {
         "success": result.get("success"),
         "mock": result.get("mock", False),

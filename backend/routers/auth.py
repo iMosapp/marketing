@@ -149,6 +149,16 @@ def _strip_binary(user: dict) -> dict:
 
 
 
+async def _billing_lock(user: dict) -> dict:
+    """Subscription access state for the app (services/billing_lock.py): the access-paused screen keys off `locked`."""
+    try:
+        from services import billing_lock
+        return await billing_lock.for_user(get_db(), {"_id": user.get("_id"), "role": user.get("role"), "organization_id": user.get("organization_id")})
+    except Exception as e:
+        logger.warning(f"[BillingLock] state unavailable: {e}")
+        return {"locked": False, "state": "unknown"}
+
+
 def _apply_pilot_flags(user: dict, org: dict) -> None:
     """Stage 3: users of a launch customer org marked pilot get the simplified experience. Legacy orgs carry no `customer` field."""
     c = org.get("customer") or {}
@@ -634,6 +644,7 @@ async def login(credentials: dict, request: Request = None):
     # Merge feature permissions (no DB call)
     from permissions import merge_permissions
     user['feature_permissions'] = merge_permissions(user.get('feature_permissions'), user.get('role', 'user'))
+    user['billing_lock'] = await _billing_lock(user)
 
     response_data = {
         "token": create_jwt_token(str(user['_id']), user.get('role', 'user')),
@@ -748,6 +759,7 @@ async def _session_response(user: dict):
     # Merge feature permissions with role-based defaults (same as login)
     from permissions import merge_permissions
     user['feature_permissions'] = merge_permissions(user.get('feature_permissions'), user.get('role', 'user'))
+    user['billing_lock'] = await _billing_lock(user)
 
     # Include store slug and name (same as login)
     if user.get('store_id'):
@@ -915,7 +927,7 @@ async def _send_code_sms(phone: str, code: str, purpose: str) -> bool:
         return False
     try:
         from services.twilio_service import send_sms
-        result = await send_sms(e164, _CODE_COPY[purpose]["sms"].format(code=code))
+        result = await send_sms(e164, _CODE_COPY[purpose]["sms"].format(code=code), purpose="system", system_kind="otp")
         if result.get("success"):
             logger.info(f"[CodeSMS] {purpose} code sent to ...{e164[-4:]} (mock={result.get('mock')})")
             return True
@@ -1530,30 +1542,15 @@ async def notify_onboarding_complete(user: dict):
 
 async def send_onboarding_notification_sms(manager: dict, user_name: str):
     """Send SMS notification about onboarding completion"""
-    import os
-    
-    twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
-    twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
-    
-    if not twilio_sid or not twilio_token:
-        return
-    
     manager_phone = manager.get("phone")
-    from_number = manager.get("mvpline_number") or os.environ.get("TWILIO_PHONE_NUMBER")
-    
-    if not manager_phone or not from_number:
+    if not manager_phone:
         return
-    
     message = f"Training Complete!\n\n{user_name} has completed their I'm On Social onboarding and is ready to start!"
-    
     try:
-        from twilio.rest import Client
-        client = Client(twilio_sid, twilio_token)
-        client.messages.create(
-            body=message,
-            from_=from_number,
-            to=manager_phone
-        )
+        from services.twilio_service import send_sms
+        own = manager.get("mvpline_number")  # the manager's own line, else I'm On Social's platform sender
+        await send_sms(manager_phone, message, from_phone=own or None, purpose="system", system_kind="team_alert",
+                       user_id=str(manager.get("_id")) if own and manager.get("_id") else None)
     except Exception as e:
         logger.warning(f"Twilio SMS failed: {e}")
 

@@ -261,7 +261,7 @@ async def send_payment_link(db, org: dict, actor: dict, url: str) -> dict:
         try:
             from services.twilio_service import send_sms
             res = await send_sms(owner["phone"], f"Hi {first}, here is the secure payment link for {org.get('name', 'your')} on I'm On Social ({plan_line}). "
-                                                 f"Card details go to Stripe, never to us: {url}")
+                                                 f"Card details go to Stripe, never to us: {url}", purpose="system", system_kind="billing_owner")
             sms_sent = bool(res.get("success"))
         except Exception as e:
             logger.warning(f"[Billing] payment link text failed for {org['_id']}: {e}")

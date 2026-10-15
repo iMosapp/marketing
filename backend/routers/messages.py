@@ -402,6 +402,16 @@ async def create_conversation(user_id: str, data: dict):
     conv['_id'] = str(result.inserted_id)
     return conv
 
+async def _preflight(user_id: str, to_phone: str, purpose, contact_id, conversation=None, from_phone=None):
+    """Refuse a manual text before it is saved: opted out, missing consent, paused billing or an unready sender (409, structured)."""
+    from services.outbound_gate import preflight_or_raise
+    if from_phone is None:
+        from services.inboxes import resolve_from_number as _resolve_from
+        from_phone = await _resolve_from(get_db(), user_id, conversation=conversation)
+    await preflight_or_raise(get_db(), to_phone=to_phone, from_phone=from_phone, purpose=purpose or "conversational", user_id=user_id,
+                             contact_id=str(contact_id or "") or None)
+
+
 @router.post("/send/{user_id}/{conversation_id}")
 async def send_message(user_id: str, conversation_id: str, message_data: MessageCreate):
     """Send a message in a conversation"""
@@ -441,6 +451,8 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     # Substitute template variables ({review_link}, {first_name}, etc.)
     contact_id = conv.get('contact_id', '')
     resolved_content = await substitute_template_vars(message_data.content, user_id, contact_id)
+    if (message_data.channel or 'sms') == 'sms' and to_phone:
+        await _preflight(user_id, to_phone, message_data.purpose, contact_id, conversation=conv)
     
     # Create message record
     message = {
@@ -667,11 +679,15 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             rep_twilio_number = await _resolve_from(get_db(), user_id, conversation=conv)
         except Exception:
             pass
-        sms_result = await send_sms(to_phone, message_data.content, from_phone=rep_twilio_number)
+        sms_result = await send_sms(to_phone, message_data.content, from_phone=rep_twilio_number, purpose=message_data.purpose or "conversational",
+                                    user_id=user_id, contact_id=str(contact_id or "") or None)
         
         if sms_result.get('success'):
             message['status'] = 'sent'
             message['twilio_sid'] = sms_result.get('message_sid')
+            if sms_result.get('sent_body'):
+                message['content'] = sms_result['sent_body']
+                await get_db().messages.update_one({"_id": ObjectId(message['_id'])}, {"$set": {"content": sms_result['sent_body'], "disclosure": sms_result.get('disclosure')}})
             logger.info(f"SMS sent to {to_phone}: {message_data.content[:50]}...")
         else:
             message['status'] = 'failed'
@@ -903,7 +919,8 @@ async def message_resend_text(message_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Conversation not found")
     user_id = str(m.get("user_id") or conv.get("user_id") or "")
     from_phone = conv.get("rep_phone") or await _rep_number(db, user_id)
-    result = await send_sms(conv["contact_phone"], body, media_urls=None, from_phone=from_phone, user_id=user_id, contact_id=str(conv.get("contact_id") or "") or None)
+    result = await send_sms(conv["contact_phone"], body, media_urls=None, from_phone=from_phone, user_id=user_id, contact_id=str(conv.get("contact_id") or "") or None,
+                            purpose="conversational")
     if not result.get("success"):
         raise HTTPException(status_code=502, detail=result.get("error") or "Send failed")
     now = datetime.utcnow()
@@ -950,9 +967,15 @@ async def send_via_twilio(request: Request):
         rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
     except Exception:
         pass
-    result = await send_sms(to_phone, body, media_urls=media_urls if media_urls else None, from_phone=rep_twilio_number)
+    purpose = data.get("purpose") or "conversational"
+    await _preflight(user_id, to_phone, purpose, contact_id, from_phone=rep_twilio_number)
+    result = await send_sms(to_phone, body, media_urls=media_urls if media_urls else None, from_phone=rep_twilio_number, purpose=purpose,
+                            user_id=user_id or None, contact_id=contact_id or None)
+    if result.get("blocked"):
+        raise HTTPException(status_code=409, detail={"code": result.get("error_code"), "message": result.get("error"), "needs": result.get("needs") or [], "purpose": purpose})
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "Send failed"))
+    body = result.get("sent_body") or body
     now = datetime.utcnow()
     from services.twilio_service import normalize_phone
     # Normalize phone before lookup — prevents duplicate conversations from format mismatches
@@ -1030,7 +1053,8 @@ async def send_mms_message(
     user_id: str,
     conversation_id: str,
     content: str = Form(default=""),
-    media: UploadFile = File(...)
+    media: UploadFile = File(...),
+    purpose: str = Form(default="conversational"),
 ):
     """Send an MMS message with media attachment"""
     base_filter = await get_data_filter(user_id)
@@ -1097,6 +1121,7 @@ async def send_mms_message(
     # Normalize phone number
     from services.twilio_service import normalize_phone
     to_phone = normalize_phone(to_phone)
+    await _preflight(user_id, to_phone, purpose, contact_id, conversation=conv)
     
     # Get the actual conversation ID
     actual_conv_id = str(conv['_id'])
@@ -1158,7 +1183,8 @@ async def send_mms_message(
         rep_twilio_number = await _resolve_from(db, user_id, conversation=conv)
     except Exception:
         pass
-    sms_result = await send_sms(to_phone, content or "", media_urls, from_phone=rep_twilio_number)
+    sms_result = await send_sms(to_phone, content or "", media_urls, from_phone=rep_twilio_number, purpose=purpose or "conversational",
+                                user_id=user_id, contact_id=str(contact_id or "") or None)
     
     if sms_result.get('success'):
         message['status'] = 'sent'
@@ -1823,10 +1849,14 @@ async def schedule_delayed_message(request: Request):
     contact_name = data.get("contact_name", "")
     media_urls = data.get("media_urls", [])
     event_type = data.get("event_type", "sms_sent")
+    purpose = data.get("purpose") or "conversational"
+    if purpose not in ("conversational", "requested_info", "transactional", "marketing"):
+        raise HTTPException(status_code=400, detail="purpose must be conversational, requested_info, transactional or marketing")
 
     if not user_id or not to_phone or not body:
         raise HTTPException(status_code=400, detail="user_id, to, body required")
     await _assert_can_act_as(request, user_id)
+    await _preflight(user_id, to_phone, purpose, contact_id, from_phone=await _rep_number(get_db(), user_id))
 
     db = get_db()
     now = datetime.now(timezone.utc)
@@ -1868,6 +1898,7 @@ async def schedule_delayed_message(request: Request):
         "campaign_name":  "Direct Send",
         "media_urls":     media_urls,
         "event_type":     event_type,
+        "purpose":        purpose,
         "created_at":     now,
         "type":           "direct_scheduled",
     }
@@ -2288,6 +2319,8 @@ async def send_message_simple(user_id: str, message_data: dict):
         contact = await db.contacts.find_one({"_id": ObjectId(conv.get('contact_id', ''))})
         if contact:
             to_phone = contact.get('phone')
+    if channel == 'sms' and to_phone:
+        await _preflight(user_id, to_phone, message_data.get('purpose'), resolved_contact_id, from_phone=await _rep_number(db, user_id))
     
     # Create message
     message = {
@@ -2486,7 +2519,8 @@ async def send_message_simple(user_id: str, message_data: dict):
                 rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
             except Exception:
                 pass
-            sms_result = await send_sms(to_phone, content, from_phone=rep_twilio_number)
+            sms_result = await send_sms(to_phone, content, from_phone=rep_twilio_number, purpose=message_data.get('purpose') or "conversational",
+                                        user_id=user_id, contact_id=str(resolved_contact_id or "") or None)
             
             if sms_result.get('success'):
                 message['status'] = 'sent'
