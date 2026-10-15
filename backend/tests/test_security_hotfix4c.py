@@ -297,6 +297,6 @@ def test_webhook_enforcement_report_is_super_admin_only_and_leaks_no_keys(victim
 
 def test_smoke_script_expects_the_hotfix4c_build():
     from tests import prod_smoke_hotfix3 as smoke
-    assert smoke.DEFAULT_BUILD == "2026-10-14.mms-stage1"
+    assert smoke.DEFAULT_BUILD == "2026-10-15.mini-voice"
     probes = {(m, p) for m, p, *_ in smoke.CHECKS}
     assert ("POST", "/api/admin/users") in probes and ("POST", "/api/admin/users/create") in probes

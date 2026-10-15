@@ -464,3 +464,5 @@
 - Oct 15 2026: Jessi Mini voice stability audit (investigation only): `/app/memory/JESSI_MINI_VOICE_STABILITY_AUDIT.md`, mocked lifecycle sim `frontend/scripts/sim-mini-lifecycle.js` -> `/app/test_reports/mini_lifecycle_sim.json`; prod read-only evidence via deployer (owner account, no transcript text).
 
 - Oct 15 2026: Jessi Mini fixes in preview (not deployed): name policy (backend), quiet/away behaviour + warning UI + close diagnostics (app, OTA), tests `test_mini_voice_quality.py`, `voice_name_use_eval.py`, `scripts/sim-mini-lifecycle.js` (19/19). Report `JESSI_MINI_FIX_PREVIEW_REPORT.md`.
+
+- Oct 15 2026: BUILD bumped to `2026-10-15.mini-voice` (server.py, prod smoke default + its test); production deploy dispatched with a shadow-mode pre-check.
