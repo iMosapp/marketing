@@ -462,3 +462,5 @@
 - Oct 15 2026 (final preview gate, PREVIEW ONLY): wired the server Messages-handoff check into ~20 app paths (`services/nativeMessages.ts`), fail-closed copy verified (iteration_394), fixed thank-you authorization placement (ruff F821), added `tests/test_native_handoff.py` (16), updated stale STOP-suite assertion; GO/NO-GO report `FINAL_PREVIEW_GATE_GO_NOGO.md`. Not deployed.
 
 - Oct 15 2026: Jessi Mini voice stability audit (investigation only): `/app/memory/JESSI_MINI_VOICE_STABILITY_AUDIT.md`, mocked lifecycle sim `frontend/scripts/sim-mini-lifecycle.js` -> `/app/test_reports/mini_lifecycle_sim.json`; prod read-only evidence via deployer (owner account, no transcript text).
+
+- Oct 15 2026: Jessi Mini fixes in preview (not deployed): name policy (backend), quiet/away behaviour + warning UI + close diagnostics (app, OTA), tests `test_mini_voice_quality.py`, `voice_name_use_eval.py`, `scripts/sim-mini-lifecycle.js` (19/19). Report `JESSI_MINI_FIX_PREVIEW_REPORT.md`.

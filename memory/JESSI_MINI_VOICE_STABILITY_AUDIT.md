@@ -1,6 +1,8 @@
 # Jessi Mini: Voice Quality & Unexpected Disconnect Audit (Oct 15 2026)
 
-INVESTIGATION ONLY. No code, model, limit, prompt or production setting was changed. No paid voice test was run (owner choice).
+UPDATE: the approved fixes are built in preview; see `JESSI_MINI_FIX_PREVIEW_REPORT.md`.
+
+INVESTIGATION ONLY (at the time of the audit). No code, model, limit, prompt or production setting was changed. No paid voice test was run (owner choice).
 Evidence: code (file:line below), **read-only production records** (owner account, last 14 days, through the deployer agent: no transcript text),
 a **mocked-session simulation that runs the real `hooks/useLiveJessi.ts`** on a virtual clock (`frontend/scripts/sim-mini-lifecycle.js`,
 results `/app/test_reports/mini_lifecycle_sim.json`), and the existing server-side voice suites (24/24 pass, fake provider, no voice cost).

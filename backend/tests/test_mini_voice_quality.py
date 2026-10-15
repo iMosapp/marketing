@@ -25,6 +25,10 @@ def test_mini_prompt_drops_use_their_name_and_adds_the_name_policy():
     assert mini.endswith(CTX)
 
 
+def test_shopper_mode_gets_no_rep_name_rules():
+    assert lv.MINI_NAME_RULES not in lv.mini_instructions("You are a shopper named Dana.", CTX, names=False)
+
+
 def test_gpt_live_prompt_is_unchanged():
     live = lv.assistant_instructions(CFG, USER)
     assert "You are talking with Forest, super_admin at I'm On Social. Use their first name now and then, not every sentence." in live

@@ -88,7 +88,7 @@ export const LiveJessiProvider = ({ children }: { children: React.ReactNode }) =
         <LiveJessiSheet visible={expanded} live={live} title={launch.title} who={launch.who} hint={launch.hint} onClose={close} onRetry={() => live.start(launch.options)}
           onCollapse={() => setExpanded(false)} onAskText={askText} />
       )}
-      {launch && !expanded && <LiveJessiPill live={live} target={target} who={launch.who} onExpand={() => { if (live.quiet.level === 'warning') live.keepGoing(); setExpanded(true); }} onEnd={() => (live.state === 'live' || live.state === 'connecting' || live.state === 'switching' ? live.stop('close_requested') : close())} />}
+      {launch && !expanded && <LiveJessiPill live={live} target={target} who={launch.who} onExpand={() => { if (live.state === 'live' && live.quiet.level === 'warning') live.keepGoing(); setExpanded(true); }} onEnd={() => (live.state === 'live' || live.state === 'connecting' || live.state === 'switching' ? live.stop('close_requested') : close())} />}
     </LiveJessiContext.Provider>
   );
 };

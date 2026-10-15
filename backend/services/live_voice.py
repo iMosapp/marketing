@@ -132,9 +132,9 @@ def mini_audio_input(cfg: dict, language: str) -> dict:
     return inp
 
 
-def mini_instructions(instructions: str, context: str) -> str:
+def mini_instructions(instructions: str, context: str, names: bool = True) -> str:
     """Realtime mini takes one instructions string: shared Jessi + tool protocol + the mini length layer + the context GPT-Live gets as a developer message."""
-    return instructions.replace(REP_NAME_HINT, "") + REALTIME_RULES + MINI_RULES + MINI_NAME_RULES + "\n\n" + context
+    return instructions.replace(REP_NAME_HINT, "") + REALTIME_RULES + MINI_RULES + (MINI_NAME_RULES if names else "") + "\n\n" + context
 
 
 def voice_gender(voice_id: Optional[str]) -> Optional[str]:
@@ -521,7 +521,7 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
                     voice = cfg["mini_voice"]
                     from services import locales
                     language = locales.get(await locales.user_locale(db, user))["whisper"]
-                    session = {"type": "realtime", "model": MINI_MODEL, "instructions": mini_instructions(instructions, context), "max_output_tokens": MINI_MAX_OUTPUT_TOKENS,
+                    session = {"type": "realtime", "model": MINI_MODEL, "instructions": mini_instructions(instructions, context, names=mode != "shopper"), "max_output_tokens": MINI_MAX_OUTPUT_TOKENS,
                                "audio": {"input": mini_audio_input(cfg, language), "output": {"voice": voice}},
                                "tools": [DELEGATE_TOOL], "tool_choice": "auto"}
                     resp = await client.post(REALTIME_URL, files={"sdp": (None, sdp, "application/sdp"), "session": (None, json.dumps(session), "application/json")}, headers=headers)

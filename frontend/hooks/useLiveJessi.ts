@@ -208,6 +208,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     const s = secs ?? secondsRef.current;
     if (liveId.current) queue.current.push(traceEvent(), { type: 'closed', reason, seconds: s, tokens: isMini() ? { ...tokensRef.current } : undefined, diag: closeDiag(reason) });
     setCloseReason(reason);
+    setQuiet({ level: '', closeIn: 0 });
     if (CAP_REASONS.includes(reason)) setOfferText(true);
     setState('ended');
     flush();
@@ -330,7 +331,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       if (opened) nudge(`The app just ${openLabel(opened).toLowerCase()} on the rep's screen; they can see it now.`);
     }
     if (opened) { try { onOpenRef.current?.(opened); } catch { /* navigation is best effort */ } }
-    if (end) setTimeout(() => stop('close_requested'), 2500);
+    if (end) setTimeout(() => { if (!stopBy.current) stopBy.current = 'app'; stop('close_requested'); }, 2500);
     setTimeout(() => setWorking(''), 1200);
   };
 
@@ -615,6 +616,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     const sub = AppState.addEventListener?.('change', (st: string) => {
       appStateRef.current.state = st;
       if (st === 'background') appStateRef.current.backgrounds += 1;
+      if (st === 'active') touch(quietRef.current, Date.now());  // coming back to the app counts as activity: never end on the first tick after a resume
     });
     return () => sub?.remove?.();
   }, []);

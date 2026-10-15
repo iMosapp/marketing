@@ -137,6 +137,7 @@ const begin = async (o = {}) => {
   sim.sessionResponse = { engine: o.engine || 'mini', sdp: 'v=0 fake answer', idle_close_s: o.idle ?? 15, cap_left_s: o.cap ?? 86400, greeting: 'Hey Alex, who are we talking about today?', listening: null,
     meter: { policy_mode: o.controls ? 'controls' : 'legacy', role: o.controls ? 'backup' : null } };
   const hook = useLiveJessi({});
+  sim.cleanups = sim.effects.map(fn => fn()).filter(Boolean);  // mount: run the effects once (AppState listener), keep their cleanups for unmount
   hook.start({ mode: 'assistant' });
   await flush();
   if ((o.engine || 'mini') === 'mini') {
@@ -192,9 +193,12 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
   // 5 Long 30 s answer generated in 2 s: not cut off; quiet starts when her audio ends.
   await begin();
   await repSays(6000, 'u1', 2500, 'Walk me through everybody today');
-  const endB = await jessiSays(9100, 'r1', 'You have five today. Sarah Kincaid is waiting on the Tahoe, Bud Miller has an overdue follow up, Mike Tran is one of your three, Earl Jones asked about financing and Tanya Reed is a hot lead', 2000, 30000);
+  const p5 = jessiSays(9100, 'r1', 'You have five today. Sarah Kincaid is waiting on the Tahoe, Bud Miller has an overdue follow up, Mike Tran is one of your three, Earl Jones asked about financing and Tanya Reed is a hot lead', 2000, 30000);
+  const endB = await p5;
+  const midAudio = sim.quietLog.filter(q => q.t > 11200 && q.t < endB && q.level).length;
   await advanceTo(endB + 1000);
-  record('5', 'Long 30 s answer whose text arrives in 2 s', { jessi_audio_ends_s: s(endB), state_after_answer: sim.state.state, quiet_after_answer: sim.state.quiet.level || 'none' }, live() && sim.state.quiet.level === '', 'She finishes; the quiet clock starts only after her audio');
+  record('5', 'Long 30 s answer whose text arrives in 2 s', { jessi_audio_ends_s: s(endB), quiet_flags_while_she_spoke: midAudio, state_after_answer: sim.state.state, quiet_after_answer: sim.state.quiet.level || 'none' },
+    live() && sim.state.quiet.level === '' && midAudio === 0, 'She finishes; no quiet hint while her audio plays; the quiet clock starts after it');
 
   // 6 Slow lookup (30 s): no cut-off; the result is spoken.
   await begin();
@@ -229,8 +233,8 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
   await advanceTo(t0 + 149000);
   const before = sim.state.state;
   await advanceTo(t0 + 152000);
-  record('8', 'Forgotten session: warning, Keep going, then calm end', { warning_at_121s: warn, after_keep_going: afterKeep, live_at_149s: before, close_reason: sim.state.closeReason, closed_at_quiet_s: s(closedAt() - t0), diag: diag() },
-    warn.level === 'warning' && warn.closeIn > 0 && afterKeep === 'none' && before === 'live' && sim.state.closeReason === 'away' && diag().initiated_by === 'app' && diag().unexpected === false,
+  record('8', 'Forgotten session: warning, Keep going, then calm end', { warning_at_121s: warn, after_keep_going: afterKeep, live_at_149s: before, close_reason: sim.state.closeReason, closed_at_quiet_s: s(closedAt() - t0), quiet_after_end: sim.state.quiet.level || 'none', diag: diag() },
+    warn.level === 'warning' && warn.closeIn > 0 && afterKeep === 'none' && before === 'live' && sim.state.closeReason === 'away' && diag().initiated_by === 'app' && diag().unexpected === false && sim.state.quiet.level === '',
     'Warns with a countdown, Keep going resets it, ends quietly as "away" after 150 s of true quiet');
 
   // 9 Explicit End: mic, peer connection and audio session released, one close, no new session.
@@ -238,7 +242,7 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
   await advanceTo(20000);
   h9.stop('close_requested'); h9.stop('close_requested');
   ch().close();
-  sim.effects.map(fn => fn()).filter(Boolean).forEach(f => f());
+  sim.cleanups.forEach(f => f());
   await advanceTo(23000);
   record('9', 'Rep taps End (twice), then channel close + unmount', { state: sim.state.state, close_events: closedEvents().length, mic_tracks_stopped: sim.micStopped > 0, pc_state: pc().connectionState, audio_session_stopped: sim.audioStopped > 0, sessions_created: sim.sessions, diag: diag() },
     sim.state.state === 'ended' && closedEvents().length === 1 && sim.micStopped > 0 && pc().connectionState === 'closed' && sim.audioStopped > 0 && sim.sessions === 1 && diag().initiated_by === 'user' && diag().unexpected === false,
@@ -278,24 +282,51 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
   record('14', 'Audio-stopped event never arrives', { close_reason: sim.state.closeReason, closed_at_s: s(closedAt()) }, sim.state.closeReason === 'away', 'Not stuck open: ends as "away" after the 90 s safety cap + 150 s');
 
   // 15 App backgrounded and back during a session.
-  await begin();
+  const h15 = await begin();
   await advanceTo(10000);
   sim.appListeners.forEach(f => f('background'));
   await advanceTo(40000);
   sim.appListeners.forEach(f => f('active'));
   await advanceTo(45000);
   const h15live = sim.state.state;
-  record('15', 'App backgrounded 30 s, then foreground (JS keeps running in the mock)', { state: h15live }, h15live === 'live', 'No change in behaviour; backgrounds are counted for the close diagnostics');
+  h15.stop('close_requested');
+  await advanceTo(47000);
+  record('15', 'App backgrounded 30 s, then foreground (JS keeps running in the mock)', { state_after_foreground: h15live, diag_backgrounds: diag().backgrounds, diag_app_state: diag().app_state },
+    h15live === 'live' && diag().backgrounds === 1 && diag().app_state === 'active', 'No change in behaviour; the background trip is counted in the close diagnostics');
+
+  // 15b Long background (JS paused 200 s, e.g. iOS suspended it): coming back must not end the session on the first tick without a warning.
+  const h15b = await begin();
+  await advanceTo(10000);
+  sim.appListeners.forEach(f => f('background'));
+  const savedTimers = new Map(timers); timers.clear(); now = 210000;  // nothing ran for 200 s
+  sim.appListeners.forEach(f => f('active'));
+  savedTimers.forEach((x, id) => { if (x.every) x.at = now + 1; timers.set(id, x); });
+  await advanceTo(215000);
+  record('15b', 'Back from a 200 s background with JS paused', { state: sim.state.state, quiet: sim.state.quiet.level || 'none' }, live(), 'Returning to the app counts as activity: no instant away-end');
+  h15b.stop('close_requested');
 
   // 16 Premium (GPT-Live) unchanged: 15 s without captions still closes as idle.
   await begin({ engine: 'live' });
+  await advanceTo(14000);
+  const live14 = sim.state.state;
   await advanceTo(17000);
-  record('16', 'Premium idle behaviour unchanged', { close_reason: sim.state.closeReason, closed_at_s: s(closedAt()), quiet: sim.state.quiet.level || 'none' }, sim.state.closeReason === 'idle' && sim.state.quiet.level === '', 'GPT-Live still closes after 15 s without captions, as before');
+  record('16', 'Premium idle behaviour unchanged', { live_at_14s: live14, close_reason: sim.state.closeReason, ending_at_s: s((sim.log.find(x => x.state === 'ending') || {}).t ?? null), quiet: sim.state.quiet.level || 'none' },
+    live14 === 'live' && sim.state.closeReason === 'idle' && Math.abs((sim.log.find(x => x.state === 'ending') || {}).t - 15300) <= 1000 && sim.state.quiet.level === '', 'GPT-Live still closes 15 s after the last caption, as before');
 
   // 17 No unintended session recreation across a long quiet session.
   await begin();
   await advanceTo(3600 + 115000);
   record('17', 'No extra provider sessions during long quiet', { sessions_created: sim.sessions, state: sim.state.state }, sim.sessions === 1 && live(), 'One session only; no reconnects');
+
+  // 18 A failed lookup (409) still clears the lookup flag: the quiet hint comes back, the session stays live.
+  await begin();
+  sim.delegateStatus = 409; sim.delegateMs = 1500;
+  await repSays(6000, 'u1', 2000, 'Pull up Sarah');
+  await jessiSays(8400, 'r1', 'One sec.', 300, 900, [{ type: 'function_call', name: 'delegate', call_id: 'call_9', arguments: JSON.stringify({ request: 'pull up Sarah' }) }]);
+  await advanceTo(10300);
+  await jessiSays(10400, 'r2', 'That did not work, try again.', 300, 2000);
+  await advanceTo(12400 + 17000);
+  record('18', 'Lookup fails (409) then quiet', { state: sim.state.state, quiet: sim.state.quiet.level || 'none' }, live() && sim.state.quiet.level === 'hint', 'Lookup flag cleared on failure; normal quiet handling resumes');
 
   fs.mkdirSync('/app/test_reports', { recursive: true });
   fs.writeFileSync('/app/test_reports/mini_lifecycle_sim_after.json', JSON.stringify({ note: 'virtual clock; real hooks/useLiveJessi.ts; fake provider events', passed: results.length - failures, failed: failures, results }, null, 2));

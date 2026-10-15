@@ -32,7 +32,7 @@ export const LiveJessiPill = ({ live, target, who = 'Jessi', onExpand, onEnd }: 
   }, [isLive, pulse]);
 
   const where = target?.kind === 'contact' || target?.kind === 'thread' ? (target.first || target.name || '') : target?.kind === 'task' ? 'Reminder' : target?.kind === 'tasks' ? 'Tasks' : target?.kind === 'inbox' ? 'Inbox' : target?.kind === 'home' ? 'Home' : target?.kind === 'duplicates' ? 'Duplicates' : target?.kind === 'mentions' ? 'Who mentioned' : '';
-  const line = live.working || (live.quiet.level === 'warning' ? `Still there? Closing in ${live.quiet.closeIn} s, tap to keep going` : '') || (last ? `${last.role === 'rep' ? 'You' : who}: ${last.text}` : statusText(live, who));
+  const line = live.working || (isLive && live.quiet.level === 'warning' ? `Still there? Closing in ${live.quiet.closeIn} s, tap to keep going` : '') || (last ? `${last.role === 'rep' ? 'You' : who}: ${last.text}` : statusText(live, who));
 
   return (
     <Animated.View pointerEvents="box-none" style={{ position: 'absolute', left: 12, right: 12, bottom: (insets.bottom || (Platform.OS === 'web' ? 12 : 0)) + 84, zIndex: 9999, elevation: 30, opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }] }}>
