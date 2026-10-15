@@ -32,13 +32,13 @@ def esc(s):
 FEATURES = [
     ("Capture & remember", [("Voice memos & Jessi AI", "/jessi/", "Talk it out, Jessi writes it down"), ("Digital card & QR", "/digital-card/", "A card people keep and share"),
                             ("Link page & showcase", "/showcase/", "Your work, reviews and links in one place")]),
-    ("Stay connected", [("Campaigns & date triggers", "/date-triggers/", "Birthdays, anniversaries, check-ins"), ("Inbox & texting", "/inbox/", "Every text and email with a customer in one thread"),
+    ("Stay connected", [("Campaigns & date triggers", "/date-triggers/", "Birthdays, anniversaries, check-ins"), ("Inbox & texting", "/inbox/", "Text from a business number, history on every contact"),
                         ("Congrats cards", "/congrats-template/", "Celebrate every purchase")]),
     ("Grow & manage", [("Reviews", "/reviews/", "Ask for a review in one tap"), ("Leaderboards", "/leaderboard/", "Friendly competition for teams"),
                        ("SEO & visibility", "/seo/", "Pages built to be found")]),
 ]
 SOLUTIONS = [("For businesses", "/organizations/"), ("For sales professionals", "/individuals/"), ("Automotive & equipment", "/dealers/"), ("Real estate", "/real-estate/"),
-             ("Insurance & financial", "/insurance/"), ("Home services", "/home-services/"), ("Powersports", "/powersports/")]
+             ("Insurance & financial", "/insurance/"), ("Home services", "/home-services/"), ("Powersports", "/powersports/"), ("All industries", "/industries/")]
 RESOURCES = [("Help Center", "/help/"), ("Training", "/training/"), ("Why i'M On Social", "/why-imonsocial/"), ("Developers & API", "/developers/"),
              ("Get the iPhone app", "https://app.imonsocial.com/api/get/site")]
 SIGN_IN = "https://app.imonsocial.com"
@@ -67,6 +67,8 @@ class Site:
     def u(self, path):
         if path.startswith(("http", "#", "mailto:", "tel:")):
             return path
+        if not self.preview and len(path) > 1 and path.endswith("/"):
+            path = path[:-1]
         return self.base + path
 
     def a(self, path):
@@ -81,7 +83,7 @@ class Site:
         return f'<a href="{self.u(path)}" class="{cls}"{ext} data-testid="{tid}">{esc(label)}</a>'
 
     def head(self, title, desc, path, jsonld):
-        canon = "https://www.imonsocial.com" + path
+        canon = "https://www.imonsocial.com" + (path.rstrip("/") or "/")
         robots = '<meta name="robots" content="noindex, nofollow"/>' if self.preview else '<meta name="robots" content="index, follow"/>'
         ld = "".join(f'<script type="application/ld+json">{json.dumps(x, separators=(",", ":"))}</script>' for x in jsonld)
         return f"""<head>
@@ -208,40 +210,44 @@ class Site:
         return (f'<div class="field"><label for="{prefix}-{name}">{label}{star}</label><input id="{prefix}-{name}" name="{name}" type="{typ}"'
                 f'{" required" if req else ""}{f" autocomplete={chr(34)}{auto}{chr(34)}" if auto else ""}{f" placeholder={chr(34)}{ph}{chr(34)}" if ph else ""} data-testid="{prefix}-{name}-input"/></div>')
 
-    def modals(self):
+    def demo_form(self, prefix, source=""):
         inds = "".join(f'<option value="{v}">{esc(t)}</option>' for v, t in INDUSTRIES)
         sizes = '<option value="">Select team size</option>' + "".join(f'<option value="{s}">{s}</option>' for s in TEAM_SIZES)
+        src = f' data-source="{source}"' if source else ""
+        head = ('<p class="overline">Book a demo</p><h2 id="demo-title">See it with your own customers in mind.</h2>'
+                '<p class="modal-sub">A short call with our team. We show you the app and set you up on the plan that fits.</p>') if prefix == "demo" else ""
+        return f"""<form class="demo-form" id="{prefix}-form" data-form="demo"{src} novalidate data-testid="{prefix}-form">
+      {head}
+      <div class="row2">{self._field(prefix, "first_name", "First name", auto="given-name")}{self._field(prefix, "last_name", "Last name", req=False, auto="family-name")}</div>
+      <div class="row2">{self._field(prefix, "phone", "Mobile", "tel", auto="tel")}{self._field(prefix, "email", "Email", "email", auto="email")}</div>
+      {self._field(prefix, "company", "Company", auto="organization")}
+      <div class="row2">
+        <div class="field"><label for="{prefix}-industry">Industry <span aria-hidden="true">*</span></label><select id="{prefix}-industry" name="business_type" required data-testid="{prefix}-industry-select">{inds}</select></div>
+        <div class="field"><label for="{prefix}-team">Team size <em>(optional)</em></label><select id="{prefix}-team" name="team_size" data-testid="{prefix}-team-size-select">{sizes}</select></div>
+      </div>
+      {self._consent(prefix)}
+      <p class="form-error" role="alert" data-testid="{prefix}-form-error" hidden></p>
+      <button class="btn btn-gold btn-block" type="submit" data-testid="{prefix}-form-submit-button">Book my demo</button>
+    </form>
+    <div class="form-success" hidden data-testid="{prefix}-form-success-message">
+      <div class="success-ico">{icon("check", 28)}</div>
+      <h2>Thanks, <span data-first>there</span>.</h2>
+      <p>Someone from our team will reach out shortly to pick a time.</p>
+      {'<button class="btn btn-ink" type="button" data-modal-close data-testid="demo-success-close">Done</button>' if prefix == "demo" else ''}
+    </div>"""
+
+    def modals(self):
         x = icon("x", 22)
         return f"""<div class="modal" id="demo-modal" role="dialog" aria-modal="true" aria-labelledby="demo-title" aria-hidden="true" data-testid="book-demo-modal">
   <div class="modal-card">
     <button class="modal-close" type="button" aria-label="Close" data-modal-close data-testid="demo-modal-close">{x}</button>
-    <form class="demo-form" id="demo-form" novalidate data-testid="demo-form">
-      <p class="overline">Book a demo</p>
-      <h2 id="demo-title">See it with your own customers in mind.</h2>
-      <p class="modal-sub">A short call with our team. We show you the app and set you up on the plan that fits.</p>
-      <div class="row2">{self._field("demo", "first_name", "First name", auto="given-name")}{self._field("demo", "last_name", "Last name", req=False, auto="family-name")}</div>
-      <div class="row2">{self._field("demo", "phone", "Mobile", "tel", auto="tel")}{self._field("demo", "email", "Email", "email", auto="email")}</div>
-      {self._field("demo", "company", "Company", auto="organization")}
-      <div class="row2">
-        <div class="field"><label for="demo-industry">Industry <span aria-hidden="true">*</span></label><select id="demo-industry" name="business_type" required data-testid="demo-industry-select">{inds}</select></div>
-        <div class="field"><label for="demo-team">Team size <em>(optional)</em></label><select id="demo-team" name="team_size" data-testid="demo-team-size-select">{sizes}</select></div>
-      </div>
-      {self._consent("demo")}
-      <p class="form-error" role="alert" data-testid="demo-form-error" hidden></p>
-      <button class="btn btn-gold btn-block" type="submit" data-testid="demo-form-submit-button">Book my demo</button>
-    </form>
-    <div class="form-success" hidden data-testid="demo-form-success-message">
-      <div class="success-ico">{icon("check", 28)}</div>
-      <h2>Thanks, <span data-first>there</span>.</h2>
-      <p>Someone from our team will reach out shortly to pick a time.</p>
-      <button class="btn btn-ink" type="button" data-modal-close data-testid="demo-success-close">Done</button>
-    </div>
+    {self.demo_form("demo")}
   </div>
 </div>
 <div class="modal" id="contact-modal" role="dialog" aria-modal="true" aria-labelledby="contact-title" aria-hidden="true" data-testid="contact-modal">
   <div class="modal-card">
     <button class="modal-close" type="button" aria-label="Close" data-modal-close data-testid="contact-modal-close">{x}</button>
-    <form class="contact-form" id="contact-form" novalidate data-testid="contact-form">
+    <form class="contact-form" id="contact-form" data-form="contact" novalidate data-testid="contact-form">
       <p class="overline">Contact us</p>
       <h2 id="contact-title">How can we help?</h2>
       <p class="modal-sub">Send us a note and we will get back to you within one business day.</p>

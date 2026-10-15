@@ -7,7 +7,7 @@ import sys
 from playwright.async_api import async_playwright
 
 BASE = open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0]
-EMAIL, PASSWORD = "marketing-demo@invalid.imonsocial.test", "DemoShots123!"
+EMAIL, PASSWORD = "alex@summitpartners.example", "DemoShots123!"
 OUT = "/app/marketing/tools/shots"
 
 
@@ -35,7 +35,10 @@ async def main(targets):
             name, _, path = t.partition("=")
             path, _, click = (path or name).partition("|")
             click, _, scroll = click.partition("|")
-            await page.evaluate(f"() => {{ window.history.pushState({{}}, '', '/{path}'); window.dispatchEvent(new PopStateEvent('popstate')); }}")
+            if path.startswith("!"):
+                await page.goto(f"{BASE}/{path[1:]}", wait_until="domcontentloaded")
+            else:
+                await page.evaluate(f"() => {{ window.history.pushState({{}}, '', '/{path}'); window.dispatchEvent(new PopStateEvent('popstate')); }}")
             await page.wait_for_timeout(int(os.environ.get("WAIT", "7000")))
             if click:
                 await page.get_by_text(click, exact=False).first.click()

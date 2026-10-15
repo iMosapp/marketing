@@ -10,7 +10,7 @@ PROBLEM = ["Hundreds of past customers sit in a phone, a CRM and a stack of busi
            "The details that matter, a kid's name, a move, a renewal date, are gone by the next conversation.",
            "When someone leaves, their customers and the history go with them."]
 
-STEPS = [("01", "Capture", "mic", "Share your card, scan a business card or add a contact in seconds. After a meeting, tap record and just talk.",
+STEPS = [("01", "Capture", "mic", "Share your card by text or QR, add a contact in seconds, or import your phone contacts. After a meeting, tap record and just talk.",
           "screen-voice-record", "Voice memos screen with a large record button"),
          ("02", "Remember", "spark", "Jessi turns a 20-second voice note into clean notes, personal details and a follow-up, filed on the right person.",
           "screen-voice-memo", "Voice memo summarized by Jessi and attached to a contact"),
@@ -45,7 +45,7 @@ AUDIENCE = [("business", "For businesses", "Give your whole team the same memory
              "From $100 / month", "home_individual", "card-light")]
 
 CHIPS = [("Automotive & equipment", "/dealers/"), ("Real estate", "/real-estate/"), ("Insurance & financial services", "/insurance/"), ("Home services", "/home-services/"),
-         ("Powersports", "/powersports/"), ("Salons & wellness", "/salons/"), ("Fitness", "/fitness/"), ("Restaurants", "/restaurants/"), ("Medical & dental", "/medical/")]
+         ("Powersports", "/powersports/"), ("Salons & wellness", "/salons/"), ("Fitness", "/fitness/"), ("Restaurants", "/restaurants/"), ("Medical & dental", "/medical/"), ("All industries", "/industries/")]
 
 JSONLD = [{"@context": "https://schema.org", "@type": "Organization", "name": "i'M On Social", "url": "https://www.imonsocial.com/",
            "logo": "https://www.imonsocial.com/logo.png", "sameAs": ["https://instagram.com/imonsocialapp", "https://tiktok.com/@imonsocialapp", "https://youtube.com/@imonsocial"]},

@@ -1,7 +1,7 @@
 """Fictional demo workspace for marketing screenshots (preview only). Nothing is texted or emailed: documents go straight into Mongo.
 Run:  cd /app/backend && set -a && . ./.env && set +a && python tests/seed_marketing_demo.py          (idempotent, re-seeds)
       ... python tests/seed_marketing_demo.py --wipe                                                     (removes everything it made)
-Login: marketing-demo@invalid.imonsocial.test / DemoShots123!  (store "Summit Partners", reps Jordan Reyes + Priya Shah)."""
+Login: alex@summitpartners.example / DemoShots123!  (store "Summit Partners", reps Jordan Reyes + Priya Shah)."""
 import asyncio
 import os
 import sys
@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from routers.auth import hash_password  # noqa: E402
 
 TAG = "marketing_demo"
-EMAIL = "marketing-demo@invalid.imonsocial.test"
+EMAIL = "alex@summitpartners.example"
 PASSWORD = "DemoShots123!"
 NOW = datetime.now(timezone.utc).replace(tzinfo=None)
 U = "https://images.unsplash.com/photo-{}?w=240&h=240&fit=crop&crop=faces&q=80"
@@ -91,11 +91,19 @@ UNATTACHED = [("Open house notes, Saturday", 51, ["follow-up"], "Couple from Gol
 CAMPAIGNS = [("Birthday wishes", "birthday", "cake", "#FF375F", "Happy birthday {first_name}! Hope it's a great one. - Alex"),
              ("Client anniversary", "sold_date", "heart", "#C9A962", "Hey {first_name}, can't believe it's been a year already! Anything I can help with?"),
              ("90-day check-in", None, "chatbubbles", "#34C759", "Hi {first_name}, Alex here. Checking in, how is everything going?")]
+BIO = "Client advisor at Summit Partners in Denver. Twelve years helping families with homes, insurance and cars. Most of my new clients come from referrals."
+REVIEWS = [("Maria Santos", 5, "Alex made the whole process easy and actually remembered what mattered to us. Already sent two friends his way.", 9),
+           ("Chris Vance", 5, "Responsive, honest and never pushy. Checked in after closing just to see how we were settling in.", 2),
+           ("Rachel Nguyen", 5, "Quick answers by text and no runaround. Would work with Alex again.", 30),
+           ("Marcus Delgado", 4, "Great experience start to finish. Thanks for the birthday text!", 45)]
+KEYS_PHOTO = "https://images.unsplash.com/photo-1758523671826-d7f8217ffac3?w=900&q=80&fit=crop"
+ACTIVITY = {"alex": (24, 9, 38, 12, 4), "jordan": (31, 6, 52, 18, 6), "priya": (18, 11, 29, 9, 3)}
 
 
 async def wipe(db):
     users = [str(u["_id"]) async for u in db.users.find({"seed_key": TAG}, {"_id": 1})]
-    for coll in ("contacts", "conversations", "messages", "tasks", "voice_notes", "campaigns", "campaign_enrollments", "contact_events"):
+    for coll in ("contacts", "conversations", "messages", "tasks", "voice_notes", "campaigns", "campaign_enrollments", "contact_events",
+                 "customer_feedback", "link_pages", "congrats_cards"):
         await db[coll].delete_many({"$or": [{"seed_key": TAG}, {"user_id": {"$in": users}}]})
     await db.users.delete_many({"seed_key": TAG})
     await db.stores.delete_many({"seed_key": TAG})
@@ -105,7 +113,9 @@ async def seed(db):
     await wipe(db)
     sid = ObjectId()
     await db.stores.insert_one({"_id": sid, "seed_key": TAG, "name": "Summit Partners", "slug": "summit-partners-demo", "city": "Denver", "state": "CO",
-                                "timezone": "America/Denver", "primary_color": "#C9A962", "created_at": ago(200)})
+                                "timezone": "America/Denver", "primary_color": "#C9A962", "created_at": ago(200),
+                                "phone": "+13035550100", "address": "1600 Market St", "zip_code": "80202", "website": "https://example.com",
+                                "review_links": {"google": "https://example.com/google-review", "facebook": "https://example.com/facebook-review", "yelp": "https://example.com/yelp-review"}})
 
     async def user(first, last, email, role, phone, photo=None):
         uid = ObjectId()
@@ -182,13 +192,38 @@ async def seed(db):
             await db.campaign_enrollments.insert_one({"seed_key": TAG, "user_id": alex, "campaign_id": str(camp), "contact_id": ids[f], "contact_name": f,
                                                       "current_step": 1, "status": "active", "enrolled_at": ago(60), "next_send_at": ago(-20), "messages_sent": []})
 
+    await db.users.update_one({"_id": ObjectId(alex)}, {"$set": {"bio": BIO, "persona": {"bio": BIO, "title": "Client Advisor"}}})
+    for name, rating, text, d in REVIEWS:
+        await db.customer_feedback.insert_one({"seed_key": TAG, "store_id": str(sid), "customer_name": name, "rating": rating, "text_review": text, "salesperson_id": alex,
+                                               "salesperson_name": "Alex Morgan", "source": "review_page", "approved": True, "created_at": ago(d)})
+    await db.link_pages.insert_one({"seed_key": TAG, "user_id": alex, "username": "alexmorgan-demo", "display_name": "Alex Morgan", "bio": BIO, "photo_url": PH["m2"],
+                                    "company": "Summit Partners", "theme": "dark", "accent_color": "#C9A962", "views": 0, "custom_links": [], "created_at": ago(120), "updated_at": NOW,
+                                    "social_links": {k: {"username": "summitpartners.demo", "visible": k in ("instagram", "facebook", "linkedin")} for k in ("facebook", "instagram", "linkedin", "twitter", "tiktok", "youtube")},
+                                    "links": [{"id": "phone", "label": "Call Me", "url": "tel:+15005550090", "icon": "call", "color": "#34C759", "visible": True},
+                                              {"id": "sms", "label": "Text Me", "url": "sms:+15005550090", "icon": "sms", "color": "#34C759", "visible": True},
+                                              {"id": "email", "label": "Email Me", "url": f"mailto:{EMAIL}", "icon": "mail", "color": "#007AFF", "visible": True},
+                                              {"id": "digital_card", "label": "My Digital Card", "url": f"/card/{alex}", "icon": "card", "color": "#C9A962", "visible": True},
+                                              {"id": "showcase", "label": "My Showcase", "url": f"/showcase/{alex}", "icon": "images", "color": "#34C759", "visible": True}]})
+    await db.congrats_cards.insert_one({"seed_key": TAG, "card_id": "mktdemo-chris", "salesman_id": alex, "salesman_name": "Alex Morgan", "salesman_photo": PH["m2"],
+                                        "salesman_title": "Client Advisor", "salesman_phone": "+15005550090", "salesman_email": EMAIL, "store_id": str(sid), "store_name": "Summit Partners",
+                                        "customer_name": "Chris Vance", "customer_phone": "+15005550106", "customer_photo": KEYS_PHOTO, "card_type": "congrats", "headline": "Congratulations!",
+                                        "message": "Congratulations on the new home, Chris! It was a pleasure helping you find it. I'm here for anything you need.",
+                                        "footer_text": "", "show_salesman": True, "show_store_logo": True, "background_color": "#1A1A1A", "accent_color": "#C9A962", "text_color": "#FFFFFF",
+                                        "views": 0, "downloads": 0, "shares": 0, "contact_id": ids["Chris"], "showcase_approved": True, "created_at": ago(1)})
+
+    team_ids = {"alex": alex}
     for n, (first, last, key) in enumerate(TEAM):
-        rep = await user(first, last, f"{key}.demo@invalid.imonsocial.test", "user", f"+15005550{91 + n}")
+        rep = await user(first, last, f"{key}.demo@invalid.imonsocial.test", "user", f"+15005550{91 + n}", PH["w1" if key == "priya" else "m4"])
+        team_ids[key] = rep
         for j, (cf, cl, touch, task) in enumerate(TEAM_BOOK[key]):
             cid = await contact(rep, 40 + n * 10 + j, cf, cl, None, touch, {})
             await db.tasks.insert_one({"seed_key": TAG, "user_id": rep, "contact_id": cid, "contact_name": f"{cf} {cl}", "type": "follow_up", "source": "manual", "title": task,
                                        "action_type": "call", "priority": "high", "priority_order": 1, "status": "pending", "completed": False,
                                        "due_date": NOW.replace(hour=23, minute=0), "has_time": False, "appointment_type": "task", "created_at": ago(1)})
+    for key, counts in ACTIVITY.items():
+        for etype, k in zip(("digital_card_shared", "review_request_sent", "sms_sent", "call_placed", "congrats_card_sent"), counts):
+            for i in range(k):
+                await db.contact_events.insert_one({"seed_key": TAG, "user_id": team_ids[key], "event_type": etype, "title": etype, "timestamp": ago(hours=2 + (i * 7) % (24 * max(1, NOW.day - 1)))})
     print(f"seeded store {sid}, manager {alex} ({EMAIL} / {PASSWORD}), {len(BOOK)} contacts, {len(THREADS)} threads")
 
 

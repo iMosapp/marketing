@@ -235,11 +235,14 @@
       }).then(function () { btn.disabled = false; btn.textContent = txt; });
     });
   };
-  wire($('#demo-form'), function (v) {
-    return { name: (v('first_name') + ' ' + v('last_name')).trim(), first_name: v('first_name'), last_name: v('last_name'), email: v('email'), phone: v('phone'),
-      company: v('company'), business_type: v('business_type'), team_size: v('team_size'), sms_opt_in: v('sms_opt_in'), source: demoSource, lead_source: demoSource };
+  $$('form[data-form="demo"]').forEach(function (f) {
+    wire(f, function (v) {
+      var src = f.getAttribute('data-source') || demoSource;
+      return { name: (v('first_name') + ' ' + v('last_name')).trim(), first_name: v('first_name'), last_name: v('last_name'), email: v('email'), phone: v('phone'),
+        company: v('company'), business_type: v('business_type'), team_size: v('team_size'), sms_opt_in: v('sms_opt_in'), source: src, lead_source: src };
+    });
   });
-  wire($('#contact-form'), function (v) {
+  wire($('form[data-form="contact"]'), function (v) {
     return { name: (v('first_name') + ' ' + v('last_name')).trim(), email: v('email'), phone: v('phone'), message: v('message'),
       sms_opt_in: v('sms_opt_in'), source: PAGE + '_contact_footer', lead_source: 'contact_us' };
   });
