@@ -1,5 +1,11 @@
 # CHANGELOG — iMOs App
 
+## Oct 16 2026 — Marketing site: Phase 0 leftovers + Phase 1 homepage in staging (NOT LIVE)
+- Phase 0 leftovers in `marketing/build`: softened the medical HIPAA answer and the partner page (`/calendar-systems/dealers`) "shows up in AI answers" lines. robots.txt / sitemap.xml / 301s were already in place.
+- Demo workspace seed `backend/tests/seed_marketing_demo.py` switched to a neutral mix (homes, insurance, auto), store "Summit Partners"; 9 real app screens captured with `marketing/tools/capture_app.py`, WebP in `marketing/site/assets/img/` (28-64 KB each).
+- New generator `marketing/site/` (layout.py chrome, home.py content, assets/site.css + site.js). Homepage: hero with 2 phone frames + "From $100/mo" line + "Watch the 46-second story" lightbox, problem band, 3-step how it works, value tiles, 6-tab product tour, audience cards, industry chips, final CTA, accordion footer. One Book a Demo modal (first/last, mobile, email, company, industry, team size, optional SMS consent) sending lead_source per placement + first-touch UTMs / click ids / referrer / landing page; contact modal.
+- Staging only: `python3 marketing/site/build.py preview` (prefixes links, points old forms at the preview API, noindex). Testing agent iteration_396: 94% then 2 fixes (hover+click closed dropdowns; chat widget covered the mobile sheet/modals, now hidden while an overlay is open) self-verified.
+
 ## Oct 15 2026 — Launch compliance batch: verification, fixes, deploy plan (PREVIEW ONLY; pytest 82 pass / 1 skip; testing agent 390-393)
 - Startup indexes: new `services/index_setup.py` (`ensure` / `summarize`). All 84 startup specs go through it. Boot log: `N ok, M unresolved option mismatch, K failed`; each mismatch names `collection.index`, requested vs existing options, "existing index kept". `tests/test_startup_indexes.py` (3).
 - My Team: a store manager without `organization_id` is scoped to their store (was 403). More: "My Team" is the first item of the Team folder/group (outside the admin permission).

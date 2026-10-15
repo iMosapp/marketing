@@ -4,6 +4,11 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 68 · Oct 16 — DONE IN STAGING (tested) · AWAITING OWNER REVIEW · nothing published
+> (approved the cleanup plan) start Phase 0, build the Phase 1 homepage in staging and give me a preview link. Choices: neutral-mix demo data, small "From $100/mo" line on the homepage, keep the 46 s video as a "Watch the story" lightbox link, soften the HIPAA + partner AI-answers lines, Phase 1 = homepage + nav/footer + demo form only.
+
+Preview: `{preview}/api/marketing-preview/` (old homepage at `/api/marketing-preview/current-home/`). Generator `marketing/site/`; Phase 0 fixes in `marketing/build` go live on Save to GitHub. Testing agent iteration_396 + 2 fixes.
+
 ### 67 · Oct 15 — PLANNING ONLY · plan written · AWAITING OWNER APPROVAL · no marketing page rewritten
 > I'M ON SOCIAL — MARKETING WEBSITE CLEANUP & CONVERSION OPTIMIZATION. Website: https://www.imonsocial.com ... Before changing code, provide: Current website audit, Recommended homepage structure, Proposed navigation, Copy improvements, Pages to keep, consolidate, or retire, Visual design recommendations, SEO preservation plan, Conversion improvements, Implementation phases, Estimated Emergent effort and credit usage. Create: /app/memory/IMOS_WEBSITE_CLEANUP_PLAN.md ... Do not start implementation until I approve the plan.
 

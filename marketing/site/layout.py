@@ -1,6 +1,7 @@
 """Shared chrome for the new marketing site: head, nav, footer, demo/contact modals, video lightbox."""
 import html
 import json
+import re
 
 ICONS = {
     "chev": '<path d="m6 9 6 6 6-6"/>',
@@ -56,7 +57,7 @@ TEAM_SIZES = ["Just me", "2-5", "6-20", "21-50", "51+"]
 
 
 def slug(s):
-    return "".join(c if c.isalnum() else "-" for c in s.lower()).strip("-").replace("--", "-")
+    return re.sub(r"-+", "-", "".join(c if c.isalnum() else "-" for c in s.lower())).strip("-")
 
 
 class Site:
@@ -216,8 +217,8 @@ class Site:
     <button class="modal-close" type="button" aria-label="Close" data-modal-close data-testid="demo-modal-close">{x}</button>
     <form class="demo-form" id="demo-form" novalidate data-testid="demo-form">
       <p class="overline">Book a demo</p>
-      <h2 id="demo-title">See i'M On Social with your own customers in mind.</h2>
-      <p class="modal-sub">A short call with our team. We will show you the app and set you up on the plan that fits.</p>
+      <h2 id="demo-title">See it with your own customers in mind.</h2>
+      <p class="modal-sub">A short call with our team. We show you the app and set you up on the plan that fits.</p>
       <div class="row2">{self._field("demo", "first_name", "First name", auto="given-name")}{self._field("demo", "last_name", "Last name", req=False, auto="family-name")}</div>
       <div class="row2">{self._field("demo", "phone", "Mobile", "tel", auto="tel")}{self._field("demo", "email", "Email", "email", auto="email")}</div>
       {self._field("demo", "company", "Company", auto="organization")}

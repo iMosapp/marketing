@@ -1,5 +1,5 @@
 # i'M On Social - Marketing Website Cleanup & Conversion Plan
-Status: PLAN ONLY, awaiting owner approval (Oct 15 2026). No marketing page has been rewritten yet.
+Status (Oct 16 2026): APPROVED. Phase 0 done in `marketing/build` (not live until Save to GitHub). Phase 1 homepage + design system built in STAGING only (`marketing/site/` generator -> `marketing/build-preview/`), awaiting owner review. Owner picks Oct 16: neutral-mix demo data, small "From $100/mo" line on the homepage, 46 s video as a "Watch the story" lightbox link, soften the medical HIPAA + partner AI-answers lines, Phase 1 = homepage + nav/footer + demo form only.
 Site: https://www.imonsocial.com = static HTML in `marketing/build/` on Vercel (publishes on Save to GitHub). Staging copy for review: `marketing/build-preview/` served at `{preview}/api/marketing-preview/` (now public GET in preview, `services/route_guard.py`).
 
 Already done this session (separate from this plan):

@@ -253,31 +253,35 @@ button{font:inherit;color:inherit}
 .f-legal a:hover{color:var(--ink);text-decoration:underline}
 .f-legal .faded{opacity:.6}
 
+/* Overlays hide the third-party chat widget so it never covers a sheet or modal button */
+body.overlay-open .imosw-root{display:none!important}
+
 /* Modals */
 .modal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(11,11,15,.55);
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
 .modal.open{opacity:1;visibility:visible}
-.modal-card{position:relative;width:min(580px,100%);max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow:auto;background:var(--white);border-radius:28px;padding:40px 36px 32px;
+.modal-card{position:relative;width:min(600px,100%);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;background:var(--white);border-radius:28px;padding:30px 34px 26px;
   box-shadow:0 40px 90px -40px rgba(0,0,0,.6);transform:translateY(14px) scale(.98);transition:transform .25s var(--ease)}
 .modal.open .modal-card{transform:none}
 .modal-close{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:var(--bg-2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background-color .2s}
 .modal-close:hover{background:var(--line)}
-.modal-card h2{font-size:1.75rem;padding-right:40px}
-.modal-sub{color:var(--text-2);margin:10px 0 24px;font-size:.97rem}
+.modal-card h2{font-size:1.5rem;line-height:1.15;padding-right:44px}
+.modal-card .overline{margin-bottom:8px}
+.modal-sub{color:var(--text-2);margin:8px 0 18px;font-size:.93rem}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:.85rem;font-weight:600;margin-bottom:6px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.83rem;font-weight:600;margin-bottom:5px}
 .field em{font-style:normal;font-weight:500;color:var(--muted)}
-.field input,.field select,.field textarea{width:100%;height:48px;padding:0 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);font:inherit;font-size:.97rem;color:var(--text);
+.field input,.field select,.field textarea{width:100%;height:46px;padding:0 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);font:inherit;font-size:.97rem;color:var(--text);
   transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
 .field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2366666F' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
 .field textarea{height:auto;padding:12px 14px;resize:vertical;min-height:110px}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px rgba(201,169,98,.22)}
 .was-validated :invalid{border-color:#C2410C}
-.consent{display:flex;gap:10px;align-items:flex-start;margin:4px 0 12px;padding:12px 14px;border-radius:12px;background:var(--gold-tint);font-size:.8rem;line-height:1.5;color:var(--text-2);cursor:pointer}
+.consent{display:flex;gap:10px;align-items:flex-start;margin:2px 0 10px;padding:10px 14px;border-radius:12px;background:var(--gold-tint);font-size:.8rem;line-height:1.5;color:var(--text-2);cursor:pointer}
 .consent input{width:18px;height:18px;margin:1px 0 0;flex:none;accent-color:var(--ink)}
 .consent a,.legal-line a{color:var(--ink);text-underline-offset:2px}
-.legal-line{font-size:.78rem;color:var(--muted);margin:0 0 16px}
+.legal-line{font-size:.76rem;color:var(--muted);margin:0 0 14px}
 .form-error{background:#FEF3F2;color:#B42318;border-radius:10px;padding:10px 14px;font-size:.9rem;margin-bottom:12px}
 .form-success{text-align:center;padding:28px 0 8px}
 .form-success p{color:var(--text-2);margin:10px auto 26px;max-width:24em}
