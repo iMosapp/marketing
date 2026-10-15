@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import api from '../services/api';
 import { getRtc, attachRemoteAudio, startAudioSession, stopAudioSession, applyAudioRoute, nativeRtcMissing, nativeRtcReason } from './liveRtc';
 import { CaptionRow, reserveRep, applyRepTranscript, applyAssistantDelta, finishResponse, dropUnheard } from './miniCaptions';
 import { newGuards, routeEvent, traceSend, openingEvent } from './miniSession';
+import { QUIET_EVENTS, QuietLevel, markBusy, newQuiet, quietLevel, quietSeconds, touch } from './miniQuiet';
 
 export type LiveState = 'idle' | 'connecting' | 'live' | 'switching' | 'ending' | 'ended' | 'error';
 export type { CaptionRow };
@@ -27,6 +28,10 @@ export const STANDARD_VOICE_NOTE = "Switched to Jessi's standard voice";
 // Realtime mini turn taking, switched on after the greeting (see enableMiniListening). The server sends the tuned version with the
 // session (`listening`, Voice Lab > Mini listening); this is the fallback. Server VAD: the only mode with a loudness threshold.
 const MINI_TURN_DETECTION = { type: 'server_vad', threshold: 0.6, prefix_padding_ms: 300, silence_duration_ms: 700, create_response: true, interrupt_response: true };
+// Close diagnostics (no content): who ended a session when nothing else says so, and which ends are expected.
+const INITIATED_BY: Record<string, string> = { close_requested: 'user', idle: 'app', away: 'app', daily_cap: 'app', backup_cap: 'app', voice_cap: 'app', premium_cap: 'app',
+  unmounted: 'app', handoff_failed: 'app', no_start: 'network', connection_lost: 'network' };
+const EXPECTED_ENDS = ['close_requested', 'idle', 'away', 'daily_cap', 'backup_cap', 'voice_cap', 'premium_cap', 'killed', 'expired', 'handoff'];
 
 export const openLabel = (t: OpenTarget) => {
   const who = t.first || (t.name || '').split(' ')[0];
@@ -71,6 +76,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   const [note, setNote] = useState('');               // one-line notice in the sheet (the switch to the standard voice)
   const [offerText, setOfferText] = useState(false);  // every voice pool is spent: offer the typed Ask Jessi
   const [handoffs, setHandoffs] = useState(0);
+  const [quiet, setQuiet] = useState<{ level: QuietLevel; closeIn: number }>({ level: '', closeIn: 0 });  // Realtime mini quiet spell (miniQuiet.ts)
   const onOpenRef = useRef(handlers.onOpen);
   onOpenRef.current = handlers.onOpen;
 
@@ -114,6 +120,12 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   // Per-connection guards (miniSession.ts): one start, each provider event and each tool call acted on once, plus a short trace.
   const guards = useRef(newGuards());
   const greetings = useRef(0);   // greetings sent in this conversation (handoffs continue without one)
+  const quietRef = useRef(newQuiet(0));
+  const lookups = useRef(0);
+  const lastEv = useRef({ type: '', at: 0 });
+  const lastAudio = useRef({ type: '', at: 0 });
+  const stopBy = useRef('');
+  const appStateRef = useRef({ state: String(AppState.currentState || 'active'), backgrounds: 0 });
   const isMini = () => engineRef.current === 'mini';
   const controlled = () => meterRef.current.policy_mode === 'controls';
 
@@ -178,13 +190,23 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   };
   const queuePending = () => rowsRef.current.forEach(queueRow);
 
+  // How this session ended, without any content: who started the end, the WebRTC state, the last provider and audio events.
+  const closeDiag = (reason: string) => {
+    const now = Date.now();
+    const age = (at: number) => (at ? now - at : null);
+    return { initiated_by: stopBy.current || INITIATED_BY[reason] || 'unknown', unexpected: !EXPECTED_ENDS.includes(reason),
+      pc_state: pc.current?.connectionState || 'none', ice_state: pc.current?.iceConnectionState || 'none', dc_state: dc.current?.readyState || 'none',
+      last_event: lastEv.current.type, last_event_age_ms: age(lastEv.current.at), last_audio_event: lastAudio.current.type, last_audio_age_ms: age(lastAudio.current.at),
+      quiet_s: isMini() ? quietSeconds(quietRef.current, now) : null, app_state: appStateRef.current.state, backgrounds: appStateRef.current.backgrounds, app_build: INSTALLED_BUILD || Platform.OS };
+  };
+
   const finish = useCallback((reason: string, secs?: number) => {
     if (finalized.current) return;
     finalized.current = true;
     handing.current = false;
     queuePending();
     const s = secs ?? secondsRef.current;
-    if (liveId.current) queue.current.push(traceEvent(), { type: 'closed', reason, seconds: s, tokens: isMini() ? { ...tokensRef.current } : undefined });
+    if (liveId.current) queue.current.push(traceEvent(), { type: 'closed', reason, seconds: s, tokens: isMini() ? { ...tokensRef.current } : undefined, diag: closeDiag(reason) });
     setCloseReason(reason);
     if (CAP_REASONS.includes(reason)) setOfferText(true);
     setState('ended');
@@ -194,6 +216,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
 
   const stop = useCallback((reason = 'close_requested') => {
     if (finalized.current) return;
+    if (!stopBy.current) stopBy.current = INITIATED_BY[reason] || 'app';
     if (handing.current) { finish(reason); return; }
     if (isMini() || !dc.current || dc.current.readyState !== 'open') { finish(reason); return; }
     setState('ending');
@@ -203,13 +226,23 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   }, [finish]);
 
   const resetIdle = useCallback(() => {
+    if (isMini()) { touch(quietRef.current, Date.now()); return; }  // mini: a quiet spell never hangs up early (quietCheck)
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => stop('idle'), idleCloseS.current * 1000);
   }, [stop]);
 
+  // Realtime mini, every second: true quiet only (miniQuiet.ts). Hint, then a visible warning, then a calm end; any talk or Keep going resets it.
+  const quietCheck = () => {
+    const q = quietLevel(quietSeconds(quietRef.current, Date.now()), idleCloseS.current);
+    setQuiet(prev => (prev.level === q.level && prev.closeIn === q.closeIn ? prev : { level: q.level, closeIn: q.closeIn }));
+    if (q.end) stop('away');
+  };
+  const keepGoing = useCallback(() => { touch(quietRef.current, Date.now()); setQuiet({ level: '', closeIn: 0 }); }, []);
+
   // The pool for this engine is spent. Premium -> continue on the backup engine; backup (or nothing to fall back to) -> end and offer text.
   const onServerStop = (reason: string, fallback: string | null) => {
     if (finalized.current || handing.current) return;
+    stopBy.current = 'server';
     if (fallback) { handoff(reason); return; }
     stop(reason === 'premium_cap' ? 'voice_cap' : reason);
   };
@@ -265,6 +298,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   const handleDelegation = async (delegationId: string, request?: string) => {
     const shopper = modeRef.current === 'shopper';
     const mini = isMini();
+    if (mini && lookups.current++ === 0) markBusy(quietRef.current, 'lookup', true, Date.now());
     setWorking(shopper ? 'Thinking' : 'Working on it');
     if (!shopper && !mini) send({ type: 'session.thinking.append', event_id: `ack_${delegationId}`, delegation_id: delegationId, content: 'The backend is on it. It takes a few seconds; keep it short while you wait, and never invent the result.' });
     let content = 'Something went wrong on my side pulling that up. Try me again in a second.';
@@ -286,10 +320,11 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       if (e?.response?.status === 429 || e?.response?.status === 409) content = e.response.data?.detail || content;
     }
     if (mini) {
-      const output = kind === 'thinking' ? `GUIDANCE for your next words (do not read this label aloud): ${content}` : `SAY THIS TO THE REP in your own voice, keep every name and number, add nothing: ${content}`;
+      const output = kind === 'thinking' ? `GUIDANCE for your next words (do not read this label aloud): ${content}` : `SAY THIS TO THE REP in your own voice, keep every customer name and number, don't add the rep's name, add nothing: ${content}`;
       send({ type: 'conversation.item.create', item: { type: 'function_call_output', call_id: delegationId, output } });
       if (opened) nudge(`The app just ${openLabel(opened).toLowerCase()} on the rep's screen; they can see it now.`);
       send({ type: 'response.create' });
+      if (--lookups.current <= 0) { lookups.current = 0; markBusy(quietRef.current, 'lookup', false, Date.now()); }
     } else {
       send({ type: kind === 'thinking' ? 'session.thinking.append' : 'session.commentary.append', event_id: `res_${delegationId}`, delegation_id: delegationId, content });
       if (opened) nudge(`The app just ${openLabel(opened).toLowerCase()} on the rep's screen; they can see it now.`);
@@ -308,6 +343,9 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     send(opening.event);
     if (opening.greeting) greetings.current += 1;
     if (isMini()) vadTimer.current = setTimeout(enableMiniListening, 8000); // listening comes on at the end of the greeting (response.done); this is the safety net
+    quietRef.current = newQuiet(Date.now());
+    lookups.current = 0;
+    setQuiet({ level: '', closeIn: 0 });
     if (resumedRef.current) { setNote(STANDARD_VOICE_NOTE); setWorking(''); }
     if (openAtStart.current) {
       const target = openAtStart.current; openAtStart.current = null;
@@ -320,6 +358,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
         setSegSeconds(s);
         setSeconds(carriedRef.current + s);
         if (capRef.current !== null && s >= capRef.current) capHit();
+        else quietCheck();
       } else if (!secondsRef.current) { setSegSeconds(s); setSeconds(carriedRef.current + s); }
     }, 1000);
     flushTimer.current = setInterval(() => {
@@ -351,6 +390,13 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     // A repeated provider event, a second start event or an already-answered tool call is counted in the trace and never acted on
     const routed = routeEvent(guards.current, ev, sinceStart());
     if (routed.kind === 'skip') return;
+    const now = Date.now();
+    lastEv.current = { type: String(ev.type || ''), at: now };
+    const qe = isMini() ? QUIET_EVENTS[ev.type] : undefined;
+    if (qe) {
+      markBusy(quietRef.current, qe[0], qe[1], now);
+      if (qe[0] === 'jessi' || qe[0] === 'rep') lastAudio.current = { type: ev.type, at: now };
+    }
     switch (ev.type) {
       case 'session.started':
       case 'session.created':
@@ -402,6 +448,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       case 'session.closed':
         if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
         if (handing.current) break; // we closed it ourselves to switch engines
+        if (!stopBy.current) stopBy.current = 'provider';
         finish(ev.reason || 'close_requested', Number(ev.usage?.seconds ?? secondsRef.current));
         break;
       case 'error': {
@@ -428,7 +475,12 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     const channel = connection.createDataChannel('oai-events');
     dc.current = channel;
     channel.addEventListener('message', (e: any) => { if (dc.current === channel) onMessage(typeof e.data === 'string' ? e.data : String(e.data ?? '')); });
-    channel.addEventListener('close', () => { if (dc.current === channel && !finalized.current && !handing.current) finish('connection_lost'); });
+    channel.addEventListener('close', () => {
+      if (dc.current !== channel || finalized.current || handing.current) return;
+      // the events channel closed under a still-connected peer: the provider (or the server's hang-up) ended it, not the network
+      if (!stopBy.current) stopBy.current = connection.connectionState === 'connected' ? 'provider' : 'network';
+      finish('connection_lost');
+    });
     connection.addEventListener('connectionstatechange', () => {
       if (pc.current !== connection || handing.current) return;
       if (!['failed', 'disconnected'].includes(connection.connectionState) || finalized.current) return;
@@ -436,6 +488,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
         queue.current.push({ type: 'error', message: `ICE ${connection.connectionState} before session.started (ice: ${connection.iceConnectionState}, gathering: ${connection.iceGatheringState})` });
         setError(NO_PICKUP_BODY); setState('error');
       }
+      if (!stopBy.current) stopBy.current = 'network';
       finish(startedAt.current ? 'connection_lost' : 'no_start');
     });
     const offer = await connection.createOffer();
@@ -499,7 +552,8 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     setWorking('Switching voice line');
     clearTimers();
     queuePending();
-    queue.current.push(traceEvent(), { type: 'closed', reason, seconds: secondsRef.current, tokens: isMini() ? { ...tokensRef.current } : undefined });
+    queue.current.push(traceEvent(), { type: 'closed', reason, seconds: secondsRef.current, tokens: isMini() ? { ...tokensRef.current } : undefined, diag: closeDiag(reason) });
+    stopBy.current = '';
     const batch = queue.current.splice(0, 400);
     dropTransport();
     await post(oldId, batch);
@@ -536,6 +590,11 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     startedAt.current = 0;
     liveId.current = '';
     meterRef.current = {};
+    stopBy.current = '';
+    lastEv.current = { type: '', at: 0 };
+    lastAudio.current = { type: '', at: 0 };
+    appStateRef.current = { state: String(AppState.currentState || 'active'), backgrounds: 0 };
+    setQuiet({ level: '', closeIn: 0 });
     setRows([]); setError(''); setSeconds(0); setSegSeconds(0); setWorking(''); setCloseReason(''); setNote(''); setOfferText(false); setHandoffs(0); setState('connecting');
     try {
       startAudioSession();
@@ -551,8 +610,16 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   }, [cleanup, finish]);
 
   useEffect(() => () => { if (!finalized.current && liveId.current) finish('unmounted'); else cleanup(); }, [cleanup, finish]);
+  // Diagnostics only: whether the app went to the background during the session (sent with the close, see closeDiag).
+  useEffect(() => {
+    const sub = AppState.addEventListener?.('change', (st: string) => {
+      appStateRef.current.state = st;
+      if (st === 'background') appStateRef.current.backgrounds += 1;
+    });
+    return () => sub?.remove?.();
+  }, []);
 
-  return { state, rows, error, seconds, segSeconds, working, capLeft, closeReason, voice, engine, note, offerText, handoffs, start, stop, liveId: liveId.current };
+  return { state, rows, error, seconds, segSeconds, working, capLeft, closeReason, voice, engine, note, offerText, handoffs, quiet, keepGoing, start, stop, liveId: liveId.current };
 }
 
 export type LiveJessi = ReturnType<typeof useLiveJessi>;

@@ -9,12 +9,12 @@ type Props = { visible: boolean; onClose: () => void; live: LiveJessi; title?: s
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 const capLabel = (leftS: number) => (leftS < 60 ? 'Under a minute left today' : `${Math.floor(leftS / 60)} min left today`);
-export const REASONS: Record<string, string> = { idle: 'Closed after a quiet spell', daily_cap: "Today's minutes are used up", voice_cap: "Today's voice minutes are used up", backup_cap: "Today's voice minutes are used up",
+export const REASONS: Record<string, string> = { idle: 'Closed after a quiet spell', away: 'Closed after 2 minutes of quiet', daily_cap: "Today's minutes are used up", voice_cap: "Today's voice minutes are used up", backup_cap: "Today's voice minutes are used up",
   premium_cap: 'Premium minutes used up', connection_lost: 'The connection dropped', close_requested: 'Conversation ended', expired: 'Session limit reached', content: 'Ended by the safety filter',
   no_start: 'did not pick up', unmounted: 'Closed', handoff_failed: 'Could not switch the voice line', server_kill: 'Stopped by the server', killed: 'Paused by the account owner' };
 
 export const statusText = (live: LiveJessi, who = 'Jessi') =>
-  live.state === 'connecting' ? `Connecting to ${who}` : live.state === 'switching' ? "Switching to Jessi's standard voice" : live.state === 'ending' ? 'Wrapping up' : live.state === 'live' ? (live.working || 'Listening') : live.state === 'ended' ? (live.closeReason === 'no_start' ? `${who} did not pick up` : REASONS[live.closeReason] || 'Conversation ended') : 'Could not connect';
+  live.state === 'connecting' ? `Connecting to ${who}` : live.state === 'switching' ? "Switching to Jessi's standard voice" : live.state === 'ending' ? 'Wrapping up' : live.state === 'live' ? (live.working || (live.quiet.level === 'warning' ? `Still there? Closing in ${live.quiet.closeIn} s` : live.quiet.level === 'hint' ? 'Still here, take your time' : 'Listening')) : live.state === 'ended' ? (live.closeReason === 'no_start' ? `${who} did not pick up` : REASONS[live.closeReason] || 'Conversation ended') : 'Could not connect';
 
 // Full-screen live conversation: gold orb, live captions, one End button. The session itself lives in LiveJessiProvider,
 // so shrinking this sheet (chevron) keeps Jessi talking while the app navigates underneath.
@@ -66,6 +66,11 @@ export const LiveJessiSheet = ({ visible, onClose, live, title = 'Talk to Jessi'
           </Animated.View>
           {live.capLeft !== null && live.state === 'live' && <Text style={{ color: '#8E8E93', fontSize: 11, marginTop: 10 }} {...tid('live-jessi-cap')}>{capLabel(Math.max(0, live.capLeft - live.segSeconds))}{live.engine === 'mini' && live.handoffs > 0 ? ' on the standard voice' : ''}</Text>}
           {!!live.note && talking && <Text style={{ color: GOLD, fontSize: 11, marginTop: 6 }} {...tid('live-jessi-note')}>{live.note}</Text>}
+          {live.state === 'live' && live.quiet.level === 'warning' && (
+            <TouchableOpacity onPress={live.keepGoing} style={{ marginTop: 12, borderRadius: 18, paddingVertical: 8, paddingHorizontal: 16, backgroundColor: `${GOLD}22`, borderWidth: 1, borderColor: `${GOLD}88` }} {...tid('live-jessi-keep-going')}>
+              <Text style={{ color: GOLD, fontWeight: '800', fontSize: 13 }} {...tid('live-jessi-away-warning')}>Still there? Closing in {live.quiet.closeIn} s · Keep going</Text>
+            </TouchableOpacity>
+          )}
           {canCollapse && !hint && <Text style={{ color: '#5A5A5F', fontSize: 11, marginTop: 8 }} {...tid('live-jessi-collapse-hint')}>Say "pull up Sarah" or "open her thread" and the app follows along</Text>}
         </View>
 

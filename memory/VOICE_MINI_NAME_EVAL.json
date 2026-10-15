@@ -1,0 +1,1591 @@
+{
+ "meta": {
+  "kind": "SIMULATED (text model stand-in), not a real OpenAI audio test",
+  "stand_in_model": "gpt-4.1-mini",
+  "runs": 3,
+  "sliders": {
+   "energy": 4,
+   "pacing": 5,
+   "playful": 4,
+   "brevity": 5
+  }
+ },
+ "results": {
+  "mini_before": {
+   "summary": {
+    "post_greeting_replies": 81,
+    "replies_with_name": 16,
+    "replies_with_name_pct": 19.8,
+    "replies_starting_with_name": 1,
+    "stock_openers": 6,
+    "customer_names_kept_pct": 97.9,
+    "greetings_with_name": "9/9",
+    "avg_words": 14.5
+   },
+   "turns": [
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "What do I know about Sarah Mitchell?",
+     "backend": "Sarah Mitchell: bought a 2024 Tahoe in March, two kids, daughter starts college in the fall, open task: send her the referral card.",
+     "jessi": "Sarah Mitchell bought a 2024 Tahoe in March, has two kids, daughter starting college this fall, and you have to send her the referral card.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "When did I last talk to her?",
+     "backend": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "jessi": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Okay, remind me to call her Friday afternoon.",
+     "backend": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "jessi": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Thanks.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who else should I reach out to today?",
+     "backend": "Today's three: Bud Carter (overdue follow-up), Mike Tran (birthday), Tanya Reed (new web lead).",
+     "jessi": "Today's three: Bud Carter for overdue follow-up, Mike Tran has a birthday, Tanya Reed is a new web lead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tell me about Bud.",
+     "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus after the 15th.",
+     "jessi": "Bud Carter is looking at a Silverado High Country, trading a 2019 F-150, wife named Deb, bonus after the 15th.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What should I open with when I call him?",
+     "backend": null,
+     "jessi": "Start with asking how he and Deb are doing, then mention the Silverado and the timing around his bonus.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Good idea. Draft him a text.",
+     "backend": "Draft for Bud Carter: 'Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?' Send it?",
+     "jessi": "Draft for Bud Carter: 'Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?' Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes, send it.",
+     "backend": "Sent to Bud Carter.",
+     "jessi": "Sent to Bud Carter.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Pull up Tod Berry.",
+     "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "jessi": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "The Tahoe one.",
+     "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "jessi": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Any open tasks for him?",
+     "backend": "One open task for Tod Berry: send the trade-in appraisal.",
+     "jessi": "One open task for Tod Berry: send the trade-in appraisal.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "I'm swamped today, honestly.",
+     "backend": null,
+     "jessi": "Got it, Forest. Need me to set a reminder for that trade-in appraisal?",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    },
+    {
+     "rep": "What's my numbers this month?",
+     "backend": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "jessi": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Is that good?",
+     "backend": null,
+     "jessi": "Solid numbers, Forest. Keep pushing on those hot leads for big wins.",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who mentioned a Tesla last month?",
+     "backend": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "jessi": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tag him as EV interested.",
+     "backend": "Tagged Earl Jones: EV interested.",
+     "jessi": "Tagged Earl Jones: EV interested.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Perfect, that's it for now.",
+     "backend": null,
+     "jessi": "Got it, Forest.",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Let's brainstorm. How do I get more referrals this quarter?",
+     "backend": null,
+     "jessi": "Ask happy customers for names and texts, then follow up fast. Want me to draft a referral request text?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Go deeper on the first idea.",
+     "backend": null,
+     "jessi": "Pinpoint customers who praised you recently, then ask for 1-2 referrals right after. Make it personal and specific \u2014 that hits best. Want help pulling those names?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "How would I say that in a text?",
+     "backend": null,
+     "jessi": "\"Hey [Name], loved working with you! If you know anyone who\u2019d benefit from my help, could you send them my way? I\u2019d really appreciate it!\" Want me to draft it for you with their names?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who are my last five sold customers?",
+     "backend": "Last five sold: Sarah Mitchell (Tahoe), Dan Mitchell (Colorado), Amy Jones (Equinox), Bud Carter (Silverado), Kim Park (Traverse).",
+     "jessi": "Last five sold: Sarah Mitchell with a Tahoe, Dan Mitchell with a Colorado, Amy Jones with an Equinox, Bud Carter with a Silverado, and Kim Park with a Traverse.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Send the referral card to Kim.",
+     "backend": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "jessi": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes.",
+     "backend": "Sent to Kim Park.",
+     "jessi": "Sent to Kim Park.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What time is it?",
+     "backend": null,
+     "jessi": "9:05 AM on Thursday, October 15, 2026.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Remind me tomorrow at 9 to check on Amy.",
+     "backend": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "jessi": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Great, thanks Jessi.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "What do I know about Sarah Mitchell?",
+     "backend": "Sarah Mitchell: bought a 2024 Tahoe in March, two kids, daughter starts college in the fall, open task: send her the referral card.",
+     "jessi": "Sarah Mitchell bought a 2024 Tahoe in March, has two kids, her daughter starts college this fall, and you have an open task to send her the referral card.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "When did I last talk to her?",
+     "backend": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "jessi": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Okay, remind me to call her Friday afternoon.",
+     "backend": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "jessi": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Thanks.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who else should I reach out to today?",
+     "backend": "Today's three: Bud Carter (overdue follow-up), Mike Tran (birthday), Tanya Reed (new web lead).",
+     "jessi": "Today's three: Bud Carter for overdue follow-up, Mike Tran for his birthday, and Tanya Reed, a new web lead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tell me about Bud.",
+     "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus after the 15th.",
+     "jessi": "Bud Carter is looking at a Silverado High Country, trading in a 2019 F-150, has a wife named Deb, and expects a bonus after the 15th.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What should I open with when I call him?",
+     "backend": null,
+     "jessi": "Start with his bonus timing: \"Hey Bud, just wanted to check in since your bonus hits after the 15th\u2014ready to talk Silverado options?\" That gets straight to his timing and interest.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Good idea. Draft him a text.",
+     "backend": "Draft for Bud Carter: 'Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?' Send it?",
+     "jessi": "Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": false
+    },
+    {
+     "rep": "Yes, send it.",
+     "backend": "Sent to Bud Carter.",
+     "jessi": "Sent to Bud Carter.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Pull up Tod Berry.",
+     "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "jessi": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "The Tahoe one.",
+     "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "jessi": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Any open tasks for him?",
+     "backend": "One open task for Tod Berry: send the trade-in appraisal.",
+     "jessi": "One open task for Tod Berry: send the trade-in appraisal.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "I'm swamped today, honestly.",
+     "backend": null,
+     "jessi": "Got it, Forest. Let\u2019s focus on what moves Tod\u2019s deal. Want me to draft that trade-in appraisal text now?",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    },
+    {
+     "rep": "What's my numbers this month?",
+     "backend": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "jessi": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Is that good?",
+     "backend": null,
+     "jessi": "Nice pace, Forest. Keep pushing those 3 hot leads\u2014they\u2019re ripe.",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who mentioned a Tesla last month?",
+     "backend": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "jessi": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tag him as EV interested.",
+     "backend": "Tagged Earl Jones: EV interested.",
+     "jessi": "Tagged Earl Jones: EV interested.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Perfect, that's it for now.",
+     "backend": null,
+     "jessi": "Got you, Forest.",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Let's brainstorm. How do I get more referrals this quarter?",
+     "backend": null,
+     "jessi": "Ask every happy client directly by text or call, Forest. Offer a simple thank-you gift or incentive. Want me to draft a referral request text for you?",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Go deeper on the first idea.",
+     "backend": null,
+     "jessi": "Focus your follow-ups right after a positive interaction, Forest\u2014like delivery or service. Use personalized messages mentioning their specific purchase or experience. I can help you set reminders for those moments. Want that?",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "How would I say that in a text?",
+     "backend": null,
+     "jessi": "Forest, how about: \"Hey [Name], glad you\u2019re loving your [vehicle]! If you know anyone looking, I\u2019d appreciate the referral. I\u2019ve got a thank-you surprise for you!\" Want me to draft a full text for you to review?",
+     "name_uses": 1,
+     "starts_with_name": true,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who are my last five sold customers?",
+     "backend": "Last five sold: Sarah Mitchell (Tahoe), Dan Mitchell (Colorado), Amy Jones (Equinox), Bud Carter (Silverado), Kim Park (Traverse).",
+     "jessi": "Last five sold: Sarah Mitchell with a Tahoe, Dan Mitchell bought a Colorado, Amy Jones took an Equinox, Bud Carter got a Silverado, and Kim Park drives a Traverse.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Send the referral card to Kim.",
+     "backend": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "jessi": "Draft for Kim Park says: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes.",
+     "backend": "Sent to Kim Park.",
+     "jessi": "Sent to Kim Park.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What time is it?",
+     "backend": null,
+     "jessi": "9:05 AM, Forest.",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Remind me tomorrow at 9 to check on Amy.",
+     "backend": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "jessi": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Great, thanks Jessi.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "What do I know about Sarah Mitchell?",
+     "backend": "Sarah Mitchell: bought a 2024 Tahoe in March, two kids, daughter starts college in the fall, open task: send her the referral card.",
+     "jessi": "Sarah Mitchell bought a 2024 Tahoe in March, has two kids, her daughter starts college this fall, and you need to send her the referral card.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "When did I last talk to her?",
+     "backend": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "jessi": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Okay, remind me to call her Friday afternoon.",
+     "backend": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "jessi": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Thanks.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who else should I reach out to today?",
+     "backend": "Today's three: Bud Carter (overdue follow-up), Mike Tran (birthday), Tanya Reed (new web lead).",
+     "jessi": "Today's three: Bud Carter for overdue follow-up, Mike Tran for his birthday, and Tanya Reed, a new web lead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tell me about Bud.",
+     "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus after the 15th.",
+     "jessi": "Bud Carter's looking at the Silverado High Country, trading in a 2019 F-150, has a wife named Deb, and gets a bonus after the 15th.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What should I open with when I call him?",
+     "backend": null,
+     "jessi": "Start with his bonus timing, Forest\u2014ask how he's planning to use it on the new Silverado. Want me to draft a quick opener?",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Good idea. Draft him a text.",
+     "backend": "Draft for Bud Carter: 'Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?' Send it?",
+     "jessi": "Draft for Bud Carter: \"Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?\" Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes, send it.",
+     "backend": "Sent to Bud Carter.",
+     "jessi": "Sent to Bud Carter.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Pull up Tod Berry.",
+     "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "jessi": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "The Tahoe one.",
+     "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "jessi": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Any open tasks for him?",
+     "backend": "One open task for Tod Berry: send the trade-in appraisal.",
+     "jessi": "One open task for Tod Berry: send the trade-in appraisal.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "I'm swamped today, honestly.",
+     "backend": null,
+     "jessi": "Understood, Forest. Want me to prioritize Tod's trade-in appraisal for you?",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "What's my numbers this month?",
+     "backend": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "jessi": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Is that good?",
+     "backend": null,
+     "jessi": "Solid, Forest. You're definitely moving\u2014keep that pace up.",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who mentioned a Tesla last month?",
+     "backend": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "jessi": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tag him as EV interested.",
+     "backend": "Tagged Earl Jones: EV interested.",
+     "jessi": "Tagged Earl Jones: EV interested.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Perfect, that's it for now.",
+     "backend": null,
+     "jessi": "Got it, Forest.",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Let's brainstorm. How do I get more referrals this quarter?",
+     "backend": null,
+     "jessi": "Got it. Start by reaching out your top three happiest customers today\u2014they\u2019re your best referral sources. Want me to pull them up?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    },
+    {
+     "rep": "Go deeper on the first idea.",
+     "backend": null,
+     "jessi": "Focus on personal, direct asks right after a great service or sale. A quick, sincere text or call asking if they know anyone who\u2019d benefit works best. I can draft that for you. Want one?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "How would I say that in a text?",
+     "backend": null,
+     "jessi": "Try: \"Hey [Name], so glad you\u2019re happy with your [vehicle/service]! If you know anyone who could use the same, I\u2019d love an intro. Thanks!\" Want me to write it out fully for your top contact?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who are my last five sold customers?",
+     "backend": "Last five sold: Sarah Mitchell (Tahoe), Dan Mitchell (Colorado), Amy Jones (Equinox), Bud Carter (Silverado), Kim Park (Traverse).",
+     "jessi": "Last five sold: Sarah Mitchell (Tahoe), Dan Mitchell (Colorado), Amy Jones (Equinox), Bud Carter (Silverado), Kim Park (Traverse).",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Send the referral card to Kim.",
+     "backend": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "jessi": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes.",
+     "backend": "Sent to Kim Park.",
+     "jessi": "Sent to Kim Park.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What time is it?",
+     "backend": null,
+     "jessi": "9:05 AM, Forest.",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Remind me tomorrow at 9 to check on Amy.",
+     "backend": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "jessi": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Great, thanks Jessi.",
+     "backend": null,
+     "jessi": "You got it, Forest.",
+     "name_uses": 1,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    }
+   ]
+  },
+  "mini_after": {
+   "summary": {
+    "post_greeting_replies": 81,
+    "replies_with_name": 0,
+    "replies_with_name_pct": 0.0,
+    "replies_starting_with_name": 0,
+    "stock_openers": 4,
+    "customer_names_kept_pct": 100.0,
+    "greetings_with_name": "9/9",
+    "avg_words": 15.4
+   },
+   "turns": [
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "What do I know about Sarah Mitchell?",
+     "backend": "Sarah Mitchell: bought a 2024 Tahoe in March, two kids, daughter starts college in the fall, open task: send her the referral card.",
+     "jessi": "Sarah Mitchell bought a 2024 Tahoe in March, has two kids, her daughter starts college this fall, and you have an open task to send her the referral card.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "When did I last talk to her?",
+     "backend": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "jessi": "You last texted Sarah Mitchell on September 30 about a service appointment.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Okay, remind me to call her Friday afternoon.",
+     "backend": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "jessi": "Reminder set to call Sarah Mitchell Friday at 2 PM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Thanks.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who else should I reach out to today?",
+     "backend": "Today's three: Bud Carter (overdue follow-up), Mike Tran (birthday), Tanya Reed (new web lead).",
+     "jessi": "Today's three are Bud Carter, overdue follow-up; Mike Tran, birthday; and Tanya Reed, new web lead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tell me about Bud.",
+     "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus after the 15th.",
+     "jessi": "Bud Carter is looking at the Silverado High Country, trading a 2019 F-150, has a wife named Deb, and expects a bonus after the 15th.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What should I open with when I call him?",
+     "backend": null,
+     "jessi": "Open by asking how Deb\u2019s doing and mention you heard his bonus hits soon\u2014easy rapport and timing for the trade talk.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Good idea. Draft him a text.",
+     "backend": "Draft for Bud Carter: 'Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?' Send it?",
+     "jessi": "Draft says: \"Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?\" Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes, send it.",
+     "backend": "Sent to Bud Carter.",
+     "jessi": "Sent to Bud Carter.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Pull up Tod Berry.",
+     "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "jessi": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "The Tahoe one.",
+     "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "jessi": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Any open tasks for him?",
+     "backend": "One open task for Tod Berry: send the trade-in appraisal.",
+     "jessi": "One open task for Tod Berry: send the trade-in appraisal.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "I'm swamped today, honestly.",
+     "backend": null,
+     "jessi": "Got it, let's clear that task fast. Want me to draft the trade-in appraisal text?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    },
+    {
+     "rep": "What's my numbers this month?",
+     "backend": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "jessi": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Is that good?",
+     "backend": null,
+     "jessi": "Solid sales pace, those leads can turn quick if you hit 'em now.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who mentioned a Tesla last month?",
+     "backend": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "jessi": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tag him as EV interested.",
+     "backend": "Tagged Earl Jones: EV interested.",
+     "jessi": "Tagged Earl Jones: EV interested.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Perfect, that's it for now.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Let's brainstorm. How do I get more referrals this quarter?",
+     "backend": null,
+     "jessi": "Make asking for referrals a regular, natural step after every sale or positive interaction\u2014keep it casual and confident. Leverage your happiest customers with a quick, personal text or call asking if they know anyone who\u2019d love your help. Want me to draft a referral request message for you?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Go deeper on the first idea.",
+     "backend": null,
+     "jessi": "Build a simple referral script you use every time you wrap a deal or a great call. Practice it until it feels natural. Like: \u201cGlad we got this sorted! Who else do you know that I can help with the same great experience?\u201d Keep it friendly, not pushy\u2014timing right after a success is key. Want me to help draft that?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "How would I say that in a text?",
+     "backend": null,
+     "jessi": "How about: \"Hey [Name], so glad we got everything sorted! If you know anyone looking for help, I\u2019d love to deliver the same great experience. Thanks!\" Want me to text that for you?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who are my last five sold customers?",
+     "backend": "Last five sold: Sarah Mitchell (Tahoe), Dan Mitchell (Colorado), Amy Jones (Equinox), Bud Carter (Silverado), Kim Park (Traverse).",
+     "jessi": "Last five sold: Sarah Mitchell with the Tahoe, Dan Mitchell in a Colorado, Amy Jones got an Equinox, Bud Carter went Silverado, Kim Park took a Traverse.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Send the referral card to Kim.",
+     "backend": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "jessi": "Draft for Kim Park says, \"Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.\" Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes.",
+     "backend": "Sent to Kim Park.",
+     "jessi": "Sent to Kim Park.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What time is it?",
+     "backend": null,
+     "jessi": "9:05 AM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Remind me tomorrow at 9 to check on Amy.",
+     "backend": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "jessi": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Great, thanks Jessi.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "What do I know about Sarah Mitchell?",
+     "backend": "Sarah Mitchell: bought a 2024 Tahoe in March, two kids, daughter starts college in the fall, open task: send her the referral card.",
+     "jessi": "Sarah Mitchell bought a 2024 Tahoe in March, has two kids, daughter starting college this fall, and you have an open task to send her the referral card.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "When did I last talk to her?",
+     "backend": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "jessi": "You last texted Sarah Mitchell on September 30 about a service appointment.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Okay, remind me to call her Friday afternoon.",
+     "backend": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "jessi": "Reminder set to call Sarah Mitchell Friday at 2 PM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Thanks.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who else should I reach out to today?",
+     "backend": "Today's three: Bud Carter (overdue follow-up), Mike Tran (birthday), Tanya Reed (new web lead).",
+     "jessi": "Today's three are Bud Carter for an overdue follow-up, Mike Tran for his birthday, and Tanya Reed, a new web lead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tell me about Bud.",
+     "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus after the 15th.",
+     "jessi": "Bud Carter is looking at a Silverado High Country, trading in a 2019 F-150, has a wife named Deb, and expects a bonus after the 15th.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What should I open with when I call him?",
+     "backend": null,
+     "jessi": "Start with asking how Deb and the F-150 trade-in plan are going, then check if his bonus timing impacts his buying decision.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Good idea. Draft him a text.",
+     "backend": "Draft for Bud Carter: 'Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?' Send it?",
+     "jessi": "Draft says: \"Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?\" Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes, send it.",
+     "backend": "Sent to Bud Carter.",
+     "jessi": "Sent to Bud Carter.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Pull up Tod Berry.",
+     "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "jessi": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "The Tahoe one.",
+     "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "jessi": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Any open tasks for him?",
+     "backend": "One open task for Tod Berry: send the trade-in appraisal.",
+     "jessi": "One open task for Tod Berry: send the trade-in appraisal.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "I'm swamped today, honestly.",
+     "backend": null,
+     "jessi": "Got it, let's keep it quick. Want me to set a reminder for that trade-in appraisal?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    },
+    {
+     "rep": "What's my numbers this month?",
+     "backend": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "jessi": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Is that good?",
+     "backend": null,
+     "jessi": "Solid numbers, on track for a strong month. Keep pushing those hot leads!",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who mentioned a Tesla last month?",
+     "backend": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "jessi": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tag him as EV interested.",
+     "backend": "Tagged Earl Jones: EV interested.",
+     "jessi": "Tagged Earl Jones: EV interested.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Perfect, that's it for now.",
+     "backend": null,
+     "jessi": "Got it, ready when you are later.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Let's brainstorm. How do I get more referrals this quarter?",
+     "backend": null,
+     "jessi": "Tap loyal customers with a quick thank-you text and a simple ask. Offer value: exclusive perks or small rewards for each referral. Want me to draft a referral request text?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Go deeper on the first idea.",
+     "backend": null,
+     "jessi": "Focus on past buyers who said thanks or gave a review\u2014they're already fans. Text them a genuine thank-you, mention how much you appreciate them, then ask if they know anyone who might benefit like they did. Keep it short and warm. Want me to draft that?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "How would I say that in a text?",
+     "backend": null,
+     "jessi": "Here's a quick draft: \"Hey [Name], just wanted to say thanks again for choosing us! We really appreciate you. If you know anyone looking, I'd love to help them too. Feel free to pass my info along!\" Want me to send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who are my last five sold customers?",
+     "backend": "Last five sold: Sarah Mitchell (Tahoe), Dan Mitchell (Colorado), Amy Jones (Equinox), Bud Carter (Silverado), Kim Park (Traverse).",
+     "jessi": "Last five sold: Sarah Mitchell (Tahoe), Dan Mitchell (Colorado), Amy Jones (Equinox), Bud Carter (Silverado), Kim Park (Traverse).",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Send the referral card to Kim.",
+     "backend": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "jessi": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes.",
+     "backend": "Sent to Kim Park.",
+     "jessi": "Sent to Kim Park.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What time is it?",
+     "backend": null,
+     "jessi": "9:05 AM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Remind me tomorrow at 9 to check on Amy.",
+     "backend": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "jessi": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Great, thanks Jessi.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "What do I know about Sarah Mitchell?",
+     "backend": "Sarah Mitchell: bought a 2024 Tahoe in March, two kids, daughter starts college in the fall, open task: send her the referral card.",
+     "jessi": "Sarah Mitchell bought a 2024 Tahoe in March, has two kids, her daughter starts college this fall, and you\u2019ve got an open task to send her the referral card.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "When did I last talk to her?",
+     "backend": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "jessi": "Last text with Sarah Mitchell was September 30, about a service appointment.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Okay, remind me to call her Friday afternoon.",
+     "backend": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "jessi": "Reminder set: call Sarah Mitchell Friday 2 PM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Thanks.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who else should I reach out to today?",
+     "backend": "Today's three: Bud Carter (overdue follow-up), Mike Tran (birthday), Tanya Reed (new web lead).",
+     "jessi": "Today's three: Bud Carter for overdue follow-up, Mike Tran for birthday, and Tanya Reed, a new web lead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tell me about Bud.",
+     "backend": "Bud Carter: looking at the Silverado High Country, trading a 2019 F-150, wife Deb, bonus after the 15th.",
+     "jessi": "Bud Carter is looking at the Silverado High Country, trading in a 2019 F-150, married to Deb, and expects a bonus after the 15th.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What should I open with when I call him?",
+     "backend": null,
+     "jessi": "Open with asking how Deb\u2019s doing, then ask if he\u2019s locked in that bonus to move on the Silverado.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Good idea. Draft him a text.",
+     "backend": "Draft for Bud Carter: 'Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?' Send it?",
+     "jessi": "Draft for Bud Carter says: \"Hey Bud, it's Forest. Got a minute this week to look at the High Country numbers?\" Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes, send it.",
+     "backend": "Sent to Bud Carter.",
+     "jessi": "Sent to Bud Carter.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Pull up Tod Berry.",
+     "backend": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "jessi": "Which one: Tod Berry with the Tahoe, or Todd Berry with the Silverado?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "The Tahoe one.",
+     "backend": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "jessi": "Tod Berry is up on your screen: 2022 Tahoe, last text October 2.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Any open tasks for him?",
+     "backend": "One open task for Tod Berry: send the trade-in appraisal.",
+     "jessi": "One open task for Tod Berry: send the trade-in appraisal.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "I'm swamped today, honestly.",
+     "backend": null,
+     "jessi": "Got it. Want me to draft the trade-in appraisal text for Tod Berry?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": true,
+     "customer_kept": null
+    },
+    {
+     "rep": "What's my numbers this month?",
+     "backend": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "jessi": "This month: 11 sold, 4 reviews, 62 texts sent, 3 hot leads waiting.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Is that good?",
+     "backend": null,
+     "jessi": "Solid pace, but aiming higher never hurts.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who mentioned a Tesla last month?",
+     "backend": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "jessi": "Earl Jones mentioned a Tesla on September 18: 'thinking about a Model Y for my wife'.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Tag him as EV interested.",
+     "backend": "Tagged Earl Jones: EV interested.",
+     "jessi": "Tagged Earl Jones: EV interested.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Perfect, that's it for now.",
+     "backend": null,
+     "jessi": "Gotcha.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "(session start)",
+     "jessi": "Hey Forest, Who are we talking about today?",
+     "greeting": true
+    },
+    {
+     "rep": "Let's brainstorm. How do I get more referrals this quarter?",
+     "backend": null,
+     "jessi": "Ask top customers for intros after great service, then send quick thank-you texts with your digital card. Want help drafting that?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Go deeper on the first idea.",
+     "backend": null,
+     "jessi": "Pinpoint your happiest clients from recent sales or service. Reach out personally, reminding them of specific wins or moments you shared. Make asking for referrals a natural, casual part of the convo. Need names to start?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "How would I say that in a text?",
+     "backend": null,
+     "jessi": "One sec.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Who are my last five sold customers?",
+     "backend": "Last five sold: Sarah Mitchell (Tahoe), Dan Mitchell (Colorado), Amy Jones (Equinox), Bud Carter (Silverado), Kim Park (Traverse).",
+     "jessi": "Last five sold: Sarah Mitchell with a Tahoe, Dan Mitchell with a Colorado, Amy Jones with an Equinox, Bud Carter with a Silverado, and Kim Park with a Traverse. Want me to draft a referral text for any of them?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Send the referral card to Kim.",
+     "backend": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "jessi": "Draft for Kim Park: 'Hi Kim, it's Forest. Thanks again for choosing us, here's my card if anyone you know is shopping.' Send it?",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Yes.",
+     "backend": "Sent to Kim Park.",
+     "jessi": "Sent to Kim Park.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "What time is it?",
+     "backend": null,
+     "jessi": "9:05 AM Thursday, October 15, 2026.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    },
+    {
+     "rep": "Remind me tomorrow at 9 to check on Amy.",
+     "backend": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "jessi": "Reminder set: check on Amy Jones tomorrow 9 AM.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": true
+    },
+    {
+     "rep": "Great, thanks Jessi.",
+     "backend": null,
+     "jessi": "Go ahead.",
+     "name_uses": 0,
+     "starts_with_name": false,
+     "stock_opener": false,
+     "customer_kept": null
+    }
+   ]
+  }
+ }
+}

@@ -78,7 +78,7 @@ DELEGATE_TOOL = {"type": "function", "name": "delegate",
                  "parameters": {"type": "object", "properties": {"request": {"type": "string", "description": "What the rep wants, in one plain sentence. Keep names, spellings, numbers, dates and the exact wording of any text."}}, "required": ["request"]}}
 REALTIME_RULES = ("\n\nTOOL: you have one function, delegate(request). Every case under 'Delegate to the backend when' means: call delegate with what the rep wants in one plain sentence "
                   "(keep names, spellings, numbers, dates and the exact wording of any text). If it will take a moment, two words at most ('one sec'), then call it. "
-                  "The function returns what to say: say it in your own voice, keep every name and number, add nothing. If it returns a question (which one, yes or no), ask it and wait. "
+                  "The function returns what to say: say it in your own voice, keep every customer name and number, add nothing. If it returns a question (which one, yes or no), ask it and wait. "
                   "Never say a text was sent, a reminder was set or anything was saved unless the function said so.")
 # One Jessi on both engines: the conversational rules every reply follows. GPT-Live and Realtime mini get the same block (Phase 2 prompt parity).
 CORE_RULES = ("How you talk (every reply):\n"
@@ -97,6 +97,15 @@ MINI_RULES = ("\n\nLENGTH, this matters on this voice line: lead with the answer
               "Never greet, re-introduce yourself or restart the conversation after the first turn; if a CONVERSATION SO FAR is given below, you are already mid-conversation. "
               "If a turn from the rep was silence, noise or unclear, do not repeat yourself: say 'Go ahead' or nothing. "
               "Before a backend call say nothing or two words at most ('one sec'); never describe the call.")
+# Realtime mini only (production: the rep's name in 31% of replies after the greeting vs 8% on GPT-Live, mostly as the first word).
+# The shared rep_line's "use their first name now and then" is what mini over-applies, so mini_instructions swaps it for this.
+REP_NAME_HINT = " Use their first name now and then, not every sentence."
+MINI_NAME_RULES = ("\n\nNAMES: you may say the rep's first name once, in your greeting. After that, leave it out. Never start a reply with it, and never use it as filler, "
+                   "for emphasis or in an acknowledgment ('Absolutely, [name]', 'Great question, [name]', 'You got it, [name]'). Say it again only for a real reason, "
+                   "like getting their attention after a long silence. This is only about addressing the rep: when you read back a drafted text or a quote that contains "
+                   "their name, read it exactly as written. Customer and contact names are different: use those whenever they make the answer clearer. "
+                   "Sound like a person on a call, not a script: start with the answer itself rather than an acknowledgment, and don't open two replies in a row the same way "
+                   "('Absolutely', 'Got it', 'Perfect', 'Okay so'). Your personality, humor and tone stay exactly as described above.")
 MINI_MAX_OUTPUT_TOKENS = 1600  # about 80 s of speech: room for a long read-back, a hard stop for a runaway monologue
 # Realtime mini listening. Server VAD is the only mode with a loudness threshold, which is what keeps room noise and the phone's own
 # speaker echo from starting a turn (each false turn interrupts Jessi and makes her answer the noise). Tunable in the Voice Lab.
@@ -125,7 +134,7 @@ def mini_audio_input(cfg: dict, language: str) -> dict:
 
 def mini_instructions(instructions: str, context: str) -> str:
     """Realtime mini takes one instructions string: shared Jessi + tool protocol + the mini length layer + the context GPT-Live gets as a developer message."""
-    return instructions + REALTIME_RULES + MINI_RULES + "\n\n" + context
+    return instructions.replace(REP_NAME_HINT, "") + REALTIME_RULES + MINI_RULES + MINI_NAME_RULES + "\n\n" + context
 
 
 def voice_gender(voice_id: Optional[str]) -> Optional[str]:
@@ -261,7 +270,7 @@ def rep_line(user: dict) -> str:
     first = (user.get("name") or "").split(" ")[0] or "there"
     role = user.get("role") or "salesperson"
     org = user.get("organization_name") or user.get("store_name") or ""
-    return f"You are talking with {first}{f', {role}' if role else ''}{f' at {org}' if org else ''}. Use their first name now and then, not every sentence."
+    return f"You are talking with {first}{f', {role}' if role else ''}{f' at {org}' if org else ''}." + REP_NAME_HINT
 
 
 def focus_line(contact: Optional[dict]) -> str:
@@ -680,6 +689,11 @@ async def record_events(db, live: dict, events: list) -> dict:
                 sets["tokens"] = tokens
             cost = mini_cost(tokens) if mini and tokens else round(secs / 60 * ENGINES.get(live.get("engine") or "live", ENGINES["live"])["price_per_min"], 4)
             sets.update({"status": "closed", "ended_at": _now(), "seconds": secs, "cost_usd": cost, "close_reason": ev.get("reason") or "close_requested"})
+            if isinstance(ev.get("diag"), dict):
+                sets["close_diag"] = close_diag(ev["diag"])
+                d = sets["close_diag"]
+                logger.info(f"[Live] closed {live.get('live_id')} engine={live.get('engine')} model={live.get('model')} secs={secs} reason={sets['close_reason']} "
+                            f"by={d.get('initiated_by')} unexpected={d.get('unexpected')} pc={d.get('pc_state')} ice={d.get('ice_state')} dc={d.get('dc_state')} last={d.get('last_event')}")
         elif t == "error":
             sets["last_error"] = str(ev.get("message") or "")[:300]
         elif t == "trace" and isinstance(ev.get("rows"), list):
@@ -708,12 +722,30 @@ async def record_events(db, live: dict, events: list) -> dict:
     return sets
 
 
+# How a session ended, from the app (useLiveJessi closeDiag): states, event types and ages only. Never transcript or audio content.
+CLOSE_DIAG_KEYS = {"initiated_by": str, "unexpected": bool, "pc_state": str, "ice_state": str, "dc_state": str, "last_event": str, "last_event_age_ms": int,
+                   "last_audio_event": str, "last_audio_age_ms": int, "quiet_s": int, "app_state": str, "backgrounds": int, "app_build": str}
+
+
+def close_diag(d: dict) -> dict:
+    out = {}
+    for k, typ in CLOSE_DIAG_KEYS.items():
+        v = d.get(k)
+        if v is None:
+            continue
+        try:
+            out[k] = bool(v) if typ is bool else int(v) if typ is int else str(v)[:60]
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def serialize(s: dict, full: bool = False) -> dict:
     out = {"live_id": s.get("live_id"), "user_id": s.get("user_id"), "user_name": s.get("user_name"), "mode": s.get("mode"), "voice": s.get("voice"), "status": s.get("status"), "contact_name": s.get("contact_name"),
            "engine": s.get("engine") or "live", "model": s.get("model") or MODEL, "tokens": s.get("tokens"), "org_id": s.get("org_id"), "meter": s.get("meter"), "fake_provider": bool(s.get("fake_provider")),
            "shopper": s.get("shopper"), "team": bool(s.get("team")), "last_error": s.get("last_error"), "noise_turns": int(s.get("noise_turns") or 0), "walkthrough": {"stops": len(s["agenda"]), "done": len(s.get("agenda_done") or []), "skipped": len(s.get("agenda_skipped") or [])} if s.get("agenda") is not None else None,
            "started_at": s["started_at"].isoformat() if s.get("started_at") else None, "ended_at": s["ended_at"].isoformat() if s.get("ended_at") else None,
-           "seconds": int(s.get("seconds") or 0), "cost_usd": round(float(s.get("cost_usd") or 0), 4), "close_reason": s.get("close_reason"),
+           "seconds": int(s.get("seconds") or 0), "cost_usd": round(float(s.get("cost_usd") or 0), 4), "close_reason": s.get("close_reason"), "close_diag": s.get("close_diag"),
            "turns": len(s.get("transcript") or []), "delegations": len(s.get("delegations") or []), "tools": [d.get("tool") for d in (s.get("delegations") or [])]}
     if full:
         out["transcript"] = [{"role": r["role"], "text": r["text"], "start_ms": r.get("start_ms")} for r in s.get("transcript") or []]
@@ -1142,13 +1174,15 @@ async def _reminder(db, user: dict, args: dict, focus: Optional[dict] = None, li
     return (_with_note(f"Done. Reminder set{who}: {title}, {spoken_when}.", contact) if task else "I could not save that reminder."), task
 
 
-async def _answer(user: dict, say: str, question: str) -> str:
+async def _answer(user: dict, say: str, question: str, mini: bool = False) -> str:
     if say and len(say.split()) <= 70:
         return no_em_dash(say.strip())
     from services.jessie_service import KNOWLEDGE_BASE, _build_user_context
     from services.scripts import _llm
     ctx = await _build_user_context(str(user["_id"]))
-    return no_em_dash((await _llm(KNOWLEDGE_BASE[:14000] + "\n" + ctx + "\nAnswer for a live voice assistant: at most 60 words, plain spoken sentences, no markdown.", question, timeout=40)).strip())
+    # mini reads this aloud word for word: the knowledge base's "use the person's name" and "great question" would undo MINI_NAME_RULES
+    voice = " Don't address the user by name and don't open with praise like 'great question'." if mini else ""
+    return no_em_dash((await _llm(KNOWLEDGE_BASE[:14000] + "\n" + ctx + "\nAnswer for a live voice assistant: at most 60 words, plain spoken sentences, no markdown." + voice, question, timeout=40)).strip())
 
 
 def _last_rep_text(transcript: list) -> str:
@@ -1483,7 +1517,7 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             from services import live_actions as la
             result, new_pending, opened = await getattr(la, tool)(db, user, args, focus, live)
         else:
-            result = await _answer(user, args.get("say") or "", _last_rep_text(transcript))
+            result = await _answer(user, args.get("say") or "", _last_rep_text(transcript), mini=(live or {}).get("engine") == "mini")
     except Exception as e:
         logger.exception(f"[Live] tool {tool} failed: {e}")
         result = "Something went wrong on my side pulling that up. Try me again in a second."
