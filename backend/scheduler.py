@@ -2579,6 +2579,8 @@ def start_scheduler():
         misfire_grace_time=120,
     )
 
+    from services.job_lease import guard_jobs
+    guard_jobs(scheduler)  # both replicas keep their scheduler; each shared job runs on one replica per tick
     scheduler.start()
 
     # ── Watchdog: verify jobs registered correctly ────────────────────────────

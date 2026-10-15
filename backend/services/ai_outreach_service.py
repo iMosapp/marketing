@@ -11,7 +11,6 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from bson import ObjectId
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 from services.llm_models import CUSTOMER_TEXT_MODEL
 from routers.database import get_db
 from utils.text_sanitize import no_em_dash, clean_ai_text
@@ -126,6 +125,7 @@ async def gather_customer_context(user_id: str, contact_id: str) -> dict:
 
 async def generate_suggestions(user_id: str, contact_id: str) -> dict:
     """Generate 2 AI-powered follow-up message suggestions."""
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
     api_key = os.getenv("EMERGENT_LLM_KEY")
     if not api_key:
         raise ValueError("EMERGENT_LLM_KEY not configured")

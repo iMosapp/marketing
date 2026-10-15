@@ -12,9 +12,6 @@ import os
 import requests  # only used for google-auth library compatibility
 import httpx  # async HTTP — never blocks the event loop
 
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request as GoogleRequest
-from googleapiclient.discovery import build
 
 from routers.database import get_db
 
@@ -169,6 +166,8 @@ async def _user_tz(user_id: str) -> str:
 
 async def get_google_credentials(user_id: str):
     """Get valid Google credentials for a user, refreshing if needed"""
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request as GoogleRequest
     user = await get_db().users.find_one({"_id": ObjectId(user_id)})
     
     if not user or not user.get("google_calendar_tokens"):
@@ -212,6 +211,7 @@ async def create_calendar_event(user_id: str, event_data: dict):
         raise HTTPException(status_code=401, detail="Google Calendar not connected")
     
     try:
+        from googleapiclient.discovery import build
         service = build('calendar', 'v3', credentials=creds)
         
         # Build event body
@@ -303,6 +303,7 @@ async def create_appointment_from_ai(user_id: str, appointment_data: dict):
                 "location": appointment.get("location")
             }
             
+            from googleapiclient.discovery import build
             service = build('calendar', 'v3', credentials=creds)
             
             event = {

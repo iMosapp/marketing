@@ -9,7 +9,6 @@ import json
 import logging
 from datetime import datetime, timezone, timedelta
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 from routers.database import get_db
 from bson import ObjectId
 
@@ -60,6 +59,7 @@ Respond ONLY with valid JSON."""
 
 async def extract_personal_details(transcript: str, source: str = "voice_note") -> dict:
     """Use AI to extract personal details from a voice memo, text thread or call transcript."""
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
     api_key = os.getenv("EMERGENT_LLM_KEY")
     if not api_key:
         logger.warning("No EMERGENT_LLM_KEY - skipping extraction")

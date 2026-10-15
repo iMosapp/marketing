@@ -7,7 +7,6 @@ import re
 import subprocess
 import tempfile
 
-import numpy as np
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -31,6 +30,7 @@ def probe_duration(path: str) -> float:
 
 
 def sharpness(jpeg: bytes) -> float:
+    import numpy as np
     g = Image.open(io.BytesIO(jpeg)).convert("L")
     g.thumbnail((320, 320))
     a = np.asarray(g, dtype=np.float32)
@@ -39,6 +39,7 @@ def sharpness(jpeg: bytes) -> float:
 
 
 def dhash(jpeg: bytes) -> int:
+    import numpy as np
     g = Image.open(io.BytesIO(jpeg)).convert("L").resize((9, 8), Image.LANCZOS)
     a = np.asarray(g, dtype=np.int16)
     bits = (a[:, 1:] > a[:, :-1]).flatten()
@@ -79,6 +80,7 @@ def probe(video: bytes, ext: str) -> dict:
 
 def select(cands: list, duration: float) -> dict:
     """cands: [{t, jpeg, sharpness, hash}] in time order -> kept frames + what was dropped and why."""
+    import numpy as np
     median = float(np.median([c["sharpness"] for c in cands])) if cands else 0.0
     floor = max(SHARP_FLOOR, 0.25 * median)
     sharp = [c for c in cands if c["sharpness"] >= floor]

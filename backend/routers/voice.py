@@ -16,12 +16,10 @@ load_dotenv()
 router = APIRouter(prefix="/voice", tags=["Voice"])
 logger = logging.getLogger(__name__)
 
-# Import the OpenAI Speech-to-Text integration
-try:
-    from emergentintegrations.llm.openai import OpenAISpeechToText
-    WHISPER_AVAILABLE = True
-except ImportError:
-    WHISPER_AVAILABLE = False
+# The LLM SDK (litellm) is imported on first use, not at startup
+import importlib.util
+WHISPER_AVAILABLE = importlib.util.find_spec("emergentintegrations") is not None
+if not WHISPER_AVAILABLE:
     logger.warning("emergentintegrations not installed - voice transcription disabled")
 
 
@@ -91,7 +89,7 @@ async def transcribe_audio(
             tmp_path = tmp_file.name
         
         try:
-            # Initialize Whisper client
+            from emergentintegrations.llm.openai import OpenAISpeechToText
             stt = OpenAISpeechToText(api_key=api_key)
             
             # Transcribe

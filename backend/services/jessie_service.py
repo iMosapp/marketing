@@ -12,9 +12,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-from emergentintegrations.llm.openai import OpenAITextToSpeech
-
 from routers.database import get_db
 from utils.text_sanitize import no_em_dash, clean_ai_text
 from services.llm_models import JESSI_CHAT_MODEL
@@ -782,6 +779,7 @@ async def chat_with_jessie(user_id: str, user_message: str, current_page: str = 
     v2: Passes history as context instead of replaying through LLM (10x faster).
     v2.1: Live stats, contact awareness, and proactive suggestions.
     """
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
     api_key = os.getenv("EMERGENT_LLM_KEY")
     if not api_key:
         raise ValueError("EMERGENT_LLM_KEY not configured")
@@ -840,6 +838,7 @@ async def chat_with_jessie(user_id: str, user_message: str, current_page: str = 
 
 async def generate_voice_response(text: str) -> bytes:
     """Generate voice audio from Jessi's text response."""
+    from emergentintegrations.llm.openai import OpenAITextToSpeech
     api_key = os.getenv("EMERGENT_LLM_KEY")
     if not api_key:
         raise ValueError("EMERGENT_LLM_KEY not configured")
@@ -856,6 +855,7 @@ async def generate_voice_response(text: str) -> bytes:
 
 async def generate_voice_response_base64(text: str) -> str:
     """Generate voice as base64 for direct embedding in responses"""
+    from emergentintegrations.llm.openai import OpenAITextToSpeech
     api_key = os.getenv("EMERGENT_LLM_KEY")
     if not api_key:
         raise ValueError("EMERGENT_LLM_KEY not configured")
@@ -882,6 +882,7 @@ async def clear_chat_history(user_id: str):
 
 async def extract_profile_info(text: str, context: str = "intro") -> dict:
     """Extract structured profile information from natural speech."""
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
     api_key = os.getenv("EMERGENT_LLM_KEY")
     if not api_key:
         raise ValueError("EMERGENT_LLM_KEY not configured")

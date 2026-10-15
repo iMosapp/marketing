@@ -5,8 +5,6 @@ from datetime import datetime, timezone, timedelta, date, time
 from typing import Optional
 from zoneinfo import ZoneInfo
 
-import phonenumbers
-from phonenumbers import geocoder, timezone as pn_tz
 
 DNC_LIST, DNC_REGISTRY, REGISTRY_META = "dnc_list", "dnc_registry", "dnc_registry"
 
@@ -73,6 +71,8 @@ def state_code(value: Optional[str]) -> Optional[str]:
 
 def region(phone: str, state_hint: Optional[str] = None) -> dict:
     """Where the phone rings: state (contact's own address first, then the area code) + IANA zone (None when ambiguous, e.g. toll free)."""
+    import phonenumbers
+    from phonenumbers import geocoder, timezone as pn_tz
     out = {"state": state_code(state_hint), "tz": None, "country": "US"}
     try:
         num = phonenumbers.parse(phone, "US")

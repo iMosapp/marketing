@@ -6,7 +6,6 @@ import tempfile
 from io import BytesIO
 from pathlib import Path
 
-import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ASSETS = Path(__file__).resolve().parent.parent / "print_assets"
@@ -117,6 +116,7 @@ def rotated(base, layer, x, y, deg):
 
 
 def linear_gradient(w, h, stops):
+    import numpy as np
     xs = np.linspace(0, 1, P(w))
     pos = np.linspace(0, 1, len(stops))
     arr = np.zeros((P(h), P(w), 4), dtype=np.uint8)
@@ -126,6 +126,7 @@ def linear_gradient(w, h, stops):
 
 
 def conic_gradient(size, stops, start_deg):
+    import numpy as np
     n = P(size)
     yy, xx = np.mgrid[0:n, 0:n]
     ang = (np.degrees(np.arctan2(yy - n / 2, xx - n / 2)) + 90 - start_deg) % 360 / 360.0
@@ -137,6 +138,7 @@ def conic_gradient(size, stops, start_deg):
 
 
 def radial_glow(base, cx, cy, rx, ry, color, max_alpha):
+    import numpy as np
     yy, xx = np.mgrid[0:base.height, 0:base.width]
     d = np.sqrt(((xx - P(cx)) / P(rx)) ** 2 + ((yy - P(cy)) / P(ry)) ** 2)
     a = (np.clip(1 - d, 0, 1) ** 1.8 * 255 * max_alpha).astype(np.uint8)

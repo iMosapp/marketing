@@ -56,8 +56,8 @@ class UTCJSONResponse(_JSONResponse):
 BUILD = "2026-10-14.mms-stage1"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
 app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
-# Create a router with the /api prefix
-api_router = APIRouter(prefix="/api")
+# Create a router with the /api prefix (same response class as the app, so its routes can be mounted without being rebuilt)
+api_router = APIRouter(prefix="/api", default_response_class=UTCJSONResponse)
 
 # ============= SITEMAP + ROBOTS =============
 from fastapi.responses import PlainTextResponse
@@ -1585,8 +1585,12 @@ async def serve_link_page(username: str):
     raise HTTPException(status_code=404, detail="Page template not found")
 
 
-# Include the api_router in the main app
-app.include_router(api_router)
+# Mount the api_router routes as-is: app.include_router would rebuild all ~1,700 routes a third time (~1/3 of import CPU). Identical table, verified by tests/route_table_snapshot.py
+app.router.routes.extend(api_router.routes)
+for _h in api_router.on_startup:
+    app.router.add_event_handler("startup", _h)
+for _h in api_router.on_shutdown:
+    app.router.add_event_handler("shutdown", _h)
 
 # Include short URL router at root level
 app.include_router(short_urls.router)
@@ -1665,13 +1669,16 @@ async def startup_event():
 
     asyncio.get_event_loop().set_exception_handler(_handle_async_exception)
     
-    # Initialize object storage (non-blocking, will retry on first use)
-    try:
-        from utils.image_storage import init_storage
-        init_storage()
-        logger.info("Object storage ready")
-    except Exception as e:
-        logger.warning(f"Object storage init deferred (will retry on first upload): {e}")
+    # Initialize object storage in a worker thread (blocking HTTP call); uploads call init_storage() themselves if this has not finished
+    async def _init_storage():
+        try:
+            from utils.image_storage import init_storage
+            await asyncio.to_thread(init_storage)
+            logger.info("Object storage ready")
+        except Exception as e:
+            logger.warning(f"Object storage init deferred (will retry on first upload): {e}")
+    asyncio.create_task(_init_storage())
+    from services.job_lease import run_once
 
     # AI inspections that were mid-run when the process stopped are marked failed so the rep can retry (frames already stored are reused)
     try:
@@ -1689,7 +1696,7 @@ async def startup_event():
                 await migrate_accepted_traded(db)
         except Exception as e:
             logger.warning(f"[Appraisal] accepted->intent migration skipped: {e}")
-    asyncio.create_task(_appraisal_accepted_migration())
+    asyncio.create_task(run_once("appraisal_accepted_migration", _appraisal_accepted_migration))
 
     # ── Backfill account_id for existing users ────────────────────────────────
     # One-time migration: super_admins get account_id = their own _id,
@@ -1739,7 +1746,7 @@ async def startup_event():
             logger.warning(f"[Startup] account_id backfill skipped: {e}")
 
     import asyncio as _aio3
-    _aio3.create_task(_backfill_account_ids())
+    _aio3.create_task(run_once("backfill_account_ids", _backfill_account_ids))
 
     # ── One-time reset (June 2026): reps start from the three-tile Tools tab; managers unlock switches per rep ──
     async def _reset_rep_tools_switches():
@@ -1752,7 +1759,7 @@ async def startup_event():
             logger.info(f"Rep Tools reset: cleared feature_permissions on {res.modified_count} reps")
         except Exception as e:
             logger.warning(f"Rep Tools reset skipped: {e}")
-    _aio3.create_task(_reset_rep_tools_switches())
+    _aio3.create_task(run_once("reset_rep_tools_switches", _reset_rep_tools_switches))
     # Enforces: one phone number = one named contact = one conversation.
     # Safe to run on every startup — skips already-merged contacts.
     async def _consolidate_phone_contacts():
@@ -1863,7 +1870,7 @@ async def startup_event():
             logger.warning(f"[Startup] Phone consolidation skipped: {e}")
 
     import asyncio as _aio2
-    _aio2.create_task(_consolidate_phone_contacts())
+    _aio2.create_task(run_once("consolidate_phone_contacts", _consolidate_phone_contacts))
 
     # Self-heal: re-link voice notes whose audio_url was never saved (storage response bug),
     # then convert any stored webm memos to m4a so they play on iOS
@@ -1878,7 +1885,7 @@ async def startup_event():
                 logger.info(f"[Startup] Voice note webm conversion: {conv}")
         except Exception as e:
             logger.warning(f"[Startup] Voice note backfill skipped: {e}")
-    _aio2.create_task(_voice_note_backfill())
+    _aio2.create_task(run_once("voice_note_backfill", _voice_note_backfill))
 
     # Self-heal: a phone/browser push device must belong to exactly one person. Super-admin "view as" sessions used to
     # bind the admin's phone to the viewed user, so that user's Morning Brief landed on the admin's phone.
@@ -1890,7 +1897,7 @@ async def startup_event():
                 logger.warning(f"[Startup] Push device dedupe: {r}")
         except Exception as e:
             logger.warning(f"[Startup] Push device dedupe skipped: {e}")
-    _aio2.create_task(_push_device_dedupe())
+    _aio2.create_task(run_once("push_device_dedupe", _push_device_dedupe))
 
     # ONE-TIME migration: birthday/anniversary sends become manual opt-in.
     # Wipes previously auto-applied Birthday/Anniversary tags and cancels
@@ -1934,7 +1941,7 @@ async def startup_event():
                         f"{len(enr_ids)} enrollments + {cancelled_sends} pending sends cancelled")
         except Exception as e:
             logger.warning(f"[Startup] Date opt-in reset failed: {e}")
-    _aio2.create_task(_date_optin_migration())
+    _aio2.create_task(run_once("date_optin_migration", _date_optin_migration))
 
     # One-time: move every contact to the purchase-record model (merge duplicate archive rows, write a record for
     # sales that only lived in date_sold/vehicle, re-derive counts). Additive and idempotent.
@@ -1949,7 +1956,7 @@ async def startup_event():
             logger.info(f"[Startup] Sales units repair: {r}")
         except Exception as e:
             logger.warning(f"[Startup] Sales units repair failed: {e}")
-    _aio2.create_task(_sales_units_repair())
+    _aio2.create_task(run_once("sales_units_repair", _sales_units_repair))
 
     # Quick shops are one-off: drop any plan the demo bucket picked up and cancel planner-made future shops
     async def _quick_shops_cleanup():
@@ -1959,7 +1966,7 @@ async def startup_event():
             logger.info(f"[Startup] Quick shops cleanup: {n} planner-made shops cancelled")
         except Exception as e:
             logger.warning(f"[Startup] Quick shops cleanup failed: {e}")
-    _aio2.create_task(_quick_shops_cleanup())
+    _aio2.create_task(run_once("quick_shops_cleanup", _quick_shops_cleanup))
 
     # Kubota demo account (equipment industry) + one graded sample shop exist everywhere after a Deploy
     async def _kubota_demo_seed():
@@ -1974,7 +1981,7 @@ async def startup_event():
                 logger.info("[Startup] Kubota call guides seeded")
         except Exception as e:
             logger.warning(f"[Startup] Kubota demo seed failed: {e}")
-    _aio2.create_task(_kubota_demo_seed())
+    _aio2.create_task(run_once("kubota_demo_seed", _kubota_demo_seed))
 
 
     # Sync internal docs (PRD / Ops Manual / App Scope) from repo files into Admin → Docs
@@ -1986,7 +1993,7 @@ async def startup_event():
                 logger.info(f"[Startup] Internal docs synced: {result}")
         except Exception as e:
             logger.warning(f"[Startup] Doc sync failed: {e}")
-    _aio2.create_task(_doc_sync())
+    _aio2.create_task(run_once("doc_sync", _doc_sync))
 
     # One-time: put past leads, texts and calls on the Activity feed (see utils/activity_log.py)
     async def _activity_backfill():
@@ -1995,218 +2002,224 @@ async def startup_event():
             await run_backfill_once(get_db())
         except Exception as e:
             logger.warning(f"[Startup] Activity backfill failed: {e}")
-    _aio2.create_task(_activity_backfill())
-    # Removes any accidentally-stored test prompts from the ai_clone_prompts collection
-    try:
-        db = get_db()
-        deleted = await db.ai_clone_prompts.delete_many({
-            "scope": "global",
-            "$or": [
-                {"prompt": {"$regex": "^Test global prompt"}},
-                {"prompt": {"$regex": "^Test "}},
-            ]
-        })
-        if deleted.deleted_count:
-            logger.info(f"[Startup] Removed {deleted.deleted_count} test AI prompt(s) from DB — will use built-in DEFAULT_CLONE_PROMPT")
-    except Exception as e:
-        logger.warning(f"[Startup] AI prompt cleanup skipped: {e}")
+    _aio2.create_task(run_once("activity_backfill", _activity_backfill))
+    # Prompt cleanup + index build run in the background on one replica per rollout, so the port opens without waiting on ~100 index calls
+    async def _db_housekeeping():
+        # Removes any accidentally-stored test prompts from the ai_clone_prompts collection
+        try:
+            db = get_db()
+            deleted = await db.ai_clone_prompts.delete_many({
+                "scope": "global",
+                "$or": [
+                    {"prompt": {"$regex": "^Test global prompt"}},
+                    {"prompt": {"$regex": "^Test "}},
+                ]
+            })
+            if deleted.deleted_count:
+                logger.info(f"[Startup] Removed {deleted.deleted_count} test AI prompt(s) from DB — will use built-in DEFAULT_CLONE_PROMPT")
+        except Exception as e:
+            logger.warning(f"[Startup] AI prompt cleanup skipped: {e}")
     
-    # Create database indexes for performance (non-blocking)
-    try:
-        import asyncio
-        db = get_db()
-        if db is not None:
-            # Give index creation 15 seconds max, don't block startup
-            try:
-                await asyncio.wait_for(asyncio.gather(
-                    # Contacts - core queries
-                    db.contacts.create_index("user_id"),
-                    db.contacts.create_index([("first_name", 1)]),
-                    db.contacts.create_index([("user_id", 1), ("first_name", 1)]),
-                    db.contacts.create_index([("user_id", 1), ("status", 1)]),
-                    db.contacts.create_index([("user_id", 1), ("ownership_type", 1), ("status", 1)]),
-                    db.contacts.create_index([("user_id", 1), ("updated_at", -1)]),
-                    # Users
-                    db.users.create_index("email", unique=True, sparse=True),
-                    db.users.create_index("role"),
-                    db.users.create_index([("store_id", 1)]),
-                    # Conversations - inbox queries
-                    db.conversations.create_index([("user_id", 1), ("last_message_at", -1)]),
-                    db.conversations.create_index([("contact_id", 1)]),
-                    db.conversations.create_index([("user_id", 1), ("status", 1)]),
-                    # Messages - thread loading
-                    db.messages.create_index([("conversation_id", 1), ("timestamp", -1)]),
-                    # Contact events & photos
-                    db.contact_photos.create_index("contact_id", unique=True),
-                    db.contact_events.create_index([("user_id", 1), ("timestamp", -1)]),
-                    db.contact_events.create_index([("contact_id", 1), ("timestamp", -1)]),
-                    db.contact_facts.create_index("fingerprint", unique=True),
-                    db.contact_facts.create_index([("contact_id", 1), ("status", 1), ("layer", 1)]),
-                    db.contact_facts.create_index([("contact_id", 1), ("key", 1), ("occurred_at", -1)]),
-                    db.contact_fact_events.create_index([("fact_id", 1), ("at", 1)]),
-                    db.contact_events.create_index([("contact_id", 1), ("event_type", 1)]),
-                    # Link pages — was missing, caused 60s timeout on full collection scan
-                    db.link_pages.create_index("user_id", unique=True, sparse=True),
-                    db.link_pages.create_index("username", sparse=True),
-                    # Campaign system
-                    db.campaign_enrollments.create_index([("campaign_id", 1), ("contact_id", 1), ("status", 1)]),
-                    db.campaign_enrollments.create_index([("user_id", 1), ("status", 1)]),
-                    db.campaign_enrollments.create_index([("contact_id", 1)]),
-                    db.campaign_enrollments.create_index([("user_id", 1), ("status", 1), ("next_send_at", 1)]),
-                    db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1)]),
-                    # Compound index for catchup query: (user_id, status, send_at) — prevents collection scan
-                    db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1), ("send_at", 1)]),
-                    db.campaign_pending_sends.create_index([("campaign_id", 1), ("contact_id", 1), ("step", 1), ("status", 1)]),
-                    # Tasks
-                    db.tasks.create_index([("user_id", 1), ("status", 1), ("due_date", 1)]),
-                    db.tasks.create_index("idempotency_key", unique=True, partialFilterExpression={"idempotency_key": {"$type": "string"}}),
-                    # Date triggers & notifications
-                    db.date_trigger_configs.create_index([("user_id", 1), ("trigger_type", 1)]),
-                    db.notifications.create_index([("user_id", 1), ("read", 1), ("created_at", -1)]),
-                    # Tags
-                    db.tags.create_index([("user_id", 1)]),
-                    # Short URL click dedup index
-                    db.short_url_clicks.create_index([("short_code", 1), ("ip", 1), ("clicked_at", -1)]),
-                    # Performance: compound indexes for contact page queries
-                    db.campaign_enrollments.create_index([("contact_id", 1), ("user_id", 1), ("status", 1)]),
-                    db.campaign_pending_sends.create_index([("contact_id", 1), ("user_id", 1)]),
-                    # New pre-scheduled queue index — powers the scheduler's primary query
-                    db.campaign_pending_sends.create_index([("status", 1), ("send_at", 1)]),
-                    db.campaign_pending_sends.create_index([("enrollment_id", 1), ("status", 1)]),
-                    db.tasks.create_index([("contact_id", 1), ("user_id", 1), ("type", 1)]),
-                    db.congrats_cards_sent.create_index([("contact_id", 1), ("user_id", 1)]),
-                    db.messages.create_index([("_id", 1)]),  # Ensures batch message lookups are instant
-                    db.contacts.create_index([("user_id", 1), ("phone", 1)]),  # For phone dedup
-                    db.contacts.create_index([("user_id", 1), ("email", 1)]),  # For email dedup
-                    # Login brute-force tracking — TTL auto-cleans stale records after 1 day
-                    db.login_attempts.create_index("updated_at", expireAfterSeconds=86400),
-                    db.photo_upload_chunks.create_index("created_at", expireAfterSeconds=3600),
-                    # last_activity_at — powers "recent" sort without in-memory aggregation
-                    db.contacts.create_index([("user_id", 1), ("last_activity_at", -1)]),
-                    db.contacts.create_index([("user_id", 1), ("last_activity_at", -1), ("status", 1)]),
-                    # Short URLs — user's link listing and cleanup
-                    db.short_urls.create_index([("user_id", 1), ("created_at", -1)]),
-                    db.short_urls.create_index([("short_code", 1)]),
-                    # Notifications — user reads (also has TTL applied separately)
-                    db.notifications.create_index([("user_id", 1), ("created_at", -1)]),
-                    db.notifications.create_index([("idempotency_key", 1)], unique=False, sparse=True),  # Notification dedup
-                    # Congrats cards — tracking and reporting
-                    db.congrats_cards_sent.create_index([("user_id", 1), ("sent_at", -1)]),
-                    db.congrats_cards_sent.create_index([("salesman_id", 1), ("sent_at", -1)]),
-                    # Notification center — compound indexes for all 8 section queries
-                    # Section 6: contact_events by user + timestamp + event_type (was doing full collection scan)
-                    db.contact_events.create_index([("user_id", 1), ("event_type", 1), ("timestamp", -1)]),
-                    # Section 4/5: conversations by participants
-                    db.conversations.create_index([("participants", 1), ("unread", 1), ("updated_at", -1)]),
-                    db.conversations.create_index([("participants", 1), ("flagged", 1), ("updated_at", -1)]),
-                    # Section 8: engagement signals by user + type + date
-                    db.notifications.create_index([("user_id", 1), ("type", 1), ("created_at", -1)]),
-                    # customer_feedback — Review Center queries
-                    db.customer_feedback.create_index([("salesperson_id", 1), ("approved", 1), ("created_at", -1)]),
-                    db.customer_feedback.create_index([("salesperson_id", 1), ("created_at", -1)]),
-                    # ai_reply_queue — scheduler lookup: status + send_at (runs every 60s)
-                    db.ai_reply_queue.create_index([("status", 1), ("send_at", 1)]),
-                    db.ai_reply_queue.create_index([("contact_id", 1), ("status", 1)]),
-                    db.ai_reply_queue.create_index([("assigned_user_id", 1), ("status", 1), ("requires_approval", 1)]),
-                    # Trade appraisal (MVP5): vehicles as relationship records, history, reporting, campaign triggers
-                    db.vehicles.create_index([("contact_id", 1), ("deleted", 1)]),
-                    db.vehicles.create_index([("user_id", 1), ("ownership_status", 1), ("last_appraisal.status", 1), ("last_appraisal.closed_at", 1)]),
-                    db.vehicle_appraisals.create_index([("vehicle_id", 1), ("created_at", -1)]),
-                    db.vehicle_appraisals.create_index([("user_id", 1), ("status", 1), ("updated_at", -1)]),
-                    db.vehicle_appraisals.create_index([("store_id", 1), ("created_at", -1)]),
-                    db.vehicle_appraisals.create_index([("user_id", 1), ("created_at", -1)]),
-                    db.appraisal_decisions.create_index([("appraisal_id", 1), ("decided_at", 1)]),
-                    db.appraisal_events.create_index([("contact_id", 1), ("created_at", -1)]),
-                    db.campaigns.create_index([("trigger_events", 1), ("active", 1)]),
-                    db.tasks.create_index([("appraisal_id", 1), ("task_kind", 1)]),
-                ), timeout=15)
-                logger.info("Database indexes created/verified (production-ready)")
-
-                # TTL indexes — run separately so a failure doesn't block all indexes
-                # These auto-expire old data to prevent unbounded collection growth
+        # Create database indexes for performance (non-blocking)
+        try:
+            import asyncio
+            db = get_db()
+            if db is not None:
+                # Give index creation 15 seconds max, don't block startup
                 try:
-                    import pymongo
-                    one_year_secs   = 365 * 24 * 3600
-                    two_year_secs   = 2 * one_year_secs
-                    ninety_day_secs = 90 * 24 * 3600
+                    await asyncio.wait_for(asyncio.gather(
+                        # Contacts - core queries
+                        db.contacts.create_index("user_id"),
+                        db.contacts.create_index([("first_name", 1)]),
+                        db.contacts.create_index([("user_id", 1), ("first_name", 1)]),
+                        db.contacts.create_index([("user_id", 1), ("status", 1)]),
+                        db.contacts.create_index([("user_id", 1), ("ownership_type", 1), ("status", 1)]),
+                        db.contacts.create_index([("user_id", 1), ("updated_at", -1)]),
+                        # Users
+                        db.users.create_index("email", unique=True, sparse=True),
+                        db.users.create_index("role"),
+                        db.users.create_index([("store_id", 1)]),
+                        # Conversations - inbox queries
+                        db.conversations.create_index([("user_id", 1), ("last_message_at", -1)]),
+                        db.conversations.create_index([("contact_id", 1)]),
+                        db.conversations.create_index([("user_id", 1), ("status", 1)]),
+                        # Messages - thread loading
+                        db.messages.create_index([("conversation_id", 1), ("timestamp", -1)]),
+                        # Contact events & photos
+                        db.contact_photos.create_index("contact_id", unique=True),
+                        db.contact_events.create_index([("user_id", 1), ("timestamp", -1)]),
+                        db.contact_events.create_index([("contact_id", 1), ("timestamp", -1)]),
+                        db.contact_facts.create_index("fingerprint", unique=True),
+                        db.contact_facts.create_index([("contact_id", 1), ("status", 1), ("layer", 1)]),
+                        db.contact_facts.create_index([("contact_id", 1), ("key", 1), ("occurred_at", -1)]),
+                        db.contact_fact_events.create_index([("fact_id", 1), ("at", 1)]),
+                        db.contact_events.create_index([("contact_id", 1), ("event_type", 1)]),
+                        # Link pages — was missing, caused 60s timeout on full collection scan
+                        db.link_pages.create_index("user_id", unique=True, sparse=True),
+                        db.link_pages.create_index("username", sparse=True),
+                        # Campaign system
+                        db.campaign_enrollments.create_index([("campaign_id", 1), ("contact_id", 1), ("status", 1)]),
+                        db.campaign_enrollments.create_index([("user_id", 1), ("status", 1)]),
+                        db.campaign_enrollments.create_index([("contact_id", 1)]),
+                        db.campaign_enrollments.create_index([("user_id", 1), ("status", 1), ("next_send_at", 1)]),
+                        db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1)]),
+                        # Compound index for catchup query: (user_id, status, send_at) — prevents collection scan
+                        db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1), ("send_at", 1)]),
+                        db.campaign_pending_sends.create_index([("campaign_id", 1), ("contact_id", 1), ("step", 1), ("status", 1)]),
+                        # Tasks
+                        db.tasks.create_index([("user_id", 1), ("status", 1), ("due_date", 1)]),
+                        db.tasks.create_index("idempotency_key", unique=True, partialFilterExpression={"idempotency_key": {"$type": "string"}}),
+                        # Date triggers & notifications
+                        db.date_trigger_configs.create_index([("user_id", 1), ("trigger_type", 1)]),
+                        db.notifications.create_index([("user_id", 1), ("read", 1), ("created_at", -1)]),
+                        # Tags
+                        db.tags.create_index([("user_id", 1)]),
+                        # Short URL click dedup index
+                        db.short_url_clicks.create_index([("short_code", 1), ("ip", 1), ("clicked_at", -1)]),
+                        # Performance: compound indexes for contact page queries
+                        db.campaign_enrollments.create_index([("contact_id", 1), ("user_id", 1), ("status", 1)]),
+                        db.campaign_pending_sends.create_index([("contact_id", 1), ("user_id", 1)]),
+                        # New pre-scheduled queue index — powers the scheduler's primary query
+                        db.campaign_pending_sends.create_index([("status", 1), ("send_at", 1)]),
+                        db.campaign_pending_sends.create_index([("enrollment_id", 1), ("status", 1)]),
+                        db.tasks.create_index([("contact_id", 1), ("user_id", 1), ("type", 1)]),
+                        db.congrats_cards_sent.create_index([("contact_id", 1), ("user_id", 1)]),
+                        db.messages.create_index([("_id", 1)]),  # Ensures batch message lookups are instant
+                        db.contacts.create_index([("user_id", 1), ("phone", 1)]),  # For phone dedup
+                        db.contacts.create_index([("user_id", 1), ("email", 1)]),  # For email dedup
+                        # Login brute-force tracking — TTL auto-cleans stale records after 1 day
+                        db.login_attempts.create_index("updated_at", expireAfterSeconds=86400),
+                        db.photo_upload_chunks.create_index("created_at", expireAfterSeconds=3600),
+                        # last_activity_at — powers "recent" sort without in-memory aggregation
+                        db.contacts.create_index([("user_id", 1), ("last_activity_at", -1)]),
+                        db.contacts.create_index([("user_id", 1), ("last_activity_at", -1), ("status", 1)]),
+                        # Short URLs — user's link listing and cleanup
+                        db.short_urls.create_index([("user_id", 1), ("created_at", -1)]),
+                        db.short_urls.create_index([("short_code", 1)]),
+                        # Notifications — user reads (also has TTL applied separately)
+                        db.notifications.create_index([("user_id", 1), ("created_at", -1)]),
+                        db.notifications.create_index([("idempotency_key", 1)], unique=False, sparse=True),  # Notification dedup
+                        # Congrats cards — tracking and reporting
+                        db.congrats_cards_sent.create_index([("user_id", 1), ("sent_at", -1)]),
+                        db.congrats_cards_sent.create_index([("salesman_id", 1), ("sent_at", -1)]),
+                        # Notification center — compound indexes for all 8 section queries
+                        # Section 6: contact_events by user + timestamp + event_type (was doing full collection scan)
+                        db.contact_events.create_index([("user_id", 1), ("event_type", 1), ("timestamp", -1)]),
+                        # Section 4/5: conversations by participants
+                        db.conversations.create_index([("participants", 1), ("unread", 1), ("updated_at", -1)]),
+                        db.conversations.create_index([("participants", 1), ("flagged", 1), ("updated_at", -1)]),
+                        # Section 8: engagement signals by user + type + date
+                        db.notifications.create_index([("user_id", 1), ("type", 1), ("created_at", -1)]),
+                        # customer_feedback — Review Center queries
+                        db.customer_feedback.create_index([("salesperson_id", 1), ("approved", 1), ("created_at", -1)]),
+                        db.customer_feedback.create_index([("salesperson_id", 1), ("created_at", -1)]),
+                        # ai_reply_queue — scheduler lookup: status + send_at (runs every 60s)
+                        db.ai_reply_queue.create_index([("status", 1), ("send_at", 1)]),
+                        db.ai_reply_queue.create_index([("contact_id", 1), ("status", 1)]),
+                        db.ai_reply_queue.create_index([("assigned_user_id", 1), ("status", 1), ("requires_approval", 1)]),
+                        # Trade appraisal (MVP5): vehicles as relationship records, history, reporting, campaign triggers
+                        db.vehicles.create_index([("contact_id", 1), ("deleted", 1)]),
+                        db.vehicles.create_index([("user_id", 1), ("ownership_status", 1), ("last_appraisal.status", 1), ("last_appraisal.closed_at", 1)]),
+                        db.vehicle_appraisals.create_index([("vehicle_id", 1), ("created_at", -1)]),
+                        db.vehicle_appraisals.create_index([("user_id", 1), ("status", 1), ("updated_at", -1)]),
+                        db.vehicle_appraisals.create_index([("store_id", 1), ("created_at", -1)]),
+                        db.vehicle_appraisals.create_index([("user_id", 1), ("created_at", -1)]),
+                        db.appraisal_decisions.create_index([("appraisal_id", 1), ("decided_at", 1)]),
+                        db.appraisal_events.create_index([("contact_id", 1), ("created_at", -1)]),
+                        db.campaigns.create_index([("trigger_events", 1), ("active", 1)]),
+                        db.tasks.create_index([("appraisal_id", 1), ("task_kind", 1)]),
+                    ), timeout=15)
+                    logger.info("Database indexes created/verified (production-ready)")
 
-                    # short_url_clicks: keep 1 year of click analytics
-                    await db.short_url_clicks.create_index(
-                        [("clicked_at", pymongo.ASCENDING)],
-                        expireAfterSeconds=one_year_secs,
-                        background=True,
-                    )
-                    # notifications: expire after 90 days (users rarely read old ones)
-                    await db.notifications.create_index(
-                        [("created_at", pymongo.ASCENDING)],
-                        expireAfterSeconds=ninety_day_secs,
-                        background=True,
-                    )
-                    # contact_events: archive after 2 years (compliance-safe retention)
-                    await db.contact_events.create_index(
-                        [("timestamp", pymongo.ASCENDING)],
-                        expireAfterSeconds=two_year_secs,
-                        background=True,
-                    )
-                    logger.info("TTL indexes created — data auto-expires to prevent unbounded growth")
-                except Exception as ttl_err:
-                    logger.warning(f"TTL index creation failed (non-critical): {ttl_err}")
+                    # TTL indexes — run separately so a failure doesn't block all indexes
+                    # These auto-expire old data to prevent unbounded collection growth
+                    try:
+                        import pymongo
+                        one_year_secs   = 365 * 24 * 3600
+                        two_year_secs   = 2 * one_year_secs
+                        ninety_day_secs = 90 * 24 * 3600
 
-                # Unique index on inbound_message_dedup.message_sid — enables atomic Twilio retry dedup
-                try:
-                    await db.inbound_message_dedup.create_index(
-                        "message_sid", unique=True, background=True
-                    )
-                    await db.inbound_message_dedup.create_index(
-                        "created_at",
-                        expireAfterSeconds=3600,  # Auto-clean dedup records after 1 hour
-                        background=True,
-                    )
-                    logger.info("inbound_message_dedup index created — Twilio retry dedup active")
-                except Exception as dedup_idx_err:
-                    logger.warning(f"inbound_message_dedup index skipped: {dedup_idx_err}")
-            except asyncio.TimeoutError:
-                logger.warning("Index creation timed out - will retry on first request")
-    except Exception as e:
-        logger.warning(f"Index creation skipped: {e}")
-    
+                        # short_url_clicks: keep 1 year of click analytics
+                        await db.short_url_clicks.create_index(
+                            [("clicked_at", pymongo.ASCENDING)],
+                            expireAfterSeconds=one_year_secs,
+                            background=True,
+                        )
+                        # notifications: expire after 90 days (users rarely read old ones)
+                        await db.notifications.create_index(
+                            [("created_at", pymongo.ASCENDING)],
+                            expireAfterSeconds=ninety_day_secs,
+                            background=True,
+                        )
+                        # contact_events: archive after 2 years (compliance-safe retention)
+                        await db.contact_events.create_index(
+                            [("timestamp", pymongo.ASCENDING)],
+                            expireAfterSeconds=two_year_secs,
+                            background=True,
+                        )
+                        logger.info("TTL indexes created — data auto-expires to prevent unbounded growth")
+                    except Exception as ttl_err:
+                        logger.warning(f"TTL index creation failed (non-critical): {ttl_err}")
+
+                    # Unique index on inbound_message_dedup.message_sid — enables atomic Twilio retry dedup
+                    try:
+                        await db.inbound_message_dedup.create_index(
+                            "message_sid", unique=True, background=True
+                        )
+                        await db.inbound_message_dedup.create_index(
+                            "created_at",
+                            expireAfterSeconds=3600,  # Auto-clean dedup records after 1 hour
+                            background=True,
+                        )
+                        logger.info("inbound_message_dedup index created — Twilio retry dedup active")
+                    except Exception as dedup_idx_err:
+                        logger.warning(f"inbound_message_dedup index skipped: {dedup_idx_err}")
+                except asyncio.TimeoutError:
+                    logger.warning("Index creation timed out - will retry on first request")
+        except Exception as e:
+            logger.warning(f"Index creation skipped: {e}")
+    asyncio.create_task(run_once("db_housekeeping", _db_housekeeping))
+
     # PRD/Ops Manual/App Scope now sync from /app/docs via routers.docs.sync_repo_docs()
     # (the old raw PRD.md sync lives on as the "PRD Working Log" doc — see REPO_DOC_SOURCES)
 
-    # ── Auto-assign Twilio phone number to the primary admin on every deploy ──
-    # Uses ADMIN_EMAIL env var if set, otherwise falls back to first super_admin.
-    # Idempotent — safe to run every startup. Will NOT overwrite an existing number.
-    try:
-        twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER", "").strip()
-        if twilio_phone:
-            # Try ADMIN_EMAIL first for precision
-            admin_email = os.environ.get("ADMIN_EMAIL", "").strip()
-            admin_user = None
-            if admin_email:
-                admin_user = await db.users.find_one({"email": admin_email}, {"_id": 1, "name": 1, "twilio_number": 1, "mvpline_number": 1})
-            # Fallback: super_admin with most recent login or highest _id
-            if not admin_user:
-                admin_user = await db.users.find_one(
-                    {"role": "super_admin"},
-                    {"_id": 1, "name": 1, "twilio_number": 1, "mvpline_number": 1},
-                    sort=[("created_at", 1)]  # Oldest = primary admin
-                )
-            if admin_user:
-                existing_number = admin_user.get("twilio_number") or admin_user.get("mvpline_number")
-                if existing_number and existing_number != twilio_phone:
-                    # User already has a number assigned — do NOT overwrite it
-                    logger.info(f"[Startup] Skipping auto-assign: {admin_user.get('name')} already has {existing_number} (env has {twilio_phone})")
-                else:
-                    await db.users.update_one(
-                        {"_id": admin_user["_id"]},
-                        {"$set": {
-                            "mvpline_number": twilio_phone,
-                            "twilio_number":  twilio_phone,
-                        }}
+    async def _assign_admin_number():
+        # ── Auto-assign Twilio phone number to the primary admin on every deploy ──
+        # Uses ADMIN_EMAIL env var if set, otherwise falls back to first super_admin.
+        # Idempotent — safe to run every startup. Will NOT overwrite an existing number.
+        db = get_db()
+        try:
+            twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER", "").strip()
+            if twilio_phone:
+                # Try ADMIN_EMAIL first for precision
+                admin_email = os.environ.get("ADMIN_EMAIL", "").strip()
+                admin_user = None
+                if admin_email:
+                    admin_user = await db.users.find_one({"email": admin_email}, {"_id": 1, "name": 1, "twilio_number": 1, "mvpline_number": 1})
+                # Fallback: super_admin with most recent login or highest _id
+                if not admin_user:
+                    admin_user = await db.users.find_one(
+                        {"role": "super_admin"},
+                        {"_id": 1, "name": 1, "twilio_number": 1, "mvpline_number": 1},
+                        sort=[("created_at", 1)]  # Oldest = primary admin
                     )
-                    logger.info(f"[Startup] Twilio number {twilio_phone} auto-assigned to {admin_user.get('name','admin')}")
-    except Exception as e:
-        logger.warning(f"[Startup] Twilio number auto-assign skipped: {e}")
+                if admin_user:
+                    existing_number = admin_user.get("twilio_number") or admin_user.get("mvpline_number")
+                    if existing_number and existing_number != twilio_phone:
+                        # User already has a number assigned — do NOT overwrite it
+                        logger.info(f"[Startup] Skipping auto-assign: {admin_user.get('name')} already has {existing_number} (env has {twilio_phone})")
+                    else:
+                        await db.users.update_one(
+                            {"_id": admin_user["_id"]},
+                            {"$set": {
+                                "mvpline_number": twilio_phone,
+                                "twilio_number":  twilio_phone,
+                            }}
+                        )
+                        logger.info(f"[Startup] Twilio number {twilio_phone} auto-assigned to {admin_user.get('name','admin')}")
+        except Exception as e:
+            logger.warning(f"[Startup] Twilio number auto-assign skipped: {e}")
+    asyncio.create_task(run_once("assign_admin_number", _assign_admin_number))
 
     # ── Auto-fix Twilio webhook URLs on every deploy ───────────────────────────
     # Ensures all purchased numbers point to THIS app's inbound endpoint.
@@ -2247,7 +2260,7 @@ async def startup_event():
             logger.warning(f"[Startup] Twilio webhook auto-fix skipped: {e}")
 
     import asyncio as _aio
-    _aio.create_task(_fix_twilio_webhooks())
+    _aio.create_task(run_once("fix_twilio_webhooks", _fix_twilio_webhooks))
 
     # Start the background campaign scheduler
     try:
@@ -2257,29 +2270,31 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Scheduler start failed (non-fatal): {e}")
 
-    # One-time migration: upgrade any existing campaigns with delivery_mode="manual"
-    # to delivery_mode="auto" so they actually fire.
-    # Safe to run every startup — only updates campaigns that still have the old value.
-    try:
-        db = get_db()
-        result = await db.campaigns.update_many(
-            {"delivery_mode": {"$in": ["manual", None, ""]}},
-            {"$set": {"delivery_mode": "auto"}}
-        )
-        if result.modified_count > 0:
-            logger.info(f"[Migration] Upgraded {result.modified_count} campaign(s) from manual → auto delivery_mode")
-        # Cancel all old stuck pending_sends rather than releasing them.
-        # These were created before the delivery_mode bug was fixed — releasing them
-        # would flood customers with out-of-sequence messages from months ago.
-        # New enrollments from today forward will create fresh pending_sends with delivery_mode="auto".
-        sends_result = await db.campaign_pending_sends.update_many(
-            {"delivery_mode": {"$in": ["manual", None, ""]}, "status": {"$in": ["pending_user_action", "pending"]}},
-            {"$set": {"status": "cancelled", "cancelled_reason": "pre-fix manual delivery_mode — cancelled on deploy"}}
-        )
-        if sends_result.modified_count > 0:
-            logger.info(f"[Migration] Cancelled {sends_result.modified_count} old stuck pending_sends (pre-fix). New enrollments will work correctly.")
-    except Exception as e:
-        logger.warning(f"Campaign delivery_mode migration failed (non-fatal): {e}")
+    async def _campaign_delivery_mode_migration():
+        # One-time migration: upgrade any existing campaigns with delivery_mode="manual"
+        # to delivery_mode="auto" so they actually fire.
+        # Safe to run every startup — only updates campaigns that still have the old value.
+        try:
+            db = get_db()
+            result = await db.campaigns.update_many(
+                {"delivery_mode": {"$in": ["manual", None, ""]}},
+                {"$set": {"delivery_mode": "auto"}}
+            )
+            if result.modified_count > 0:
+                logger.info(f"[Migration] Upgraded {result.modified_count} campaign(s) from manual → auto delivery_mode")
+            # Cancel all old stuck pending_sends rather than releasing them.
+            # These were created before the delivery_mode bug was fixed — releasing them
+            # would flood customers with out-of-sequence messages from months ago.
+            # New enrollments from today forward will create fresh pending_sends with delivery_mode="auto".
+            sends_result = await db.campaign_pending_sends.update_many(
+                {"delivery_mode": {"$in": ["manual", None, ""]}, "status": {"$in": ["pending_user_action", "pending"]}},
+                {"$set": {"status": "cancelled", "cancelled_reason": "pre-fix manual delivery_mode — cancelled on deploy"}}
+            )
+            if sends_result.modified_count > 0:
+                logger.info(f"[Migration] Cancelled {sends_result.modified_count} old stuck pending_sends (pre-fix). New enrollments will work correctly.")
+        except Exception as e:
+            logger.warning(f"Campaign delivery_mode migration failed (non-fatal): {e}")
+    asyncio.create_task(run_once("campaign_delivery_mode_migration", _campaign_delivery_mode_migration))
 
     logger.info("I'm On Social API v2.0 started")
 
