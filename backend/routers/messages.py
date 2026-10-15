@@ -15,6 +15,7 @@ from utils.contact_activity import log_contact_event
 import asyncio
 
 from models import Message, MessageCreate
+from pydantic import BaseModel
 from routers.database import get_db, get_data_filter, increment_user_stat
 from services.tag_workflows import initial_ai_state
 from services.twilio_signature import require_signed_callback
@@ -454,8 +455,8 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     if (message_data.channel or 'sms') == 'sms' and to_phone:
         await _preflight(user_id, to_phone, message_data.purpose, contact_id, conversation=conv)
     elif message_data.channel == 'sms_personal' and to_phone:
-        from services.outbound_gate import stop_or_raise
-        await stop_or_raise(get_db(), to_phone=to_phone, user_id=user_id, contact_id=str(contact_id or "") or None)
+        from services import native_handoff  # the team member's own phone sends: same authorization as the native Messages handoff
+        await native_handoff.authorize(get_db(), user_id, phone=to_phone, contact_id=str(contact_id or "") or None, purpose=message_data.purpose)
     
     # Create message record
     message = {
@@ -937,6 +938,26 @@ async def message_resend_text(message_id: str, request: Request):
     await db.messages.update_one({"_id": m["_id"]}, {"$set": {"resent_as": str(r.inserted_id)}})
     await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"last_message_at": now, "updated_at": now}})
     return {"success": True, "message_id": str(r.inserted_id), "message_sid": result.get("message_sid"), "body": body}
+
+
+class NativeAuthorizeBody(BaseModel):
+    phone: Optional[str] = None
+    contact_id: Optional[str] = None
+    purpose: Optional[str] = None
+    system_kind: Optional[str] = None
+    pending_send_id: Optional[str] = None
+
+
+@router.post("/native-authorize")
+async def native_authorize(body: NativeAuthorizeBody, request: Request):
+    """Every path that opens the phone's Messages app asks here first (services/native_handoff.py); 409 = refused, nothing opens."""
+    from services import native_handoff
+    caller = getattr(request.state, "caller_id", None)
+    if not caller:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    doc = await native_handoff.authorize(get_db(), caller, phone=body.phone, contact_id=body.contact_id, purpose=body.purpose,
+                                         system_kind=body.system_kind, pending_send_id=body.pending_send_id)
+    return native_handoff.public(doc)
 
 
 @router.post("/twilio-send")
@@ -2325,8 +2346,8 @@ async def send_message_simple(user_id: str, message_data: dict):
     if channel == 'sms' and to_phone:
         await _preflight(user_id, to_phone, message_data.get('purpose'), resolved_contact_id, from_phone=await _rep_number(db, user_id))
     elif channel == 'sms_personal' and to_phone:
-        from services.outbound_gate import stop_or_raise
-        await stop_or_raise(db, to_phone=to_phone, user_id=user_id, contact_id=str(resolved_contact_id or "") or None)
+        from services import native_handoff
+        await native_handoff.authorize(db, user_id, phone=to_phone, contact_id=str(resolved_contact_id or "") or None, purpose=message_data.get('purpose'))
     
     # Create message
     message = {

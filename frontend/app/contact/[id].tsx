@@ -32,6 +32,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI, campaignsAPI, tagsAPI, messagesAPI, intelAPI } from '../../services/api';
 import { useContactSearch } from '../../hooks/useContactSearch';
 import api from '../../services/api';
+import { authorizeNativeMessages, openNativeMessages } from '../../services/nativeMessages';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
 import VoiceInput from '../../components/VoiceInput';
@@ -1437,16 +1438,7 @@ function ContactDetailScreen() {
       }
       // Build MMS SMS URL — includes image URL in the body so it shows as rich card
       const body = image_url ? `${image_url}\n\n${sms_text}` : sms_text;
-      const smsUrl = Platform.OS === 'ios'
-        ? `sms:${phone}&body=${encodeURIComponent(body)}`
-        : `sms:${phone}?body=${encodeURIComponent(body)}`;
-      const canOpen = await Linking.canOpenURL(smsUrl);
-      if (canOpen) {
-        await Linking.openURL(smsUrl);
-      } else if (typeof window !== 'undefined') {
-        await Clipboard.setStringAsync(body);
-        showSimpleAlert('Copied', 'Review card message copied to clipboard.');
-      }
+      await openNativeMessages({ phone, contactId: id as string }, body);
     } catch (e: any) {
       showSimpleAlert('Error', e?.response?.data?.detail || 'Could not generate review card.');
     } finally {
@@ -1610,6 +1602,7 @@ function ContactDetailScreen() {
               eventType:   composerEventType || (mediaUrls.length > 0 ? 'mms_sent' : 'personal_sms'),
               platform:    Platform.OS,
               mediaUrls,   // ← native photo, not a URL in text
+              nativeFallback: false,  // a failed business-number send continues below, through the Messages authorization
             });
             if (result.refused) {
               showToast(result.message || 'This text was not sent.', 'error');
@@ -1626,7 +1619,12 @@ function ContactDetailScreen() {
           }
         }
 
-        // No Twilio number (or fallback): log first; only a compliance refusal (STOP) stops the phone's messaging app, other logging failures never do
+        // The phone's Messages app: the server authorizes this contact and number first and fails closed; nothing is logged or opened otherwise
+        const auth = await authorizeNativeMessages([{ phone: contact.phone || undefined, contactId: id as string }]);
+        if (!auth.ok) return;
+        const authorizedPhone = auth.phones[0];
+
+        // Log next; only a compliance refusal (STOP) stops the phone's messaging app, other logging failures never do
         try {
           await messagesAPI.send(user._id, sendPayload);
         } catch (logErr: any) {
@@ -1649,9 +1647,9 @@ function ContactDetailScreen() {
         if (userChannels.length === 1) {
           // Single channel — open directly from this click handler (user gesture context)
           const ch = userChannels[0];
-          const phone_clean = (contact.phone || '').replace(/\D/g, '');
+          const phone_clean = authorizedPhone.replace(/\D/g, '');
           let url = ch.url_scheme
-            .replace('{phone}', encodeURIComponent(contact.phone || ''))
+            .replace('{phone}', encodeURIComponent(authorizedPhone))
             .replace('{phone_clean}', phone_clean)
             .replace('{message}', encodeURIComponent(messageContent))
             .replace('{email}', encodeURIComponent(contact.email || ''));
@@ -1678,8 +1676,10 @@ function ContactDetailScreen() {
           // Multiple channels — show the picker modal
           channelPicker.open({
             message: messageContent,
-            phone: contact.phone || '',
+            phone: authorizedPhone,
             email: contact.email || '',
+            contactId: id as string,
+            preauthorized: true,
             onSent: (ch) => {
               showToast(`Message logged & opened in ${ch === 'clipboard' ? 'clipboard' : ch}!`);
               api.patch(`/contacts/${user._id}/${id}/events/latest-channel`, { channel: ch }).catch(() => {});
@@ -3122,6 +3122,9 @@ function ContactDetailScreen() {
         phone={channelPicker.phone}
         email={channelPicker.email}
         link={channelPicker.link}
+        contactId={channelPicker.contactId}
+        purpose={channelPicker.purpose}
+        preauthorized={channelPicker.preauthorized}
         onSent={channelPicker.onSent}
         visible={channelPicker.visible}
         onClose={channelPicker.close}

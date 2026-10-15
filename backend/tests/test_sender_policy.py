@@ -179,13 +179,33 @@ def test_resolver_unknown_number_fails_closed(world):
     assert (r["allowed"], r["code"]) == (False, "unknown_sender")
 
 
-def test_resolver_internal_owner_org_unchanged():
+def test_resolver_internal_owner_org_unchanged(monkeypatch):
+    """Synthetic owner organization (preview has no OWNER_EMAIL account): the owner's org is internal for texting and is never
+    subscription-locked, even with a canceled subscription on file."""
+    from services import billing_lock
     db = adb()
-    owner = run(db.users.find_one({"email": (os.environ.get("OWNER_EMAIL") or "").lower()}, {"organization_id": 1}))
-    if not owner or not owner.get("organization_id"):
-        pytest.skip("OWNER_EMAIL user has no organization in this database")
-    r = run(sp.check(db, from_phone=None, user_id=str(owner["_id"])))
-    assert (r["allowed"], r["code"], r["dealership"]) == (True, "internal", False)
+    tag = secrets.token_hex(3)
+    org = {"_id": ObjectId(), "name": f"QA Owner Org {tag}", "customer": {"stripe_subscription_id": "sub_qa_owner_fake", "subscription_status": "canceled",
+                                                                        "current_period_end": "2020-01-01T00:00:00+00:00"}}
+    owner = {"_id": ObjectId(), "email": f"qa-owner-{tag}@invalid.imonsocial.test", "organization_id": str(org["_id"]), "role": "super_admin",
+             "created_at": datetime.now(timezone.utc)}
+    run(db.organizations.insert_one(org))
+    run(db.users.insert_one(owner))
+    monkeypatch.setenv("OWNER_EMAIL", owner["email"])
+    sp._internal_cache.clear()
+    billing_lock.invalidate()
+    try:
+        assert str(org["_id"]) in run(sp.internal_org_ids(db))
+        r = run(sp.check(db, from_phone=None, user_id=str(owner["_id"])))
+        assert (r["allowed"], r["code"], r["dealership"]) == (True, "internal", False)
+        st = run(billing_lock.org_state(db, str(org["_id"])))
+        assert (st["locked"], st["state"]) == (False, "internal")
+        assert billing_lock.evaluate(org)["locked"]  # the same subscription on a customer org would lock
+    finally:
+        run(db.users.delete_one({"_id": owner["_id"]}))
+        run(db.organizations.delete_one({"_id": org["_id"]}))
+        sp._internal_cache.clear()
+        billing_lock.invalidate()
 
 
 def test_resolver_platform_notification_to_dealership_user(world):

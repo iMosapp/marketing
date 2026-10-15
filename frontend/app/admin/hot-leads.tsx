@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../services/api';
+import { authorizeNativeMessages, openAuthorizedMessages } from '../../services/nativeMessages';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
@@ -173,6 +174,8 @@ export default function HotLeadsPage() {
                         style={styles.quickText}
                         onPress={async (e) => {
                           e.stopPropagation?.();
+                          const auth = await authorizeNativeMessages([{ phone: lead.phone, contactId: lead.contact_id || undefined }]);
+                          if (!auth.ok) return;
                           // Log SMS event before opening native SMS
                           if (user?._id && lead.contact_id) {
                             try {
@@ -183,7 +186,7 @@ export default function HotLeadsPage() {
                               });
                             } catch {}
                           }
-                          Linking.openURL(`sms:${lead.phone}`);
+                          await openAuthorizedMessages(auth.phones);
                         }}
                         {...tid(`quick-text-${i}`)}
                       >

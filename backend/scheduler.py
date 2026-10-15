@@ -1252,6 +1252,7 @@ async def process_pending_campaign_steps():
 
                     # Send SMS/MMS via Twilio: the shared inbox number when the customer lives in a "stay" inbox, else the rep's number
                     twilio_failed = False
+                    unknown_outcome = False  # the provider may have accepted it: never retried, waits for reconciliation
                     twilio_error = ""
                     from services.inboxes import resolve_from_number as _resolve_from
                     rep_number = await _resolve_from(db, user_id, contact_id=str(contact_id))
@@ -1272,7 +1273,8 @@ async def process_pending_campaign_steps():
                                 logger.info(f"[Scheduler] Paused send {send_id}: organization billing is locked")
                                 continue
                             if sms_result.get("blocked") or sms_result.get("duplicate"):
-                                await db.campaign_pending_sends.update_one({"_id": send_id}, {"$set": {"status": "skipped", "skip_reason": sms_result.get("error_code") or "refused", "processed_at": now_naive}})
+                                reason = f"duplicate:{sms_result.get('ledger_status')}" if sms_result.get("duplicate") else (sms_result.get("error_code") or "refused")
+                                await db.campaign_pending_sends.update_one({"_id": send_id}, {"$set": {"status": "skipped", "skip_reason": reason, "processed_at": now_naive}})
                                 if send_doc.get("broadcast_id"):
                                     await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=False, skipped=True)
                                 logger.info(f"[Scheduler] Skipped send {send_id}: {sms_result.get('error_code')}")
@@ -1281,6 +1283,7 @@ async def process_pending_campaign_steps():
                             if not sms_result.get("success"):
                                 twilio_failed = True
                                 twilio_error = str(sms_result.get("error", "Twilio send failed"))
+                                unknown_outcome = sms_result.get("outcome") == "unknown"
                                 logger.error(f"[Scheduler] Campaign SMS failed for step {current_step}: {twilio_error}")
                             else:
                                 sms_sid = sms_result.get("message_sid") or sms_result.get("sid")
@@ -1294,7 +1297,7 @@ async def process_pending_campaign_steps():
                     if twilio_failed:
                         await db.campaign_pending_sends.update_one(
                             {"_id": send_id},
-                            {"$set": {"status": "failed", "error": twilio_error, "processed_at": now_naive}}
+                            {"$set": {"status": "unknown_outcome" if unknown_outcome else "failed", "error": twilio_error, "processed_at": now_naive}}
                         )
                         if send_doc.get("broadcast_id"):
                             await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=True)

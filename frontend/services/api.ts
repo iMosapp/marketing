@@ -1163,8 +1163,9 @@ export async function smartSendSMS(params: {
   eventType?: string;
   platform: string;        // Platform.OS
   mediaUrls?: string[];    // optional MMS photo attachments
-}): Promise<{ sent: boolean; usedTwilio: boolean; mock?: boolean; refused?: string; message?: string }> {
-  const { to, body, userId, twilioNumber, contactId, eventType, platform, mediaUrls } = params;
+  nativeFallback?: boolean; // false: the caller opens Messages itself after a failed business-number send
+}): Promise<{ sent: boolean; usedTwilio: boolean; mock?: boolean; refused?: string; message?: string; blocked?: boolean }> {
+  const { to, body, userId, twilioNumber, contactId, eventType, mediaUrls, nativeFallback = true } = params;
   const phone = to.replace(/\D/g, '');
   const e164  = phone.length === 10 ? `+1${phone}` : `+${phone}`;
 
@@ -1187,23 +1188,13 @@ export async function smartSendSMS(params: {
     } catch (err: any) {
       // A compliance refusal (no consent, STOP, paused texting) must never be routed around through the phone's own SMS app
       if (err?.compliance) return { sent: false, usedTwilio: true, refused: err.compliance, message: err.complianceMessage };
-      // If Twilio fails, fall through to native SMS so message still goes
-      console.warn('[smartSendSMS] Twilio failed, falling back to native:', err);
+      console.warn('[smartSendSMS] Twilio failed:', err);
+      if (!nativeFallback) return { sent: false, usedTwilio: false };
     }
   }
 
-  // No Twilio number (or Twilio failed) → open native SMS app
-  const smsUrl = platform === 'ios'
-    ? `sms:${e164}&body=${encodeURIComponent(body)}`
-    : `sms:${e164}?body=${encodeURIComponent(body)}`;
-
-  if (typeof window !== 'undefined' && window.location) {
-    window.location.href = smsUrl;
-  } else {
-    const { Linking } = require('react-native');
-    const canOpen = await Linking.canOpenURL(smsUrl);
-    if (canOpen) await Linking.openURL(smsUrl);
-  }
-
-  return { sent: true, usedTwilio: false };
+  // No Twilio number (or Twilio failed) → the phone's Messages app, only after the server authorizes this recipient
+  const { openNativeMessages } = await import('./nativeMessages');
+  const opened = await openNativeMessages({ phone: e164, contactId }, body);
+  return opened ? { sent: true, usedTwilio: false } : { sent: false, usedTwilio: false, blocked: true };
 }

@@ -61,8 +61,9 @@ async def _recipient_ok(db, kind: str, phone: str, org_id: Optional[str]) -> boo
 
 
 async def evaluate(db, *, to_phone: str, from_phone: Optional[str], purpose: Optional[str], system_kind: Optional[str] = None,
-                   user_id: Optional[str] = None, org_id: Optional[str] = None, contact_id: Optional[str] = None) -> dict:
-    """{allowed, code, reason, shadow, org_id, user_id, location_id, purpose, basis, needs, policy}"""
+                   user_id: Optional[str] = None, org_id: Optional[str] = None, contact_id: Optional[str] = None, native: bool = False) -> dict:
+    """{allowed, code, reason, shadow, org_id, user_id, location_id, purpose, basis, needs, policy}.
+    native=True: the team member's own phone sends (services/native_handoff.py): every rule applies except sender registration."""
     from services import billing_lock, consent, sender_policy, suppression
     purpose = purpose or "conversational"
     if purpose not in PURPOSES:
@@ -86,7 +87,7 @@ async def evaluate(db, *, to_phone: str, from_phone: Optional[str], purpose: Opt
         lock = await billing_lock.org_state(db, org)
         if lock["locked"]:
             return block("billing_locked")
-    platform_sender = platform and not from_phone
+    platform_sender = platform and not from_phone and not native
     hit = await suppression.active(db, to_phone, None if platform_sender else org, platform=platform_sender)
     if hit:
         return block("opted_out", suppression=hit)
@@ -105,7 +106,9 @@ async def evaluate(db, *, to_phone: str, from_phone: Optional[str], purpose: Opt
             if consent_mode() == "enforce":
                 return block(code, needs=el["needs"])
             out["shadow"].append(code)
-    if not pol["allowed"]:
+    if native:
+        out["sender"] = "not_applicable_native"
+    elif not pol["allowed"]:
         if sender_mode() == "enforce":
             return block(pol["code"], pol["reason"])
         out["shadow"].append(pol["code"])
@@ -145,18 +148,3 @@ async def preflight_or_raise(db, *, to_phone: str, from_phone: Optional[str], pu
     return d
 
 
-
-async def stop_or_raise(db, *, to_phone: str, user_id: str, contact_id: Optional[str] = None) -> None:
-    """A text the team member sends from their own phone (sms_personal) never reaches the provider, so consent and sender rules
-    do not apply; a STOP still does: refuse before the app logs it or opens the phone's messaging app."""
-    from fastapi import HTTPException
-    from services import sender_policy, suppression
-    from services.twilio_service import normalize_phone
-    phone = normalize_phone(to_phone)
-    pol = await sender_policy.check(db, from_phone=None, user_id=user_id, org_id=None, platform=False)
-    hit = await suppression.active(db, phone, pol.get("org_id"))
-    if not hit and contact_id and ObjectId.is_valid(str(contact_id)):
-        hit = await db.contacts.find_one({"_id": ObjectId(str(contact_id)), "$or": [{"opted_out": True}, {"sms_opt_out": True}]}, {"_id": 1})
-    if hit:
-        raise HTTPException(status_code=409, detail={"code": "opted_out", "message": REASONS["opted_out"], "needs": [], "purpose": "conversational",
-                                                     "contact_id": contact_id, "phone": phone})

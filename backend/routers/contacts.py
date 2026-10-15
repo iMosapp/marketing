@@ -1,7 +1,7 @@
 """
 Contacts router - handles contact CRUD operations
 """
-from fastapi import APIRouter, HTTPException, Body, UploadFile, File, Form, Request
+from fastapi import APIRouter, HTTPException, Body, UploadFile, File, Form, Request, Depends
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
@@ -12,7 +12,8 @@ from pydantic import BaseModel
 from routers.database import get_db, get_data_filter, get_user_by_id, get_accessible_user_ids, increment_user_stat
 from services import memo_nudge
 
-router = APIRouter(prefix="/contacts", tags=["Contacts"])
+from services.route_guard import require_real_owner  # contact writes: real, authorized {user_id} only
+router = APIRouter(prefix="/contacts", tags=["Contacts"], dependencies=[Depends(require_real_owner)])
 logger = logging.getLogger(__name__)
 
 

@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api, { smartSendSMS } from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
+import { authorizeNativeMessages, openAuthorizedMessages } from '../../services/nativeMessages';
 import { FirstWinCelebration } from '../../components/onboarding-jessi/FirstWinCelebration';
 
 const IS_WEB = Platform.OS === 'web';
@@ -227,24 +228,6 @@ export default function QuickSendPage() {
     setStep('preview');
   };
 
-  // Open native SMS app with pre-populated message
-  const openNativeSMS = (phoneNum: string, body: string) => {
-    const encodedBody = encodeURIComponent(body);
-    const encodedPhone = encodeURIComponent(phoneNum);
-    if (IS_WEB && typeof window !== 'undefined') {
-      const ua = window.navigator.userAgent.toLowerCase();
-      const isIos = /iphone|ipad|ipod/.test(ua);
-      const sep = isIos ? '&' : '?';
-      const smsUrl = `sms:${encodedPhone}${sep}body=${encodedBody}`;
-      window.location.href = smsUrl;
-    } else {
-      const smsUrl = Platform.OS === 'ios'
-        ? `sms:${encodedPhone}&body=${encodedBody}`
-        : `sms:${encodedPhone}?body=${encodedBody}`;
-      Linking.openURL(smsUrl);
-    }
-  };
-
   // Where to go once the send is done; a Jessi-onboarded rep's FIRST digital card gets confetti first (backend decides, once)
   const finishSend = async (contactId: string, delayMs: number) => {
     const go = () => { if (contactId) router.replace(`/contact/${contactId}` as any); else router.back(); };
@@ -346,6 +329,14 @@ export default function QuickSendPage() {
         finishSend(contactId, 2000);
 
       } else if (sendMethod === 'sms') {
+        // Without a business number the phone's Messages app sends: the server authorizes the recipient before anything is logged
+        const repTwilioNumber = (user as any)?.twilio_number || (user as any)?.mvpline_number;
+        let nativePhones: string[] | null = null;
+        if (!repTwilioNumber) {
+          const auth = await authorizeNativeMessages([{ phone, contactId: contactId || undefined }]);
+          if (!auth.ok) throw new Error(`Messages handoff not authorized: ${auth.reason}`);
+          nativePhones = auth.phones;
+        }
         // Log the event server-side first
         if (contactId) {
           await api.post(`/contacts/${userId}/${contactId}/events`, {
@@ -360,7 +351,6 @@ export default function QuickSendPage() {
         }
 
         // Try Twilio first (dedicated business number) — fall back to native SMS only if needed
-        const repTwilioNumber = (user as any)?.twilio_number || (user as any)?.mvpline_number;
         let sentViaTwilio = false;
         let refused = '';
         if (repTwilioNumber && phone) {
@@ -373,6 +363,7 @@ export default function QuickSendPage() {
               contactId:   contactId,
               eventType:   config.eventType,
               platform:    Platform.OS,
+              nativeFallback: false,
             });
             sentViaTwilio = result.usedTwilio;
             if (result.refused) { refused = result.refused; showSimpleAlert('Text not sent', result.message || 'This text was not sent.'); }
@@ -381,8 +372,13 @@ export default function QuickSendPage() {
         if (refused) throw new Error(`Text refused: ${refused}`);
 
         if (!sentViaTwilio) {
-          // No Twilio number or send failed — open native SMS as fallback
-          openNativeSMS(phone, finalMessage);
+          // No Twilio number or send failed: the phone's Messages app, with the server-authorized number only
+          if (!nativePhones) {
+            const auth = await authorizeNativeMessages([{ phone, contactId: contactId || undefined }]);
+            if (!auth.ok) throw new Error(`Messages handoff not authorized: ${auth.reason}`);
+            nativePhones = auth.phones;
+          }
+          await openAuthorizedMessages(nativePhones, finalMessage);
         }
 
         setTimeout(() => {

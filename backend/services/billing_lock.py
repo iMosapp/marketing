@@ -128,11 +128,45 @@ def invalidate() -> None:
     _cache.clear()
 
 
+def account_class(org: dict, internal_ids: set) -> str:
+    """Explicit access class: internal | pilot | exception | subscribed | legacy (classified, review date) | unclassified (no decision yet)."""
+    c = org.get("customer") or {}
+    if org.get("internal") or str(org.get("_id")) in internal_ids:
+        return "internal"
+    if c.get("billing_status") in ("pilot", "exception"):
+        return c["billing_status"]
+    if c.get("stripe_subscription_id"):
+        return "subscribed"
+    return "legacy" if org.get("billing_legacy") else "unclassified"
+
+
+async def classification_report(db) -> dict:
+    """Read-only: every organization's class, access state and review / expiry dates, plus who is locked right now."""
+    from services.sender_policy import internal_org_ids
+    internal = await internal_org_ids(db)
+    rows = []
+    async for o in db.organizations.find({}, {"name": 1, "customer": 1, "billing_legacy": 1, "internal": 1}).limit(5000):
+        st = evaluate(o, internal=str(o["_id"]) in internal)
+        c, leg = o.get("customer") or {}, o.get("billing_legacy") or {}
+        rows.append({"id": str(o["_id"]), "name": o.get("name"), "class": account_class(o, internal), "locked": st["locked"], "state": st["state"],
+                     "reason": st.get("reason"), "billing_status": c.get("billing_status"), "subscription_status": c.get("subscription_status"),
+                     "period_end": st.get("period_end"), "grace_until": st.get("grace_until"), "review_by": leg.get("review_by"),
+                     "expires_at": leg.get("expires_at"), "id_is_objectid": ObjectId.is_valid(str(o["_id"])) and len(str(o["_id"])) == 24})
+    counts: dict = {}
+    for r in rows:
+        counts[r["class"]] = counts.get(r["class"], 0) + 1
+    return {"counts": counts, "locked": [r for r in rows if r["locked"]], "organizations": rows}
+
+
 async def classify_legacy(db, actor: dict, apply: bool = False, review_days: int = 90) -> dict:
-    """Organizations without a Stripe subscription become legacy exceptions with a review date (never an expiration: only an admin sets that)."""
+    """Organizations without a Stripe subscription (and not internal, pilot or exception) become legacy accounts with a review date
+    (never an expiration: only an admin sets that, on purpose). Dry run unless apply=True; already-classified accounts are left alone."""
+    from services.sender_policy import internal_org_ids
     now = datetime.now(timezone.utc)
-    q = {"customer.stripe_subscription_id": {"$in": [None, ""]}, "billing_legacy": {"$exists": False}, "internal": {"$ne": True}}
-    rows = await db.organizations.find(q, {"name": 1, "customer.billing_status": 1}).to_list(5000)
+    internal = await internal_org_ids(db)
+    q = {"customer.stripe_subscription_id": {"$in": [None, ""]}, "billing_legacy": {"$exists": False}, "internal": {"$ne": True},
+         "customer.billing_status": {"$nin": ["pilot", "exception"]}}
+    rows = [o for o in await db.organizations.find(q, {"name": 1, "customer.billing_status": 1}).to_list(5000) if str(o["_id"]) not in internal]
     if apply:
         for o in rows:
             await db.organizations.update_one({"_id": o["_id"], "billing_legacy": {"$exists": False}}, {"$set": {"billing_legacy": {

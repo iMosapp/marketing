@@ -23,6 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 import { showSimpleAlert } from '../services/alert';
+import { authorizeNativeMessages, openAuthorizedMessages } from '../services/nativeMessages';
 import { resolveUserPhotoUrlHiRes } from '../utils/photoUrl';
 
 const PROD_BASE = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
@@ -166,9 +167,9 @@ export default function ProfileSetupScreen() {
 
     const smsBody = `Hey ${recipFirst}! It was great connecting with you. Tap here to save my contact info: ${vcfUrl} — and here's my digital card with everything about me: ${cardUrl}`;
 
-    const smsUrl = Platform.OS === 'ios'
-      ? `sms:${phone}&body=${encodeURIComponent(smsBody)}`
-      : `sms:${phone}?body=${encodeURIComponent(smsBody)}`;
+    // The server authorizes this recipient before anything is logged or Messages opens (fails closed)
+    const auth = await authorizeNativeMessages([{ phone }]);
+    if (!auth.ok) return;
 
     // Log it server-side (non-blocking)
     try {
@@ -185,11 +186,7 @@ export default function ProfileSetupScreen() {
     } catch {}
 
     // Open native SMS (the actual send)
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.location.href = smsUrl;
-    } else {
-      Linking.openURL(smsUrl).catch(() => {});
-    }
+    if (!(await openAuthorizedMessages(auth.phones, smsBody))) return;
 
     setCardSent(true);
   };

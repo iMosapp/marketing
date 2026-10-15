@@ -138,6 +138,8 @@ export default function QuoteDetailScreen() {
         twilioNumber: (user as any).twilio_number || (user as any).mvpline_number,
         platform:    Platform.OS,
       });
+      if (result.refused) { showSimpleAlert('Text not sent', result.message || 'This text was not sent.'); return; }
+      if (result.blocked) return;  // the Messages authorization refused or couldn't be checked, and already said why
       if (!result.usedTwilio && !result.sent) {
         await Clipboard.setStringAsync(sms_body);
         showSimpleAlert('Copied', `Message copied to clipboard.`);

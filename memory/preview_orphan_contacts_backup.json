@@ -1,0 +1,46 @@
+{
+ "deleted_at": "2026-10-15T07:32:26.015062+00:00",
+ "reason": "QA orphans created while reproducing the user_id '0' defect (Oct 15 2026, preview only)",
+ "contacts": [
+  {
+   "_id": "6ad07e36c3d0ff424464c3ce",
+   "user_id": "0",
+   "original_user_id": "0",
+   "first_name": "QA Repro",
+   "last_name": "Path0",
+   "phone": "+15005550778",
+   "created_at": "2026-10-15 07:18:14.415000",
+   "source": "manual"
+  },
+  {
+   "_id": "6ad07e36c3d0ff424464c3cf",
+   "user_id": "undefined",
+   "original_user_id": "undefined",
+   "first_name": "QA Repro",
+   "last_name": "Pathundefined",
+   "phone": "+15005550778",
+   "created_at": "2026-10-15 07:18:14.520000",
+   "source": "manual"
+  },
+  {
+   "_id": "6ad07e36c3d0ff424464c3d0",
+   "user_id": "null",
+   "original_user_id": "null",
+   "first_name": "QA Repro",
+   "last_name": "Pathnull",
+   "phone": "+15005550778",
+   "created_at": "2026-10-15 07:18:14.643000",
+   "source": "manual"
+  },
+  {
+   "_id": "6ad07e36c3d0ff424464c3d1",
+   "user_id": "abc",
+   "original_user_id": "abc",
+   "first_name": "QA Repro",
+   "last_name": "Pathabc",
+   "phone": "+15005550778",
+   "created_at": "2026-10-15 07:18:14.747000",
+   "source": "manual"
+  }
+ ]
+}

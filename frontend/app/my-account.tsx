@@ -403,9 +403,9 @@ export default function MyAccountScreen() {
     setTimeout(() => setCopiedReview(false), 2500);
   }
   function handleShareSMS() {
-    const href = `sms:?body=${encodeURIComponent(`Hey! Leave us a review: ${reviewUrl}`)}`;
-    Platform.OS === 'web' ? window.open(href, '_self') : Linking.openURL(href);
+    // Messages never opens without a recipient the server authorized: Quick Send asks who it's for, then checks that number
     setShowShareModal(false);
+    router.push('/quick-send/review' as any);
   }
   function handleShareEmail() {
     const href = `mailto:?subject=We'd love your feedback!&body=${encodeURIComponent(`Hi!\n\nWould you mind leaving us a quick review?\n\n${reviewUrl}\n\nThank you!`)}`;

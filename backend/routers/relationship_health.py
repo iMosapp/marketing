@@ -282,6 +282,10 @@ async def thank_advocate(user_id: str, contact_id: str, body: dict):
     rep_first = (rep.get("first_name") or (rep.get("name") or "").split(" ")[0] or "me").strip()
     first = (c.get("first_name") or "there").strip()
     message = (body.get("message") or "").strip() or (THANK_CARD if mode == "card" else THANK_TEXT).format(first=first, rep=rep_first)
+    native_auth = None
+    if not (rep.get("twilio_number") or rep.get("mvpline_number")):
+        from services import native_handoff  # the app opens Messages on the rep's phone: authorize that recipient first
+        native_auth = native_handoff.public(await native_handoff.authorize(db, user_id, contact_id=contact_id, purpose="conversational"))
 
     card = None
     if mode == "card":
@@ -300,6 +304,9 @@ async def thank_advocate(user_id: str, contact_id: str, body: dict):
     sid = None
     if rep_number:
         result = await send_sms(phone, sms_body, from_phone=rep_number, purpose="conversational", user_id=user_id, contact_id=contact_id)
+        if result.get("blocked"):
+            raise HTTPException(status_code=409, detail={"code": result.get("error_code"), "message": result.get("error"), "needs": result.get("needs") or [],
+                                                         "purpose": "conversational", "contact_id": contact_id, "phone": normalize_phone(phone)})
         if not result.get("success"):
             raise HTTPException(status_code=502, detail=result.get("error") or "Text failed to send")
         sent_via, sid = ("mock" if result.get("mock") else "twilio"), result.get("message_sid")
@@ -322,7 +329,7 @@ async def thank_advocate(user_id: str, contact_id: str, body: dict):
                        description=message, channel="sms", ref=sid, metadata={"mode": mode, "card_id": (card or {}).get("card_id"), "via": sent_via})
     await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"last_thanked_at": now, "updated_at": now.isoformat()}})
     _book_cache.pop(user_id, None)
-    return {"ok": True, "mode": mode, "via": sent_via, "phone": phone, "body": sms_body, "card_url": (card or {}).get("short_url"), "thanked_at": now.isoformat()}
+    return {"ok": True, "mode": mode, "via": sent_via, "phone": (native_auth or {}).get("phone") or phone, "native_authorization": native_auth, "body": sms_body, "card_url": (card or {}).get("short_url"), "thanked_at": now.isoformat()}
 
 
 @router.get("/{user_id}/contact/{contact_id}")

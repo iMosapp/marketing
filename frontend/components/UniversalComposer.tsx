@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { copyToClipboard } from '../utils/clipboard';
 import api, { messagesAPI } from '../services/api';
 import { showSimpleAlert } from '../services/alert';
+import { authorizeNativeMessages, openAuthorizedMessages } from '../services/nativeMessages';
 import { useAuthStore } from '../store/authStore';
 
 const IS_WEB = Platform.OS === 'web';
@@ -263,6 +264,13 @@ export default function UniversalComposer({
 
     setSending(true);
     try {
+      // The phone's Messages app sends: the server authorizes this recipient before anything is uploaded, logged or opened (fails closed)
+      let authorizedPhone = '';
+      if (mode === 'sms' && contact?.phone) {
+        const auth = await authorizeNativeMessages([{ phone: contact.phone, contactId }]);
+        if (!auth.ok) return;
+        authorizedPhone = auth.phones[0];
+      }
       // Upload photo if attached
       let photoUrl = '';
       if (media?.uri) {
@@ -293,12 +301,9 @@ export default function UniversalComposer({
 
       await messagesAPI.send(userId, payload);
 
-      if (mode === 'sms' && contact?.phone) {
+      if (mode === 'sms' && authorizedPhone) {
         // Open native SMS on mobile / copy on web
-        const smsUrl = IS_WEB
-          ? `sms:${contact.phone}${/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase()) ? '&' : '?'}body=${encodeURIComponent(messageContent)}`
-          : `sms:${contact.phone}?body=${encodeURIComponent(messageContent)}`;
-        try { if (IS_WEB) window.location.href = smsUrl; else Linking.openURL(smsUrl); } catch {}
+        await openAuthorizedMessages([authorizedPhone], messageContent);
         try { await copyToClipboard(messageContent); } catch {}
       } else if (mode === 'email') {
         // Email sent via backend — just notify

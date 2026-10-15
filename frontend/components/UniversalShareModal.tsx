@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
+import { openNativeMessages } from '../services/nativeMessages';
 import { showSimpleAlert } from '../services/alert';
 import { copyToClipboard } from '../utils/clipboard';
 
@@ -185,12 +186,8 @@ export function UniversalShareModal({
       return;
     }
     if (!userId) {
-      // Fallback for non-logged-in: open native SMS
-      const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator?.userAgent || '');
-      const sep = isApple ? '&' : '?';
-      const smsUrl = `sms:${phone}${sep}body=${encodeURIComponent(defaultShareText)}`;
-      IS_WEB ? (window.location.href = smsUrl) : Linking.openURL(smsUrl);
-      close();
+      // No user loaded: still only through the server's Messages authorization (fails closed)
+      if (await openNativeMessages({ phone }, defaultShareText)) close();
       return;
     }
     setSaving(true);

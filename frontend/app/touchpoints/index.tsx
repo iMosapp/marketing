@@ -14,6 +14,7 @@ import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHe
 import { tasksAPI, contactsAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
+import { authorizeNativeMessages, openAuthorizedMessages } from '../../services/nativeMessages';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 import { UpcomingView } from '../../components/upcoming/UpcomingView';
 import { tid } from '../../components/scripts/shared';
@@ -252,7 +253,9 @@ function TouchpointsScreen() {
       }
     } catch {}
 
-    // Contact not in CRM — create contact via find-or-create, then log the event
+    // Contact not in CRM: the server authorizes this number first (fails closed), then create the contact via find-or-create and log the event
+    const auth = await authorizeNativeMessages([{ phone }]);
+    if (!auth.ok) return;
     try {
       const createRes = await api.post(`/contacts/${user!._id}/find-or-create-and-log`, {
         phone,
@@ -265,17 +268,8 @@ function TouchpointsScreen() {
         event_channel: 'sms',
       });
     } catch {}
-    // Open native SMS app with message pre-filled
-    if (IS_WEB && typeof window !== 'undefined') {
-      const ua = window.navigator.userAgent.toLowerCase();
-      const isIos = /iphone|ipad|ipod/.test(ua);
-      const sep = isIos ? '&' : '?';
-      const smsUrl = `sms:${encodeURIComponent(phone)}${sep}body=${encodeURIComponent(cleanMessage)}`;
-      window.open(smsUrl, '_self');
-    } else {
-      const smsUrl = `sms:${phone.replace(/[^\d+]/g, '')}`;
-      Linking.openURL(smsUrl);
-    }
+    // Open native SMS app (message pre-filled on web), authorized number only
+    await openAuthorizedMessages(auth.phones, IS_WEB ? cleanMessage : undefined);
     // Auto-complete the task
     completeTask(task._id);
   };

@@ -13,6 +13,7 @@ import { useThemeStore } from '../../store/themeStore';
 import api, { contactsAPI, smartSendSMS } from '../../services/api';
 import { useContactSearch } from '../../hooks/useContactSearch';
 import { showSimpleAlert } from '../../services/alert';
+import { authorizeNativeMessages, openAuthorizedMessages } from '../../services/nativeMessages';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -140,6 +141,7 @@ function SendPhotoScreen() {
               eventType: 'photo_sent',
               platform: Platform.OS,
               mediaUrls: [mediaUrl],
+              nativeFallback: false,
             });
             if (result.usedTwilio) sent++;
           } catch {}
@@ -153,7 +155,9 @@ function SendPhotoScreen() {
         }
       }
 
-      // 3. Fallback: log the events, open native SMS with the photo as a link
+      // 3. Fallback: the server authorizes every recipient first (fails closed), then log the events and open native SMS with the photo as a link
+      const auth = await authorizeNativeMessages(selContacts.map(c => ({ phone: c.phone, contactId: c._id || c.id })));
+      if (!auth.ok) { setSending(false); return; }
       for (const c of selContacts) {
         try {
           await contactsAPI.logEvent(user._id, c._id || c.id, {
@@ -168,21 +172,7 @@ function SendPhotoScreen() {
         } catch {}
       }
       const smsBody = body ? `${body} ${mediaUrl}` : mediaUrl;
-      const numbers = selContacts.map(c => (c.phone || '').replace(/[^\d+]/g, '')).join(',');
-      let sep = '?';
-      if (IS_WEB && typeof window !== 'undefined') {
-        const ua = window.navigator.userAgent.toLowerCase();
-        if (/iphone|ipad|ipod/.test(ua)) sep = '&';
-      } else if (Platform.OS === 'ios') {
-        sep = '&';
-      }
-      const smsUrl = `sms:${numbers}${sep}body=${encodeURIComponent(smsBody)}`;
-      if (IS_WEB && typeof window !== 'undefined') {
-        window.open(smsUrl, '_self');
-      } else {
-        const { Linking } = require('react-native');
-        Linking.openURL(smsUrl);
-      }
+      if (!(await openAuthorizedMessages(auth.phones, smsBody))) { setSending(false); return; }
       setSentVia('native');
       setSentCount(selContacts.length);
       setStep('done');

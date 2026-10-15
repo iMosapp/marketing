@@ -8,6 +8,7 @@ import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { useToast } from './common/Toast';
 import api from '../services/api';
+import { authorizeNativeMessages } from '../services/nativeMessages';
 import { SheetGrabber } from '../components/common/SheetGrabber';
 
 type Channel = {
@@ -20,6 +21,9 @@ type ChannelPickerProps = {
   phone?: string;
   email?: string;
   link?: string;
+  contactId?: string;
+  purpose?: string;
+  preauthorized?: boolean;  // the caller already got this phone from /messages/native-authorize
   onSent?: (channelId: string) => void;
   visible: boolean;
   onClose: () => void;
@@ -45,7 +49,7 @@ function buildUrl(scheme: string, params: { phone?: string; phone_clean?: string
   return url;
 }
 
-export default function ChannelPicker({ message, phone, email, link, onSent, visible, onClose }: ChannelPickerProps) {
+export default function ChannelPicker({ message, phone, email, link, contactId, purpose, preauthorized, onSent, visible, onClose }: ChannelPickerProps) {
   const colors = useThemeStore((s) => s.colors);
   const user = useAuthStore((s) => s.user);
   const { showToast } = useToast();
@@ -67,10 +71,16 @@ export default function ChannelPicker({ message, phone, email, link, onSent, vis
     }
   }, [user?._id, loaded]);
 
-  const handleSelect = useCallback((ch: Channel) => {
+  const handleSelect = useCallback(async (ch: Channel) => {
+    let authorizedPhone = phone || '';
+    if (/^sms(to)?:/i.test(ch.url_scheme) && !preauthorized) {
+      const auth = await authorizeNativeMessages([{ phone, contactId, purpose }]);
+      if (!auth.ok) { onClose(); return; }
+      authorizedPhone = auth.phones[0];
+    }
     const params = {
-      phone: phone || '',
-      phone_clean: (phone || '').replace(/\D/g, ''),
+      phone: authorizedPhone,
+      phone_clean: authorizedPhone.replace(/\D/g, ''),
       email: email || '',
       message,
       link: link || '',
@@ -109,7 +119,7 @@ export default function ChannelPicker({ message, phone, email, link, onSent, vis
     showToast(`Message copied & opening ${ch.name}... Paste to send!`, 'success');
     onSent?.(ch.id);
     onClose();
-  }, [message, phone, email, link, onSent, onClose]);
+  }, [message, phone, email, link, contactId, purpose, preauthorized, onSent, onClose]);
 
   // Auto-send: If only 1 channel, skip the picker
   useEffect(() => {
@@ -159,12 +169,12 @@ export default function ChannelPicker({ message, phone, email, link, onSent, vis
 
 // Hook for easy integration
 export function useChannelPicker() {
-  const [state, setState] = useState<{ visible: boolean; message: string; phone?: string; email?: string; link?: string; onSent?: (ch: string) => void }>({
+  const [state, setState] = useState<{ visible: boolean; message: string; phone?: string; email?: string; link?: string; contactId?: string; purpose?: string; preauthorized?: boolean; onSent?: (ch: string) => void }>({
     visible: false, message: '',
   });
 
-  const open = useCallback((params: { message: string; phone?: string; email?: string; link?: string; onSent?: (ch: string) => void }) => {
-    setState({ visible: true, ...params });
+  const open = useCallback((params: { message: string; phone?: string; email?: string; link?: string; contactId?: string; purpose?: string; preauthorized?: boolean; onSent?: (ch: string) => void }) => {
+    setState({ visible: true, contactId: undefined, purpose: undefined, preauthorized: false, ...params });
   }, []);
 
   const close = useCallback(() => {

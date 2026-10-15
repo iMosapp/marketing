@@ -3,7 +3,7 @@ Contact Events router - tracks all touchpoints and interactions with a contact.
 Aggregates data from messages, campaigns, congrats cards, and custom events
 into a unified "Facebook-feed" style timeline.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
 from datetime import datetime, timezone
 from typing import Optional
@@ -74,7 +74,8 @@ async def _quick_milestone_check(user_id: str):
     except Exception as e:
         logger.debug(f"Quick milestone check failed for {user_id}: {e}")
 
-router = APIRouter(prefix="/contacts", tags=["Contact Events"])
+from services.route_guard import require_real_owner  # contact writes: real, authorized {user_id} only
+router = APIRouter(prefix="/contacts", tags=["Contact Events"], dependencies=[Depends(require_real_owner)])
 logger = logging.getLogger(__name__)
 
 

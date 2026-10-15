@@ -12,7 +12,8 @@ import re
 from routers.database import get_db, get_data_filter, get_user_by_id
 from routers.rbac import require_user_access
 
-router = APIRouter(prefix="/tags", tags=["Tags"])
+from services.route_guard import require_real_owner  # contact writes: real, authorized {user_id} only
+router = APIRouter(prefix="/tags", tags=["Tags"], dependencies=[Depends(require_real_owner)])
 logger = logging.getLogger(__name__)
 
 # Default tag colors

@@ -48,6 +48,7 @@ import { useToast } from '../../components/common/Toast';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert, showAlert, showConfirm } from '../../services/alert';
+import { authorizeNativeMessages } from '../../services/nativeMessages';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
 import WhyThisReply from '../../components/contact/WhyThisReply';
 import FactSourceSheet from '../../components/contact/FactSourceSheet';
@@ -1080,6 +1081,12 @@ function ThreadScreen() {
     // Previous approach used raw fetch+keepalive which iOS PWA kills on navigation.
     // Now we await the API call first, then open SMS.
     if (isPersonalSMS && contactPhone) {
+      // The server authorizes this recipient before anything is logged or the phone's Messages app opens (fails closed)
+      setSending(true);
+      const auth = await authorizeNativeMessages([{ phone: contactPhone, contactId: contactIdForNav || undefined }]);
+      setSending(false);
+      if (!auth.ok) return;
+      const authorizedPhone = auth.phones[0];
       // Optimistic UI update
       const optimisticMessage: Message = {
         _id: `temp_${Date.now()}`,
@@ -1178,7 +1185,9 @@ function ThreadScreen() {
       completeLinkedTask();
       channelPicker.open({
         message: contentToSend,
-        phone: contactPhone,
+        phone: authorizedPhone,
+        contactId: contactIdForNav || undefined,
+        preauthorized: true,
         email: (contact_email as string) || savedContactEmail || '',
         onSent: (ch) => {
           // Update the just-logged event with the actual channel used
@@ -3916,6 +3925,9 @@ function ThreadScreen() {
         phone={channelPicker.phone}
         email={channelPicker.email}
         link={channelPicker.link}
+        contactId={channelPicker.contactId}
+        purpose={channelPicker.purpose}
+        preauthorized={channelPicker.preauthorized}
         onSent={channelPicker.onSent}
         visible={channelPicker.visible}
         onClose={channelPicker.close}

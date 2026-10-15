@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Modal, Pressable, TouchableOpacity, TextInput, ActivityIndicator, Platform, Linking, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
+import { NATIVE_CHECK_FAILED, openAuthorizedMessages } from '../../services/nativeMessages';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
 
 const BLUE = '#0A84FF';
@@ -15,12 +16,6 @@ type Props = {
   colors: any;
   onClose: () => void;
   onSent: (contactId: string, result: any) => void;
-};
-
-const openNativeSms = (phone: string, body: string) => {
-  const digits = phone.replace(/[^\d+]/g, '');
-  const sep = Platform.OS === 'ios' ? '&' : '?';
-  Linking.openURL(`sms:${digits}${sep}body=${encodeURIComponent(body)}`).catch(() => { /* noop */ });
 };
 
 export const ThankSheet = ({ visible, userId, advocate, colors, onClose, onSent }: Props) => {
@@ -46,11 +41,17 @@ export const ThankSheet = ({ visible, userId, advocate, colors, onClose, onSent 
     setSending(true); setError('');
     try {
       const r = await api.post(`/relationship-health/${userId}/advocates/${advocate.contact_id}/thank`, { mode, message: message.trim() });
-      if (r.data.via === 'native' && r.data.phone) openNativeSms(r.data.phone, r.data.body);
+      // The send endpoint authorized this recipient server-side; Messages opens only with that authorized number
+      if (r.data.via === 'native') {
+        const phone = r.data.native_authorization?.phone;
+        if (!phone) { setError(NATIVE_CHECK_FAILED); return; }
+        await openAuthorizedMessages([phone], r.data.body);
+      }
       onSent(advocate.contact_id, r.data);
       onClose();
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Could not send. Try again.');
+      const d = e?.response?.data?.detail;
+      setError(typeof d === 'string' && d ? d : (viaTwilio ? 'Could not send. Try again.' : NATIVE_CHECK_FAILED));
     } finally { setSending(false); }
   };
 

@@ -1,7 +1,8 @@
 """Per-recipient send ledger: at most one provider call per idempotency key, on any replica, including retries after a crash.
-A key is claimed (status `sending`) before the provider is called and closed with the provider's answer. A crash between the
-provider accepting a text and the answer being recorded leaves the row in `sending`; the sweep moves it to `unknown_outcome`
-and it is never re-sent automatically (at-most-once: a missed text is preferable to a duplicate). Rows stay for review."""
+A key is claimed (status `sending`) before the provider is called and closed with the provider's answer:
+`sent` (accepted), `failed` (a definite refusal, e.g. Twilio 4xx), or `unknown_outcome` (timeout, dropped connection or Twilio 5xx
+during the call, or a crash that left the row in `sending`, moved by the sweep). No status is ever re-sent automatically under the
+same key (at-most-once: a missed text is preferable to a duplicate); unknown outcomes wait for reconciliation. Rows stay for review."""
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -26,9 +27,20 @@ async def claim(db, key: str, **meta) -> bool:
         return False
 
 
+def outcome(result: dict) -> str:
+    if result.get("success"):
+        return "sent"
+    return "unknown_outcome" if result.get("outcome") == "unknown" else "failed"
+
+
+async def status(db, key: str):
+    row = await db[COLL].find_one({"_id": key}, {"status": 1})
+    return (row or {}).get("status")
+
+
 async def done(db, key: str, result: dict) -> None:
     ok = bool(result.get("success"))
-    await db[COLL].update_one({"_id": key}, {"$set": {"status": "sent" if ok else "failed", "message_sid": result.get("message_sid"),
+    await db[COLL].update_one({"_id": key}, {"$set": {"status": outcome(result), "message_sid": result.get("message_sid"),
                                                      "error_code": None if ok else str(result.get("error_code") or result.get("error") or "")[:120], "finished_at": _now()}})
 
 

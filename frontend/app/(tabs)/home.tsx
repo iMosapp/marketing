@@ -23,6 +23,7 @@ import api from '../../services/api';
 import { contactsAPI } from '../../services/api';
 import { useContactSearch } from '../../hooks/useContactSearch';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
+import { authorizeNativeMessages, openAuthorizedMessages } from '../../services/nativeMessages';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { UniversalShareModal } from '../../components/UniversalShareModal';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
@@ -185,13 +186,14 @@ function ContactActionModal({
 
   const logAndText = async (phone: string, contact?: any) => {
     if (!phone) return;
+    const auth = await authorizeNativeMessages([{ phone, contactId: contact?._id }]);
+    if (!auth.ok) return;
     try {
       if (contact?._id) {
         await contactsAPI.logEvent(userId, contact._id, { event_type: 'sms_sent', title: 'SMS Sent', description: `Texted ${contact.first_name || ''}`.trim(), channel: 'sms_personal', category: 'message', icon: 'chatbubble', color: '#007AFF' });
       }
     } catch {}
-    const smsUrl = `sms:${phone.replace(/[^\d+]/g, '')}`;
-    IS_WEB ? (window.location.href = smsUrl) : Linking.openURL(smsUrl);
+    await openAuthorizedMessages(auth.phones);
     onClose();
   };
 

@@ -161,8 +161,9 @@ async def send_sms(
             return {"success": False, "error": blocked, "error_code": "not_ready", "mock": False}
 
     if idempotency_key and not await send_ledger.claim(db, idempotency_key, to=to_phone, purpose=decision["purpose"], org_id=org_id):
-        logger.info(f"[SMS] duplicate suppressed for key {idempotency_key}")
-        return {"success": False, "duplicate": True, "error": "Already sent", "error_code": "duplicate", "mock": False}
+        prior = await send_ledger.status(db, idempotency_key)
+        logger.info(f"[SMS] duplicate suppressed for key {idempotency_key} (earlier outcome: {prior})")
+        return {"success": False, "duplicate": True, "ledger_status": prior, "error": f"Already attempted ({prior})", "error_code": "duplicate", "mock": False}
     plan = await _disclosure_plan(db, decision, from_phone, to_phone, message, campaign_key)
     message = disclosure.apply(message, plan) if plan else message
     result = await _deliver(to_phone, message, media_urls, from_phone, org_id, user_id)
@@ -220,6 +221,7 @@ async def _deliver(to_phone: str, message: str, media_urls, from_phone, org_id, 
             "mock": True,
         }
 
+    attempted = False  # set just before the provider call: an exception after it means Twilio may have accepted the text
     try:
         params: dict = {"body": message, "to": to_phone}
 
@@ -240,6 +242,7 @@ async def _deliver(to_phone: str, message: str, media_urls, from_phone, org_id, 
             params["status_callback"] = cb  # delivery failures land in /api/webhooks/twilio/status
 
         client = await _client_for_sender(params.get("from_")) or twilio_client
+        attempted = True
         msg = client.messages.create(**params)
         logger.info(f"Twilio sent: {msg.sid} → {to_phone} from {params.get('from_', 'messaging_svc')} | status={msg.status}")
         await _record_usage(params.get("from_") or TWILIO_PHONE_NUMBER, media_urls, msg.num_segments, org_id, user_id)
@@ -253,11 +256,14 @@ async def _deliver(to_phone: str, message: str, media_urls, from_phone, org_id, 
         }
 
     except TwilioRestException as e:
-        logger.error(f"Twilio error → {to_phone}: [{e.code}] {e.msg}")
-        return {"success": False, "error": e.msg, "error_code": e.code, "mock": False}
+        # A 4xx answer is a definite refusal; a 5xx may have been processed anyway
+        outcome = "unknown" if (getattr(e, "status", None) or 0) >= 500 else "failed"
+        logger.error(f"Twilio error → {to_phone}: [{e.code}] {e.msg} (outcome {outcome})")
+        return {"success": False, "error": e.msg, "error_code": e.code, "mock": False, "outcome": outcome}
     except Exception as e:
-        logger.error(f"SMS send error → {to_phone}: {e}")
-        return {"success": False, "error": str(e), "mock": False}
+        outcome = "unknown" if attempted else "failed"  # timeout / connection drop during the call: never assume it did not send
+        logger.error(f"SMS send error → {to_phone}: {e} (outcome {outcome})")
+        return {"success": False, "error": str(e), "mock": False, "outcome": outcome}
 
 
 async def _client_for_sender(from_phone: Optional[str]):

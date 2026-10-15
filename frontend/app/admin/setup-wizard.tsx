@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { showAlert } from '../../services/alert';
+import { openNativeMessages } from '../../services/nativeMessages';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, Platform, Image, KeyboardAvoidingView, Animated,
@@ -758,15 +759,14 @@ export default function SetupWizardScreen() {
                 }}>
                   <Ionicons name="copy-outline" size={14} color="#007AFF" /><Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600' }}>Copy</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={s.actionChip} onPress={() => {
+                <TouchableOpacity style={s.actionChip} onPress={async () => {
                   const created = teamMembers.filter(m => m.createdId);
                   if (created.length > 0) {
                     const m = created[0];
                     const msg = `Welcome to I'm On Social!\n\nHere are your login credentials:\n\nLogin: https://app.imonsocial.com\nUsername: ${m.email}\nPassword: ${m.tempPassword}\n\nYou will be prompted to create a new password on your first login.`;
-                    const url = Platform.OS === 'ios' ? `sms:${m.phone || ''}&body=${encodeURIComponent(msg)}` : `sms:${m.phone || ''}?body=${encodeURIComponent(msg)}`;
-                    Linking.openURL(url).catch(() => {});
+                    await openNativeMessages({ phone: m.phone || '', purpose: 'system', systemKind: 'account_invite' }, msg);
                   }
-                }}>
+                }} data-testid="setup-wizard-text-credentials">
                   <Ionicons name="chatbubble-outline" size={14} color="#34C759" /><Text style={{ fontSize: 14, color: '#34C759', fontWeight: '600' }}>Text</Text>
                 </TouchableOpacity>
                 {Platform.OS === 'web' && (

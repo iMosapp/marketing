@@ -10,6 +10,7 @@ import * as Clipboard from 'expo-clipboard';
 import api from '../../../services/api';
 import { useAuthStore } from '../../../store/authStore';
 import { showSimpleAlert } from '../../../services/alert';
+import { openNativeMessages } from '../../../services/nativeMessages';
 
 import { useThemeStore } from '../../../store/themeStore';
 export default function PrepareNDA() {
@@ -146,12 +147,10 @@ export default function PrepareNDA() {
     showSimpleAlert('Copied', 'Link copied to clipboard');
   };
 
-  const handleTextLink = () => {
+  const handleTextLink = async () => {
     if (!ndaLink) return;
-    const body = encodeURIComponent(`Hi ${recipientName}, please review and sign this NDA: ${ndaLink}`);
     const phone = recipientPhone.replace(/\D/g, '');
-    const sep = /iPhone|iPad|iPod/i.test(navigator?.userAgent || '') ? '&' : '?';
-    window.location.href = `sms:${phone}${sep}body=${body}`;
+    await openNativeMessages({ phone, purpose: 'requested_info' }, `Hi ${recipientName}, please review and sign this NDA: ${ndaLink}`);
   };
 
   return (

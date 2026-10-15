@@ -1,7 +1,7 @@
 """
 Contact Import router - parses Google Contacts CSV and Apple/Google VCF exports.
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from bson import ObjectId
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -12,7 +12,8 @@ import logging
 
 from routers.database import get_db, get_data_filter
 
-router = APIRouter(prefix="/contacts", tags=["Contacts"])
+from services.route_guard import require_real_owner  # contact writes: real, authorized {user_id} only
+router = APIRouter(prefix="/contacts", tags=["Contacts"], dependencies=[Depends(require_real_owner)])
 logger = logging.getLogger(__name__)
 
 PHONE_LABEL_PRIORITY = ["mobile", "cell", "main", "work", "home", "other"]

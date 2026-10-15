@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { showAlert } from '../../../services/alert';
+import { openNativeMessages } from '../../../services/nativeMessages';
 import {
   View,
   Text,
@@ -61,7 +62,7 @@ export default function PendingSendPage() {
     }
   };
 
-  const handleSendViaNative = () => {
+  const handleSendViaNative = async () => {
     if (!pendingSend) return;
     const phone = pendingSend.contact_phone;
     const channel = pendingSend.channel || 'sms';
@@ -74,13 +75,8 @@ export default function PendingSendPage() {
         window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
       }
     } else {
-      const encoded = encodeURIComponent(message);
-      const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
-      const isIOS = /iPhone|iPad|iPod/i.test(ua);
-      const smsLink = isIOS ? `sms:${phone}&body=${encoded}` : `sms:${phone}?body=${encoded}`;
-      if (IS_WEB) {
-        window.location.href = smsLink;
-      }
+      // The server decides this pending send's recipient and purpose and authorizes it first (fails closed)
+      if (!(await openNativeMessages({ pendingSendId: pendingSend._id }, message))) return;
     }
 
     // Mark as sent

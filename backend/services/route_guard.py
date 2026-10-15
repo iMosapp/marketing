@@ -7,7 +7,7 @@ route that reads or writes an account."""
 import re
 
 from bson import ObjectId
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from starlette.routing import Match
 
 from routers.database import get_db
@@ -135,3 +135,26 @@ async def assert_self_or_scoped_manager(caller_id: str, target_id: str, write: b
     if str(caller_id) == str(target_id) or await manager_can_access(str(caller_id), str(target_id), write=write):
         return
     raise HTTPException(status_code=403, detail="Access denied — you can only access your own data")
+
+
+
+_HEX24 = re.compile(r"^[0-9a-fA-F]{24}$")
+
+
+async def require_real_owner(request: Request) -> None:
+    """Router dependency for contact create / import / bulk writes: the {user_id} in the path must be a real account the caller may
+    write for (400 malformed, 401 no session, 404 no such account, 403 outside the caller's own data or managed scope). The identity
+    middleware only binds ids that look like ObjectIds, so writes under "0", "undefined" or "abc" used to land as orphans."""
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return
+    uid = request.path_params.get("user_id")
+    if uid is None:
+        return
+    if not _HEX24.match(str(uid)):
+        raise HTTPException(status_code=400, detail="Invalid user id")
+    caller = getattr(request.state, "caller_id", None)
+    if not caller:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if not await get_db().users.find_one({"_id": ObjectId(str(uid))}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="User not found")
+    await assert_self_or_scoped_manager(caller, uid, write=True)

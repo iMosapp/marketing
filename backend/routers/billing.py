@@ -123,6 +123,13 @@ async def access_overview(me: dict = Depends(require_role("super_admin"))):
             "locked": sum(1 for r in out if r["locked"])}
 
 
+@router.get("/admin/access/report")
+async def access_report(me: dict = Depends(require_role("super_admin"))):
+    """Read-only: every organization's explicit access class (internal / pilot / exception / subscribed / legacy / unclassified)."""
+    from services import billing_lock
+    return await billing_lock.classification_report(get_db())
+
+
 @router.post("/admin/access/classify-legacy")
 async def classify_legacy(apply: bool = False, me: dict = Depends(require_role("super_admin"))):
     from services import billing_lock
