@@ -105,4 +105,5 @@ def test_stop_then_start_lifecycle(manager):
         user_id = manager["user"]["id"] if "id" in manager["user"] else manager["user"].get("_id")
         rp = requests.post(f"{BASE}/api/messages/send/{user_id}", headers={**headers, "Content-Type": "application/json"},
                            json={"contact_id": QA_CONTACT, "content": "QA personal after START", "channel": "sms_personal"}, timeout=30)
-        assert rp.status_code == 200, f"{rp.status_code} {rp.text[:200]}"
+        # START lifts the STOP refusal; "text from my phone" now runs the full native authorization, so a contact without consent gets consent_required
+        assert rp.status_code == 200 or (rp.status_code == 409 and rp.json()["detail"]["code"] == "consent_required"), f"{rp.status_code} {rp.text[:200]}"
