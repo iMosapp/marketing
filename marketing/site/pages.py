@@ -53,7 +53,7 @@ def features_hub(site):
 
 def industries_hub(site):
     d = c.INDUSTRIES_HUB
-    groups = [("Choose your industry", [("heart", v["name"], v["path"], v["sub"]) for v in c.INDUSTRY_PAGES.values()])]
+    groups = [("Choose your industry", [(v["icon"], v["name"], v["path"], v["sub"]) for v in c.INDUSTRY_PAGES.values()])]
     body = [b.page_hero(site, "industries", d["overline"], esc(d["h1"]), d["sub"], secondary=("See all features", "/features/")),
             b.card_grid(site, "industries", groups), b.cta_band("industries")]
     return site.page(d["title"], d["desc"], d["path"], "\n".join(body), [ORG_LD], "industries")

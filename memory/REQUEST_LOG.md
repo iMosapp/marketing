@@ -4,6 +4,11 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 69 · Oct 16 — DONE IN STAGING (tested) · AWAITING OWNER REVIEW · nothing published
+> Homepage approved as-is, carry the design to the other pages. Pricing: Individual $100/mo, Team $75 per user/mo with 5 seats minimum ($375/mo), everything included, Book a Demo on both. Skip ad tracking for now. No cookie banner, just a note in the privacy policy. All pages in one pass plus the redirect and noindex plan.
+
+All 31 pages in staging at `{preview}/api/marketing-preview/`. Privacy policy already has a cookies/analytics section, so no wording change while tracking is skipped. Publishing = `build.py production --approved` then Save to GitHub, only on the owner's OK. Testing agent iteration_397.
+
 ### 68 · Oct 16 — DONE IN STAGING (tested) · AWAITING OWNER REVIEW · nothing published
 > (approved the cleanup plan) start Phase 0, build the Phase 1 homepage in staging and give me a preview link. Choices: neutral-mix demo data, small "From $100/mo" line on the homepage, keep the 46 s video as a "Watch the story" lightbox link, soften the HIPAA + partner AI-answers lines, Phase 1 = homepage + nav/footer + demo form only.
 

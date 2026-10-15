@@ -1,5 +1,12 @@
 # CHANGELOG — iMOs App
 
+## Oct 16 2026 (later) — Marketing site: every page rebuilt in staging (NOT LIVE)
+- Owner approved the homepage as-is and asked for all other pages in one pass. 31 pages now come from `marketing/site/`: features hub, new /industries hub, pricing (Individual $100/mo, Team $75/user/mo with 5-seat minimum), demo (inline form, lead_source demo_page), organizations, individuals, why, help, training, 9 feature pages, 9 industry pages, and privacy/terms/sms-terms (new chrome, legal text verbatim from `site/legal/`).
+- Copy rewritten with verified claims only (checked against the code): removed NFC, "reviews follow you job to job", email open tracking, "one photo and everything is automatic", competitor price table and all stats. Medical HIPAA answer stays neutral.
+- 9 more real app screens (digital card, link page, showcase, congrats card, leaderboard, SEO Health, training hub, inbox, contacts); seed now adds reviews, a link page, a congrats card and leaderboard activity; manager login is alex@summitpartners.example.
+- Redirect + noindex plan wired into `build.py production --approved` (301s in vercel.json + netlify.toml, retired dirs removed, presentations/ and calendar-systems/ noindex, sitemap regenerated). Staging uses redirect stubs. Links drop trailing slashes in production to match Vercel `trailingSlash: false`.
+- Testing agent iteration_397: 98%, 1 low bug (mobile focus jumped to the menu button after the demo modal) fixed + verified; per-industry icons and two soft "most customers..." lines reworded.
+
 ## Oct 16 2026 — Marketing site: Phase 0 leftovers + Phase 1 homepage in staging (NOT LIVE)
 - Phase 0 leftovers in `marketing/build`: softened the medical HIPAA answer and the partner page (`/calendar-systems/dealers`) "shows up in AI answers" lines. robots.txt / sitemap.xml / 301s were already in place.
 - Demo workspace seed `backend/tests/seed_marketing_demo.py` switched to a neutral mix (homes, insurance, auto), store "Summit Partners"; 9 real app screens captured with `marketing/tools/capture_app.py`, WebP in `marketing/site/assets/img/` (28-64 KB each).

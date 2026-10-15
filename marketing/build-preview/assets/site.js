@@ -55,6 +55,8 @@
   var menuBtn = $('[data-testid="nav-mobile-toggle"]');
   var setSheet = function (on) {
     if (!sheet) return;
+    var was = sheet.classList.contains('open');
+    if (was === on) return;
     sheet.classList.toggle('open', on);
     sheet.setAttribute('aria-hidden', on ? 'false' : 'true');
     if (menuBtn) menuBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
