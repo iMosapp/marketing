@@ -107,13 +107,43 @@
       "permanent": true
     },
     {
-      "source": "/industries",
-      "destination": "/",
+      "source": "/industries.html",
+      "destination": "/industries",
       "permanent": true
     },
     {
-      "source": "/industries.html",
-      "destination": "/",
+      "source": "/automotive",
+      "destination": "/dealers",
+      "permanent": true
+    },
+    {
+      "source": "/salespresentation",
+      "destination": "/dealers",
+      "permanent": true
+    },
+    {
+      "source": "/hub",
+      "destination": "/organizations",
+      "permanent": true
+    },
+    {
+      "source": "/platform",
+      "destination": "/features",
+      "permanent": true
+    },
+    {
+      "source": "/store-reviews",
+      "destination": "/reviews",
+      "permanent": true
+    },
+    {
+      "source": "/future",
+      "destination": "/why-imonsocial",
+      "permanent": true
+    },
+    {
+      "source": "/presentation",
+      "destination": "/presentations",
       "permanent": true
     }
   ]

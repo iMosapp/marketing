@@ -133,13 +133,49 @@
   force = true
 
 [[redirects]]
-  from = "/industries"
-  to = "/"
+  from = "/industries.html"
+  to = "/industries"
   status = 301
   force = true
 
 [[redirects]]
-  from = "/industries.html"
-  to = "/"
+  from = "/automotive"
+  to = "/dealers"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/salespresentation"
+  to = "/dealers"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/hub"
+  to = "/organizations"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/platform"
+  to = "/features"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/store-reviews"
+  to = "/reviews"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/future"
+  to = "/why-imonsocial"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/presentation"
+  to = "/presentations"
   status = 301
   force = true

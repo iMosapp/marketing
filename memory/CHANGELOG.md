@@ -1,5 +1,10 @@
 # CHANGELOG — iMOs App
 
+## Oct 16 2026 (final) — Marketing site approved and written into marketing/build
+- Owner picks: Contact form now says "we will get back to you soon" (no promised response time); homepage line reworded to "Customers who feel remembered come back and send their friends."; /developers restyled in the new design with the same content (docs still from /app/docs markdown, tabs + deep links ?doc= work).
+- Ran `site/build.py production --approved`: 32 pages + assets into `marketing/build`, removed /automotive, /salespresentation, /hub, /platform, /store-reviews, /future, /presentation (301s added to vercel.json + netlify.toml), sitemap 32 URLs, presentations + calendar-systems noindex. Checked: 3,387 internal links in the build all resolve, no preview paths, widget FE2POg13 on every page, forms post to https://app.imonsocial.com.
+- Disabled old generators (`generate_pages.py`, `swap_home.py`, `build_developers.py` main) so nobody overwrites the new pages.
+
 ## Oct 16 2026 (later) — Marketing site: every page rebuilt in staging (NOT LIVE)
 - Owner approved the homepage as-is and asked for all other pages in one pass. 31 pages now come from `marketing/site/`: features hub, new /industries hub, pricing (Individual $100/mo, Team $75/user/mo with 5-seat minimum), demo (inline form, lead_source demo_page), organizations, individuals, why, help, training, 9 feature pages, 9 industry pages, and privacy/terms/sms-terms (new chrome, legal text verbatim from `site/legal/`).
 - Copy rewritten with verified claims only (checked against the code): removed NFC, "reviews follow you job to job", email open tracking, "one photo and everything is automatic", competitor price table and all stats. Medical HIPAA answer stays neutral.

@@ -2,10 +2,15 @@
 import re
 from pathlib import Path
 
+import sys
+
 import blocks as b
 import content as c
 import home
 from layout import esc, icon
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import build_developers as devdocs  # noqa: E402
 
 ORG_LD = home.JSONLD[0]
 
@@ -140,6 +145,61 @@ def legal_page(site, key, inner, title, desc, path):
     return site.page(title, desc, path, body, [ORG_LD], key)
 
 
+DEV_JS = """<script>
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('.dev-tab')),docs=[].slice.call(document.querySelectorAll('.doc'));
+  function show(slug,push){
+    if(!docs.some(function(d){return d.dataset.slug===slug}))slug=docs[0].dataset.slug;
+    docs.forEach(function(d){d.hidden=d.dataset.slug!==slug});
+    tabs.forEach(function(t){var on=t.dataset.slug===slug;t.classList.toggle('on',on);t.setAttribute('aria-current',on?'page':'false')});
+    if(push){history.pushState(null,'','?doc='+slug+location.hash)}
+  }
+  function fromUrl(){
+    var q=new URLSearchParams(location.search).get('doc'),h=location.hash.slice(1);
+    if(!q&&h&&h.indexOf('--')>0)q=h.split('--')[0];
+    show(q||docs[0].dataset.slug,false);
+    if(h){var el=document.getElementById(h);if(el)setTimeout(function(){el.scrollIntoView()},0)}
+  }
+  tabs.forEach(function(t){t.addEventListener('click',function(e){e.preventDefault();show(t.dataset.slug,true);document.getElementById('docs').scrollIntoView({behavior:'smooth'})})});
+  document.getElementById('docs').addEventListener('click',function(e){
+    var a=e.target.closest('a');if(!a)return;
+    var m=(a.getAttribute('href')||'').match(/^(?:https?:\\/\\/(?:www\\.)?imonsocial\\.com)?\\/developers\\/?\\?doc=([a-z0-9-]+)(#.*)?$/);
+    if(m){e.preventDefault();show(m[1],true);if(m[2]){location.hash=m[2]}else{document.getElementById('docs').scrollIntoView()}}
+  });
+  addEventListener('popstate',fromUrl);fromUrl();
+})();
+</script>"""
+DEV_ICONS = {"api-reference": "code", "crm-integration-guide": "send", "automotive-crm-programs": "car"}
+
+
+def developers(site):
+    quick = [("play", "Try it live", "Interactive console. Paste your key under <strong>Authorize</strong> and run real calls against your store.", "Open API console",
+              "https://app.imonsocial.com/api/public/reference", "dev-console-btn"),
+             ("code", "OpenAPI 3 schema", "Import into Postman or Insomnia, or generate a client in any language.", "openapi-v1.json",
+              "https://app.imonsocial.com/api/public/openapi-v1.json", "dev-openapi-btn"),
+             ("key", "Get an API key", "A dealership admin creates one in the app: <strong>Tools, Integrations, API Keys</strong>. One key = one store; ask for an organization key for a group.",
+              "Sign in to the app", "https://app.imonsocial.com", "dev-key-btn")]
+    cards = "".join(f'''<a class="tile dev-quick reveal" style="--d:{i * 80}ms" href="{h}" target="_blank" rel="noopener" data-testid="{tid}"><span class="tile-ico">{icon(ic, 22)}</span>
+      <h3>{esc(t)}</h3><p>{txt}</p><span class="text-link">{esc(lbl)} {icon("arrow", 16)}</span></a>''' for i, (ic, t, txt, lbl, h, tid) in enumerate(quick))
+    tabs = "".join(f'''<a class="dev-tab" href="?doc={d["slug"]}" data-slug="{d["slug"]}" data-testid="dev-tab-{d["slug"]}">{icon(DEV_ICONS[d["slug"]], 18)}
+      <span><strong>{esc(d["title"])}</strong><em>{esc(d["sub"])}</em></span></a>''' for d in devdocs.DOCS)
+    docs = "".join(re.sub(r'<i class="fa-[^"]*"></i>\s*', "", devdocs.render_doc(d)) for d in devdocs.DOCS)
+    body = f"""<section class="page-hero solo dev-hero" data-testid="developers-hero"><div class="wrap">
+  <p class="overline reveal">Developers</p><h1 class="reveal" data-testid="developers-h1">Build on i'M On Social.</h1>
+  <p class="lead reveal">An open REST API and signed webhooks for every customer, text, call, note, task and sold record in a store. Connect your CRM, DMS, marketing stack or automation tool. No partnership paperwork: a dealership admin hands you a key and you are live.</p>
+  <div class="tiles tiles-3 dev-quicks">{cards}</div>
+</div></section>
+<section class="section dev-docs" data-testid="developers-docs"><div class="wrap dev-grid">
+  <aside class="dev-side"><p class="dev-side-t">Documentation</p>{tabs}
+    <div class="dev-help"><strong>Need a sandbox store, an organization key, or an engineer on a call?</strong> Email <a href="mailto:support@imonsocial.com">support@imonsocial.com</a> with your company, the system you are connecting and the dealership you are integrating for.</div>
+  </aside>
+  <div id="docs" class="dev-main">{docs}</div>
+</div></section>"""
+    return site.page("Developers & API | i'M On Social",
+                     "Open REST API and signed webhooks for every customer, text, call, note, task and sold record. CRM integration guide and the automotive CRM certification checklist.",
+                     "/developers/", body, [ORG_LD], "developers", DEV_JS)
+
+
 LEGAL = {"privacy": ("Privacy Policy | i'M On Social", "How i'M On Social collects, uses and protects your information."),
          "terms": ("Terms of Service | i'M On Social", "The terms that govern your use of i'M On Social."),
          "sms-terms": ("SMS Messaging Policy | i'M On Social", "How SMS messaging works on i'M On Social, including how to opt in, opt out and get help.")}
@@ -148,7 +208,8 @@ LEGAL = {"privacy": ("Privacy Policy | i'M On Social", "How i'M On Social collec
 def all_pages(legal_dir: Path):
     """path (relative file) -> renderer(site). Legal text is a verbatim snapshot in site/legal/ so the wording never changes here."""
     pages = {"index.html": home.render, "features/index.html": features_hub, "industries/index.html": industries_hub, "pricing/index.html": pricing,
-             "demo/index.html": demo, "why-imonsocial/index.html": why, "help/index.html": help_page, "training/index.html": training}
+             "demo/index.html": demo, "why-imonsocial/index.html": why, "help/index.html": help_page, "training/index.html": training,
+             "developers/index.html": developers}
     for k, d in c.FEATURE_PAGES.items():
         pages[d["path"].strip("/") + "/index.html"] = lambda s, k=k, d=d: feature_page(s, k, d)
     for k, d in c.AUDIENCE_PAGES.items():

@@ -124,4 +124,3 @@ def card_grid(site, key, groups):
 
 def tour_band(site):
     return tour(site)
-

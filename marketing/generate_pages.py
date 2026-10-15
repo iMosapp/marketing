@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate all branded marketing pages from templates."""
+raise SystemExit("Retired Oct 2026: marketing pages now come from marketing/site/build.py. Running this would overwrite them.")
 import os
 
 PAGES = {

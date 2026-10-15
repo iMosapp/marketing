@@ -30,7 +30,7 @@ REDIRECTS = {"/automotive": "/dealers", "/salespresentation": "/dealers", "/hub"
 # Phase 0 sent /industries to the homepage; it is a real page now.
 UNREDIRECT = {"/industries": "/industries", "/industries.html": "/industries"}
 NOINDEX_DIRS = ["presentations", "calendar-systems"]
-SITEMAP_EXTRA = ["/developers"]
+SITEMAP_EXTRA = []
 
 
 def version():

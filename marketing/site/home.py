@@ -121,7 +121,7 @@ def value():
     return f"""<section class="section value" data-testid="value-section">
   <div class="wrap value-grid">
     <div class="section-head sticky-head"><p class="overline reveal">Why it matters</p><h2 class="reveal">Relationships are your most valuable asset. Treat them that way.</h2>
-    <p class="reveal muted">Most customers would happily buy again. Too many never hear from their salesperson again. i'M On Social closes that gap.</p></div>
+    <p class="reveal muted">Customers who feel remembered come back and send their friends. i'M On Social makes sure every customer feels remembered.</p></div>
     <div class="tiles">{tiles}</div>
   </div>
 </section>"""

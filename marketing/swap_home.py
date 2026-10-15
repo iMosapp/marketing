@@ -1,6 +1,7 @@
 """One-off: make the Relationship OS story the site home, move the old home to /platform, fix links.
 run: cd /app/marketing && python swap_home.py
 """
+raise SystemExit("Retired Oct 2026: marketing pages now come from marketing/site/build.py. Running this would overwrite them.")
 import re
 from pathlib import Path
 

@@ -17,6 +17,8 @@ ICONS = {
     "mic": '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/>',
     "spark": '<path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0L14.06 8.5A2 2 0 0 0 15.5 9.94l6.14 1.58a.5.5 0 0 1 0 .96L15.5 14.06a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/>',
     "send": '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+    "code": '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+    "key": '<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>',
     "car": '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
     "bike": '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
     "home": '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .71-1.53l7-6a2 2 0 0 1 2.58 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
@@ -258,7 +260,7 @@ class Site:
     <form class="contact-form" id="contact-form" data-form="contact" novalidate data-testid="contact-form">
       <p class="overline">Contact us</p>
       <h2 id="contact-title">How can we help?</h2>
-      <p class="modal-sub">Send us a note and we will get back to you within one business day.</p>
+      <p class="modal-sub">Send us a note and we will get back to you soon.</p>
       <div class="row2">{self._field("contact", "first_name", "First name", auto="given-name")}{self._field("contact", "last_name", "Last name", req=False, auto="family-name")}</div>
       <div class="row2">{self._field("contact", "email", "Email", "email", auto="email")}{self._field("contact", "phone", "Mobile", "tel", req=False, auto="tel")}</div>
       <div class="field"><label for="contact-message">Message <span aria-hidden="true">*</span></label><textarea id="contact-message" name="message" rows="4" required data-testid="contact-message-input"></textarea></div>
@@ -269,7 +271,7 @@ class Site:
     <div class="form-success" hidden data-testid="contact-form-success-message">
       <div class="success-ico">{icon("check", 28)}</div>
       <h2>Thanks, <span data-first>there</span>.</h2>
-      <p>We got your message and will reply within one business day.</p>
+      <p>We got your message and will get back to you soon.</p>
       <button class="btn btn-ink" type="button" data-modal-close data-testid="contact-success-close">Done</button>
     </div>
   </div>
@@ -283,7 +285,7 @@ class Site:
   </div>
 </div>"""
 
-    def page(self, title, desc, path, body, jsonld, page_key):
+    def page(self, title, desc, path, body, jsonld, page_key, extra=""):
         return f"""<!DOCTYPE html>
 <html lang="en" data-api="{self.api}" data-page="{page_key}">
 {self.head(title, desc, path, jsonld)}
@@ -296,6 +298,7 @@ class Site:
 {self.modals()}
 <script src="{self.u('/lead-retry.js')}" defer></script>
 <script src="{self.a('site.js')}" defer></script>
+{extra}
 <script src="https://app.imonsocial.com/api/w/FE2POg13.js" async></script>
 </body>
 </html>

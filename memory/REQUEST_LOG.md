@@ -4,6 +4,11 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 70 · Oct 16 — DONE · written into marketing/build · goes live when you update GitHub
+> Site approval. Soften the contact promise, restyle /developers with the same content, reword the homepage claim, yes remove the 7 old pages and write the new site into marketing/build, I'll update GitHub.
+
+All 32 pages are in `marketing/build`. Ship: Save to GitHub (Vercel deploys `marketing/build`).
+
 ### 69 · Oct 16 — DONE IN STAGING (tested) · AWAITING OWNER REVIEW · nothing published
 > Homepage approved as-is, carry the design to the other pages. Pricing: Individual $100/mo, Team $75 per user/mo with 5 seats minimum ($375/mo), everything included, Book a Demo on both. Skip ad tracking for now. No cookie banner, just a note in the privacy policy. All pages in one pass plus the redirect and noindex plan.
 
