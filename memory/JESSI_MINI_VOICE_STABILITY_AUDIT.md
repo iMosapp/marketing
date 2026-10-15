@@ -11,7 +11,7 @@ results `/app/test_reports/mini_lifecycle_sim.json`), and the existing server-si
 |---|---|
 | Most likely reason conversations are cut off | **The app's own idle timer, and it only hits Mini.** Production is set to **15 s** (`jessi_voice.idle_close_s`). The timer restarts only when a caption or "speech started" event arrives. On Mini, her caption text arrives faster than her voice, and nothing arrives while the rep is talking. So the 15 s get used up while she is still speaking, while the rep is mid-sentence, or during a lookup. Production: **17 of 31 Mini sessions (55%) ended "idle"** (median 37 s into the conversation). **0 of 33 Premium sessions did.** GPT-Live captions follow its audio and stream while the rep talks. Mini had 0 network drops and 0 allowance stops. |
 | Is a time limit causing it? | **Yes: the 15 s idle auto-close**, which acts like a time limit because it is measured wrongly. Separately, the owner's account allows **5 premium minutes a day** (super admins capped too). At minute 5 the app cuts GPT-Live mid-sentence and reconnects on Mini with another voice (3 times in the window). The Mini allowance is **20 min/day** for the owner and **never** ended a session. OpenAI's 60-minute session limit is never reached. |
-| Why she repeats the name | The prompt tells her to: `"Use their first name now and then, not every sentence."` (`live_voice.py:264`, same text for Premium and Mini; Mini follows the first half and drops the limit). Her greeting opens with the name, and a compact model copies its own first turn. The production sliders ("fast and clipped", "playful", "as few words as possible") favour stock one-liners where the name becomes filler. Section 6. |
+| Why she repeats the name | Measured: after the greeting, **Mini says your name in 31% of replies (Premium 8%), usually as the first word.** The prompt tells her to: `"Use their first name now and then, not every sentence."` (`live_voice.py:264`, same text for Premium and Mini; Mini follows the first half and drops the limit). Her greeting opens with the name, and a compact model copies its own first turn. The production sliders ("fast and clipped", "playful", "as few words as possible") favour stock one-liners where the name becomes filler. Section 6. |
 | Fix first | The idle timer fix (P0-1), raising `idle_close_s` in the Voice Lab, and treating a short network blip as recoverable (P0-2). Then the prompt changes in section 6. |
 | Without materially raising cost? | **Yes.** Mini bills tokens, not minutes. Silence and waiting add almost no Mini cost. The prompt edits add about 60 instruction tokens, which are cached at $0.06 per 1M. Nothing proposed adds a reconnect loop or raises any allowance. Section 8. |
 
@@ -190,15 +190,26 @@ Other: 2x provider error "Conversation already has an active response in progres
 
 **Why only Mini goes idle:** GPT-Live's caption events follow its audio and stream while the rep talks (`session.input_transcript.delta`). Every delta restarts the idle timer. On Mini the transcript arrives ahead of the audio, and nothing arrives while the rep talks until they stop. Same timer, same 15 s, very different result.
 
-### 9b. Name use (production counts, numbers only)
-Delegation results containing the rep's first name: Mini 8, Premium 26, `answer` tool 0 on both. Most of these are drafted customer texts that legitimately contain the rep's name ("it's Forest from..."), and the "answer" tool path didn't contribute. Rep rows containing the name: Mini 0, Premium 4. First reply after the 3 handoffs: 0 mentions. The per-row assistant counts (greeting vs later, Mini vs Premium) have been requested; they're not needed to decide the prompt fix, but they're the before/after metric.
+### 9b. Name use (production counts, numbers only; NAME = the rep's first name, whole word)
+| | Mini (31 sessions) | Premium GPT-Live (33) |
+|---|---|---|
+| Assistant replies | 129 (4.2 per session, 18 words each) | 274 (8.3 per session, 17 words each) |
+| Replies containing the name | **57 (44%)** | 49 (18%) |
+| Replies that START with the name | **49 (38%)** | 34 (12%) |
+| Greeting replies with the name | 27 | 30 |
+| **Later replies (after the greeting) with the name** | **30 of 98 (31%)**, mean 1.06 per session, max 8 | 19 of 241 (8%), mean 0.73, max 4 |
+| Rep's own replies containing the name | 0 | 4 |
+| Lookup results containing the name, by tool | find_mentions 6, recall_person 1, who_today 1 (`answer` 0) | find_mentions 10, recall_person 7, open_screen 3, draft_message 3, update_contact 1, add_note 1, who_today 1 (`answer` 0) |
+Older sessions (178, no engine field): 152 of them have at least one reply with the name. In a 46-session sample, 65 of 293 replies (22%).
+
+**Reading:** after the greeting, Mini says the name in **about 1 reply in 3, about 4x as often as Premium**, and usually as the first word ("Forest, ..."). Both get the same rep_line and greeting, so the model's handling of "Use their first name now and then" is the difference. Lookup results carry the name only rarely (8 on Mini, mostly `find_mentions`, where the rep's name appears in their own notes and messages), so the prompt is the cause, not the tools. **Success measure for the fix:** later replies with the name on Mini from 31% to under 5%, and replies starting with the name to about 0 after the greeting.
 ---
 ## 10. Test results
 | Test | Type | Result |
 |---|---|---|
 | `frontend/scripts/sim-mini-lifecycle.js` (real hook, mocked provider, virtual clock) | automated, mocked | A/A15, B/B15, C/C15, D/D15 reproduce idle cut-offs; E short blip ends the call; F provider end looks like network; G allowance cut with 0 warnings; H server stop honoured; I one close only; J "That session is closed" spoken |
 | `tests/test_voice_controls.py`, `test_voice_fallback.py`, `test_live_voice.py` | automated, fake provider | 24/24 pass (allowance, handoff, watchdog stale, kill switch, listening config) |
-| Name-use measurement | production counts | section 9b (tool results: Mini 8 / Premium 26, answer tool 0) |
+| Name-use measurement | production counts | section 9b: Mini 31% of later replies vs Premium 8% |
 | Paid live Mini test | not run | owner skipped it. Preview has no OpenAI key |
 | Short/long conversations, silence, interruptions, rapid back-and-forth | mocked (A-D) | as above |
 | Network switch, backgrounding, screen lock, audio interruptions | **physical iPhone, owner** | checklist below |
