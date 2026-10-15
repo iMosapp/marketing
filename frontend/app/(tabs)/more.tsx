@@ -586,7 +586,6 @@ function MoreScreenFull() {
       { permKey: 'accounts', icon: 'call', title: 'Phone Numbers', subtitle: 'Twilio inventory & billing', onPress: () => router.push('/admin/twilio-numbers'), color: '#34C759' },
       ...((!repPreview && (user?.role === 'store_manager' || user?.role === 'org_admin')) ? [
         { icon: 'card' as any, title: 'Billing', subtitle: 'Your plan, invoices and payment method', onPress: () => router.push('/settings/billing' as any), color: '#C9A962' },
-        myTeamItem,
       ] : []),
       ...((!repPreview && user?.role === 'org_admin') ? [
         { permKey: 'accounts', icon: 'chatbubbles' as any, title: 'Communications', subtitle: 'Your texting numbers, who holds them, compliance and messaging status', onPress: () => router.push(`/admin/org-twilio/${user?.organization_id}` as any), color: '#C9A962' },
@@ -597,9 +596,11 @@ function MoreScreenFull() {
     const filtered = items.filter(i => !i.permKey || perm('admin', i.permKey));
     if (filtered.length > 0) sections.push({ id: 'setup_manage', title: 'Set Up', icon: 'construct', color: '#FF9500', items: filtered });
   }
-  // My Team is a manager view, not an admin permission: managers without the Set Up section still get it
-  if (isTeamManager && !sections.some(sec => sec.id === 'setup_manage')) {
-    sections.push({ id: 'my_team', title: 'My Team', icon: 'people', color: '#34C759', items: [myTeamItem] });
+  // My Team is a manager view, not an admin permission: first item of the Team folder, or its own section when there is none
+  if (isTeamManager) {
+    const teamSec = sections.find(sec => sec.id === 'team');
+    if (teamSec) teamSec.items.unshift(myTeamItem);
+    else sections.push({ id: 'my_team', title: 'My Team', icon: 'people', color: '#34C759', items: [myTeamItem] });
   }
 
   // ============================================================
@@ -810,7 +811,7 @@ function MoreScreenFull() {
   }
   const GROUP_PRIORITY: Record<string, string[]> = {
     daily: ['Tasks', 'Ask Jessi', 'Who Mentioned', 'Trade Appraisal', 'AI Follow-ups', 'Send a Blast', 'Share My Card', 'Get Reviews', 'Calendar', 'Inventory', 'Team Chat'],
-    team: ['Team Today', 'Team Tasks', 'Ask Jessi About The Team', 'Team Members', 'Invite Team', 'Team Availability', 'Inboxes'],
+    team: ['My Team', 'Team Today', 'Team Tasks', 'Ask Jessi About The Team', 'Team Members', 'Invite Team', 'Team Availability', 'Inboxes'],
     leads: ['Internet Leads', 'Power Dialer', 'Call Retries', 'Lead Flows', 'Lead Source Queue', 'Lead Source Config', 'Website Widget'],
   };
   const dirGroups: ToolGroup[] = GROUP_ORDER.filter(g => dirBuckets[g]?.length).map(g => {

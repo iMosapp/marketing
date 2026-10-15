@@ -119,14 +119,15 @@ api.interceptors.response.use(
       useCompliance.getState().setLock({ ...(prev || {}), locked: true, owner: !!data.owner, message: typeof detail === 'string' ? detail : prev?.message });
     }
     if (status === 409 && detail && typeof detail === 'object' && typeof detail.code === 'string' && 'needs' in detail) {
-      const { useCompliance, CONSENT_CODES } = await import('../store/complianceStore');
+      const { useCompliance, CONSENT_CODES, quieted } = await import('../store/complianceStore');
       error.compliance = detail.code;
       error.complianceMessage = detail.message;
       if (!cfg.skipConsentPrompt && !cfg._consentAsked && (CONSENT_CODES.includes(detail.code) || detail.code === 'opted_out')) {
         cfg._consentAsked = true;
+        const quiet = quieted(detail);
         const ok = await useCompliance.getState().requestConsent(detail);
         if (ok && detail.code !== 'opted_out') return api(cfg);
-        error.consentDeclined = true;  // the sheet already explained it
+        if (!quiet) error.consentDeclined = true;  // the sheet already explained it (while quieted, the caller explains)
       }
       // Callers that print `detail` get the readable reason, not an object
       error.response.data = { ...data, detail: detail.message || detail.code, compliance: detail };

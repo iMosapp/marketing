@@ -143,3 +143,20 @@ async def preflight_or_raise(db, *, to_phone: str, from_phone: Optional[str], pu
         raise HTTPException(status_code=409, detail={"code": d["code"], "message": d["reason"], "needs": d.get("needs") or [], "purpose": purpose,
                                                      "contact_id": contact_id, "phone": normalize_phone(to_phone)})
     return d
+
+
+
+async def stop_or_raise(db, *, to_phone: str, user_id: str, contact_id: Optional[str] = None) -> None:
+    """A text the team member sends from their own phone (sms_personal) never reaches the provider, so consent and sender rules
+    do not apply; a STOP still does: refuse before the app logs it or opens the phone's messaging app."""
+    from fastapi import HTTPException
+    from services import sender_policy, suppression
+    from services.twilio_service import normalize_phone
+    phone = normalize_phone(to_phone)
+    pol = await sender_policy.check(db, from_phone=None, user_id=user_id, org_id=None, platform=False)
+    hit = await suppression.active(db, phone, pol.get("org_id"))
+    if not hit and contact_id and ObjectId.is_valid(str(contact_id)):
+        hit = await db.contacts.find_one({"_id": ObjectId(str(contact_id)), "$or": [{"opted_out": True}, {"sms_opt_out": True}]}, {"_id": 1})
+    if hit:
+        raise HTTPException(status_code=409, detail={"code": "opted_out", "message": REASONS["opted_out"], "needs": [], "purpose": "conversational",
+                                                     "contact_id": contact_id, "phone": phone})

@@ -453,6 +453,9 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     resolved_content = await substitute_template_vars(message_data.content, user_id, contact_id)
     if (message_data.channel or 'sms') == 'sms' and to_phone:
         await _preflight(user_id, to_phone, message_data.purpose, contact_id, conversation=conv)
+    elif message_data.channel == 'sms_personal' and to_phone:
+        from services.outbound_gate import stop_or_raise
+        await stop_or_raise(get_db(), to_phone=to_phone, user_id=user_id, contact_id=str(contact_id or "") or None)
     
     # Create message record
     message = {
@@ -2321,6 +2324,9 @@ async def send_message_simple(user_id: str, message_data: dict):
             to_phone = contact.get('phone')
     if channel == 'sms' and to_phone:
         await _preflight(user_id, to_phone, message_data.get('purpose'), resolved_contact_id, from_phone=await _rep_number(db, user_id))
+    elif channel == 'sms_personal' and to_phone:
+        from services.outbound_gate import stop_or_raise
+        await stop_or_raise(db, to_phone=to_phone, user_id=user_id, contact_id=str(resolved_contact_id or "") or None)
     
     # Create message
     message = {

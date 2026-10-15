@@ -83,6 +83,11 @@ def test_stop_then_start_lifecycle(manager):
         )
         assert blocked, f"send not blocked opted-out: {resp.status_code} {body}"
 
+        # Texting from the rep's own phone (sms_personal) is refused too, before anything is logged
+        rp = requests.post(send_url, headers=headers, json={"contact_id": QA_CONTACT, "content": "QA personal opt-out " + secrets.token_hex(3),
+                                                            "channel": "sms_personal"}, timeout=30)
+        assert rp.status_code == 409 and rp.json()["detail"]["code"] == "opted_out", f"{rp.status_code} {rp.text[:200]}"
+
         # Opt-in link creation refused
         r2 = requests.post(f"{BASE}/api/consent/contact/{QA_CONTACT}/opt-in-link",
                            headers=headers, json={"scopes": ["marketing"]}, timeout=30)
@@ -97,3 +102,7 @@ def test_stop_then_start_lifecycle(manager):
         r = requests.get(f"{BASE}/api/consent/contact/{QA_CONTACT}", headers=headers, timeout=30)
         assert r.status_code == 200
         assert r.json().get("opted_out") in (False, None), r.json()
+        user_id = manager["user"]["id"] if "id" in manager["user"] else manager["user"].get("_id")
+        rp = requests.post(f"{BASE}/api/messages/send/{user_id}", headers={**headers, "Content-Type": "application/json"},
+                           json={"contact_id": QA_CONTACT, "content": "QA personal after START", "channel": "sms_personal"}, timeout=30)
+        assert rp.status_code == 200, f"{rp.status_code} {rp.text[:200]}"

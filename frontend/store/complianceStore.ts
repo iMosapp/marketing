@@ -16,14 +16,17 @@ type ComplianceState = {
 const DECLINE_QUIET_MS = 30000;
 const declinedUntil = new Map<string, number>();
 const inflight = new Map<string, Promise<boolean>>();
+const askKey = (a: ConsentAsk) => a.phone || a.contact_id || 'unknown';
+/** True while a "Not now" is still quieting the sheet for this number: callers then explain the refusal themselves. */
+export const quieted = (a: ConsentAsk) => !a.manual && (declinedUntil.get(askKey(a)) || 0) > Date.now();
 
 export const useCompliance = create<ComplianceState>((set, get) => ({
   ask: null,
   lock: null,
   // One sheet per number: parallel refused sends share it, and a "Not now" quiets repeats for 30 s (one tap never spawns five sheets).
   requestConsent: (a) => {
-    const key = a.phone || a.contact_id || 'unknown';
-    if (!a.manual && (declinedUntil.get(key) || 0) > Date.now()) return Promise.resolve(false);
+    const key = askKey(a);
+    if (quieted(a)) return Promise.resolve(false);
     const running = inflight.get(key);
     if (running) return running;
     if (get().ask) return Promise.resolve(false);

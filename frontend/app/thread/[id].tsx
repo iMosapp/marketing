@@ -1132,7 +1132,15 @@ function ThreadScreen() {
           await api.post(`/messages/send/${user._id}/${convId}`, messagePayload);
           eventLogged = true;
           setLeadWait(null);
-        } catch (e) {
+        } catch (e: any) {
+          if (e?.compliance) {
+            // Opted out (STOP): nothing is logged and the phone's messaging app is not opened
+            if (!e.consentDeclined) showAlert('Text not sent', e.complianceMessage || 'This text was not sent.');
+            setMessages((prev) => prev.filter((m) => m._id !== optimisticMessage._id));
+            setMessage(contentToSend);
+            setSending(false);
+            return;
+          }
           console.error('Messages send failed, will use fallback:', e);
         }
       }
