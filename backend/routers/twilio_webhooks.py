@@ -2351,6 +2351,10 @@ async def handle_inbound_voice(
             logger.warning(f"[Voice] No rep found for {to_phone} — falling back to super_admin ({rep_user.get('name')})")
 
     rep_personal_phone = normalize_phone((rep_user.get("phone") or "").strip()) if rep_user else ""
+    if rep_personal_phone and rep_personal_phone == from_phone:
+        # the rep is calling their own business number from their own cell: dialing that cell can never connect, go straight to voicemail
+        logger.info(f"[Voice] {from_phone[-4:]} is calling their own number {to_phone[-4:]}: voicemail instead of ringing the same phone")
+        rep_personal_phone = ""
     rep_name           = (rep_user.get("name") or "I'm On Social").split()[0] if rep_user else "I'm On Social"
     app_url            = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 

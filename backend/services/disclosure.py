@@ -1,7 +1,7 @@
-"""Opt-out disclosure tracking: the first text from a sender to a contact identifies the business and says how to opt out; later
-conversational texts stay natural. Reminders and marketing rules come from configuration (per messaging program, per
-jurisdiction, per organization), never from one hard-coded frequency. Disclosure history (`sms_disclosure_events`) is kept
-apart from consent: sending an opt-out notice never counts as consent."""
+"""Opt-out disclosure tracking. Personal 1:1 texts (conversational, requested info, transactional) carry no opt-out line: contacts
+opt in verbally or by checkbox before a rep texts them (owner decision, Oct 15 2026). Campaigns and broadcasts (marketing) carry it
+on the first campaign message to each person. Reminders come from configuration (per program, jurisdiction, organization), never
+from one hard-coded frequency. Disclosure history (`sms_disclosure_events`) is kept apart from consent: an opt-out notice never counts as consent."""
 import logging
 import re
 from datetime import datetime, timedelta, timezone
@@ -17,8 +17,8 @@ DEFAULT_POLICY = {
     "version": VERSION,
     # reminder_every_messages / reminder_every_days: None = no periodic reminder unless a program, jurisdiction or organization sets one
     "programs": {
-        "standard": {"first_message": True, "every_message": False, "reminder_every_messages": None, "reminder_every_days": None},
-        "marketing": {"first_message": True, "every_message": True, "reminder_every_messages": None, "reminder_every_days": None},
+        "standard": {"first_message": False, "every_message": False, "reminder_every_messages": None, "reminder_every_days": None},
+        "marketing": {"first_message": True, "every_message": False, "reminder_every_messages": None, "reminder_every_days": None},
         "system": {"first_message": False, "every_message": False, "reminder_every_messages": None, "reminder_every_days": None},
     },
     "jurisdictions": {},
@@ -56,7 +56,7 @@ def _jurisdiction(phone: str) -> list:
 
 def program_id(purpose: str, from_number: Optional[str], campaign_key: Optional[str]) -> str:
     if PROGRAM_OF.get(purpose) == "marketing":
-        return f"marketing:{campaign_key or 'general'}"
+        return "marketing"  # one program per organization and person: the first campaign message to someone carries it, whichever campaign
     return f"sender:{from_number or 'platform'}"
 
 
@@ -74,7 +74,7 @@ async def plan(db, *, org: Optional[dict], purpose: str, from_number: Optional[s
     sid = f"{org_id}:{pid}:{phone}"
     st = await db[STATE].find_one({"_id": sid}) or {}
     reason = None
-    if not st.get("first_at"):
+    if not (st.get("first_at") or st.get("disclosures")):  # never disclosed in this program to this person
         reason = "first_message" if rules.get("first_message") else None
     elif rules.get("every_message"):
         reason = "every_message"
@@ -106,7 +106,7 @@ async def record(db, p: dict, *, phone: str, contact_id: Optional[str], message_
             await db[STATE].update_one({"_id": p["state_id"]}, {
                 "$set": {"org_id": p["org_id"], "program": p["program"], "phone": phone, "last_at": now, "last_version": p["version"], "last_message_sid": message_sid,
                          "last_delivery_status": "accepted", "since_last": 0},
-                "$setOnInsert": {"first_at": now}, "$inc": {"total": 1, "disclosures": 1}}, upsert=True)
+                "$min": {"first_at": now}, "$inc": {"total": 1, "disclosures": 1}}, upsert=True)  # $min: also when an earlier plain text created the doc
             await db[EVENTS].insert_one({"state_id": p["state_id"], "org_id": p["org_id"], "program": p["program"], "phone": phone, "contact_id": contact_id,
                                          "reason": p.get("reason") or "in_body", "version": p["version"], "text": p.get("append") or "(sender's own wording)",
                                          "message_sid": message_sid, "delivery_status": "accepted", "at": now, "message_excerpt": (text or "")[-200:]})

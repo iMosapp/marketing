@@ -177,18 +177,47 @@ def test_locked_org_blocks_outbound_and_api_paths():
 
 # ── disclosure ────────────────────────────────────────────────────────────────
 
-def test_first_text_discloses_then_stays_natural_marketing_always():
+def _send(db, org, purpose, body, campaign_key=None, sender="+18015550000", sid="SMqa"):
+    p = run(disclosure.plan(db, org=org, purpose=purpose, from_number=sender, phone=PHONE, body=body, campaign_key=campaign_key))
+    run(disclosure.record(db, p, phone=PHONE, contact_id=None, message_sid=sid, text=disclosure.apply(body, p)))
+    return p
+
+
+def test_personal_texts_never_carry_the_opt_out_line():
     db = adb()
     org = {"_id": ObjectId(ORG), "name": "QA Launch Co"}
-    p1 = run(disclosure.plan(db, org=org, purpose="conversational", from_number="+18015550000", phone=PHONE, body="Hi there"))
-    assert p1["reason"] == "first_message" and "STOP" in p1["append"] and "QA Launch Co" in p1["append"]
-    run(disclosure.record(db, p1, phone=PHONE, contact_id=None, message_sid="SMqa1", text=disclosure.apply("Hi there", p1)))
-    p2 = run(disclosure.plan(db, org=org, purpose="conversational", from_number="+18015550000", phone=PHONE, body="See you at 3"))
-    assert p2["append"] is None and not p2["included"]
-    p3 = run(disclosure.plan(db, org=org, purpose="marketing", from_number="+18015550000", phone=PHONE, body="Sale this week", campaign_key="qa"))
-    assert p3["append"] and "HELP" in p3["append"]
-    p4 = run(disclosure.plan(db, org=org, purpose="conversational", from_number="+18015550001", phone=PHONE, body="Reply STOP to opt out. Hi"))
-    assert p4["already_in_body"] and p4["append"] is None
+    for i, purpose in enumerate(("conversational", "requested_info", "transactional", "conversational", "conversational")):
+        p = _send(db, org, purpose, f"Hi there {i}", sid=f"SMp{i}")
+        assert p["append"] is None and p["reason"] is None, (purpose, p)
+    p = _send(db, org, "conversational", "Reply STOP to opt out. Hi", sender="+18015550001", sid="SMp9")
+    assert p["already_in_body"] and p["append"] is None  # the sender's own wording is never touched
+
+
+def test_campaign_line_only_on_the_first_campaign_message_to_each_person():
+    db = adb()
+    org = {"_id": ObjectId(ORG), "name": "QA Launch Co"}
+    run(db[disclosure.STATE].delete_many({"phone": PHONE}))
+    p1 = _send(db, org, "marketing", "Sale this week", campaign_key="qa-1", sid="SMm1")
+    assert p1["reason"] == "first_message" and "HELP" in p1["append"] and "STOP" in p1["append"] and "QA Launch Co" in p1["append"]
+    p2 = _send(db, org, "marketing", "Last day of the sale", campaign_key="qa-1", sid="SMm2")
+    p3 = _send(db, org, "marketing", "New service special", campaign_key="qa-2", sid="SMm3")  # another campaign, same person
+    assert p2["append"] is None and p3["append"] is None
+
+
+def test_an_earlier_plain_text_no_longer_makes_the_line_repeat():
+    """Production bug (Oct 15): a plain text created the state without first_at, so every later text re-disclosed."""
+    db = adb()
+    org = {"_id": ObjectId(ORG), "name": "QA Launch Co"}
+    run(db[disclosure.STATE].delete_many({"phone": PHONE}))
+    _send(db, org, "system", "Your code is 123456", sid="SMs0")
+    run(db[disclosure.STATE].update_one({"_id": f"{ORG}:marketing:{PHONE}"}, {"$set": {"org_id": ORG, "program": "marketing", "phone": PHONE},
+                                                                            "$inc": {"total": 1, "since_last": 1}}, upsert=True))
+    first = _send(db, org, "marketing", "Sale this week", campaign_key="qa-3", sid="SMs1")
+    assert first["reason"] == "first_message"
+    st = run(db[disclosure.STATE].find_one({"_id": first["state_id"]}))
+    assert st.get("first_at") and st.get("disclosures") == 1
+    for i in range(3):
+        assert _send(db, org, "marketing", f"Follow-up {i}", campaign_key="qa-3", sid=f"SMs{i + 2}")["append"] is None
 
 
 # ── duplicate-send protection ─────────────────────────────────────────────────

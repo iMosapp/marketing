@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "https://app.imonsocial.com").rstrip("/")
-DEFAULT_BUILD = "2026-10-15.mini-voice"
+DEFAULT_BUILD = "2026-10-15.optout-calls"
 EXPECTED_BUILD = sys.argv[2] if __name__ == "__main__" and len(sys.argv) > 2 else DEFAULT_BUILD
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Content-Type": "application/json"}
 ZERO = "0" * 24

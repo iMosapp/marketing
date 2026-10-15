@@ -466,3 +466,5 @@
 - Oct 15 2026: Jessi Mini fixes in preview (not deployed): name policy (backend), quiet/away behaviour + warning UI + close diagnostics (app, OTA), tests `test_mini_voice_quality.py`, `voice_name_use_eval.py`, `scripts/sim-mini-lifecycle.js` (19/19). Report `JESSI_MINI_FIX_PREVIEW_REPORT.md`.
 
 - Oct 15 2026: BUILD bumped to `2026-10-15.mini-voice` (server.py, prod smoke default + its test); production deploy dispatched with a shadow-mode pre-check.
+
+- Oct 15 2026: Opt-out line only on the first campaign message per person (none on personal texts); disclosure first_at bug fixed; self-call to own business number goes to voicemail. BUILD `2026-10-15.optout-calls`, deploy dispatched.
