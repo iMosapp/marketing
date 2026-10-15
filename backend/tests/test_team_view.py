@@ -83,6 +83,16 @@ def test_store_manager_sees_only_their_store(world):
     assert res["scope"] == "store" and names(res) == ["owner", "rep1", "rep2"]
 
 
+
+def test_store_manager_without_org_id_sees_only_their_store(world):
+    mgr = {**world["users"]["mgr"], "organization_id": None}
+    assert team_view.scope_query(mgr) == {"store_id": mgr["store_id"]}
+    with pytest.raises(PermissionError):
+        team_view.scope_query(mgr, org_id=world["oid"])
+    with pytest.raises(PermissionError):
+        team_view.scope_query({**world["users"]["owner"], "organization_id": None})
+
+
 def test_rep_cannot_see_my_team(world):
     with pytest.raises(PermissionError):
         run(team_view.team(world["db"], world["users"]["rep1"]))

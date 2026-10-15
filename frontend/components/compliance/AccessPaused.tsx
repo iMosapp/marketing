@@ -11,7 +11,10 @@ import { GOLD, RADIUS, SPACE, TYPE, tid, tint } from '../ui/tokens';
 /** Keeps the subscription lock in sync: on sign-in, when the app returns to the foreground, and from any 403 billing_locked (api.ts). */
 export function useBillingAccess() {
   const userId = useAuthStore(s => s.user?._id);
+  const signInLock = useAuthStore(s => (s.user as any)?.billing_lock);
   const setLock = useCompliance(s => s.setLock);
+  // The sign-in response already carries the lock (owner flag included): show the right screen at once, /billing/access then refreshes it
+  useEffect(() => { if (signInLock?.locked) setLock(signInLock); }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
   const check = useCallback(async () => {
     if (!userId) { setLock(null); return; }
     try {

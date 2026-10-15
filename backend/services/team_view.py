@@ -30,12 +30,15 @@ def scope_query(viewer: dict, org_id: Optional[str] = None) -> dict:
             raise PermissionError("Pick an organization")
         return {"organization_id": str(target)}
     own = str(viewer.get("organization_id") or "")
-    if not own or (org_id and str(org_id) != own):
+    if org_id and str(org_id) != own:
         raise PermissionError("You can only see your own team")
     if role == "store_manager":
         if not viewer.get("store_id"):
             raise PermissionError("Your account is not attached to a store")
-        return {"organization_id": own, "store_id": str(viewer["store_id"])}
+        # The location is the boundary; legacy managers without an organization id still see only their own location
+        return {**({"organization_id": own} if own else {}), "store_id": str(viewer["store_id"])}
+    if not own:
+        raise PermissionError("You can only see your own team")
     return {"organization_id": own}
 
 
