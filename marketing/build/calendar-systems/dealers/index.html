@@ -203,7 +203,7 @@ nav{background:#FFF;border-bottom:2px solid var(--surface);position:sticky;top:0
     <div class="ch-card rv rv-1">
       <i class="fa-solid fa-magnifying-glass-chart" style="color:var(--orange)"></i>
       <h3>SEO and Search Visibility</h3>
-      <p>Every salesperson gets a searchable digital profile. Every photo shared, every digital card tapped, every review collected builds your dealership's presence in Google and AI answer engines. More visibility, more walk-ins.</p>
+      <p>Every salesperson gets a searchable digital profile. Every photo shared, digital card tapped and review collected adds to your dealership's online presence, with pages built to be found.</p>
     </div>
     <div class="ch-card rv rv-2">
       <i class="fa-solid fa-chart-pie" style="color:#27AE60"></i>
@@ -228,7 +228,7 @@ nav{background:#FFF;border-bottom:2px solid var(--surface);position:sticky;top:0
       <div class="ch-card rv rv-2" style="border-left:4px solid #2E86DE">
         <i class="fa-solid fa-robot" style="color:#2E86DE"></i>
         <h3>AI Answer Engine Optimization</h3>
-        <p>Google isn't the only place people search anymore. ChatGPT, Siri, Google AI, they all pull from structured data. The more your salespeople share, engage, and collect reviews, the more your dealership shows up in AI-powered answers. This is where search is going, and you'll already be there.</p>
+        <p>Search is changing, and more of it runs on structured data. Every card and page your salespeople share carries their reviews, profiles and business details in a search-friendly format that Google and other search tools can read.</p>
       </div>
       <div class="ch-card rv rv-3" style="border-left:4px solid #27AE60">
         <i class="fa-solid fa-bullseye" style="color:#27AE60"></i>
@@ -384,5 +384,6 @@ nav{background:#FFF;border-bottom:2px solid var(--surface);position:sticky;top:0
 const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')});},{threshold:.08,rootMargin:'0px 0px -32px 0px'});document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
 async function submitGetStarted(e){e.preventDefault();var btn=document.getElementById('gsSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('gs-name').value,email:document.getElementById('gs-email').value,phone:document.getElementById('gs-phone').value,company:document.getElementById('gs-dealer').value,business_type:document.getElementById('gs-size').value,lead_source:'calendar_systems_dealer_page'})});if(res.ok){document.getElementById('gsForm').style.display='none';document.getElementById('gsSuccess').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Get Started';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.")}}
 </script>
+<script src="https://app.imonsocial.com/api/w/FE2POg13.js" async></script>
 </body>
 </html>

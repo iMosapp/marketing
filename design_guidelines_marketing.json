@@ -1,0 +1,166 @@
+{
+  "project_name": "i'M On Social - Marketing Site Redesign",
+  "app_type": "marketing_site",
+  "target_stack": "Pure HTML5, Shared Vanilla CSS, Vanilla JavaScript (No React Framework)",
+  "positioning": {
+    "tagline": "The Relationship OS for Sales Teams",
+    "core_value_prop": "Your CRM remembers the deal. i'M On Social remembers the person.",
+    "script_tag_embed": "<script src=\"https://app.imonsocial.com/api/w/FE2POg13.js\" async></script>"
+  },
+  "brand_rules": {
+    "em_dash_policy": "STRICTLY FORBIDDEN. Never use em dashes (—) anywhere in page copy. Use commas, hyphens with spaces (' - '), or separate sentences.",
+    "logo_files": {
+      "light_backgrounds": "/logo.png",
+      "dark_backgrounds": "/logo-dark.png",
+      "rule": "Do not create or invent alternate wordmarks or logos. Use only existing speech-bubble logo image files."
+    },
+    "chat_widget_spacing": "Reserve bottom-right corner (z-index 9999) for the i'M On Social live chat widget. Do not anchor fixed buttons or floating badges in the bottom-right 100px x 100px area."
+  },
+  "color_palette": {
+    "archetype": "Obsidian Performance Pro & Luxury Executive",
+    "backgrounds": {
+      "page_bg": "#070B14",
+      "surface_dark": "#0E1626",
+      "surface_card": "#141E33",
+      "surface_hover": "#1C2A47",
+      "surface_glass": "rgba(14, 22, 38, 0.75)"
+    },
+    "accents": {
+      "primary_blue": "#3B82F6",
+      "primary_hover": "#2563EB",
+      "cyan_glow": "#06B6D4",
+      "emerald_status": "#10B981",
+      "amber_warmth": "#F59E0B",
+      "coral_alert": "#EF4444"
+    },
+    "typography": {
+      "text_primary": "#F8FAFC",
+      "text_secondary": "#94A3B8",
+      "text_muted": "#64748B",
+      "text_inverse": "#0F172A"
+    },
+    "borders": {
+      "subtle": "rgba(255, 255, 255, 0.08)",
+      "medium": "rgba(255, 255, 255, 0.15)",
+      "glow": "rgba(59, 130, 246, 0.4)"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Plus Jakarta Sans, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "google_font_url": "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
+    "hierarchy": {
+      "h1_hero": "text-4xl sm:text-5xl lg:text-6xl (font-weight: 800, tracking-tight)",
+      "h2_section": "text-2xl sm:text-3xl lg:text-4xl (font-weight: 700)",
+      "h3_card": "text-xl sm:text-2xl (font-weight: 600)",
+      "body_text": "text-base sm:text-lg (leading-relaxed)",
+      "caption": "text-xs sm:text-sm (tracking-wider uppercase)"
+    }
+  },
+  "component_guidelines": {
+    "navigation_bar": {
+      "position": "fixed top-0 left-0 right-0 z-50",
+      "backdrop": "backdrop-filter: blur(16px); background: rgba(7, 11, 20, 0.85); border-bottom: 1px solid rgba(255, 255, 255, 0.08);",
+      "links": ["Product", "Solutions", "Features", "Pricing"],
+      "ctas": [
+        { "text": "Sign In", "url": "https://app.imonsocial.com/auth/login", "style": "text-link" },
+        { "text": "Book a Demo", "action": "openDemoModal", "style": "primary-button", "data_testid": "nav-book-demo-btn" }
+      ],
+      "dropdown_menus": "Desktop hover / focus-visible animated card panels; Mobile toggle full-screen overlay."
+    },
+    "phone_mockup_frame": {
+      "style": "iPhone 16 Pro CSS Titanium Frame",
+      "specs": "rounded-[48px] border-[8px] border-[#2A3447] shadow-2xl relative overflow-hidden bg-black",
+      "dynamic_island": "w-[100px] h-[24px] bg-black rounded-full absolute top-3 left-1/2 -translate-x-1/2 z-20",
+      "image_containment": "object-cover w-full h-full rounded-[40px]"
+    },
+    "footer": {
+      "style": "Compact multi-column accordion layout with collapsible dropdown headers on mobile",
+      "groups": [
+        { "title": "Platform", "items": ["Overview", "Jessi AI Voice", "Unified Inbox", "Lead Queue", "Digital Cards", "Call Scorecards"] },
+        { "title": "Solutions", "items": ["Automotive Dealers", "Powersports", "Real Estate", "Insurance", "Salons & Spas", "Medical & Dental", "Fitness", "Restaurants", "Home Services"] },
+        { "title": "Resources", "items": ["Help Center", "Manager Playbook", "API Documentation", "Video Overview"] },
+        { "title": "Company & Legal", "items": ["Privacy Policy", "Terms of Service", "SMS Opt-in Policy", "Contact Support"] }
+      ],
+      "script_requirement": "Include third-party widget script in footer markup: <script src=\"https://app.imonsocial.com/api/w/FE2POg13.js\" async></script>"
+    },
+    "modals": {
+      "demo_modal": {
+        "title": "Book a Demo with i'M On Social",
+        "fields": ["Full Name", "Work Email", "Phone Number", "Business Type (Dropdown)", "Company Name"],
+        "compliance_checkbox": "I agree to receive SMS updates and demos from i'M On Social. Message & data rates may apply.",
+        "submit_button": "Schedule My Demo",
+        "data_testid": "demo-modal-submit-button"
+      }
+    }
+  },
+  "homepage_blueprint": [
+    {
+      "section_id": "hero",
+      "title": "Your CRM Remembers the Deal. i'M On Social Remembers the Person.",
+      "subtitle": "The Relationship OS that turns automated follow-ups into genuine human connection. Powered by Live Jessi AI, instant lead queues, and voice memos.",
+      "visual": "Hero Phone Frame displaying live 'People to Talk to Today' view with relationship health indicators.",
+      "cta_primary": { "label": "Book a Demo", "data_testid": "hero-cta-demo" },
+      "cta_secondary": { "label": "Watch 46s Tour", "data_testid": "hero-cta-video" }
+    },
+    {
+      "section_id": "proof_strip",
+      "metrics": [
+        { "value": "12 Sec", "label": "Average Speed to Lead" },
+        { "value": "4.2x", "label": "Higher Customer Response Rate" },
+        { "value": "98%", "label": "Retention Across Dealership Teams" }
+      ]
+    },
+    {
+      "section_id": "core_features_bento",
+      "headline": "Built for Sales Reps Who Win on Relationships",
+      "items": [
+        { "name": "People to Talk To Today", "desc": "Intelligent daily agenda showing exactly who to reach out to and why." },
+        { "name": "Jessi AI (Text & Live Voice)", "desc": "AI assistant texting in the rep's authentic voice and providing hands-free voice coaching." },
+        { "name": "Shared Lead Queue", "desc": "Speed-to-lead timers ensuring every internet lead is claimed within seconds." },
+        { "name": "Voice Memos to Notes", "desc": "Talk naturally after a conversation - AI auto-summarizes notes and schedules follow-ups." },
+        { "name": "Digital & 4x6 Printed Leave-Behind Cards", "desc": "QR-powered digital profiles paired with physical leave-behind cards for instant trust." },
+        { "name": "Website Chat & Voice Widget", "desc": "Allow web visitors to text, request an instant call, or chat directly with Jessi." }
+      ]
+    },
+    {
+      "section_id": "industry_grid",
+      "headline": "Tailored for High-Touch Sales Teams",
+      "industries": ["Automotive Dealers", "Powersports", "Real Estate", "Insurance", "Salons", "Medical & Dental", "Fitness", "Restaurants", "Home Services"]
+    },
+    {
+      "section_id": "video_showcase",
+      "headline": "See Relationship OS in Action",
+      "video_asset": "/marketing/build/video/social-ad.mp4"
+    }
+  ],
+  "industry_pages_template": {
+    "structure": "Hero -> Industry Challenge vs Relationship OS Solution -> Phone Screenshots -> Tailored Playbook Features -> Industry Testimonial -> Demo CTA",
+    "pages": [
+      "/dealers/",
+      "/powersports/",
+      "/real-estate/",
+      "/insurance/",
+      "/salons/",
+      "/medical/",
+      "/fitness/",
+      "/restaurants/",
+      "/home-services/"
+    ]
+  },
+  "media_assets": {
+    "image_urls": [
+      "https://images.unsplash.com/photo-1522125670776-3c7abb882bc2?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "https://images.unsplash.com/photo-1570101945621-945409a6370f?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?crop=entropy&cs=srgb&fm=jpg&q=85"
+    ]
+  },
+  "general_ui_ux_guidelines": {
+    "testing_attributes": "All interactive elements (buttons, inputs, links, tabs, modals) MUST contain data-testid attributes for automated testing.",
+    "hover_states": "Interactive elements must transition border-color, background, or scale (1.02x) smoothly over 200ms.",
+    "mobile_responsiveness": "100% mobile optimized with touch-friendly targets (minimum 44px height)."
+  }
+}

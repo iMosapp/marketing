@@ -133,7 +133,7 @@ DEFAULTS = {
         "chat": {"on": True, "label": "Chat now", "intro": "Ask Jessi about hours, what's in stock or the store. A real person is one tap away.", "button": "Start chat",
                  "placeholder": "Type your question", "human": "Talk to a person", "booking_on": True, "booking_label": "Book a visit", "meeting_link": "", "notify_reps": True},
     },
-    "kb": {"mode": "dealership", "welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False, "starters": [],
+    "kb": {"mode": "dealership", "pace": "natural", "welcome": "", "specials": [], "never": [], "notes": "", "share_listed_prices": False, "starters": [],
            "playbook": {"on": True, "goal": "", "questions": [], "offer_after": 3, "pitch": ""}, "scripts": [], "extra_urls": []},
     "copy": {
         "title": "How can we help?", "name_label": "Name", "phone_label": "Mobile number", "message_label": "Message (optional)",
@@ -199,6 +199,7 @@ def normalize_config(cfg: dict) -> dict:
         pz["photo_url"] = ""
     kb = c["kb"]
     kb["mode"] = "business" if kb.get("mode") == "business" else "dealership"
+    kb["pace"] = kb.get("pace") if kb.get("pace") in ("natural", "relaxed", "instant") else "natural"
     kb["welcome"] = str(kb.get("welcome") or "")[:300]
     kb["notes"] = str(kb.get("notes") or "")[:2000]
     kb["share_listed_prices"] = bool(kb.get("share_listed_prices"))
@@ -283,6 +284,7 @@ def public_config(w: dict, store: Optional[dict], preview: bool = False, va: Opt
     out = {"key": w["key"], "api": f"{app_url()}/api/w/{w['key']}", "store_name": (store or {}).get("name") or w.get("store_name") or "",
            "appearance": cfg["appearance"], "doors": {d: {k: v for k, v in cfg["doors"][d].items()} for d in cfg["doors"]}, "copy": cfg["copy"], "preview": preview}
     out["chat_mode"] = cfg["kb"]["mode"]
+    out["chat_pace"] = cfg["kb"]["pace"]
     out["appearance"]["smart_teasers"] = {**SMART_TEASERS[out["chat_mode"]], **cfg["appearance"]["smart_teasers"]}
     out["va"] = va if va and va.get("on") else {"on": False, "name": "Jessi"}
     out["starters"] = cfg["kb"]["starters"] or STARTERS[cfg["kb"]["mode"]]

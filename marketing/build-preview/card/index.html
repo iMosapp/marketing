@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="robots" content="noindex, nofollow"/>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>i'M On Social - See it in action</title>
 <meta name="description" content="Your CRM remembers the sale. We remember the person. Watch the 46-second story and book a demo."/>
 <meta name="robots" content="noindex"/>
 <meta name="theme-color" content="#0A0A0F"/>
-<link rel="icon" href="/favicon.png"/>
+<link rel="icon" href="/api/marketing-preview/favicon.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<script src="/lead-retry.js"></script>
+<script src="/api/marketing-preview/lead-retry.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--gold:#C9A962;--gold-2:#D8B975;--bg:#0A0A0F;--card:#141419;--line:rgba(255,255,255,.08);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.4);--red:#FF3B30;--blue:#0A84FF;--green:#34C759;--yellow:#FFD60A}
@@ -124,15 +125,15 @@ h1 .g{color:var(--gold)}
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="/"><img src="/logo-dark.png" alt=""><span><b>I'M ON <i>SOCIAL</i></b><small>The Relationship OS</small></span></a>
+    <a class="brand" href="/api/marketing-preview/"><img src="/api/marketing-preview/logo-dark.png" alt=""><span><b>I'M ON <i>SOCIAL</i></b><small>The Relationship OS</small></span></a>
     <div class="rep" id="repChip"><div class="av" id="repAv"></div><span id="repName">Rep<em>shared this with you</em></span></div>
   </header>
 
   <section class="stage">
     <div class="vid" id="vid">
-      <video id="ad" muted playsinline webkit-playsinline autoplay preload="auto" poster="/video/social-ad-poster.jpg" aria-label="i'M On Social: Your CRM remembers the sale. We remember the person.">
-        <source src="/video/social-ad.mp4" type="video/mp4">
-        <source src="/video/social-ad.webm" type="video/webm">
+      <video id="ad" muted playsinline webkit-playsinline autoplay preload="auto" poster="/api/marketing-preview/video/social-ad-poster.jpg" aria-label="i'M On Social: Your CRM remembers the sale. We remember the person.">
+        <source src="/api/marketing-preview/video/social-ad.mp4" type="video/mp4">
+        <source src="/api/marketing-preview/video/social-ad.webm" type="video/webm">
       </video>
       <span class="tag">46-sec story</span>
       <button class="mute" id="muteBtn" aria-label="Mute"><i class="fa-solid fa-volume-high"></i></button>
@@ -158,7 +159,7 @@ h1 .g{color:var(--gold)}
     </div>
     <div class="quote"><p>"You don't need more contacts. You need to remember the ones you already have."</p><small>Stay connected. Be the one they remember.</small></div>
   </section>
-  <p class="foot"><a href="/">imonsocial.com</a> &nbsp;|&nbsp; People &middot; Conversations &middot; Relationships &middot; For life</p>
+  <p class="foot"><a href="/api/marketing-preview/">imonsocial.com</a> &nbsp;|&nbsp; People &middot; Conversations &middot; Relationships &middot; For life</p>
 </div>
 
 <div class="bar"><div class="in">
@@ -180,10 +181,10 @@ h1 .g{color:var(--gold)}
           <div class="f"><label>Email</label><input id="f-email" type="email" autocomplete="email" placeholder="you@dealer.com" required></div>
         </div>
         <div class="f"><label>Dealership / company</label><input id="f-company" type="text" autocomplete="organization" placeholder="Where you sell"></div>
-        <label class="consent"><input id="f-sms" type="checkbox" checked><span>Text me about my demo. Msg &amp; data rates may apply. Reply STOP to opt out. <a href="/sms-terms">SMS policy</a></span></label>
+        <label class="consent"><input id="f-sms" type="checkbox" checked><span>Text me about my demo. Msg &amp; data rates may apply. Reply STOP to opt out. <a href="/api/marketing-preview/sms-terms">SMS policy</a></span></label>
         <div class="err" id="err">We couldn't reach our server just now. Please try again in a moment, or text us instead.</div>
         <button class="submit" id="submitBtn" type="submit">Book My Demo</button>
-        <p class="fine">By submitting you agree to our <a href="/terms">Terms</a> &amp; <a href="/privacy">Privacy Policy</a>.</p>
+        <p class="fine">By submitting you agree to our <a href="/api/marketing-preview/terms">Terms</a> &amp; <a href="/api/marketing-preview/privacy">Privacy Policy</a>.</p>
       </form>
     </div>
     <div class="ok" id="okWrap">
@@ -281,5 +282,6 @@ h1 .g{color:var(--gold)}
   };
 })();
 </script>
+<script src="https://app.imonsocial.com/api/w/FE2POg13.js" async></script>
 </body>
 </html>

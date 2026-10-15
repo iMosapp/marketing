@@ -1,14 +1,19 @@
 <!doctype html>
 <html lang="en">
 <head>
+<meta name="robots" content="noindex, nofollow"/>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>i'M On Social</title>
 <script>
-  // /get/<code> install links must work even when host-level redirects are not configured.
+  // /get/<code> install links, /go/<slug> print QR links and /s/<code> short links must work even when host-level redirects are not configured.
   (function () {
     var m = /^\/get\/([A-Za-z0-9\-]+)\/?$/.exec(location.pathname);
     if (m) location.replace('https://app.imonsocial.com/api/get/' + m[1].toLowerCase());
+    var g = /^\/go\/([A-Za-z0-9\-]+)\/?$/.exec(location.pathname);
+    if (g) location.replace('https://app.imonsocial.com/api/go/' + g[1].toLowerCase());
+    var s = /^\/s\/([A-Za-z0-9]+)\/?$/.exec(location.pathname);
+    if (s) location.replace('https://app.imonsocial.com/api/s/' + s[1]);
   })();
 </script>
 <style>
@@ -16,13 +21,20 @@
   h1{font-size:28px;margin:0 0 10px}p{color:rgba(255,255,255,.6);margin:0 0 24px}
   a{display:inline-block;background:#C9A962;color:#000;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none}
 </style>
+  <meta property="og:image" content="https://www.imonsocial.com/og-image.png"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:image:alt" content="i'M On Social - The Relationship OS for Sales Teams"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:image" content="https://www.imonsocial.com/og-image.png"/>
 </head>
 <body>
   <div>
     <h1>That page moved.</h1>
     <p>Looking for the app? Tap below and we will send you to the right place.</p>
     <a href="https://app.imonsocial.com/api/get/site">Get the iPhone app</a>
-    <p style="margin-top:18px"><a href="/" style="background:transparent;color:#C9A962;padding:0">Back to imonsocial.com</a></p>
+    <p style="margin-top:18px"><a href="/api/marketing-preview/" style="background:transparent;color:#C9A962;padding:0">Back to imonsocial.com</a></p>
   </div>
+<script src="https://app.imonsocial.com/api/w/FE2POg13.js" async></script>
 </body>
 </html>

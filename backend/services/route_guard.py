@@ -4,6 +4,7 @@ Default is deny: an /api request with no proven caller (signed JWT or live imper
 public here. Public = webhooks that verify their own secret or signature, customer-facing pages and token links, machine callers
 with their own credential (cron secret, X-API-Key) and the login flows. Anything else needs a session, including every /api/auth
 route that reads or writes an account."""
+import os
 import re
 
 from bson import ObjectId
@@ -67,6 +68,8 @@ def is_public(method: str, path: str) -> bool:
         return False
     if path.startswith(PUBLIC_PREFIXES) or any(p.match(path) for p in PUBLIC_PATTERNS):
         return True
+    if method == "GET" and path.startswith("/api/marketing-preview") and os.environ.get("MARKETING_PREVIEW_PUBLIC") == "1":
+        return True  # staging copy of the marketing site; only the preview environment sets the flag
     if method == "GET" and any(p.match(path) for p in PUBLIC_GET_PATTERNS):
         return True
     return method == "POST" and path in PUBLIC_POST_EXACT

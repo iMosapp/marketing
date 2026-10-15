@@ -1,149 +1,205 @@
 {
-  "design_system": {
-    "theme": "dark_first",
-    "backgrounds": {
-      "app_bg": "#000000",
-      "surface_base": "#0B0B0C",
-      "card_bg": "#1C1C1E",
-      "card_bg_elevated": "#2C2C2E",
-      "glass_bg": "rgba(28, 28, 30, 0.75)"
+  "project_name": "i'M On Social - Marketing Homepage Blueprint",
+  "app_type": "marketing_site",
+  "archetype": "ORGANIC_AND_EARTHY_LUXURY",
+  "theme": "LIGHT_BASE_WITH_DARK_CONTRAST_BANDS",
+  "design_system_files": {
+    "css": "site.css",
+    "js": "site.js"
+  },
+  "fonts": {
+    "font_family_import": "https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@500;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
+    "heading_font": "'Cabinet Grotesk', sans-serif",
+    "body_font": "'Plus Jakarta Sans', sans-serif",
+    "mono_font": "monospace",
+    "anti_default_rule": "FORBIDDEN to use Inter for H1, H2, H3 headings. Headings MUST use Cabinet Grotesk."
+  },
+  "colors": {
+    "brand_gold": "#C9A962",
+    "brand_gold_hover": "#B8964F",
+    "brand_gold_light": "#F7F3E9",
+    "bg_light": "#FDFCF9",
+    "bg_white": "#FFFFFF",
+    "bg_dark_band": "#0B0B0F",
+    "bg_dark_card": "#16161C",
+    "text_primary_light": "#0B0B0F",
+    "text_secondary_light": "#52525B",
+    "text_muted_light": "#71717A",
+    "text_primary_dark": "#FFFFFF",
+    "text_secondary_dark": "#A1A1AA",
+    "text_muted_dark": "#71717A",
+    "border_light": "#E4E4E7",
+    "border_dark": "#27272A",
+    "shadow_subtle": "0 10px 30px -10px rgba(0, 0, 0, 0.08)",
+    "shadow_phone": "0 25px 50px -12px rgba(11, 11, 15, 0.25)"
+  },
+  "typography_hierarchy": {
+    "h1": "text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]",
+    "h2": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-snug",
+    "h3": "text-xl sm:text-2xl font-bold tracking-tight",
+    "h4": "text-lg sm:text-xl font-semibold",
+    "body": "text-base sm:text-lg leading-relaxed",
+    "small": "text-sm text-secondary leading-normal",
+    "overline": "text-xs font-bold uppercase tracking-[0.2em] text-[#C9A962]"
+  },
+  "css_phone_frame_spec": {
+    "outer_wrapper": "relative w-[280px] sm:w-[320px] aspect-[390/844] rounded-[44px] bg-[#0B0B0F] p-3 shadow-phone border border-[#27272A] transition-all duration-300",
+    "island_notch": "absolute top-4 left-1/2 -translate-x-1/2 w-28 h-5 bg-[#000000] rounded-full z-20 flex items-center justify-center gap-2",
+    "camera_lens": "w-2.5 h-2.5 rounded-full bg-[#1A1A1E]",
+    "speaker": "w-8 h-1 rounded-full bg-[#1A1A1E]",
+    "screen_area": "w-full h-full rounded-[34px] bg-[#121216] overflow-hidden relative flex flex-col border border-white/5",
+    "offset_hero_phones": "Front phone z-10 hover:scale-[1.02] transition-transform; Rear phone absolute top-6 -right-8 opacity-75 scale-95 blur-[0.5px] z-0 hidden sm:block"
+  },
+  "components": {
+    "nav": {
+      "desktop_layout": "Sticky header (z-50) with glassmorphism backdrop-blur-md bg-white/80 border-b border-zinc-200/80 px-6 py-4 flex items-center justify-between",
+      "logo": "i'M On Social brand text/mark in gold & ink text",
+      "items": [
+        "How It Works",
+        "Features ▾ (dropdown: Contact Intel, AI Voice Memos, Live Campaigns, AI Reply Assistant, Team Manager View)",
+        "Solutions ▾ (dropdown: Real Estate, Insurance, Auto Sales, Advisory, High-Touch B2B)",
+        "Pricing",
+        "Resources ▾ (dropdown: Case Studies, Relationship Playbook, Blog, Help Center)"
+      ],
+      "actions": ["Sign In", "Book a Demo (Gold Pill Button)"],
+      "mobile_drawer": "Full-screen sheet drawer trigger with hamburger button, smooth slide-in, accordion navigation menus, sticky bottom CTA button for Book a Demo"
     },
-    "colors": {
-      "gold_accent": "#C9A962",
-      "gold_subtle": "rgba(201, 169, 98, 0.15)",
-      "gold_border": "rgba(201, 169, 98, 0.35)",
-      "system_blue": "#007AFF",
-      "system_blue_subtle": "rgba(0, 122, 255, 0.15)",
-      "system_green": "#34C759",
-      "system_green_subtle": "rgba(52, 199, 89, 0.15)",
-      "system_red": "#FF3B30",
-      "system_orange": "#FF9500",
-      "text_primary": "#FFFFFF",
-      "text_secondary": "#8E8E93",
-      "text_tertiary": "#636366",
-      "border_subtle": "rgba(255, 255, 255, 0.10)"
+    "hero": {
+      "headline": "Your CRM remembers the deal. i'M On Social remembers the person.",
+      "subtitle": "Turn every customer interaction into a relationship that lasts. Capture what matters, stay connected automatically, and never let another opportunity slip through the cracks.",
+      "ctas": [
+        {"text": "Book a Demo", "type": "primary", "action": "open-modal"},
+        {"text": "See How It Works", "type": "secondary", "action": "scroll-to-how-it-works"},
+        {"text": "Watch the story (46s)", "type": "lightbox_link", "action": "open-video-modal"}
+      ],
+      "pricing_line": "From $100/mo · Individual & Team plans available",
+      "trust_line": "iPhone and web. Works next to the CRM you already use."
     },
-    "typography": {
-      "font_family": "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif",
-      "heading_h1": {
-        "font_size": "22px",
-        "font_weight": "700",
-        "line_height": "28px",
-        "letter_spacing": "-0.4px"
+    "problem_band": {
+      "theme": "dark (#0B0B0F)",
+      "heading": "You're sitting on relationships you've forgotten.",
+      "statements": [
+        "Contacts cold-call you 2 years later and you can't remember their kids' names.",
+        "Key clients slip away simply because life got busy and follow-ups were missed.",
+        "Crucial context lives buried in unorganized voice notes, text messages, and sticky notes.",
+        "Team members leave, taking personal rapport and relationship history with them."
+      ],
+      "kicker": "The problem isn't that people don't care. It's that no one can remember everything."
+    },
+    "how_it_works": {
+      "steps": [
+        {"number": "01", "title": "CAPTURE", "description": "Drop quick voice notes or text intel after every call. i'M On Social automatically summarizes key details and personal context."},
+        {"number": "02", "title": "REMEMBER", "description": "Get daily intelligent digest cards showing 'People to Talk To Today' with rich contact intelligence right when you need it."},
+        {"number": "03", "title": "STAY CONNECTED", "description": "Automate birthday wishes, client anniversaries, and 90-day check-ins with AI-suggested responses tailored to your voice."}
+      ]
+    },
+    "product_tour": {
+      "heading": "See the Actual Product",
+      "subheading": "Real screens from the mobile & web app — built for maximum daily clarity.",
+      "tabs": [
+        {"id": "tab-1", "title": "People to Talk To Today", "caption": "Daily prioritized stack of contacts needing attention, complete with contextual relationship scores."},
+        {"id": "tab-2", "title": "Contact Intel & Snapshot", "caption": "Instant 360-degree memory card highlighting family, preferences, past interactions, and important dates."},
+        {"id": "tab-3", "title": "Voice Memos + AI Summary", "caption": "Speak naturally after meetings. AI converts audio rambles into structured bullet points and action items."},
+        {"id": "tab-4", "title": "Automated Campaigns", "caption": "Set and forget birthday, anniversary, and quarterly check-in workflows with live activity badges."},
+        {"id": "tab-5", "title": "AI Reply Assistant", "caption": "Smart 'Jessi suggests' response cards embedded right inside your message threads for effortless follow-ups."},
+        {"id": "tab-6", "title": "Team Manager View", "caption": "Bird's-eye dashboard for team leaders to monitor relationship health and daily team activity metrics."}
+      ],
+      "behavior": "Auto-advances every 5 seconds, pauses on tab click or mouse hover, smooth phone screen crossfade transition"
+    },
+    "business_value": {
+      "tiles": [
+        {"title": "Never Forget a Customer", "description": "Turn fleeting conversation details into structured memory that deepens personal connection."},
+        {"title": "Follow Up Without Relying on Memory", "description": "Intelligent nudges ensure no important milestone or scheduled check-in ever slips away."},
+        {"title": "Protect Your Customer Relationships", "description": "Keep valuable relationship capital stored securely in your business, not stranded on personal phones."},
+        {"title": "Turn Relationships Into Revenue", "description": "Consistent, authentic contact drives higher retention, more referrals, and faster deal closing."}
+      ]
+    },
+    "audience_cards": [
+      {
+        "title": "For Businesses & Teams",
+        "price": "From $75 / user / mo",
+        "features": ["Centralized relationship asset security", "Team activity & relationship scoreboards", "Shared contact context across account managers", "Seamless CRM side-by-side integration"]
       },
-      "heading_h2": {
-        "font_size": "17px",
-        "font_weight": "600",
-        "line_height": "22px",
-        "letter_spacing": "-0.2px"
-      },
-      "section_label": {
-        "font_size": "11px",
-        "font_weight": "700",
-        "text_transform": "uppercase",
-        "letter_spacing": "0.8px"
-      },
-      "body_primary": {
-        "font_size": "15px",
-        "font_weight": "400",
-        "line_height": "20px"
-      },
-      "body_medium": {
-        "font_size": "15px",
-        "font_weight": "600",
-        "line_height": "20px"
-      },
-      "caption_meta": {
-        "font_size": "13px",
-        "font_weight": "400",
-        "line_height": "16px"
-      },
-      "badge_text": {
-        "font_size": "12px",
-        "font_weight": "600"
+      {
+        "title": "For Individual Professionals",
+        "price": "From $100 / mo",
+        "features": ["Personalized daily top-3 outreach stack", "AI voice memo capture & auto-summaries", "Personal brand automated campaigns", "Mobile app with real-time push notifications"]
       }
+    ],
+    "industry_chips": [
+      "Real Estate", "Insurance Agents", "Auto Dealerships", "Financial Advisory", "Mortgage Brokers", "B2B SaaS Sales", "High-Touch Consulting"
+    ],
+    "final_cta_band": {
+      "theme": "dark (#0B0B0F)",
+      "heading": "Be the business they never forget.",
+      "subtext": "Start building deeper customer relationships today. Book a personalized demo with our team.",
+      "button": "Book a Demo"
     },
-    "spacing_scale": {
-      "screen_padding": "16px",
-      "card_padding": "14px 16px",
-      "gap_tight": "6px",
-      "gap_medium": "12px",
-      "gap_large": "16px",
-      "section_margin": "16px"
+    "footer": {
+      "columns": [
+        {"title": "Product", "links": ["How It Works", "Features", "Mobile App", "Web Platform", "Integrations", "Pricing"]},
+        {"title": "Solutions", "links": ["Real Estate", "Insurance", "Financial Advisors", "Auto Sales", "Enterprise Teams"]},
+        {"title": "Resources", "links": ["Relationship Playbook", "Case Studies", "Blog", "Customer Stories", "Help Center"]},
+        {"title": "Company", "links": ["About Us", "Careers", "Contact", "Privacy Policy", "Terms of Service"]}
+      ],
+      "mobile_accordion_behavior": "Collapsible accordions for footer columns on screens < 768px",
+      "bottom_right_reserved": "Keep bottom-right viewport (80px x 80px) completely free for third-party chat bubble widget"
     },
-    "surface_treatment_rules": {
-      "rule_1_standard_card": "Use #1C1C1E with 1px border border_subtle and rounded-2xl (16px) for standard grouping blocks.",
-      "rule_2_gold_card": "Reserve gold borders and gold subtles strictly for high-value AI / 'Ask Jessi' / 'Deal Status' highlights. Max 1 gold card visible on screen at any time to avoid visual competition.",
-      "rule_3_flat_rows": "Inside cards or lists, use flat 1px subtle divider lines instead of nesting cards inside cards.",
-      "rule_4_header_glass": "Header and bottom composer use blur background rgba(28,28,30,0.85) with backdrop-filter blur(20px) and bottom/top border rgba(255,255,255,0.1)."
+    "book_demo_modal": {
+      "title": "Book a Demo with i'M On Social",
+      "fields": [
+        {"name": "first_name", "type": "text", "label": "First Name", "required": true},
+        {"name": "mobile", "type": "tel", "label": "Mobile Phone", "required": true},
+        {"name": "email", "type": "email", "label": "Work Email", "required": true},
+        {"name": "company", "type": "text", "label": "Company Name", "required": true},
+        {"name": "industry", "type": "select", "label": "Industry", "options": ["Real Estate", "Insurance", "Auto Sales", "Financial Advisory", "Mortgage", "Other B2B Services"], "required": true},
+        {"name": "team_size", "type": "select", "label": "Team Size (Optional)", "options": ["Just me (Individual)", "2-5 users", "6-20 users", "21-50 users", "50+ users"], "required": false},
+        {"name": "sms_consent", "type": "checkbox", "label": "I agree to receive SMS demo updates and reminder texts.", "required": false, "default": false, "policy_text": "Message and data rates may apply. Reply STOP to cancel anytime."}
+      ],
+      "privacy_notice": "We respect your privacy. Read our Privacy Policy.",
+      "submit_button": "Schedule My Demo",
+      "success_state": "Thank you! Your demo request has been received. Our team will reach out shortly."
+    },
+    "video_lightbox": {
+      "aspect_ratio": "16/9",
+      "placeholder_title": "i'M On Social Product Story (46s)",
+      "close_on_backdrop_or_esc": true
     }
   },
-  "layout_architecture": {
-    "screen": "Contact Detail Screen (/app/frontend/app/contact/[id].tsx or component tree)",
-    "top_to_bottom_blueprint": [
-      {
-        "position": 1,
-        "component": "Header",
-        "description": "Sticky top bar with back navigation, contact name title, open in Inbox icon, and Edit trigger."
-      },
-      {
-        "position": 2,
-        "component": "HeroSection",
-        "description": "Unified Hero Card: Clean avatar + Touchpoint counter pill, Contact full name (22px bold), Gold Vehicle Badge tag, location/occupation/relationship duration meta line, clean 4-stat metrics row (Touchpoints, Messages, Clicks, Campaigns), and organized metadata pills (Tags, Dates, Active Campaigns) separated by category."
-      },
-      {
-        "position": 3,
-        "component": "RelationshipHealthBadge",
-        "description": "Integrated Health Pill (Opportunity/Advocate/Warm/Cooling/Cold) with subtle color-coded dot and last engagement timestamp."
-      },
-      {
-        "position": 4,
-        "component": "QuickActionsRow",
-        "description": "5 primary actions: Call, Text (scrolls to composer), Voice Note/Record, Add Task, Mark Sold (Gold accent). Replaced duplicate email with voice note."
-      },
-      {
-        "position": 5,
-        "component": "ContactTasksCard",
-        "description": "Up Next Action Card: Display active open tasks for this contact or 'No pending tasks' with '+ Add Task' quick button."
-      },
-      {
-        "position": 6,
-        "component": "IntelTeaserAndChatCard",
-        "description": "Merged Jessi Briefing Teaser & 'Ask Jessi' prompt into one cohesive AI Intelligence Card. Shows 1 key insight line with expandable full briefing + instant Ask Jessi search bar."
-      },
-      {
-        "position": 7,
-        "component": "TabNavigation",
-        "description": "Segmented tab bar: [Details] [Calls] [Feed]. Sticky below hero/AI cards."
-      },
-      {
-        "position": 8,
-        "component": "TabContentArea",
-        "sub_tabs": {
-          "Details": "Clean list grouping: 1. Action Progress Tracker, 2. Personal Intelligence Facts, 3. Vehicle & Purchase History, 4. Important Dates & Opt-ins, 5. Campaign Enrollments, 6. Share & CRM Export.",
-          "Calls": "List of recorded calls & voice notes with audio waveform playback, transcription toggle, and summary notes.",
-          "Feed": "Chronological searchable timeline of all touchpoints (SMS, calls, cards, AI triggers) with date grouping and filter pills."
-        }
-      },
-      {
-        "position": 9,
-        "component": "StickyBottomComposer",
-        "description": "Bottom fixed bar with SMS/Email mode selector, smart suggestion sparkle button, text input, quick media/card attachments toggle, and primary send button."
-      }
+  "micro_interactions": {
+    "scroll_animations": "Fade-up entrance animations using IntersectionObserver (.reveal element class)",
+    "accessibility_motion": "Check @media (prefers-reduced-motion: reduce) to immediately disable all scroll reveals, phone floats, and auto-advancing carousels",
+    "hover_states": "Buttons elevate -2px with gold glow; cards get subtle border highlight; tabs indicate active state with solid gold indicator pill"
+  },
+  "testing_attributes": {
+    "data_testid_rules": "All interactive elements, buttons, links, inputs, tabs, modals, and key headings MUST have data-testid in kebab-case format.",
+    "key_test_ids": [
+      "data-testid='nav-logo'",
+      "data-testid='nav-book-demo-button'",
+      "data-testid='nav-mobile-toggle'",
+      "data-testid='hero-h1'",
+      "data-testid='hero-book-demo-cta'",
+      "data-testid='hero-see-how-it-works-cta'",
+      "data-testid='watch-story-link'",
+      "data-testid='product-tour-tab-1'",
+      "data-testid='product-tour-tab-2'",
+      "data-testid='product-tour-tab-3'",
+      "data-testid='product-tour-tab-4'",
+      "data-testid='product-tour-tab-5'",
+      "data-testid='product-tour-tab-6'",
+      "data-testid='book-demo-modal'",
+      "data-testid='demo-form-submit-button'",
+      "data-testid='demo-form-success-message'",
+      "data-testid='video-lightbox'",
+      "data-testid='footer-accordion-toggle'"
     ]
   },
-  "instructions_to_main_agent": [
-    "Ensure all interactive elements have data-testid attributes formatted in kebab-case (e.g., data-testid='quick-action-call-button', data-testid='tab-details', data-testid='composer-send-button').",
-    "Do NOT use complete transparent backgrounds for headers or overlays that have content scrolling under them.",
-    "Do NOT introduce duplicate email or text buttons across the hero and quick actions; keep quick actions focused on direct actions (Call, Text, Record, Task, Sold).",
-    "Maintain the dark theme palette (#000000 base, #1C1C1E surface, #C9A962 gold accent) strictly.",
-    "Ensure responsive layout optimization for mobile web viewports with comfortable touch targets (minimum 44x44px).",
-    "Use smooth micro-interactions (collapsible sections with chevron indicators, active tab indicator transitions, micro scale feedback on tap)."
-  ],
-  "UNIVERSAL GUIDELINES FOR MAIN AGENT": {
-    "data_testid_requirement": "All buttons, inputs, tab items, cards, and interactive controls must have data-testid.",
-    "no_transparent_overlays": "Never set background to transparent on floating/fixed headers, dropdowns, or modals.",
-    "spacing_rhythm": "Use 12px-16px gap between stacked sections, 14px-16px internal card padding.",
-    "gold_accent_usage": "Use gold (#C9A962) strictly for high-value actions (Mark Sold, Ask Jessi primary, Vehicle model tag)."
-  }
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Strictly follow the approved copy without inventing unsupported statistics or fake testimonials.",
+    "Use pure CSS for phone frames with rounded corners and dark screen styling.",
+    "Ensure minimum 4.5:1 text contrast for normal text and 3:1 for large headings.",
+    "Never use em dashes in copy.",
+    "Keep bottom-right viewport free for third-party chat bubble.",
+    "All interactive elements MUST include data-testid attributes."
+  ]
 }

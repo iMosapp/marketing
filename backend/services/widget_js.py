@@ -294,7 +294,26 @@ function showCallStatus(r, n){
   } else if (st === 'ringing' && r.request_id === 'preview') { pollTimer = setTimeout(function(){ if (panel) showCallStatus({ status: 'connecting', rep_first: 'Chuck', from_display: '(555) 010-2030', request_id: 'preview' }, n); }, 2500); }
 }
 
-var chat = { sid: saved.chat_sid || null, msgs: [], busy: false, need: false, status: 'open', mode: 'jessi', agent: '', offer: false, booking: null, slots: null, showBook: false };
+var chat = { sid: saved.chat_sid || null, msgs: [], busy: false, need: false, status: 'open', mode: 'jessi', agent: '', offer: false, booking: null, slots: null, showBook: false, reveal: null };
+// Human pacing: pause to "read", type at cps with jitter (capped per text), long answers arrive as 2-3 texts.
+var PACES = { natural: { read: [1500, 3000], cps: 8, cap: 7000, gap: [500, 1000], split: true }, relaxed: { read: [2500, 4500], cps: 5, cap: 14000, gap: [800, 1600], split: true }, instant: { read: [300, 700], cps: 0, cap: 0, gap: [0, 0], split: false } };
+var PACE = PACES[C.chat_pace] || PACES.natural;
+function rnd(a){ return a[0] + Math.random() * (a[1] - a[0]); }
+function typeMs(t){ return PACE.cps ? Math.min(PACE.cap, (t || '').length / PACE.cps * 1000 * (0.85 + Math.random() * 0.3)) : 0; }
+var ABBR = /\b(Mr|Mrs|Ms|Dr|St|Jr|Sr|vs|etc|approx|No|e\.g|i\.e|a\.m|p\.m)\.$/i;
+function splitReply(t){
+  t = String(t || '').trim(); if (!PACE.split || t.length <= 180) return [t];
+  var units = [];
+  t.split(/\n\s*\n/).forEach(function(block){ block = block.trim(); if (!block) return;
+    var sents = /^\s*([-*\u2022]|\d+[.)])\s/m.test(block) ? [block] : block.replace(/([.!?]+["')\]\u201d]*)\s+(?=["'(\u201c]?[A-Z0-9])/g, '$1\u0001').split('\u0001');
+    var merged = []; sents.forEach(function(s){ if (merged.length && ABBR.test(merged[merged.length - 1])) merged[merged.length - 1] += ' ' + s; else merged.push(s); });
+    merged.forEach(function(s, si){ if (s.trim()) units.push({ t: s.trim(), sep: si === 0 ? '\n\n' : ' ' }); }); });
+  var n = t.length <= 380 ? 2 : 3, target = t.length / n, out = [], cur = '';
+  units.forEach(function(u){ if (cur && out.length < n - 1 && Math.abs(cur.length + u.t.length - target) > Math.abs(cur.length - target)) { out.push(cur); cur = ''; } cur = cur ? cur + u.sep + u.t : u.t; });
+  if (cur) out.push(cur);
+  if (out.length > 1 && out[out.length - 1].length < 40) { var last = out.pop(); out[out.length - 1] += ' ' + last; }
+  return out.length ? out : [t];
+}
 var drawn = 0, lastBusy = false;
 var pollTimerChat = null; function stopPoll(){ if (pollTimerChat) { clearInterval(pollTimerChat); pollTimerChat = null; } }
 function previewReply(t){ if (/test.?drive|appointment|schedule|book|come in|stop by|visit|oil change/i.test(t)) { chat.offer = true; return 'I can set that up right here. Pick a day and time below and I\'ll get you booked.'; }
@@ -375,47 +394,66 @@ function showChat(){
     box.appendChild(h('div', { 'class': 'imosw-fine', style: 'margin-top:4px' }, [fill(T.optin, ctx)]));
     return box;
   }
-  function draw(){ var keep = list.scrollTop, hadMsgs = drawn, wasBusy = lastBusy; list.innerHTML = ''; var firstNew = null; if (chat.msgs.length < drawn) drawn = 0;
+  function draw(toEnd){ var keep = list.scrollTop, hadMsgs = drawn, wasBusy = lastBusy; list.innerHTML = ''; var firstNew = null; if (chat.msgs.length < drawn) drawn = 0;
+    var rv = chat.reveal;
     chat.msgs.forEach(function(m, i){
+      if (rv && i > rv.i) return;
       if (m.role === 'system') { list.appendChild(h('div', { 'class': 'imosw-sys' }, [m.text])); return; }
-      var el = h('div', { 'class': 'imosw-m ' + (m.role === 'visitor' ? 'v' : m.role === 'rep' ? 'r' : 'j') });
-      if (m.role === 'rep' && m.who) el.appendChild(h('div', { 'class': 'who' }, [m.who]));
-      el.appendChild(document.createTextNode(m.text)); list.appendChild(el);
-      if (drawn > 0 && i >= drawn && m.role !== 'visitor' && !firstNew) firstNew = el; });
-    if (chat.booking) list.appendChild(h('div', { 'class': 'imosw-booked' }, ['\u2713 ' + chat.booking.kind + ' \u00b7 ' + chat.booking.when]));
+      var ps = m.role === 'jessi' ? splitReply(m.text) : [m.text];
+      if (rv && i === rv.i) ps = ps.slice(0, rv.n);
+      ps.forEach(function(p, k){
+        var el = h('div', { 'class': 'imosw-m ' + (m.role === 'visitor' ? 'v' : m.role === 'rep' ? 'r' : 'j') });
+        if (k === 0 && m.role === 'rep' && m.who) el.appendChild(h('div', { 'class': 'who' }, [m.who]));
+        el.appendChild(document.createTextNode(p)); list.appendChild(el);
+        if (drawn > 0 && i >= drawn && m.role !== 'visitor' && !firstNew) firstNew = el; }); });
+    if (chat.booking && !rv) list.appendChild(h('div', { 'class': 'imosw-booked' }, ['\u2713 ' + chat.booking.kind + ' \u00b7 ' + chat.booking.when]));
     if (chat.msgs.length === 1 && chat.msgs[0].role === 'jessi' && !chat.busy && !chat.need && !chat.showBook && chat.status !== 'closed' && chat.mode !== 'human' && (C.starters || []).length) {
       var st = h('div', { 'class': 'imosw-starters', role: 'group', 'aria-label': 'Suggested questions' });
       (C.starters || []).slice(0, 3).forEach(function(q){ st.appendChild(h('button', { type: 'button', 'class': 'imosw-chip', onclick: function(){ starter(q); } }, [q])); });
       list.appendChild(st); }
-    if (chat.need && chat.status !== 'closed') list.appendChild(contactForm());
-    if ((chat.offer || chat.showBook) && !chat.booking && chat.status !== 'closed' && chat.mode !== 'human') list.appendChild(bookForm());
-    if (chat.busy && chat.mode !== 'human') list.appendChild(h('div', { 'class': 'imosw-typing', 'aria-label': NAME + ' is typing', html: '<i></i><i></i><i></i>' }));
-    if (chat.status === 'closed') list.appendChild(h('div', { style: 'text-align:center;padding:6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', onclick: function(){ chat.sid = null; remember('chat_sid', null); chat.msgs = []; chat.status = 'open'; chat.mode = 'jessi'; chat.agent = ''; chat.booking = null; chat.offer = false; sub(); begin(); } }, ['Start a new chat']) ]));
-    send.disabled = chat.busy || chat.status === 'closed'; input.disabled = chat.status === 'closed'; humanBtn.style.display = chat.status === 'closed' ? 'none' : ''; sep.style.display = bookBtn.style.display = (chat.status === 'closed' || chat.booking || chat.mode === 'human') ? 'none' : '';
+    if (chat.need && chat.status !== 'closed' && !rv) list.appendChild(contactForm());
+    if ((chat.offer || chat.showBook) && !chat.booking && chat.status !== 'closed' && chat.mode !== 'human' && !rv) list.appendChild(bookForm());
+    if ((chat.busy && chat.mode !== 'human') || rv) list.appendChild(h('div', { 'class': 'imosw-typing', 'aria-label': NAME + ' is typing', html: '<i></i><i></i><i></i>' }));
+    if (chat.status === 'closed' && !rv) list.appendChild(h('div', { style: 'text-align:center;padding:6px' }, [ h('button', { 'class': 'imosw-link', type: 'button', onclick: function(){ chat.sid = null; remember('chat_sid', null); chat.msgs = []; chat.status = 'open'; chat.mode = 'jessi'; chat.agent = ''; chat.booking = null; chat.offer = false; chat.reveal = null; sub(); begin(); } }, ['Start a new chat']) ]));
+    send.disabled = chat.busy || !!rv || chat.status === 'closed'; input.disabled = chat.status === 'closed'; humanBtn.style.display = chat.status === 'closed' ? 'none' : ''; sep.style.display = bookBtn.style.display = (chat.status === 'closed' || chat.booking || chat.mode === 'human') ? 'none' : '';
     drawn = chat.msgs.length; lastBusy = chat.busy;
     // Scroll rules: a new reply starts at the top of the window when it (plus whatever follows, like the booking form) does not fit, so it reads from its first line;
     // short replies, the visitor's own message and the typing dots sit at the bottom like any chat; every other redraw (time slots loading, a chip tap, a poll) keeps the view where it was.
     var top = firstNew ? firstNew.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop - 6 : 0;
-    if (firstNew) list.scrollTop = list.scrollHeight - top > list.clientHeight ? Math.max(0, top) : list.scrollHeight;
+    if (toEnd === true) list.scrollTop = list.scrollHeight;
+    else if (firstNew) list.scrollTop = list.scrollHeight - top > list.clientHeight ? Math.max(0, top) : list.scrollHeight;
     else if (chat.msgs.length > hadMsgs || (chat.busy && !wasBusy) || hadMsgs === 0) list.scrollTop = list.scrollHeight;
     else list.scrollTop = keep; }
-  function fail(e){ chat.busy = false; chat.msgs.push({ role: 'jessi', text: typeof e === 'string' ? e : 'Hmm, something hiccuped on my end. Try that once more.' }); draw(); }
-  function paced(started, r, fn){ var reply = (r && r.reply) || ''; var wait = Math.min(4200, 1100 + reply.length * 22) - (Date.now() - started); setTimeout(fn, Math.max(0, wait)); }
-  function submit(){ var t = input.value.trim(); if (!t || chat.busy || chat.status === 'closed') return; input.value = ''; chat.msgs.push({ role: 'visitor', text: t }); chat.busy = true; draw();
+  function fail(e){ chat.busy = false; chat.reveal = null; chat.msgs.push({ role: 'jessi', text: typeof e === 'string' ? e : 'Hmm, something hiccuped on my end. Try that once more.' }); draw(); }
+  // Typing dots for the read pause + first text (network time counts toward it), then each further text gets its own dots.
+  function deliver(started, reply, applyFn){
+    var first = splitReply(reply)[0] || '';
+    setTimeout(function(){
+      chat.busy = false; applyFn();
+      var idx = -1; for (var j = chat.msgs.length - 1; j >= 0; j--) { if (chat.msgs[j].role === 'jessi') { idx = j; break; } }
+      var ps = idx >= 0 ? splitReply(chat.msgs[idx].text) : [];
+      if (ps.length < 2) { draw(); return; }
+      chat.reveal = { i: idx, n: 1 }; draw();
+      (function step(){ setTimeout(function(){ if (!chat.reveal) return; chat.reveal.n++; if (chat.reveal.n >= ps.length) chat.reveal = null; draw(true); if (chat.reveal) step(); }, rnd(PACE.gap) + typeMs(ps[chat.reveal.n])); })();
+    }, Math.max(0, rnd(PACE.read) + typeMs(first) - (Date.now() - started)));
+  }
+  function submit(){ var t = input.value.trim(); if (!t || chat.busy || chat.reveal || chat.status === 'closed') return; input.value = ''; chat.msgs.push({ role: 'visitor', text: t }); chat.busy = true; draw();
     var t0 = Date.now();
-    if (PREVIEW) { setTimeout(function(){ chat.busy = false; chat.msgs.push({ role: 'jessi', text: previewReply(t) }); draw(); }, 1800); return; }
-    post('/chat/' + chat.sid + '/message', { text: t }).then(function(r){ paced(t0, r, function(){ chat.busy = false; apply(r); draw(); }); }).catch(fail); }
+    if (PREVIEW) { var o = chat.offer, nd = chat.need, txt = previewReply(t), no = chat.offer, nn = chat.need; chat.offer = o; chat.need = nd;
+      deliver(t0, txt, function(){ chat.offer = no; chat.need = nn; chat.msgs.push({ role: 'jessi', text: txt }); }); return; }
+    post('/chat/' + chat.sid + '/message', { text: t }).then(function(r){ deliver(t0, (r && r.reply) || '', function(){ apply(r); }); }).catch(fail); }
   function starter(q){ if (chat.busy || chat.status === 'closed') return; track('starter', { door: 'chat', q: q });
     if (cfg.booking_on !== false && /\b(book|schedule|demo|test[- ]?drive|appointment|visit)\b/i.test(q)) { chat.showBook = true; draw(); return; }
     input.value = q; submit(); }
-  function askHuman(){ if (chat.busy) return; chat.busy = true; draw();
+  function askHuman(){ if (chat.busy || chat.reveal) return; chat.busy = true; draw();
     var t0 = Date.now();
-    if (PREVIEW) { setTimeout(function(){ chat.busy = false; chat.need = chat.status !== 'handed_off'; chat.msgs.push({ role: 'jessi', text: chat.status === 'handed_off' ? 'A team member already has your number and is texting you now.' : 'Happy to. What\'s your first name and mobile number? A team member will text you in a minute.' }); draw(); }, 1200); return; }
-    post('/chat/' + chat.sid + '/human', {}).then(function(r){ paced(t0, r, function(){ chat.busy = false; apply(r); draw(); }); }).catch(fail); }
+    if (PREVIEW) { var done = chat.status === 'handed_off', txt = done ? 'A team member already has your number and is texting you now.' : 'Happy to. What\'s your first name and mobile number? A team member will text you in a minute.';
+      deliver(t0, txt, function(){ chat.need = !done; chat.msgs.push({ role: 'jessi', text: txt }); }); return; }
+    post('/chat/' + chat.sid + '/human', {}).then(function(r){ deliver(t0, (r && r.reply) || '', function(){ apply(r); }); }).catch(fail); }
   function begin(){ chat.busy = true; draw();
     post('/chat/start', { page: location.href, title: document.title, visitor: visitor }).then(function(r){ chat.busy = false; chat.sid = r.sid; chat.status = 'open'; remember('chat_sid', r.sid); chat.msgs = [{ role: 'jessi', text: r.greeting }]; draw(); poll(); }).catch(fail); }
   function poll(){ stopPoll(); if (PREVIEW) return;
-    pollTimerChat = setInterval(function(){ if (!panel || !chat.sid || chat.busy || chat.status === 'closed') { if (!panel) stopPoll(); return; }
+    pollTimerChat = setInterval(function(){ if (!panel || !chat.sid || chat.busy || chat.reveal || chat.status === 'closed') { if (!panel) stopPoll(); return; }
       fetch(API + '/chat/' + chat.sid).then(function(x){ if (!x.ok) throw 0; return x.json(); }).then(function(r){ var before = chat.msgs.length + '|' + chat.mode + '|' + chat.status + '|' + chat.offer + '|' + !!chat.booking; apply(r); var after = chat.msgs.length + '|' + chat.mode + '|' + chat.status + '|' + chat.offer + '|' + !!chat.booking; if (before !== after) draw(); }).catch(function(){}); }, 3000); }
   send.addEventListener('click', submit); input.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); submit(); } });
   wrap.appendChild(list); wrap.appendChild(h('div', { 'class': 'imosw-compose' }, [input, send])); wrap.appendChild(human);

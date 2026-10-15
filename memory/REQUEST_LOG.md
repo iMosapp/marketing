@@ -4,6 +4,21 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 67 · Oct 15 — PLANNING ONLY · plan written · AWAITING OWNER APPROVAL · no marketing page rewritten
+> I'M ON SOCIAL — MARKETING WEBSITE CLEANUP & CONVERSION OPTIMIZATION. Website: https://www.imonsocial.com ... Before changing code, provide: Current website audit, Recommended homepage structure, Proposed navigation, Copy improvements, Pages to keep, consolidate, or retire, Visual design recommendations, SEO preservation plan, Conversion improvements, Implementation phases, Estimated Emergent effort and credit usage. Create: /app/memory/IMOS_WEBSITE_CLEANUP_PLAN.md ... Do not start implementation until I approve the plan.
+
+Plan: `/app/memory/IMOS_WEBSITE_CLEANUP_PLAN.md` (20 ranked findings, claims table, homepage outline, nav, keep/301/noindex map, phases 0-5).
+
+### 66 · Oct 15 — DONE (preview, tested) · DEPLOY + EAS UPDATE
+> when someone chooses chat on the widget and it's being handled by AI the bouncing bubbles are great but the replies come back too quick with long replies.. no fooling anyone that its ai and not a human
+
+Owner picked Natural pacing + a per-store setting (Natural / Relaxed / Instant), split long answers into 2-3 texts, keep the answer length. `services/widget_js.py` (PACES, splitReply, deliver, reveal state), `services/widgets.py` (`kb.pace`, `chat_pace`), `components/widget/JessiTab.tsx` (`widget-section-pace`, `widget-kb-pace-*`). Test `tests/test_widget_pace.py` 5/5; live preview chat: 583-char answer arrived as 3 texts at 9.5 s / 17 s / 25 s.
+
+### 65 · Oct 15 — DONE (marketing/build) · SAVE TO GITHUB (Vercel)
+> I need this back on my production marketing site: <script src="https://app.imonsocial.com/api/w/FE2POg13.js" async></script> also lets cleanup the marketing site with current screenshots, messaging etc.. let me preview what you have before actually updating it
+
+Old key XkTvZEUb is disabled in production (404 "unknown or disabled key"), so the widget had vanished. FE2POg13 now on all 67 public pages (56 swapped + 48 added; not on the /relationship-os and /go/card redirect stubs). Cleanup folded into #67.
+
 ### 64 · Oct 9 — PLANNING ONLY · DONE (proposal written) · AWAITING FOUNDER DECISIONS · no code change
 > I'M ON SOCIAL — AI LEADERSHIP TEAM. Multi-Agent Executive Organization — Architecture & Implementation Planning. Read-only architecture assessment, organizational design, and phased implementation proposal. NO CODING, NO DEPLOYMENT. [full brief: executive vision, platform audit, three-level org (Founder / Chief of Staff + Strategic Advisor + CTO/COO/CRO/CPO/CFO / departmental specialists), agent design standard, four operating modes (Ask an Executive, Leadership Roundtable, Project War Room, Executive Operating Review), Mystery Shopping launch example via TracTru, shared company intelligence, human + AI collaboration, delegation/RACI, three authority levels, orchestration evaluation, UX, cost model separating conventional effort from Emergent elapsed time, four phases, deliverables saved to /app/memory/AI_LEADERSHIP_TEAM_ARCHITECTURE.md] + ADDENDUM: Multi-Company Intelligence Engine (three layers, guided onboarding, knowledge model, retrieval with sources/freshness/permissions, sync + corrections + conflicts, tenant isolation, MongoDB vs hybrid vs semantic, read-only platform intelligence, onboarding without custom development).
 

@@ -35,3 +35,111 @@
   to = "/"
   status = 301
   force = true
+
+[[redirects]]
+  from = "/landing"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/landing.html"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/ad-autopilot"
+  to = "/date-triggers/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/ad-autopilot.html"
+  to = "/date-triggers/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/ad-digital-card"
+  to = "/digital-card/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/ad-digital-card.html"
+  to = "/digital-card/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/ad-reviews"
+  to = "/reviews/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/ad-reviews.html"
+  to = "/reviews/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/ad-showcase"
+  to = "/showcase/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/ad-showcase.html"
+  to = "/showcase/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/outreach"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/outreach/*"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/tiktok"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/tiktok/*"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/appdirectory"
+  to = "/features/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/appdirectory/*"
+  to = "/features/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/industries"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/industries.html"
+  to = "/"
+  status = 301
+  force = true

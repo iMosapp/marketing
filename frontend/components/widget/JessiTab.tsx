@@ -34,6 +34,12 @@ const AddRow = ({ placeholder, onAdd, colors, testId, busy }: { placeholder: str
   );
 };
 
+const PACE_HINT: Record<string, string> = {
+  natural: 'Like a person texting: she pauses to read, types about 8 characters a second, and long answers arrive as 2 or 3 short texts.',
+  relaxed: 'Slower and very human: about 5 characters a second, long answers arrive as 2 or 3 short texts.',
+  instant: 'Answers in under a second, in one bubble. Visitors will know it is AI.',
+};
+
 export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeName, showToast, canManage, recentChats, chatOn, onTurnOnChat, siteUrl, onKbSaved }: Props) => {
   const router = useRouter();
   const kb = form.kb || {};
@@ -92,6 +98,20 @@ export const JessiTab = ({ widgetId, form, set, colors, facts, setFacts, storeNa
             return (
               <TouchableOpacity key={o.v} onPress={() => setKb({ mode: o.v })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 12, backgroundColor: on ? GOLD : colors.surface, borderWidth: 1, borderColor: on ? GOLD : colors.border }} {...tid(`widget-kb-mode-${o.v}`)}>
                 <Ionicons name={o.icon as any} size={17} color={on ? '#111' : colors.textSecondary} />
+                <Text style={{ fontSize: 13.5, fontWeight: '800', color: on ? '#111' : colors.text }}>{o.l}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Section>
+      <Section colors={colors} testId="widget-section-pace">
+        <Label colors={colors}>How fast Jessi replies</Label>
+        <Hint colors={colors}>{PACE_HINT[kb.pace || 'natural']}</Hint>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {[{ v: 'natural', l: 'Natural' }, { v: 'relaxed', l: 'Relaxed' }, { v: 'instant', l: 'Instant' }].map(o => {
+            const on = (kb.pace || 'natural') === o.v;
+            return (
+              <TouchableOpacity key={o.v} onPress={() => setKb({ pace: o.v })} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 40, borderRadius: 12, backgroundColor: on ? GOLD : colors.surface, borderWidth: 1, borderColor: on ? GOLD : colors.border }} {...tid(`widget-kb-pace-${o.v}`)}>
                 <Text style={{ fontSize: 13.5, fontWeight: '800', color: on ? '#111' : colors.text }}>{o.l}</Text>
               </TouchableOpacity>
             );

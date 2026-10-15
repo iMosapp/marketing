@@ -1,0 +1,120 @@
+{
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/s/:code",
+      "destination": "https://app.imonsocial.com/api/s/:code",
+      "permanent": false
+    },
+    {
+      "source": "/go/:slug",
+      "destination": "https://app.imonsocial.com/api/go/:slug",
+      "permanent": false
+    },
+    {
+      "source": "/get/:code",
+      "destination": "https://app.imonsocial.com/api/get/:code",
+      "permanent": false
+    },
+    {
+      "source": "/relationship-os",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/relationship-os/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/landing",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/landing.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/ad-autopilot",
+      "destination": "/date-triggers/",
+      "permanent": true
+    },
+    {
+      "source": "/ad-autopilot.html",
+      "destination": "/date-triggers/",
+      "permanent": true
+    },
+    {
+      "source": "/ad-digital-card",
+      "destination": "/digital-card/",
+      "permanent": true
+    },
+    {
+      "source": "/ad-digital-card.html",
+      "destination": "/digital-card/",
+      "permanent": true
+    },
+    {
+      "source": "/ad-reviews",
+      "destination": "/reviews/",
+      "permanent": true
+    },
+    {
+      "source": "/ad-reviews.html",
+      "destination": "/reviews/",
+      "permanent": true
+    },
+    {
+      "source": "/ad-showcase",
+      "destination": "/showcase/",
+      "permanent": true
+    },
+    {
+      "source": "/ad-showcase.html",
+      "destination": "/showcase/",
+      "permanent": true
+    },
+    {
+      "source": "/outreach",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/outreach/:path*",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/tiktok",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/tiktok/:path*",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/appdirectory",
+      "destination": "/features/",
+      "permanent": true
+    },
+    {
+      "source": "/appdirectory/:path*",
+      "destination": "/features/",
+      "permanent": true
+    },
+    {
+      "source": "/industries",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/industries.html",
+      "destination": "/",
+      "permanent": true
+    }
+  ]
+}

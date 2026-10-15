@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="robots" content="noindex, nofollow"/>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>i'M On Social — My Platform Overview</title>
@@ -431,7 +432,7 @@
     if (!v('lf-name') || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('lf-email'))) { err.textContent = 'Please enter your name and a valid email.'; err.style.display = 'block'; return; }
     btn.disabled = true; btn.textContent = 'Sending…';
     try {
-      const r = await fetch('https://app.imonsocial.com/api/demo-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const r = await fetch('/api/demo-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: v('lf-name'), email: v('lf-email'), phone: v('lf-phone'), company: v('lf-company'), message: v('lf-msg'), source: INVESTOR ? 'platform_overview_investor_cta' : 'platform_overview_cta', referrer: document.referrer }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || j.status === 'error') throw new Error(j.message || 'failed');
@@ -439,6 +440,6 @@
     } catch (ex) { btn.disabled = false; btn.textContent = 'Send'; err.textContent = "Couldn't reach the server. Please try again, or email forest@imonsocial.com."; err.style.display = 'block'; }
   });
 </script>
-<script src="https://app.imonsocial.com/api/w/XkTvZEUb.js" async></script>
+<script src="https://app.imonsocial.com/api/w/FE2POg13.js" async></script>
 </body>
 </html>
