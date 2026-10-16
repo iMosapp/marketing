@@ -1101,7 +1101,7 @@ function HomeScreen() {
           { key: 'new-contact', icon: 'person-add', label: 'Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
           { key: 'voice-memo', icon: 'mic', label: 'Voice memo', color: '#34C759', onPress: () => router.push('/voice-memos?record=1' as any) },
           ...(canAppraise ? [{ key: 'appraisal', icon: 'car-sport', label: 'Appraise trade', color: '#C9A962', onPress: () => router.push('/appraisals/new' as any) }] : []),
-          { key: 'sold', icon: 'camera', label: 'Share Photo', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
+          { key: 'sold', icon: 'trophy', label: 'Sold', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
         ]}
       />
 
