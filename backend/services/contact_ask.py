@@ -192,6 +192,8 @@ async def build_record(db, contact: dict, tz: Optional[str] = None, caller_id: O
     profile = [f"CUSTOMER: {contact.get('name') or first} | phone {contact.get('phone') or 'n/a'} | email {contact.get('email') or 'n/a'} | tags {', '.join(contact.get('tags') or []) or 'none'} | added {_fmt(contact.get('created_at'), tz)}"]
     if isinstance(pd, dict) and pd:
         profile.append("PERSONAL DETAILS ON FILE: " + "; ".join(f"{k.replace('_', ' ')}: {v}" for k, v in pd.items() if v and isinstance(v, (str, int, float)))[:1500])
+    if (contact.get("how_we_met") or {}).get("summary"):
+        profile.append(f"HOW WE MET: {contact['how_we_met']['summary']}")
     if contact.get("notes"):
         profile.append(f"NOTES: {str(contact['notes'])[:1500]}")
     if intel and intel.get("summary"):

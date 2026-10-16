@@ -391,3 +391,116 @@ async def send_card(db, user: dict, args: dict, focus: Optional[dict], live: Opt
     pending = {"type": "send_text", "contact_id": str(contact["_id"]), "name": lv._first_last(contact), "content": content, "at": lv._now().isoformat()}
     label = "my card" if what == "card" else "a review request"
     return lv._with_note(f"Here is the text to send {first} {label}: \"{content}\" Say yes and I will send it.", contact), pending, lv._open_target("thread", contact)
+
+
+# ── new contact ───────────────────────────────────────────────────────────────
+def _clean_email(value: str) -> str:
+    e = (value or "").strip().lower().replace(" at ", "@").replace(" dot ", ".").replace(" ", "")
+    return e if re.match(r"^[^@\s]+@[^@\s]+\.[a-z]{2,}$", e) else ""
+
+
+async def _possible_dups(db, user: dict, first: str, last: str, phone: str, email: str) -> list:
+    """Records that may already be this person: same phone or email in the rep's universe, or a very close full name."""
+    from routers.contacts import _dup_owners
+    uid = str(user["_id"])
+    owners, _, _ = await _dup_owners(db, uid)
+    ors = ([{"phone": {"$regex": re.sub(r"\D", "", phone)[-10:] + "$"}}] if len(re.sub(r"\D", "", phone)) >= 10 else []) + \
+          ([{"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}}] if email else [])
+    rows = await db.contacts.find({"user_id": {"$in": owners}, "status": {"$nin": ["merged", "deleted", "hidden"]}, "$or": ors},
+                                  {"first_name": 1, "last_name": 1, "phone": 1, "email": 1, "vehicle": 1}).limit(3).to_list(3) if ors else []
+    if first and last:
+        for r in await lv._find(db, uid, f"{first} {last}"):
+            if r.get("_score", 0) >= 0.9 and lv._sim(last, r.get("last_name") or "") >= 0.85:
+                rows.append(r)
+    seen, out = set(), []
+    for r in rows:
+        if r["_id"] not in seen:
+            seen.add(r["_id"])
+            out.append(r)
+    return out[:3]
+
+
+async def create_contact(db, user: dict, args: dict, focus: Optional[dict], live: Optional[dict]):
+    """Stage a new contact from what the rep said: read it back, warn about a likely duplicate, save only on their yes.
+    Nothing is invented: a missing detail stays empty, and a name is the only thing Jessi asks for."""
+    from services import how_we_met
+    from services.twilio_service import normalize_phone
+    prev = (live or {}).get("pending") if ((live or {}).get("pending") or {}).get("type") == "contact" else None
+    said = " ".join(x for x in ((prev or {}).get("said", ""), (live or {}).get("_said", "")) if x).strip()
+    first = re.sub(r"\s+", " ", str(args.get("first_name") or "")).strip(" .,").title()[:40]
+    last = re.sub(r"\s+", " ", str(args.get("last_name") or "")).strip(" .,").title()[:40]
+    if not first:
+        return "What's their name?", prev, None
+    raw_phone = str(args.get("phone") or "").strip()
+    phone = normalize_phone(raw_phone) if len(re.sub(r"\D", "", raw_phone)) >= 10 else ""
+    email = _clean_email(args.get("email") or "")
+    company = str(args.get("company") or "").strip()[:80]
+    met = how_we_met.clean({"event": args.get("met_at"), "place": args.get("met_place"), "date": args.get("met_date")})
+    tz = await lv._tz(user)
+    follow_at = _parse_local(args.get("follow_up_iso"), tz)
+    if follow_at and not (follow_at.hour or follow_at.minute):
+        follow_at = follow_at.replace(hour=9)
+    fnote = re.sub(r"(?i)^(to\s+)?(follow\s*-?\s*up|check\s+in)(\s+with\s+(him|her|them|\w+))?(\s+(about|on|regarding|re|for))?\s*", "", str(args.get("follow_up_note") or "").strip()).strip(" .")
+    follow = {"when": follow_at.isoformat(), "note": fnote[:120]} if follow_at and follow_at > lv._now() else None
+    name = f"{first} {last}".strip()
+    bits = [name] + ([lv._fmt_phone(phone)] if phone else []) + ([email] if email else []) + ([company] if company else [])
+    met_line = how_we_met.line(met)
+    summary = ", ".join(bits) + (f", met {met_line[0].lower() + met_line[1:]}" if met_line else "")
+    missing = "" if phone or email else " No phone or email yet, you can add those later."
+    heard = " I will save what you told me about them as a note." if said or args.get("note") else ""
+    dups = await _possible_dups(db, user, first, last, phone, email)
+    dup = ""
+    if dups:
+        d = dups[0]
+        dup = (f" Heads up: you already have {lv._first_last(d)}" + (f" at {lv._fmt_phone(d['phone'])}" if d.get("phone") else "") +
+               ". Say yes to add a new record anyway, or tell me to add this to the one you have.")
+    pending = {"type": "contact", "name": name, "content": f"add new contact {summary}", "at": lv._now().isoformat(), "said": said[:2000],
+               "fields": {"first_name": first, "last_name": last, "phone": phone, "email": email, "company": company},
+               "met": met, "note": str(args.get("note") or "").strip()[:2000], "follow": follow, "dup_ids": [str(d["_id"]) for d in dups]}
+    say = f"Add {summary}?{missing}{heard}{dup}" + ("" if dup else " Say yes to save, or tell me what to change.")
+    return say, pending, None
+
+
+async def contact_now(db, user: dict, pending: dict):
+    """Create the contact through the normal contacts API (no tags, so no campaign starts), keep the rep's words as a Jessi memo
+    (the usual extraction makes them searchable), fill How we met, then offer the dated reminder. Returns (say, open, next pending)."""
+    from models import ContactCreate
+    from routers.contacts import create_contact as api_create
+    from routers.voice_notes import create_text_memo
+    from services import how_we_met
+    uid, f = str(user["_id"]), pending["fields"]
+    try:
+        c = await api_create(uid, ContactCreate(first_name=f["first_name"], last_name=f.get("last_name") or None, phone=f.get("phone") or "", email=f.get("email") or None,
+                                                employer=f.get("company") or None, organization_name=f.get("company") or None, source="jessi"))
+    except Exception as e:
+        return f"That contact did not save: {_err(e)}", None, None
+    cid = str(c.id)
+    await how_we_met.fill(db, cid, pending.get("met") or {}, "jessi")
+    words = (pending.get("said") or pending.get("note") or "").strip()
+    if len(words) >= 10:
+        try:
+            await create_text_memo(db, uid, cid, words, source="jessi", followup=False)
+        except Exception as e:
+            logger.warning(f"[LiveActions] new-contact memo failed for {cid}: {e}")
+    name, first = pending["name"], f["first_name"]
+    opened = {"kind": "contact", "id": cid, "name": name, "first": first}
+    follow = pending.get("follow")
+    if follow:
+        when = datetime.fromisoformat(follow["when"])
+        nxt = {"type": "reminder", "contact_id": cid, "name": name, "when": follow["when"], "note": follow.get("note") or "",
+               "content": f"remind the rep to follow up with {name} {_spoken(when)}", "at": lv._now().isoformat()}
+        return f"Saved {name}. Want a reminder to follow up {_spoken(when)}" + (f" about {nxt['note']}" if nxt["note"] else "") + "?", opened, nxt
+    return f"Saved {name}. They are in your contacts, and anything useful you told me goes on their profile.", opened, None
+
+
+async def reminder_now(db, user: dict, pending: dict):
+    from routers.tasks import create_task
+    when = datetime.fromisoformat(pending["when"])
+    first = pending["name"].split(" ")[0]
+    title = (f"Follow up with {first}: {pending['note']}" if pending.get("note") else f"Follow up with {pending['name']}")[:100]
+    try:
+        task = await create_task(str(user["_id"]), {"title": title, "description": pending.get("note") or title, "contact_id": pending["contact_id"], "type": "follow_up",
+                                                    "action_type": "call", "due_date": when.astimezone(timezone.utc).isoformat(), "has_time": True, "priority": "medium"})
+    except Exception as e:
+        return f"I could not save that reminder: {_err(e)}", None
+    return f"Done. Reminder set for {_spoken(when)}: {title}.", lv._open_target("task", task=task) if task else {"kind": "contact", "id": pending["contact_id"], "name": pending["name"], "first": first}

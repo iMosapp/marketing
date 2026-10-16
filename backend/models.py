@@ -285,6 +285,7 @@ class Contact(BaseModel):
     occupation: Optional[str] = None
     employer: Optional[str] = None
     personal_details: Dict[str, Any] = {}
+    how_we_met: Optional[Dict[str, Any]] = None   # {event, place, date, summary, source}: Jessi fills it once, the rep's edit wins
     
     # Important dates
     birthday: Optional[datetime] = None

@@ -82,6 +82,7 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     
     # Auto-enroll in tag-triggered campaigns
     await _check_tag_campaign_enrollment(user_id, str(result.inserted_id), contact_dict)
+    _schedule_notes_intel(user_id, str(result.inserted_id), contact_dict.get('notes') if source in NOTE_INTEL_SOURCES else "")
     
     # NOTE: date-based campaign enrollment (birthday/anniversary/sold_date) happens
     # day-of via the daily scheduler sweep — never at save time.
@@ -128,6 +129,37 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
         logger.warning(f"Sold workflow error (non-blocking): {e}")
 
     return Contact(**contact_dict)
+
+
+NOTE_INTEL_SOURCES = {"manual", "", "app", "scan", "jessi", "referral"}   # notes the rep wrote (lead-form text is not theirs)
+
+
+def _schedule_notes_intel(user_id: str, contact_id: str, text: Optional[str]) -> None:
+    """Notes the rep typed or dictated get the same fact extraction as a voice memo (How we met, family, interests). Fire and forget."""
+    if not text or len(text.strip()) < 20:
+        return
+    import asyncio
+    from services.voice_intel import process_notes_intelligence
+    try:
+        asyncio.get_running_loop().create_task(process_notes_intelligence(user_id, contact_id, text))
+    except RuntimeError:
+        pass
+
+
+class HowWeMetBody(BaseModel):
+    event: str = ""
+    place: str = ""
+    date: str = ""
+
+
+@router.patch("/{user_id}/{contact_id}/how-we-met")
+async def set_how_we_met(user_id: str, contact_id: str, body: HowWeMetBody):
+    """The rep's own How we met (it always wins over what Jessi filled in). All fields empty clears it."""
+    from services import how_we_met
+    db = get_db()
+    if not ObjectId.is_valid(contact_id) or not await db.contacts.find_one({"$and": [{"_id": ObjectId(contact_id)}, await get_data_filter(user_id)]}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"how_we_met": how_we_met.public(await how_we_met.set_by_rep(db, contact_id, body.model_dump()))}
 
 
 @router.get("/{user_id}/check-duplicate")
@@ -788,7 +820,7 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
             logger.error(f"Referral count update failed: {e}")
     
     try:
-        _before = await get_db().contacts.find_one({"$and": [{"_id": ObjectId(contact_id)}, base_filter]}, {"phone": 1, "email": 1, "first_name": 1, "last_name": 1, "vehicle_interest": 1, "user_id": 1, "store_id": 1, "created_at": 1})
+        _before = await get_db().contacts.find_one({"$and": [{"_id": ObjectId(contact_id)}, base_filter]}, {"phone": 1, "email": 1, "first_name": 1, "last_name": 1, "vehicle_interest": 1, "user_id": 1, "store_id": 1, "created_at": 1, "notes": 1})
     except Exception:
         _before = None
     try:
@@ -804,6 +836,11 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
+
+    # New words in the notes go through fact extraction (only what was added when the rep appended)
+    _old_notes, _new_notes = ((_before or {}).get("notes") or ""), (update_dict.get("notes") or "")
+    if _new_notes.strip() != _old_notes.strip():
+        _schedule_notes_intel(user_id, contact_id, _new_notes[len(_old_notes):] if _old_notes and _new_notes.startswith(_old_notes) else _new_notes)
 
     # Living Relationship Intelligence (flagged): a rep's change of phone/email/name is a confirmed identity fact; the old value stays as history.
     if _before:

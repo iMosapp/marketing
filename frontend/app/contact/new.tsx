@@ -31,7 +31,7 @@ import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
 import { getS } from '../../components/contact/contactStyles';
 import { PrimaryButton } from '../../components/ui/PrimaryButton';
-import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint } from '../../components/ui/tokens';
+import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint, tid } from '../../components/ui/tokens';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
 import { MemoKindPicker, MemoKind } from '../../components/memos/MemoKindPicker';
 import { NewContactConsent } from '../../components/compliance/NewContactConsent';
@@ -193,44 +193,36 @@ export default function NewContactScreen() {
     setShowDatePicker(false); setActiveDateField(null);
   };
 
-  // ── Voice note for new contact ─────────────────────────────────────────────
+  // ── Voice note for new contact: each recording is kept and saved as a real voice note (audio + transcript) after Save ──
   const [ncVoiceRecording, setNcVoiceRecording] = useState(false);
   const [ncVoiceTranscribing, setNcVoiceTranscribing] = useState(false);
   const ncVoiceRef = useRef<any>(null);
-  const ncVoiceAudioBlob = useRef<Blob | null>(null);
+  const [ncClips, setNcClips] = useState<{ file: any; duration: number; transcript: string }[]>([]);
   const ncScrollRef = useRef<ScrollView>(null);
 
   const handleVoice = async () => {
     try {
       if (ncVoiceRecording) {
         setNcVoiceRecording(false);
-        if (ncVoiceRef.current) {
+        const rec = ncVoiceRef.current;
+        if (rec) {
           setNcVoiceTranscribing(true);
-          await ncVoiceRef.current.stopAndUnloadAsync();
-          const uri = ncVoiceRef.current.getURI();
+          let ms = 0;
+          try { ms = (await rec.getStatusAsync())?.durationMillis || 0; } catch {}
+          const st: any = await rec.stopAndUnloadAsync();
+          ms = st?.durationMillis || ms;
+          const uri = rec.getURI();
           ncVoiceRef.current = null;
           if (uri) {
-            const formData = new FormData();
-            if (IS_WEB) {
-              const resp = await fetch(uri);
-              const blob = await resp.blob();
-              ncVoiceAudioBlob.current = blob;
-              formData.append('file', blob, 'recording.webm');
-            } else {
-              ncVoiceAudioBlob.current = { uri, type: 'audio/m4a', name: 'recording.m4a' } as any;
-              formData.append('file', { uri, type: 'audio/m4a', name: 'recording.m4a' } as any);
-            }
-            try {
-              const response = await api.post('/voice/transcribe', formData, {
-                
-              });
-              if (response.data.success && response.data.text) {
-                setContact(prev => ({
-                  ...prev,
-                  notes: prev.notes ? `${prev.notes}\n${response.data.text}` : response.data.text,
-                }));
-              }
+            const file: any = IS_WEB ? await (await fetch(uri)).blob() : { uri, type: 'audio/m4a', name: 'recording.m4a' };
+            let text = '';
+            try {   // shown here before Save, then sent with the audio so it is not transcribed twice
+              const formData = new FormData();
+              if (IS_WEB) formData.append('file', file, 'recording.webm'); else formData.append('file', file);
+              const response = await api.post('/voice/transcribe', formData);
+              if (response.data?.success) text = (response.data.text || '').trim();
             } catch {}
+            setNcClips(prev => [...prev, { file, duration: Math.round(ms / 100) / 10, transcript: text }]);
           }
           setNcVoiceTranscribing(false);
         }
@@ -245,12 +237,32 @@ export default function NewContactScreen() {
         await recording.prepareToRecordAsync(opts);
         await recording.startAsync();
         ncVoiceRef.current = recording;
-        ncVoiceAudioBlob.current = null;
         setNcVoiceRecording(true);
       }
     } catch {
       setNcVoiceRecording(false); setNcVoiceTranscribing(false);
     }
+  };
+
+  // Each clip becomes a voice note on the new contact (one retry); the rep is told if any did not make it.
+  const uploadClips = async (newId: string) => {
+    let failed = 0;
+    for (const c of ncClips) {
+      let ok = false;
+      for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+        try {
+          const formData = new FormData();
+          if (IS_WEB && c.file instanceof Blob) formData.append('audio', c.file, 'recording.webm'); else formData.append('audio', c.file);
+          formData.append('duration', String(c.duration || 0));
+          if (c.transcript) formData.append('transcript', c.transcript);
+          await api.post(`/voice-notes/${user!._id}/${newId}`, formData, { timeout: 120000 });
+          ok = true;
+        } catch {}
+      }
+      if (!ok) failed++;
+    }
+    setNcClips([]);
+    if (failed) showToast(`Contact saved, but ${failed === 1 ? 'a voice note' : `${failed} voice notes`} did not upload. Record it again on their profile.`, 'error', 6000);
   };
 
   // ── Device contacts ────────────────────────────────────────────────────────
@@ -399,22 +411,8 @@ export default function NewContactScreen() {
         }
       }
 
-      // Upload the voice recording if one was made
-      if (newId && ncVoiceAudioBlob.current) {
-        try {
-          const formData = new FormData();
-          if (IS_WEB && ncVoiceAudioBlob.current instanceof Blob) {
-            formData.append('audio', ncVoiceAudioBlob.current, 'recording.webm');
-          } else {
-            formData.append('audio', ncVoiceAudioBlob.current as any);
-          }
-          formData.append('duration', '0');
-          await api.post(`/voice-notes/${user._id}/${newId}`, formData, {
-            
-          });
-          ncVoiceAudioBlob.current = null;
-        } catch {}
-      }
+      // Upload the voice recordings as voice notes (never pasted into Notes)
+      if (newId && ncClips.length) await uploadClips(newId);
 
       if (newId && scanFrom) {
         try {
@@ -562,7 +560,7 @@ export default function NewContactScreen() {
           {/* Voice note: the fastest way to capture who they are. Jessi fills in the rest. */}
           <View style={{ marginHorizontal: SPACE.lg, marginBottom: SPACE.lg }}>
             <PrimaryButton
-              label={ncVoiceTranscribing ? 'Transcribing...' : ncVoiceRecording ? 'Stop recording' : 'Record a voice note'}
+              label={ncVoiceTranscribing ? 'Transcribing...' : ncVoiceRecording ? 'Stop recording' : ncClips.length ? 'Record another voice note' : 'Record a voice note'}
               icon={ncVoiceRecording ? 'stop-circle' : 'mic'}
               color={ncVoiceRecording ? RED : GOLD}
               size="lg" full
@@ -570,18 +568,25 @@ export default function NewContactScreen() {
               onPress={handleVoice}
               testID="new-contact-voice-btn"
             />
-            <Text style={{ fontSize: TYPE.sub, color: colors.textTertiary, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 }}>
-              {ncVoiceRecording ? 'Listening. Say who they are and what they are after.' : 'Say who they are and what they want. It is transcribed into their notes.'}
+            <Text style={{ fontSize: TYPE.sub, color: colors.textTertiary, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 }} {...tid('new-contact-voice-hint')}>
+              {ncVoiceRecording ? 'Listening. Say who they are, how you met and what they are after.' : 'Say who they are, how you met and what they want. It saves as a voice note on their profile.'}
             </Text>
-            {!!contact.notes && !showMoreDetails && (
-              <View style={{ marginTop: SPACE.md, backgroundColor: colors.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: tint(GREEN, 0.35), padding: SPACE.md }} data-testid="new-contact-transcript">
+            {ncClips.map((c, i) => (
+              <View key={i} style={{ marginTop: SPACE.md, backgroundColor: colors.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: tint(GREEN, 0.35), padding: SPACE.md }} {...tid(`new-contact-voice-clip-${i}`)}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <Ionicons name="checkmark-circle" size={14} color={GREEN} />
-                  <Text style={{ fontSize: TYPE.label, fontWeight: '800', color: GREEN, letterSpacing: 0.8 }}>SAVED TO NOTES</Text>
+                  <Ionicons name="mic" size={14} color={GREEN} />
+                  <Text style={{ flex: 1, fontSize: TYPE.label, fontWeight: '800', color: GREEN, letterSpacing: 0.8 }}>
+                    VOICE NOTE{ncClips.length > 1 ? ` ${i + 1}` : ''}{c.duration ? ` · ${Math.floor(c.duration / 60)}:${String(Math.round(c.duration % 60)).padStart(2, '0')}` : ''} · SAVES WITH THE CONTACT
+                  </Text>
+                  <TouchableOpacity onPress={() => setNcClips(p => p.filter((_, j) => j !== i))} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} {...tid(`new-contact-voice-clip-remove-${i}`)}>
+                    <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+                  </TouchableOpacity>
                 </View>
-                <Text style={{ fontSize: TYPE.sub, color: colors.text, lineHeight: 18 }} numberOfLines={3}>{contact.notes}</Text>
+                <Text style={{ fontSize: TYPE.sub, color: c.transcript ? colors.text : colors.textTertiary, lineHeight: 18 }} numberOfLines={3}>
+                  {c.transcript || 'Recorded. Jessi transcribes it when you save.'}
+                </Text>
               </View>
-            )}
+            ))}
           </View>
 
           {/* More details: email, purchase, referral, notes, tags, photo, address, dates */}

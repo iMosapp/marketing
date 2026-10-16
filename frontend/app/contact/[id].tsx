@@ -179,6 +179,7 @@ function ContactDetailScreen() {
     linked_store_id: null as string | null,
     linked_org_name: null as string | null,
     linked_role: null as string | null,
+    how_we_met: null as any,
   });
   const [loading, setLoading] = useState(!isNewContact);
   const [saving, setSaving] = useState(false);
@@ -619,6 +620,7 @@ function ContactDetailScreen() {
         linked_store_id: data.linked_store_id || null,
         linked_org_name: data.linked_org_name || null,
         linked_role: data.linked_role || null,
+        how_we_met: data.how_we_met || null,
       });
     } catch (e) {
       console.error('Failed to load contact:', e);

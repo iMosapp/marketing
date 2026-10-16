@@ -209,8 +209,9 @@ def _ext_for(content_type: str) -> str:
     return "webm"
 
 
-async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: bytes, content_type: str, duration: float, kind: str) -> dict:
-    """Store, transcribe, summarize (conversations), log the touchpoint, extract personal details."""
+async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: bytes, content_type: str, duration: float, kind: str, transcript: str = "") -> dict:
+    """Store, transcribe, summarize (conversations), log the touchpoint, extract personal details.
+    transcript: already transcribed on this recording (the new-contact screen shows it before Save), so it is not paid for twice."""
     ext = _ext_for(content_type)
     filename = f"voice_note_{uuid.uuid4().hex[:8]}.{ext}"
     if ext == "webm":
@@ -230,16 +231,17 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
         logger.error(f"Voice note upload failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to store audio")
 
-    transcript = await _transcribe_audio(audio_bytes, filename, kind)
+    transcript = (transcript or "").strip()[:20000] or await _transcribe_audio(audio_bytes, filename, kind)
     return await _store_note(db, user_id, contact_id, transcript, kind, duration, audio_url, stored_path, audio_bytes)
 
 
-async def create_text_memo(db, user_id: str, contact_id: str, text: str, source: str = "jessi") -> dict:
-    """A memo dictated to Jessi (or typed): no audio, otherwise the exact voice-note pipeline (timeline event, personal-detail extraction)."""
-    return await _store_note(db, user_id, contact_id, (text or "").strip(), "memo", 0.0, None, None, None, source=source)
+async def create_text_memo(db, user_id: str, contact_id: str, text: str, source: str = "jessi", followup: bool = True) -> dict:
+    """A memo dictated to Jessi (or typed): no audio, otherwise the exact voice-note pipeline (timeline event, personal-detail extraction).
+    followup=False when the caller handles the follow-up itself (Jessi's new-contact flow offers a dated reminder)."""
+    return await _store_note(db, user_id, contact_id, (text or "").strip(), "memo", 0.0, None, None, None, source=source, followup=followup)
 
 
-async def _store_note(db, user_id: str, contact_id: str, transcript: str, kind: str, duration: float, audio_url, stored_path, audio_bytes, source: str = "app") -> dict:
+async def _store_note(db, user_id: str, contact_id: str, transcript: str, kind: str, duration: float, audio_url, stored_path, audio_bytes, source: str = "app", followup: bool = True) -> dict:
     is_convo = kind == "conversation"
 
     now = datetime.now(timezone.utc)
@@ -287,7 +289,7 @@ async def _store_note(db, user_id: str, contact_id: str, transcript: str, kind: 
     if transcript and len(transcript.strip()) >= 10:
         try:
             from services.voice_intel import process_voice_note_intelligence
-            asyncio.create_task(process_voice_note_intelligence(user_id, contact_id, transcript, note_id))
+            asyncio.create_task(process_voice_note_intelligence(user_id, contact_id, transcript, note_id, auto_followup=followup))
         except Exception as e:
             logger.warning(f"Voice intelligence extraction trigger failed: {e}")
 
@@ -309,6 +311,7 @@ async def create_voice_note(
     audio: UploadFile = File(...),
     duration: float = Form(0),
     kind: str = Form("memo"),
+    transcript: str = Form(""),
 ):
     """Upload a voice memo (or a recorded in-person conversation) for a contact. Stores audio, transcribes, logs event."""
     db = get_db()
@@ -318,7 +321,7 @@ async def create_voice_note(
     audio_bytes = await audio.read()
     if len(audio_bytes) == 0:
         raise HTTPException(status_code=400, detail="Empty audio file")
-    return await _process_voice_note(db, user_id, contact_id, audio_bytes, audio.content_type or "audio/webm", duration, kind)
+    return await _process_voice_note(db, user_id, contact_id, audio_bytes, audio.content_type or "audio/webm", duration, kind, transcript)
 
 
 class AudioChunk(BaseModel):

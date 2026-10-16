@@ -148,6 +148,11 @@ async def scan(db, user: dict, terms: list, days: Optional[int] = None) -> list:
         if snip:
             hits.append({"source": "note", "contact_id": str(c["_id"]), "who": "note", "when": _when(c.get("updated_at")), "quote": snip, "ref": str(c["_id"])})
 
+    async for c in db.contacts.find({"user_id": {"$in": owners}, "status": {"$nin": ["merged", "deleted", "hidden"]}, "how_we_met.summary": mongo_rx}, {"how_we_met": 1}).limit(120):
+        met = c.get("how_we_met") or {}
+        if _snippet(met.get("summary") or "", rx):
+            hits.append({"source": "note", "contact_id": str(c["_id"]), "who": "note", "when": _when(met.get("date")) or _when(met.get("updated_at")), "quote": f"How we met: {met['summary']}", "ref": str(c["_id"])})
+
     # files and photos Jessi read (business cards, VIN plates, PDFs); sensitive ones only when the searcher filed them
     q = {"user_id": {"$in": owners}, "deleted": {"$ne": True}, "contact_id": {"$nin": ["", None]}, "$or": [{"text": mongo_rx}, {"summary": mongo_rx}, {"name": mongo_rx}, {"title": mongo_rx}]}
     if since:

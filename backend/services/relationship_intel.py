@@ -312,6 +312,8 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
             date_str = p.get("date", "unknown date")
             ai_parts.append(f"  - {p.get('title', 'Purchase')} — {date_str}")
 
+    if (contact.get("how_we_met") or {}).get("summary"):
+        ai_parts.append(f"How we met: {contact['how_we_met']['summary']}")
     if contact.get("notes"):
         ai_parts.append(f"Notes: {contact['notes'][:300]}")
 

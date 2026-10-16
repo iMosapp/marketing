@@ -2,7 +2,7 @@
 Jessi AI Assistant Router
 API endpoints for the voice-enabled AI assistant
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -25,12 +25,15 @@ class VoiceMessage(BaseModel):
 
 
 @router.post("/chat")
-async def chat_with_jessie(data: ChatMessage):
+async def chat_with_jessie(data: ChatMessage, request: Request):
     """
     Send a text message to Jessi and get a response.
-    Optionally includes voice audio in the response.
+    Optionally includes voice audio in the response. Jessi can act (texts, reminders, new contacts), so she only ever acts as the signed-in rep.
     """
     from services.jessie_service import chat_with_jessie as jessie_chat, generate_voice_response_base64
+    caller = getattr(request.state, "caller_id", None)
+    if not caller or data.user_id != caller:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     try:
         # Get Jessi's text response
@@ -39,6 +42,9 @@ async def chat_with_jessie(data: ChatMessage):
         response = {
             "text": result["text"],
             "session_id": result["session_id"],
+            "open": result.get("open"),
+            "tool": result.get("tool") or "answer",
+            "pending": bool(result.get("pending")),
         }
         
         # Generate voice if requested
@@ -58,11 +64,13 @@ async def chat_with_jessie(data: ChatMessage):
 
 
 @router.post("/voice-chat")
-async def voice_chat_with_jessie(data: VoiceMessage):
+async def voice_chat_with_jessie(data: VoiceMessage, request: Request):
     """
     Handle voice input (already transcribed) and return voice response.
     """
     from services.jessie_service import chat_with_jessie as jessie_chat, generate_voice_response_base64
+    if data.user_id != getattr(request.state, "caller_id", None):
+        raise HTTPException(status_code=403, detail="Access denied")
     
     try:
         # Get Jessi's text response
