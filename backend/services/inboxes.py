@@ -659,6 +659,8 @@ async def escalate_silent_owners() -> dict:
 
 # ── Ownership actions ────────────────────────────────────────────────────────
 
+NOT_PERSONAL = {"ownership_type": {"$ne": "personal"}}   # thread handoffs never move a rep's personal contact
+
 async def _system_message(db, conv_id: str, text: str):
     now = datetime.utcnow()
     await db.messages.insert_one({"conversation_id": conv_id, "sender": "system", "direction": "system", "channel": "system",
@@ -673,8 +675,11 @@ async def _move_book(db, contact_id: Optional[str], from_user: Optional[str], to
     """The customer follows the new owner: contact, open tasks, live campaign enrollments and pending sends."""
     if not contact_id or not _oid(contact_id):
         return
+    if await db.contacts.find_one({"_id": _oid(contact_id), "ownership_type": "personal"}, {"_id": 1}):
+        return   # a rep's personal contact (and its tasks / enrollments) never changes owner with a thread handoff
     now = _now()
-    await db.contacts.update_one({"_id": _oid(contact_id)}, {"$set": {"user_id": to_user, "claimed_by": to_user, "updated_at": now.isoformat()}})
+    # a rep's personal contact never changes owner with a thread handoff (the thread moves, the relationship record does not)
+    await db.contacts.update_one({"_id": _oid(contact_id), **NOT_PERSONAL}, {"$set": {"user_id": to_user, "claimed_by": to_user, "updated_at": now.isoformat()}})
     q_prev = {"contact_id": str(contact_id)}
     if from_user:
         q_prev["user_id"] = from_user
@@ -787,7 +792,7 @@ async def release_conversation(db, conv: dict, actor: dict, note: str = "") -> d
     await db.conversations.update_one({"_id": conv["_id"]}, {"$set": sets, "$push": {"assignment_history": {
         "at": now, "by": actor_id, "from": prev_id or None, "to": None, "kind": "release", "note": (note or "")[:200]}}})
     if conv.get("contact_id") and _oid(conv["contact_id"]) and store_id:
-        await db.contacts.update_one({"_id": _oid(conv["contact_id"])}, {"$set": {"user_id": store_id, "claimed_by": None, "released_from": prev_id or None}})
+        await db.contacts.update_one({"_id": _oid(conv["contact_id"]), **NOT_PERSONAL}, {"$set": {"user_id": store_id, "claimed_by": None, "released_from": prev_id or None}})
     line = f"{_first(actor)} released this back to {(inbox or {}).get('name') or 'the inbox'}" + (f': "{note.strip()[:200]}"' if (note or "").strip() else "")
     await _system_message(db, str(conv["_id"]), line)
     if inbox:
@@ -817,7 +822,7 @@ async def move_conversation(db, conv: dict, actor: dict, inbox_id: str, to_user_
         "at": now, "by": str(actor["_id"]), "from": prev_owner or None, "to": None, "kind": "move",
         "inbox_from": str(prev_inbox["_id"]) if prev_inbox else None, "inbox_to": str(inbox["_id"]), "note": (note or "")[:200]}}})
     if conv.get("contact_id") and _oid(conv["contact_id"]) and inbox.get("store_id"):
-        await db.contacts.update_one({"_id": _oid(conv["contact_id"])}, {"$set": {"user_id": inbox["store_id"], "claimed_by": None}})
+        await db.contacts.update_one({"_id": _oid(conv["contact_id"]), **NOT_PERSONAL}, {"$set": {"user_id": inbox["store_id"], "claimed_by": None}})
     line = f"{_first(actor)} moved this from {(prev_inbox or {}).get('name') or 'a personal inbox'} to {inbox.get('name')}"
     if (note or "").strip():
         line += f': "{note.strip()[:200]}"'

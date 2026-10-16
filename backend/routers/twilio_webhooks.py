@@ -404,20 +404,22 @@ async def incoming_message(
                     logger.info(f"[Webhook] Reusing internet-lead contact {lead_conv['contact_id']} for {from_phone}")
         if not contact:
             is_new_contact = True
-            # Enrich: try to find the contact's real name from any other rep's namespace
-            # This prevents "Lead (9122)" when "Forest Ward" is already known in the system
+            # Enrich: a teammate in the SAME organization may already know this number's real name ("Forest Ward", not "Lead (9122)").
+            # Never other organizations: their contact books are private.
             enriched_name = f"Lead ({from_phone[-4:]})"
             enriched_photo = None
             enriched_first = "New"
             enriched_last  = "Lead"
             try:
+                _org = str((rep_user or {}).get("organization_id") or "")
+                _peers = [str(u["_id"]) async for u in db.users.find({"organization_id": _org}, {"_id": 1})] if _org else []
                 any_contact = await db.contacts.find_one(
                     {
-                        **_pc, "status": NOT_MERGED,
+                        **_pc, "status": NOT_MERGED, "user_id": {"$in": _peers},
                         "name": {"$nin": ["Contact", "Unknown", "New Lead", "", None], "$not": {"$regex": "^Lead \\("}}
                     },
                     {"name": 1, "first_name": 1, "last_name": 1, "photo_url": 1, "photo_thumbnail": 1}
-                )
+                ) if _peers else None
                 if any_contact and any_contact.get("name"):
                     enriched_name  = any_contact["name"]
                     enriched_first = any_contact.get("first_name") or enriched_name.split()[0]

@@ -121,15 +121,9 @@ async def _contact(db, user: dict, contact_id: str) -> dict:
     base = await get_data_filter(str(user["_id"]))
     contact = await db.contacts.find_one({"$and": [{"_id": ObjectId(contact_id)}, base]})
     if not contact:
-        # customers reached through shared-inbox threads: members of the inbox, anyone the thread is assigned/shared to,
-        # and managers of the inbox's store can ask about them even when the contact record belongs to someone else
-        from services.inboxes import inboxes_for_user
-        inbox_ids = [str(i["_id"]) for i in await inboxes_for_user(db, user)]
-        ors = [{"user_id": str(user["_id"])}, {"assigned_to": str(user["_id"])}, {"collaborators": str(user["_id"])}]
-        if inbox_ids:
-            ors.append({"inbox_id": {"$in": inbox_ids}})
-        conv = await db.conversations.find_one({"contact_id": contact_id, "$or": ors}, {"_id": 1})
-        if conv:
+        # store-owned / unassigned leads reached through a shared-inbox thread; a teammate's own customer stays theirs (contact_scope)
+        from services.contact_scope import contact_visible
+        if await contact_visible(db, str(user["_id"]), str(user["_id"]), contact_id):
             contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")

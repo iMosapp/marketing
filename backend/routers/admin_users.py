@@ -1927,3 +1927,20 @@ async def trigger_power_rankings(x_user_id: str = Header(None, alias="X-User-ID"
     return {"status": "ok", "emails_sent": count}
 
 
+
+
+@router.get("/contact-access-audit", dependencies=[Depends(require_role("super_admin"))])
+async def contact_access_audit_log(limit: int = 200, actor_id: Optional[str] = None, contact_id: Optional[str] = None):
+    """Super-admin opens of contacts owned outside their own organization (ids, roles, action, reason; never contact content)."""
+    from services import contact_access_audit
+    return {"rows": await contact_access_audit.recent(get_db(), limit, actor_id, contact_id)}
+
+
+@router.get("/contact-merge-assessment", dependencies=[Depends(require_role("super_admin"))])
+async def contact_merge_assessment(request: Request, confirm: str = ""):
+    """Read-only, counts-only scan for historical cross-organization contact merges (services/merge_assessment.py). Writes nothing."""
+    if confirm != "COUNTS_ONLY":
+        raise HTTPException(status_code=400, detail="Add ?confirm=COUNTS_ONLY to run the read-only scan")
+    from services import merge_assessment
+    logger.info(f"[MergeAssessment] started by {getattr(request.state, 'caller_id', '-')}")
+    return await merge_assessment.run(get_db())

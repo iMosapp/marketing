@@ -162,6 +162,10 @@ async def bulk_push_to_crm(user_id: str, body: BulkPushBody):
     ids = [str(i) for i in body.contact_ids][:50]
     if not ids:
         raise HTTPException(status_code=400, detail="No contacts selected")
+    from services.contact_scope import contacts_in_scope
+    ids = await contacts_in_scope(db, user_id, ids)   # a contact id outside the caller's scope is never pushed
+    if not ids:
+        raise HTTPException(status_code=404, detail="Contact not found")
 
     resend_key = os.environ.get("RESEND_API_KEY")
     if not resend_key:

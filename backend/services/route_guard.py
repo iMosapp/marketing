@@ -79,16 +79,43 @@ def is_public(method: str, path: str) -> bool:
 _OID_SEGMENT = re.compile(r"/[0-9a-f]{24}(/|$)")
 
 
-def route_user_id(app, scope) -> str | None:
-    """The {user_id} path parameter of the route this request resolves to, if it has one."""
+def route_match(app, scope) -> tuple:
+    """(path template, path parameters) of the route this request resolves to (("", {}) when the path carries no ObjectId segment)."""
     if not _OID_SEGMENT.search(scope["path"]):
-        return None
+        return "", {}
     for route in app.router.routes:
         match, child = route.matches(scope)
         if match == Match.FULL:
-            value = (child.get("path_params") or {}).get("user_id")
-            return str(value) if value else None
-    return None
+            return getattr(route, "path", ""), {k: str(v) for k, v in (child.get("path_params") or {}).items() if v is not None}
+    return "", {}
+
+
+def route_params(app, scope) -> dict:
+    """Path parameters of the route this request resolves to ({} when the path carries no ObjectId segment)."""
+    return route_match(app, scope)[1]
+
+
+# {contact_id} routes that only serve the conversation (drafts, scheduled texts, consent, logging a touch): seeing the customer's thread
+# (assigned, shared, shared inbox) is enough. Every other {contact_id} route serves the relationship record itself (notes, personal
+# details, voice memos, files, intelligence, sharing) and needs the contact inside the caller's data scope (owner or their managers).
+CONVERSATION_CONTACT_ROUTES = {
+    ("GET", "/api/messages/draft/{user_id}/{contact_id}"), ("DELETE", "/api/messages/draft/{user_id}/{contact_id}"),
+    ("GET", "/api/messages/scheduled/{user_id}/{contact_id}"), ("GET", "/api/messages/email-diagnostic/{user_id}/{contact_id}"),
+    ("GET", "/api/ai-reply/history/{contact_id}"),
+    ("GET", "/api/consent/contact/{contact_id}"), ("POST", "/api/consent/contact/{contact_id}"),
+    ("POST", "/api/consent/contact/{contact_id}/opt-in-link"), ("POST", "/api/consent/contact/{contact_id}/revoke"),
+    ("POST", "/api/contacts/{user_id}/{contact_id}/events"), ("PATCH", "/api/contacts/{user_id}/{contact_id}/events/latest-channel"),
+    ("POST", "/api/contacts/{user_id}/{contact_id}/log-reply"),
+}
+
+
+def conversation_contact_route(method: str, template: str) -> bool:
+    return (method, template) in CONVERSATION_CONTACT_ROUTES
+
+
+def route_user_id(app, scope) -> str | None:
+    """The {user_id} path parameter of the route this request resolves to, if it has one."""
+    return route_params(app, scope).get("user_id")
 
 
 _OID = re.compile(r"^[0-9a-f]{24}$")

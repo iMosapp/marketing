@@ -386,7 +386,7 @@ async def _apply_claim_to_conversation(db, job: dict, user_id: str, via: str):
     )
     if job.get("contact_id"):
         prev = await db.contacts.find_one_and_update(
-            {"_id": ObjectId(job["contact_id"])},
+            {"_id": ObjectId(job["contact_id"]), "ownership_type": {"$ne": "personal"}},
             {"$set": {"user_id": user_id, "claimed_by": user_id, "claimed_at": now.isoformat(), "updated_at": now.isoformat()}},
         )
         from utils.activity_log import on_lead_claimed

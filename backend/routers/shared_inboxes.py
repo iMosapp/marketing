@@ -339,10 +339,12 @@ async def inbox_webhook(inbox_id: str, request: Request):
             from datetime import datetime as _dt
             from routers.twilio_webhooks import normalize_phone
             phone_e164 = normalize_phone(phone)
-            # Create contact
-            contact = await db.contacts.find_one({"phone": phone_e164})
+            # Create contact (only this inbox's store / members are searched; the record belongs to the inbox's store)
+            owners = [o for o in [str(inbox.get("store_id") or "")] + [str(u) for u in inbox.get("assigned_user_ids", [])] if o]
+            contact = await db.contacts.find_one({"phone": phone_e164, "user_id": {"$in": owners}}) if owners else None
             if not contact:
                 res = await db.contacts.insert_one({
+                    "user_id": owners[0] if owners else "", "store_id": inbox.get("store_id"), "ownership_type": "org",
                     "phone": phone_e164, "first_name": first_name, "last_name": last_name,
                     "name": full_name, "email": email, "source": source_name,
                     "tags": ["Inbound Lead"], "status": "active",
@@ -490,6 +492,16 @@ async def unassign_user_from_inbox(inbox_id: str, target_user_id: str, user_id: 
 
 # ============= BULK CUSTOMER TRANSFER ENDPOINTS =============
 
+TRANSFERABLE = {"ownership_type": {"$ne": "personal"}, "status": {"$nin": ["merged", "deleted"]}}
+
+
+async def _assert_can_transfer(caller_id: str, *user_ids: str) -> None:
+    """A manager moves books only between people they manage (own org / stores, never someone who outranks them)."""
+    from services.route_guard import manager_can_access
+    for uid in user_ids:
+        if str(uid) != str(caller_id) and not await manager_can_access(str(caller_id), str(uid), write=True):
+            raise HTTPException(status_code=403, detail="You can only transfer customers between people you manage")
+
 @router.post("/bulk-transfer", dependencies=_bound)
 async def initiate_bulk_transfer(transfer: BulkTransferRequest, user_id: str):
     """
@@ -511,6 +523,7 @@ async def initiate_bulk_transfer(transfer: BulkTransferRequest, user_id: str):
         raise HTTPException(status_code=404, detail="Source user not found")
     if not to_user:
         raise HTTPException(status_code=404, detail="Destination user not found")
+    await _assert_can_transfer(user_id, transfer.from_user_id, transfer.to_user_id)
     
     # Track what we're transferring
     transfer_log = {
@@ -525,53 +538,32 @@ async def initiate_bulk_transfer(transfer: BulkTransferRequest, user_id: str):
         "status": "in_progress",
         "transfers": {}
     }
+    now = datetime.utcnow()
+    stamp = {"user_id": transfer.to_user_id, "transferred_from": transfer.from_user_id, "transferred_at": now}
+    # Dealership contacts only: personal contacts (and their threads, tasks and enrollments) stay with the rep.
+    moved = [str(c["_id"]) async for c in db.contacts.find({**TRANSFERABLE, "user_id": transfer.from_user_id}, {"_id": 1})]
+    transfer_log['transfers']['personal_contacts_kept'] = await db.contacts.count_documents({"user_id": transfer.from_user_id, "ownership_type": "personal"})
     
     # Transfer contacts
-    if transfer.transfer_contacts:
-        result = await db.contacts.update_many(
-            {"user_id": transfer.from_user_id},
-            {"$set": {
-                "user_id": transfer.to_user_id,
-                "transferred_from": transfer.from_user_id,
-                "transferred_at": datetime.utcnow()
-            }}
-        )
+    if transfer.transfer_contacts and moved:
+        result = await db.contacts.update_many({"_id": {"$in": [ObjectId(c) for c in moved]}, "user_id": transfer.from_user_id}, {"$set": stamp})
         transfer_log['transfers']['contacts'] = result.modified_count
     
+    linked = {"user_id": transfer.from_user_id, "contact_id": {"$in": moved}}
     # Transfer conversations
-    if transfer.transfer_conversations:
-        result = await db.conversations.update_many(
-            {"user_id": transfer.from_user_id},
-            {"$set": {
-                "user_id": transfer.to_user_id,
-                "transferred_from": transfer.from_user_id,
-                "transferred_at": datetime.utcnow()
-            }}
-        )
+    if transfer.transfer_conversations and moved:
+        result = await db.conversations.update_many(linked, {"$set": stamp})
         transfer_log['transfers']['conversations'] = result.modified_count
     
-    # Transfer tasks
+    # Transfer tasks (the moved customers' tasks, plus to-dos that are not about any customer)
     if transfer.transfer_tasks:
-        result = await db.tasks.update_many(
-            {"user_id": transfer.from_user_id},
-            {"$set": {
-                "user_id": transfer.to_user_id,
-                "transferred_from": transfer.from_user_id,
-                "transferred_at": datetime.utcnow()
-            }}
-        )
+        no_contact = {"user_id": transfer.from_user_id, "$or": [{"contact_id": {"$exists": False}}, {"contact_id": None}, {"contact_id": ""}]}
+        result = await db.tasks.update_many({"$or": [linked, no_contact]} if moved else no_contact, {"$set": stamp})
         transfer_log['transfers']['tasks'] = result.modified_count
     
     # Transfer campaign enrollments
-    if transfer.transfer_campaigns:
-        result = await db.campaign_enrollments.update_many(
-            {"user_id": transfer.from_user_id},
-            {"$set": {
-                "user_id": transfer.to_user_id,
-                "transferred_from": transfer.from_user_id,
-                "transferred_at": datetime.utcnow()
-            }}
-        )
+    if transfer.transfer_campaigns and moved:
+        result = await db.campaign_enrollments.update_many(linked, {"$set": stamp})
         transfer_log['transfers']['campaign_enrollments'] = result.modified_count
     
     # Mark transfer as completed
@@ -582,7 +574,7 @@ async def initiate_bulk_transfer(transfer: BulkTransferRequest, user_id: str):
     await db.bulk_transfers.insert_one(transfer_log)
     
     # Update user stats
-    total_transferred = sum(transfer_log['transfers'].values())
+    total_transferred = sum(v for k, v in transfer_log['transfers'].items() if k != "personal_contacts_kept")
     
     return {
         "message": f"Successfully transferred {total_transferred} items from {from_user.get('name')} to {to_user.get('name')}",
@@ -601,7 +593,11 @@ async def get_transfer_history(user_id: str, limit: int = 20):
     if not user or user.get('role') not in ['super_admin', 'org_admin', 'store_manager']:
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    transfers = await db.bulk_transfers.find({}).sort("started_at", -1).limit(limit).to_list(limit)
+    q = {}
+    if user.get('role') != 'super_admin':
+        from routers.database import get_accessible_user_ids
+        q = {"from_user_id": {"$in": await get_accessible_user_ids(user)}}
+    transfers = await db.bulk_transfers.find(q).sort("started_at", -1).limit(limit).to_list(limit)
     
     result = []
     for t in transfers:
@@ -632,12 +628,17 @@ async def preview_bulk_transfer(from_user_id: str, user_id: str):
     from_user = await get_user_by_id(from_user_id)
     if not from_user:
         raise HTTPException(status_code=404, detail="User not found")
+    await _assert_can_transfer(user_id, from_user_id)
     
-    # Count items that would be transferred
-    contacts_count = await db.contacts.count_documents({"user_id": from_user_id})
-    conversations_count = await db.conversations.count_documents({"user_id": from_user_id})
-    tasks_count = await db.tasks.count_documents({"user_id": from_user_id})
-    enrollments_count = await db.campaign_enrollments.count_documents({"user_id": from_user_id})
+    # Count items that would be transferred (same rules as the transfer itself)
+    moved = [str(c["_id"]) async for c in db.contacts.find({**TRANSFERABLE, "user_id": from_user_id}, {"_id": 1})]
+    linked = {"user_id": from_user_id, "contact_id": {"$in": moved}}
+    no_contact = {"user_id": from_user_id, "$or": [{"contact_id": {"$exists": False}}, {"contact_id": None}, {"contact_id": ""}]}
+    contacts_count = len(moved)
+    conversations_count = await db.conversations.count_documents(linked) if moved else 0
+    tasks_count = await db.tasks.count_documents({"$or": [linked, no_contact]} if moved else no_contact)
+    enrollments_count = await db.campaign_enrollments.count_documents(linked) if moved else 0
+    personal_kept = await db.contacts.count_documents({"user_id": from_user_id, "ownership_type": "personal"})
     
     return {
         "from_user": {
@@ -651,6 +652,7 @@ async def preview_bulk_transfer(from_user_id: str, user_id: str):
             "tasks": tasks_count,
             "campaign_enrollments": enrollments_count
         },
+        "personal_contacts_kept": personal_kept,
         "total": contacts_count + conversations_count + tasks_count + enrollments_count
     }
 

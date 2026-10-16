@@ -381,18 +381,33 @@ async def get_unassigned_contacts(
 @router.post("/reassign-contacts")
 async def reassign_contacts(
     request: BulkReassignRequest,
+    http: Request,
     x_user_id: str = Header(None, alias="X-User-ID")
 ):
-    """Bulk reassign contacts to a new owner"""
+    """Bulk reassign contacts to a new owner (managers, inside their own organization / stores only)"""
     db = get_db()
+    from routers.rbac import get_current_user
+    from services.contact_scope import contacts_in_scope
+    from services.route_guard import manager_can_access
+    me = await get_current_user(http)
+    if me.get("role") not in ("super_admin", "org_admin", "store_manager"):
+        raise HTTPException(status_code=403, detail="Managers only")
+    if str(me["_id"]) != request.new_owner_id and not await manager_can_access(str(me["_id"]), request.new_owner_id, write=True):
+        raise HTTPException(status_code=403, detail="You can only assign contacts to people you manage")
     
     # Verify new owner exists
     new_owner = await db.users.find_one({"_id": ObjectId(request.new_owner_id)})
     if not new_owner:
         raise HTTPException(status_code=404, detail="New owner not found")
     
-    # Convert contact IDs to ObjectIds
-    contact_oids = [ObjectId(cid) for cid in request.contact_ids]
+    # Only contacts inside the caller's scope (unassigned dealership records of their own org / stores)
+    contact_oids = [ObjectId(cid) for cid in await contacts_in_scope(db, str(me["_id"]), request.contact_ids)]
+    if me.get("role") != "super_admin":
+        scope = {"organization_id": str(me.get("organization_id") or "")} if me.get("role") == "org_admin" else {"store_id": str(me.get("store_id") or "")}
+        contact_oids += [c["_id"] async for c in db.contacts.find({"_id": {"$in": [ObjectId(c) for c in request.contact_ids if ObjectId.is_valid(str(c))]},
+                                                                   "$or": [{"is_unassigned": True}, {"owner_id": None}], **scope}, {"_id": 1})]
+    else:
+        contact_oids = [ObjectId(c) for c in request.contact_ids if ObjectId.is_valid(str(c))]
     
     # Update contacts
     result = await db.contacts.update_many(

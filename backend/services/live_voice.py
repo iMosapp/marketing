@@ -352,16 +352,19 @@ def greeting_text(cfg: dict, user: dict, contact: Optional[dict] = None) -> str:
 
 
 async def focus_contact(db, user: dict, contact_id: Optional[str]) -> Optional[dict]:
-    """The contact the rep opened Jessi from: theirs, or one they can see through a shared inbox / team."""
+    """The contact the rep opened Jessi from: theirs, one inside their data scope (managers: their own org / stores only), or one they can
+    see through a shared inbox / team thread. Same rule as every {contact_id} route (contact_scope.contact_visible): a role alone never
+    opens another organization's contact."""
     if not contact_id or not ObjectId.is_valid(str(contact_id)):
         return None
     c = await db.contacts.find_one({"_id": ObjectId(str(contact_id))})
     if not c:
         return None
-    if c.get("user_id") == str(user["_id"]) or user.get("role") in ("super_admin", "admin", "org_admin", "store_manager", "manager"):
+    uid = str(user["_id"])
+    if c.get("user_id") == uid:
         return c
-    shared = await db.conversations.find_one({"contact_id": str(c["_id"]), "$or": [{"user_id": str(user["_id"])}, {"assigned_user_id": str(user["_id"])}]}, {"_id": 1})
-    return c if shared else None
+    from services.contact_scope import contact_visible
+    return c if await contact_visible(db, uid, uid, str(c["_id"])) else None
 
 
 async def focus_brief(db, contact: dict, user: Optional[dict] = None) -> str:

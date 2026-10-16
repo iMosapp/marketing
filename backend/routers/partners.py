@@ -1759,8 +1759,7 @@ async def add_agreement_contact(agreement_id: str, request: Request):
     existing = None
     if or_clauses:
         existing = await db.contacts.find_one({
-            "$or": user_scope,
-            "$or": or_clauses,   # noqa: F601 — MongoDB accepts duplicate $or via array
+            "$and": [{"$or": user_scope}, {"$or": or_clauses}],
         })
 
     # Fallback: simpler exact match if broad query returns nothing

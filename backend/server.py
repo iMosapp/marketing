@@ -53,7 +53,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-BUILD = "2026-10-16.photo-intel"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
+BUILD = "2026-10-16.contact-ownership"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
 app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix (same response class as the app, so its routes can be mounted without being rebuilt)
@@ -192,11 +192,20 @@ async def bind_identity_header(request: Request, call_next):
     if not claimed:
         _set_header(request, b"x-user-id", caller)
     request.state.caller_id = caller
+    from services import contact_access_audit
+    contact_access_audit.bind(caller, request.method, path)
     if not public:
-        target = route_guard.route_user_id(app, request.scope) or route_guard.query_user_id(request)
+        template, params = route_guard.route_match(app, request.scope)
+        target = params.get("user_id") or route_guard.query_user_id(request)
         if target and target != caller and not await route_guard.manager_can_access(caller, target, write=request.method not in ("GET", "HEAD")):
             logger.warning(f"[BOLA] Blocked {request.method} {path} — caller={caller} tried to access user_id={target}")
             return _JSONResponse({"detail": "Access denied — you can only access your own data"}, status_code=403)
+        if params.get("contact_id"):
+            from services.contact_scope import contact_visible
+            if not await contact_visible(get_db(), params.get("user_id") or caller, caller, params["contact_id"],
+                                         conversation_ok=route_guard.conversation_contact_route(request.method, template)):
+                logger.warning(f"[CONTACT-SCOPE] Blocked {request.method} {path} — caller={caller} contact={params['contact_id']}")
+                return _JSONResponse({"detail": "Contact not found"}, status_code=404)
     return await call_next(request)
 
 
@@ -1776,117 +1785,9 @@ async def startup_event():
         except Exception as e:
             logger.warning(f"Rep Tools reset skipped: {e}")
     _aio3.create_task(run_once("reset_rep_tools_switches", _reset_rep_tools_switches))
-    # Enforces: one phone number = one named contact = one conversation.
-    # Safe to run on every startup — skips already-merged contacts.
-    async def _consolidate_phone_contacts():
-        try:
-            db = get_db()
-            GENERIC = {"Contact", "Unknown", "New Lead", "", None}
-
-            def _quality(c: dict) -> int:
-                n = (c.get("name") or f"{c.get('first_name','')} {c.get('last_name','')}".strip()).strip()
-                if not n or n in GENERIC: return 0
-                if n.startswith("Lead ("): return 1
-                return 2  # Real name — wins
-
-            # Find all contacts that have a phone number, grouped in memory
-            all_contacts = await db.contacts.find(
-                {"phone": {"$exists": True, "$ne": ""}},
-                {"_id": 1, "phone": 1, "name": 1, "first_name": 1, "last_name": 1, "user_id": 1}
-            ).to_list(50000)
-
-            # Group by normalised phone
-            from collections import defaultdict
-            groups: dict = defaultdict(list)
-            for c in all_contacts:
-                raw = (c.get("phone") or "").strip()
-                if not raw: continue
-                # Normalise: always +1XXXXXXXXXX
-                digits = "".join(ch for ch in raw if ch.isdigit())
-                if len(digits) == 10:  digits = "1" + digits
-                if len(digits) == 11 and digits.startswith("1"): digits = digits
-                groups[digits].append(c)
-
-            merged_contacts = 0
-            merged_convs    = 0
-
-            for digits, contacts in groups.items():
-                if len(contacts) < 2:
-                    continue
-
-                contacts.sort(key=_quality, reverse=True)
-                winner   = contacts[0]
-                losers   = contacts[1:]
-                winner_id = str(winner["_id"])
-
-                for loser in losers:
-                    loser_id = str(loser["_id"])
-                    if _quality(loser) >= _quality(winner):
-                        continue  # Both are named — skip to avoid bad merges
-
-                    # Re-point all conversations from loser → winner
-                    w_name = (winner.get("name") or f"{winner.get('first_name','')} {winner.get('last_name','')}".strip()).strip()
-                    conv_res = await db.conversations.update_many(
-                        {"contact_id": loser_id},
-                        {"$set": {"contact_id": winner_id, "contact_name": w_name or ""}}
-                    )
-                    if conv_res.modified_count:
-                        merged_convs += conv_res.modified_count
-
-                    # Re-point messages, events, enrollments, tasks
-                    for col in ("messages", "contact_events", "campaign_enrollments", "tasks", "notes", "call_logs"):
-                        await db[col].update_many(
-                            {"contact_id": loser_id},
-                            {"$set": {"contact_id": winner_id}}
-                        )
-
-                    # Mark loser as merged
-                    await db.contacts.update_one(
-                        {"_id": loser["_id"]},
-                        {"$set": {"merged_into": winner_id, "merged_at": datetime.utcnow()}}
-                    )
-                    merged_contacts += 1
-
-            # Merge duplicate conversations for the same user + phone
-            # Find conversations with the same contact_id, keep the most recent
-            cursor = db.conversations.aggregate([
-                {"$match": {"contact_id": {"$exists": True}}},
-                {"$group": {
-                    "_id": {"user_id": "$user_id", "contact_id": "$contact_id"},
-                    "convs": {"$push": {"id": "$_id", "last": "$last_message_at"}},
-                    "count": {"$sum": 1}
-                }},
-                {"$match": {"count": {"$gt": 1}}}
-            ])
-            async for group in cursor:
-                convs_in_group = sorted(
-                    group["convs"],
-                    key=lambda x: str(x.get("last") or ""),
-                    reverse=True
-                )
-                primary_id = convs_in_group[0]["id"]
-                for dup in convs_in_group[1:]:
-                    dup_id = str(dup["id"])
-                    primary_str = str(primary_id)
-                    await db.messages.update_many(
-                        {"conversation_id": dup_id},
-                        {"$set": {"conversation_id": primary_str}}
-                    )
-                    await db.conversations.update_one(
-                        {"_id": dup["id"]},
-                        {"$set": {"status": "closed", "merged_into": primary_str}}
-                    )
-                    merged_convs += 1
-
-            if merged_contacts or merged_convs:
-                logger.info(f"[Startup] Phone consolidation: {merged_contacts} duplicate contacts merged, {merged_convs} conversations consolidated")
-            else:
-                logger.info("[Startup] Phone consolidation: all clean — no duplicates found")
-        except Exception as e:
-            logger.warning(f"[Startup] Phone consolidation skipped: {e}")
-
+    # No startup phone consolidation: it merged contacts across users and orgs by phone alone (contact audit C1, Oct 2026).
+    # Duplicate cleanup stays per owner: Duplicates screen / Jessi "merge them" (services/duplicates.py).
     import asyncio as _aio2
-    _aio2.create_task(run_once("consolidate_phone_contacts", _consolidate_phone_contacts))
 
     # Self-heal: re-link voice notes whose audio_url was never saved (storage response bug),
     # then convert any stored webm memos to m4a so they play on iOS

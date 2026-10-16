@@ -105,7 +105,7 @@ async def _flagged_pairs(db, owners: list, rows: list) -> list:
         oid = c.get("possible_duplicate_of")
         if not oid or not ObjectId.is_valid(str(oid)):
             continue
-        orig = by_id.get(str(oid)) or await db.contacts.find_one({"_id": ObjectId(str(oid)), "status": LIVE}, FIELDS)
+        orig = by_id.get(str(oid)) or await db.contacts.find_one({"_id": ObjectId(str(oid)), "user_id": {"$in": owners}, "status": LIVE}, FIELDS)
         if orig:
             out.append(("name", "Same name, different number", [orig, c]))
     return out

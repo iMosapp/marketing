@@ -810,7 +810,7 @@ async def ring_me(conversation_id: str, user_id: str, request: Request):
             "claimed": True, "claimed_by": user_id, "assigned_to": user_id, "user_id": user_id, "claim_source": "app",
             "routing_kind": "claimed", "claimed_at": datetime.now(timezone.utc).isoformat(), "updated_at": datetime.now(timezone.utc).isoformat()}})
         if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])):
-            await db.contacts.update_one({"_id": ObjectId(conv["contact_id"])}, {"$set": {"user_id": user_id, "claimed_by": user_id, "updated_at": datetime.now(timezone.utc).isoformat()}})
+            await db.contacts.update_one({"_id": ObjectId(conv["contact_id"]), "ownership_type": {"$ne": "personal"}}, {"$set": {"user_id": user_id, "claimed_by": user_id, "updated_at": datetime.now(timezone.utc).isoformat()}})
     from services.lead_call_engine import call_rep_now
     result = await call_rep_now(conversation_id, user_id)
     if not result.get("ok"):
@@ -1026,7 +1026,7 @@ async def claim_and_call(conversation_id: str, user_id: str, request: Request):
                   "claimed_at": datetime.now(timezone.utc), "claim_source": "app"}}
     )
     if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])):
-        prev_contact = await db.contacts.find_one_and_update({"_id": ObjectId(conv["contact_id"])},
+        prev_contact = await db.contacts.find_one_and_update({"_id": ObjectId(conv["contact_id"]), "ownership_type": {"$ne": "personal"}},
                                      {"$set": {"user_id": user_id, "claimed_by": user_id, "updated_at": datetime.now(timezone.utc).isoformat()}})
         from utils.activity_log import on_lead_claimed
         await on_lead_claimed(db, contact_id=str(conv["contact_id"]), user_id=user_id, via="app",

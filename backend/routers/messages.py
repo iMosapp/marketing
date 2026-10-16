@@ -803,7 +803,7 @@ async def _assert_can_act_as(request: Request, user_id: str) -> dict:
 
 
 async def _conv_for_caller(request: Request, conversation_id: str) -> dict:
-    """The conversation, only when the proven caller owns it, is a member of its shared inbox, or manages its owner."""
+    """The conversation, only when the proven caller owns it, it is assigned / shared to them, they're a member of its shared inbox, or manage its owner."""
     from routers.rbac import get_current_user, verify_user_access
     from services.inboxes import member_inbox_ids
     me = await get_current_user(request)
@@ -811,7 +811,7 @@ async def _conv_for_caller(request: Request, conversation_id: str) -> dict:
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
     mine, owner = str(me["_id"]), str(conv.get("user_id") or "")
-    if owner == mine:
+    if owner == mine or conv.get("assigned_to") == mine or mine in (conv.get("collaborators") or []):
         return conv
     if conv.get("inbox_id") and str(conv["inbox_id"]) in await member_inbox_ids(get_db(), mine):
         return conv
@@ -2239,9 +2239,11 @@ async def get_ai_suggestion_smart(conversation_id: str, request: Request, body: 
             system_prompt += attachment_notice(len(_last_in.get("media_urls") or []) or int(_last_in.get("num_media") or 1), _last_in.get("content") or "")
         vehicle_ok = is_vehicle_inquiry(lead_inquiry) and not (view.current and view.current.kind in ("software", "billing"))
 
-        # Get contact context
+        # Get contact context (a teammate working a shared thread drafts without the owner's private notes / memos / intelligence)
         contact_ctx = ""
-        if contact_id:
+        _c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"user_id": 1}) if contact_id and ObjectId.is_valid(str(contact_id)) else None
+        from services.contact_scope import relationship_ok
+        if _c and await relationship_ok(db, request.state.caller_id, _c):
             try:
                 _cb = await get_contact_brief(user_id, contact_id, include_vehicle=vehicle_ok, conversation_id=conversation_id)
                 contact_ctx, intel_rationale = _cb["ai_context"], _cb.get("intel_rationale")
@@ -2827,15 +2829,18 @@ async def twilio_inbound_webhook(request: Request):
             ]
         })
         
-        # Also check if contact exists under any user (for shared inboxes)
+        # Also check the shared inbox's own members / store (never other dealerships' records)
         if not contact and inbox_type == "shared":
+            inbox_doc = await db.shared_inboxes.find_one({"_id": ObjectId(inbox_id)}, {"assigned_user_ids": 1, "store_id": 1}) if inbox_id and ObjectId.is_valid(str(inbox_id)) else None
+            members = [str(u) for u in (inbox_doc or {}).get("assigned_user_ids", [])] + ([str(inbox_doc["store_id"])] if (inbox_doc or {}).get("store_id") else [])
             contact = await db.contacts.find_one({
+                "user_id": {"$in": members},
                 "$or": [
                     {"phone": from_phone},
                     {"phone": from_phone.replace("+", "")},
                     {"phone": from_phone[2:] if from_phone.startswith("+1") else from_phone}
                 ]
-            })
+            }) if members else None
         
         if not contact:
             logger.info(f"No contact found for phone {from_phone} - creating new contact")

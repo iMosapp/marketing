@@ -556,6 +556,10 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     from services.contact_match import find_existing_contact, source_owner_ids
     existing_contact, match_how, name_conflict = await find_existing_contact(
         db, phone_e164, email, first, last, store_id, extra_owner_ids=source_owner_ids(source))
+    # A rep's PERSONAL contact is never taken over by a dealership lead on a name alone: the lead gets its own record, flagged.
+    split_from = None   # a rep-owned record this lead must not move or edit: the lead gets its own record, flagged as a possible duplicate
+    if existing_contact and match_how == "name" and existing_contact.get("ownership_type") == "personal":
+        split_from, existing_contact = existing_contact, None
     if existing_contact and match_how == "name":
         fill = {}
         if phone_e164 and not existing_contact.get("phone"):
@@ -568,6 +572,8 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
 
     # Returning customer: an existing contact owned by an ACTIVE rep in this store goes straight to
     # that rep (skips the shared queue + ladder). Store-owned / orphaned contacts are treated as new.
+    # A contact an active rep owns is never reassigned: when the rep has gone quiet (or works in another store) the lead is
+    # routed as a fresh dealership record and the rep keeps theirs, with its notes and voice memos.
     owner_id = None
     returning_reopened = None
     if existing_contact:
@@ -584,7 +590,12 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
                     if verdict["reopen"]:
                         returning_reopened = {**verdict, "prev_owner_id": cand, "prev_owner_name": owner.get("name") or owner.get("first_name") or "their rep", "stale_days": stale_days}
                         owner_id = None
-                        logger.info(f"[LeadIntake] Returning contact {existing_contact['_id']} reopened to the team: quiet {verdict['quiet_days']}d, no sale (owner {cand})")
+                        split_from, existing_contact = existing_contact, None
+                        logger.info(f"[LeadIntake] Returning contact {split_from['_id']} reopened to the team as a new record: quiet {verdict['quiet_days']}d, no sale (owner {cand} keeps theirs)")
+            elif owner:
+                split_from, existing_contact = existing_contact, None   # an active rep in another store keeps their record
+        if existing_contact and existing_contact.get("ownership_type") == "personal" and not owner_id:
+            split_from, existing_contact = existing_contact, None       # a personal relationship never moves, even when its owner left
 
     if existing_contact:
         contact_id = str(existing_contact["_id"])
@@ -645,7 +656,13 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         result = await db.contacts.insert_one(contact_doc)
         contact_id = str(result.inserted_id)
         is_new_contact = True
-        if name_conflict:
+        if split_from:
+            # The rep's own record stays untouched; only the new dealership record carries the flag.
+            await db.contacts.update_one({"_id": result.inserted_id}, {
+                "$addToSet": {"tags": "Possible Duplicate"},
+                "$set": {"possible_duplicate_of": str(split_from["_id"])}})
+            logger.info(f"[LeadIntake] {full_name}: new contact {contact_id} kept apart from rep-owned {split_from['_id']}")
+        elif name_conflict:
             # Same name, different number: keep both, flag both so the rep can merge in one tap.
             await db.contacts.update_one({"_id": result.inserted_id}, {
                 "$addToSet": {"tags": "Possible Duplicate"},
