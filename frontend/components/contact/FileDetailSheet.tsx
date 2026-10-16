@@ -25,7 +25,7 @@ export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sens
   const [busy, setBusy] = useState<string | null>(null);
   const [showText, setShowText] = useState(false);
   const [name, setName] = useState('');
-  useEffect(() => { if (file) { setPicked(Object.keys(file.fields || {}).filter(k => !(file.applied || []).includes(k) && (ADDS.includes(k) || !hasValue(k, contact)))); setShowText(false); setName(file.title || file.name || ''); } }, [file?.id]);
+  useEffect(() => { if (file) { setPicked(Object.keys(file.fields || {}).filter(k => !(file.applied || []).includes(k) && (ADDS.includes(k) || !hasValue(k, contact)))); setShowText(false); setName(file.title || file.name || ''); } }, [file?.id, contact?._id]);
   const url = useMemo(() => resolvePhotoUrl(file?.url) || '', [file?.url]);
   if (!file) return null;
 

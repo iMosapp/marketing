@@ -108,6 +108,8 @@ async def save_scan(user_id: str, scan_id: str, body: SaveBody, request: Request
     doc = await _scan(db, user_id, scan_id)
     if doc.get("contact_id") and doc["contact_id"] != body.contact_id:
         raise HTTPException(status_code=409, detail="This scan is already saved to another contact")
+    if doc.get("contact_id"):   # a retry / double tap: already saved here, nothing is logged twice
+        return {"ok": True, "applied": {}, "labels": {}, "contact_id": doc["contact_id"], "file_id": str(doc["_id"]), "already_saved": True}
     if not ObjectId.is_valid(body.contact_id):
         raise HTTPException(status_code=404, detail="Contact not found")
     contact = await db.contacts.find_one({"_id": ObjectId(body.contact_id), **(await get_data_filter(user_id))})

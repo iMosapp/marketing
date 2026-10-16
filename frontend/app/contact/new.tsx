@@ -76,10 +76,13 @@ export default function NewContactScreen() {
   // ── Scan with Jessi: a business card fills this form; after Save the card lands in their Files with the extra details ──
   const scanStatus = useScanStatus(user?._id);
   const [showScan, setShowScan] = useState(false);
-  const [scanFrom, setScanFrom] = useState<{ id: string; extras: Record<string, string> } | null>(null);
+  const [scanFrom, setScanFrom] = useState<{ id: string; extras: Record<string, string>; values: Record<string, string> } | null>(null);
+  const pendingScan = useRef<string | null>(null);   // a card read but not saved yet: discarded if the rep leaves without saving
+  useEffect(() => () => { if (pendingScan.current && user?._id) api.delete(`/scan/${user._id}/${pendingScan.current}`).catch(() => {}); }, [user?._id]);
   useEffect(() => { if (params.scan === '1' && scanStatus?.enabled) setShowScan(true); }, [params.scan, scanStatus?.enabled]);
   const fillFromScan = (scan: any, v: Record<string, string>) => {
     if (scanFrom && scanFrom.id !== scan.id) api.delete(`/scan/${user?._id}/${scanFrom.id}`).catch(() => {});   // a different card replaces the first one
+    pendingScan.current = scan.id;
     const phone = v.phone || (!v.email ? v.phone_office : '') || '';
     setContact(p => ({ ...p, first_name: v.first_name || p.first_name, last_name: v.last_name || p.last_name, phone: phone || p.phone, email: v.email || p.email,
       employer: v.company || p.employer, address_street: v.address_street || p.address_street, address_city: v.address_city || p.address_city,
@@ -88,7 +91,7 @@ export default function NewContactScreen() {
     if (v.title) extras.title = v.title;
     if (v.website) extras.website = v.website;
     if (v.phone_office && v.phone_office !== phone) extras.phone_office = v.phone_office;
-    setScanFrom({ id: scan.id, extras });
+    setScanFrom({ id: scan.id, extras, values: v });
     if (v.address_street || v.address_city) setShowMoreDetails(true);
     setShowScan(false);
     checkDuplicate(phone, v.email || '');
@@ -414,8 +417,10 @@ export default function NewContactScreen() {
       }
 
       if (newId && scanFrom) {
-        try { await api.post(`/scan/${user._id}/${scanFrom.id}/save`, { contact_id: newId, fields: Object.keys(scanFrom.extras), values: scanFrom.extras }); }
-        catch { showToast('Contact saved, but the card was not added to their Files.', 'error', 4000); }
+        try {
+          await api.post(`/scan/${user._id}/${scanFrom.id}/save`, { contact_id: newId, fields: Object.keys(scanFrom.extras), values: { ...scanFrom.values, ...scanFrom.extras } });
+          pendingScan.current = null;
+        } catch { showToast('Contact saved, but the card was not added to their Files.', 'error', 4000); }
       }
       if (newId && memoId) { setAttachTo({ id: newId, name: contact.first_name }); return; }
       if (newId && params.returnTo === 'appraisal') { router.replace(`/appraisals/new?contact_id=${newId}` as any); return; }

@@ -486,3 +486,11 @@
 - Oct 15 2026: BUILD bumped to `2026-10-15.mini-voice` (server.py, prod smoke default + its test); production deploy dispatched with a shadow-mode pre-check.
 
 - Oct 15 2026: Opt-out line only on the first campaign message per person (none on personal texts); disclosure first_at bug fixed; self-call to own business number goes to voicemail. BUILD `2026-10-15.optout-calls`, deploy dispatched.
+
+## Scan with Jessi, Phase B: business cards (Oct 16 2026) - DONE, tested in preview (iteration_400: backend 13/13 `tests/test_scan_with_jessi_iter400.py`, all web flows pass), NOT DEPLOYED
+- Plan + phases: `/app/memory/VISUAL_INTELLIGENCE_ENGINE_PLAN.md`. Backend `routers/visual_scans.py` (/api/scan/{uid}/status|chunk|{id}|{id}/save|DELETE), `services/visual_intel.py`; reuses `contact_files.save_file/read_file/apply_fields` (one GPT-5.4 read, owner-wide sha256 reuse, vision_usage source scan_camera/scan_library/scan_document).
+- Entry points: Add Contact "Scan a business card" (fills the form; card + title/website/office phone saved to Files after Save), gold + "Scan card" (Home + all tabs -> /contact/new?scan=1), contact Files > Add > Business card (review sheet opens by itself).
+- Safety: only empty slots pre-ticked (FileDetailSheet + update-existing); replacing needs an explicit tick; phones/emails are added, never replaced (email now appends to emails[] when email + email_work exist); unsaved scans are discarded when the rep leaves, and purged after 30 days otherwise; save is idempotent; nothing is sent.
+- Rollout: follows Automatic Photo Intelligence `intelligence` scope (test orgs first) + Pause All. Preview setting: intelligence test_orgs = [69a907033b77512d1d8d8a08] (Forest's org).
+- Timeline now keeps stored titles for file_added/file_applied ("Business card scanned with Jessi", "Business card filed").
+- Next: Phase C (documents/screenshots, dates -> rep reminder tasks with source jessi_scan), Phase D (search + relationship intelligence), Phase E (products/equipment).
