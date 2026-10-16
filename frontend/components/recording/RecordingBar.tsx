@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GOLD, RED, tid } from '../scripts/shared';
 import { useRecordingStore, fmtClock, MAX_SECONDS } from '../../store/recordingStore';
 import { useHomeFabStore } from '../../store/homeFabStore';
+import { useHomeFabSpot } from '../common/HomeFab';
 import { useLiveJessiLauncher } from '../jessi/LiveJessiProvider';
 
 const WARN_AT = MAX_SECONDS - 120;
@@ -31,6 +32,7 @@ export const RecordingBar = () => {
   const pathname = usePathname() || '';
   const fabOffset = useHomeFabStore(s => s.offset);
   const jessiActive = useLiveJessiLauncher().active;
+  const fabSpot = useHomeFabSpot();
   const session = useRecordingStore(s => s.session);
   const recording = useRecordingStore(s => s.recording);
   const seconds = useRecordingStore(s => s.seconds);
@@ -51,7 +53,7 @@ export const RecordingBar = () => {
   const who = session?.contactFirst || failed?.session.contactFirst || 'the customer';
   const onContact = !!session && pathname.startsWith(`/contact/${session.contactId}`);
   const fabBottom = fabOffset > 0 ? fabOffset + 10 : Math.max(insets.bottom, Platform.OS === 'web' ? 12 : 0) + 10;
-  const bottom = fabBottom + 56 + 10 + (jessiActive ? 70 : 0);
+  const bottom = fabBottom + 56 + 10 + (jessiActive && !fabSpot ? 70 : 0);   // the Jessi bar sits beside the Home pill when it shows
   const left = seconds >= WARN_AT ? `Stops automatically in ${fmtClock(MAX_SECONDS - seconds)}` : onContact ? 'Tap Stop & save when you are done' : `Tap to open ${who}`;
   const goThere = () => { if (session && !onContact) router.push(`/contact/${session.contactId}` as any); };
   const title = recording ? `Recording · ${who}` : failed ? `Couldn't save ${who}'s conversation` : `Saving ${who}'s conversation`;

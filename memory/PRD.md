@@ -1019,3 +1019,7 @@ DELIVERY: backend deploy + eas update --branch production.
 - Rollout: follows Automatic Photo Intelligence `intelligence` scope (test orgs first) + Pause All. Preview setting: intelligence test_orgs = [69a907033b77512d1d8d8a08] (Forest's org).
 - Timeline now keeps stored titles for file_added/file_applied ("Business card scanned with Jessi", "Business card filed").
 - Next: Phase C (documents/screenshots, dates -> rep reminder tasks with source jessi_scan), Phase D (search + relationship intelligence), Phase E (products/equipment).
+
+## Live Jessi bar sits beside the Home button (Oct 16 2026) - DONE, verified preview (phone 430px + desktop 1440px screenshots)
+- `components/jessi/LiveJessiPill.tsx`: when the Home pill shows, the Jessi bar is on the same row, to its left (right: 84), just above the composer, max width 420, 56pt tall like the Home pill. When the Home pill is hidden (tabs, keyboard, expanded composer) it keeps the old spot above the bottom bar, centered.
+- `components/common/HomeFab.tsx`: new `useHomeFabSpot()` (shared visibility + bottom); `RecordingBar` no longer adds the extra 70pt for Jessi when they sit side by side.
