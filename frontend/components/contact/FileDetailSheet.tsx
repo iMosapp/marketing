@@ -84,7 +84,7 @@ export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sens
                 : <View style={{ height: 150, alignItems: 'center', justifyContent: 'center', gap: 8 }}><Ionicons name="document-text" size={44} color={GOLD} /><Text style={{ color: colors.textSecondary, fontSize: 13 }}>PDF · {file.pages || 1} page{file.pages === 1 ? '' : 's'} · tap to open</Text></View>}
             </TouchableOpacity>
             <Text style={{ fontSize: 12, color: colors.textSecondary }}>{file.doc_label || file.scan_label} · {when(file.created_at)}{file.source === 'mms' ? ' · texted by the customer' : ''}{file.status === 'unread' ? ' · Jessi could not read this one' : ''}</Text>
-            {file.kind === 'image' && !file.sensitive && (
+            {file.kind === 'image' && !file.sensitive && file.scan_type === 'photo' && !file.doc_type && (
               <TouchableOpacity onPress={setAsPhoto} disabled={!!busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }} {...tid('file-use-as-profile-photo')}>
                 {busy === 'photo' ? <ActivityIndicator color={GOLD} size="small" /> : <Ionicons name="person-circle-outline" size={18} color={GOLD} />}
                 <Text style={{ fontSize: 13, fontWeight: '700', color: GOLD }}>Use as profile photo</Text>

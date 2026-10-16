@@ -21,6 +21,7 @@ export const LiveJessiPill = ({ live, target, who = 'Jessi', onExpand, onEnd }: 
   const rise = useRef(new Animated.Value(0)).current;
   const drag = useRef(new Animated.Value(0)).current;
   const [mini, setMini] = useState(false);
+  const draggedAt = useRef(0);   // web fires a click after a short drag that sprang back: ignore it
   const last = live.rows[live.rows.length - 1];
   const isLive = live.state === 'live';
   const warning = isLive && live.quiet.level === 'warning';
@@ -44,11 +45,13 @@ export const LiveJessiPill = ({ live, target, who = 'Jessi', onExpand, onEnd }: 
     onMoveShouldSetPanResponderCapture: (_, g) => g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx),
     onPanResponderMove: (_, g) => drag.setValue(Math.max(0, g.dy)),
     onPanResponderRelease: (_, g) => {
+      draggedAt.current = Date.now();
       if (g.dy > SWIPE_DOWN) { setMini(true); drag.setValue(0); }
       else Animated.spring(drag, { toValue: 0, useNativeDriver: true }).start();
     },
-    onPanResponderTerminate: () => Animated.spring(drag, { toValue: 0, useNativeDriver: true }).start(),
+    onPanResponderTerminate: () => { draggedAt.current = Date.now(); Animated.spring(drag, { toValue: 0, useNativeDriver: true }).start(); },
   }), [drag]);
+  const tap = () => { if (Date.now() - draggedAt.current > 350) onExpand(); };
 
   const where = target?.kind === 'contact' || target?.kind === 'thread' ? (target.first || target.name || '') : target?.kind === 'task' ? 'Reminder' : target?.kind === 'tasks' ? 'Tasks' : target?.kind === 'inbox' ? 'Inbox' : target?.kind === 'home' ? 'Home' : target?.kind === 'duplicates' ? 'Duplicates' : target?.kind === 'mentions' ? 'Who mentioned' : '';
   const line = live.working || (warning ? `Still there? Closing in ${live.quiet.closeIn} s, tap to keep going` : '') || (last ? `${last.role === 'rep' ? 'You' : who}: ${last.text}` : statusText(live, who));
@@ -73,7 +76,7 @@ export const LiveJessiPill = ({ live, target, who = 'Jessi', onExpand, onEnd }: 
   return (
     <Animated.View pointerEvents="box-none" {...pan.panHandlers} style={{ position: 'absolute', left: 12, bottom, ...spot, zIndex: 9999, elevation: 30, opacity: rise,
       transform: [{ translateY: Animated.add(rise.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }), drag) }] }}>
-      <TouchableOpacity onPress={onExpand} activeOpacity={0.9} style={{ width: '100%', maxWidth: 420, minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#0B0B0D', borderRadius: 28, paddingVertical: 7, paddingLeft: 8, paddingRight: 10, borderWidth: 1.5, borderColor: isLive ? `${GOLD}AA` : '#3A3A3C', shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } }} {...tid('live-jessi-pill')}>
+      <TouchableOpacity onPress={tap} activeOpacity={0.9} style={{ width: '100%', maxWidth: 420, minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#0B0B0D', borderRadius: 28, paddingVertical: 7, paddingLeft: 8, paddingRight: 10, borderWidth: 1.5, borderColor: isLive ? `${GOLD}AA` : '#3A3A3C', shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } }} {...tid('live-jessi-pill')}>
         <View pointerEvents="none" style={{ position: 'absolute', top: 4, left: '50%', marginLeft: -14, width: 28, height: 3, borderRadius: 2, backgroundColor: '#3A3A3C' }} {...tid('live-jessi-pill-grabber')} />
         <Animated.View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: isLive ? GOLD : '#1C1C1E', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pulse }] }}>
           <Ionicons name="mic" size={19} color={isLive ? '#0B0B0D' : GOLD} />

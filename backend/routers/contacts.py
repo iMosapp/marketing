@@ -851,11 +851,15 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     return response
 
 async def _contact_file_photo(photo_url: str, contact_id: str) -> str:
-    """A photo from this contact's own Files (never a private document) as a data URL, so the avatar gets proper sizes."""
-    import asyncio as _aio, base64 as _b64
+    """A photo from this contact's own Files (never a private document) as a data URL, so the avatar gets proper sizes.
+    Any URL that mentions contact-files must resolve to exactly such a file, or it is refused."""
+    import asyncio as _aio, base64 as _b64, re as _re
     from utils.image_storage import get_object
-    path = photo_url.split("/api/images/", 1)[1].split("?", 1)[0]
-    f = await get_db().contact_files.find_one({"path": path, "contact_id": contact_id, "kind": "image", "deleted": {"$ne": True}}, {"sensitive": 1})
+    i = photo_url.lower().find("/api/images/")
+    path = photo_url[i + len("/api/images/"):].split("?", 1)[0] if i >= 0 else ""
+    f = None
+    if path.startswith("contact-files/") and not _re.search(r"(^|/)\.{1,2}(/|$)|//", path):
+        f = await get_db().contact_files.find_one({"path": path, "contact_id": contact_id, "kind": "image", "deleted": {"$ne": True}}, {"sensitive": 1})
     if not f or f.get("sensitive"):
         raise HTTPException(status_code=400, detail="That photo can't be used as a profile photo")
     raw, ctype = await _aio.to_thread(get_object, path)
@@ -869,10 +873,13 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
     photo_url = data.get("photo_url", "")
     if not photo_url:
         raise HTTPException(status_code=400, detail="photo_url is required")
+    if not ObjectId.is_valid(contact_id) or not await db.contacts.find_one({"_id": ObjectId(contact_id), **(await get_data_filter(user_id))}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Contact not found")
 
     # If the source is a Twilio media proxy (customer-texted photo), it isn't durable —
     # download the bytes and re-upload to object storage so the avatar survives long-term.
-    _file_b64 = await _contact_file_photo(photo_url, contact_id) if "/api/images/contact-files/" in photo_url.lower() else None
+    from urllib.parse import unquote as _unquote
+    _file_b64 = await _contact_file_photo(_unquote(photo_url), contact_id) if "contact-files/" in _unquote(photo_url).lower() else None
     try:
         low = photo_url.lower()
         _b64data = _file_b64

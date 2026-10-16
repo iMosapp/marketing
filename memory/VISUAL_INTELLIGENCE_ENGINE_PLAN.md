@@ -1,6 +1,6 @@
 # Visual Intelligence Engine: "Scan with Jessi" — audit + implementation plan
 
-Status (Oct 16 2026): Phase B (business cards) BUILT + TESTED in preview (iteration_400), not deployed. Phases C-E not started.
+Status (Oct 16 2026): Phase B (cards, iteration_400) and Phase C (documents, dates, rep reminders, iteration_401) BUILT + TESTED in preview, not deployed. Phases D-E not started.
 Mission: a rep takes a picture, Jessi understands what matters, and the rep confirms what gets saved.
 
 ---

@@ -39,7 +39,7 @@ READ_SYSTEM = (
     "You read documents and photos a salesperson files on a customer record. Reply with JSON only:\n"
     "{\"type\": one of business_card|vin|trade_in|id_document|insurance_card|credit_app|receipt|document|photo,\n"
     " \"title\": \"3 to 6 word title\",\n"
-    " \"summary\": \"one or two plain sentences: what this is and anything worth remembering about the customer, no em dashes\",\n"
+    " \"summary\": \"one or two plain sentences: what this is and anything worth remembering about the customer, no em dashes, dates in words (November 13, 2026)\",\n"
     " \"text\": \"every readable word in reading order, empty string if there is no text\",\n"
     " \"visible\": \"one to three plain sentences on what is actually visible: the objects, any condition or damage you can see, what a screenshot shows. "
     "Say so if it is blurry or unclear. Never guess who a person is\",\n"
