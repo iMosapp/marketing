@@ -3,6 +3,7 @@ from the saved audio. A transcript that finally arrives runs the normal pipeline
 summary). If every try fails the memo says "couldn't transcribe" with a Retry button and the rep gets one reminder to listen."""
 import asyncio
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -35,13 +36,24 @@ def status_of(n: dict) -> str:
     return "failed" if n.get("audio_path") else "done"
 
 
+# What Whisper says on silence or noise (it was trained on captioned video): never treat these as the rep's words.
+HALLUCINATIONS = re.compile(r"(fema\.gov|amara\.org|thanks? (you )?(so much )?for watching|please (like and )?subscribe|subtitles? (by|created)|transcribed by|"
+                            r"^\W*(you|thank you|thanks|bye|okay|so|uh|um|hmm|\.+)\W*$)", re.IGNORECASE)
+
+
+def heard_words(text: str) -> str:
+    """The transcript, or "" when it is only Whisper's silence filler."""
+    t = (text or "").strip()
+    return "" if not t or HALLUCINATIONS.search(t) and len(t) < 120 else t
+
+
 async def transcribe_now(audio_bytes: bytes, filename: str, kind: str) -> tuple:
-    """(text, error) after one try plus one quick retry. No words heard counts as a miss too."""
+    """(text, error) after one try plus one quick retry. No words heard (or only Whisper's silence filler) counts as a miss too."""
     from routers.voice_notes import _whisper
     err = ""
     for attempt in range(2):
         try:
-            text = await _whisper(audio_bytes, filename, kind)
+            text = heard_words(await _whisper(audio_bytes, filename, kind))
             if text:
                 return text, ""
             err = "no words heard"
@@ -71,8 +83,15 @@ async def _contact_name(db, contact_id: Optional[str]) -> tuple:
     return first, f"{first} {c.get('last_name') or ''}".strip(), c.get("phone") or ""
 
 
+async def _owner(db, note: dict) -> str:
+    """Whoever has the contact now (a memo recorded before a reassignment works for the new rep); the recorder for unfiled memos."""
+    cid = note.get("contact_id")
+    c = await db.contacts.find_one({"_id": ObjectId(str(cid))}, {"user_id": 1}) if cid and ObjectId.is_valid(str(cid)) else None
+    return str((c or {}).get("user_id") or note.get("user_id") or "")
+
+
 async def _failure_task(db, note: dict) -> None:
-    """One reminder per memo (idempotent) for the rep who recorded it."""
+    """One reminder per memo (idempotent) for the rep who has the contact now."""
     nid, now = str(note["_id"]), _now()
     first, name, phone = await _contact_name(db, note.get("contact_id"))
     when = _aware(note.get("created_at")).strftime("%b %d")
@@ -80,7 +99,7 @@ async def _failure_task(db, note: dict) -> None:
     title = f"Listen to your {what} about {first} and add a note" if first else f"Listen to your unfiled {what} from {when} and add a note"
     where = f"Play it on {name}'s profile (History, Memos)" if name else "Play it under Voice memos"
     await db.tasks.update_one({"idempotency_key": _task_key(nid)}, {"$setOnInsert": {
-        "user_id": note.get("user_id"), "contact_id": note.get("contact_id") or "", "contact_name": name, "contact_phone": phone,
+        "user_id": await _owner(db, note), "contact_id": note.get("contact_id") or "", "contact_name": name, "contact_phone": phone,
         "type": "follow_up", "source": "transcript_failed", "title": title[:120],
         "description": f"Jessi could not transcribe the {what} you recorded {when}, even after retrying. {where} and add what matters as a note, or tap Retry.",
         "suggested_message": "", "action_type": "manual", "priority": "medium", "priority_order": 2, "status": "pending", "completed": False,
@@ -108,6 +127,7 @@ async def apply_transcript(db, note: dict, text: str) -> None:
             sets["title"] = meta["title"]
         await db.voice_notes.update_one({"_id": note["_id"]}, {"$set": sets})
         return
+    uid = await _owner(db, note)   # follow-ups from a late transcript go to whoever has the contact now
     summary = ""
     if note.get("kind") == "conversation" and len(text) >= 40:
         from services.recording_highlights import process_recorded_conversation
@@ -123,6 +143,7 @@ async def retry_one(db, note: dict, manual: bool = False) -> dict:
     """One more go from the saved audio. Scheduled tries walk RETRY_AFTER; a manual Retry never schedules more or adds a 2nd reminder."""
     from utils.image_storage import get_object
     nid = str(note["_id"])
+    scheduled = not manual or note.get("transcript_status") == "retrying"   # tapping Retry early never cancels the remaining schedule
     text, err = "", "audio not found"
     if note.get("audio_path"):
         try:
@@ -135,13 +156,13 @@ async def retry_one(db, note: dict, manual: bool = False) -> dict:
         logger.info(f"[Transcript] recovered note {nid} ({'manual' if manual else 'scheduled'})")
         return {"transcript_status": "done", "transcript": text}
     attempts = int(note.get("transcript_attempts") or 1) + 1
-    if not manual and attempts <= len(RETRY_AFTER):
+    if scheduled and attempts <= len(RETRY_AFTER):
         nxt = max(_aware(note.get("created_at")) + RETRY_AFTER[attempts - 1], _now() + timedelta(seconds=30))
         await db.voice_notes.update_one({"_id": note["_id"]}, {"$set": {"transcript_status": "retrying", "transcript_attempts": attempts, "transcript_next_at": nxt, "transcript_error": err}})
         return {"transcript_status": "retrying", "transcript": ""}
     await db.voice_notes.update_one({"_id": note["_id"]}, {"$set": {"transcript_status": "failed", "transcript_attempts": attempts, "transcript_error": err, "transcript_failed_at": _now()},
                                                            "$unset": {"transcript_next_at": ""}})
-    if not manual:
+    if scheduled:
         await _failure_task(db, note)
     logger.warning(f"[Transcript] note {nid} still has no transcript after {attempts} attempts: {err}")
     return {"transcript_status": "failed", "transcript": ""}

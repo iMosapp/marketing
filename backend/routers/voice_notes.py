@@ -230,9 +230,9 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
         logger.error(f"Voice note upload failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to store audio")
 
-    transcript, error = (transcript or "").strip()[:20000], ""
+    from services.transcript_retry import heard_words, transcribe_now
+    transcript, error = heard_words((transcript or "")[:20000]), ""
     if not transcript:
-        from services.transcript_retry import transcribe_now
         transcript, error = await transcribe_now(audio_bytes, filename, kind)
     return await _store_note(db, user_id, contact_id, transcript, kind, duration, audio_url, stored_path, audio_bytes, transcript_error=error)
 

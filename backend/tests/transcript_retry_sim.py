@@ -47,6 +47,7 @@ async def main(uid: str, cid: str, cleanup: bool):
         await db.voice_notes.delete_one({"_id": ObjectId(nid)})
         await db.contact_events.delete_many({"metadata.voice_note_id": nid})
         await db.tasks.delete_many({"idempotency_key": f"transcript_failed_{nid}"})
+        await db.contact_facts.delete_many({"source.ref": nid})
         print("cleaned up", nid)
 
 
