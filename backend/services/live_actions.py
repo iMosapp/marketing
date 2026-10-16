@@ -435,8 +435,8 @@ async def build_campaign(db, user: dict, args: dict, focus: Optional[dict], live
             brief[k] = v[:200]
     asked = list((prev or {}).get("asked") or [])
     said = (live or {}).get("_said") or ""
-    # the model's "go" is trusted only when we cannot see the rep's words; an answer like "3 weeks, 5 touches" is not a go-ahead
-    go = bool(cb.YOU_PICK.search(said) or cb.GO_AHEAD.search(said)) if said else bool(args.get("go"))
+    # the model's "go" is trusted only when we cannot see the rep's words; an answer like "3 weeks, 5 touches" or "make it friendly" is not a go-ahead
+    go = cb.go_ahead(said, bool(prev)) if said else bool(args.get("go"))
     if brief.get("trigger_tag") and not brief.get("audience"):
         brief["audience"] = f"anyone tagged {brief['trigger_tag']}"
     if not go:
@@ -449,7 +449,9 @@ async def build_campaign(db, user: dict, args: dict, focus: Optional[dict], live
     try:
         made = await cb.create(db, user, brief)
     except HTTPException as e:
-        return f"I cannot build campaigns on your login: {str(e.detail).rstrip('. ')}. Ask your manager or admin to turn on campaign editing for you.", None, None
+        why = str(e.detail).rstrip('. ')
+        ask = "" if re.search(r"(?i)admin|manager", why) else " Ask your manager or admin to turn on campaign editing for you."
+        return f"I cannot build campaigns on your login: {why}.{ask}", None, None
     except Exception as e:
         logger.warning(f"[Live] build_campaign failed: {e}")
         return "I could not draft that one. Try me again in a second.", None, None
@@ -478,7 +480,7 @@ async def edit_campaign(db, user: dict, args: dict, focus: Optional[dict], live:
     if not res["changed"]:
         return f"I was not sure what to change in {camp.get('name')}. Say it like make text 2 shorter, add a call on day 10, or change the tone to casual.", opened
     opened["name"] = res.get("name") or opened["name"]
-    return f"{res['summary']}. Now {cb.outline(res['touches'])} It is updated on your screen.", opened
+    return f"{res['summary'].rstrip('. ')}. Now {cb.outline(res['touches'])} It is updated on your screen.", opened
 
 
 # ── card / review link ────────────────────────────────────────────────────────

@@ -1010,13 +1010,13 @@ async def _advance_enrollment(db, send_doc: dict, campaign_doc: dict, now_naive,
 async def _call_touch_task(db, send_doc: dict, step_goal: str, now) -> None:
     """Campaign call touch: one "Call <name>" task per enrollment step (idempotent) with the plan's talking points."""
     contact_id = send_doc.get("contact_id")
-    c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"status": 1}) if contact_id and ObjectId.is_valid(str(contact_id)) else None
+    c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"status": 1, "first_name": 1, "last_name": 1}) if contact_id and ObjectId.is_valid(str(contact_id)) else None
     if not c or c.get("status") in ("merged", "deleted"):
         return
     name = send_doc.get("contact_name") or "this customer"
     enr8 = (send_doc.get("enrollment_id") or str(send_doc.get("_id", "")))[-8:]
     idem = f"campaign_{send_doc.get('campaign_id')}_{contact_id}_{enr8}_{send_doc.get('step', 1)}"
-    points = (send_doc.get("message_template") or "").strip()
+    points = await resolve_template_variables(db, (send_doc.get("message_template") or "").strip(), {**c, "contact_name": send_doc.get("contact_name") or ""}, send_doc.get("user_id"))
     await db.tasks.update_one({"idempotency_key": idem}, {"$setOnInsert": {
         "user_id": send_doc.get("user_id"), "contact_id": contact_id, "contact_name": name, "contact_phone": send_doc.get("contact_phone", ""),
         "type": "call", "action_type": "call", "source": "campaign", "title": f"Call {name}"[:120],

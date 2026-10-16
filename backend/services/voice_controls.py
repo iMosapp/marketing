@@ -389,7 +389,7 @@ async def resolve(db, user: dict, policy: dict) -> dict:
     if policy["hard_premium_cap_usd"] is not None:  # the hard $ cap binds everyone, authorized or not
         hard_left = _usd_to_s(policy["hard_premium_cap_usd"] - float(amonth.get("premium_cost_usd") or 0), "live") - acct_reserved
         limits.append("hard_premium_cap")
-    if policy["account_monthly_hard_usd"] is not None:  # total spend (both engines) this month; binds everyone incl. super admins
+    if policy["account_monthly_hard_usd"] is not None:  # total spend (both engines) this month; binds everyone except uncapped super admins (applied below)
         remaining = policy["account_monthly_hard_usd"] - float(amonth.get("est_cost_usd") or 0)
         v = _usd_to_s(remaining, "live") - acct_reserved
         hard_left = v if hard_left is None else min(hard_left, v)
@@ -769,7 +769,8 @@ PILOT_DEFAULTS = {"premium_min": 2, "backup_min": 10, "hard_usd": 20.0}
 
 async def pilot_enroll(db, me: dict, premium_min: int, backup_min: int, hard_usd: float) -> dict:
     org_id = await org_of(db, me)
-    patch = {"enabled": True, "cap_super_admins": True, "killed": False, "per_user_daily_premium_min": premium_min, "per_user_daily_backup_min": backup_min,
+    g = await get_global(db)   # once every account is on voice limits, super admins are never capped (the pilot cap was for the test only)
+    patch = {"enabled": True, "cap_super_admins": not g["all_accounts"], "killed": False, "per_user_daily_premium_min": premium_min, "per_user_daily_backup_min": backup_min,
              "account_monthly_hard_usd": hard_usd, "notes": f"Founder voice pilot, enrolled by {me.get('email')}"}
     await save_policy(db, org_id, patch, me)
     return await pilot_status(db, me)

@@ -16,8 +16,16 @@ QUESTIONS = (
     ("length", "How long should it run, and roughly how many touches? Something like 3 weeks with 5 touches."),
     ("tone", "What tone: friendly and casual, straight to the point, or more polished?"),
 )
-YOU_PICK = re.compile(r"(?i)\b(you (pick|choose|decide)|whatever|up to you|doesn'?t matter|surprise me|your call|you tell me|default)\b")
-GO_AHEAD = re.compile(r"(?i)\b(yes|yeah|yep|yup|sure|ok(ay)?|sounds (good|great)|go ahead|(just )?(build|make|draft|do) it( now)?|that'?s (fine|good|it)|perfect|good to go|let'?s go)\b")
+YOU_PICK = re.compile(r"(?i)\b(you (pick|choose|decide)|whatever|up to you|doesn'?t matter|surprise me|your call|you tell me)\b")
+BUILD_NOW = re.compile(r"(?i)\b(just (build|make|draft|do) (it|one)|(build|make|draft) it now|go ahead|skip the questions)\b")
+REPLY_YES = re.compile(r"(?i)^\W*(yes|yeah|yep|yup|sure|ok(ay)?|sounds (good|great)|that'?s (fine|good|it)|perfect|good to go|let'?s go|do it|build it|fine)\b")
+
+
+def go_ahead(said: str, answering: bool) -> bool:
+    """Build now: 'you pick' / 'just build it' anywhere, or a short yes when Jessi just asked a question."""
+    if YOU_PICK.search(said) or BUILD_NOW.search(said):
+        return True
+    return answering and len(said.split()) <= 6 and bool(REPLY_YES.search(said))
 PLACEHOLDER = re.compile(r"\[[^\]]{1,40}\]")
 REP_NAME = re.compile(r"(?i)\[(rep|your|my|sales ?person|salesperson|agent)('?s)? ?(first )?name\]")
 MAX_TOUCHES, MAX_DAY = 10, 365
