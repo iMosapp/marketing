@@ -23,7 +23,7 @@ export const TrioCard = ({ person, preview, loading, colors, width, index, onSwa
         </TouchableOpacity>
       </View>
 
-      <View style={{ gap: 4 }}>
+      {(loading || !!preview?.knew?.length) && <View style={{ gap: 4 }} {...tid(`trio-knew-${index}`)}>
         <Text style={{ fontSize: 10.5, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.8 }}>WHAT JESSI KNEW</Text>
         {(preview?.knew || []).map(k => (
           <View key={k} style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start' }}>
@@ -32,7 +32,7 @@ export const TrioCard = ({ person, preview, loading, colors, width, index, onSwa
           </View>
         ))}
         {loading && !preview && <Text style={{ fontSize: 12.5, color: colors.textTertiary }}>Looking them up…</Text>}
-      </View>
+      </View>}
 
       <View style={{ minHeight: 90, borderRadius: 16, borderTopLeftRadius: 4, backgroundColor: `${GOLD}1A`, borderWidth: 1, borderColor: `${GOLD}55`, padding: 12, justifyContent: 'center' }} {...tid(`trio-message-${index}`)}>
         {loading ? (

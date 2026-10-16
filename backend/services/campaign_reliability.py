@@ -94,6 +94,16 @@ def is_dated(send_doc: dict, campaign: dict) -> bool:
     return (campaign.get("date_type") or campaign.get("type") or "") in DATED_TYPES or (send_doc.get("card_type") or "") in DATED_CARDS
 
 
+OCCASIONS = {"birthday": "their birthday: wish them a happy birthday", "anniversary": "their anniversary: wish them a happy anniversary",
+             "sold_date": "the anniversary of the day they bought from me", "holiday": "today's holiday: wish them a happy holiday"}
+
+
+def occasion(campaign: dict, card_type: str = "") -> str:
+    """What a dated plan is celebrating, for the writer ('' for ordinary check-ins)."""
+    t = campaign.get("date_type") or campaign.get("type") or ""
+    return OCCASIONS.get(t if t in OCCASIONS else (card_type or ""), "")
+
+
 async def _rep_tz(db, user_id: str) -> ZoneInfo:
     try:
         u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1}) if ObjectId.is_valid(str(user_id)) else None
@@ -149,16 +159,14 @@ async def rep_task(db, send_doc: dict, now: datetime, key: str, title: str, desc
     if send_doc.get("broadcast_id"):
         return
     idem = f"campaign_{key}_{send_doc['_id']}"
-    if await db.tasks.find_one({"idempotency_key": idem}, {"_id": 1}):
-        return
-    await db.tasks.insert_one({
+    await db.tasks.update_one({"idempotency_key": idem}, {"$setOnInsert": {
         "user_id": send_doc.get("user_id"), "contact_id": send_doc.get("contact_id"), "contact_name": send_doc.get("contact_name", ""),
         "contact_phone": send_doc.get("contact_phone", ""), "type": "follow_up", "source": f"campaign_{key}", "title": title[:120],
         "description": description[:600], "suggested_message": "", "action_type": "text", "priority": "medium", "priority_order": 2,
         "status": "pending", "completed": False, "due_date": now.replace(tzinfo=timezone.utc), "has_time": False,
         "campaign_id": send_doc.get("campaign_id"), "campaign_name": send_doc.get("campaign_name", ""), "pending_send_id": str(send_doc["_id"]),
-        "channel": send_doc.get("channel", "sms"), "created_at": now.replace(tzinfo=timezone.utc), "idempotency_key": idem,
-    })
+        "channel": send_doc.get("channel", "sms"), "created_at": now.replace(tzinfo=timezone.utc),
+    }}, upsert=True)
 
 
 def _who(send_doc: dict) -> str:

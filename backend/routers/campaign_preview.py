@@ -16,14 +16,17 @@ logger = logging.getLogger(__name__)
 
 POOL = 80
 DETAIL_KEYS = [("spouse_name", "Spouse"), ("kids", "Kids"), ("interests", "Into"), ("hobbies", "Hobbies"), ("pets", "Pets"),
-               ("purchase_context", "What matters to them"), ("trade_in", "Trade-in"), ("neighborhood", "Lives in"), ("occupation", "Works as")]
-_STOP = {"with", "that", "this", "from", "your", "have", "they", "their", "about", "just", "into", "what", "matters"}
+               ("purchase_context", "What matters to them"), ("trade_in", "Trade-in"), ("neighborhood", "Lives in"), ("occupation", "Works as"),
+               ("personal_notes", "Notes")]
+_STOP = {"with", "that", "this", "from", "your", "have", "they", "their", "about", "just", "into", "what", "matters",
+         "the", "and", "for", "you", "but", "was", "are", "his", "her", "him", "she", "one", "new", "got", "all", "out", "not", "can"}
 
 
 class PreviewBody(BaseModel):
     contact_ids: list
     step_context: str = ""
     message_template: str = ""
+    card_type: str = ""
     channel: str = "sms"
     ai_enabled: bool = True
 
@@ -31,14 +34,15 @@ class PreviewBody(BaseModel):
 async def _campaign(db, user_id: str, campaign_id: str) -> dict:
     if not ObjectId.is_valid(campaign_id):
         raise HTTPException(status_code=404, detail="Campaign not found")
-    c = await db.campaigns.find_one({"$and": [{"_id": ObjectId(campaign_id)}, await get_data_filter(user_id)]}, {"name": 1, "ai_enabled": 1})
+    c = await db.campaigns.find_one({"$and": [{"_id": ObjectId(campaign_id)}, await get_data_filter(user_id)]}, {"name": 1, "ai_enabled": 1, "type": 1, "date_type": 1})
     if not c:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return c
 
 
 def _vehicle(c: dict) -> str:
-    ph = [p for p in c.get("purchase_history") or [] if isinstance(p, dict) and p.get("title")]
+    ph = [p for p in c.get("purchase_history") or [] if isinstance(p, dict) and p.get("title")
+          and "trade" not in str(p.get("type") or "").lower() and "(trade" not in str(p["title"]).lower()]
     if ph:
         return sorted(ph, key=lambda p: str(p.get("date") or ""))[-1]["title"]
     return c.get("vehicle_purchased") or c.get("vehicle") or (c.get("personal_details") or {}).get("vehicle_purchased") or ""
@@ -116,28 +120,30 @@ def _knew(c: dict, memos: int, last_msg: dict) -> list:
     out = []
     veh = _vehicle(c)
     if veh:
-        out.append(f"Bought: {veh}")
+        out.append(f"{'Trading in' if '(trade' in veh.lower() else 'Bought'}: {veh}")
     out += _details(c)
+    if c.get("notes"):
+        out.append(f"Notes: {str(c['notes'])[:70]}")
     if memos:
         out.append(f"{memos} voice memo{'s' if memos != 1 else ''}")
     if last_msg and last_msg.get("content"):
         who = "They texted" if last_msg.get("sender") == "contact" else "You texted"
         out.append(f"{who}: “{str(last_msg['content'])[:70]}”")
-    return out[:7] or ["Nothing on file yet"]
+    return out[:8] or ["Nothing on file yet"]
 
 
 def _used(knew: list, message: str) -> list:
     """What the text visibly draws on: an item counts when one of its words is in the message (each word credits one item only)."""
-    words, out = set(re.findall(r"[a-z0-9']{4,}", (message or "").lower())) - _STOP, []
+    words, out = set(re.findall(r"[a-z0-9']{3,}", (message or "").lower())) - _STOP, []
     for k in knew:
-        hit = words & (set(re.findall(r"[a-z0-9']{4,}", k.lower().split(":", 1)[-1])) - _STOP)
+        hit = words & (set(re.findall(r"[a-z0-9']{3,}", k.lower().split(":", 1)[-1])) - _STOP)
         if hit:
             out.append(k)
             words -= hit
     return out
 
 
-async def _one(db, user_id: str, cid: str, body: PreviewBody, campaign_name: str, ai: bool) -> dict:
+async def _one(db, user_id: str, cid: str, body: PreviewBody, camp: dict, ai: bool) -> dict:
     scope = await get_data_filter(user_id)
     c = await db.contacts.find_one({"$and": [{"_id": ObjectId(cid)}, scope]}) if ObjectId.is_valid(cid) else None
     if not c:
@@ -150,9 +156,10 @@ async def _one(db, user_id: str, cid: str, body: PreviewBody, campaign_name: str
     out = {"contact_id": cid, "name": name, "knew": knew, "ai": ai, "message": "", "used": [], "error": ""}
     if ai:
         from routers.ai_campaigns import generate_campaign_message
-        from services.campaign_reliability import generate
-        text, err = await generate(lambda: generate_campaign_message(owner, cid, {"step_context": body.step_context or "a genuine check-in", "channel": body.channel,
-                                                                                    "campaign_name": campaign_name, "template_hint": body.message_template}))
+        from services.campaign_reliability import generate, occasion
+        payload = {"step_context": body.step_context, "channel": body.channel, "campaign_name": camp.get("name") or "",
+                   "template_hint": body.message_template, "occasion": occasion(camp, body.card_type)}   # the scheduler's v2 payload
+        text, err = await generate(lambda: generate_campaign_message(owner, cid, payload))
         if not text:
             logger.warning(f"[CampaignPreview] writer failed for {cid}: {err}")
             out["error"] = "Jessi couldn't write this one right now. Try again in a minute."
@@ -171,5 +178,5 @@ async def preview(user_id: str, campaign_id: str, body: PreviewBody):
     ids = [str(x) for x in body.contact_ids if isinstance(x, str)][:3]
     if not ids:
         raise HTTPException(status_code=400, detail="Pick at least one customer")
-    rows = await asyncio.gather(*[_one(db, user_id, cid, body, camp.get("name") or "", body.ai_enabled) for cid in ids])
+    rows = await asyncio.gather(*[_one(db, user_id, cid, body, camp, body.ai_enabled) for cid in ids])
     return {"campaign_name": camp.get("name") or "", "ai": body.ai_enabled, "previews": rows}

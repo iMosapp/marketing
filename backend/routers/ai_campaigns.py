@@ -390,6 +390,7 @@ async def generate_campaign_message(user_id: str, contact_id: str, data: dict):
     channel = data.get("channel", "sms")
     campaign_name = data.get("campaign_name", "")
     template_hint = data.get("template_hint", "")
+    occasion = data.get("occasion", "")   # dated plans: the occasion is the point of the text
 
     # Build system prompt with AI clone personality
     system_prompt = await build_clone_system_prompt(user_id)
@@ -412,7 +413,8 @@ async def generate_campaign_message(user_id: str, contact_id: str, data: dict):
     user_prompt = f"""Write the next {channel} touch to this customer for my campaign.
 
 Campaign: {campaign_name}
-What this touch is for: {step_context or 'a genuine check-in'}
+What this touch is for: {step_context or occasion or 'a genuine check-in'}
+{f'THE OCCASION: {occasion}. This is the whole point of the text: say it plainly in the first sentence. Use at most one personal detail to make it theirs.' if occasion else ''}
 {f'Rough intent of the touch (do NOT copy its words, write your own from the history): {template_hint}' if template_hint else ''}
 
 {format_hint}
@@ -422,14 +424,14 @@ RULES:
 - Lead with ONE specific thing from the history below (something they said, their vehicle, the season, a milestone, a memo). Do not stack several.
 - If I have nothing specific on them, keep it short and human: no invented details, no fake memories.
 - Do not repeat or paraphrase a check-in I already sent; a new angle every time.
-- If they texted me recently and I answered, build on that thread; if they never reply, keep it low-pressure and easy to answer.
+{'- Today is about the occasion, not the last conversation: do not follow up on an open thread, a deal, numbers or an appraisal.' if occasion else '- If they texted me recently and I answered, build on that thread; if they never reply, keep it low-pressure and easy to answer.'}
 - No 'just checking in', no 'hope this finds you well', no exclamation storms, no emojis unless the thread already uses them.
 
 {history}
 
 RELATIONSHIP INTEL:
 {contact_context}
-
+{f'{chr(10)}REMEMBER: this text is only about {occasion}. Say it in the first sentence. No business at all: no open deals, appraisals, numbers, rates, calls or work in progress.{chr(10)}' if occasion else ''}
 Write ONLY the message text. No quotes, no explanation."""
 
     emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")

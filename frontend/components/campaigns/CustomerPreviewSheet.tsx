@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
@@ -9,6 +9,7 @@ import { ScanContactPicker } from '../scan/ScanContactPicker';
 
 type Props = { userId: string; campaignId: string; touches: Touch[]; aiEnabled: boolean; colors: any; onClose: () => void };
 const errText = (e: any, d: string) => e?.response?.data?.detail || d;
+const WRITE_FAIL = "Jessi couldn't write this one right now. Try again in a minute.";
 
 // Customer Preview Trio: one step written for three real customers side by side. Examples only; nothing is saved or sent.
 export const CustomerPreviewSheet = ({ userId, campaignId, touches, aiEnabled, colors, onClose }: Props) => {
@@ -21,16 +22,27 @@ export const CustomerPreviewSheet = ({ userId, campaignId, touches, aiEnabled, c
   const [swapAt, setSwapAt] = useState<number | null>(null);
   const [note, setNote] = useState('');
 
+  const seq = useRef(0);
+  const latest = useRef<Record<string, number>>({});   // newest request per customer; older replies are ignored
+
   const write = async (ids: string[], s = step) => {
     const t = touches[s];
     if (!t || !ids.length) return;
-    setLoading(l => [...l, ...ids]);
+    const n = ++seq.current;
+    ids.forEach(id => { latest.current[id] = n; });
+    const mine = (id: string) => latest.current[id] === n;
+    setLoading(l => Array.from(new Set([...l, ...ids])));
     try {
-      const r = await api.post(`/campaign-preview/${userId}/${campaignId}`, { contact_ids: ids, step_context: t.step_context || '', message_template: t.message || '', channel: t.channel || 'sms', ai_enabled: aiEnabled }, { timeout: 120000 });
-      setPreviews(p => ({ ...p, ...Object.fromEntries((r.data.previews || []).map((x: TrioPreview) => [x.contact_id, x])) }));
-    } catch (e) {
-      setPreviews(p => ({ ...p, ...Object.fromEntries(ids.map(id => [id, { contact_id: id, name: '', message: '', knew: p[id]?.knew || [], used: [], error: errText(e, 'Could not write the preview') }])) }));
-    } finally { setLoading(l => l.filter(x => !ids.includes(x))); }
+      const r = await api.post(`/campaign-preview/${userId}/${campaignId}`, { contact_ids: ids, step_context: t.step_context || '', message_template: t.message || '', card_type: t.actionType === 'send_card' ? t.cardType : '', channel: t.channel || 'sms', ai_enabled: aiEnabled }, { timeout: 120000 });
+      const rows = (r.data.previews || []).filter((x: TrioPreview) => mine(x.contact_id));
+      setPreviews(p => ({ ...p, ...Object.fromEntries(rows.map((x: TrioPreview) => [x.contact_id, x])) }));
+    } catch {
+      const live = ids.filter(mine);
+      setPreviews(p => ({ ...p, ...Object.fromEntries(live.map(id => [id, { contact_id: id, name: '', message: '', knew: p[id]?.knew || [], used: [], error: WRITE_FAIL }])) }));
+    } finally {
+      const done = ids.filter(mine);
+      setLoading(l => l.filter(x => !done.includes(x)));
+    }
   };
 
   useEffect(() => {

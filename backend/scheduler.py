@@ -1219,6 +1219,8 @@ async def process_pending_campaign_steps():
                     from routers.ai_campaigns import generate_campaign_message
                     ai_payload = {"step_context": step_goal or f"Step {current_step}", "channel": channel,
                                   "campaign_name": send_doc.get("campaign_name", ""), "template_hint": message_content}
+                    if v2:   # same goal the Customer Preview Trio writes from; dated plans name their occasion
+                        ai_payload.update(step_context=step_goal, occasion=rel.occasion(campaign_doc, send_doc.get("card_type") or ""))
                     if v2 and delivery_mode in ("automated", "auto"):
                         # try + 2 retries; then the touch waits for the rep. Never the template, never a generic text
                         ai_text, ai_err = await rel.generate(lambda: generate_campaign_message(user_id, contact_id, ai_payload))
