@@ -44,7 +44,6 @@ export const TrendCard = ({ u }: { u: Usage }) => {
         {u.daily.filter(d => d.received || d.analyzed).slice(-7).reverse().map(d => <Line key={d.day} label={d.day} s={d as Stat} testID={`photo-intel-day-${d.day}`} />)}
       </View>
       <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6, marginTop: 12, marginBottom: 4 }}>BY MONTH</Text>
-      {u.monthly.length === 0 && <Text style={{ fontSize: 13, color: colors.textSecondary }}>No photos yet.</Text>}
       {u.monthly.slice().reverse().map(m => <Line key={m.month} label={m.month} s={m} testID={`photo-intel-month-${m.month}`} />)}
     </Card>
   );
@@ -57,7 +56,7 @@ const Line = ({ label, sub, s, testID }: { label: string; sub?: string; s: Stat;
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 13, color: colors.text, fontWeight: '700' }} numberOfLines={1}>{label}</Text>
         <Text style={{ fontSize: 11.5, color: colors.textSecondary }} numberOfLines={1}>
-          {sub ? `${sub} · ` : ''}{s.received || 0} in · {s.analyzed || 0} analyzed · {s.reused || 0} reused · {s.failed || 0} failed{s.active_reps ? ` · ${s.active_reps} reps` : ''}
+          {sub ? `${sub} · ` : ''}{s.received || 0} in · {s.analyzed || 0} analyzed · {s.reused || 0} reused · {s.failed || 0} failed{s.active_reps ? ` · ${s.active_reps} rep${s.active_reps === 1 ? '' : 's'}` : ''}
         </Text>
       </View>
       <Text style={{ fontSize: 13, color: colors.text, fontWeight: '800' }}>{money(s.est_cost_usd)}</Text>

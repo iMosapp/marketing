@@ -395,6 +395,14 @@ def test_switch_endpoints(super_admin, rep, mongo):
         code, d = super_admin.delete(f"/api/jessi-vision/test-orgs/{mine}")
         assert code == 200 and not d["my_org"]["is_test"] and d["my_org"]["replies_on"] is False
         assert mongo.vision_settings_events.count_documents({}) >= 5
+        assert rep.post("/api/jessi-vision/photo-suggestions/clear", {})[0] == 403
+        probe = mongo.contacts.insert_one({"name": "QA Clear", "detail_suggestions": [{"id": "p1", "source": "a photo", "new": "x"}, {"id": "t1", "source": "texts", "new": "y"}]}).inserted_id
+        try:
+            code, d = super_admin.post("/api/jessi-vision/photo-suggestions/clear", {})
+            assert code == 200 and d["contacts"] >= 1
+            assert [x["id"] for x in mongo.contacts.find_one({"_id": probe})["detail_suggestions"]] == ["t1"]
+        finally:
+            mongo.contacts.delete_one({"_id": probe})
         code, u = super_admin.get("/api/jessi-vision/usage?days=7")
         assert code == 200 and {"totals", "daily", "monthly", "organizations", "stores", "reps", "by_source", "by_model", "monitoring", "cost_method"} <= set(u)
         assert len(u["daily"]) == 7 and u["cost_basis"] == "estimate"
@@ -491,7 +499,8 @@ def test_photo_intelligence_is_proposed_until_the_rep_confirms(mongo, switch, fa
     sugs = c.get("detail_suggestions") or []
     print("\nsuggestions:", [(s["field"], s["new"], s["basis"]) for s in sugs])
     assert sugs and all(s["source"] == "a photo" and s["ref"]["message_id"] == mid and s["ref"]["file_id"] for s in sugs)
-    assert all(s["new"].endswith("(seen in a photo)") or s["new"].startswith("Looks like:") for s in sugs)
+    assert all(s["mode"] == "add" and s["old"] == "" and ("(seen in a photo)" in s["label"] or "guess from a photo" in s["label"]) for s in sugs)
+    assert all(("seen" in s["label"]) == (s["basis"] == "visible") for s in sugs) and not any("photo" in s["new"].lower() for s in sugs)
     assert c["personal_details"] == {"interests": ["fishing"]} and c["first_name"] == "Verified"   # nothing written before the rep confirms
     from routers import database
     from services.voice_intel import resolve_detail_suggestion
@@ -569,3 +578,18 @@ def test_usage_report_attributes_org_location_and_rep(mongo, super_admin, mms_re
     assert org["est_cost_usd"] > 0 and org["active_reps"] >= 1 and org["cost_per_active_rep"] > 0 and org["avg_cost_per_analyzed"] > 0
     assert any(s["store_id"] == str(mms_rep.get("store_id")) for s in u["stores"])
     assert u["daily"][-1]["received"] >= 2 and u["monthly"] and u["totals"]["received"] >= 2
+
+
+def test_accepting_a_photo_interest_on_an_empty_contact_makes_a_list(mongo, thread):
+    from routers import database
+    from services.voice_intel import resolve_detail_suggestion
+    rep_id, cid, conv = thread("QA EmptyList")
+    mongo.contacts.update_one({"_id": ObjectId(cid)}, {"$set": {"detail_suggestions": [
+        {"id": "e1", "field": "interests", "label": "Interest (seen in a photo)", "old": "", "new": "Bass boat", "mode": "add", "source": "a photo"},
+        {"id": "e2", "field": "personal_notes", "label": "Note (seen in a photo)", "old": "", "new": "Building a deck", "mode": "add", "source": "a photo"}]}})
+    database._client, database._db = None, None
+    LOOP.run_until_complete(resolve_detail_suggestion(rep_id, cid, "e1", True))
+    database._client, database._db = None, None
+    LOOP.run_until_complete(resolve_detail_suggestion(rep_id, cid, "e2", True))
+    pd = mongo.contacts.find_one({"_id": ObjectId(cid)})["personal_details"]
+    assert pd == {"interests": ["Bass boat"], "personal_notes": "Building a deck"}

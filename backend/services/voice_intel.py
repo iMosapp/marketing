@@ -242,8 +242,8 @@ async def resolve_detail_suggestion(user_id: str, contact_id: str, suggestion_id
     if accept and sug.get("mode") == "add":   # a photo detail adds to what is saved, never replaces it
         pd = dict(contact.get("personal_details") or {})
         cur = pd.get(sug["field"])
-        if isinstance(cur, list):
-            pd[sug["field"]] = cur + [sug["new"]]
+        if isinstance(cur, list) or (cur in (None, "") and sug["field"] in ("interests", "kids")):
+            pd[sug["field"]] = (cur or []) + [sug["new"]]
         else:
             pd[sug["field"]] = f"{cur}; {sug['new']}" if cur else sug["new"]
         update["$set"]["personal_details"] = pd

@@ -4,6 +4,16 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 74 · Oct 16 — DONE IN PREVIEW (tested) · STOPPED BEFORE DEPLOY · waiting for Save to GitHub + your GO
+> APPROVED — JESSI PHOTO INTELLIGENCE IMPLEMENTATION ... Build the Photo Intelligence screen under More → Internal Operations → Photo Intelligence ... Emergency Pause All must stop new AI image analysis across Jessi replies, relationship intelligence and Files ... Keep newly extracted photo facts as proposed until confirmed ... Then STOP for my confirmation before production deployment. Do not enable All orgs until I confirm successful testing.
+
+Built and tested (stage2 22/22 with real GPT-5.4, iter398 13/13, iter399 16/16, regression 90/91 with 1 flaky). Report: `/app/memory/JESSI_MMS_VISION_IMPLEMENTATION.md`. Next: you try Save to GitHub -> agent deploys with everything OFF -> you Add my organization + Test orgs only -> real MMS tests -> All orgs on your OK.
+
+### 73 · Oct 16 — PLAN APPROVED
+> I'M ON SOCIAL — JESSI PHOTO UNDERSTANDING: FINAL APPROVAL, PRODUCTION DEPLOYMENT & USAGE MONITORING ... I do NOT want a $5 monthly cap ... launch the functionality, measure actual usage and operating costs ... (10 phases).
+
+The plan was agreed in #74.
+
 ### 72 · Oct 16 — DONE IN PREVIEW (tested) · AWAITING OWNER APPROVAL · nothing deployed
 > JESSI AI PHOTO UNDERSTANDING (STAGE 2) (paraphrased): Jessi should understand the photos customers text and reply naturally; never fake it; implement and test in preview, then STOP for my approval. Choices: always flag the rep on photos, private docs = thank + never repeat numbers + flag rep, no daily cap (log cost), one kill switch, GPT-5.4 via the Emergent key.
 

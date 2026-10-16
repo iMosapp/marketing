@@ -308,15 +308,13 @@ def thread_label(m: dict) -> str:
 FACT_FIELDS = {"vehicle_details": "Vehicle or equipment", "interests": "Interest", "personal_notes": "Note"}
 
 
-def _fact_text(f: dict) -> str:
-    v = _short(f.get("value"), 120)
-    return f"{v} (seen in a photo)" if f.get("basis") == "visible" else f"Looks like: {v} (Jessi's guess from a photo)"
 
 
 async def propose_facts(db, contact_id: str, user_id: str, message_id: Optional[str], found: list) -> list:
     """found = [(file_id, facts)] from non-sensitive readings. Each fact lands in contacts.detail_suggestions (the existing
-    "Jessi noticed" card): nothing is written to the contact until the rep accepts, verified details are never overwritten, a value the rep
-    already declined or that is already pending or saved is skipped. Visible facts and Jessi's assumptions are labelled differently."""
+    "Jessi noticed" card) in add mode: nothing is written to the contact until the rep accepts, and accepting appends, it never replaces
+    a saved detail. A value the rep already declined, or that is pending or saved, is skipped. Visible facts and Jessi's assumptions are
+    labelled differently; the source message and file are kept on the suggestion."""
     import secrets
     from bson import ObjectId
     if not ObjectId.is_valid(str(contact_id or "")):
@@ -334,14 +332,14 @@ async def propose_facts(db, contact_id: str, user_id: str, message_id: Optional[
             field = f.get("field")
             if field not in FACT_FIELDS or not f.get("value"):
                 continue
-            new = _fact_text(f)
+            new = _short(f["value"], 120)
             cur = pd.get(field)
             cur_text = "; ".join(map(str, cur)) if isinstance(cur, list) else str(cur or "")
-            if (field, norm(new)) in seen or norm(f.get("value")) in norm(cur_text):
+            if (field, norm(new)) in seen or norm(new) in norm(cur_text):
                 continue
-            sug = {"id": secrets.token_hex(5), "field": field, "label": f"{FACT_FIELDS[field]} (from a photo)", "old": cur_text if field == "vehicle_details" else "",
-                   "new": new, "mode": "replace" if field == "vehicle_details" and cur_text else "add", "basis": f.get("basis"), "source": "a photo",
-                   "ref": {"message_id": message_id, "file_id": file_id}, "created_at": datetime.now(timezone.utc)}
+            how = "seen in a photo" if f.get("basis") == "visible" else "Jessi's guess from a photo"
+            sug = {"id": secrets.token_hex(5), "field": field, "label": f"{FACT_FIELDS[field]} ({how})", "old": "", "new": new, "mode": "add",
+                   "basis": f.get("basis"), "source": "a photo", "ref": {"message_id": message_id, "file_id": file_id}, "created_at": datetime.now(timezone.utc)}
             pending.append(sug)
             added.append(sug)
             seen.add((field, norm(new)))

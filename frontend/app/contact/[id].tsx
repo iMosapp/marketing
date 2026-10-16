@@ -576,10 +576,10 @@ function ContactDetailScreen() {
   //   return () => clearInterval(interval);
   // }, [id, user, isNewContact]);
 
-  const loadContact = async () => {
+  const loadContact = async (silent = false) => {
     if (!user) return;
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const data = await contactsAPI.getById(user._id, id as string);
       // Calendar dates arrive as "YYYY-MM-DD" or UTC midnight ("...T00:00:00Z"); read them as local dates or Sep 11 shows as Sep 10 in US zones
       const parseDate = (d: any): Date | null => {
@@ -2361,7 +2361,7 @@ function ContactDetailScreen() {
     if (!user || isNewContact) return;
     try {
       const data = await contactsAPI.getContactIntel(user._id, id as string);
-      if (data.summary) setIntelData(data);
+      if (data.summary || (data.suggestions || []).length) setIntelData(data);
       if (data.stale) refreshIntel();
     } catch (e) {
       // No cached intel  - that's fine
@@ -2732,7 +2732,7 @@ function ContactDetailScreen() {
               userId={user?._id}
               contactId={id as string}
               onUpdate={(patch: any) => setIntelData((prev: any) => ({ ...(prev || {}), ...patch }))}
-              onDetailsChanged={() => loadContact()}
+              onDetailsChanged={() => loadContact(true)}
               voiceNotesCount={voiceNotes.filter((n: any) => n.kind !== 'conversation').length}
             />
           )}

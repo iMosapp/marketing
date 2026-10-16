@@ -161,6 +161,7 @@ def test_photo_only_inbound_flags_a_human_and_jessi_never_claims_to_see_it(mongo
         mongo.ai_reply_queue.delete_many({"conversation_id": conv})
         mongo.conversations.delete_one({"_id": conv_id})
         mongo.contacts.delete_one({"_id": cid})
+        mongo.vision_usage.delete_many({"contact_id": str(cid)})
         mongo.contact_files.delete_many({"contact_id": str(cid)}) if "contact_files" in mongo.list_collection_names() else None
 
 
@@ -194,6 +195,7 @@ def test_text_plus_photo_still_gets_a_normal_reply_with_the_notice(mongo, mms_re
         mongo.ai_reply_queue.delete_many({"conversation_id": conv})
         mongo.conversations.delete_one({"_id": conv_id})
         mongo.contacts.delete_one({"_id": cid})
+        mongo.vision_usage.delete_many({"contact_id": str(cid)})
 
 
 # ── D. the thread reader and Ask Jessi (manual suggestion) are told the same thing ──────────────────────────────────────
@@ -238,3 +240,4 @@ def test_ask_jessi_suggestion_on_a_photo_only_text_never_claims_to_see_it(mongo,
         mongo.messages.delete_many({"conversation_id": conv})
         mongo.conversations.delete_one({"_id": conv_id})
         mongo.contacts.delete_one({"_id": cid})
+        mongo.vision_usage.delete_many({"contact_id": str(cid)})

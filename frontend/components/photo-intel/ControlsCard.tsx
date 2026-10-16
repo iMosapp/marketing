@@ -53,13 +53,17 @@ export const ControlsCard = ({ s, busy, onScope, onPause, onAddMine, onRemove }:
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Ionicons name="pause-circle" size={20} color={s.paused ? RED : AMBER} />
           <Text style={{ flex: 1, fontSize: 14.5, fontWeight: '800', color: colors.text }}>Emergency Pause All</Text>
-          <Switch value={s.paused} disabled={busy} onValueChange={onPause} trackColor={{ true: RED, false: colors.border }} {...tid('photo-intel-pause-switch')} />
+          <Switch value={s.paused} disabled={busy} onValueChange={onPause} trackColor={{ true: RED, false: colors.border }} thumbColor="#FFFFFF" {...tid('photo-intel-pause-switch')} />
         </View>
         <Text style={{ fontSize: 12.5, color: colors.textSecondary, marginTop: 6, lineHeight: 17 }} {...tid('photo-intel-pause-note')}>
           {s.paused ? 'PAUSED: no new photo is analyzed anywhere (replies, intelligence, Files). Texted photos are still received and saved in Files.'
             : 'Stops every new photo analysis at once (Jessi replies, intelligence and Files). Photos are still received and saved.'}
         </Text>
       </View>
+      <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 10, lineHeight: 16 }} {...tid('photo-intel-files-note')}>
+        Contact Files still reads texted photos and rep uploads (as it did before) while both settings are Off. Only Pause All stops that cost.
+        Trade appraisal photo reads are a separate workflow and are not affected by these settings.
+      </Text>
       {!!s.updated_by && <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 10 }} {...tid('photo-intel-updated')}>Last changed by {s.updated_by}{s.updated_at ? ` · ${new Date(s.updated_at).toLocaleString()}` : ''}</Text>}
     </Card>
   );

@@ -11,7 +11,7 @@ import { PhotoSettings, Scope, Usage, Segmented } from '../../components/photo-i
 import { ControlsCard } from '../../components/photo-intel/ControlsCard';
 import { TotalsCard, TrendCard, BreakdownCard } from '../../components/photo-intel/UsageCards';
 
-const RANGES = [{ key: '1', label: 'Today' }, { key: '7', label: '7 days' }, { key: '30', label: '30 days' }, { key: '90', label: '90 days' }];
+const RANGES = [{ key: '1', label: '24 hours' }, { key: '7', label: '7 days' }, { key: '30', label: '30 days' }, { key: '90', label: '90 days' }];
 
 const confirm = (msg: string) => new Promise<boolean>(res => {
   if (Platform.OS === 'web') return res(window.confirm(msg));

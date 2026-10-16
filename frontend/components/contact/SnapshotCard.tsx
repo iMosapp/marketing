@@ -37,6 +37,7 @@ export default function SnapshotCard({ colors, contact, stats, events, intelData
   }, [userId, contactId]);
 
   const summary: string = intelData?.summary || '';
+  const pending: number = (intelData?.suggestions || []).length;
   const sections = useMemo(() => parseSections(summary), [summary]);
   const jessiLine = ((sections['Before Your Next Interaction'] || [])[0] || (sections['Quick Take'] || []).join(' ') || '').replace(/\s+/g, ' ').trim();
 
@@ -86,13 +87,19 @@ export default function SnapshotCard({ colors, contact, stats, events, intelData
         <Line icon="sparkles" label="Jessi" value={jessiValue} colors={colors} gold testid="snapshot-line-jessi" lines={2} />
         <Line icon="stats-chart" label="Numbers" value={numbers} colors={colors} testid="snapshot-line-numbers" lines={2} />
       </View>
+      {!expanded && pending > 0 && (
+        <TouchableOpacity onPress={() => setExpanded(true)} activeOpacity={0.75} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingBottom: 10 }} testID="snapshot-pending-suggestions" dataSet={{ testid: 'snapshot-pending-suggestions' } as any}>
+          <Ionicons name="help-circle" size={14} color="#FF9500" />
+          <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#FF9500' }}>Jessi noticed {pending} thing{pending === 1 ? '' : 's'} to review</Text>
+        </TouchableOpacity>
+      )}
       <TouchableOpacity onPress={() => setExpanded(e => !e)} activeOpacity={0.75} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderTopWidth: 1, borderTopColor: `${GOLD}33` }} testID="snapshot-toggle" dataSet={{ testid: 'snapshot-toggle' } as any}>
         <Text style={{ fontSize: 12.5, fontWeight: '800', color: GOLD }}>{expanded ? 'Less' : 'Full intel & personal details'}</Text>
         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={15} color={GOLD} />
       </TouchableOpacity>
       {expanded && (
         <View style={{ borderTopWidth: 1, borderTopColor: `${GOLD}33`, backgroundColor: colors.bg }} testID="snapshot-expanded" dataSet={{ testid: 'snapshot-expanded' } as any}>
-          {!!summary && (
+          {(!!summary || pending > 0) && (
             <IntelBriefingCard colors={colors} intelData={intelData} refreshing={refreshing} onRefresh={onRefresh} userId={userId} contactId={contactId} onUpdate={onUpdate} onDetailsChanged={onDetailsChanged} embedded />
           )}
           <View style={{ paddingTop: 12 }}>

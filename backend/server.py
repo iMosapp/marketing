@@ -53,7 +53,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-BUILD = "2026-10-16.mms-vision"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
+BUILD = "2026-10-16.photo-intel"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
 app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix (same response class as the app, so its routes can be mounted without being rebuilt)
@@ -2356,7 +2356,8 @@ async def seed_admin_user(db):
 
 # Serve marketing preview (temporary - for content review only)
 marketing_preview_dir = Path("/app/marketing/build-preview")
-if marketing_preview_dir.exists():
+from services.runtime_env import is_preview_runtime as _is_preview_runtime
+if marketing_preview_dir.exists() and _is_preview_runtime():   # staging copy of the marketing site: never served by production
     app.mount("/api/marketing-preview", StaticFiles(directory=str(marketing_preview_dir), html=True), name="marketing-preview")
 
 if __name__ == "__main__":

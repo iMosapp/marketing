@@ -103,6 +103,17 @@ async def remove_test_org(org_id: str, request: Request):
     return await _view(db, me)
 
 
+@router.post("/photo-suggestions/clear")
+async def clear_photo_suggestions(request: Request):
+    """Rollback helper: drop every PENDING photo proposal (accepted details stay). Run before rolling back to a build older than
+    2026-10-16, whose decision code would replace a saved detail instead of adding to it."""
+    me, db = _super(request), get_db()
+    r = await db.contacts.update_many({"detail_suggestions.source": "a photo"}, {"$pull": {"detail_suggestions": {"source": "a photo"}}})
+    await db.vision_settings_events.insert_one({"action": "clear_photo_suggestions", "contacts": r.modified_count, "by": me.get("email") or str(me.get("_id")),
+                                                "at": datetime.now(timezone.utc)})
+    return {"contacts": r.modified_count}
+
+
 # ── Usage & estimated cost ────────────────────────────────────────────────────
 
 AN = {"$ifNull": ["$analyzed", {"$not": ["$cached"]}]}
@@ -154,8 +165,13 @@ async def usage(request: Request, days: int = 30):
         d = (now - timedelta(days=k)).strftime("%Y-%m-%d")
         r = daily.get(d) or {"received": 0, "analyzed": 0, "reused": 0, "failed": 0, "est_cost_usd": 0}
         series.append({"day": d, **{f: r.get(f, 0) for f in ("received", "analyzed", "reused", "successful", "failed", "fetch_failed", "est_cost_usd", "active_reps")}})
-    monthly = await _group(db, {"created_at": {"$gte": now - timedelta(days=366)}}, {"$ifNull": ["$month", {"$substrCP": ["$day", 0, 7]}]})
-    monthly.sort(key=lambda r: r["key"] or "")
+    by_month = {r["key"]: r for r in await _group(db, {"created_at": {"$gte": now - timedelta(days=366)}}, {"$ifNull": ["$month", {"$substrCP": ["$day", 0, 7]}]})}
+    months, y, mo = [], now.year, now.month
+    for _ in range(12):
+        months.insert(0, f"{y:04d}-{mo:02d}")
+        y, mo = (y, mo - 1) if mo > 1 else (y - 1, 12)
+    empty = _finish({**{k: 0 for k in ACC if k != "reps"}, "reps": []})
+    monthly = [{**(by_month.get(k) or empty), "key": k} for k in months]
     f = lambda k: {"$ifNull": [f"${k}", ""]}
     orgs = await _group(db, m, f("organization_id"), 200)
     stores = await _group(db, m, {"org": f("organization_id"), "store": f("store_id")}, 100)
