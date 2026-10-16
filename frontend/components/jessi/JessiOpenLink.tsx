@@ -1,6 +1,6 @@
 // The "tap to open" link under a typed Jessi answer: the contact, thread, reminder or search she just worked on.
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { pathFor } from './LiveJessiProvider';
@@ -18,14 +18,14 @@ const label = (t: OpenTarget) => {
   return { icon: 'open-outline', text: t.kind === 'inbox' ? 'Open inbox' : 'Open Home' };
 };
 
-export const JessiOpenLink = ({ target, onNavigate, testID = 'jessi-open-link' }: { target?: OpenTarget | null; onNavigate?: () => void; testID?: string }) => {
+export const JessiOpenLink = ({ target, onNavigate, testID = 'jessi-open-link', style }: { target?: OpenTarget | null; onNavigate?: () => void; testID?: string; style?: ViewStyle }) => {
   const router = useRouter();
   const path = target?.kind ? pathFor(target) : null;
   if (!target || !path) return null;
   const l = label(target);
   return (
     <TouchableOpacity onPress={() => { onNavigate?.(); router.push(path as any); }} activeOpacity={0.75}
-      style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, marginTop: 8, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: tint(GOLD, 0.16), borderWidth: 1, borderColor: tint(GOLD, 0.45) }}
+      style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, marginTop: 8, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: tint(GOLD, 0.16), borderWidth: 1, borderColor: tint(GOLD, 0.45), ...style }}
       {...tid(testID)}>
       <Ionicons name={l.icon as any} size={15} color={GOLD} />
       <Text style={{ color: GOLD, fontWeight: '800', fontSize: 13 }} numberOfLines={1}>{l.text}</Text>

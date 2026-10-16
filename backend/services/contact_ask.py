@@ -287,7 +287,8 @@ async def ask(db, user: dict, contact: dict, question: str, session: Optional[di
     if not api_key:
         raise RuntimeError("EMERGENT_LLM_KEY not set")
     from emergentintegrations.llm.chat import LlmChat, UserMessage
-    record = await build_record(db, contact, tz=user.get("timezone"), caller_id=str(user.get("_id") or ""))
+    from routers.user_schedule import resolve_user_tz
+    record = await build_record(db, contact, tz=await resolve_user_tz(str(user.get("_id") or "")), caller_id=str(user.get("_id") or ""))
     rep_first = user.get("first_name") or (user.get("name") or "there").split(" ")[0]
     history = ""
     if session and session.get("messages"):

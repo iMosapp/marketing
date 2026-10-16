@@ -35,6 +35,7 @@ EXTRACTION_PROMPT = """You are a CRM data extraction expert. Analyze this __SOUR
 - For interests, include hobbies, sports teams, activities, etc.
 - For important_dates, include any dates mentioned with what they're for
 - vehicle_details should capture specifics: model, color, trim, features they liked
+- personal_notes never repeats contact info (phone numbers, emails, addresses) or instructions to the assistant ("add him as a contact")
 - Resolve relative dates ("today", "next Tuesday", "in two weeks") against the RECORDED date given with the text; never guess a year that was not said. important_dates hold real dates (YYYY-MM-DD, or MM-DD when no year), never words like "next Tuesday"
 - met_event / met_place / met_date: ONLY when the text says how or where the salesperson met this person (met him at NADA, walked into the store, introduced at the golf tournament); otherwise null
 - follow_up: ONLY when the text says the salesperson will or should follow up / call / text / send something at a stated time; otherwise null. Never invent one

@@ -420,6 +420,20 @@ async def _possible_dups(db, user: dict, first: str, last: str, phone: str, emai
     return out[:3]
 
 
+def _name_case(v) -> str:
+    """'mike peterson' -> 'Mike Peterson', but McDonald and DeAngelo keep the casing the brain gave."""
+    words = re.sub(r"\s+", " ", str(v or "")).strip(" .,").split(" ")
+    return " ".join(w.title() if (w.islower() or w.isupper()) else w[:1].upper() + w[1:] for w in words if w)[:40]
+
+
+def _follow_note(v) -> str:
+    """'Follow up next Tuesday about a fleet deal' / 'call him Friday about his trade' -> 'fleet deal' / 'his trade'."""
+    n = re.sub(r"\s+", " ", str(v or "")).strip(" .")
+    m = re.match(r"(?i)^(to\s+)?(follow\s*-?\s*up|check\s+in|call|text|email|ping|reach\s+out|touch\s+base)\b[^,]*?\b(about|regarding|re)\s+(.+)$", n)
+    n = m.group(4) if m else re.sub(r"(?i)^(to\s+)?(follow\s*-?\s*up|check\s+in)(\s+with\s+\w+)?\s*", "", n)
+    return re.sub(r"(?i)^((a|an|the|on|about|regarding)\s+)+", "", n).strip(" .")[:120]
+
+
 async def create_contact(db, user: dict, args: dict, focus: Optional[dict], live: Optional[dict]):
     """Stage a new contact from what the rep said: read it back, warn about a likely duplicate, save only on their yes.
     Nothing is invented: a missing detail stays empty, and a name is the only thing Jessi asks for."""
@@ -427,8 +441,8 @@ async def create_contact(db, user: dict, args: dict, focus: Optional[dict], live
     from services.twilio_service import normalize_phone
     prev = (live or {}).get("pending") if ((live or {}).get("pending") or {}).get("type") == "contact" else None
     said = " ".join(x for x in ((prev or {}).get("said", ""), (live or {}).get("_said", "")) if x).strip()
-    first = re.sub(r"\s+", " ", str(args.get("first_name") or "")).strip(" .,").title()[:40]
-    last = re.sub(r"\s+", " ", str(args.get("last_name") or "")).strip(" .,").title()[:40]
+    first = _name_case(args.get("first_name"))
+    last = _name_case(args.get("last_name"))
     if not first:
         return "What's their name?", prev, None
     raw_phone = str(args.get("phone") or "").strip()
@@ -440,14 +454,15 @@ async def create_contact(db, user: dict, args: dict, focus: Optional[dict], live
     follow_at = _parse_local(args.get("follow_up_iso"), tz)
     if follow_at and not (follow_at.hour or follow_at.minute):
         follow_at = follow_at.replace(hour=9)
-    fnote = re.sub(r"(?i)^(to\s+)?(follow\s*-?\s*up|check\s+in)(\s+with\s+(him|her|them|\w+))?(\s+(about|on|regarding|re|for))?\s*", "", str(args.get("follow_up_note") or "").strip()).strip(" .")
-    follow = {"when": follow_at.isoformat(), "note": fnote[:120]} if follow_at and follow_at > lv._now() else None
+    if follow_at and follow_at <= lv._now() and follow_at.date() == lv._now().astimezone(tz).date():   # "today" after 9 AM: later today
+        follow_at = (lv._now().astimezone(tz) + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+    follow = {"when": follow_at.isoformat(), "note": _follow_note(args.get("follow_up_note"))} if follow_at and follow_at > lv._now() else None
     name = f"{first} {last}".strip()
     bits = [name] + ([lv._fmt_phone(phone)] if phone else []) + ([email] if email else []) + ([company] if company else [])
     met_line = how_we_met.line(met)
     summary = ", ".join(bits) + (f", met {met_line[0].lower() + met_line[1:]}" if met_line else "")
     missing = "" if phone or email else " No phone or email yet, you can add those later."
-    heard = " I will save what you told me about them as a note." if said or args.get("note") else ""
+    heard = " I will keep what you told me about them as a voice memo on their profile." if said or args.get("note") else ""
     dups = await _possible_dups(db, user, first, last, phone, email)
     dup = ""
     if dups:

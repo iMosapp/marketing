@@ -25,7 +25,7 @@ def line(met: dict) -> str:
     bits = []
     if m["event"]:
         bits.append(m["event"] if re.match(r"(?i)^(at|in|on|through|via|from|when|while)\b", m["event"]) else f"At {m['event']}")
-    if m["place"]:
+    if m["place"] and m["place"].lower() not in m["event"].lower():
         bits.append(f"in {m['place']}" if bits else f"In {m['place']}")
     out = " ".join(bits)
     if m["date"]:

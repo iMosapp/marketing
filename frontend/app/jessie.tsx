@@ -608,7 +608,6 @@ export default function JessiScreen() {
                 <Text style={styles.transcriptText}>"{transcript}"</Text>
               ) : null}
               <Text style={[styles.responseText, { color: colors.text }]}>{response.replace(/\*\*/g, '')}</Text>
-              <JessiOpenLink target={openTarget} testID="jessie-response-open" />
             </ScrollView>
           ) : (
             <View style={styles.introContainer}>
@@ -621,6 +620,9 @@ export default function JessiScreen() {
           )}
           
           {/* Voice Button */}
+          {!!response && openTarget && (
+            <JessiOpenLink target={openTarget} testID="jessie-response-open" style={{ alignSelf: 'center', marginTop: 0, marginBottom: 12 }} />
+          )}
           <View style={styles.buttonContainer}>
             {renderAudioBars()}
             

@@ -395,6 +395,7 @@ export default function NewContactScreen() {
     if (!contact.first_name) { showSimpleAlert('Error', 'First name is required'); return; }
     if (!contact.phone && !contact.email) { showSimpleAlert('Error', 'Please provide a phone number or email'); return; }
     if (!user) return;
+    if (ncVoiceRecording || ncVoiceTranscribing) { showSimpleAlert('Voice note', 'Stop the recording first so it saves with the contact.'); return; }
     try {
       setSaving(true);
       const result = await contactsAPI.create(user._id, contact);

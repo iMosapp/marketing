@@ -183,6 +183,11 @@ async def _tz(user: dict):
         return timezone.utc
 
 
+async def _tz_name(user: Optional[dict]) -> Optional[str]:
+    """The rep's resolved timezone name for build_record, so times are read back in their own time."""
+    return getattr(await _tz(user), "key", None) if user and user.get("_id") else None
+
+
 def configured() -> Optional[str]:
     if not (os.environ.get("OPENAI_API_KEY") or "").strip():
         return "GPT-Live needs your own OpenAI API key: add OPENAI_API_KEY to the backend environment (platform.openai.com, project API key, Tier 1 or higher)."
@@ -358,11 +363,11 @@ async def focus_contact(db, user: dict, contact_id: Optional[str]) -> Optional[d
     return c if shared else None
 
 
-async def focus_brief(db, contact: dict) -> str:
+async def focus_brief(db, contact: dict, user: Optional[dict] = None) -> str:
     """A few plain lines about the focus contact so GPT-Live can follow the conversation; facts still come from the backend."""
     from services.contact_ask import build_record
     try:
-        rec = await build_record(db, contact)
+        rec = await build_record(db, contact, tz=await _tz_name(user))
     except Exception:
         rec = {}
     bits = [f"Contact in focus: {_first_last(contact)}."]
@@ -507,7 +512,7 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
             instructions += WALKTHROUGH_RULES
     tz = await _tz(user)
     now_local = _now().astimezone(tz).strftime("%A %B %d, %Y, %-I:%M %p")
-    where = f"Their app is open on {_first_last(contact)}'s conversation. {await focus_brief(db, contact)}" if contact else "Their app is open on the Home screen."
+    where = f"Their app is open on {_first_last(contact)}'s conversation. {await focus_brief(db, contact, user)}" if contact else "Their app is open on the Home screen."
     context = f"Right now it is {now_local}." if (shop or advisor_convo) else f"Right now it is {now_local} for the rep. {where}"
     if team is not None:
         context += " TEAM DIGEST already pulled; the rep is a manager and asked for it. They can say a rep's name for that rep's full list or ask to nudge a rep about a customer."
@@ -789,7 +794,7 @@ Tools:
 - book_appointment: an appointment, meeting, test drive or delivery with a person: "set Bud for Saturday at 10", "book Sarah for a test drive Thursday at 2", "put Mike's delivery on the calendar for the 20th at noon". args: {"name": "...", "when_iso": "<ISO datetime in the rep's local time, resolved from NOW>", "duration_min": <number, default 30>, "title": "<e.g. Test drive with Sarah, Delivery for Mike; empty for a plain appointment>", "location": "<if said, else empty>"}
 - enroll_campaign: put a person on a campaign / plan / drip: "put Bud on the sold quarterly plan", "enroll Sarah in the birthday campaign", "start Mike on the new lead follow-up". args: {"name": "...", "campaign": "<the campaign as spoken>"}
 - send_card: text the rep's digital business card or review link to a person: "send Bud my card", "text Sarah my info", "ask Mike for a review", "send her the review link". args: {"name": "...", "what": "card|review"}
-- create_contact: the rep wants to ADD a NEW person to their contacts: "add Mike Peterson, I met him at NADA, his number is 602 555 0148", "new contact, Sarah Lee from Acme", "save this guy: Tom Reyes, rides Harleys". args: {"first_name": "...", "last_name": "...", "phone": "<digits as said, else empty>", "email": "<cleaned up, else empty>", "company": "<their company or dealership, else empty>", "met_at": "<the event or occasion where they met (NADA, the golf tournament, walked into the store), else empty>", "met_place": "<city or venue if said, else empty>", "met_date": "<YYYY-MM-DD when they met; today when they say just met / today; else empty>", "note": "<everything else the rep said about the person, in the rep's words>", "follow_up_iso": "<ISO datetime in the rep's local time when the rep wants to follow up (next Tuesday -> that date at 09:00), resolved from NOW, else empty>", "follow_up_note": "<what the follow-up is about, else empty>"}. Only what the rep actually said: never invent a phone, email, company or date. While a new contact is PENDING and the rep corrects or adds a detail ("his number is actually...", "last name is Petersen with an e", "he works at Valley Motors"), call create_contact again with ALL the details so far plus the change.
+- create_contact: the rep wants to ADD a NEW person to their contacts: "add Mike Peterson, I met him at NADA, his number is 602 555 0148", "new contact, Sarah Lee from Acme", "save this guy: Tom Reyes, rides Harleys". args: {"first_name": "...", "last_name": "...", "phone": "<digits as said, else empty>", "email": "<cleaned up, else empty>", "company": "<their company or dealership, else empty>", "met_at": "<the event or occasion where they met (NADA, the golf tournament, walked into the store), else empty>", "met_place": "<city or venue if said, else empty>", "met_date": "<YYYY-MM-DD when they met; today when they say just met / today; else empty>", "note": "<everything else the rep said about the person, in the rep's words>", "follow_up_iso": "<ISO datetime in the rep's local time when the rep says they will or want to follow up, call, text, check in or be reminded about this person (next Tuesday -> that date at 09:00; Friday at 2 -> that Friday 14:00; a bare weekday is the next one AFTER today, so 'Friday' said on a Friday is 7 days out), resolved from NOW, else empty>", "follow_up_note": "<what that follow-up is about (his trade, pricing), else empty>"}. Only what the rep actually said: never invent a phone, email, company or date. While a new contact is PENDING and the rep corrects or adds a detail ("his number is actually...", "last name is Petersen with an e", "he works at Valley Motors"), call create_contact again with ALL the details so far plus the change.
 
 Every tool that takes a "name" also takes "hint": how the rep pointed at ONE of several records Jessi listed, verbatim and short: "the first one", "the second one", "the other one", "the one with the Tahoe", "ending in 0100", "the Berry one", "the newer one". Empty when the rep did not pick.
 
@@ -1085,7 +1090,7 @@ async def _recall(db, user: dict, name: str, focus: Optional[dict] = None, hint:
         return err, None
     from services.contact_ask import build_record
     from services.scripts import _llm
-    rec = await build_record(db, contact)
+    rec = await build_record(db, contact, tz=await _tz_name(user))
     timeline = rec.get("timeline") or ""
     facts = await _llm("You turn a CRM record into what a sharp assistant would SAY out loud to the salesperson about this person. At most 90 words, plain sentences, most useful first: what they bought or want, when you last talked and about what, anything personal worth remembering, open tasks. No headings, no markdown, no phone numbers.",
                        f"PROFILE:\n{rec.get('profile', '')[:4000]}\n\nRECENT TIMELINE (newest last):\n{timeline[-6000:]}", timeout=40)
@@ -1127,7 +1132,7 @@ async def _draft(db, user: dict, contact: dict, intent: str, wording: str = "") 
     from services.contact_ask import build_record
     from services.scripts import _llm
     from services.llm_models import CUSTOMER_TEXT_MODEL
-    rec = await build_record(db, contact)
+    rec = await build_record(db, contact, tz=await _tz_name(user))
     rep_first = (user.get("name") or "").split(" ")[0]
     text = (await _llm(f"Write ONE text message from {rep_first} (a salesperson) to their customer {contact.get('first_name')}. Under 240 characters, sounds human, first name only, no emojis, no signature, no em dashes, references something real from the record when it helps. Output only the message.",
                        f"Goal: {intent or 'friendly check-in'}\n\nPROFILE:\n{rec.get('profile', '')[:2500]}\n\nRECENT:\n{(rec.get('timeline') or '')[-2500:]}", timeout=40, model=CUSTOMER_TEXT_MODEL)).strip().strip('"')[:400]
@@ -1443,6 +1448,10 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
     if tool == "next_stop" and live.get("agenda") is None:
         tool = "answer"
     chat = live.get("mode") == "chat"
+    if chat and tool == "answer" and not pending and re.fullmatch(r"(?i)\W*(no|nope|nah|never ?mind|cancel( that| it)?|forget (it|that)|stop|hold on)\W*", _last_rep_text(transcript) or ""):
+        tool = "cancel"
+    if chat and tool == "answer" and not pending and re.fullmatch(r"(?i)\W*(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|sounds good|please do)\W*", _last_rep_text(transcript) or ""):
+        tool = "confirm"   # a bare yes with nothing waiting is never handed to the chat model (it would claim something was done)
     if chat and tool == "answer":   # typed Jessi answers app questions and small talk with her own chat model
         return {"tool": "answer", "content": "", "kind": "commentary", "pending": bool(pending), "open": None, "ms": int((_now() - t0).total_seconds() * 1000)}
     live["_said"] = _last_rep_text(transcript)
