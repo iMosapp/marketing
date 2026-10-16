@@ -4,6 +4,16 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 76 · Oct 16 — DONE (frontend, needs eas update)
+> Mini still running rogue a bit. I didn't say one word. It pre-populated all of that ... It's just the intro ... if I don't end it, it just keeps listening way too long ... End after 20 seconds ... let's try this and see how it is
+
+Fixed: Mini listens only after her greeting finishes PLAYING (her own voice was being heard as the rep). She now ends after 20 s of true quiet, with a countdown from 12 s and a Keep going button. The Sold screen title was renamed too. Simulation 21/21. Ship: Save to GitHub -> eas update.
+
+### 75 · Oct 16 — DONE
+> ok quick fix I want the "send photo" changed back to "sold" since it kicks off the sold campaign
+
+The gold + button says "Sold" again (trophy icon). Help and the Welcome Tour were updated to match, and the screen title is "Sold" (#76).
+
 ### 74 · Oct 16 — DONE IN PREVIEW (tested) · STOPPED BEFORE DEPLOY · waiting for Save to GitHub + your GO
 > APPROVED — JESSI PHOTO INTELLIGENCE IMPLEMENTATION ... Build the Photo Intelligence screen under More → Internal Operations → Photo Intelligence ... Emergency Pause All must stop new AI image analysis across Jessi replies, relationship intelligence and Files ... Keep newly extracted photo facts as proposed until confirmed ... Then STOP for my confirmation before production deployment. Do not enable All orgs until I confirm successful testing.
 
