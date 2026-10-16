@@ -1250,8 +1250,10 @@ async def update_personal_details(user_id: str, contact_id: str, data: dict = Bo
 async def re_extract_intelligence(user_id: str, contact_id: str):
     """Re-run AI extraction on all voice notes for this contact."""
     db = get_db()
+    from services.contact_scope import owned_contact
+    await owned_contact(db, user_id, contact_id, {"_id": 1})
     notes = await db.voice_notes.find(
-        {"contact_id": contact_id, "user_id": user_id, "transcript": {"$ne": ""}},
+        {"contact_id": contact_id, "transcript": {"$nin": ["", None]}},
         {"_id": 1, "transcript": 1}
     ).to_list(50)
 

@@ -10,7 +10,7 @@ import { QUIET_EVENTS, QuietLevel, markBusy, newQuiet, quietLevel, quietSeconds,
 export type LiveState = 'idle' | 'connecting' | 'live' | 'switching' | 'ending' | 'ended' | 'error';
 export type { CaptionRow };
 export type LiveOptions = { mode: 'assistant' | 'lab' | 'shopper' | 'advisor'; overrides?: Record<string, any>; contactId?: string };
-export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions' | 'team_today'; id?: string; name?: string; first?: string; contact_id?: string; query?: string; days?: number | null; res?: any; rep?: string; draft?: string };
+export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions' | 'team_today' | 'campaign'; id?: string; name?: string; first?: string; contact_id?: string; query?: string; days?: number | null; res?: any; rep?: string; draft?: string };
 type Meter = { policy_mode?: 'controls' | 'legacy'; role?: 'premium' | 'backup' | null; fallback_reason?: string | null; left_s?: number | null };
 
 const TOOL_LABELS: Record<string, string> = {

@@ -2114,6 +2114,22 @@ def start_scheduler():
         coalesce=True,
     )
 
+    # Every minute - voice notes Whisper missed get another go (~2 min, 10 min, 1 h after recording), then a rep reminder
+    async def run_transcript_retry_job():
+        from routers.database import get_db
+        from services import transcript_retry
+        await transcript_retry.sweep(get_db())
+    scheduler.add_job(
+        safe_job(run_transcript_retry_job),
+        IntervalTrigger(minutes=1),
+        id="transcript_retry",
+        replace_existing=True,
+        misfire_grace_time=120,
+        coalesce=True,
+        max_instances=1,
+    )
+
+
     # Daily 3:30 AM UTC - destroy sensitive contact files (IDs, insurance cards, credit apps) past their 30 days
     async def run_contact_files_purge():
         from routers.database import get_db

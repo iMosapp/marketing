@@ -16,12 +16,13 @@ import { PeopleInPlan, Enrollment } from '../../components/campaigns/PeopleInPla
 import { TradeTriggerPicker, tradeTriggerSummary } from '../../components/campaigns/TradeTriggerPicker';
 import { useQuickLinks } from '../../components/campaigns/useQuickLinks';
 import { CustomerPreviewSheet } from '../../components/campaigns/CustomerPreviewSheet';
+import { MetAtSheet } from '../../components/campaigns/MetAtSheet';
 import {
   Touch, normalizeTouches, touchesToSequences, newTouch, touchMinutes, summarizeTouches, isDateCampaign, dateTypeOf, DATE_TYPES,
   REPLY_MODES, REPLY_SHORT, DELIVERY_MODES, isAutoDelivery, tagColor, scopeLabel, DEFAULT_SAMPLE, Sample, GOLD, GREEN, RED, AMBER, tid,
 } from '../../components/campaigns/utils';
 
-type Sheet = 'touch' | 'replies' | 'trigger' | 'delivery' | 'rename' | 'trio' | null;
+type Sheet = 'touch' | 'replies' | 'trigger' | 'delivery' | 'rename' | 'trio' | 'met_at' | null;
 
 export default function CampaignEditorScreen() {
   const { colors } = useThemeStore();
@@ -343,6 +344,14 @@ export default function CampaignEditorScreen() {
         </View>
 
         <PeopleInPlan enrollments={enrollments} triggerLabel={triggerType === 'tag' ? triggerTag : ''} colors={colors} onRemove={removePerson} onRemoveAll={removeEveryone} />
+        <TouchableOpacity onPress={() => setSheet('met_at')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: GOLD + '66', backgroundColor: GOLD + '12' }} {...tid('campaign-add-met-at')}>
+          <Ionicons name="location" size={18} color={GOLD} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>Add people I met at…</Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>Everyone from NADA, a golf tournament or a show, in one go</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={GOLD} />
+        </TouchableOpacity>
 
         {canEdit ? (
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
@@ -409,6 +418,11 @@ export default function CampaignEditorScreen() {
 
       {sheet === 'trio' && user ? (
         <CustomerPreviewSheet userId={user._id} campaignId={id!} touches={touches} aiEnabled={aiEnabled} colors={colors} onClose={() => setSheet(null)} />
+      ) : null}
+
+      {sheet === 'met_at' && user ? (
+        <MetAtSheet userId={user._id} campaignId={id!} campaignName={name || 'this plan'} colors={colors} onClose={() => setSheet(null)} showToast={showToast}
+          onAdded={() => { campaignsAPI.getEnrollments(user._id, id!).then(e => setEnrollments(e || [])).catch(() => {}); }} />
       ) : null}
 
       {sheet === 'rename' ? (

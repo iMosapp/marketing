@@ -153,8 +153,8 @@ PACING = {1: "slow and unhurried", 2: "measured", 3: "a natural pace", 4: "quick
 PLAYFUL = {1: "all business", 2: "mostly serious", 3: "lightly playful when it fits", 4: "playful", 5: "very playful, quick with a one-liner"}
 BREVITY = {1: "take your time and explain fully", 2: "a few sentences", 3: "two or three short sentences", 4: "one or two short sentences, then let them talk", 5: "as few words as possible"}
 TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates", "next_stop", "find_mentions", "more_mentions", "team_today", "nudge_rep",
-         "call_person", "add_note", "tag_person", "mark_sold", "finish_task", "update_contact", "book_appointment", "enroll_campaign", "send_card", "create_contact")
-PENDING_CANCEL = {"merge": "Nothing was merged.", "sold": "Nothing was marked sold.", "appointment": "Nothing was booked.", "enroll": "Nobody was enrolled.", "send_text": "Nothing was sent.",
+         "call_person", "add_note", "tag_person", "mark_sold", "finish_task", "update_contact", "book_appointment", "enroll_campaign", "send_card", "create_contact", "enroll_group")
+PENDING_CANCEL = {"merge": "Nothing was merged.", "sold": "Nothing was marked sold.", "appointment": "Nothing was booked.", "enroll": "Nobody was enrolled.", "enroll_group": "Nobody was enrolled.", "send_text": "Nothing was sent.",
                   "contact": "Nothing was saved.", "reminder": "No reminder was set."}
 CHAT_WORDS = (("They are up on your screen.", "Tap below to open them."), ("is up on your screen.", "is linked below."), ("are up on your screen.", "are linked below."),
               ("It is up now.", "Tap below to open it."), ("Home is up.", "Tap below for Home."), ("Your inbox is up.", "Tap below for your inbox."))
@@ -770,7 +770,7 @@ You read the live transcript (it can contain mishearings, half sentences and lat
 Tools:
 - who_today: the rep asks who to contact / follow up with / talk to today. args: {}
 - find_person: the rep mentions a person but you only need to confirm who they mean or list matches. args: {"name": "..."}
-- recall_person: the rep wants to know about someone (history, what they bought, last conversation, anything about them). args: {"name": "..."}
+- recall_person: the rep wants to know about someone (history, what they bought, last conversation, anything about them): "tell me about Mike", "what do I know about Sarah Lee", "what did we talk about with Bud", "remind me who Tom is". args: {"name": "..."}
 - send_text: the rep wants to text someone. args: {"name": "...", "message": "<the exact wording if the rep gave it, else empty>", "intent": "<what the text should accomplish>"}
 - set_reminder: the rep wants a reminder/task. args: {"name": "<person or empty>", "when_iso": "<ISO 8601 datetime in the rep's timezone, resolve words like Friday/tomorrow 3pm from NOW>", "note": "<what to do>", "action": "call|text|email|manual"}
 - draft_message: the rep wants wording to send themselves. args: {"name": "...", "intent": "..."}
@@ -793,6 +793,7 @@ Tools:
 - update_contact: a fact to save on a person's record: "Bud's birthday is March 3rd", "Sarah's anniversary is June 10th 2015", "Mike's email is mike at gmail dot com", "his new number is 801 555 0142", "Bud is looking at a Silverado now", "Sarah drives a 2019 Tahoe", "Mike is a firefighter", "he works at Intermountain", "his wife is Amy and the kids are Max and Ava", "Bud loves fly fishing". args: {"name": "...", "field": "birthday|anniversary|email|phone|vehicle_interest|vehicle|occupation|employer|address|personal", "value": "<dates as YYYY-MM-DD, or MM-DD when no year was said; emails and phones cleaned up; otherwise the fact in a few words>", "key": "<personal only: family|spouse|kids|hobby|pets|work|other>"}
 - book_appointment: an appointment, meeting, test drive or delivery with a person: "set Bud for Saturday at 10", "book Sarah for a test drive Thursday at 2", "put Mike's delivery on the calendar for the 20th at noon". args: {"name": "...", "when_iso": "<ISO datetime in the rep's local time, resolved from NOW>", "duration_min": <number, default 30>, "title": "<e.g. Test drive with Sarah, Delivery for Mike; empty for a plain appointment>", "location": "<if said, else empty>"}
 - enroll_campaign: put a person on a campaign / plan / drip: "put Bud on the sold quarterly plan", "enroll Sarah in the birthday campaign", "start Mike on the new lead follow-up". args: {"name": "...", "campaign": "<the campaign as spoken>"}
+- enroll_group: put EVERYONE the rep met at one event or place on a campaign: "put everyone I met at NADA on the Trade-in plan", "add the golf tournament people to my VIP drip", "start all my Vegas show contacts on the new lead follow-up". args: {"event": "<where they met, as spoken: NADA, the golf tournament, Vegas>", "campaign": "<the campaign as spoken>"}. One named person is enroll_campaign, never this.
 - send_card: text the rep's digital business card or review link to a person: "send Bud my card", "text Sarah my info", "ask Mike for a review", "send her the review link". args: {"name": "...", "what": "card|review"}
 - create_contact: the rep wants to ADD a NEW person to their contacts: "add Mike Peterson, I met him at NADA, his number is 602 555 0148", "new contact, Sarah Lee from Acme", "save this guy: Tom Reyes, rides Harleys". args: {"first_name": "...", "last_name": "...", "phone": "<digits as said, else empty>", "email": "<cleaned up, else empty>", "company": "<their company or dealership, else empty>", "met_at": "<the event or occasion where they met (NADA, the golf tournament, walked into the store), else empty>", "met_place": "<city or venue if said, else empty>", "met_date": "<YYYY-MM-DD when they met; today when they say just met / today; else empty>", "note": "<everything else the rep said about the person, in the rep's words>", "follow_up_iso": "<ISO datetime in the rep's local time when the rep says they will or want to follow up, call, text, check in or be reminded about this person (next Tuesday -> that date at 09:00; Friday at 2 -> that Friday 14:00; a bare weekday is the next one AFTER today, so 'Friday' said on a Friday is 7 days out), resolved from NOW, else empty>", "follow_up_note": "<what that follow-up is about (his trade, pricing), else empty>"}. Only what the rep actually said: never invent a phone, email, company or date. While a new contact is PENDING and the rep corrects or adds a detail ("his number is actually...", "last name is Petersen with an e", "he works at Valley Motors"), call create_contact again with ALL the details so far plus the change.
 
@@ -1498,9 +1499,9 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             elif pending and pending.get("type") == "merge":
                 result, opened = await _merge_now(db, user, pending)
                 new_pending = None
-            elif pending and pending.get("type") in ("sold", "appointment", "enroll", "reminder"):
+            elif pending and pending.get("type") in ("sold", "appointment", "enroll", "reminder", "enroll_group"):
                 from services import live_actions as la
-                runner = {"sold": la.sold_now, "appointment": la.appointment_now, "enroll": la.enroll_now, "reminder": la.reminder_now}[pending["type"]]
+                runner = {"sold": la.sold_now, "appointment": la.appointment_now, "enroll": la.enroll_now, "reminder": la.reminder_now, "enroll_group": la.enroll_group_now}[pending["type"]]
                 result, opened = await runner(db, user, pending)
                 new_pending = None
             elif pending and pending.get("type") == "contact":
@@ -1534,7 +1535,7 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             from services import live_actions as la
             result, opened = await getattr(la, tool)(db, user, args, focus, live)
             new_pending = None
-        elif tool in ("mark_sold", "book_appointment", "enroll_campaign", "send_card", "create_contact"):
+        elif tool in ("mark_sold", "book_appointment", "enroll_campaign", "send_card", "create_contact", "enroll_group"):
             from services import live_actions as la
             result, new_pending, opened = await getattr(la, tool)(db, user, args, focus, live)
         else:

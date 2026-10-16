@@ -73,6 +73,20 @@ export default function VoiceMemosScreen() {
     try { await api.delete(`/voice-memos/${user!._id}/${m.id}`); setMemos(prev => (prev || []).filter(x => x.id !== m.id)); setCounts(c => ({ ...c, unattached: Math.max(0, c.unattached - 1) })); if (player.playingId === m.id) player.stop(); }
     catch (e) { showToast(errText(e, 'Could not delete'), 'error'); }
   }, undefined, 'Delete');
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const retry = async (m: any) => {
+    if (retryingId) return;
+    setRetryingId(m.id);
+    try {
+      const r = (await api.post(`/voice-memos/${user!._id}/${m.id}/retry-transcript`, {}, { timeout: 120000 })).data;
+      patch(m.id, r);
+      if (r?.transcript_status === 'done') showToast(r.title ? `Transcribed: ${r.title}` : 'Transcribed', 'success');
+      else showToast("Still couldn't transcribe it. You can play it and add a note.", 'error', 5000);
+    } catch (e) { showToast(errText(e, 'Retry did not go through'), 'error'); }
+    finally { setRetryingId(null); }
+  };
+  const anyRetrying = (memos || []).some(m => m.transcript_status === 'retrying');
+  useEffect(() => { if (!anyRetrying) return; const t = setInterval(load, 30000); return () => clearInterval(t); }, [anyRetrying, load]);
   const attached = (memoId: string, r: any) => {
     setMemos(prev => (prev || []).filter(x => x.id !== memoId));
     setCounts(c => ({ unattached: Math.max(0, c.unattached - 1), attached: c.attached + 1 }));
@@ -114,7 +128,7 @@ export default function VoiceMemosScreen() {
         ) : groups.map(g => (
           <View key={g.key} style={{ gap: 10 }} {...tid(`memo-group-${g.key}`)}>
             <DayHeader dayKey={g.key} title={g.title} label={dayLabels[g.key] || ''} count={g.memos.length} onRename={(l) => labelDay(g.key, l)} colors={colors} />
-            {g.memos.map(m => <MemoCard key={m.id} memo={m} colors={colors} playing={player.playingId === m.id} onPlay={() => player.play(m)} onAttach={(s) => { setPreset(s || null); setAttaching(m); }} onDelete={() => remove(m)} onRename={t => rename(m, t)} onTag={() => setTagging(m)} tagColor={tagColor} />)}
+            {g.memos.map(m => <MemoCard key={m.id} memo={m} colors={colors} playing={player.playingId === m.id} onPlay={() => player.play(m)} onAttach={(s) => { setPreset(s || null); setAttaching(m); }} onDelete={() => remove(m)} onRename={t => rename(m, t)} onTag={() => setTagging(m)} tagColor={tagColor} onRetry={() => retry(m)} retrying={retryingId === m.id} />)}
           </View>
         ))}
       </ScrollView>
