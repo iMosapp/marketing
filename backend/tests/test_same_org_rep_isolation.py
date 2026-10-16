@@ -85,12 +85,16 @@ async def _seed():
 
 async def _wipe():
     db = get_db()
-    ids = list(S["uid"].values()) + [S.get("store")]
+    # never let None / "" into $in: {"user_id": {"$in": [None]}} matches every document WITHOUT a user_id (users, stores, orgs, settings...)
+    ids = [i for i in list(S["uid"].values()) + [S.get("store")] if i and ObjectId.is_valid(str(i))]
+    cids = [c for c in S.get("cids", []) if c and ObjectId.is_valid(str(c))]
     for coll in await db.list_collection_names():
         if coll.startswith("system."):
             continue
-        await db[coll].delete_many({"user_id": {"$in": ids}})
-        await db[coll].delete_many({"contact_id": {"$in": S["cids"]}})
+        if ids:
+            await db[coll].delete_many({"user_id": {"$in": ids}})
+        if cids:
+            await db[coll].delete_many({"contact_id": {"$in": cids}})
     await db.contacts.delete_many({"_id": {"$in": [ObjectId(c) for c in S["cids"]]}})
     await db.shared_inboxes.delete_many({"qa_same_org_iso": True})
     await db.users.delete_many({"qa_same_org_iso": True})

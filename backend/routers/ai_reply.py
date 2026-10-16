@@ -871,8 +871,17 @@ async def queue_ai_reply(
             if (_src or {}).get("va_prompt_override"):
                 system_prompt += f"\n\nABOUT LEADS FROM {_src.get('name') or 'this source'}: {str(_src['va_prompt_override']).strip()[:1500]}"
 
-        _cb = await get_contact_brief(voice_user_id, contact_id, include_vehicle=vehicle_ok, conversation_id=conversation_id)
-        contact_context, intel_rationale = _cb["ai_context"], _cb.get("intel_rationale")
+        # The draft (and its "why this reply") is shown to the assignee, or to the whole inbox team while nobody owns the thread: either way
+        # a teammate never gets one built from the owner's private notes / memos / intelligence (same rule as AI Suggest)
+        from services.contact_scope import relationship_ok, owned_by_a_person
+        _owner_doc = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"user_id": 1}) if ObjectId.is_valid(str(contact_id or "")) else None
+        _private_ok = not _owner_doc or (await relationship_ok(db, str(assigned_user_id), _owner_doc) if assigned_user_id
+                                         else not await owned_by_a_person(db, _owner_doc))
+        if not _private_ok:
+            contact_context, intel_rationale = "", None
+        else:
+            _cb = await get_contact_brief(voice_user_id, contact_id, include_vehicle=vehicle_ok, conversation_id=conversation_id)
+            contact_context, intel_rationale = _cb["ai_context"], _cb.get("intel_rationale")
 
         # The thread, labelled: events are events, the site chat is a site chat, and each topic sits under its own header
         conv_lines = thread_view.dialogue()
@@ -902,7 +911,7 @@ async def queue_ai_reply(
         if fact_answers:
             inv_block += va_prompt.facts_block(fact_answers)
         user_prompt = (
-            f"Customer context:\n{contact_context}\n\n"
+            f"{'Customer context:' + chr(10) + contact_context + nl if contact_context else ''}"
             f"{topic_block + nl if topic_block else ''}"
             f"{inv_block}"
             f"{'The thread so far (oldest first):' + nl + conv_lines + nl if conv_lines else ''}"

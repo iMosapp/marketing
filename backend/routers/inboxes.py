@@ -471,6 +471,46 @@ async def _conv(db, conv_id: str) -> dict:
     return conv
 
 
+async def _person(db, user_id: str) -> Optional[dict]:
+    return await db.users.find_one({"_id": ObjectId(user_id)}, {"organization_id": 1, "store_id": 1, "store_ids": 1}) if ObjectId.is_valid(str(user_id or "")) else None
+
+
+async def _manages(db, me: dict, user_id: str) -> bool:
+    from services.route_guard import manager_can_access
+    return bool(await _person(db, user_id)) and await manager_can_access(str(me["_id"]), str(user_id), write=True)
+
+
+async def _same_team(db, me: dict, user_id: str) -> bool:
+    other = await _person(db, user_id)
+    if not other:
+        return False
+    org = str(me.get("organization_id") or "")
+    stores = {str(s) for s in [me.get("store_id"), *(me.get("store_ids") or [])] if s}
+    return (bool(org) and str(other.get("organization_id") or "") == org) or bool(stores & {str(s) for s in [other.get("store_id"), *(other.get("store_ids") or [])] if s})
+
+
+async def _acting_conv(db, me: dict, conv_id: str, target: Optional[str] = None) -> dict:
+    """Ownership actions (claim / assign / release / move / share / graduate) only on threads the caller runs: a manager inside their own
+    stores / org (an inbox they manage, or a thread owned by someone they manage), anyone else their own thread or an inbox they belong to.
+    The person a thread is handed or shared to must be on the caller's team, so a thread and its contact never leave the organization."""
+    conv = await _conv(db, conv_id)
+    if me.get("role") == "super_admin":
+        return conv
+    me_id = str(me["_id"])
+    owner = ib.owner_of(conv) or str(conv.get("user_id") or "")
+    inbox = await ib.get_inbox(db, conv["inbox_id"]) if conv.get("inbox_id") and not conv.get("graduated_at") else None
+    if ib.is_manager(me):
+        ok = bool(inbox and ib.can_manage_inbox(me, inbox)) or owner == me_id or await _manages(db, me, owner)
+    else:
+        ok = owner == me_id or conv.get("assigned_to") == me_id or bool(inbox and me_id in ib.members(inbox))
+    if not ok:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if target and target != me_id and not (inbox and target in ib.members(inbox)) \
+            and not (ib.is_manager(me) and await _manages(db, me, target)) and not await _same_team(db, me, target):
+        raise HTTPException(status_code=403, detail="That person isn't on your team")
+    return conv
+
+
 async def _can_see(db, me: dict, conv: dict) -> bool:
     me_id = str(me["_id"])
     if ib.is_manager(me) or str(conv.get("user_id") or "") == me_id or conv.get("assigned_to") == me_id or me_id in (conv.get("collaborators") or []):
@@ -544,7 +584,9 @@ def _err(e: Exception):
 async def claim(conv_id: str, request: Request):
     db = get_db()
     me = _me(request)
-    conv = await _conv(db, conv_id)
+    conv = await _acting_conv(db, me, conv_id)
+    if not conv.get("inbox_id") or conv.get("graduated_at"):
+        raise HTTPException(status_code=400, detail="Only shared-inbox conversations can be claimed")
     if ib.owner_of(conv) and ib.owner_of(conv) != str(conv.get("store_id") or ""):
         owner = await db.users.find_one({"_id": ObjectId(ib.owner_of(conv))}, {"name": 1}) if ObjectId.is_valid(ib.owner_of(conv)) else None
         raise HTTPException(status_code=409, detail=f"{(owner or {}).get('name') or 'Someone'} already has this one")
@@ -559,9 +601,9 @@ async def claim(conv_id: str, request: Request):
 async def assign(conv_id: str, body: AssignBody, request: Request):
     db = get_db()
     me = _me(request)
-    conv = await _conv(db, conv_id)
     if not ObjectId.is_valid(body.user_id):
         raise HTTPException(status_code=400, detail="Invalid user id")
+    conv = await _acting_conv(db, me, conv_id, body.user_id)
     try:
         res = await ib.assign_conversation(db, conv, me, body.user_id, body.note)
     except Exception as e:
@@ -573,7 +615,7 @@ async def assign(conv_id: str, body: AssignBody, request: Request):
 async def release(conv_id: str, request: Request, body: Optional[NoteBody] = None):
     db = get_db()
     me = _me(request)
-    conv = await _conv(db, conv_id)
+    conv = await _acting_conv(db, me, conv_id)
     try:
         res = await ib.release_conversation(db, conv, me, (body or NoteBody()).note)
     except Exception as e:
@@ -585,9 +627,12 @@ async def release(conv_id: str, request: Request, body: Optional[NoteBody] = Non
 async def move(conv_id: str, body: MoveBody, request: Request):
     db = get_db()
     me = _me(request)
-    conv = await _conv(db, conv_id)
+    conv = await _acting_conv(db, me, conv_id, body.user_id or None)
     if not ObjectId.is_valid(body.inbox_id):
         raise HTTPException(status_code=400, detail="Invalid inbox id")
+    target_inbox = await ib.get_inbox(db, body.inbox_id)
+    if not target_inbox or not ib.can_manage_inbox(me, target_inbox):
+        raise HTTPException(status_code=404, detail="Inbox not found")
     try:
         res = await ib.move_conversation(db, conv, me, body.inbox_id, body.user_id, body.note)
     except Exception as e:
@@ -599,9 +644,9 @@ async def move(conv_id: str, body: MoveBody, request: Request):
 async def collaborators(conv_id: str, body: CollaboratorBody, request: Request):
     db = get_db()
     me = _me(request)
-    conv = await _conv(db, conv_id)
     if not ObjectId.is_valid(body.user_id):
         raise HTTPException(status_code=400, detail="Invalid user id")
+    conv = await _acting_conv(db, me, conv_id, body.user_id if body.add else None)
     try:
         res = await ib.set_collaborator(db, conv, me, body.user_id, body.add)
     except Exception as e:
@@ -614,7 +659,7 @@ async def graduate(conv_id: str, request: Request):
     """Manually move an inbox thread onto its owner's own line (same as the closing tag would)."""
     db = get_db()
     me = _me(request)
-    conv = await _conv(db, conv_id)
+    conv = await _acting_conv(db, me, conv_id)
     if not conv.get("inbox_id") or conv.get("graduated_at"):
         raise HTTPException(status_code=400, detail="This conversation isn't in a shared inbox")
     owner = ib.owner_of(conv)

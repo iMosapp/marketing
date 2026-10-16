@@ -502,6 +502,15 @@ async def reassign_lead(
     if contact.get("ownership_type") != "org":
         raise HTTPException(status_code=403, detail="Only organization-created leads can be reassigned")
 
+    from routers.database import get_data_filter
+    from services.route_guard import manager_can_access
+    if not ObjectId.is_valid(str(new_user_id)):
+        raise HTTPException(status_code=400, detail="Invalid user id")
+    if not await db.contacts.find_one({"$and": [{"_id": contact["_id"]}, await get_data_filter(x_user_id)]}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Contact not found")
+    if not await manager_can_access(x_user_id, str(new_user_id), write=False):
+        raise HTTPException(status_code=403, detail="That person isn't on your team")
+
     old_user_id = contact.get("user_id")
 
     # Verify target user exists

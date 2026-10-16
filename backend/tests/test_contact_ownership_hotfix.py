@@ -80,12 +80,14 @@ async def _seed():
 
 async def _wipe():
     db = get_db()
-    ids = list(S["uid"].values())
-    cids = [c for c in S["cids"] if c]
+    ids = [i for i in S["uid"].values() if i and ObjectId.is_valid(str(i))]   # never None in $in: it would match every doc without a user_id
+    cids = [c for c in S["cids"] if c and ObjectId.is_valid(str(c))]
+    stores = [s for s in S["stores"].values() if s and ObjectId.is_valid(str(s))]
     for coll in await db.list_collection_names():
         if coll.startswith("system."):
             continue
-        await db[coll].delete_many({"user_id": {"$in": ids + list(S["stores"].values())}})
+        if ids + stores:
+            await db[coll].delete_many({"user_id": {"$in": ids + stores}})
         if cids:
             await db[coll].delete_many({"contact_id": {"$in": cids}})
     await db.contacts.delete_many({"_id": {"$in": [ObjectId(c) for c in cids] + S["extra_oids"]}})
