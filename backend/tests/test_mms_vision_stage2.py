@@ -179,10 +179,15 @@ def _deliver(mongo, rep_id, cid, conv, text, urls):
 
     async def go():
         db = database.get_db()
-        mms_vision.start_filing(db, rep_id, cid, mid, [f"https://app.imonsocial.com/api/webhooks/twilio/media-proxy?url={u}" for u in urls],
-                                ["image/jpeg"] * len(urls), text)
+        task = mms_vision.start_filing(db, rep_id, cid, mid, [f"https://app.imonsocial.com/api/webhooks/twilio/media-proxy?url={u}" for u in urls],
+                                       ["image/jpeg"] * len(urls), text)
         await queue_ai_reply(contact_id=cid, conversation_id=conv, enrollment_id="conversation_direct", campaign_id="", assigned_user_id=rep_id,
                              incoming_message=text, ai_assist_mode="draft_only", attachments=len(urls), message_id=mid)
+        # switch OFF: nothing in the reply waits for the filing, so let it finish before the loop stops (avoids a flaky Files count)
+        try:
+            await asyncio.wait_for(asyncio.shield(task), timeout=90)
+        except Exception:
+            pass
         await asyncio.sleep(0.2)
     database._client, database._db = None, None
     LOOP.run_until_complete(go())

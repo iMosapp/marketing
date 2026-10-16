@@ -4,6 +4,11 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 72 · Oct 16 — DONE IN PREVIEW (tested) · AWAITING OWNER APPROVAL · nothing deployed
+> JESSI AI PHOTO UNDERSTANDING (STAGE 2) (paraphrased): Jessi should understand the photos customers text and reply naturally; never fake it; implement and test in preview, then STOP for my approval. Choices: always flag the rep on photos, private docs = thank + never repeat numbers + flag rep, no daily cap (log cost), one kill switch, GPT-5.4 via the Emergent key.
+
+Built and tested in preview (33/33, testing agent iteration_398). Kill switch is a database setting, OFF until a super admin turns it on (production starts OFF after Deploy). Report: `/app/memory/JESSI_MMS_VISION_IMPLEMENTATION.md`. Ship after approval: Save to GitHub -> Deploy (no eas update) -> turn the switch on -> text yourself a test photo.
+
 ### 71 · Oct 16 — DONE
 > i need to push this to github but the integration isn't working ... yes create a zip folder for me
 

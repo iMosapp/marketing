@@ -397,46 +397,48 @@ async def file_inbound_media(db, user_id: str, contact_id: str, message_id: str,
     if mid:
         await db.messages.update_one({"_id": mid}, {"$set": {"media_read_pending": True}})
     items, read_n = [], 0
-    for i, url in enumerate(urls[:10]):
-        ct = ((types[i] if i < len(types) else "") or "image/jpeg").lower()
-        item = {"i": i, "ok": False, "content_type": ct}
-        if not _kind(ct, ""):
-            items.append({**item, "reason": "unsupported"})
-            continue
-        try:
-            data, got_ct = await mv.fetch_media(url)
-        except ValueError as e:
-            logger.warning(f"[MMSVision] media {i} of {message_id} not fetched: {e}")
-            items.append({**item, "reason": "too_large" if str(e) == "too_large" else "fetch_failed"})
-            continue
-        except Exception as e:
-            logger.warning(f"[MMSVision] media {i} of {message_id} fetch error: {type(e).__name__}")
-            items.append({**item, "reason": "fetch_failed"})
-            continue
-        do_read = read_n < mv.MAX_READ_PER_MESSAGE
-        try:
-            stamp = _now().strftime("%b %-d")
-            doc = await save_file(db, user_id=user_id, contact_id=contact_id, name=f"Texted {stamp}" + ("" if len(urls) == 1 else f" ({i + 1})"),
-                                  content_type=got_ct if _kind(got_ct, "") else ct, data=data, hint=None, source="mms", message_id=message_id,
-                                  caption=caption, do_read=do_read, timeout=mv.READ_TIMEOUT, retries=1)
-        except Exception as e:
-            logger.warning(f"[MMSVision] media {i} of {message_id} not filed: {type(e).__name__}: {e}")
-            items.append({**item, "reason": "unreadable"})
-            continue
-        read_n += 1 if do_read else 0
-        sens = bool(doc.get("sensitive"))
-        if doc.get("status") != "ready":
-            items.append({**item, "file_id": str(doc["_id"]), "reason": "unreadable" if do_read else "not_read"})
-            continue
-        items.append({**item, "ok": True, "file_id": str(doc["_id"]), "type": doc.get("scan_type"), "title": "" if sens else doc.get("title") or "", "sensitive": sens,
-                      "summary": "" if sens else doc.get("summary") or "", "visible": "" if sens else doc.get("visible") or "",
-                      "text": "" if sens else (doc.get("text") or "")[:1500], "fields": {} if sens else doc.get("fields") or {},
-                      "confidence": doc.get("confidence") if doc.get("confidence") is not None else 0.7})
     try:
-        if mid:
-            await db.messages.update_one({"_id": mid}, {"$set": {"media_read": items, "media_read_at": _now()}, "$unset": {"media_read_pending": ""}})
-    except Exception as e:
-        logger.warning(f"[MMSVision] could not store readings on {message_id}: {e}")
+        for i, url in enumerate(urls[:10]):
+            ct = ((types[i] if i < len(types) else "") or "image/jpeg").lower()
+            item = {"i": i, "ok": False, "content_type": ct}
+            if not _kind(ct, ""):
+                items.append({**item, "reason": "unsupported"})
+                continue
+            try:
+                data, got_ct = await mv.fetch_media(url)
+            except ValueError as e:
+                logger.warning(f"[MMSVision] media {i} of {message_id} not fetched: {e}")
+                items.append({**item, "reason": "too_large" if str(e) == "too_large" else "fetch_failed"})
+                continue
+            except Exception as e:
+                logger.warning(f"[MMSVision] media {i} of {message_id} fetch error: {type(e).__name__}")
+                items.append({**item, "reason": "fetch_failed"})
+                continue
+            do_read = read_n < mv.MAX_READ_PER_MESSAGE
+            try:
+                stamp = _now().strftime("%b %-d")
+                doc = await save_file(db, user_id=user_id, contact_id=contact_id, name=f"Texted {stamp}" + ("" if len(urls) == 1 else f" ({i + 1})"),
+                                      content_type=got_ct if _kind(got_ct, "") else ct, data=data, hint=None, source="mms", message_id=message_id,
+                                      caption=caption, do_read=do_read, timeout=mv.READ_TIMEOUT, retries=1)
+            except Exception as e:
+                logger.warning(f"[MMSVision] media {i} of {message_id} not filed: {type(e).__name__}: {e}")
+                items.append({**item, "reason": "unreadable"})
+                continue
+            read_n += 1 if do_read else 0
+            sens = bool(doc.get("sensitive"))
+            if doc.get("status") != "ready":
+                items.append({**item, "file_id": str(doc["_id"]), "reason": "unreadable" if do_read else "not_read"})
+                continue
+            items.append({**item, "ok": True, "file_id": str(doc["_id"]), "type": doc.get("scan_type"), "title": "" if sens else doc.get("title") or "", "sensitive": sens,
+                          "summary": "" if sens else doc.get("summary") or "", "visible": "" if sens else doc.get("visible") or "",
+                          "text": "" if sens else (doc.get("text") or "")[:1500], "fields": {} if sens else doc.get("fields") or {},
+                          "confidence": doc.get("confidence") if doc.get("confidence") is not None else 0.7})
+    finally:   # always store the outcome and clear the marker, so a reply never waits on a reading that died
+        try:
+            if mid:
+                await db.messages.update_one({"_id": mid}, {"$set": {"media_read": items, "media_read_at": _now()}, "$unset": {"media_read_pending": ""}})
+        except Exception as e:
+            logger.warning(f"[MMSVision] could not store readings on {message_id}: {e}")
     return items
 
 
