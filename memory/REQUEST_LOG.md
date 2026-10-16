@@ -7,7 +7,7 @@ Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/
 ### 71 · Oct 16 — DONE
 > i need to push this to github but the integration isn't working ... yes create a zip folder for me
 
-Save to GitHub is stuck on the platform side (support steps given). Zip of the whole `marketing` folder (228 files, 46 MB, same files git would push, no node_modules/staging copy) at `{preview}/api/marketing-preview/download/imonsocial-marketing.zip`. It is wiped the next time `site/build.py preview` runs; rebuild it with `git ls-files --cached --others --exclude-standard marketing | grep -v ^marketing/build-preview/ | zip -q marketing/build-preview/download/imonsocial-marketing.zip -@`.
+Save to GitHub is stuck on the platform side (support steps given). Zip of the whole `marketing` folder (228 files, 46 MB, same files git would push, no node_modules/staging copy) at `{preview}/api/marketing-preview/download/imonsocial-marketing.zip`. Owner pushes the FULL codebase to the marketing repo, so also made `{preview}/api/marketing-preview/download/imonsocial-full-codebase.zip` (2,378 files, 95 MB, git file list: no .env, no node_modules, no staging copy). Both zips are wiped the next time `site/build.py preview` runs; rebuild it with `git ls-files --cached --others --exclude-standard marketing | grep -v ^marketing/build-preview/ | zip -q marketing/build-preview/download/imonsocial-marketing.zip -@`.
 
 ### 70 · Oct 16 — DONE · written into marketing/build · goes live when you update GitHub
 > Site approval. Soften the contact promise, restyle /developers with the same content, reword the homepage claim, yes remove the 7 old pages and write the new site into marketing/build, I'll update GitHub.
