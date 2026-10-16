@@ -53,6 +53,7 @@ import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker'
 import { ContactProvider } from '../../components/contact/ContactContext';
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import HeroSection from '../../components/contact/HeroSection';
+import { ContactUnavailable } from '../../components/contact/ContactUnavailable';
 import { CaptureStorySheet } from '../../components/contact/CaptureStorySheet';
 import EditFormTop from '../../components/contact/EditFormTop';
 import EditFormBottom from '../../components/contact/EditFormBottom';
@@ -182,6 +183,7 @@ function ContactDetailScreen() {
     how_we_met: null as any,
   });
   const [loading, setLoading] = useState(!isNewContact);
+  const [unavailable, setUnavailable] = useState(false);
   const [saving, setSaving] = useState(false);
   const [originalNotes, setOriginalNotes] = useState('');
   // Full photo viewer & gallery
@@ -622,8 +624,9 @@ function ContactDetailScreen() {
         linked_role: data.linked_role || null,
         how_we_met: data.how_we_met || null,
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to load contact:', e);
+      if ([403, 404].includes(e?.response?.status)) setUnavailable(true);
     } finally {
       setLoading(false);
     }
@@ -2584,6 +2587,9 @@ function ContactDetailScreen() {
         </View>
       </SafeAreaView>
     );
+  }
+  if (unavailable) {
+    return <ContactUnavailable colors={colors} onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/contacts' as any))} />;
   }
 
   const fullName = `${contact.first_name} ${contact.last_name || ''}`.trim() || 'New Contact';
