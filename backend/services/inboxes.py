@@ -534,7 +534,10 @@ async def handle_inbound(db, inbox: dict, from_phone: str, body: str, media_urls
                "status": "received", "twilio_sid": message_sid, "from_phone": from_phone, "to_phone": inbox_number}
     if media_urls:
         message.update({"media_urls": media_urls, "media_types": media_types, "has_media": True, "num_media": len(media_urls)})
-    await db.messages.insert_one(message)
+    msg_res = await db.messages.insert_one(message)
+    if media_urls and contact_id and (conv or {}).get("user_id"):
+        from services.mms_vision import start_filing
+        start_filing(db, str(conv["user_id"]), str(contact_id), str(msg_res.inserted_id), media_urls, media_types, body or "")
     preview = (body or "").strip()[:100] or "(photo)"
     await db.conversations.update_one({"_id": ObjectId(conv_id)}, {
         "$set": {"last_message": preview, "last_message_at": datetime.utcnow(), "last_message_from": "contact", "unread": True,
@@ -574,7 +577,7 @@ async def handle_inbound(db, inbox: dict, from_phone: str, body: str, media_urls
             from routers.ai_reply import queue_ai_reply
             asyncio.create_task(queue_ai_reply(
                 contact_id=str(contact_id or ""), conversation_id=conv_id, enrollment_id="conversation_direct", campaign_id="",
-                assigned_user_id=None, incoming_message=body, ai_assist_mode=mode, attachments=len(media_urls or [])))
+                assigned_user_id=None, incoming_message=body, ai_assist_mode=mode, attachments=len(media_urls or []), message_id=str(msg_res.inserted_id)))
         except Exception as e:
             logger.warning(f"[Inbox] VA reply failed to queue: {e}")
     return {"handled": True}

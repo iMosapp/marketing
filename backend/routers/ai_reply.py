@@ -296,11 +296,13 @@ async def queue_ai_reply(
     escalation_manager_id: Optional[str] = None,
     reply_count: int = 1,
     attachments: int = 0,
+    message_id: Optional[str] = None,
 ) -> Optional[dict]:
     """
     Generate an AI draft and add it to the queue.
     Returns the queue document or None if mode is off/draft_only with no send.
-    `attachments` = number of photos/files on the inbound message (Jessi cannot see them yet; see attachment_notice).
+    `attachments` = number of photos/files on the inbound message; `message_id` = that message, whose photo reading (MMS Stage 2,
+    services.mms_vision) Jessi uses when the global switch is on. Off / no reading = Stage 1 attachment_notice.
     """
     db = get_db()
     incoming_message = incoming_message or ""
@@ -349,6 +351,36 @@ async def queue_ai_reply(
         logger.info(f"[AIReply] Mode off — not queuing for conversation {conversation_id}")
         return None  # Caller already paused + notified rep
 
+    # ── Photos (MMS Stage 2): wait for Jessi's reading of this text's photos before anything reads the thread ──
+    from services import mms_vision
+    vision_on, photo = False, None
+    if attachments:
+        try:
+            vision_on = await mms_vision.enabled(db)
+            if vision_on:
+                photo = await mms_vision.photo_block(db, message_id or await mms_vision.latest_media_message_id(db, conversation_id), incoming_message)
+        except Exception as _pe:
+            logger.warning(f"[AIReply] photo reading unavailable for {conversation_id}: {_pe}")
+
+    async def _photo_alert(team=None):
+        """Switch on: every photo reaches a person, with what Jessi read (or why she couldn't)."""
+        cname = (_conv_pause or {}).get("contact_name") or "A customer"
+        title = f"{cname} sent " + ("a photo" if attachments == 1 else f"{attachments} photos")
+        body = (photo or {}).get("alert") or "Jessi couldn't read it. Open the thread to look at it."
+        try:
+            if assigned_user_id:
+                await db.notifications.insert_one({
+                    "user_id": assigned_user_id, "type": "you_are_needed", "priority": "urgent", "title": title, "message": body,
+                    "contact_id": contact_id, "conversation_id": conversation_id, "read": False, "dismissed": False,
+                    "photo_status": (photo or {}).get("status"), "created_at": datetime.utcnow()})
+                from routers.push_notifications import send_push_to_user
+                asyncio.create_task(send_push_to_user(assigned_user_id, title, body[:150], f"/thread/{conversation_id}", "image"))
+            elif team:
+                from services.inboxes import notify_members as _nm
+                await _nm(db, team, conversation_id, contact_id, title, body, notif_type="you_are_needed")
+        except Exception as _ae:
+            logger.warning(f"[AIReply] photo alert failed for {conversation_id}: {_ae}")
+
     # ── Human-handling pause ──────────────────────────────────────────────────
     # When a conversation was escalated to a human for a fact-based question that
     # Jessi can't answer safely (inventory availability, pricing, financing, colors,
@@ -371,6 +403,8 @@ async def queue_ai_reply(
                     {"_id": ObjectId(conversation_id)},
                     {"$set": {"needs_assistance": True, "you_are_needed_at": datetime.utcnow()}}
                 )
+            if vision_on:
+                await _photo_alert()
             return None
         # What this lead actually asked for (software demo / vehicle / general). Keeps Jessi on topic.
         from services.lead_context import get_conversation_inquiry
@@ -428,7 +462,9 @@ async def queue_ai_reply(
         except Exception:
             pass
         _recently_asked = bool(_last_att) and (_att_now - _last_att) < timedelta(minutes=30)
-        if not _recently_asked:
+        if vision_on:
+            await _photo_alert(_inbox_team)
+        elif not _recently_asked:
             _cname_att = (_conv_pause or {}).get("contact_name") or "A customer"
             _what = "a photo" if attachments == 1 else f"{attachments} photos"
             if assigned_user_id:
@@ -457,7 +493,7 @@ async def queue_ai_reply(
                     pass
             elif _inbox_team:
                 await _alert_inbox_team(f"{_cname_att} sent {_what}", "Jessi can't see photos yet - claim the thread to look at it.")
-        if media_only and _recently_asked:
+        if media_only and _recently_asked and not (photo and photo["status"] != "failed"):
             logger.info(f"[AIReply] Another photo-only message within 30 min for {conversation_id} - already asked, human flagged, no second AI reply")
             return None
 
@@ -828,7 +864,7 @@ async def queue_ai_reply(
             _rep = await db.users.find_one({"_id": ObjectId(assigned_user_id)}, {"store_id": 1}) if ObjectId.is_valid(str(assigned_user_id or "")) else None
             system_prompt += "\n\n" + loc.language_rule(await loc.user_locale(db, _rep))
         system_prompt += inquiry_prompt_block(lead_inquiry)
-        system_prompt += attachment_notice(attachments, incoming_message)
+        system_prompt += photo["block"] if photo else attachment_notice(attachments, incoming_message)
         if (_conv_for_inbox or {}).get("lead_source_id") and ObjectId.is_valid(str(_conv_for_inbox["lead_source_id"])):
             _src = await db.lead_sources.find_one({"_id": ObjectId(str(_conv_for_inbox["lead_source_id"]))}, {"va_prompt_override": 1, "name": 1})
             if (_src or {}).get("va_prompt_override"):
@@ -870,6 +906,7 @@ async def queue_ai_reply(
             f"{inv_block}"
             f"{'The thread so far (oldest first):' + nl + conv_lines + nl if conv_lines else ''}"
             + (f"Customer just said: \"{incoming_message}\"\n\n" if incoming_message.strip()
+               else f"Customer just sent: {attachment_preview(attachments, '')} with no text (see the photo note above).\n\n" if photo
                else f"Customer just sent: {attachment_preview(attachments, '')} - no text, and you cannot see it.\n\n") +
             "Reply naturally and briefly as me. Just the reply text, nothing else."
         )
@@ -894,6 +931,7 @@ async def queue_ai_reply(
                    else str(response)).strip('"\'')
         ai_body = no_em_dash(ai_body)
         ai_body = await clean_ai_text(ai_body, voice_user_id)
+        ai_body = mms_vision.guard_private(ai_body, photo)
         if inventory_link and inventory_link["url"] not in ai_body:
             ai_body = f"{ai_body.rstrip()}\n\nAll the photos and details: {inventory_link['url']}"
 
@@ -987,6 +1025,7 @@ async def queue_ai_reply(
         "reply_count_at_creation":     reply_count,
         "incoming_message_preview":    attachment_preview(attachments, incoming_message)[:200],
         "attachments":                 attachments,
+        "photo_status":                (photo or {}).get("status"),
         "media_urls":                  inventory_media or [],
         "topic":                       thread_view.summary(),
         "intel_rationale":             intel_rationale,

@@ -174,7 +174,7 @@ def _line(m: dict, first: str, ts: datetime) -> Optional[str]:
         return f"[call {_clock(ts)}] {content[:200]}" if content else None
     if sender in ("user", "ai", "ai_draft"):
         return f"Me: {content[:300]}" if content else ("Me: [sent a photo]" if m.get("media_urls") else None)
-    photo = "[sent a photo you cannot see]" if (m.get("media_urls") or m.get("has_media")) else ""
+    photo = (m.get("_photo_label") or "[sent a photo you cannot see]") if (m.get("media_urls") or m.get("has_media")) else ""
     if not content:
         return f"{first}: {photo}" if photo else None
     return f"{first}: {photo + ' ' if photo else ''}{content[:300]}"
@@ -264,6 +264,12 @@ async def load(db, conversation_id: str, first: str = "", inquiry: Optional[dict
     if not first:
         conv = await db.conversations.find_one({"_id": ObjectId(str(conversation_id))}, {"contact_name": 1}) if ObjectId.is_valid(str(conversation_id)) else None
         first = ((conv or {}).get("contact_name") or "").split(" ")[0]
+    if any(m.get("media_read") is not None for m in rows):
+        from services import mms_vision
+        if await mms_vision.enabled(db):
+            for m in rows:
+                if m.get("sender") == "contact" and m.get("media_read") is not None:
+                    m["_photo_label"] = mms_vision.thread_label(m)
     ids = {str(m.get("appraisal_id")) for m in rows if m.get("appraisal_id") and ObjectId.is_valid(str(m.get("appraisal_id")))}
     vehicles = {}
     if ids:

@@ -2218,17 +2218,23 @@ async def get_ai_suggestion_smart(conversation_id: str, request: Request, body: 
         from services.lead_context import get_conversation_inquiry, is_vehicle_inquiry, inquiry_prompt_block
         from services import thread_context as tc
         lead_inquiry = await get_conversation_inquiry(db, conv)
+        # Photos/files on the latest customer text: Jessi's reading of them when the switch is on (MMS Stage 2), else the Stage 1 notice
+        _last_in = await db.messages.find_one(
+            {"conversation_id": conversation_id, "sender": "contact"}, {"media_urls": 1, "num_media": 1, "content": 1},
+            sort=[("timestamp", -1)])
+        _photo = None
+        if _last_in and (_last_in.get("media_urls") or _last_in.get("num_media")):
+            from services import mms_vision
+            _photo = await mms_vision.photo_block(db, str(_last_in["_id"]), _last_in.get("content") or "", wait=15)
         view = await tc.load(db, conversation_id, conv.get("contact_name") or "", lead_inquiry)
         if body and body.get("topic_kind") in tc.KIND_LABEL:
             view.force(body["topic_kind"], str(body.get("topic") or "")[:120])
         lead_inquiry = view.inquiry_for_prompt(lead_inquiry)
         topic = view.summary()
         system_prompt += inquiry_prompt_block(lead_inquiry)
-        # Photos/files on the latest customer text: the model is text-only, so it is told it cannot see them (Stage 1 fallback)
-        _last_in = await db.messages.find_one(
-            {"conversation_id": conversation_id, "sender": "contact"}, {"media_urls": 1, "num_media": 1, "content": 1},
-            sort=[("timestamp", -1)])
-        if _last_in and (_last_in.get("media_urls") or _last_in.get("num_media")):
+        if _photo:
+            system_prompt += _photo["block"]
+        elif _last_in and (_last_in.get("media_urls") or _last_in.get("num_media")):
             from routers.ai_reply import attachment_notice
             system_prompt += attachment_notice(len(_last_in.get("media_urls") or []) or int(_last_in.get("num_media") or 1), _last_in.get("content") or "")
         vehicle_ok = is_vehicle_inquiry(lead_inquiry) and not (view.current and view.current.kind in ("software", "billing"))
@@ -2270,6 +2276,9 @@ async def get_ai_suggestion_smart(conversation_id: str, request: Request, body: 
                       else str(response)).strip('"\'')
         suggestion = no_em_dash(suggestion)
         suggestion = await clean_ai_text(suggestion, user_id)
+        if _photo:
+            from services.mms_vision import guard_private
+            suggestion = guard_private(suggestion, _photo)
 
         if suggestion:
             return {"suggestion": suggestion, "intent": "contextual", "topic": topic, "intel_rationale": intel_rationale}

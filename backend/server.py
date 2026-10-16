@@ -53,7 +53,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-BUILD = "2026-10-15.optout-calls"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
+BUILD = "2026-10-16.mms-vision"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
 app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix (same response class as the app, so its routes can be mounted without being rebuilt)
@@ -784,6 +784,8 @@ from routers import consent as consent_router, team_view as team_view_router
 api_router.include_router(consent_router.router)
 api_router.include_router(consent_router.public_router)
 api_router.include_router(team_view_router.router)
+from routers import jessi_vision as jessi_vision_router
+api_router.include_router(jessi_vision_router.router)
 from routers import owner as owner_router
 api_router.include_router(owner_router.router)
 from routers import scripts as scripts_router

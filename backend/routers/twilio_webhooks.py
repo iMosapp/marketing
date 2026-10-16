@@ -583,8 +583,8 @@ async def incoming_message(
         # ── Photos / PDFs the customer texted land in the contact's Files (fire-and-forget) ──
         if media_urls and contact_id:
             try:
-                from services.contact_files import file_inbound_media
-                asyncio.create_task(file_inbound_media(db, str(user_id), str(contact_id), str(msg_insert.inserted_id), media_urls, media_types))
+                from services.mms_vision import start_filing
+                start_filing(db, str(user_id), str(contact_id), str(msg_insert.inserted_id), media_urls, media_types, Body or "")
             except Exception as cf_err:
                 logger.warning(f"[ContactFiles] schedule failed: {cf_err}")
 
@@ -841,6 +841,7 @@ async def incoming_message(
                                         assigned_user_id=rep_user_id,
                                         incoming_message=Body,
                                         attachments=len(media_urls),
+                                        message_id=str(msg_insert.inserted_id),
                                         ai_assist_mode=ai_mode,
                                         escalation_threshold=int(campaign.get("escalation_threshold", 3)),
                                         escalation_timeout_minutes=int(campaign.get("escalation_timeout_minutes", 15)),
@@ -970,6 +971,7 @@ async def incoming_message(
                             assigned_user_id=user_id or enroll.get("user_id", ""),
                             incoming_message=Body,
                             attachments=len(media_urls),
+                            message_id=str(msg_insert.inserted_id),
                             ai_assist_mode=ai_mode,
                             escalation_threshold=int((camp or {}).get("escalation_threshold", 2)),
                             escalation_timeout_minutes=int((camp or {}).get("escalation_timeout_minutes", 15)),
@@ -1001,6 +1003,7 @@ async def incoming_message(
                             assigned_user_id=user_id or rep_user_id or "",
                             incoming_message=Body,
                             attachments=len(media_urls),
+                            message_id=str(msg_insert.inserted_id),
                             ai_assist_mode=mode,
                             escalation_threshold=3,
                             escalation_timeout_minutes=15,
