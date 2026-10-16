@@ -4,6 +4,11 @@ Your exact words, in order, and where each one stands. Newest at the bottom. Upd
 Legend: DONE = built + verified in preview · DEPLOY = needs backend deploy and/or `eas update` to reach production · USER = waiting on something only you can do.
 
 ---
+### 71 · Oct 16 — DONE
+> i need to push this to github but the integration isn't working ... yes create a zip folder for me
+
+Save to GitHub is stuck on the platform side (support steps given). Zip of the whole `marketing` folder (228 files, 46 MB, same files git would push, no node_modules/staging copy) at `{preview}/api/marketing-preview/download/imonsocial-marketing.zip`. It is wiped the next time `site/build.py preview` runs; rebuild it with `git ls-files --cached --others --exclude-standard marketing | grep -v ^marketing/build-preview/ | zip -q marketing/build-preview/download/imonsocial-marketing.zip -@`.
+
 ### 70 · Oct 16 — DONE · written into marketing/build · goes live when you update GitHub
 > Site approval. Soften the contact promise, restyle /developers with the same content, reword the homepage claim, yes remove the 7 old pages and write the new site into marketing/build, I'll update GitHub.
 
