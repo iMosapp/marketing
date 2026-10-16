@@ -850,6 +850,18 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
         response["sold_workflow"] = sold_result
     return response
 
+async def _contact_file_photo(photo_url: str, contact_id: str) -> str:
+    """A photo from this contact's own Files (never a private document) as a data URL, so the avatar gets proper sizes."""
+    import asyncio as _aio, base64 as _b64
+    from utils.image_storage import get_object
+    path = photo_url.split("/api/images/", 1)[1].split("?", 1)[0]
+    f = await get_db().contact_files.find_one({"path": path, "contact_id": contact_id, "kind": "image", "deleted": {"$ne": True}}, {"sensitive": 1})
+    if not f or f.get("sensitive"):
+        raise HTTPException(status_code=400, detail="That photo can't be used as a profile photo")
+    raw, ctype = await _aio.to_thread(get_object, path)
+    return f"data:{ctype or 'image/jpeg'};base64,{_b64.b64encode(raw).decode('ascii')}"
+
+
 @router.patch("/{user_id}/{contact_id}/profile-photo")
 async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...)):
     """Set a contact's profile photo from an existing photo URL."""
@@ -860,8 +872,10 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
 
     # If the source is a Twilio media proxy (customer-texted photo), it isn't durable —
     # download the bytes and re-upload to object storage so the avatar survives long-term.
+    _file_b64 = await _contact_file_photo(photo_url, contact_id) if "/api/images/contact-files/" in photo_url.lower() else None
     try:
         low = photo_url.lower()
+        _b64data = _file_b64
         if "media-proxy" in low or "api.twilio.com" in low:
             import httpx as _httpx, os as _os, urllib.parse as _urllib
             from routers.twilio_webhooks import allowed_media_url
@@ -878,6 +892,7 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
                 import base64 as _b64
                 _ctype = _resp.headers.get("content-type", "image/jpeg")
                 _b64data = f"data:{_ctype};base64,{_b64.b64encode(_resp.content).decode('ascii')}"
+        if _b64data:
                 from utils.image_storage import upload_image
                 _up = await upload_image(_b64data, prefix="contacts", entity_id=contact_id)
                 if _up:
@@ -1793,6 +1808,16 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
                 })
     except Exception as e:
         logger.warning(f"[photos/all] message media fetch failed: {e}")
+
+    # 6. Photos filed on the contact's Files (texted ones already show above; private documents never do)
+    try:
+        async for f in db.contact_files.find({"contact_id": contact_id, "kind": "image", "sensitive": {"$ne": True}, "deleted": {"$ne": True}, "source": {"$ne": "mms"}},
+                                             {"path": 1, "thumb_path": 1, "title": 1, "created_at": 1}).sort("created_at", -1).limit(100):
+            photos.append({"type": "file", "label": f.get("title") or "From Files", "url": f"/api/images/{f['path']}",
+                           "thumbnail_url": f"/api/images/{f.get('thumb_path') or f['path']}",
+                           "date": f["created_at"].isoformat() if f.get("created_at") else None})
+    except Exception as e:
+        logger.warning(f"[photos/all] files fetch failed: {e}")
 
     # Deduplicate by URL — keep first occurrence (profile > history > congrats > birthday)
     seen_urls = set()

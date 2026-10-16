@@ -13,25 +13,32 @@ type Props = { scan: any; values: Record<string, string>; setValue: (k: string, 
 
 const Label = ({ text, colors }: any) => <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.8, marginTop: 14, marginBottom: 6 }}>{text}</Text>;
 
+// The "Jessi found" header shared by the card and document reviews.
+export const ScanFound = ({ scan, colors }: { scan: any; colors: any }) => {
+  const thumb = resolvePhotoUrl(scan.thumb_url || scan.url) || '';
+  return (
+    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+      {!!thumb && <Image source={{ uri: thumb }} style={{ width: 64, height: 64, borderRadius: 10, backgroundColor: colors.card }} />}
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 0.8 }} {...tid('scan-found-label')}>{scan.doc_label && !scan.sensitive ? `JESSI FOUND · ${String(scan.doc_label).toUpperCase()}` : 'JESSI FOUND'}</Text>
+        <Text style={{ fontSize: 14, color: colors.text, marginTop: 3, lineHeight: 20 }} {...tid('scan-summary')}>
+          {scan.sensitive ? 'This looks like a private document (an ID, insurance or a financial form). Jessi did not keep any details from it.'
+            : scan.paused ? 'Jessi is not reading photos right now. Try again a little later.'
+            : scan.status !== 'ready' ? 'Jessi could not read this one. Try again in better light, flat and in focus.'
+            : scan.summary || scan.title || 'Read it.'}
+        </Text>
+        {scan.reused && <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }}>Same picture as before, so Jessi reused her reading.</Text>}
+      </View>
+    </View>
+  );
+};
+
 // Jessi found / suggested information (editable) / possible existing contacts / what to do with it.
 export const ScanReview = ({ scan, values, setValue, matches, colors, onCreate, onUpdate, onDiscard }: Props) => {
   const keys = ORDER.filter(k => k in values);
-  const thumb = resolvePhotoUrl(scan.thumb_url || scan.url) || '';
   return (
     <View {...tid('scan-review')}>
-      <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-        {!!thumb && <Image source={{ uri: thumb }} style={{ width: 64, height: 64, borderRadius: 10, backgroundColor: colors.card }} />}
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 0.8 }}>JESSI FOUND</Text>
-          <Text style={{ fontSize: 14, color: colors.text, marginTop: 3, lineHeight: 20 }} {...tid('scan-summary')}>
-            {scan.sensitive ? 'This looks like a private document (an ID, insurance or a financial form). Jessi did not keep any details from it.'
-              : scan.paused ? 'Jessi is not reading photos right now. Try again a little later.'
-              : scan.status !== 'ready' ? 'Jessi could not read this one. Try again in better light, flat and in focus.'
-              : scan.summary || scan.title || 'Read it.'}
-          </Text>
-          {scan.reused && <Text style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }}>Same picture as before, so Jessi reused her reading.</Text>}
-        </View>
-      </View>
+      <ScanFound scan={scan} colors={colors} />
 
       {scan.is_card && keys.length > 0 && (
         <>
@@ -52,11 +59,6 @@ export const ScanReview = ({ scan, values, setValue, matches, colors, onCreate, 
             ))}
           </View>
         </>
-      )}
-      {!scan.is_card && !scan.sensitive && scan.status === 'ready' && (
-        <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 12, lineHeight: 18 }} {...tid('scan-not-card')}>
-          This doesn't look like a business card. Scanning documents and other photos is coming next; for now add them from the contact's Files.
-        </Text>
       )}
 
       {matches.length > 0 && (

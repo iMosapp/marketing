@@ -27,12 +27,14 @@ class ScanChunk(BaseModel):
     name: str = ""
     content_type: str = "application/octet-stream"
     capture: Optional[str] = None
+    mode: str = "card"   # card | document (quote, invoice, service paper, screenshot)
 
 
 class SaveBody(BaseModel):
     contact_id: str
     fields: list = []
     values: dict = {}
+    reminders: list = []
 
 
 def _me(request: Request, user_id: str) -> dict:
@@ -82,14 +84,21 @@ async def upload_chunk(user_id: str, chunk: ScanChunk, request: Request):
     capture = chunk.capture if chunk.capture in ("camera", "library", "document") else "library"
     try:
         doc = await cf.save_file(db, user_id=user_id, contact_id="", name=chunk.name or "Scan", content_type=chunk.content_type, data=data,
-                                 hint="business_card", source="scan", capture=capture)
+                                 hint="business_card" if chunk.mode != "document" else None, source="scan", capture=capture)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"[Scan] save failed: {e}")
         raise HTTPException(status_code=500, detail="Could not store that photo")
     v = vi.view(doc, user_id)
-    return {"success": True, "received": chunk.total, "total": chunk.total, "scan": v, "matches": await vi.matches(db, me, v["fields"]) if v["is_card"] else []}
+    return {"success": True, "received": chunk.total, "total": chunk.total, "scan": v, "matches": await _matches(db, me, v)}
+
+
+async def _matches(db, me: dict, v: dict) -> list:
+    """Possible existing contacts: a card by phone / email / name; a document also by the company on it. None for private documents."""
+    if v["sensitive"] or v["status"] != "ready" or v["contact_id"]:
+        return []
+    return await vi.matches(db, me, v["fields"], company=not v["is_card"])
 
 
 @router.get("/{user_id}/{scan_id}")
@@ -97,7 +106,7 @@ async def get_scan(user_id: str, scan_id: str, request: Request):
     me = _me(request, user_id)
     db = get_db()
     v = vi.view(await _scan(db, user_id, scan_id), user_id)
-    return {"scan": v, "matches": await vi.matches(db, me, v["fields"]) if v["is_card"] and not v["contact_id"] else []}
+    return {"scan": v, "matches": await _matches(db, me, v)}
 
 
 @router.post("/{user_id}/{scan_id}/save")
@@ -115,7 +124,7 @@ async def save_scan(user_id: str, scan_id: str, body: SaveBody, request: Request
     contact = await db.contacts.find_one({"_id": ObjectId(body.contact_id), **(await get_data_filter(user_id))})
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
-    return {"ok": True, **await vi.save_to_contact(db, user_id, doc, contact, body.fields, body.values or {})}
+    return {"ok": True, **await vi.save_to_contact(db, user_id, doc, contact, body.fields, body.values or {}, body.reminders)}
 
 
 @router.delete("/{user_id}/{scan_id}")

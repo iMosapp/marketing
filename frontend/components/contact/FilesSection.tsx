@@ -39,7 +39,7 @@ export default function FilesSection({ contactId, colors, store, contact, onCont
   const [filter, setFilter] = useState<Filter>('all');
   const up = useContactFileUpload({ userId: user?._id, contactId, onSaved: (f) => {
     setFiles(prev => [f, ...(prev || [])]); showToast(f.title ? `Filed: ${f.title}` : 'Filed', 'success');
-    if (f.scan_type === 'business_card' && !f.sensitive && Object.keys(f.fields || {}).length) setOpenId(f.id);   // a card goes straight to review
+    if ((f.scan_type === 'business_card' && !f.sensitive && Object.keys(f.fields || {}).length) || f.reminders?.length) setOpenId(f.id);   // straight to review
   }, onError: (m) => showToast(m, 'error', 3500) });
   const cols = width >= 900 ? 5 : width >= 600 ? 4 : 3;
   const tile = Math.floor((Math.min(width, 1200) - 32 - (cols - 1) * 10) / cols);

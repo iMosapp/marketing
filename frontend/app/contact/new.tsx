@@ -76,11 +76,11 @@ export default function NewContactScreen() {
   // ── Scan with Jessi: a business card fills this form; after Save the card lands in their Files with the extra details ──
   const scanStatus = useScanStatus(user?._id);
   const [showScan, setShowScan] = useState(false);
-  const [scanFrom, setScanFrom] = useState<{ id: string; extras: Record<string, string>; values: Record<string, string> } | null>(null);
+  const [scanFrom, setScanFrom] = useState<{ id: string; extras: Record<string, string>; values: Record<string, string>; reminders: string[]; card: boolean } | null>(null);
   const pendingScan = useRef<string | null>(null);   // a card read but not saved yet: discarded if the rep leaves without saving
   useEffect(() => () => { if (pendingScan.current && user?._id) api.delete(`/scan/${user._id}/${pendingScan.current}`).catch(() => {}); }, [user?._id]);
   useEffect(() => { if (params.scan === '1' && scanStatus?.enabled) setShowScan(true); }, [params.scan, scanStatus?.enabled]);
-  const fillFromScan = (scan: any, v: Record<string, string>) => {
+  const fillFromScan = (scan: any, v: Record<string, string>, reminders: string[] = []) => {
     if (scanFrom && scanFrom.id !== scan.id) api.delete(`/scan/${user?._id}/${scanFrom.id}`).catch(() => {});   // a different card replaces the first one
     pendingScan.current = scan.id;
     const phone = v.phone || (!v.email ? v.phone_office : '') || '';
@@ -91,7 +91,7 @@ export default function NewContactScreen() {
     if (v.title) extras.title = v.title;
     if (v.website) extras.website = v.website;
     if (v.phone_office && v.phone_office !== phone) extras.phone_office = v.phone_office;
-    setScanFrom({ id: scan.id, extras, values: v });
+    setScanFrom({ id: scan.id, extras, values: v, reminders, card: !!scan.is_card });
     if (v.address_street || v.address_city) setShowMoreDetails(true);
     setShowScan(false);
     checkDuplicate(phone, v.email || '');
@@ -418,7 +418,7 @@ export default function NewContactScreen() {
 
       if (newId && scanFrom) {
         try {
-          await api.post(`/scan/${user._id}/${scanFrom.id}/save`, { contact_id: newId, fields: Object.keys(scanFrom.extras), values: { ...scanFrom.values, ...scanFrom.extras } });
+          await api.post(`/scan/${user._id}/${scanFrom.id}/save`, { contact_id: newId, fields: Object.keys(scanFrom.extras), values: { ...scanFrom.values, ...scanFrom.extras }, reminders: scanFrom.reminders });
           pendingScan.current = null;
         } catch { showToast('Contact saved, but the card was not added to their Files.', 'error', 4000); }
       }
@@ -488,8 +488,8 @@ export default function NewContactScreen() {
             <TouchableOpacity onPress={() => setShowScan(true)} style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: tint(GOLD, 0.5), backgroundColor: tint(GOLD, 0.08), padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }} data-testid="new-contact-scan-btn">
               <Ionicons name="scan" size={20} color={GOLD} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: TYPE.body, fontWeight: '800', color: colors.text }}>{scanFrom ? 'Scan a different card' : 'Scan a business card'}</Text>
-                <Text style={{ fontSize: TYPE.sub, color: colors.textSecondary }}>{scanFrom ? 'Filled in from the card. Check it and tap Save; the card goes in their Files.' : 'Jessi fills this in. You check it before saving.'}</Text>
+                <Text style={{ fontSize: TYPE.body, fontWeight: '800', color: colors.text }}>{scanFrom ? 'Scan something else' : 'Scan a business card'}</Text>
+                <Text style={{ fontSize: TYPE.sub, color: colors.textSecondary }}>{scanFrom ? `Filled in from the ${scanFrom.card ? 'card' : 'document'}. Check it and tap Save; it goes in their Files${scanFrom.reminders.length ? ' and your reminders are set' : ''}.` : 'Jessi fills this in. You check it before saving.'}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={GOLD} />
             </TouchableOpacity>
