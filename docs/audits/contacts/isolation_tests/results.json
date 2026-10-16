@@ -1,0 +1,65 @@
+{
+ "ran_at": "2026-10-16T20:10:42.446558+00:00",
+ "results": {
+  "same_phone_two_users_two_orgs": {
+   "status": "VERIFIED",
+   "detail": "two records, owners A/B, stored phones equal after normalisation=True, ownership_type=org"
+  },
+  "list_and_check_duplicate_scope": {
+   "status": "VERIFIED",
+   "detail": "list=200, check-duplicate=200, B record visible to A=False"
+  },
+  "idor_core_contact_routes": {
+   "status": "VERIFIED",
+   "detail": "B path as A=403, B contact under A path=404, B voice notes under A path=404, B Jessi history=403"
+  },
+  "idor_contact_subroutes": {
+   "status": "DEFECT",
+   "detail": "status codes={'GET personal-details': 200, 'GET photos/all': 200, 'GET photo/full': 404, 'GET campaign-journey': 200, 'PATCH toggle-automation': 200, 'PATCH personal-details': 200}; A read B private notes=True; A wrote B personal_details=True; A toggled B automation=True"
+  },
+  "jessi_memory_scan_scope": {
+   "status": "VERIFIED",
+   "detail": "A 'Jeep' hits=3 (A contact found=True, B contact found=False); B 'Jeep' hits=0; A search for B-only word hits=0"
+  },
+  "jessi_chat_find_by_event": {
+   "status": "VERIFIED",
+   "detail": "status=200; mentions A-only detail=True; mentions B-only detail=False"
+  },
+  "jessi_focus_contact_cross_org": {
+   "status": "DEFECT",
+   "detail": "rep A focus on B contact -> None; store manager of org X focus on org Y contact -> returned; chat as MX with B contact in focus: status=200, reply contains B-only detail=True"
+  },
+  "campaign_enroll_cross_user": {
+   "status": "VERIFIED",
+   "detail": "create campaign=403; enroll B contact into A campaign=404; enrollments on B contact=0"
+  },
+  "team_transfer_route": {
+   "status": "NOT REACHABLE",
+   "detail": "POST /api/team/transfer answers 404: routers/team.py is not mounted in server.py (dead code)"
+  },
+  "admin_bulk_transfer_route": {
+   "status": "DEFECT",
+   "detail": "rep A=403; store manager of org X moving an org Y rep's book=200; B contact moved=True"
+  },
+  "startup_phone_consolidation": {
+   "status": "DEFECT",
+   "detail": "synthetic: org Y rep B's unnamed 'Lead (0142)' would be folded into org X rep A's named contact=True; whole preview DB right now: 3 merges planned, 2 across different owners; preview records carrying the consolidation signature (merged_into set, status not merged)=1"
+  },
+  "concurrent_create_same_phone": {
+   "status": "PARTIAL",
+   "detail": "5 parallel manual creates -> 5 records (manual create never dedupes server-side; the app warns via check-duplicate first)"
+  },
+  "same_email_two_users": {
+   "status": "VERIFIED",
+   "detail": "same email kept on both records; ownership_type on a manual create=org"
+  },
+  "delete_contact_cascade": {
+   "status": "PARTIAL",
+   "detail": "delete=200, contact hard-deleted=True, records left pointing at the deleted id={'voice_notes': 1, 'contact_events': 1, 'tasks': 0}"
+  },
+  "idor_other_contact_routes_get_sweep": {
+   "status": "DEFECT",
+   "detail": "{'/contacts/{A}/{B_contact}/events': '200 LEAK', '/contacts/{A}/{B_contact}/share/text': '200 LEAK', '/contacts/{A}/{B_contact}/share/vcard': '200 LEAK', '/calls/{A}/contact/{B_contact}': '200', '/ai-outreach/relationship-brief/{A}/{B_contact}': '200 LEAK', '/ai-reply/history/{B_contact}': '200', '/consent/contact/{B_contact}': '404', '/crm-push/{A}/{B_contact}/preview': '200 LEAK', '/relationship-health/{A}/advocates/{B_contact}/thank': '200', '/sold-workflow/contact/{B_contact}': '200', '/home/draft/{A}/{B_contact}': '200'}; leaking=['/contacts/{A}/{B_contact}/events', '/contacts/{A}/{B_contact}/share/text', '/contacts/{A}/{B_contact}/share/vcard', '/ai-outreach/relationship-brief/{A}/{B_contact}', '/crm-push/{A}/{B_contact}/preview']"
+  }
+ }
+}
