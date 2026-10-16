@@ -419,6 +419,68 @@ async def enroll_group_now(db, user: dict, pending: dict):
     return f"Done. {n} {'person is' if n == 1 else 'people are'} on {pending['campaign']}.{miss}", opened
 
 
+# ── build / edit a campaign ───────────────────────────────────────────────────
+BRIEF_KEYS = ("goal", "audience", "trigger_tag", "length", "tone", "channels")
+
+
+async def build_campaign(db, user: dict, args: dict, focus: Optional[dict], live: Optional[dict]):
+    """Two or three quick questions (who, how long, tone) kept as a campaign_brief pending, then the draft is saved OFF and opened on screen."""
+    from fastapi import HTTPException
+    from services import campaign_builder as cb
+    prev = (live or {}).get("pending") if ((live or {}).get("pending") or {}).get("type") == "campaign_brief" else None
+    brief = dict((prev or {}).get("brief") or {})
+    for k in BRIEF_KEYS:
+        v = str(args.get(k) or "").strip()
+        if v:
+            brief[k] = v[:200]
+    asked = list((prev or {}).get("asked") or [])
+    said = (live or {}).get("_said") or ""
+    # the model's "go" is trusted only when we cannot see the rep's words; an answer like "3 weeks, 5 touches" is not a go-ahead
+    go = bool(cb.YOU_PICK.search(said) or cb.GO_AHEAD.search(said)) if said else bool(args.get("go"))
+    if brief.get("trigger_tag") and not brief.get("audience"):
+        brief["audience"] = f"anyone tagged {brief['trigger_tag']}"
+    if not go:
+        for key, question in cb.QUESTIONS:
+            if not brief.get(key) and key not in asked and len(asked) < 3:
+                asked.append(key)
+                lead = "Sure, let's build it. " if not prev else ""
+                pending = {"type": "campaign_brief", "brief": brief, "asked": asked, "name": "a new campaign", "content": f"building a campaign, asked about {key}", "at": lv._now().isoformat()}
+                return f"{lead}{question}", pending, None
+    try:
+        made = await cb.create(db, user, brief)
+    except HTTPException as e:
+        return f"I cannot build campaigns on your login: {str(e.detail).rstrip('. ')}. Ask your manager or admin to turn on campaign editing for you.", None, None
+    except Exception as e:
+        logger.warning(f"[Live] build_campaign failed: {e}")
+        return "I could not draft that one. Try me again in a second.", None, None
+    who = f" for anyone tagged {made['tag']}" if made["tag"] else ""
+    tag_note = "" if not made["tag"] or made["tag_exists"] else f" You do not have a {made['tag']} tag yet; it starts the first time you tag someone with it."
+    opened = {"kind": "campaign", "id": made["id"], "name": made["name"], "rev": lv._now().isoformat()}
+    return (f"Here is {made['name']}{who}: {cb.outline(made['touches'])} It is on your screen and switched off.{tag_note} "
+            "Tell me what to change, like make text 2 shorter or add a call on day 10, or edit it there and turn it on when you are happy."), None, opened
+
+
+async def edit_campaign(db, user: dict, args: dict, focus: Optional[dict], live: Optional[dict]):
+    from fastapi import HTTPException
+    from services import campaign_builder as cb
+    change = str(args.get("change") or (live or {}).get("_said") or "").strip()
+    camp = await cb.find_draft(db, user, args.get("campaign") or "")
+    if not camp:
+        return "Which campaign? Say its name, or ask me to build a new one.", None
+    opened = {"kind": "campaign", "id": str(camp["_id"]), "name": camp.get("name") or "", "rev": lv._now().isoformat()}
+    try:
+        res = await cb.edit(db, user, camp, change)
+    except HTTPException as e:
+        return str(e.detail), opened
+    except Exception as e:
+        logger.warning(f"[Live] edit_campaign failed: {e}")
+        return "I could not make that change. Try saying it another way.", opened
+    if not res["changed"]:
+        return f"I was not sure what to change in {camp.get('name')}. Say it like make text 2 shorter, add a call on day 10, or change the tone to casual.", opened
+    opened["name"] = res.get("name") or opened["name"]
+    return f"{res['summary']}. Now {cb.outline(res['touches'])} It is updated on your screen.", opened
+
+
 # ── card / review link ────────────────────────────────────────────────────────
 def _app_url() -> str:
     return (os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL") or "https://app.imonsocial.com").rstrip("/")

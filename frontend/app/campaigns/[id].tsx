@@ -27,7 +27,7 @@ type Sheet = 'touch' | 'replies' | 'trigger' | 'delivery' | 'rename' | 'trio' | 
 export default function CampaignEditorScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, rev } = useLocalSearchParams<{ id: string; rev?: string }>();
   const user = useAuthStore(s => s.user);
   const { showToast } = useToast();
   const quickLinks = useQuickLinks(user);
@@ -100,7 +100,7 @@ export default function CampaignEditorScreen() {
       else showToast(e?.response?.data?.detail || 'Could not load campaign', 'error');
     } finally { setLoading(false); }
   }, [id, user?._id]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, rev]);   // rev: Jessi just built or changed this plan by voice
 
   useEffect(() => {
     setWorkflow(triggerType === 'tag' && triggerTag ? workflows.find((w: any) => w.tag === triggerTag.toLowerCase()) || null : null);
@@ -417,7 +417,7 @@ export default function CampaignEditorScreen() {
       ) : null}
 
       {sheet === 'trio' && user ? (
-        <CustomerPreviewSheet userId={user._id} campaignId={id!} touches={touches} aiEnabled={aiEnabled} colors={colors} onClose={() => setSheet(null)} />
+        <CustomerPreviewSheet userId={user._id} campaignId={id!} touches={touches.filter(t => t.actionType !== 'call')} aiEnabled={aiEnabled} colors={colors} onClose={() => setSheet(null)} />
       ) : null}
 
       {sheet === 'met_at' && user ? (

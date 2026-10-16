@@ -13,6 +13,7 @@ import { PilotEngineCard, EngineMode } from '../../components/voice-pilot/PilotE
 import { PilotUsageCard } from '../../components/voice-pilot/PilotUsageCard';
 import { PilotKillCard } from '../../components/voice-pilot/PilotKillCard';
 import { PilotSessionsCard } from '../../components/voice-pilot/PilotSessionsCard';
+import { RolloutCard } from '../../components/voice-pilot/RolloutCard';
 
 const POLL_MS = 5000;
 
@@ -49,6 +50,7 @@ export default function VoicePilot() {
   const resume = () => act(() => api.post('/voice-controls/pilot/resume'));
   const leave = () => act(() => api.post('/voice-controls/pilot/leave'));
   const setMode = (mode: EngineMode) => act(() => api.post('/voice-controls/pilot/engine-mode', { mode }));
+  const rollout = (on: boolean) => act(() => api.post('/voice-controls/rollout', { on }));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} {...tid('voice-pilot-screen')}>
@@ -59,6 +61,7 @@ export default function VoicePilot() {
         {s && (
           <>
             <PilotStatusCard s={s} />
+            <RolloutCard s={s} busy={busy} onRollout={rollout} />
             <PilotEnrollCard s={s} busy={busy} onEnroll={enroll} onLeave={leave} />
             {s.enrolled && <PilotEngineCard s={s} busy={busy} onMode={setMode} />}
             {s.enrolled && <PilotKillCard s={s} busy={busy} onKill={kill} onResume={resume} />}

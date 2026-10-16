@@ -1007,6 +1007,27 @@ async def _advance_enrollment(db, send_doc: dict, campaign_doc: dict, now_naive,
         logger.warning(f"[Scheduler] Enrollment update failed: {ee}")
 
 
+async def _call_touch_task(db, send_doc: dict, step_goal: str, now) -> None:
+    """Campaign call touch: one "Call <name>" task per enrollment step (idempotent) with the plan's talking points."""
+    contact_id = send_doc.get("contact_id")
+    c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"status": 1}) if contact_id and ObjectId.is_valid(str(contact_id)) else None
+    if not c or c.get("status") in ("merged", "deleted"):
+        return
+    name = send_doc.get("contact_name") or "this customer"
+    enr8 = (send_doc.get("enrollment_id") or str(send_doc.get("_id", "")))[-8:]
+    idem = f"campaign_{send_doc.get('campaign_id')}_{contact_id}_{enr8}_{send_doc.get('step', 1)}"
+    points = (send_doc.get("message_template") or "").strip()
+    await db.tasks.update_one({"idempotency_key": idem}, {"$setOnInsert": {
+        "user_id": send_doc.get("user_id"), "contact_id": contact_id, "contact_name": name, "contact_phone": send_doc.get("contact_phone", ""),
+        "type": "call", "action_type": "call", "source": "campaign", "title": f"Call {name}"[:120],
+        "description": f"Campaign '{send_doc.get('campaign_name', '')}' step {send_doc.get('step', 1)}{': ' + step_goal if step_goal else ''}. {points}"[:600],
+        "suggested_message": points, "due_date": now, "priority": "high", "priority_order": 1, "status": "pending", "completed": False,
+        "campaign_id": send_doc.get("campaign_id"), "campaign_name": send_doc.get("campaign_name", ""), "pending_send_id": str(send_doc["_id"]),
+        "channel": "call", "created_at": now, "idempotency_key": idem,
+    }}, upsert=True)
+    logger.info(f"[Scheduler] CALL task for step {send_doc.get('step', 1)} to {name}")
+
+
 async def process_pending_campaign_steps():
     """
     Reads from the pre-scheduled campaign_pending_sends queue — no enrollment scan.
@@ -1173,6 +1194,12 @@ async def process_pending_campaign_steps():
                             await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=False, skipped=True)
                         logger.info(f"[Scheduler] Touch {send_id} {state}: {why}")
                         continue
+                if send_doc.get("action_type") == "call":   # a call touch is a dated task for the rep (talking points), never a text
+                    await _call_touch_task(db, send_doc, step_goal, now)
+                    await db.campaign_pending_sends.update_one({"_id": send_id}, {"$set": {"status": "pending_user_action", "processed_at": now_naive}})
+                    await _advance_enrollment(db, send_doc, campaign_doc, now_naive, now, message_content, "call", "manual", "pending")
+                    processed += 1
+                    continue
                 try:
                     guard_contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"opted_out": 1, "sms_opt_out": 1, "status": 1}) if contact_id and ObjectId.is_valid(str(contact_id)) else None
                     if guard_contact is None or guard_contact.get("status") in ("merged", "deleted") or guard_contact.get("opted_out") or guard_contact.get("sms_opt_out"):
