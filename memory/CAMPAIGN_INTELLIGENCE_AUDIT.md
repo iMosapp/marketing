@@ -58,9 +58,9 @@ None of the items below is "verified end-to-end in production": the production c
 10. **Relationship-aware suppression is advisory only.**
     - The fact engine knows "not shopping", "bought elsewhere" and "lost" (`services/intelligence/ingest.py:177-210`). This only reaches the AI writer as prompt text, and only when `INTEL_FACTS_INGEST` is on.
     - No hard skip exists for an upcoming service appointment, a recent same-topic conversation, a complaint, a traded vehicle or a changed owner.
-11. **Scale basics are missing.**
-    - There are no indexes on `campaign_pending_sends` or `campaign_enrollments` (none in `services/index_setup.py`).
-    - The claim loop runs 50 sorted `find_one_and_update` calls every 5 minutes. That works now and becomes a collection scan at thousands of rows.
+11. **Some scale basics are missing.**
+    - *Correction (Phase 1 build):* the queue indexes do exist, created in `server.py` (`campaign_pending_sends {status, send_at}`, `{enrollment_id, status}`; `campaign_enrollments {campaign_id, contact_id, status}`).
+    - `messages` had no `contact_id` index, so the "customer is waiting on a reply" guard scanned the collection for every touch. Added in Phase 1.
     - There is no per-org throttling. Quiet hours use the rep's timezone, not the customer's (`scheduler.py:1181-1208`).
 12. **Test coverage is broad but not deterministic.**
     - 43 campaign, date, sold and lease test files exist. Most are live HTTP tests against the preview.
@@ -144,7 +144,7 @@ None of the items below is "verified end-to-end in production": the production c
 | Quiet hours | PARTIAL [TEST] `test_quiet_hours.py`: 8am-9pm in the REP's timezone, auto mode only | `:1181-1208` |
 | DST | PARTIAL: delays are absolute UTC offsets, so local send time drifts 1 h across DST; quiet window re-defers | |
 | Org throttling / rate limits | MISSING | |
-| Indexes | MISSING for pending sends / enrollments | `services/index_setup.py` |
+| Indexes | WORKING (queue indexes in `server.py` startup); `messages.contact_id` index was missing (added in Phase 1) | `server.py:2060-2100` |
 | Carrier receipts | WORKING: `delivery_status` delivered/undelivered on the pending row | `twilio_webhooks.py:1254-1265` |
 | Manual / approval mode | WORKING: `delivery_mode` manual creates a `campaign_send` task at due time, message generated then and frozen on the row; no expiry | `scheduler.py:1397-1469`, `frontend/app/campaigns/pending-send/[id].tsx` |
 
@@ -218,7 +218,7 @@ Most of these are live HTTP tests: they need the running preview and write data.
 | R7 | P1 | Sold anchor = tag time | Anchor to the purchase record date (`purchase_history` / `date_sold`); missing -> flag + rep task to confirm, don't guess |
 | R8 | P1 | Twilio failures terminal; no classification | Classify (permanent: invalid number / STOP; transient: 5xx / rate limit) and retry transient with backoff |
 | R9 | P1 | Quiet hours in rep timezone, auto only | Contact timezone (from area code / address, fallback store, then rep); apply to every customer touch incl. manual tasks' suggested time |
-| R10 | P1 | No indexes | `campaign_pending_sends {status, send_at}`, `{enrollment_id, step}` unique touch key, `{message_sid}`; `campaign_enrollments {campaign_id, contact_id, status}` |
+| R10 | P1 | (corrected) queue indexes exist; `messages.contact_id` missing | Add `messages {contact_id, timestamp}`, `campaign_pending_sends {enrollment_id, step}` and `{status, locked_at}` |
 | R11 | P1 | Two date systems + Sold wizard + campaigns can overlap | One date-event resolver; cross-campaign "same event same day" guard extended to all paths |
 | R12 | P2 | Feb 29, DST drift, no org throttling, no backlog alerts | Feb 28 in non-leap years (configurable); schedule in contact local time; per-org send rate; health alerts |
 | R13 | P2 | Dead `campaign_lifecycle.py` with drifted schema | Remove after confirming no callers (tests only) |

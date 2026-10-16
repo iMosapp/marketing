@@ -6,12 +6,12 @@ import { GOLD, tid } from '../inbox/ownership';
 import { ScanMatch } from '../../hooks/useScanWithJessi';
 
 export type PickedContact = { id: string; name: string };
-type Props = { userId?: string; matches: ScanMatch[]; selected: PickedContact | null; onSelect: (c: PickedContact) => void; colors: any };
+type Props = { userId?: string; matches: ScanMatch[]; selected: PickedContact | null; onSelect: (c: PickedContact) => void; colors: any; label?: string };
 
 const nameOf = (c: any) => `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.phone || 'Unnamed';
 
 // Who the document is for: Jessi's guesses first (same name, phone, email or company), or search your contacts.
-export const ScanContactPicker = ({ userId, matches, selected, onSelect, colors }: Props) => {
+export const ScanContactPicker = ({ userId, matches, selected, onSelect, colors, label = 'WHO IS IT FOR?' }: Props) => {
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<any[]>([]);
   useEffect(() => {
@@ -28,7 +28,7 @@ export const ScanContactPicker = ({ userId, matches, selected, onSelect, colors 
   ];
   return (
     <View style={{ marginTop: 14 }} {...tid('scan-contact-picker')}>
-      <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.8, marginBottom: 6 }}>WHO IS IT FOR?</Text>
+      <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.8, marginBottom: 6 }}>{label}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 12, marginBottom: 8 }}>
         <Ionicons name="search" size={16} color={colors.textSecondary} />
         <TextInput value={q} onChangeText={setQ} placeholder="Search your contacts" placeholderTextColor={colors.textSecondary} autoCorrect={false}

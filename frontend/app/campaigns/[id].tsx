@@ -15,12 +15,13 @@ import { TouchTimeline } from '../../components/campaigns/TouchTimeline';
 import { PeopleInPlan, Enrollment } from '../../components/campaigns/PeopleInPlan';
 import { TradeTriggerPicker, tradeTriggerSummary } from '../../components/campaigns/TradeTriggerPicker';
 import { useQuickLinks } from '../../components/campaigns/useQuickLinks';
+import { CustomerPreviewSheet } from '../../components/campaigns/CustomerPreviewSheet';
 import {
   Touch, normalizeTouches, touchesToSequences, newTouch, touchMinutes, summarizeTouches, isDateCampaign, dateTypeOf, DATE_TYPES,
   REPLY_MODES, REPLY_SHORT, DELIVERY_MODES, isAutoDelivery, tagColor, scopeLabel, DEFAULT_SAMPLE, Sample, GOLD, GREEN, RED, AMBER, tid,
 } from '../../components/campaigns/utils';
 
-type Sheet = 'touch' | 'replies' | 'trigger' | 'delivery' | 'rename' | null;
+type Sheet = 'touch' | 'replies' | 'trigger' | 'delivery' | 'rename' | 'trio' | null;
 
 export default function CampaignEditorScreen() {
   const { colors } = useThemeStore();
@@ -319,6 +320,8 @@ export default function CampaignEditorScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Eyebrow colors={colors} style={{ flex: 1 }}>TIMELINE · {touches.length} {touches.length === 1 ? 'TOUCH' : 'TOUCHES'}</Eyebrow>
             {touches.length ? <Chip label={preview ? `Previewing as ${sample.first_name}` : 'Preview'} icon={preview ? 'eye' : 'eye-outline'} active={preview} colors={colors} testId="campaign-preview-toggle" onPress={() => setPreview(p => !p)} /> : null}
+            {touches.length ? <View style={{ width: 8 }} /> : null}
+            {touches.length ? <Chip label="3 customers" icon="people-outline" colors={colors} testId="campaign-trio-open" onPress={() => setSheet('trio')} /> : null}
           </View>
           {touches.length === 0 ? (
             <View style={{ backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 18, alignItems: 'center', gap: 10 }} {...tid('campaign-no-touches')}>
@@ -402,6 +405,10 @@ export default function CampaignEditorScreen() {
             </View>
           )}
         </SheetShell>
+      ) : null}
+
+      {sheet === 'trio' && user ? (
+        <CustomerPreviewSheet userId={user._id} campaignId={id!} touches={touches} aiEnabled={aiEnabled} colors={colors} onClose={() => setSheet(null)} />
       ) : null}
 
       {sheet === 'rename' ? (

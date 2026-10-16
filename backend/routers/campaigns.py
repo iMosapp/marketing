@@ -968,7 +968,10 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Campaign not found")
-    
+    if update_dict.get("active") is True:   # touches held while the plan was paused go back to the queue
+        from services.campaign_reliability import resume_campaign
+        await resume_campaign(get_db(), campaign_id)
+
     return {"message": "Campaign updated successfully"}
 
 @router.delete("/{user_id}/{campaign_id}")

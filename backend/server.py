@@ -737,6 +737,8 @@ api_router.include_router(training_reports.router)
 api_router.include_router(seo.router)
 api_router.include_router(geo.router)
 api_router.include_router(va_profiles.router)
+from routers import campaign_preview as campaign_preview_router  # noqa: E402
+api_router.include_router(campaign_preview_router.router)
 from routers import agents as agents_router
 api_router.include_router(agents_router.router)
 from routers import voice_memos as voice_memos_router
@@ -2058,6 +2060,7 @@ async def startup_event():
                         _ensure_idx(db.conversations, [("user_id", 1), ("status", 1)]),
                         # Messages - thread loading
                         _ensure_idx(db.messages, [("conversation_id", 1), ("timestamp", -1)]),
+                        _ensure_idx(db.messages, [("contact_id", 1), ("timestamp", -1)]),  # campaign "waiting on a reply" guard + previews
                         # Contact events & photos
                         _ensure_idx(db.contact_photos, "contact_id", unique=True),
                         _ensure_idx(db.contact_events, [("user_id", 1), ("timestamp", -1)]),
@@ -2095,6 +2098,8 @@ async def startup_event():
                         # New pre-scheduled queue index — powers the scheduler's primary query
                         _ensure_idx(db.campaign_pending_sends, [("status", 1), ("send_at", 1)]),
                         _ensure_idx(db.campaign_pending_sends, [("enrollment_id", 1), ("status", 1)]),
+                        _ensure_idx(db.campaign_pending_sends, [("enrollment_id", 1), ("step", 1)]),
+                        _ensure_idx(db.campaign_pending_sends, [("status", 1), ("locked_at", 1)]),
                         _ensure_idx(db.tasks, [("contact_id", 1), ("user_id", 1), ("type", 1)]),
                         _ensure_idx(db.congrats_cards_sent, [("contact_id", 1), ("user_id", 1)]),
                         _ensure_idx(db.messages, [("_id", 1)]),  # Ensures batch message lookups are instant
