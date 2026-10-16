@@ -1032,3 +1032,7 @@ DELIVERY: backend deploy + eas update --branch production.
 - Profile photo: file sheet "Use as profile photo" (plain photos only); gallery gets a Files section; `PATCH /contacts/{uid}/{cid}/profile-photo` now checks the contact is in the caller's scope (was open) and any URL mentioning contact-files must be an exact non-private image of that contact (re-uploaded to proper avatar sizes).
 - Live Jessi bar: swipe down -> 44pt gold dot beside Home (pulses when live), tap dot -> bar back, auto-restores on the silence warning / end; short drags don't open the sheet.
 - SHIP: Deploy (backend) + eas update (owner, from the Mac).
+
+## Campaign Intelligence & Automation, Phase 1 READ-ONLY audit (Oct 16 2026) - DONE, awaiting owner approval (no code changed)
+- Report: `/app/memory/CAMPAIGN_INTELLIGENCE_AUDIT.md` (A-J + decisions). Top findings: pause doesn't stop queued touches; crashed `processing` rows never recovered; no lateness cap; guardrails fail open; AI failure falls back to template/"Hi {name}!"; Sold anchored to tag time; open writes on global clone prompt / campaign-config / scheduler trigger; suppression only advisory; no indexes on campaign_pending_sends; six parallel message paths (campaign_lifecycle.py is dead/unmounted). sender_policy IS wired via outbound_gate (corrects Oct 15 audit).
+- Proposed phases: 0 harness, 1 execution reliability, 2 permissions + unified model/versions, 3 Personal VA identity, 4 JIT generation + suppression + ai_usage ledger, 5 triggers/dates, 6 voice builder, 7 manual builder/templates, 8 monitoring.
