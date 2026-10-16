@@ -786,6 +786,8 @@ api_router.include_router(consent_router.public_router)
 api_router.include_router(team_view_router.router)
 from routers import jessi_vision as jessi_vision_router
 api_router.include_router(jessi_vision_router.router)
+from routers import visual_scans as visual_scans_router
+api_router.include_router(visual_scans_router.router)
 from routers import owner as owner_router
 api_router.include_router(owner_router.router)
 from routers import scripts as scripts_router

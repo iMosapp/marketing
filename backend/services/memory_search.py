@@ -149,7 +149,7 @@ async def scan(db, user: dict, terms: list, days: Optional[int] = None) -> list:
             hits.append({"source": "note", "contact_id": str(c["_id"]), "who": "note", "when": _when(c.get("updated_at")), "quote": snip, "ref": str(c["_id"])})
 
     # files and photos Jessi read (business cards, VIN plates, PDFs); sensitive ones only when the searcher filed them
-    q = {"user_id": {"$in": owners}, "deleted": {"$ne": True}, "$or": [{"text": mongo_rx}, {"summary": mongo_rx}, {"name": mongo_rx}, {"title": mongo_rx}]}
+    q = {"user_id": {"$in": owners}, "deleted": {"$ne": True}, "contact_id": {"$nin": ["", None]}, "$or": [{"text": mongo_rx}, {"summary": mongo_rx}, {"name": mongo_rx}, {"title": mongo_rx}]}
     if since:
         q["created_at"] = {"$gte": since}
     async for f in db.contact_files.find(q, {"text": 1, "summary": 1, "name": 1, "title": 1, "contact_id": 1, "created_at": 1, "sensitive": 1, "user_id": 1}).sort("created_at", -1).limit(120):

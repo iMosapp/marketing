@@ -29,7 +29,8 @@ OPEN_TOKEN_SECONDS = 60 * 60
 SCAN_TYPES = {"business_card": "Business card", "vin": "VIN / odometer", "trade_in": "Trade-in photos", "id_document": "Driver's license / ID",
               "insurance_card": "Insurance card", "credit_app": "Credit application", "receipt": "Receipt / invoice", "document": "Document", "photo": "Photo"}
 SENSITIVE_TYPES = {"id_document", "insurance_card", "credit_app"}
-FIELD_LABELS = {"first_name": "First name", "last_name": "Last name", "company": "Company", "title": "Job title", "phone": "Phone", "email": "Email", "website": "Website",
+FIELD_LABELS = {"first_name": "First name", "last_name": "Last name", "company": "Company", "title": "Job title", "phone": "Phone", "phone_office": "Office phone",
+                "email": "Email", "website": "Website",
                 "address_street": "Street", "address_city": "City", "address_state": "State", "address_zip": "ZIP", "vin": "VIN", "year": "Year", "make": "Make", "model": "Model",
                 "trim": "Trim", "mileage": "Mileage", "color": "Color", "plate": "Plate", "birthday": "Birthday"}
 
@@ -43,7 +44,8 @@ READ_SYSTEM = (
     "Say so if it is blurry or unclear. Never guess who a person is\",\n"
     " \"confidence\": number from 0 to 1, how sure you are about what this shows,\n"
     " \"sensitive\": true when it shows a government ID, social security or tax number, bank, card or account numbers, an insurance policy or a signed financial form,\n"
-    " \"fields\": {only keys you can read with confidence: first_name, last_name, company, title, phone, email, website, address_street, address_city, address_state, address_zip, "
+    " \"fields\": {only keys you can read with confidence: first_name, last_name, company, title, phone (the mobile or only number), phone_office (a "
+    "second office, main or direct line when the card shows two), email, website, address_street, address_city, address_state, address_zip, "
     "vin, year, make, model, trim, mileage, color, plate, birthday (YYYY-MM-DD)},\n"
     " \"facts\": [at most 3 lasting details about the CUSTOMER a salesperson would still want to know months from now (what they drive or own, a "
     "product they want, a project they are working on), each {\"field\": vehicle_details (a vehicle or piece of "
@@ -242,10 +244,11 @@ def public(doc: dict, caller_id: str) -> dict:
 
 async def save_file(db, *, user_id: str, contact_id: str, name: str, content_type: str, data: bytes, hint: Optional[str] = None,
                     source: str = "upload", message_id: Optional[str] = None, caption: str = "", do_read: bool = True,
-                    timeout: float = 90, retries: int = 0, not_read_reason: str = "not_read", i: Optional[int] = None) -> dict:
+                    timeout: float = 90, retries: int = 0, not_read_reason: str = "not_read", i: Optional[int] = None, capture: Optional[str] = None) -> dict:
     """Store + read one file. Raises ValueError for unsupported or oversized files.
-    The same photo filed again on the same contact reuses the earlier reading (no second model call). The emergency Pause All stores the file
-    without reading it. Every read is cost-logged, and so is every texted image (read or not), so the report counts what came in."""
+    contact_id "" = a Scan with Jessi item not saved to anyone yet (owner-only, see services.visual_intel); capture = camera | library | document.
+    The same image filed again by the same rep (or on the same contact) reuses the earlier reading (no second model call). The emergency
+    Pause All stores the file without reading it. Every read is cost-logged, and so is every texted image (read or not)."""
     if len(data) > MAX_BYTES:
         raise ValueError(f"That file is over {MAX_BYTES // (1024 * 1024)} MB")
     if not data:
@@ -254,7 +257,7 @@ async def save_file(db, *, user_id: str, contact_id: str, name: str, content_typ
     if not kind:
         raise ValueError("Only photos and PDFs can be filed for now")
     fid = ObjectId()
-    base = f"contact-files/{user_id}/{contact_id}/{fid}"
+    base = f"contact-files/{user_id}/{contact_id or '_scans'}/{fid}"
     thumb_path, pages, dims = None, 0, (0, 0)
     if kind == "image":
         try:
@@ -278,12 +281,15 @@ async def save_file(db, *, user_id: str, contact_id: str, name: str, content_typ
            "pages": pages, "path": path, "thumb_path": thumb_path, "scan_type": hint if hint in SCAN_TYPES else "document" if kind == "pdf" else "photo", "hint": hint,
            "sensitive": hint in SENSITIVE_TYPES, "status": "reading", "source": source, "message_id": message_id, "created_at": now, "applied": [],
            "sha256": hashlib.sha256(data).hexdigest()}
+    if capture:
+        doc["capture"] = capture
     if doc["sensitive"]:
         doc["expires_at"] = now + timedelta(days=SENSITIVE_TTL_DAYS)
     await db.contact_files.insert_one(doc)
     from services import mms_vision
     read, cached, attempts, t0 = {}, False, 0, time.monotonic()
-    prev = await db.contact_files.find_one({"contact_id": contact_id, "sha256": doc["sha256"], "status": "ready", "deleted": {"$ne": True}, "_id": {"$ne": fid}},
+    same = [{"user_id": user_id}] + ([{"contact_id": contact_id}] if contact_id else [])
+    prev = await db.contact_files.find_one({"$or": same, "sha256": doc["sha256"], "status": "ready", "deleted": {"$ne": True}, "_id": {"$ne": fid}},
                                            {"scan_type": 1, "title": 1, "summary": 1, "visible": 1, "confidence": 1, "text": 1, "fields": 1, "sensitive": 1, "pages": 1, "facts": 1})
     is_paused = bool(do_read and not prev and await mms_vision.paused(db))
     if prev:
@@ -301,7 +307,8 @@ async def save_file(db, *, user_id: str, contact_id: str, name: str, content_typ
     if cached or attempts or source == "mms":
         scale = min(1.0, 1600 / max(dims)) if max(dims) else 1.0
         reason = "" if read else "unreadable" if attempts else "paused" if is_paused else not_read_reason
-        await mms_vision.record_usage(db, user_id=user_id, contact_id=contact_id, message_id=message_id, file_id=str(fid), source=source, ok=bool(read),
+        await mms_vision.record_usage(db, user_id=user_id, contact_id=contact_id, message_id=message_id, file_id=str(fid),
+                                      source=f"scan_{capture or 'library'}" if source == "scan" else source, ok=bool(read),
                                       cached=cached, analyzed=bool(attempts), attempts=attempts, i=i, ms=int((time.monotonic() - t0) * 1000),
                                       width=int(dims[0] * scale), height=int(dims[1] * scale), prompt_chars=chars[0], output_chars=chars[1], reason=reason)
     upd = {"status": "ready" if read else "unread"}
@@ -314,6 +321,8 @@ async def save_file(db, *, user_id: str, contact_id: str, name: str, content_typ
             upd.update({"sensitive": True, "expires_at": now + timedelta(days=SENSITIVE_TTL_DAYS)})
     await db.contact_files.update_one({"_id": fid}, {"$set": upd})
     doc.update(upd)
+    if not contact_id:   # a scan lands on the timeline when the rep saves it to a contact
+        return doc
     try:
         sens = bool(doc.get("sensitive"))   # the timeline is visible to everyone who sees the contact: private documents stay generic
         label = "Private document" if sens else SCAN_TYPES.get(doc.get("scan_type") or "", "File")
@@ -346,10 +355,13 @@ async def destroy_file(db, doc: dict, reason: str = "deleted"):
 
 
 async def purge_expired(db) -> int:
-    """Daily: sensitive documents past their 30 days are destroyed."""
+    """Daily: sensitive documents past their 30 days are destroyed, and so are Scan with Jessi items never saved to a contact after 30 days."""
     n = 0
     async for doc in db.contact_files.find({"sensitive": True, "deleted": {"$ne": True}, "expires_at": {"$lt": _now()}}):
         await destroy_file(db, doc, "expired")
+        n += 1
+    async for doc in db.contact_files.find({"contact_id": "", "deleted": {"$ne": True}, "created_at": {"$lt": _now() - timedelta(days=SENSITIVE_TTL_DAYS)}}):
+        await destroy_file(db, doc, "scan_not_saved")
         n += 1
     if n:
         logger.info(f"[ContactFiles] purged {n} expired sensitive files")
@@ -377,16 +389,25 @@ async def apply_fields(db, doc: dict, contact: dict, wanted: list) -> dict:
             sets["occupation"] = v
         elif k == "website":
             pd["website"] = v
-        elif k == "phone":
-            if not contact.get("phone"):
-                sets["phone"] = f"+1{v}" if len(v) == 10 else v
+        elif k in ("phone", "phone_office"):
+            num = f"+1{v}" if len(re.sub(r"\D", "", v)) == 10 and not v.startswith("+") else v
+            have = [contact.get("phone") or ""] + [p.get("number") or "" for p in (sets.get("phones") or contact.get("phones") or []) if isinstance(p, dict)]
+            if any(re.sub(r"\D", "", h)[-10:] == re.sub(r"\D", "", num)[-10:] for h in have if h):
+                continue   # already on the contact
+            if k == "phone" and not contact.get("phone") and "phone" not in sets:
+                sets["phone"] = num
             else:
-                sets["phones"] = (contact.get("phones") or []) + [{"label": "work", "number": f"+1{v}" if len(v) == 10 else v}]
-        elif k == "email":
+                sets["phones"] = (sets.get("phones") or contact.get("phones") or []) + [{"label": "work", "number": num}]
+        elif k == "email":   # added next to what is saved, never replaces an email
+            have = [str(contact.get(x) or "").lower() for x in ("email", "email_work")] + [str(e.get("value") or "").lower() for e in contact.get("emails") or [] if isinstance(e, dict)]
+            if v.lower() in have:
+                continue
             if not contact.get("email"):
                 sets["email"] = v
-            else:
+            elif not contact.get("email_work"):
                 sets["email_work"] = v
+            else:
+                sets["emails"] = (contact.get("emails") or []) + [{"label": "work", "value": v}]
         elif k in ("vin", "year", "make", "model", "trim", "mileage", "color", "plate"):
             line = _vehicle_line(f)
             if line and "vehicle" not in sets:

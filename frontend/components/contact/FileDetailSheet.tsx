@@ -13,16 +13,19 @@ const RED = '#FF3B30';
 const when = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); };
 
 // One file: preview, what Jessi read, the details she can add to the contact, type, sensitive lock, delete.
-// Name fields replace the contact's own name, so they are never pre-ticked once the contact has one (a referral's card must not rename Sarah).
-const CURRENT: Record<string, (c: any) => string> = { first_name: c => c?.first_name || '', last_name: c => c?.last_name || '', company: c => c?.employer || '', title: c => c?.occupation || '' };
+// Only empty slots are pre-ticked: anything that would replace a saved value (a name, address, vehicle...) waits for the rep's tick.
+const CURRENT: Record<string, (c: any) => string> = { first_name: c => c?.first_name || '', last_name: c => c?.last_name || '', company: c => c?.employer || '', title: c => c?.occupation || '',
+  website: c => c?.personal_details?.website || '', address_street: c => c?.address_street || '', address_city: c => c?.address_city || '', address_state: c => c?.address_state || '', address_zip: c => c?.address_zip || '' };
+const VEHICLE = ['vin', 'year', 'make', 'model', 'trim', 'mileage', 'color', 'plate'];
+const ADDS = ['phone', 'phone_office', 'email'];   // added next to what is saved, never replace it
+const hasValue = (k: string, c: any) => !!(CURRENT[k]?.(c) || (VEHICLE.includes(k) && c?.vehicle) || (k === 'birthday' && c?.birthday));
 
 export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sensitiveTypes, ttlDays, contact, onClose, onChanged, onDeleted, onApplied, showToast }: Props) => {
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [showText, setShowText] = useState(false);
   const [name, setName] = useState('');
-  const hasName = !!(contact?.first_name || contact?.last_name);
-  useEffect(() => { if (file) { setPicked(Object.keys(file.fields || {}).filter(k => !(file.applied || []).includes(k) && !(hasName && (k === 'first_name' || k === 'last_name')))); setShowText(false); setName(file.title || file.name || ''); } }, [file?.id]);
+  useEffect(() => { if (file) { setPicked(Object.keys(file.fields || {}).filter(k => !(file.applied || []).includes(k) && (ADDS.includes(k) || !hasValue(k, contact)))); setShowText(false); setName(file.title || file.name || ''); } }, [file?.id]);
   const url = useMemo(() => resolvePhotoUrl(file?.url) || '', [file?.url]);
   if (!file) return null;
 
