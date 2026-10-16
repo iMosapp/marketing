@@ -37,7 +37,9 @@ def _set(mongo, on):
     if on is None:
         mongo.settings.delete_one({"key": KEY})
     else:
-        mongo.settings.update_one({"key": KEY}, {"$set": {"key": KEY, "enabled": on}}, upsert=True)
+        # Photo Replies on (test org rollout for the QA org) or off; Photo Intelligence stays off here
+        mongo.settings.replace_one({"key": KEY}, {"key": KEY, "replies": "test_orgs" if on else "off", "intelligence": "off", "paused": False,
+                                                  "test_org_ids": [QA_ORG_A]}, upsert=True)
 
 
 @pytest.fixture(scope="module")
@@ -95,35 +97,40 @@ def _photo_notes(mongo, conv):
 def test_settings_unset_is_off_and_role_gates(super_admin, store_manager, org_admin, rep, mongo):
     _set(mongo, None)
     code, d = super_admin.get("/api/jessi-vision/settings")
-    assert code == 200 and d["enabled"] is False and d["model"] == "openai/gpt-5.4"
+    assert code == 200 and (d["replies"], d["intelligence"], d["paused"], d["test_orgs"]) == ("off", "off", False, []) and d["model"] == "openai/gpt-5.4"
     assert anon("GET", "/api/jessi-vision/settings")[0] == 401
-    assert anon("PUT", "/api/jessi-vision/settings", {"enabled": True})[0] == 401
+    assert anon("PUT", "/api/jessi-vision/settings", {"replies": "all"})[0] == 401
+    assert anon("POST", "/api/jessi-vision/test-orgs/mine", {})[0] == 401
     assert anon("GET", "/api/jessi-vision/usage")[0] == 401
     for s in (rep, store_manager, org_admin):
         assert s.get("/api/jessi-vision/settings")[0] == 403, s.email
-        assert s.put("/api/jessi-vision/settings", {"enabled": True})[0] == 403, s.email
+        assert s.put("/api/jessi-vision/settings", {"replies": "all"})[0] == 403, s.email
+        assert s.post("/api/jessi-vision/test-orgs/mine", {})[0] == 403, s.email
+        assert s.delete("/api/jessi-vision/test-orgs/org_001")[0] == 403, s.email
         assert s.get("/api/jessi-vision/usage?days=7")[0] == 403, s.email
     assert mongo.settings.find_one({"key": KEY}) is None, "a non-super-admin PUT created the switch"
 
 
 def test_settings_put_persists_and_validates(super_admin, mongo):
-    code, d = super_admin.put("/api/jessi-vision/settings", {"enabled": True})
-    assert code == 200 and d["enabled"] is True and d["updated_by"] and d["updated_at"]
-    assert mongo.settings.find_one({"key": KEY})["enabled"] is True
-    assert super_admin.get("/api/jessi-vision/settings")[1]["enabled"] is True
+    code, d = super_admin.put("/api/jessi-vision/settings", {"replies": "all", "intelligence": "test_orgs"})
+    assert code == 200 and d["replies"] == "all" and d["intelligence"] == "test_orgs" and d["updated_by"] and d["updated_at"]
+    assert mongo.settings.find_one({"key": KEY})["replies"] == "all"
+    assert super_admin.get("/api/jessi-vision/settings")[1]["intelligence"] == "test_orgs"
     assert super_admin.put("/api/jessi-vision/settings", {})[0] == 422
-    assert super_admin.put("/api/jessi-vision/settings", {"enabled": "maybe"})[0] == 422
-    code, d = super_admin.put("/api/jessi-vision/settings", {"enabled": False})
-    assert code == 200 and d["enabled"] is False and mongo.settings.find_one({"key": KEY})["enabled"] is False
+    assert super_admin.put("/api/jessi-vision/settings", {"replies": "maybe"})[0] == 422
+    assert super_admin.put("/api/jessi-vision/settings", {"paused": "maybe"})[0] == 422
+    code, d = super_admin.put("/api/jessi-vision/settings", {"replies": "off", "intelligence": "off"})
+    assert code == 200 and d["replies"] == "off" and mongo.settings.find_one({"key": KEY})["intelligence"] == "off"
 
 
 def test_usage_aggregates_per_org(super_admin, mongo):
     org = "TEST_org_398"
     now = datetime.utcnow()
-    rows = [{"organization_id": org, "ok": True, "cached": False, "est_cost_usd": 0.0021, "created_at": now, "contact_id": "TEST_398"},
-            {"organization_id": org, "ok": True, "cached": True, "est_cost_usd": 0.0, "created_at": now, "contact_id": "TEST_398"},
-            {"organization_id": org, "ok": False, "cached": False, "est_cost_usd": 0.0, "created_at": now, "contact_id": "TEST_398"},
-            {"organization_id": org, "ok": True, "cached": False, "est_cost_usd": 5.0, "created_at": now - timedelta(days=20), "contact_id": "TEST_398"}]
+    day = lambda d: d.strftime("%Y-%m-%d")
+    rows = [{"organization_id": org, "source": "mms", "analyzed": True, "ok": True, "cached": False, "est_cost_usd": 0.0021, "created_at": now, "day": day(now), "contact_id": "TEST_398", "user_id": "u1"},
+            {"organization_id": org, "source": "mms", "analyzed": False, "ok": True, "cached": True, "est_cost_usd": 0.0, "created_at": now, "day": day(now), "contact_id": "TEST_398", "user_id": "u1"},
+            {"organization_id": org, "source": "mms", "analyzed": True, "ok": False, "cached": False, "est_cost_usd": 0.0, "created_at": now, "day": day(now), "contact_id": "TEST_398", "user_id": "u2"},
+            {"organization_id": org, "source": "mms", "analyzed": True, "ok": True, "cached": False, "est_cost_usd": 5.0, "created_at": now - timedelta(days=20), "day": day(now - timedelta(days=20)), "contact_id": "TEST_398", "user_id": "u1"}]
     mongo.vision_usage.insert_many(rows)
     try:
         code, u = super_admin.get("/api/jessi-vision/usage?days=7")
@@ -131,12 +138,12 @@ def test_usage_aggregates_per_org(super_admin, mongo):
         mine = [o for o in u["organizations"] if o["organization_id"] == org]
         assert len(mine) == 1, u
         o = mine[0]
-        assert (o["images"], o["model_calls"], o["failed"]) == (3, 2, 1), o
-        assert abs(o["est_cost_usd"] - 0.0021) < 1e-6, o
+        assert (o["received"], o["analyzed"], o["reused"], o["successful"], o["failed"], o["active_reps"]) == (3, 2, 1, 1, 1, 2), o
+        assert abs(o["est_cost_usd"] - 0.0021) < 1e-6 and abs(o["cost_per_active_rep"] - 0.00105) < 1e-4, o
         u30 = super_admin.get("/api/jessi-vision/usage?days=30")[1]
         o30 = [x for x in u30["organizations"] if x["organization_id"] == org][0]
-        assert o30["images"] == 4 and abs(o30["est_cost_usd"] - 5.0021) < 1e-6
-        assert u30["total_est_cost_usd"] >= 5.0
+        assert o30["received"] == 4 and abs(o30["est_cost_usd"] - 5.0021) < 1e-6
+        assert u30["totals"]["est_cost_usd"] >= 5.0 and len(u30["daily"]) == 30
         for bad in ("0", "-5", "100000"):
             assert super_admin.get(f"/api/jessi-vision/usage?days={bad}")[0] == 200
         assert super_admin.get("/api/jessi-vision/usage?days=abc")[0] == 422

@@ -657,6 +657,7 @@ function MoreScreenFull() {
       { icon: 'flask', title: 'Test Lab', subtitle: 'Try new features on your account before reps see them', onPress: () => router.push('/admin/test-lab' as any), color: '#C9A962' },
       { icon: 'radio', title: 'Jessi Voice Lab', subtitle: 'Pick her live voice, energy and pacing, audition her', onPress: () => router.push('/admin/voice-lab' as any), color: '#C9A962' },
       { icon: 'pulse', title: 'Voice Pilot', subtitle: 'Enrol your own account in the voice spending controls, watch usage, kill switch', onPress: () => router.push('/admin/voice-pilot' as any), color: '#C9A962' },
+      { icon: 'image', title: 'Photo Intelligence', subtitle: 'Jessi reads customer photos: rollout, emergency pause, usage and estimated cost', onPress: () => router.push('/admin/photo-intelligence' as any), color: '#C9A962' },
       // System
       { icon: 'shield-checkmark', title: 'Texting Compliance', subtitle: 'A2P 10DLC brand + campaign and Caller ID per organization', onPress: () => router.push('/admin/compliance' as any), color: '#C9A962' },
       { icon: 'git-network', title: 'Twilio Migration', subtitle: 'Map every existing number to its organization, import into the registry, texting rules', onPress: () => router.push('/admin/twilio-migration' as any), color: '#C9A962' },

@@ -239,7 +239,15 @@ async def resolve_detail_suggestion(user_id: str, contact_id: str, suggestion_id
     remaining = [p for p in pending if p.get("id") != suggestion_id]
     now = datetime.now(timezone.utc)
     update: dict = {"$set": {"detail_suggestions": remaining, "updated_at": now}}
-    if accept:
+    if accept and sug.get("mode") == "add":   # a photo detail adds to what is saved, never replaces it
+        pd = dict(contact.get("personal_details") or {})
+        cur = pd.get(sug["field"])
+        if isinstance(cur, list):
+            pd[sug["field"]] = cur + [sug["new"]]
+        else:
+            pd[sug["field"]] = f"{cur}; {sug['new']}" if cur else sug["new"]
+        update["$set"]["personal_details"] = pd
+    elif accept:
         pd = {**(contact.get("personal_details") or {}), sug["field"]: sug["new"]}
         update["$set"]["personal_details"] = pd
         top = {"vehicle_purchased": "vehicle", "occupation": "occupation", "employer": "employer"}.get(sug["field"])
@@ -252,7 +260,8 @@ async def resolve_detail_suggestion(user_id: str, contact_id: str, suggestion_id
     await db.contact_events.insert_one({
         "event_type": "detail_confirmed" if accept else "detail_kept",
         "title": f"{label} {'updated' if accept else 'kept'}",
-        "description": f"{label}: {sug['old']} -> {sug['new']} (from {sug.get('source', 'texts')}, {'confirmed' if accept else 'declined'} by rep)",
+        "description": (f"{label}: {sug['new']} ({'added' if accept else 'declined'} by rep)" if sug.get("mode") == "add"
+                        else f"{label}: {sug['old']} -> {sug['new']} (from {sug.get('source', 'texts')}, {'confirmed' if accept else 'declined'} by rep)"),
         "contact_id": contact_id, "user_id": user_id, "channel": "ai", "category": "intelligence",
         "icon": "checkmark-circle" if accept else "close-circle", "color": "#34C759" if accept else "#8E8E93",
         "timestamp": now, "created_at": now,

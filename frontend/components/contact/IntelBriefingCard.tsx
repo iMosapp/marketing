@@ -45,7 +45,31 @@ function LearnedChip({ learned, colors }: any) {
   );
 }
 
+// A photo detail with nothing to replace: Jessi proposes adding it, the rep decides.
+function AddSuggestionRow({ s, colors, busy, onDecide }: any) {
+  return (
+    <View style={{ borderRadius: 12, borderWidth: 1, borderColor: `${AMBER}66`, backgroundColor: `${AMBER}12`, padding: 10, marginBottom: 8 }} {...tid(`intel-suggestion-${s.id}`)}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Ionicons name="image" size={14} color={AMBER} />
+        <Text style={{ fontSize: 12, fontWeight: '700', color: AMBER, letterSpacing: 0.8 }}>JESSI NOTICED · from {s.source || 'a photo'}</Text>
+      </View>
+      <Text style={{ fontSize: 13, color: colors.text, marginTop: 5, lineHeight: 19 }} {...tid(`intel-suggestion-text-${s.id}`)}>
+        <Text style={{ fontWeight: '700' }}>{s.label}: </Text>{String(s.new)}
+      </Text>
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+        <TouchableOpacity disabled={busy} onPress={() => onDecide(s, 'accept')} style={{ flex: 1, backgroundColor: GOLD, borderRadius: 9, paddingVertical: 8, alignItems: 'center', opacity: busy ? 0.6 : 1 }} {...tid(`intel-suggestion-accept-${s.id}`)}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: '#000' }}>Add it</Text>
+        </TouchableOpacity>
+        <TouchableOpacity disabled={busy} onPress={() => onDecide(s, 'reject')} style={{ flex: 1, borderRadius: 9, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: colors.border, opacity: busy ? 0.6 : 1 }} {...tid(`intel-suggestion-reject-${s.id}`)}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>Not right</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 function SuggestionRow({ s, colors, busy, onDecide }: any) {
+  if (s.mode === 'add' || !s.old) return <AddSuggestionRow s={s} colors={colors} busy={busy} onDecide={onDecide} />;
   return (
     <View style={{ borderRadius: 12, borderWidth: 1, borderColor: `${AMBER}66`, backgroundColor: `${AMBER}12`, padding: 10, marginBottom: 8 }} {...tid(`intel-suggestion-${s.id}`)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

@@ -356,9 +356,10 @@ async def queue_ai_reply(
     vision_on, photo = False, None
     if attachments:
         try:
-            vision_on = await mms_vision.enabled(db)
+            vision_on = await mms_vision.replies_on(db, assigned_user_id)
             if vision_on:
-                photo = await mms_vision.photo_block(db, message_id or await mms_vision.latest_media_message_id(db, conversation_id), incoming_message)
+                photo = await mms_vision.photo_block(db, message_id or await mms_vision.latest_media_message_id(db, conversation_id), incoming_message,
+                                                     user_id=assigned_user_id)
         except Exception as _pe:
             logger.warning(f"[AIReply] photo reading unavailable for {conversation_id}: {_pe}")
 

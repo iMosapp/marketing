@@ -1,8 +1,9 @@
-"""Jessi understands the photos customers text (MMS Stage 2).
+"""Jessi understands the photos customers text (MMS Stage 2) + Automatic Photo Intelligence.
 
-One pipeline, reused: the webhook files every inbound MMS in the contact's Files (services.contact_files), which reads each image with the
-vision model. This module starts that filing, keeps track of it per message, and turns the stored reading into what the auto-reply needs:
-a prompt block (untrusted content), a thread label, and the rep alert. It also owns the secure Twilio media fetch and the per-image cost log."""
+One pipeline, one reading per image: the webhook files every inbound MMS in the contact's Files (services.contact_files), which reads each
+image with the vision model once (the same photo on the same contact reuses it). This module starts that filing, keeps track of it per
+message, and turns the stored reading into what the auto-reply needs (prompt block of untrusted content, thread label, rep alert) and into
+proposed relationship details. It also owns the photo settings, the secure Twilio media fetch and the per-image usage/cost log."""
 import asyncio
 import logging
 import math
@@ -25,17 +26,57 @@ _INFLIGHT: dict = {}
 
 
 SETTINGS_KEY = "jessi_mms_vision"
+SCOPES = ("off", "test_orgs", "all")
+CAPABILITIES = ("replies", "intelligence")
+DEFAULTS = {"replies": "off", "intelligence": "off", "paused": False, "test_org_ids": []}
 
 
-async def enabled(db) -> bool:
-    """Single global kill switch for photo understanding in Jessi's replies (db.settings, per environment, OFF until a super admin
-    turns it on). Off = Stage 1 behaviour: she says she can't open it. Filing photos in the contact's Files is unaffected."""
+async def settings(db) -> dict:
+    """Photo settings (db.settings, per environment; absent = everything off, not paused).
+    replies: Jessi uses the photo in replies. intelligence: photo facts become proposed relationship details.
+    paused: emergency stop for every NEW image analysis (Files, replies, intelligence); attachments are still received and stored."""
     try:
-        doc = await db.settings.find_one({"key": SETTINGS_KEY}, {"enabled": 1})
+        doc = await db.settings.find_one({"key": SETTINGS_KEY}) or {}
     except Exception as e:
-        logger.warning(f"[MMSVision] switch read failed, treating as off: {e}")
+        logger.warning(f"[MMSVision] settings read failed, treating as off: {e}")
+        doc = {}
+    out = {**DEFAULTS, **{k: doc[k] for k in DEFAULTS if k in doc}}
+    for c in CAPABILITIES:
+        if out[c] not in SCOPES:
+            out[c] = "off"
+    out["paused"] = bool(out["paused"])
+    out["test_org_ids"] = [str(x) for x in out["test_org_ids"] or []]
+    return out
+
+
+async def org_of(db, user_id: Optional[str]) -> str:
+    from bson import ObjectId
+    if not ObjectId.is_valid(str(user_id or "")):
+        return ""
+    u = await db.users.find_one({"_id": ObjectId(str(user_id))}, {"organization_id": 1})
+    return str((u or {}).get("organization_id") or "")
+
+
+def in_scope(cfg: dict, cap: str, org_id: str) -> bool:
+    if cfg["paused"] or cfg[cap] == "off":
         return False
-    return bool((doc or {}).get("enabled"))
+    return cfg[cap] == "all" or (cfg[cap] == "test_orgs" and bool(org_id) and org_id in cfg["test_org_ids"])
+
+
+async def capability(db, cap: str, user_id: Optional[str]) -> bool:
+    """Is this capability on for the rep's organization? Unknown rep (unclaimed inbox thread) = only an All-orgs rollout."""
+    cfg = await settings(db)
+    if cfg["paused"] or cfg[cap] == "off":
+        return False
+    return in_scope(cfg, cap, await org_of(db, user_id) if cfg[cap] == "test_orgs" else "")
+
+
+async def replies_on(db, user_id: Optional[str]) -> bool:
+    return await capability(db, "replies", user_id)
+
+
+async def paused(db) -> bool:
+    return (await settings(db))["paused"]
 
 
 def raw_twilio_url(url: str) -> Optional[str]:
@@ -125,19 +166,27 @@ def estimate(width: int, height: int, prompt_chars: int, output_chars: int) -> t
 
 
 async def record_usage(db, *, user_id: str, contact_id: str, message_id: Optional[str], file_id: str, source: str, ok: bool, cached: bool,
-                       ms: int = 0, width: int = 0, height: int = 0, prompt_chars: int = 0, output_chars: int = 0, reason: str = ""):
-    """One row per image Jessi read (or reused): who pays (organization / location / rep), estimated tokens and cost. Never raises."""
+                       analyzed: bool, attempts: int = 0, i: Optional[int] = None, ms: int = 0, width: int = 0, height: int = 0,
+                       prompt_chars: int = 0, output_chars: int = 0, reason: str = ""):
+    """One row per image received by text (and per rep upload that was read or reused): who pays (organization / location / rep), whether
+    the model was called (analyzed), reused an earlier reading (cached), the outcome, and the ESTIMATED tokens and cost. Never stores image
+    content. A failed attempt is costed on its input tokens (the provider may still bill it). Never raises."""
     try:
         from bson import ObjectId
+        from services.contact_files import READ_SYSTEM
         from services.llm_models import VISION_MODEL
         u = await db.users.find_one({"_id": ObjectId(user_id)}, {"organization_id": 1, "store_id": 1}) if ObjectId.is_valid(str(user_id or "")) else None
-        tin, tout, usd = (0, 0, 0.0) if (cached or (not ok and not output_chars)) else estimate(width, height, prompt_chars, output_chars)
+        tin, tout, usd = 0, 0, 0.0
+        if analyzed:
+            one, tout, _ = estimate(width, height, prompt_chars or len(READ_SYSTEM) + 300, output_chars)
+            tin, tout = one * max(1, attempts), (tout if ok else 0)
+            usd = round(tin * PRICE_IN_PER_M / 1e6 + tout * PRICE_OUT_PER_M / 1e6, 6)
         now = datetime.now(timezone.utc)
         await db.vision_usage.insert_one({
             "organization_id": str((u or {}).get("organization_id") or ""), "store_id": str((u or {}).get("store_id") or ""), "user_id": str(user_id or ""),
-            "contact_id": contact_id, "message_id": message_id, "file_id": file_id, "source": source, "model": f"{VISION_MODEL[0]}/{VISION_MODEL[1]}",
-            "ok": ok, "cached": cached, "reason": reason, "ms": ms, "input_tokens": tin, "output_tokens": tout, "est_cost_usd": usd,
-            "day": now.strftime("%Y-%m-%d"), "created_at": now})
+            "contact_id": contact_id, "message_id": message_id, "file_id": file_id, "i": i, "source": source, "model": f"{VISION_MODEL[0]}/{VISION_MODEL[1]}",
+            "analyzed": analyzed, "attempts": attempts, "ok": ok, "cached": cached, "reason": reason, "ms": ms, "input_tokens": tin, "output_tokens": tout,
+            "est_cost_usd": usd, "cost_basis": "estimate", "day": now.strftime("%Y-%m-%d"), "month": now.strftime("%Y-%m"), "created_at": now})
     except Exception as e:
         logger.warning(f"[MMSVision] usage log failed: {e}")
 
@@ -223,9 +272,9 @@ def reply_block(items: Optional[list], text: str = "") -> Optional[dict]:
     return {"status": st, "block": block, "alert": alert}
 
 
-async def photo_block(db, message_id: Optional[str], text: str = "", wait: float = READ_WAIT) -> Optional[dict]:
-    """reply_block for one inbound text when the switch is on; None = use the Stage 1 notice."""
-    if not message_id or not await enabled(db):
+async def photo_block(db, message_id: Optional[str], text: str = "", wait: float = READ_WAIT, user_id: Optional[str] = None) -> Optional[dict]:
+    """reply_block for one inbound text when Jessi Photo Replies is on for the rep's organization; None = use the Stage 1 notice."""
+    if not message_id or not await replies_on(db, user_id):
         return None
     return reply_block(await readings(db, message_id, wait), text)
 
@@ -252,3 +301,50 @@ def thread_label(m: dict) -> str:
     if c["status"] == "failed":
         return "[sent a photo that did not open]"
     return "[sent a photo you cannot see]"
+
+
+# ── Automatic Photo Intelligence: what a photo adds to the relationship, always as a proposal the rep confirms ──
+
+FACT_FIELDS = {"vehicle_details": "Vehicle or equipment", "interests": "Interest", "personal_notes": "Note"}
+
+
+def _fact_text(f: dict) -> str:
+    v = _short(f.get("value"), 120)
+    return f"{v} (seen in a photo)" if f.get("basis") == "visible" else f"Looks like: {v} (Jessi's guess from a photo)"
+
+
+async def propose_facts(db, contact_id: str, user_id: str, message_id: Optional[str], found: list) -> list:
+    """found = [(file_id, facts)] from non-sensitive readings. Each fact lands in contacts.detail_suggestions (the existing
+    "Jessi noticed" card): nothing is written to the contact until the rep accepts, verified details are never overwritten, a value the rep
+    already declined or that is already pending or saved is skipped. Visible facts and Jessi's assumptions are labelled differently."""
+    import secrets
+    from bson import ObjectId
+    if not ObjectId.is_valid(str(contact_id or "")):
+        return []
+    c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"personal_details": 1, "detail_suggestions": 1, "detail_suggestions_rejected": 1})
+    if not c:
+        return []
+    pd = c.get("personal_details") or {}
+    pending = list(c.get("detail_suggestions") or [])
+    norm = lambda v: " ".join(str(v or "").lower().split())
+    seen = {(p.get("field"), norm(p.get("new"))) for p in pending} | {(r.get("field"), norm(r.get("new"))) for r in c.get("detail_suggestions_rejected") or []}
+    added = []
+    for file_id, facts in found:
+        for f in (facts or [])[:4]:
+            field = f.get("field")
+            if field not in FACT_FIELDS or not f.get("value"):
+                continue
+            new = _fact_text(f)
+            cur = pd.get(field)
+            cur_text = "; ".join(map(str, cur)) if isinstance(cur, list) else str(cur or "")
+            if (field, norm(new)) in seen or norm(f.get("value")) in norm(cur_text):
+                continue
+            sug = {"id": secrets.token_hex(5), "field": field, "label": f"{FACT_FIELDS[field]} (from a photo)", "old": cur_text if field == "vehicle_details" else "",
+                   "new": new, "mode": "replace" if field == "vehicle_details" and cur_text else "add", "basis": f.get("basis"), "source": "a photo",
+                   "ref": {"message_id": message_id, "file_id": file_id}, "created_at": datetime.now(timezone.utc)}
+            pending.append(sug)
+            added.append(sug)
+            seen.add((field, norm(new)))
+    if added:
+        await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"detail_suggestions": pending}})
+    return added

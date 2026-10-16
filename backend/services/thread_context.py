@@ -266,7 +266,8 @@ async def load(db, conversation_id: str, first: str = "", inquiry: Optional[dict
         first = ((conv or {}).get("contact_name") or "").split(" ")[0]
     if any(m.get("media_read") is not None for m in rows):
         from services import mms_vision
-        if await mms_vision.enabled(db):
+        conv = await db.conversations.find_one({"_id": ObjectId(str(conversation_id))}, {"user_id": 1}) if ObjectId.is_valid(str(conversation_id)) else None
+        if await mms_vision.replies_on(db, (conv or {}).get("user_id")):
             for m in rows:
                 if m.get("sender") == "contact" and m.get("media_read") is not None:
                     m["_photo_label"] = mms_vision.thread_label(m)

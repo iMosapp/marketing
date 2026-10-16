@@ -2225,7 +2225,7 @@ async def get_ai_suggestion_smart(conversation_id: str, request: Request, body: 
         _photo = None
         if _last_in and (_last_in.get("media_urls") or _last_in.get("num_media")):
             from services import mms_vision
-            _photo = await mms_vision.photo_block(db, str(_last_in["_id"]), _last_in.get("content") or "", wait=15)
+            _photo = await mms_vision.photo_block(db, str(_last_in["_id"]), _last_in.get("content") or "", wait=15, user_id=user_id)
         view = await tc.load(db, conversation_id, conv.get("contact_name") or "", lead_inquiry)
         if body and body.get("topic_kind") in tc.KIND_LABEL:
             view.force(body["topic_kind"], str(body.get("topic") or "")[:120])

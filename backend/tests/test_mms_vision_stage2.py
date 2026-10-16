@@ -111,10 +111,11 @@ def mms_rep(mongo):
 
 @pytest.fixture(scope="module")
 def switch(mongo):
-    """Turns the global switch ON for this module and restores whatever was there."""
+    """Photo Replies + Photo Intelligence ON for the QA org only (test-org rollout) for this module; restores whatever was there."""
     from services.mms_vision import SETTINGS_KEY
     before = mongo.settings.find_one({"key": SETTINGS_KEY})
-    mongo.settings.update_one({"key": SETTINGS_KEY}, {"$set": {"key": SETTINGS_KEY, "enabled": True}}, upsert=True)
+    mongo.settings.replace_one({"key": SETTINGS_KEY}, {"key": SETTINGS_KEY, "replies": "test_orgs", "intelligence": "test_orgs", "paused": False,
+                                                       "test_org_ids": [QA_ORG_A]}, upsert=True)
     yield
     if before:
         mongo.settings.replace_one({"key": SETTINGS_KEY}, before)
@@ -158,6 +159,7 @@ def thread(mongo, mms_rep):
         for coll in ("messages", "notifications", "ai_reply_queue"):
             mongo[coll].delete_many({"conversation_id": str(conv)})
         mongo.vision_usage.delete_many({"contact_id": str(cid)})
+        mongo.contact_events.delete_many({"contact_id": str(cid)})
         mongo.contact_files.delete_many({"contact_id": str(cid)})
         mongo.conversations.delete_one({"_id": conv})
         mongo.contacts.delete_one({"_id": cid})
@@ -245,8 +247,11 @@ def test_switch_is_off_when_unset(mongo):
 
         async def go():
             db = database.get_db()
-            return await mms_vision.enabled(db), await mms_vision.photo_block(db, str(ObjectId()), "")
-        assert LOOP.run_until_complete(go()) == (False, None)
+            return (await mms_vision.settings(db), await mms_vision.replies_on(db, None), await mms_vision.capability(db, "intelligence", None),
+                    await mms_vision.paused(db), await mms_vision.photo_block(db, str(ObjectId()), ""))
+        cfg, rep_on, intel_on, paused, block = LOOP.run_until_complete(go())
+        assert cfg == {"replies": "off", "intelligence": "off", "paused": False, "test_org_ids": []}
+        assert (rep_on, intel_on, paused, block) == (False, False, False, None)
     finally:
         if before:
             mongo.settings.replace_one({"key": mms_vision.SETTINGS_KEY}, before, upsert=True)
@@ -350,7 +355,7 @@ def test_photo_that_does_not_open(mongo, switch, fake_fetch, thread):
 def test_switch_off_keeps_stage1(mongo, fake_fetch, thread):
     from services.mms_vision import SETTINGS_KEY
     before = mongo.settings.find_one({"key": SETTINGS_KEY})
-    mongo.settings.update_one({"key": SETTINGS_KEY}, {"$set": {"key": SETTINGS_KEY, "enabled": False}}, upsert=True)
+    mongo.settings.replace_one({"key": SETTINGS_KEY}, {"key": SETTINGS_KEY, "replies": "off", "intelligence": "off", "paused": False, "test_org_ids": [QA_ORG_A]}, upsert=True)
     try:
         rep_id, cid, conv = thread("QA Off")
         _, msg, q, note = _deliver(mongo, rep_id, cid, conv, "", [_media_url("car")])
@@ -376,13 +381,23 @@ def test_switch_endpoints(super_admin, rep, mongo):
     try:
         assert anon("GET", "/api/jessi-vision/settings")[0] == 401
         assert rep.get("/api/jessi-vision/settings")[0] == 403
-        assert rep.put("/api/jessi-vision/settings", {"enabled": True})[0] == 403
-        code, d = super_admin.put("/api/jessi-vision/settings", {"enabled": True})
-        assert code == 200 and d["enabled"] is True and d["updated_by"]
-        assert super_admin.get("/api/jessi-vision/settings")[1]["enabled"] is True
-        assert super_admin.put("/api/jessi-vision/settings", {"enabled": False})[1]["enabled"] is False
+        assert rep.put("/api/jessi-vision/settings", {"replies": "all"})[0] == 403
+        assert rep.post("/api/jessi-vision/test-orgs/mine", {})[0] == 403
+        code, d = super_admin.put("/api/jessi-vision/settings", {"replies": "test_orgs", "intelligence": "test_orgs"})
+        assert code == 200 and d["replies"] == "test_orgs" and d["intelligence"] == "test_orgs" and d["updated_by"]
+        assert super_admin.put("/api/jessi-vision/settings", {"replies": "everyone"})[0] == 422
+        code, d = super_admin.post("/api/jessi-vision/test-orgs/mine", {})
+        mine = d["my_org"]["id"]
+        assert code == 200 and mine in [o["id"] for o in d["test_orgs"]] and d["my_org"]["is_test"] and d["my_org"]["replies_on"] and d["my_org"]["intelligence_on"]
+        code, d = super_admin.put("/api/jessi-vision/settings", {"paused": True})
+        assert d["paused"] is True and d["my_org"]["replies_on"] is False and d["my_org"]["intelligence_on"] is False
+        d = super_admin.put("/api/jessi-vision/settings", {"paused": False})[1]
+        code, d = super_admin.delete(f"/api/jessi-vision/test-orgs/{mine}")
+        assert code == 200 and not d["my_org"]["is_test"] and d["my_org"]["replies_on"] is False
+        assert mongo.vision_settings_events.count_documents({}) >= 5
         code, u = super_admin.get("/api/jessi-vision/usage?days=7")
-        assert code == 200 and "organizations" in u and "total_est_cost_usd" in u
+        assert code == 200 and {"totals", "daily", "monthly", "organizations", "stores", "reps", "by_source", "by_model", "monitoring", "cost_method"} <= set(u)
+        assert len(u["daily"]) == 7 and u["cost_basis"] == "estimate"
         assert rep.get("/api/jessi-vision/usage")[0] == 403
     finally:
         if before:
@@ -408,3 +423,149 @@ def test_signed_webhook_photo_that_cannot_open(mongo, mms_rep, switch, thread):
     assert q["photo_status"] == "failed" and q["requires_approval"] is True
     note = mongo.notifications.find_one({"conversation_id": conv, "type": "you_are_needed", "title": {"$regex": "sent a photo"}})
     assert note and "couldn't open" in note["message"]
+
+
+# ── Photo settings, rollout scope, Pause All, intelligence, multiple photos, duplicates ──────────────────────────────
+
+
+def _cfg(mongo, **kw):
+    from services.mms_vision import SETTINGS_KEY
+    doc = {"key": SETTINGS_KEY, "replies": "test_orgs", "intelligence": "test_orgs", "paused": False, "test_org_ids": [QA_ORG_A], **kw}
+    mongo.settings.replace_one({"key": SETTINGS_KEY}, doc, upsert=True)
+
+
+def test_scope_is_per_organization(mongo, switch, mms_rep):
+    from routers import database
+    from services import mms_vision
+    other = mongo.users.insert_one({"email": "qa-photo-other@invalid.imonsocial.test", "organization_id": "TEST_other_org_photo", "role": "user"}).inserted_id
+    try:
+        database._client, database._db = None, None
+
+        async def caps():
+            db = database.get_db()
+            return [await mms_vision.capability(db, c, u) for c in ("replies", "intelligence") for u in (str(mms_rep["_id"]), str(other), None)]
+        assert LOOP.run_until_complete(caps()) == [True, False, False, True, False, False]
+        _cfg(mongo, replies="all", intelligence="off")
+        database._client, database._db = None, None
+        assert LOOP.run_until_complete(caps()) == [True, True, True, False, False, False]
+        _cfg(mongo, replies="all", intelligence="all", paused=True)
+        database._client, database._db = None, None
+        assert LOOP.run_until_complete(caps()) == [False] * 6
+    finally:
+        mongo.users.delete_one({"_id": other})
+        _cfg(mongo)
+
+
+def test_two_photos_in_one_text(mongo, switch, fake_fetch, thread):
+    rep_id, cid, conv = thread("QA Two")
+    mid, msg, q, note = _deliver(mongo, rep_id, cid, conv, "this is the truck and here's my buddy's card, he wants one too", [_media_url("car"), _media_url("card")])
+    assert [i["ok"] for i in msg["media_read"]] == [True, True] and {i["type"] for i in msg["media_read"]} >= {"business_card"}
+    assert q["photo_status"] == "seen" and q["attachments"] == 2
+    assert mongo.notifications.count_documents({"conversation_id": conv, "title": {"$regex": "sent 2 photos"}}) == 1
+    rows = list(mongo.vision_usage.find({"message_id": mid}))
+    assert sorted(r["i"] for r in rows) == [0, 1] and all(r["analyzed"] and r["ok"] and r["source"] == "mms" for r in rows)
+    assert mongo.contact_files.count_documents({"message_id": mid}) == 2
+
+
+def test_pause_all_stores_without_reading(mongo, switch, fake_fetch, thread):
+    _cfg(mongo, paused=True)
+    try:
+        rep_id, cid, conv = thread("QA Paused")
+        mid, msg, q, note = _deliver(mongo, rep_id, cid, conv, "", [_media_url("car")])
+        f = mongo.contact_files.find_one({"message_id": mid})
+        assert f and f["status"] == "unread" and f["unread_reason"] == "paused" and not f.get("summary")
+        u = mongo.vision_usage.find_one({"message_id": mid})
+        assert u["analyzed"] is False and u["reason"] == "paused" and u["est_cost_usd"] == 0
+        assert msg["media_read"][0]["reason"] == "paused"
+        assert q["photo_status"] is None and "can't see" in note["title"]   # replies are off while paused: Stage 1
+        assert not (mongo.contacts.find_one({"_id": ObjectId(cid)}).get("detail_suggestions"))
+    finally:
+        _cfg(mongo)
+
+
+def test_photo_intelligence_is_proposed_until_the_rep_confirms(mongo, switch, fake_fetch, thread):
+    rep_id, cid, conv = thread("QA Intel")
+    mongo.contacts.update_one({"_id": ObjectId(cid)}, {"$set": {"personal_details": {"interests": ["fishing"]}, "first_name": "Verified"}})
+    mid, msg, q, note = _deliver(mongo, rep_id, cid, conv, "what do you think of this one", [_media_url("car")])
+    c = mongo.contacts.find_one({"_id": ObjectId(cid)})
+    sugs = c.get("detail_suggestions") or []
+    print("\nsuggestions:", [(s["field"], s["new"], s["basis"]) for s in sugs])
+    assert sugs and all(s["source"] == "a photo" and s["ref"]["message_id"] == mid and s["ref"]["file_id"] for s in sugs)
+    assert all(s["new"].endswith("(seen in a photo)") or s["new"].startswith("Looks like:") for s in sugs)
+    assert c["personal_details"] == {"interests": ["fishing"]} and c["first_name"] == "Verified"   # nothing written before the rep confirms
+    from routers import database
+    from services.voice_intel import resolve_detail_suggestion
+    database._client, database._db = None, None
+    s0 = sugs[0]
+    res = LOOP.run_until_complete(resolve_detail_suggestion(rep_id, cid, s0["id"], True))
+    assert res["ok"] and res["accepted"]
+    pd = mongo.contacts.find_one({"_id": ObjectId(cid)})["personal_details"]
+    assert s0["new"] in (pd.get(s0["field"]) if isinstance(pd.get(s0["field"]), list) else [x.strip() for x in str(pd.get(s0["field"])).split(";")])
+    assert pd["interests"][0] == "fishing"
+    # the same photo again proposes nothing new (dedupe against saved + pending)
+    before = len(mongo.contacts.find_one({"_id": ObjectId(cid)}).get("detail_suggestions") or [])
+    _deliver(mongo, rep_id, cid, conv, "", [_media_url("car")])
+    assert len(mongo.contacts.find_one({"_id": ObjectId(cid)}).get("detail_suggestions") or []) <= before
+
+
+def test_intelligence_off_and_private_documents_propose_nothing(mongo, switch, fake_fetch, thread):
+    _cfg(mongo, intelligence="off")
+    try:
+        rep_id, cid, conv = thread("QA NoIntel")
+        _deliver(mongo, rep_id, cid, conv, "", [_media_url("car")])
+        assert not mongo.contacts.find_one({"_id": ObjectId(cid)}).get("detail_suggestions")
+    finally:
+        _cfg(mongo)
+    rep_id, cid, conv = thread("QA PrivateIntel")
+    mid, msg, q, note = _deliver(mongo, rep_id, cid, conv, "", [_media_url("license")])
+    assert not mongo.contacts.find_one({"_id": ObjectId(cid)}).get("detail_suggestions")
+    f = mongo.contact_files.find_one({"message_id": mid})
+    assert f["sensitive"] and not f.get("facts")
+    ev = mongo.contact_events.find_one({"contact_id": cid, "event_type": "file_added"})
+    assert ev["title"].startswith("Private document") and "98-765" not in ev["description"] and "Reynolds" not in (ev["description"] + ev.get("content", "")).title()
+    mongo.contact_events.delete_many({"contact_id": cid})
+
+
+def test_business_card_never_changes_the_contact_by_itself(mongo, switch, fake_fetch, thread):
+    rep_id, cid, conv = thread("Sarah Keep")
+    _, msg, q, note = _deliver(mongo, rep_id, cid, conv, "", [_media_url("card")])
+    c = mongo.contacts.find_one({"_id": ObjectId(cid)})
+    assert c["first_name"] == "Sarah" and c["last_name"] == "Keep" and not c.get("email") and not c.get("employer")
+    f = mongo.contact_files.find_one({"contact_id": cid})
+    assert f["fields"].get("email") and f["applied"] == []          # waiting in Files for the rep to review and add
+    assert not any(s["field"] in ("first_name", "last_name", "email", "phone") for s in c.get("detail_suggestions") or [])
+
+
+def test_duplicate_twilio_delivery_is_processed_once(mongo, mms_rep, switch, thread):
+    from tests.test_mms_stage1 import _signed_inbound, _wait
+    rep_id, cid, conv = thread("QA Dup")
+    phone = mongo.contacts.find_one({"_id": ObjectId(cid)})["phone"]
+    form = {"MessageSid": f"MMqadup{int(time.time())}", "AccountSid": os.environ.get("TWILIO_ACCOUNT_SID", ""), "From": phone, "To": REP_NUMBER,
+            "Body": "", "NumMedia": "1", "MediaUrl0": _media_url("dupe"), "MediaContentType0": "image/jpeg"}
+    assert _signed_inbound(form) in (200, 204)
+    assert _signed_inbound(form) in (200, 204)
+    q = _wait(lambda: mongo.ai_reply_queue.find_one({"conversation_id": conv}), seconds=90)
+    time.sleep(3)
+    mongo.ai_reply_queue.update_many({"conversation_id": conv, "status": "pending"}, {"$set": {"status": "cancelled", "cancel_reason": "qa_test"}})
+    assert q and mongo.messages.count_documents({"conversation_id": conv, "sender": "contact"}) == 1
+    assert mongo.ai_reply_queue.count_documents({"conversation_id": conv}) == 1
+    assert mongo.vision_usage.count_documents({"contact_id": cid}) == 1
+    assert mongo.notifications.count_documents({"conversation_id": conv, "title": {"$regex": "sent a photo"}}) == 1
+
+
+def test_usage_report_attributes_org_location_and_rep(mongo, super_admin, mms_rep, switch, fake_fetch, thread):
+    rep_id, cid, conv = thread("QA Report")
+    mid, *_ = _deliver(mongo, rep_id, cid, conv, "", [_media_url("blur")])
+    _deliver(mongo, rep_id, cid, conv, "", [_media_url("blur")])                  # reused, no charge
+    rows = list(mongo.vision_usage.find({"contact_id": cid}).sort("created_at", 1))
+    assert [r["analyzed"] for r in rows] == [True, False] and rows[1]["cached"] and rows[1]["est_cost_usd"] == 0
+    assert all(r["organization_id"] == QA_ORG_A and r["store_id"] == str(mms_rep.get("store_id")) and r["user_id"] == rep_id for r in rows)
+    assert not any(k in r for r in rows for k in ("summary", "text", "visible", "fields"))   # no image content in the cost log
+    code, u = super_admin.get("/api/jessi-vision/usage?days=1")
+    assert code == 200
+    me = [r for r in u["reps"] if r["user_id"] == rep_id][0]
+    assert me["received"] >= 2 and me["analyzed"] >= 1 and me["reused"] >= 1 and me["name"]
+    org = [o for o in u["organizations"] if o["organization_id"] == QA_ORG_A][0]
+    assert org["est_cost_usd"] > 0 and org["active_reps"] >= 1 and org["cost_per_active_rep"] > 0 and org["avg_cost_per_analyzed"] > 0
+    assert any(s["store_id"] == str(mms_rep.get("store_id")) for s in u["stores"])
+    assert u["daily"][-1]["received"] >= 2 and u["monthly"] and u["totals"]["received"] >= 2
