@@ -1,5 +1,10 @@
 # CHANGELOG — iMOs App
 
+## Oct 17 2026 — /feature-sheet and /mybaby restyled in the new site design (workspace only, NOT published)
+- New `marketing/site/extra.py` (+ `extra_css.py`) renders both pages with the shared `layout.Site` chrome (header, footer, demo/contact modals, site.css/site.js, widget FE2POg13), forced noindex, kept out of build.py / sitemap. Writes `build/feature-sheet/index.html`, `build/mybaby.html`, `public/mybaby.html` and the `build-preview/` copies. `python3 marketing/build_feature_sheet.py` (data only now) runs it.
+- Feature sheet: same 102 features, sticky "Jump to" rail, new chips/legend, Print/PDF kept, CTA band. /mybaby: normal scrolling page (no slide dots / arrow keys), same section order and copy, count-up metrics, `?investor=1` still swaps #close for #ask, own "Start a conversation" modal posting `/api/demo-requests` with `platform_overview_cta` / `platform_overview_investor_cta`.
+- Publish: upload only `marketing/build/feature-sheet/index.html` and `marketing/build/mybaby.html` (build/assets/site.css + site.js are already identical to the live ones).
+
 ## Oct 17 2026 — /mybaby counts refreshed from production R2 (workspace only, NOT published)
 - `marketing/public/mybaby.html` = `build/mybaby.html` (+ `build-preview/`): 295K+ -> 335K+ lines, 1,495 -> 1,774 endpoints, 346 -> 379 screens, 50 -> 57 jobs, 252 -> 375 components, 194 -> 213 collections, tests 100K+ -> 120K+, "September" -> "October 2026". Integrations (14) and cost/team estimates unchanged.
 - Method (reproduces the Sep deck on commit ba19fcfd0: 296,564 lines, 1,493 endpoints, 346, 50, 253, 195): `git archive 30b6dbf03 backend frontend`; lines = all lines of backend .py (no tests/, scripts/, migrations/) + frontend app, components, hooks, services, store, utils, contexts, types, constants, config (.ts/.tsx/.js/.jsx, no tests); endpoints = @x.get/post/put/patch/delete in routers/*.py whose module name appears in server.py; screens = frontend/app .tsx not starting with `_`; components = frontend/components .tsx/.jsx; collections = distinct `db.<name>.<op>` / `db["name"]` in backend; jobs = `.add_job(` count.

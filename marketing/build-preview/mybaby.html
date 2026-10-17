@@ -1,444 +1,356 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-api="" data-page="platform_overview">
 <head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>i&#x27;M On Social: My Platform Overview</title>
+<meta name="description" content="i&#x27;M On Social: a production-grade AI Relationship Operating System already built at significant scale. 335K+ lines of application code, 1,774 API endpoints, 14 live integrations."/>
 <meta name="robots" content="noindex, nofollow"/>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>i'M On Social — My Platform Overview</title>
-<meta name="description" content="i'M On Social: a production-grade AI Relationship Operating System already built at significant scale. 335K+ lines of application code, 1,774 API endpoints, 14 live integrations." />
-<meta name="robots" content="noindex, nofollow" />
-<meta property="og:title" content="i'M On Social — My Platform Overview" />
-<meta property="og:description" content="Built, not just conceptualized. A production-grade AI Relationship Operating System." />
-<meta property="og:image" content="https://imonsocial.com/og-image.png" />
-<link rel="icon" href="favicon.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="canonical" href="https://www.imonsocial.com/mybaby"/>
+<meta property="og:title" content="i&#x27;M On Social: My Platform Overview"/>
+<meta property="og:description" content="i&#x27;M On Social: a production-grade AI Relationship Operating System already built at significant scale. 335K+ lines of application code, 1,774 API endpoints, 14 live integrations."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://www.imonsocial.com/mybaby"/>
+<meta property="og:image" content="https://www.imonsocial.com/og-image.png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://www.imonsocial.com/og-image.png"/>
+<meta name="theme-color" content="#FDFCF9"/>
+<link rel="icon" href="/api/marketing-preview/favicon.png"/>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&display=swap"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"/>
+<link rel="stylesheet" href="/api/marketing-preview/assets/site.css?v=c54817d1"/>
+
 <style>
-  :root {
-    --bg: #0a0a0b; --bg2: #121214; --card: #161618; --line: #26262a; --text: #f3efe6; --muted: #a39f94; --gold: #c9a962; --gold2: #e5cf8f; --ink: #0a0a0b;
-    --serif: 'Fraunces', Georgia, serif; --sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
-  body { scroll-snap-type: y proximity; }
-  ::selection { background: var(--gold); color: var(--ink); }
-  a { color: var(--gold2); }
-
-  .noise { position: fixed; inset: 0; pointer-events: none; opacity: .05; z-index: 0;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='.6'/></svg>"); }
-
-  .slide { position: relative; min-height: 100svh; scroll-snap-align: start; padding: clamp(28px, 6vh, 72px) clamp(20px, 6vw, 96px); display: flex; flex-direction: column; justify-content: center; border-bottom: 1px solid var(--line); overflow: hidden; }
-  .slide .inner { position: relative; z-index: 1; width: 100%; max-width: 1240px; margin: 0 auto; }
-  .kicker { font: 700 12px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin: 0 0 18px; display: flex; align-items: center; gap: 12px; }
-  .kicker::before { content: ""; width: 28px; height: 2px; background: var(--gold); display: inline-block; }
-  h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.02em; margin: 0; }
-  h1 { font-size: clamp(40px, 6.6vw, 92px); line-height: .98; }
-  h2 { font-size: clamp(30px, 4.6vw, 64px); line-height: 1.02; }
-  h2.sm { font-size: clamp(26px, 3.6vw, 50px); }
-  h2.xs { font-size: clamp(24px, 3vw, 42px); line-height: 1.08; max-width: 1100px; }
-  .lead { font-size: clamp(16px, 1.45vw, 21px); line-height: 1.5; color: var(--muted); max-width: 820px; margin: 22px 0 0; }
-  .lead b { color: var(--text); font-weight: 600; }
-  .lead.wide { max-width: 980px; }
-  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
-  .slide.on .reveal { opacity: 1; transform: none; }
-  .slide.on .reveal:nth-child(2) { transition-delay: .08s } .slide.on .reveal:nth-child(3) { transition-delay: .16s } .slide.on .reveal:nth-child(4) { transition-delay: .24s } .slide.on .reveal:nth-child(5) { transition-delay: .32s }
-
-  /* cover */
-  #cover { background: radial-gradient(1200px 600px at 80% -10%, rgba(201,169,98,.18), transparent 60%), var(--bg); }
-  .brand { display: flex; align-items: center; gap: 14px; margin-bottom: clamp(32px, 8vh, 80px); }
-  .brand img { height: 76px; width: auto; }
-  .brand span { font-weight: 800; letter-spacing: .02em; }
-  .cover-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 48px; align-items: end; }
-  .cover-right { border-left: 1px solid var(--line); padding-left: 32px; color: var(--muted); font-size: 15px; line-height: 1.6; }
-  .cover-right b { display: block; color: var(--text); font-size: 13px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 10px; }
-  .cover-right i { display: block; font-style: normal; color: var(--gold2); font-weight: 700; margin-top: 12px; }
-
-  /* metrics */
-  .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 40px; }
-  .metric { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px 22px 20px; position: relative; overflow: hidden; }
-  .metric::after { content: ""; position: absolute; right: -40px; top: -40px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgba(201,169,98,.22), transparent 70%); }
-  .metric .n { font-family: var(--serif); font-size: clamp(36px, 3.6vw, 56px); line-height: 1; color: var(--gold2); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-  .metric .l { margin-top: 10px; color: var(--muted); font-size: 14px; font-weight: 600; letter-spacing: .02em; }
-  .footnote { margin-top: 18px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
-  .appendix { display: none; }
-
-  /* layers */
-  .layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
-  .layer { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; min-height: 180px; display: flex; flex-direction: column; gap: 12px; transition: transform .25s ease, border-color .25s ease; }
-  .layer:hover { transform: translateY(-3px); border-color: rgba(201,169,98,.55); }
-  .layer .ic { width: 42px; height: 42px; border-radius: 12px; background: rgba(201,169,98,.14); display: grid; place-items: center; color: var(--gold2); }
-  .layer .ic svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .layer h3 { margin: 0; font: 800 13px/1.2 var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text); }
-  .layer p { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.55; }
-
-  /* engine */
-  .moat { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; margin-top: 24px; }
-  .ring { position: relative; width: min(100%, 500px); aspect-ratio: 1; margin: 0 auto; container-type: inline-size; }
-  .ring .loop { position: absolute; inset: 11%; border: 1.5px dashed rgba(201,169,98,.45); border-radius: 50%; animation: spin 80s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg) } }
-  .ring .hub { position: absolute; left: 50%; top: 50%; width: 46%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a2418, #141210 70%); border: 1px solid rgba(201,169,98,.5); display: grid; place-items: center; text-align: center; padding: 18px; box-shadow: 0 0 0 10px rgba(201,169,98,.05), 0 20px 60px rgba(0,0,0,.5); }
-  .ring .hub b { font-family: var(--serif); font-weight: 600; font-size: clamp(16px, 1.6vw, 22px); line-height: 1.15; color: var(--gold2); }
-  .ring .hub small { display: block; margin-top: 8px; color: var(--muted); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
-  .node { --r: 44cqw; position: absolute; left: 50%; top: 50%; width: 112px; margin: -24px 0 0 -56px; transform: rotate(var(--a)) translate(0, calc(var(--r) * -1)) rotate(calc(var(--a) * -1)); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 11px 10px; text-align: center; font-weight: 800; font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; }
-  .node i { display: block; font-style: normal; font-weight: 600; font-size: 10px; letter-spacing: .12em; color: var(--gold); margin-bottom: 2px; }
-  .chain { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
-  .chain span { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; font-size: 13.5px; font-weight: 600; }
-  .chain em { color: var(--gold); font-style: normal; align-self: center; }
-  .flywheel { margin-top: 26px; font-family: var(--serif); font-size: clamp(22px, 2.4vw, 34px); line-height: 1.2; color: var(--gold2); }
-  .bar { margin-top: 36px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 18px 4px; }
-  .bar div { font: 800 13px/1.4 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-  .bar div b { color: var(--gold2); font-family: var(--serif); font-weight: 600; font-size: 22px; letter-spacing: 0; margin-right: 8px; }
-
-  /* build today */
-  .cost { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 36px; }
-  .cost .c { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
-  .cost .c .v { font-family: var(--serif); font-size: clamp(30px, 3.2vw, 46px); color: var(--gold2); line-height: 1; letter-spacing: -.02em; }
-  .cost .c .t { margin-top: 10px; font-weight: 800; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
-  .cost .c p { margin: 10px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
-  .complex { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 28px; }
-  .complex div { display: flex; gap: 12px; align-items: flex-start; color: var(--muted); font-size: 14px; line-height: 1.5; padding: 6px 0; border-bottom: 1px dashed var(--line); }
-  .complex div::before { content: "◆"; color: var(--gold); font-size: 10px; margin-top: 5px; }
-  .complex b { color: var(--text); font-weight: 600; }
-  .versus { margin-top: 26px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: center; }
-  .versus .side { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
-  .versus .side b { display: block; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-  .versus .side span { font-family: var(--serif); font-size: 22px; }
-  .versus .side.live { border-color: rgba(201,169,98,.6); background: linear-gradient(135deg, rgba(201,169,98,.18), rgba(201,169,98,.04)); }
-  .versus .side.live span { color: var(--gold2); }
-  .versus .vs { font: 800 12px/1 var(--sans); letter-spacing: .2em; color: var(--muted); }
-
-  /* go to market / ask */
-  .uses { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 36px; counter-reset: u; }
-  .uses.four { grid-template-columns: repeat(4, 1fr); margin-top: 30px; }
-  .uses.four .use { min-height: 0; }
-  .use { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px 20px; min-height: 200px; display: flex; flex-direction: column; gap: 10px; }
-  .use::before { counter-increment: u; content: "0" counter(u); font-family: var(--serif); color: var(--gold); font-size: 22px; }
-  .use h3 { margin: 0; font: 800 13px/1.25 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
-  .use p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
-  .risk { display: inline-flex; align-items: center; gap: 10px; margin-top: 24px; padding: 12px 16px; border-radius: 999px; border: 1px solid rgba(201,169,98,.5); color: var(--gold2); font-size: 13.5px; font-weight: 600; }
-  .risk i { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 5px rgba(201,169,98,.18); }
-  .quote { margin-top: 28px; padding-left: 22px; border-left: 2px solid var(--gold); font-family: var(--serif); font-size: clamp(20px, 2.2vw, 30px); line-height: 1.25; max-width: 900px; }
-  .quote span { color: var(--gold2); }
-
-  /* close */
-  #close, #ask { text-align: left; background: radial-gradient(900px 500px at 20% 110%, rgba(201,169,98,.16), transparent 60%), var(--bg); }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
-  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 999px; font-weight: 800; font-size: 14px; letter-spacing: .02em; text-decoration: none; border: 1px solid var(--line); color: var(--text); transition: transform .2s ease, background-color .2s ease; }
-  .btn:hover { transform: translateY(-2px); }
-  .btn.gold { background: var(--gold); color: var(--ink); border-color: var(--gold); }
-  .btn.gold:hover { background: var(--gold2); }
-
-  /* lead form */
-  .lead-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 60; display: none; align-items: center; justify-content: center; padding: 20px; }
-  .lead-overlay.open { display: flex; }
-  .lead-modal { position: relative; width: 100%; max-width: 520px; max-height: calc(100vh - 40px); overflow-y: auto; background: var(--bg2); border: 1px solid var(--line); border-radius: 22px; padding: 34px 32px 28px; box-shadow: 0 40px 100px rgba(0,0,0,.6); animation: leadIn .35s ease; }
-  @keyframes leadIn { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: none } }
-  .lead-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; transition: color .2s ease, border-color .2s ease; }
-  .lead-close:hover { color: var(--text); border-color: var(--muted); }
-  .lead-modal h2 { font-size: clamp(26px, 3vw, 34px); line-height: 1.1; margin-bottom: 8px; }
-  .lead-modal .sub { color: var(--muted); font-size: 14px; margin: 0 0 22px; line-height: 1.5; }
-  .lf { display: grid; gap: 14px; }
-  .lf .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .lf label { display: block; font: 700 11px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
-  .lf input, .lf textarea { width: 100%; box-sizing: border-box; background: var(--card); border: 1px solid var(--line); border-radius: 12px; color: var(--text); font: 500 15px/1.4 var(--sans); padding: 13px 14px; outline: none; transition: border-color .2s ease; }
-  .lf input:focus, .lf textarea:focus { border-color: var(--gold); }
-  .lf textarea { min-height: 96px; resize: vertical; }
-  .lf .submit { margin-top: 6px; width: 100%; justify-content: center; cursor: pointer; font-family: var(--sans); }
-  .lf .submit:disabled { opacity: .6; cursor: default; transform: none; }
-  .lf .fine { font-size: 11.5px; color: var(--muted); text-align: center; margin: 4px 0 0; line-height: 1.5; }
-  .lf .err { display: none; color: #e07070; font-size: 13px; text-align: center; }
-  .lead-done { display: none; text-align: center; padding: 18px 0 8px; }
-  .lead-done i { display: block; width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%; border: 1.5px solid var(--gold); color: var(--gold2); font-style: normal; font-size: 26px; line-height: 56px; }
-  .lead-done h2 { margin-bottom: 10px; }
-  .lead-done p { color: var(--muted); font-size: 15px; margin: 0; line-height: 1.5; }
-  @media (max-width: 560px) { .lf .row { grid-template-columns: 1fr; } .lead-modal { padding: 28px 22px 22px; } }
-
-  /* chrome */
-  .progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; background: var(--gold); z-index: 20; transition: width .25s ease; }
-  .dots { position: fixed; right: 18px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 20; }
-  .dots a { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: block; transition: background-color .2s ease, transform .2s ease; }
-  .dots a.cur { background: var(--gold); transform: scale(1.35); }
-
-  @media (max-width: 980px) {
-    .cover-grid, .moat, .complex, .versus { grid-template-columns: 1fr; }
-    .cover-right { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 20px; }
-    .metrics { grid-template-columns: repeat(2, 1fr); }
-    .layers { grid-template-columns: 1fr 1fr; }
-    .cost { grid-template-columns: 1fr 1fr; }
-    .uses, .uses.four { grid-template-columns: 1fr 1fr; }
-    .use { min-height: 0; }
-    .dots { display: none; }
-    .versus .vs { text-align: center; }
-    .node { width: 96px; margin-left: -48px; font-size: 11px; }
-  }
-  @media (max-width: 560px) {
-    .metrics, .layers, .cost, .uses, .uses.four { grid-template-columns: 1fr; }
-    .bar div { width: 100%; }
-    .node { --r: 36cqw; }
-  }
-  @media print {
-    .dots, .progress, .noise, .lead-overlay, .imosw-root { display: none !important; }
-    .appendix { display: block; }
-    body { background: #fff; color: #111; scroll-snap-type: none; }
-    :root { --bg: #fff; --bg2: #fff; --card: #f6f3ec; --line: #ddd6c6; --text: #111; --muted: #555; --gold: #8a6d2f; --gold2: #6f5520; --ink: #fff; }
-    .slide { min-height: 100vh; height: auto; page-break-after: always; break-inside: avoid; border: 0; }
-    .reveal { opacity: 1 !important; transform: none !important; }
-    .ring .loop { animation: none; }
-  }
+.ov-hero{padding:72px 0 112px}
+.ov-hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:56px;align-items:center}
+.ov-hero h1{font-size:clamp(2.5rem,1.4rem + 3.4vw,4.4rem);max-width:12em}
+.ov-hero .lead b,.section-head .muted b,.story-text b,.ov-ask-lead b{color:var(--ink);font-weight:700}
+.ov-glance{background:var(--white);border:1px solid var(--line);border-radius:28px;padding:32px 30px;box-shadow:var(--shadow)}
+.ov-glance ul{list-style:none;margin:6px 0 0;padding:0}
+.ov-glance li{display:flex;align-items:baseline;gap:14px;padding:12px 0;border-top:1px solid var(--line);color:var(--text-2);font-size:.95rem}
+.ov-glance li:first-child{border-top:0}
+.ov-glance li b{min-width:4.2em;font-family:var(--font-h);font-weight:800;font-size:1.45rem;letter-spacing:-.02em;color:var(--ink)}
+.ov-tag{margin-top:16px;font-weight:700;color:var(--gold-deep)}
+.ov-engine{display:grid;grid-template-columns:1.05fr .95fr;gap:72px;align-items:center}
+.ov-chain{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px}
+.ov-chain span{padding:9px 16px;border-radius:999px;background:var(--white);border:1px solid var(--line);font-size:.9rem;font-weight:600}
+.ov-chain em{font-style:normal;color:var(--gold-deep);align-self:center}
+.ov-fly{margin-top:30px;padding-left:22px;border-left:3px solid var(--gold);font-family:var(--font-h);font-weight:700;font-size:clamp(1.3rem,1rem + 1vw,1.8rem);line-height:1.25}
+.ov-ring{position:relative;width:min(100%,500px);aspect-ratio:1;margin:0 auto;container-type:inline-size}
+.ov-ring::before{content:"";position:absolute;inset:4%;border-radius:50%;background:radial-gradient(closest-side,rgba(201,169,98,.22),rgba(201,169,98,0))}
+.ov-loop{position:absolute;inset:11%;border:1.5px dashed rgba(201,169,98,.6);border-radius:50%;animation:ovspin 80s linear infinite}
+@keyframes ovspin{to{transform:rotate(360deg)}}
+.ov-hub{position:absolute;left:50%;top:50%;width:46%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:var(--ink);display:grid;place-items:center;text-align:center;padding:18px;
+  box-shadow:0 0 0 10px rgba(201,169,98,.12),var(--shadow-phone)}
+.ov-hub b{font-family:var(--font-h);font-weight:800;font-size:clamp(1rem,.8rem + .6vw,1.35rem);line-height:1.15;color:var(--gold)}
+.ov-hub small{display:block;margin-top:8px;color:var(--d-text-2);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase}
+.ov-node{--r:44cqw;position:absolute;left:50%;top:50%;width:122px;margin:-26px 0 0 -61px;transform:rotate(var(--a)) translate(0,calc(var(--r) * -1)) rotate(calc(var(--a) * -1));
+  background:var(--white);border:1px solid var(--line);border-radius:999px;padding:10px;text-align:center;font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 10px 24px -16px rgba(11,11,15,.35)}
+.ov-node i{display:block;font-style:normal;font-size:.64rem;letter-spacing:.12em;color:var(--gold-deep);margin-bottom:2px}
+.ov-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:56px}
+.ov-metric{position:relative;overflow:hidden;padding:28px 24px 24px;border-radius:24px;background:var(--ink-2);border:1px solid var(--line-dark)}
+.ov-metric::after{content:"";position:absolute;right:-40px;top:-40px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(201,169,98,.25),transparent 70%)}
+.ov-n{font-family:var(--font-h);font-weight:800;font-size:clamp(2.2rem,1.4rem + 2vw,3.3rem);line-height:1;letter-spacing:-.03em;color:var(--gold);font-variant-numeric:tabular-nums}
+.ov-l{margin-top:12px;font-size:.9rem;font-weight:600;color:var(--d-text-2)}
+.ov-foot{margin-top:22px;font-size:.84rem;color:var(--d-text-2)}
+.ov-appendix{display:none}
+.ov-costs{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.ov-cost{padding:30px 26px;border-radius:26px;background:var(--white);border:1px solid var(--line);transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s}
+.ov-cost:hover{transform:translateY(-4px);border-color:var(--gold);box-shadow:var(--shadow)}
+.ov-v{font-family:var(--font-h);font-weight:800;font-size:clamp(1.9rem,1.3rem + 1.4vw,2.6rem);line-height:1;letter-spacing:-.02em}
+.ov-t{margin-top:12px;font-size:.74rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep)}
+.ov-cost p:last-child{margin-top:10px;color:var(--text-2);font-size:.93rem}
+.ov-complex{grid-template-columns:1fr 1fr;gap:14px 40px;margin-top:48px}
+.ov-complex li{color:var(--text-2)}
+.ov-complex b{color:var(--ink)}
+.ov-versus{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-top:48px}
+.ov-side{padding:24px 28px;border-radius:22px;background:var(--white);border:1px solid var(--line)}
+.ov-side .ov-t{margin:0 0 8px}
+.ov-side span{font-family:var(--font-h);font-weight:700;font-size:1.3rem}
+.ov-side.live{background:var(--gold-tint);border-color:#E9DDBF}
+.ov-vs{font-weight:800;font-size:.8rem;letter-spacing:.2em;color:var(--muted)}
+.ov-note{margin-top:24px;font-size:.84rem;color:var(--muted);max-width:60em}
+.ov-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px}
+.ov-bar div{padding:22px;border-radius:20px;background:var(--white);border:1px solid var(--line);font-size:.9rem;color:var(--text-2)}
+.ov-bar b{display:block;font-family:var(--font-h);font-weight:800;font-size:2rem;line-height:1;color:var(--ink);margin-bottom:8px}
+.ov-uses{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.ov-uses.four{grid-template-columns:repeat(4,1fr);margin-top:44px}
+.ov-use h3{font-size:1.12rem;margin:12px 0 8px}
+.ov-idx{font-family:var(--font-h);font-weight:800;font-size:.9rem;letter-spacing:.08em;color:var(--gold-deep)}
+.ov-risk{display:inline-flex;align-items:center;gap:12px;margin-top:36px;padding:12px 20px;border-radius:999px;background:var(--gold-tint);border:1px solid #E9DDBF;font-weight:600;color:var(--gold-deep)}
+.ov-risk i{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(201,169,98,.25)}
+.ov-gold{color:var(--gold)}
+.ov-close h2{max-width:16em}
+.ov-ctas{justify-content:center;margin-top:0}
+.ov-ask .ov-ctas{justify-content:flex-start;margin-top:40px}
+.ov-btn-light{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+.ov-btn-light:hover{background:#fff;color:var(--ink);border-color:#fff;transform:translateY(-2px)}
+.ov-ask h2{max-width:22em}
+.ov-ask-lead{margin-top:22px;font-size:1.12rem;color:var(--d-text-2);max-width:40em}
+.ov-ask-lead b{color:#fff}
+.ov-ask .ov-use{background:var(--ink-2);border-color:var(--line-dark)}
+.ov-ask .ov-use p{color:var(--d-text-2)}
+.ov-ask .ov-idx{color:var(--gold)}
+.ov-quote{margin-top:44px;padding-left:24px;border-left:3px solid var(--gold);font-family:var(--font-h);font-weight:700;font-size:clamp(1.3rem,1rem + 1.1vw,1.9rem);line-height:1.3;max-width:34em}
+.ov-quote span{color:var(--gold)}
+.ov-fine{margin:12px 0 0;text-align:center}
+@media (max-width:1080px){
+  .ov-metrics{grid-template-columns:repeat(3,1fr)}
+  .ov-costs,.ov-uses.four{grid-template-columns:1fr 1fr}
+  .ov-uses{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:960px){
+  .ov-hero-grid,.ov-engine{grid-template-columns:1fr;gap:48px}
+  .ov-complex{grid-template-columns:1fr}
+}
+@media (max-width:720px){
+  .ov-hero{padding:44px 0 80px}
+  .ov-metrics,.ov-uses{grid-template-columns:1fr 1fr}
+  .ov-costs,.ov-uses.four,.ov-bar{grid-template-columns:1fr}
+  .ov-versus{grid-template-columns:1fr;gap:10px}
+  .ov-vs{text-align:center}
+  .ov-node{width:96px;margin:-22px 0 0 -48px;font-size:.66rem;padding:8px 6px}
+  .ov-ctas .btn{width:100%}
+}
+@media print{
+  .site-header,.site-footer,.modal,.sheet,.imosw-root,.skip,.ov-ctas,.cta-row{display:none !important}
+  body::after{display:none}
+  .js .reveal{opacity:1 !important;transform:none !important}
+  .section,.band{padding:28px 0;break-inside:avoid}
+  .band-ink{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .ov-appendix{display:block}
+  .ov-loop{animation:none}
+}
 </style>
 </head>
 <body>
-<div class="noise"></div>
-<div class="progress" id="progress"></div>
-<nav class="dots" id="dots" aria-label="Slides"></nav>
-
-<!-- 1. COVER: the problem -->
-<section class="slide" id="cover">
-  <div class="inner">
-    <div class="brand reveal"><img src="logo.png" alt="i'M On Social" /><span>i'M On Social</span></div>
-    <div class="cover-grid">
-      <div>
-        <p class="kicker reveal">My Platform Overview · 2026</p>
-        <h1 class="reveal">The AI Relationship<br/>Operating System.</h1>
-        <p class="lead reveal">Salespeople don't lose relationships because they don't care. They lose them because no human can remember hundreds of customers, every conversation, every milestone and exactly when to reconnect. <b>We built the system that can.</b></p>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header" data-testid="site-header">
+  <div class="wrap header-inner">
+    <a href="/api/marketing-preview/" class="logo" data-testid="nav-logo" aria-label="i'M On Social home"><picture><source srcset="/api/marketing-preview/assets/img/logo.webp?v=c54817d1" type="image/webp"/><img src="/api/marketing-preview/assets/img/logo.png?v=c54817d1" alt="i'M On Social" width="42" height="48"/></picture></a>
+    <nav class="nav" aria-label="Main">
+      <a class="nav-link" href="/api/marketing-preview/#how-it-works" data-scroll="how-it-works" data-testid="nav-how-it-works">How It Works</a>
+      <div class="nav-item"><button class="nav-trigger" type="button" aria-expanded="false" aria-controls="dd-features" data-dd="features" data-testid="nav-features-trigger">Features <svg class="ico chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="dd dd-wide" id="dd-features" role="menu"><div class="dd-col"><p class="dd-label">Capture &amp; remember</p><a class="dd-link" href="/api/marketing-preview/jessi/" data-testid="nav-features-voice-memos-jessi-ai"><strong>Voice memos &amp; Jessi AI</strong><span>Talk it out, Jessi writes it down</span></a><a class="dd-link" href="/api/marketing-preview/digital-card/" data-testid="nav-features-digital-card-qr"><strong>Digital card &amp; QR</strong><span>A card people keep and share</span></a><a class="dd-link" href="/api/marketing-preview/showcase/" data-testid="nav-features-link-page-showcase"><strong>Link page &amp; showcase</strong><span>Your work, reviews and links in one place</span></a></div><div class="dd-col"><p class="dd-label">Stay connected</p><a class="dd-link" href="/api/marketing-preview/date-triggers/" data-testid="nav-features-campaigns-date-triggers"><strong>Campaigns &amp; date triggers</strong><span>Birthdays, anniversaries, check-ins</span></a><a class="dd-link" href="/api/marketing-preview/inbox/" data-testid="nav-features-inbox-texting"><strong>Inbox &amp; texting</strong><span>Text from a business number, history on every contact</span></a><a class="dd-link" href="/api/marketing-preview/congrats-template/" data-testid="nav-features-congrats-cards"><strong>Congrats cards</strong><span>Celebrate every purchase</span></a></div><div class="dd-col"><p class="dd-label">Grow &amp; manage</p><a class="dd-link" href="/api/marketing-preview/reviews/" data-testid="nav-features-reviews"><strong>Reviews</strong><span>Ask for a review in one tap</span></a><a class="dd-link" href="/api/marketing-preview/leaderboard/" data-testid="nav-features-leaderboards"><strong>Leaderboards</strong><span>Friendly competition for teams</span></a><a class="dd-link" href="/api/marketing-preview/seo/" data-testid="nav-features-seo-visibility"><strong>SEO &amp; visibility</strong><span>Pages built to be found</span></a></div><a class="dd-all" href="/api/marketing-preview/features/" data-testid="nav-features-all">All features <svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></div></div>
+      <div class="nav-item"><button class="nav-trigger" type="button" aria-expanded="false" aria-controls="dd-solutions" data-dd="solutions" data-testid="nav-solutions-trigger">Solutions <svg class="ico chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="dd" id="dd-solutions" role="menu"><a class="dd-link" href="/api/marketing-preview/organizations/" data-testid="nav-solutions-for-businesses"><strong>For businesses</strong></a><a class="dd-link" href="/api/marketing-preview/individuals/" data-testid="nav-solutions-for-sales-professionals"><strong>For sales professionals</strong></a><a class="dd-link" href="/api/marketing-preview/dealers/" data-testid="nav-solutions-automotive-equipment"><strong>Automotive &amp; equipment</strong></a><a class="dd-link" href="/api/marketing-preview/real-estate/" data-testid="nav-solutions-real-estate"><strong>Real estate</strong></a><a class="dd-link" href="/api/marketing-preview/insurance/" data-testid="nav-solutions-insurance-financial"><strong>Insurance &amp; financial</strong></a><a class="dd-link" href="/api/marketing-preview/home-services/" data-testid="nav-solutions-home-services"><strong>Home services</strong></a><a class="dd-link" href="/api/marketing-preview/powersports/" data-testid="nav-solutions-powersports"><strong>Powersports</strong></a><a class="dd-link" href="/api/marketing-preview/industries/" data-testid="nav-solutions-all-industries"><strong>All industries</strong></a></div></div>
+      <a class="nav-link" href="/api/marketing-preview/pricing/" data-testid="nav-pricing">Pricing</a>
+      <div class="nav-item"><button class="nav-trigger" type="button" aria-expanded="false" aria-controls="dd-resources" data-dd="resources" data-testid="nav-resources-trigger">Resources <svg class="ico chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="dd" id="dd-resources" role="menu"><a class="dd-link" href="/api/marketing-preview/help/" data-testid="nav-resources-help-center"><strong>Help Center</strong></a><a class="dd-link" href="/api/marketing-preview/training/" data-testid="nav-resources-training"><strong>Training</strong></a><a class="dd-link" href="/api/marketing-preview/why-imonsocial/" data-testid="nav-resources-why-i-m-on-social"><strong>Why i&#x27;M On Social</strong></a><a class="dd-link" href="/api/marketing-preview/developers/" data-testid="nav-resources-developers-api"><strong>Developers &amp; API</strong></a><a class="dd-link" href="https://app.imonsocial.com/api/get/site" data-testid="nav-resources-get-the-iphone-app"><strong>Get the iPhone app</strong></a></div></div>
+    </nav>
+    <div class="header-actions">
+      <a class="nav-link signin" href="https://app.imonsocial.com" data-testid="nav-sign-in">Sign In</a>
+      <button class="btn btn-gold btn-sm" type="button" data-demo="nav" data-testid="nav-book-demo-button">Book a Demo</button>
+      <button class="menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-sheet" data-testid="nav-mobile-toggle"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg></button>
+    </div>
+  </div>
+</header>
+<div class="sheet" id="mobile-sheet" aria-hidden="true" data-testid="mobile-sheet">
+  <div class="sheet-top"><a href="/api/marketing-preview/" class="logo" data-testid="mobile-sheet-logo" aria-label="i'M On Social home"><picture><source srcset="/api/marketing-preview/assets/img/logo.webp?v=c54817d1" type="image/webp"/><img src="/api/marketing-preview/assets/img/logo.png?v=c54817d1" alt="i'M On Social" width="42" height="48"/></picture></a><button class="menu-btn" type="button" aria-label="Close menu" data-sheet-close data-testid="mobile-sheet-close"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+  <div class="sheet-body">
+    <a class="sheet-link" href="/api/marketing-preview/#how-it-works" data-scroll="how-it-works" data-testid="mobile-how-it-works">How It Works</a>
+    <details class="sheet-acc" data-testid="mobile-acc-features"><summary data-testid="mobile-acc-features-toggle">Features <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="sheet-links"><a href="/api/marketing-preview/jessi/" class="" data-testid="mobile-features-voice-memos-jessi-ai">Voice memos &amp; Jessi AI</a><a href="/api/marketing-preview/digital-card/" class="" data-testid="mobile-features-digital-card-qr">Digital card &amp; QR</a><a href="/api/marketing-preview/showcase/" class="" data-testid="mobile-features-link-page-showcase">Link page &amp; showcase</a><a href="/api/marketing-preview/date-triggers/" class="" data-testid="mobile-features-campaigns-date-triggers">Campaigns &amp; date triggers</a><a href="/api/marketing-preview/inbox/" class="" data-testid="mobile-features-inbox-texting">Inbox &amp; texting</a><a href="/api/marketing-preview/congrats-template/" class="" data-testid="mobile-features-congrats-cards">Congrats cards</a><a href="/api/marketing-preview/reviews/" class="" data-testid="mobile-features-reviews">Reviews</a><a href="/api/marketing-preview/leaderboard/" class="" data-testid="mobile-features-leaderboards">Leaderboards</a><a href="/api/marketing-preview/seo/" class="" data-testid="mobile-features-seo-visibility">SEO &amp; visibility</a><a href="/api/marketing-preview/features/" class="" data-testid="mobile-features-all">All features</a></div></details>
+    <details class="sheet-acc" data-testid="mobile-acc-solutions"><summary data-testid="mobile-acc-solutions-toggle">Solutions <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="sheet-links"><a href="/api/marketing-preview/organizations/" class="" data-testid="mobile-solutions-for-businesses">For businesses</a><a href="/api/marketing-preview/individuals/" class="" data-testid="mobile-solutions-for-sales-professionals">For sales professionals</a><a href="/api/marketing-preview/dealers/" class="" data-testid="mobile-solutions-automotive-equipment">Automotive &amp; equipment</a><a href="/api/marketing-preview/real-estate/" class="" data-testid="mobile-solutions-real-estate">Real estate</a><a href="/api/marketing-preview/insurance/" class="" data-testid="mobile-solutions-insurance-financial">Insurance &amp; financial</a><a href="/api/marketing-preview/home-services/" class="" data-testid="mobile-solutions-home-services">Home services</a><a href="/api/marketing-preview/powersports/" class="" data-testid="mobile-solutions-powersports">Powersports</a><a href="/api/marketing-preview/industries/" class="" data-testid="mobile-solutions-all-industries">All industries</a></div></details>
+    <a class="sheet-link" href="/api/marketing-preview/pricing/" data-testid="mobile-pricing">Pricing</a>
+    <details class="sheet-acc" data-testid="mobile-acc-resources"><summary data-testid="mobile-acc-resources-toggle">Resources <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="sheet-links"><a href="/api/marketing-preview/help/" class="" data-testid="mobile-resources-help-center">Help Center</a><a href="/api/marketing-preview/training/" class="" data-testid="mobile-resources-training">Training</a><a href="/api/marketing-preview/why-imonsocial/" class="" data-testid="mobile-resources-why-i-m-on-social">Why i&#x27;M On Social</a><a href="/api/marketing-preview/developers/" class="" data-testid="mobile-resources-developers-api">Developers &amp; API</a><a href="https://app.imonsocial.com/api/get/site" class="" data-testid="mobile-resources-get-the-iphone-app">Get the iPhone app</a></div></details>
+    <a class="sheet-link" href="https://app.imonsocial.com" data-testid="mobile-sign-in">Sign In</a>
+  </div>
+  <div class="sheet-cta"><button class="btn btn-gold btn-block" type="button" data-demo="mobile_nav" data-testid="mobile-book-demo-button">Book a Demo</button></div>
+</div>
+<main id="main">
+<section class="page-hero ov-hero" id="cover" data-testid="overview-hero"><div class="wrap ov-hero-grid">
+  <div>
+    <p class="overline reveal">My Platform Overview · 2026</p>
+    <h1 class="reveal" data-testid="overview-h1">The AI Relationship Operating System.</h1>
+    <p class="lead reveal">Salespeople don't lose relationships because they don't care. They lose them because no human can remember hundreds of customers, every conversation, every milestone and exactly when to reconnect. <b>We built the system that can.</b></p>
+    <div class="cta-row reveal"><button class="btn btn-gold btn-lg" type="button" data-ov-lead data-testid="overview-hero-start-conversation">Start a conversation</button><a class="btn btn-outline btn-lg" href="#built" data-testid="overview-hero-numbers">See the numbers</a></div>
+  </div>
+  <aside class="ov-glance reveal" data-testid="overview-at-a-glance">
+    <p class="overline">At a glance</p>
+    <ul><li><b>335K+</b>Lines of application code</li><li><b>1,774</b>API endpoints</li><li><b>379</b>Application screens</li><li><b>57</b>Automated background jobs</li><li><b>14</b>Live external integrations</li><li><b>3</b>Surfaces: iOS, web and an embeddable website widget</li></ul>
+    <p class="ov-tag">Already built. Already live. Already in use.</p>
+  </aside>
+</div></section>
+<section class="section" id="engine" data-testid="overview-engine"><div class="wrap ov-engine">
+  <div>
+    <p class="overline reveal">What it actually does</p>
+    <h2 class="reveal">A CRM stores what happened. i'M On Social understands what changed.</h2>
+    <p class="lead reveal">Something happens. The relationship changes. The system understands the change, and the next action changes with it. Every conversation, call and customer signal strengthens the record, so the platform can determine:</p>
+    <div class="ov-chain reveal" aria-label="Decision chain"><span>Who needs attention</span><em>→</em><span>Why</span><em>→</em><span>What should happen next</span><em>→</em><span>When</span><em>→</em><span>How to execute it</span></div>
+    <p class="ov-fly reveal">Every interaction makes the next interaction smarter.</p>
+  </div>
+  <div class="ov-ring reveal" aria-label="Relationship Intelligence Engine with five connected systems" data-testid="overview-ring">
+    <div class="ov-loop"></div><div class="ov-hub"><div><b>Relationship Intelligence Engine</b><small>the system of record</small></div></div><div class="ov-node" style="--a:0deg"><i>01</i>Communicate</div><div class="ov-node" style="--a:72deg"><i>02</i>Understand</div><div class="ov-node" style="--a:144deg"><i>03</i>Remember</div><div class="ov-node" style="--a:216deg"><i>04</i>Automate</div><div class="ov-node" style="--a:288deg"><i>05</i>Act</div>
+  </div>
+</div></section>
+<section class="section value" id="layers" data-testid="overview-layers"><div class="wrap">
+  <div class="section-head"><p class="overline reveal">One platform. One shared context.</p><h2 class="reveal">Six systems most companies buy from six vendors. One relationship layer connecting all of them.</h2>
+  <p class="reveal muted">The texting system knows what the relationship engine knows. So does voice. So does automation, training and tasks. <b>Not six features under one login: six systems sharing one memory.</b></p></div>
+  <div class="tiles tiles-3"><article class="tile reveal" style="--d:0ms" data-testid="overview-layer-relationship-intelligence"><span class="tile-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1"/><path d="M12 3a4 4 0 0 1 4 4v1a4 4 0 0 1 3 3.9A4 4 0 0 1 17 19h-1"/><path d="M12 3v18"/></svg></span><h3>Relationship intelligence</h3><p>Persistent customer memory that turns conversations, activities, preferences, milestones and engagement history into a continuously evolving relationship profile.</p></article><article class="tile reveal" style="--d:70ms" data-testid="overview-layer-ai-communication"><span class="tile-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></span><h3>AI communication</h3><p>Real-time conversational voice, intelligent texting, email, transcription, voice generation and automated customer interaction.</p></article><article class="tile reveal" style="--d:140ms" data-testid="overview-layer-automation-engine"><span class="tile-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></span><h3>Automation engine</h3><p>Long-term campaigns, event-driven workflows, scheduled engagement, follow-up automation and salesperson task generation.</p></article><article class="tile reveal" style="--d:210ms" data-testid="overview-layer-sales-execution"><span class="tile-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span><h3>Sales execution</h3><p>Lead response, customer engagement, landing pages, digital experiences, reviews, referrals, communication tools and actionable next steps.</p></article><article class="tile reveal" style="--d:280ms" data-testid="overview-layer-training-coaching"><span class="tile-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 9v6"/></svg></span><h3>Training &amp; coaching</h3><p>AI practice calls, role-play scenarios, scoring, scripts, coaching, progress tracking and certification.</p></article><article class="tile reveal" style="--d:350ms" data-testid="overview-layer-enterprise-infrastructure"><span class="tile-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5M9 10h2M13 10h2M9 14h2M13 14h2"/></svg></span><h3>Enterprise infrastructure</h3><p>Multi-user organizations, permissions, multi-location deployments, billing, partner programs, integrations, reporting and APIs.</p></article></div>
+</div></section>
+<section class="band band-ink" id="built" data-testid="overview-built"><div class="wrap">
+  <p class="overline reveal">Built, not just conceptualized</p>
+  <h2 class="reveal">Production-grade, already built at significant scale.</h2>
+  <div class="ov-metrics" data-testid="overview-metrics"><div class="ov-metric reveal" style="--d:0ms"><div class="ov-n" data-count="335" data-suffix="K+">0</div><div class="ov-l">Lines of application code</div></div><div class="ov-metric reveal" style="--d:70ms"><div class="ov-n" data-count="1774" data-suffix="">0</div><div class="ov-l">API endpoints</div></div><div class="ov-metric reveal" style="--d:140ms"><div class="ov-n" data-count="379" data-suffix="">0</div><div class="ov-l">Application screens</div></div><div class="ov-metric reveal" style="--d:210ms"><div class="ov-n" data-count="57" data-suffix="">0</div><div class="ov-l">Automated background jobs</div></div><div class="ov-metric reveal" style="--d:280ms"><div class="ov-n" data-count="14" data-suffix="">0</div><div class="ov-l">Live external integrations</div></div></div>
+  <p class="ov-foot reveal">Measured from the production repository, October 2026. Backend plus mobile/web app, excluding tests. Tests, build tooling and documentation add another 120K+ lines.</p>
+  <p class="ov-foot ov-appendix">Technical appendix: 375 reusable UI components · 213 data collections · native iOS app, web app and a one-line embeddable website widget · multi-tenant telephony with carrier (10DLC) compliance.</p>
+</div></section>
+<section class="section" id="replace" data-testid="overview-replace"><div class="wrap">
+  <div class="section-head"><p class="overline reveal">What would it take to build this today?</p><h2 class="reveal">The technical execution risk has already been absorbed.</h2></div>
+  <div class="ov-costs"><div class="ov-cost reveal" style="--d:0ms"><div class="ov-v">12–15</div><p class="ov-t">Engineers</p><p>Recreating the current platform would require a multidisciplinary team spanning backend, mobile, web, AI/voice, telephony, DevOps, QA and product.</p></div><div class="ov-cost reveal" style="--d:70ms"><div class="ov-v">18–24 mo</div><p class="ov-t">To feature parity</p><p>Estimated development time for a dedicated team to rebuild the current platform and reach the same depth.</p></div><div class="ov-cost reveal" style="--d:140ms"><div class="ov-v">$5M–$8M</div><p class="ov-t">Estimated equivalent build cost</p><p>Fully loaded US engineering cost to recreate ≈335K lines of production code plus the integration and compliance work around it.</p></div><div class="ov-cost reveal" style="--d:210ms"><div class="ov-v">Live now</div><p class="ov-t">Execution lead</p><p>While that team would be hiring and architecting, i&#x27;M On Social is already deployed, processing real conversations for real sales teams.</p></div></div>
+  <ul class="checks ov-complex reveal"><li><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Real-time voice bridge</b> between carrier media streams and a live AI model, with interruptions, watchdogs and fallbacks.</span></li><li><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Multi-tenant telephony</b> with per-organization numbers, sub-accounts and carrier (10DLC) compliance.</span></li><li><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>14 live integrations</b> across telephony, email, payments, AI, push, storage, identity and mapping.</span></li><li><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>57 scheduled jobs</b> running campaigns, follow-ups, digests, lifecycle events and health checks around the clock.</span></li><li><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>One living profile per customer</b>, continuously updated from every channel and every interaction.</span></li><li><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Three surfaces</b>: native iOS app, web app and a one-line embeddable website widget.</span></li></ul>
+  <div class="ov-versus reveal" data-testid="overview-versus">
+    <div class="ov-side"><p class="ov-t">Build from scratch</p><span>12–15 people · 18–24 months · $5M–$8M</span></div><div class="ov-vs">VS</div>
+    <div class="ov-side live"><p class="ov-t">i'M On Social today</p><span>Built, deployed, in use</span></div>
+  </div>
+  <p class="ov-note reveal">Estimates use industry productivity benchmarks of 12–18K production lines per engineer-year and fully loaded US cost of $200–250K per engineer-year, plus product, design, QA and infrastructure overhead. Formal models (COCOMO II) produce higher figures.</p>
+</div></section>
+<section class="section value" id="founder" data-testid="overview-founder"><div class="wrap story-grid">
+  <div><p class="overline reveal">Founder-market fit</p><h2 class="reveal">Thirty years on the sales floor. One tool built for the people on it.</h2></div>
+  <div><p class="story-text reveal">Most sales systems are built around managing the pipeline. This one is built around helping the salesperson manage the relationship. i'M On Social wasn't designed by a software team that discovered automotive sales in a market report. It was built by a high-tech redneck who spent three decades carrying a quota, then built the tool he always needed, for the lifeblood of every company: <b>the salesperson.</b></p>
+  <div class="ov-bar reveal"><div><b>30</b>years selling, not studying sales</div><div><b>1</b>problem lived every single day</div><div><b>335K+</b>lines of code written to end it</div></div></div>
+</div></section>
+<section class="section" id="gtm" data-testid="overview-gtm"><div class="wrap">
+  <div class="section-head"><p class="overline reveal">Where we are now</p><h2 class="reveal">The product is built. The infrastructure is live. Now it goes to market.</h2>
+  <p class="reveal muted">The focus shifts from building to distribution. <b>Here is the plan:</b></p></div>
+  <div class="ov-uses"><article class="track ov-use reveal" style="--d:0ms" data-testid="overview-gtm-dealers-first"><span class="ov-idx">01</span><h3>Dealers first</h3><p>Automotive and powersports dealerships, where the pain is sharpest: hundreds of past customers every salesperson has simply forgotten.</p></article><article class="track ov-use reveal" style="--d:70ms" data-testid="overview-gtm-land-and-expand"><span class="ov-idx">02</span><h3>Land and expand</h3><p>One rep becomes the store, the store becomes the group. Team leaderboards, manager views and the referral engine already drive this inside the product.</p></article><article class="track ov-use reveal" style="--d:140ms" data-testid="overview-gtm-partners-and-white-label"><span class="ov-idx">03</span><h3>Partners and white-label</h3><p>Partner, reseller and white-label programs are wired in, so industry channels can carry i&#x27;M On Social under their own brand.</p></article><article class="track ov-use reveal" style="--d:210ms" data-testid="overview-gtm-plug-into-existing-workflows"><span class="ov-idx">04</span><h3>Plug into existing workflows</h3><p>Two-way sync with the CRMs and DMS platforms dealers already run, so i&#x27;M On Social slots in on day one instead of replacing anything.</p></article><article class="track ov-use reveal" style="--d:280ms" data-testid="overview-gtm-adjacent-industries"><span class="ov-idx">05</span><h3>Adjacent industries</h3><p>Real estate, insurance, home services, medical and fitness: relationship-driven businesses the platform already supports with their own playbooks.</p></article></div>
+  <p class="ov-risk reveal"><i></i>Built. Live. In use. The next chapter is distribution.</p>
+</div></section>
+<section class="band band-ink final ov-close" id="close" data-mode="general" data-testid="overview-close"><div class="wrap final-inner">
+  <h2 class="reveal">Remember everyone. Understand every relationship. <span class="ov-gold">Never miss what should happen next.</span></h2>
+  <p class="reveal">From contact → relationship intelligence → action. One platform, already running.</p>
+  <div class="cta-row ov-ctas reveal"><button class="btn btn-gold btn-lg" type="button" data-ov-lead data-testid="overview-close-start-conversation">Start a conversation</button><a class="btn btn-lg ov-btn-light" href="/api/marketing-preview/" data-testid="overview-close-see-product">See the product</a><a class="btn btn-lg ov-btn-light" href="https://app.imonsocial.com" data-testid="overview-close-open-app">Open the live app</a></div>
+</div></section>
+<section class="band band-ink ov-ask" id="ask" data-mode="investor" data-testid="overview-ask"><div class="wrap">
+  <p class="overline reveal">Now we scale it</p>
+  <h2 class="reveal">We aren't raising capital to find out whether this can be built. <span class="ov-gold">We're raising capital to determine how fast it can be distributed.</span></h2>
+  <p class="ov-ask-lead reveal">The product is built. The infrastructure is live. The market has been identified. <b>The next investment is distribution.</b></p>
+  <div class="ov-uses four"><article class="track ov-use reveal" style="--d:0ms" data-testid="overview-ask-sales-distribution"><span class="ov-idx">01</span><h3>Sales &amp; distribution</h3><p>A direct sales motion for dealer groups and multi-location operators, plus the partner and reseller channels already wired into the product.</p></article><article class="track ov-use reveal" style="--d:70ms" data-testid="overview-ask-strategic-integrations"><span class="ov-idx">02</span><h3>Strategic integrations</h3><p>Two-way sync with the CRMs and DMS platforms the market already runs, so i&#x27;M On Social becomes the relationship layer on top of existing systems.</p></article><article class="track ov-use reveal" style="--d:140ms" data-testid="overview-ask-enterprise-deployment"><span class="ov-idx">03</span><h3>Enterprise deployment</h3><p>Onboarding, support, controls and reporting for groups rolling i&#x27;M On Social out across hundreds of reps at once.</p></article><article class="track ov-use reveal" style="--d:210ms" data-testid="overview-ask-product-expansion"><span class="ov-idx">04</span><h3>Product expansion</h3><p>Deeper AI across voice, texting and coaching, and the adjacent industries the platform already supports.</p></article></div>
+  <p class="ov-quote reveal">I've built the machine. <span>Now I'm looking for the right capital and partners to put fuel in it.</span></p>
+  <div class="cta-row ov-ctas reveal"><button class="btn btn-gold btn-lg" type="button" data-ov-lead data-testid="overview-ask-start-conversation">Start a conversation</button><a class="btn btn-lg ov-btn-light" href="/api/marketing-preview/" data-testid="overview-ask-see-product">See the product</a><a class="btn btn-lg ov-btn-light" href="https://app.imonsocial.com" data-testid="overview-ask-open-app">Open the live app</a></div>
+</div></section>
+<div class="modal" id="ov-lead-modal" role="dialog" aria-modal="true" aria-labelledby="ov-lead-title" aria-hidden="true" data-testid="overview-lead-modal">
+  <div class="modal-card">
+    <button class="modal-close" type="button" aria-label="Close" data-modal-close data-testid="overview-lead-close"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <form id="ov-lead-form" novalidate data-testid="overview-lead-form">
+      <p class="overline">Let's talk</p><h2 id="ov-lead-title">Start a conversation.</h2>
+      <p class="modal-sub">Leave your details and Forest will reach out personally.</p>
+      <div class="row2"><div class="field"><label for="ov-name">Name <span aria-hidden="true">*</span></label><input id="ov-name" name="name" type="text" required autocomplete="name" data-testid="overview-lead-name-input"/></div><div class="field"><label for="ov-company">Company <em>(optional)</em></label><input id="ov-company" name="company" type="text" autocomplete="organization" data-testid="overview-lead-company-input"/></div></div>
+      <div class="row2"><div class="field"><label for="ov-email">Email <span aria-hidden="true">*</span></label><input id="ov-email" name="email" type="email" required autocomplete="email" data-testid="overview-lead-email-input"/></div><div class="field"><label for="ov-phone">Phone <em>(optional)</em></label><input id="ov-phone" name="phone" type="tel" autocomplete="tel" data-testid="overview-lead-phone-input"/></div></div>
+      <div class="field"><label for="ov-message">What would you like to discuss? <em>(optional)</em></label><textarea id="ov-message" name="message" rows="4" data-testid="overview-lead-message-input"></textarea></div>
+      <p class="form-error" role="alert" hidden data-testid="overview-lead-error"></p>
+      <button class="btn btn-gold btn-block" type="submit" data-testid="overview-lead-submit">Send</button>
+      <p class="legal-line ov-fine">Your details go straight to Forest. No lists, no spam.</p>
+    </form>
+    <div class="form-success" hidden data-testid="overview-lead-success"><div class="success-ico"><svg class="ico" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div><h2>Got it.</h2>
+      <p>Thanks for reaching out. Forest will be in touch shortly.</p><button class="btn btn-ink" type="button" data-modal-close data-testid="overview-lead-done">Done</button></div>
+  </div>
+</div>
+</main>
+<footer class="site-footer" data-testid="site-footer">
+  <div class="wrap footer-grid">
+    <div class="f-brand">
+      <a href="/api/marketing-preview/" class="logo" data-testid="footer-logo" aria-label="i'M On Social home"><picture><source srcset="/api/marketing-preview/assets/img/logo.webp?v=c54817d1" type="image/webp"/><img src="/api/marketing-preview/assets/img/logo.png?v=c54817d1" alt="i'M On Social" width="42" height="48"/></picture></a>
+      <p>The Relationship OS for businesses and the people who sell for them.</p>
+      <a class="appstore" href="https://app.imonsocial.com/api/get/site" data-testid="footer-app-store">Get the iPhone app <svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+      <div class="socials"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener" data-testid="footer-social-instagram">Instagram</a><a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener" data-testid="footer-social-tiktok">TikTok</a><a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener" data-testid="footer-social-youtube">YouTube</a></div>
+    </div>
+    <div class="f-cols"><details class="f-col" open data-testid="footer-col-product"><summary data-testid="footer-accordion-toggle-product">Product <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-links"><a href="/api/marketing-preview/#how-it-works" class="" data-testid="footer-product-how-it-works">How it works</a><a href="/api/marketing-preview/features/" class="" data-testid="footer-product-all-features">All features</a><a href="/api/marketing-preview/jessi/" class="" data-testid="footer-product-jessi-ai">Jessi AI</a><a href="/api/marketing-preview/inbox/" class="" data-testid="footer-product-inbox-texting">Inbox &amp; texting</a><a href="/api/marketing-preview/date-triggers/" class="" data-testid="footer-product-campaigns">Campaigns</a><a href="/api/marketing-preview/pricing/" class="" data-testid="footer-product-pricing">Pricing</a></div></details><details class="f-col" open data-testid="footer-col-solutions"><summary data-testid="footer-accordion-toggle-solutions">Solutions <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-links"><a href="/api/marketing-preview/organizations/" class="" data-testid="footer-solutions-for-businesses">For businesses</a><a href="/api/marketing-preview/individuals/" class="" data-testid="footer-solutions-for-sales-professionals">For sales professionals</a><a href="/api/marketing-preview/dealers/" class="" data-testid="footer-solutions-automotive-equipment">Automotive &amp; equipment</a><a href="/api/marketing-preview/real-estate/" class="" data-testid="footer-solutions-real-estate">Real estate</a><a href="/api/marketing-preview/insurance/" class="" data-testid="footer-solutions-insurance-financial">Insurance &amp; financial</a><a href="/api/marketing-preview/home-services/" class="" data-testid="footer-solutions-home-services">Home services</a></div></details><details class="f-col" open data-testid="footer-col-resources"><summary data-testid="footer-accordion-toggle-resources">Resources <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-links"><a href="/api/marketing-preview/help/" class="" data-testid="footer-resources-help-center">Help Center</a><a href="/api/marketing-preview/training/" class="" data-testid="footer-resources-training">Training</a><a href="/api/marketing-preview/developers/" class="" data-testid="footer-resources-developers-api">Developers &amp; API</a><a href="/api/marketing-preview/why-imonsocial/" class="" data-testid="footer-resources-why-i-m-on-social">Why i&#x27;M On Social</a><a href="https://app.imonsocial.com/api/get/site" class="" data-testid="footer-resources-get-the-iphone-app">Get the iPhone app</a></div></details><details class="f-col" open data-testid="footer-col-company"><summary data-testid="footer-accordion-toggle-company">Company <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-links"><a href="#demo" class="" data-demo="footer" data-testid="footer-company-book-a-demo">Book a demo</a><a href="#contact" class="" data-contact data-testid="footer-company-contact-us">Contact us</a><a href="https://app.imonsocial.com" class="" target="_blank" rel="noopener" data-testid="footer-company-sign-in">Sign in</a><a href="/api/marketing-preview/privacy/" class="" data-testid="footer-company-privacy">Privacy</a><a href="/api/marketing-preview/terms/" class="" data-testid="footer-company-terms">Terms</a><a href="/api/marketing-preview/sms-terms/" class="" data-testid="footer-company-sms-policy">SMS policy</a></div></details></div>
+  </div>
+  <div class="wrap f-legal">
+    <p>&copy; 2026 i'M On Social. Operated by VI Ventures Group LLC.</p>
+    <div><a href="/api/marketing-preview/privacy/" class="" data-testid="footer-legal-privacy">Privacy</a><a href="/api/marketing-preview/terms/" class="" data-testid="footer-legal-terms">Terms</a><a href="/api/marketing-preview/sms-terms/" class="" data-testid="footer-legal-sms">SMS Policy</a><a href="#contact" class="" data-contact data-testid="footer-legal-contact">Contact</a><a class="faded" href="/api/marketing-preview/feature-sheet/" data-testid="footer-feature-sheet">Feature sheet</a></div>
+  </div>
+</footer>
+<div class="modal" id="demo-modal" role="dialog" aria-modal="true" aria-labelledby="demo-title" aria-hidden="true" data-testid="book-demo-modal">
+  <div class="modal-card">
+    <button class="modal-close" type="button" aria-label="Close" data-modal-close data-testid="demo-modal-close"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <form class="demo-form" id="demo-form" data-form="demo" novalidate data-testid="demo-form">
+      <p class="overline">Book a demo</p><h2 id="demo-title">See it with your own customers in mind.</h2><p class="modal-sub">A short call with our team. We show you the app and set you up on the plan that fits.</p>
+      <div class="row2"><div class="field"><label for="demo-first_name">First name <span aria-hidden="true">*</span></label><input id="demo-first_name" name="first_name" type="text" required autocomplete="given-name" data-testid="demo-first_name-input"/></div><div class="field"><label for="demo-last_name">Last name <em>(optional)</em></label><input id="demo-last_name" name="last_name" type="text" autocomplete="family-name" data-testid="demo-last_name-input"/></div></div>
+      <div class="row2"><div class="field"><label for="demo-phone">Mobile <span aria-hidden="true">*</span></label><input id="demo-phone" name="phone" type="tel" required autocomplete="tel" data-testid="demo-phone-input"/></div><div class="field"><label for="demo-email">Email <span aria-hidden="true">*</span></label><input id="demo-email" name="email" type="email" required autocomplete="email" data-testid="demo-email-input"/></div></div>
+      <div class="field"><label for="demo-company">Company <span aria-hidden="true">*</span></label><input id="demo-company" name="company" type="text" required autocomplete="organization" data-testid="demo-company-input"/></div>
+      <div class="row2">
+        <div class="field"><label for="demo-industry">Industry <span aria-hidden="true">*</span></label><select id="demo-industry" name="business_type" required data-testid="demo-industry-select"><option value="">Select your industry</option><option value="real_estate">Real estate</option><option value="insurance">Insurance &amp; financial services</option><option value="car_dealer">Automotive &amp; equipment</option><option value="powersports">Powersports</option><option value="home_services">Home services</option><option value="professional_services">Professional services</option><option value="salon_wellness">Salons, fitness &amp; wellness</option><option value="other">Other</option></select></div>
+        <div class="field"><label for="demo-team">Team size <em>(optional)</em></label><select id="demo-team" name="team_size" data-testid="demo-team-size-select"><option value="">Select team size</option><option value="Just me">Just me</option><option value="2-5">2-5</option><option value="6-20">6-20</option><option value="21-50">21-50</option><option value="51+">51+</option></select></div>
       </div>
-      <div class="cover-right reveal">
-        <b>At a glance</b>
-        335K+ lines of application code · 1,774 API endpoints · 379 screens · 57 automated jobs · 14 live integrations · iOS, web and an embeddable website widget.
-        <i>Already built. Already live. Already in use.</i>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 2. ENGINE: what it actually does -->
-<section class="slide" id="engine">
-  <div class="inner">
-    <p class="kicker reveal">What it actually does</p>
-    <div class="moat">
-      <div class="reveal">
-        <h2 class="sm">A CRM stores what happened.<br/>i'M On Social understands what changed.</h2>
-        <p class="lead">Something happens. The relationship changes. The system understands the change, and the next action changes with it. Every conversation, call and customer signal strengthens the record, so the platform can determine:</p>
-        <div class="chain" aria-label="Decision chain">
-          <span>Who needs attention</span><em>→</em><span>Why</span><em>→</em><span>What should happen next</span><em>→</em><span>When</span><em>→</em><span>How to execute it</span>
-        </div>
-        <p class="flywheel">Every interaction makes the next interaction smarter.</p>
-      </div>
-      <div class="ring reveal" aria-label="Relationship Intelligence Engine with five connected systems">
-        <div class="loop"></div>
-        <div class="hub"><div><b>Relationship Intelligence Engine</b><small>the system of record</small></div></div>
-        <div class="node" style="--a: 0deg"><i>01</i>Communicate</div>
-        <div class="node" style="--a: 72deg"><i>02</i>Understand</div>
-        <div class="node" style="--a: 144deg"><i>03</i>Remember</div>
-        <div class="node" style="--a: 216deg"><i>04</i>Automate</div>
-        <div class="node" style="--a: 288deg"><i>05</i>Act</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 3. LAYERS: six systems, one shared context -->
-<section class="slide" id="layers">
-  <div class="inner">
-    <p class="kicker reveal">One platform. One shared context.</p>
-    <h2 class="sm reveal">Six systems most companies buy from six vendors.<br/>One relationship layer connecting all of them.</h2>
-    <p class="lead wide reveal">The texting system knows what the relationship engine knows. So does voice. So does automation, training and tasks. <b>Not six features under one login: six systems sharing one memory.</b></p>
-    <div class="layers reveal">
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1"/><path d="M12 3a4 4 0 0 1 4 4v1a4 4 0 0 1 3 3.9A4 4 0 0 1 17 19h-1"/><path d="M12 3v18"/><path d="M8 12h-1M17 12h-1M9 16h-1M16 16h-1"/></svg></div><h3>Relationship intelligence</h3><p>Persistent customer memory that turns conversations, activities, preferences, milestones and engagement history into a continuously evolving relationship profile.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></div><h3>AI communication</h3><p>Real-time conversational voice, intelligent texting, email, transcription, voice generation and automated customer interaction.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></div><h3>Automation engine</h3><p>Long-term campaigns, event-driven workflows, scheduled engagement, follow-up automation and salesperson task generation.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/><path d="M12 3v4M21 12h-4"/></svg></div><h3>Sales execution</h3><p>Lead response, customer engagement, landing pages, digital experiences, reviews, referrals, communication tools and actionable next steps.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 9v6"/></svg></div><h3>Training &amp; coaching</h3><p>AI practice calls, role-play scenarios, scoring, scripts, coaching, progress tracking and certification.</p></div>
-      <div class="layer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5M9 10h2M13 10h2M9 14h2M13 14h2"/></svg></div><h3>Enterprise infrastructure</h3><p>Multi-user organizations, permissions, multi-location deployments, billing, partner programs, integrations, reporting and APIs.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- 4. SCALE: proof it is real -->
-<section class="slide" id="built">
-  <div class="inner">
-    <p class="kicker reveal">Built, not just conceptualized</p>
-    <h2 class="reveal">Production-grade,<br/>already built at significant scale.</h2>
-    <div class="metrics reveal">
-      <div class="metric"><div class="n" data-count="335" data-suffix="K+">0</div><div class="l">Lines of application code</div></div>
-      <div class="metric"><div class="n" data-count="1774">0</div><div class="l">API endpoints</div></div>
-      <div class="metric"><div class="n" data-count="379">0</div><div class="l">Application screens</div></div>
-      <div class="metric"><div class="n" data-count="57">0</div><div class="l">Automated background jobs</div></div>
-      <div class="metric"><div class="n" data-count="14">0</div><div class="l">Live external integrations</div></div>
-    </div>
-    <p class="footnote reveal">Measured from the production repository, October 2026. Backend plus mobile/web app, excluding tests. Tests, build tooling and documentation add another 120K+ lines.</p>
-    <p class="footnote appendix">Technical appendix: 375 reusable UI components · 213 data collections · native iOS app, web app and a one-line embeddable website widget · multi-tenant telephony with carrier (10DLC) compliance.</p>
-  </div>
-</section>
-
-<!-- 5. BUILD TODAY: difficult to recreate -->
-<section class="slide" id="replace">
-  <div class="inner">
-    <p class="kicker reveal">What would it take to build this today?</p>
-    <h2 class="reveal">The technical execution risk<br/>has already been absorbed.</h2>
-    <div class="cost reveal">
-      <div class="c"><div class="v">12–15</div><div class="t">Engineers</div><p>Recreating the current platform would require a multidisciplinary team spanning backend, mobile, web, AI/voice, telephony, DevOps, QA and product.</p></div>
-      <div class="c"><div class="v">18–24 mo</div><div class="t">To feature parity</div><p>Estimated development time for a dedicated team to rebuild the current platform and reach the same depth.</p></div>
-      <div class="c"><div class="v">$5M–$8M</div><div class="t">Estimated equivalent build cost</div><p>Fully loaded US engineering cost to recreate ≈335K lines of production code plus the integration and compliance work around it.</p></div>
-      <div class="c"><div class="v">Live now</div><div class="t">Execution lead</div><p>While that team would be hiring and architecting, i'M On Social is already deployed, processing real conversations for real sales teams.</p></div>
-    </div>
-    <div class="complex reveal">
-      <div><span><b>Real-time voice bridge</b> between carrier media streams and a live AI model, with interruptions, watchdogs and fallbacks.</span></div>
-      <div><span><b>Multi-tenant telephony</b> with per-organization numbers, sub-accounts and carrier (10DLC) compliance.</span></div>
-      <div><span><b>14 live integrations</b> across telephony, email, payments, AI, push, storage, identity and mapping.</span></div>
-      <div><span><b>57 scheduled jobs</b> running campaigns, follow-ups, digests, lifecycle events and health checks around the clock.</span></div>
-      <div><span><b>One living profile per customer</b>, continuously updated from every channel and every interaction.</span></div>
-      <div><span><b>Three surfaces</b>: native iOS app, web app and a one-line embeddable website widget.</span></div>
-    </div>
-    <div class="versus reveal">
-      <div class="side"><b>Build from scratch</b><span>12–15 people · 18–24 months · $5M–$8M</span></div>
-      <div class="vs">VS</div>
-      <div class="side live"><b>i'M On Social today</b><span>Built, deployed, in use</span></div>
-    </div>
-    <p class="footnote reveal">Estimates use industry productivity benchmarks of 12–18K production lines per engineer-year and fully loaded US cost of $200–250K per engineer-year, plus product, design, QA and infrastructure overhead. Formal models (COCOMO II) produce higher figures.</p>
-  </div>
-</section>
-
-<!-- 6. FOUNDER -->
-<section class="slide" id="founder">
-  <div class="inner">
-    <p class="kicker reveal">Founder-market fit</p>
-    <h2 class="reveal">Thirty years on the sales floor.<br/>One tool built for the people on it.</h2>
-    <p class="lead wide reveal">Most sales systems are built around managing the pipeline. This one is built around helping the salesperson manage the relationship. i'M On Social wasn't designed by a software team that discovered automotive sales in a market report. It was built by a high-tech redneck who spent three decades carrying a quota, then built the tool he always needed, for the lifeblood of every company: <b>the salesperson.</b></p>
-    <div class="bar reveal">
-      <div><b>30</b>years selling, not studying sales</div>
-      <div><b>1</b>problem lived every single day</div>
-      <div><b>335K+</b>lines of code written to end it</div>
-    </div>
-  </div>
-</section>
-
-
-<!-- 7. GO TO MARKET -->
-<section class="slide" id="gtm">
-  <div class="inner">
-    <p class="kicker reveal">Where we are now</p>
-    <h2 class="reveal">The product is built. The infrastructure is live.<br/>Now it goes to market.</h2>
-    <p class="lead reveal">The focus shifts from building to distribution. <b>Here is the plan:</b></p>
-    <div class="uses reveal">
-      <div class="use"><h3>Dealers first</h3><p>Automotive and powersports dealerships, where the pain is sharpest: hundreds of past customers every salesperson has simply forgotten.</p></div>
-      <div class="use"><h3>Land and expand</h3><p>One rep becomes the store, the store becomes the group. Team leaderboards, manager views and the referral engine already drive this inside the product.</p></div>
-      <div class="use"><h3>Partners and white-label</h3><p>Partner, reseller and white-label programs are wired in, so industry channels can carry i'M On Social under their own brand.</p></div>
-      <div class="use"><h3>Plug into existing workflows</h3><p>Two-way sync with the CRMs and DMS platforms dealers already run, so i'M On Social slots in on day one instead of replacing anything.</p></div>
-      <div class="use"><h3>Adjacent industries</h3><p>Real estate, insurance, home services, medical and fitness: relationship-driven businesses the platform already supports with their own playbooks.</p></div>
-    </div>
-    <div class="risk reveal"><i></i> Built. Live. In use. The next chapter is distribution.</div>
-  </div>
-</section>
-
-<!-- 8a. CLOSE (general audience) -->
-<section class="slide" id="close" data-mode="general">
-  <div class="inner">
-    <div class="brand reveal"><img src="logo.png" alt="i'M On Social" /><span>i'M On Social</span></div>
-    <h1 class="reveal">Remember everyone.<br/>Understand every relationship.<br/><span style="color: var(--gold2)">Never miss what should happen next.</span></h1>
-    <p class="lead reveal">From contact → relationship intelligence → action. One platform, already running.</p>
-    <div class="cta reveal">
-      <a class="btn gold lead-open" href="#">Start a conversation</a>
-      <a class="btn" href="https://imonsocial.com">See the product</a>
-      <a class="btn" href="https://app.imonsocial.com">Open the live app</a>
-    </div>
-  </div>
-</section>
-
-<!-- 8b. ASK (investor mode: ?investor=1) -->
-<section class="slide" id="ask" data-mode="investor">
-  <div class="inner">
-    <p class="kicker reveal">Now we scale it</p>
-    <h2 class="xs reveal">We aren't raising capital to find out whether this can be built. <span style="color: var(--gold2)">We're raising capital to determine how fast it can be distributed.</span></h2>
-    <p class="lead reveal">The product is built. The infrastructure is live. The market has been identified. <b>The next investment is distribution.</b></p>
-    <div class="uses four reveal">
-      <div class="use"><h3>Sales &amp; distribution</h3><p>A direct sales motion for dealer groups and multi-location operators, plus the partner and reseller channels already wired into the product.</p></div>
-      <div class="use"><h3>Strategic integrations</h3><p>Two-way sync with the CRMs and DMS platforms the market already runs, so i'M On Social becomes the relationship layer on top of existing systems.</p></div>
-      <div class="use"><h3>Enterprise deployment</h3><p>Onboarding, support, controls and reporting for groups rolling i'M On Social out across hundreds of reps at once.</p></div>
-      <div class="use"><h3>Product expansion</h3><p>Deeper AI across voice, texting and coaching, and the adjacent industries the platform already supports.</p></div>
-    </div>
-    <p class="quote reveal">I've built the machine. <span>Now I'm looking for the right capital and partners to put fuel in it.</span></p>
-    <div class="cta reveal">
-      <a class="btn gold lead-open" href="#">Start a conversation</a>
-      <a class="btn" href="https://imonsocial.com">See the product</a>
-      <a class="btn" href="https://app.imonsocial.com">Open the live app</a>
-    </div>
-  </div>
-</section>
-
-<div class="lead-overlay" id="leadOverlay" role="dialog" aria-modal="true" aria-labelledby="leadTitle">
-  <div class="lead-modal">
-    <button class="lead-close" id="leadClose" aria-label="Close">&times;</button>
-    <div id="leadFormWrap">
-      <h2 id="leadTitle">Let's talk.</h2>
-      <p class="sub">Leave your details and Forest will reach out personally.</p>
-      <form class="lf" id="leadForm" novalidate>
-        <div class="row">
-          <div><label for="lf-name">Name *</label><input id="lf-name" type="text" autocomplete="name" required /></div>
-          <div><label for="lf-company">Company</label><input id="lf-company" type="text" autocomplete="organization" /></div>
-        </div>
-        <div class="row">
-          <div><label for="lf-email">Email *</label><input id="lf-email" type="email" autocomplete="email" required /></div>
-          <div><label for="lf-phone">Phone</label><input id="lf-phone" type="tel" autocomplete="tel" /></div>
-        </div>
-        <div><label for="lf-msg">What would you like to discuss?</label><textarea id="lf-msg"></textarea></div>
-        <button type="submit" class="btn gold submit" id="leadSubmit">Send</button>
-        <p class="err" id="leadErr">Couldn't reach the server. Please try again, or email forest@imonsocial.com.</p>
-        <p class="fine">Your details go straight to Forest. No lists, no spam.</p>
-      </form>
-    </div>
-    <div class="lead-done" id="leadDone">
-      <i>&#10003;</i>
-      <h2>Got it.</h2>
-      <p>Thanks for reaching out. Forest will be in touch shortly.</p>
+      <label class="consent" data-testid="demo-sms-consent-label"><input type="checkbox" name="sms_opt_in" data-testid="demo-sms-consent"/><span>I agree to receive SMS messages from i'M On Social about my request and follow-up communications. Msg &amp; data rates may apply. Message frequency varies. Reply STOP to opt out, HELP for help. See our <a href="/api/marketing-preview/sms-terms/" data-testid="demo-sms-policy-link">SMS Messaging Policy</a>.</span></label><p class="legal-line">By submitting you agree to our <a href="/api/marketing-preview/terms/">Terms</a> and <a href="/api/marketing-preview/privacy/">Privacy Policy</a>. i'M On Social is operated by VI Ventures Group LLC.</p>
+      <p class="form-error" role="alert" data-testid="demo-form-error" hidden></p>
+      <button class="btn btn-gold btn-block" type="submit" data-testid="demo-form-submit-button">Book my demo</button>
+    </form>
+    <div class="form-success" hidden data-testid="demo-form-success-message">
+      <div class="success-ico"><svg class="ico" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <h2>Thanks, <span data-first>there</span>.</h2>
+      <p>Someone from our team will reach out shortly to pick a time.</p>
+      <button class="btn btn-ink" type="button" data-modal-close data-testid="demo-success-close">Done</button>
     </div>
   </div>
 </div>
-
+<div class="modal" id="contact-modal" role="dialog" aria-modal="true" aria-labelledby="contact-title" aria-hidden="true" data-testid="contact-modal">
+  <div class="modal-card">
+    <button class="modal-close" type="button" aria-label="Close" data-modal-close data-testid="contact-modal-close"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <form class="contact-form" id="contact-form" data-form="contact" novalidate data-testid="contact-form">
+      <p class="overline">Contact us</p>
+      <h2 id="contact-title">How can we help?</h2>
+      <p class="modal-sub">Send us a note and we will get back to you soon.</p>
+      <div class="row2"><div class="field"><label for="contact-first_name">First name <span aria-hidden="true">*</span></label><input id="contact-first_name" name="first_name" type="text" required autocomplete="given-name" data-testid="contact-first_name-input"/></div><div class="field"><label for="contact-last_name">Last name <em>(optional)</em></label><input id="contact-last_name" name="last_name" type="text" autocomplete="family-name" data-testid="contact-last_name-input"/></div></div>
+      <div class="row2"><div class="field"><label for="contact-email">Email <span aria-hidden="true">*</span></label><input id="contact-email" name="email" type="email" required autocomplete="email" data-testid="contact-email-input"/></div><div class="field"><label for="contact-phone">Mobile <em>(optional)</em></label><input id="contact-phone" name="phone" type="tel" autocomplete="tel" data-testid="contact-phone-input"/></div></div>
+      <div class="field"><label for="contact-message">Message <span aria-hidden="true">*</span></label><textarea id="contact-message" name="message" rows="4" required data-testid="contact-message-input"></textarea></div>
+      <label class="consent" data-testid="contact-sms-consent-label"><input type="checkbox" name="sms_opt_in" data-testid="contact-sms-consent"/><span>I agree to receive SMS messages from i'M On Social about my request and follow-up communications. Msg &amp; data rates may apply. Message frequency varies. Reply STOP to opt out, HELP for help. See our <a href="/api/marketing-preview/sms-terms/" data-testid="contact-sms-policy-link">SMS Messaging Policy</a>.</span></label><p class="legal-line">By submitting you agree to our <a href="/api/marketing-preview/terms/">Terms</a> and <a href="/api/marketing-preview/privacy/">Privacy Policy</a>. i'M On Social is operated by VI Ventures Group LLC.</p>
+      <p class="form-error" role="alert" data-testid="contact-form-error" hidden></p>
+      <button class="btn btn-ink btn-block" type="submit" data-testid="contact-form-submit-button">Send message</button>
+    </form>
+    <div class="form-success" hidden data-testid="contact-form-success-message">
+      <div class="success-ico"><svg class="ico" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <h2>Thanks, <span data-first>there</span>.</h2>
+      <p>We got your message and will get back to you soon.</p>
+      <button class="btn btn-ink" type="button" data-modal-close data-testid="contact-success-close">Done</button>
+    </div>
+  </div>
+</div>
+<div class="modal modal-video" id="video-modal" role="dialog" aria-modal="true" aria-label="The i'M On Social story" aria-hidden="true" data-testid="video-lightbox">
+  <div class="video-card">
+    <button class="modal-close" type="button" aria-label="Close video" data-modal-close data-testid="video-lightbox-close"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <video controls playsinline preload="none" poster="/api/marketing-preview/video/social-ad-poster.jpg" data-testid="video-lightbox-player">
+      <source src="/api/marketing-preview/video/social-ad.webm" type="video/webm"/><source src="/api/marketing-preview/video/social-ad.mp4" type="video/mp4"/>
+    </video>
+  </div>
+</div>
+<script src="/api/marketing-preview/lead-retry.js" defer></script>
+<script src="/api/marketing-preview/assets/site.js?v=c54817d1" defer></script>
 <script>
-  const INVESTOR = new URLSearchParams(location.search).get('investor') === '1';
-  document.querySelectorAll('.slide[data-mode]').forEach(s => { if (s.dataset.mode !== (INVESTOR ? 'investor' : 'general')) s.remove(); });
-
-  const slides = [...document.querySelectorAll('.slide')];
-  const dots = document.getElementById('dots');
-  const progress = document.getElementById('progress');
-  slides.forEach((s, i) => { const a = document.createElement('a'); a.href = '#' + s.id; a.title = s.id; a.setAttribute('aria-label', 'Slide ' + (i + 1)); dots.appendChild(a); });
-  let current = 0;
-  const setCurrent = i => { current = i; [...dots.children].forEach((d, k) => d.classList.toggle('cur', k === i)); progress.style.width = ((i + 1) / slides.length * 100) + '%'; };
-  const ease = t => 1 - Math.pow(1 - t, 3);
-  const countUp = el => { if (el.dataset.done) return; el.dataset.done = '1'; const end = +el.dataset.count, suffix = el.dataset.suffix || ''; const t0 = performance.now(), dur = 1400;
-    const tick = now => { const p = Math.min(1, (now - t0) / dur); el.textContent = Math.round(end * ease(p)).toLocaleString('en-US') + suffix; if (p < 1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); };
-  const io = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('on'); e.target.querySelectorAll('[data-count]').forEach(countUp); } if (e.isIntersecting && e.intersectionRatio > 0.5) setCurrent(slides.indexOf(e.target)); }); }, { threshold: [0.2, 0.6] });
-  slides.forEach(s => io.observe(s));
-  const go = i => { const n = Math.max(0, Math.min(slides.length - 1, i)); slides[n].scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  window.addEventListener('keydown', e => { if (leadOverlay.classList.contains('open') || /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) { if (e.key === 'Escape') closeLead(); return; } if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(current + 1); } if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); go(current - 1); } if (e.key === 'Home') go(0); if (e.key === 'End') go(slides.length - 1); });
-  setCurrent(0);
-  window.addEventListener('beforeprint', () => slides.forEach(s => { s.classList.add('on'); s.querySelectorAll('[data-count]').forEach(el => { el.textContent = (+el.dataset.count).toLocaleString('en-US') + (el.dataset.suffix || ''); el.dataset.done = '1'; }); }));
-
-
-  const leadOverlay = document.getElementById('leadOverlay');
-  const openLead = e => { e.preventDefault(); leadOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; setTimeout(() => document.getElementById('lf-name').focus(), 50); };
-  const closeLead = () => { leadOverlay.classList.remove('open'); document.body.style.overflow = ''; };
-  document.querySelectorAll('.lead-open').forEach(b => b.addEventListener('click', openLead));
-  document.getElementById('leadClose').addEventListener('click', closeLead);
-  leadOverlay.addEventListener('click', e => { if (e.target === leadOverlay) closeLead(); });
-  document.getElementById('leadForm').addEventListener('submit', async e => {
+(function () {
+  var INVESTOR = new URLSearchParams(location.search).get('investor') === '1';
+  document.querySelectorAll('[data-mode]').forEach(function (s) { if (s.getAttribute('data-mode') !== (INVESTOR ? 'investor' : 'general')) s.remove(); });
+  var API = document.documentElement.getAttribute('data-api') || '';
+  var m = document.getElementById('ov-lead-modal'), form = document.getElementById('ov-lead-form'), ok = m.querySelector('.form-success'), err = form.querySelector('.form-error');
+  var open = function () { form.hidden = false; ok.hidden = true; err.hidden = true; m.classList.add('open'); m.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden'; document.body.classList.add('overlay-open'); setTimeout(function () { document.getElementById('ov-name').focus(); }, 60); };
+  var close = function () { m.classList.remove('open'); m.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; document.body.classList.remove('overlay-open'); };
+  document.querySelectorAll('[data-ov-lead]').forEach(function (b) { b.addEventListener('click', open); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && m.classList.contains('open')) close(); });
+  form.addEventListener('submit', function (e) {
     e.preventDefault();
-    const v = id => document.getElementById(id).value.trim();
-    const err = document.getElementById('leadErr'), btn = document.getElementById('leadSubmit');
-    err.style.display = 'none';
-    if (!v('lf-name') || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('lf-email'))) { err.textContent = 'Please enter your name and a valid email.'; err.style.display = 'block'; return; }
-    btn.disabled = true; btn.textContent = 'Sending…';
-    try {
-      const r = await fetch('/api/demo-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: v('lf-name'), email: v('lf-email'), phone: v('lf-phone'), company: v('lf-company'), message: v('lf-msg'), source: INVESTOR ? 'platform_overview_investor_cta' : 'platform_overview_cta', referrer: document.referrer }) });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || j.status === 'error') throw new Error(j.message || 'failed');
-      document.getElementById('leadFormWrap').style.display = 'none'; document.getElementById('leadDone').style.display = 'block';
-    } catch (ex) { btn.disabled = false; btn.textContent = 'Send'; err.textContent = "Couldn't reach the server. Please try again, or email forest@imonsocial.com."; err.style.display = 'block'; }
+    var v = function (n) { return form.elements[n].value.trim(); }, btn = form.querySelector('button[type="submit"]');
+    if (!v('name') || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('email'))) { err.textContent = 'Please enter your name and a valid email.'; err.hidden = false; return; }
+    err.hidden = true; btn.disabled = true; btn.textContent = 'Sending...';
+    fetch(API + '/api/demo-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: v('name'), email: v('email'), phone: v('phone'),
+      company: v('company'), message: v('message'), source: INVESTOR ? 'platform_overview_investor_cta' : 'platform_overview_cta', referrer: document.referrer, page: location.pathname }) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || j.status === 'error') throw new Error('failed'); }); })
+      .then(function () { form.hidden = true; ok.hidden = false; form.reset(); })
+      .catch(function () { err.textContent = "Couldn't reach the server. Please try again, or email forest@imonsocial.com."; err.hidden = false; })
+      .then(function () { btn.disabled = false; btn.textContent = 'Send'; });
   });
+  var fmt = function (el, x) { el.textContent = Math.round(x).toLocaleString('en-US') + (el.getAttribute('data-suffix') || ''); };
+  var count = function (el) { if (el.dataset.done) return; el.dataset.done = '1'; var end = +el.getAttribute('data-count'), t0 = performance.now();
+    var tick = function (now) { var p = Math.min(1, (now - t0) / 1400); fmt(el, end * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); };
+  var nums = document.querySelectorAll('[data-count]');
+  if ('IntersectionObserver' in window) { var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { count(e.target); io.unobserve(e.target); } }); }, { threshold: .4 });
+    nums.forEach(function (n) { io.observe(n); }); } else nums.forEach(function (n) { fmt(n, +n.getAttribute('data-count')); });
+  window.addEventListener('beforeprint', function () { nums.forEach(function (n) { n.dataset.done = '1'; fmt(n, +n.getAttribute('data-count')); }); });
+})();
 </script>
 <script src="https://app.imonsocial.com/api/w/FE2POg13.js" async></script>
 </body>

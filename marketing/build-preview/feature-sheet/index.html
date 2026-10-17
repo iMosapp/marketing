@@ -1,649 +1,677 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-api="" data-page="feature_sheet">
 <head>
-  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Feature Sheet - I'm On Social</title>
-  <meta name="robots" content="noindex,nofollow"/>
-  <meta name="description" content="Internal review sheet: every feature of I'm On Social with what it does and why it matters."/>
-  <link rel="icon" href="/api/marketing-preview/favicon.png"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--blue:#007AFF;--blue-dark:#0059CC;--gold:#C9A962;--text:#111;--text-2:#555;--text-3:#888;--bg:#FFF;--bg-2:#F8F9FB;--border:rgba(0,0,0,.06);--border-2:rgba(0,0,0,.1)}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
-nav{position:fixed;top:0;left:0;right:0;z-index:1000;transition:all .3s}
-nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 1px 0 var(--border-2)}
-.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
-.logo{display:flex;align-items:center;text-decoration:none}.logo img{height:72px;width:auto}
-.nav-cta{display:flex;align-items:center;gap:10px}
-.btn-sign{padding:10px 20px;border-radius:980px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;transition:background .2s}
-.btn-sign:hover{background:var(--bg-2)}
-.btn-demo{background:var(--blue);padding:10px 24px;border-radius:980px;font-size:14px;font-weight:600;color:#FFF;text-decoration:none;transition:all .25s;box-shadow:0 2px 12px rgba(0,122,255,.25)}
-.btn-demo:hover{background:var(--blue-dark);transform:translateY(-1px)}
-.page-hero{padding:150px 24px 36px;max-width:1240px;margin:0 auto}
-.sec-tag{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
-.page-hero h1{font-size:46px;font-weight:900;line-height:1.08;letter-spacing:-.035em;margin-bottom:14px;max-width:820px}
-.page-hero-sub{font-size:18px;color:var(--text-2);line-height:1.6;max-width:720px}
-.hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;align-items:center}
-.meaning{max-width:1240px;margin:0 auto 34px;padding:0 24px}
-.meaning-box{position:relative;border:1px solid rgba(201,169,98,.45);background:linear-gradient(180deg,rgba(201,169,98,.10),rgba(201,169,98,.03));border-radius:22px;padding:30px 34px;display:grid;grid-template-columns:1.25fr 1fr;gap:28px;align-items:center}
-.meaning-box .sec-tag{margin-bottom:10px}
-.meaning h2{font-size:26px;font-weight:900;letter-spacing:-.025em;line-height:1.2;margin-bottom:12px}
-.meaning h2 em{font-style:normal;color:#8a6d2b}
-.meaning p{font-size:16px;color:var(--text-2);line-height:1.65}
-.meaning p+p{margin-top:10px}
-.pitch{border-left:3px solid var(--gold);padding:6px 0 6px 20px}
-.pitch .q{font-size:22px;font-weight:700;line-height:1.4;color:var(--text);letter-spacing:-.01em}
-.pitch .q strong{display:block;font-size:13px;letter-spacing:3px;font-weight:800;margin-bottom:8px}
-.pitch .q strong{color:#8a6d2b}
-.pitch .l{font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-3);margin-top:10px}
-.pill{font-size:13px;font-weight:600;color:var(--text-2);background:var(--bg-2);border:1px solid var(--border-2);border-radius:980px;padding:7px 14px}
-.pill.gold{color:#8a6d2b;background:rgba(201,169,98,.12);border-color:rgba(201,169,98,.35)}
-.legend{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto;align-items:center;font-size:12px;color:var(--text-3)}
-.btn-print{margin-left:6px;background:var(--text);color:#FFF;border:none;border-radius:980px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px}
-.btn-print:hover{background:#333}
-.wrap{max-width:1240px;margin:0 auto;padding:0 24px 80px;display:grid;grid-template-columns:260px 1fr;gap:40px;align-items:start}
-.toc{position:sticky;top:104px;display:flex;flex-direction:column;gap:2px;border:1px solid var(--border-2);border-radius:18px;padding:12px;background:#FFF}
-.toc-t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);padding:8px 10px 6px}
-.toc a{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:500;color:var(--text-2);text-decoration:none;padding:8px 10px;border-radius:10px;line-height:1.3}
-.toc a:hover{background:var(--bg-2);color:var(--text)}
-.toc a em{margin-left:auto;font-style:normal;font-size:11px;color:var(--text-3);font-weight:600}
-.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.grp{padding-top:24px;margin-bottom:44px;scroll-margin-top:110px}
-.grp-head{margin-bottom:18px;max-width:760px}
-.grp-head h2{font-size:28px;font-weight:900;letter-spacing:-.025em;line-height:1.15;margin-bottom:8px}
-.grp-head p{font-size:15.5px;color:var(--text-2)}
-.rows{border:1px solid var(--border-2);border-radius:18px;overflow:hidden;background:#FFF}
-.row{display:grid;grid-template-columns:24% 1fr 32%;gap:0;border-top:1px solid var(--border)}
-.row>div{padding:18px 20px;font-size:14.5px;line-height:1.55;color:var(--text-2)}
-.row.hdr{background:var(--bg-2);border-top:none}
-.row.hdr>div{padding:10px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3)}
-.row:not(.hdr):hover{background:#FCFCFD}
-.c-name{border-right:1px solid var(--border)}
-.c-name h3{font-size:15.5px;font-weight:700;color:var(--text);line-height:1.3;margin:2px 0 8px}
-.num{font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:.5px}
-.c-why{background:rgba(201,169,98,.05);border-left:1px solid var(--border);color:var(--text)}
-.lbl{display:none}
-.auds{display:flex;flex-wrap:wrap;gap:5px}
-.aud{font-size:10.5px;font-weight:700;letter-spacing:.3px;color:var(--c);background:color-mix(in srgb,var(--c) 10%,#FFF);border-radius:980px;padding:2px 8px}
-.legend .aud{font-size:11px}
-footer{border-top:1px solid var(--border);background:var(--bg-2)}
-.ft-inner{max-width:1200px;margin:0 auto;padding:40px 24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:center}
-.ft-copy{font-size:12px;color:var(--text-3)}
-.ft-links{display:flex;gap:18px}.ft-links a{font-size:13px;color:var(--text-3);text-decoration:none}.ft-links a:hover{color:var(--blue)}
-@media(max-width:1000px){.wrap{grid-template-columns:1fr}.toc{position:static;flex-direction:row;flex-wrap:wrap}.toc-t{display:none}.toc a em{display:none}}
-@media(max-width:1000px){.meaning-box{grid-template-columns:1fr}}
-@media(max-width:768px){.meaning{padding:0 14px;margin-bottom:22px}.meaning-box{padding:20px;border-radius:16px}.meaning h2{font-size:21px}.meaning p{font-size:14.5px}.pitch .q{font-size:17px}.page-hero{padding:110px 20px 24px}.page-hero h1{font-size:30px}.page-hero-sub{font-size:15.5px}.wrap{padding:0 14px 60px;gap:20px}.logo img{height:56px}.nav-cta{display:none}
-.row{grid-template-columns:1fr}.row.hdr{display:none}.c-name{border-right:none;padding-bottom:6px}.c-what{padding-top:6px}.c-why{border-left:none;border-top:1px dashed var(--border)}
-.lbl{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);margin-bottom:4px}.grp-head h2{font-size:23px}.legend{margin-left:0}}
-@media print{nav,.toc,.btn-print,footer,.hero-meta .pill.gold{display:none!important}.meaning{padding:0;margin-bottom:14px}.meaning-box{padding:12px 16px;grid-template-columns:1.3fr 1fr;gap:16px;border-radius:8px;background:none}.meaning h2{font-size:15px;margin-bottom:6px}.meaning p{font-size:11px;line-height:1.45}.pitch .q{font-size:12.5px}.pitch .l{font-size:9px}.page-hero{padding:0 0 16px}.page-hero h1{font-size:26px}.page-hero-sub{font-size:13px}.wrap{display:block;padding:0}.grp{margin-bottom:22px;padding-top:6px;break-inside:auto}.grp-head h2{font-size:18px}.grp-head p{font-size:12px}
-.rows{border-radius:6px}.row{break-inside:avoid}.row>div{padding:8px 10px;font-size:10.5px;line-height:1.4}.c-name h3{font-size:11.5px;margin:0 0 4px}.row.hdr>div{padding:5px 10px;font-size:9px}.aud{font-size:8.5px;border:1px solid var(--c)}body{color:#000}}
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Feature Sheet - i&#x27;M On Social</title>
+<meta name="description" content="Internal review sheet: every feature of i&#x27;M On Social with what it does and why it matters."/>
+<meta name="robots" content="noindex, nofollow"/>
+<link rel="canonical" href="https://www.imonsocial.com/feature-sheet"/>
+<meta property="og:title" content="Feature Sheet - i&#x27;M On Social"/>
+<meta property="og:description" content="Internal review sheet: every feature of i&#x27;M On Social with what it does and why it matters."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://www.imonsocial.com/feature-sheet"/>
+<meta property="og:image" content="https://www.imonsocial.com/og-image.png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://www.imonsocial.com/og-image.png"/>
+<meta name="theme-color" content="#FDFCF9"/>
+<link rel="icon" href="/api/marketing-preview/favicon.png"/>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&display=swap"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"/>
+<link rel="stylesheet" href="/api/marketing-preview/assets/site.css?v=c54817d1"/>
+
+<style>
+.fs-hero{padding:64px 0 40px}
+.fs-hero h1{max-width:15em}
+.fs-hero .lead{max-width:44em}
+.fs-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:32px}
+.fs-pill{display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--white);font-size:.86rem;font-weight:600;color:var(--text-2)}
+.fs-pill.gold{background:var(--gold-tint);border-color:#E9DDBF;color:var(--gold-deep)}
+.fs-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;font-size:.84rem;color:var(--muted)}
+.fs-print{margin-left:8px}
+.fs-aud{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--bg-2);border:1px solid var(--line);font-size:.72rem;font-weight:700;color:var(--text-2);white-space:nowrap}
+.fs-aud::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+.fs-why-sec{padding:8px 0 24px}
+.fs-why{display:grid;grid-template-columns:1.3fr .9fr;gap:48px;align-items:center;padding:44px 48px;border-radius:30px;background:var(--gold-tint);border:1px solid #E9DDBF}
+.fs-why h2{font-size:clamp(1.6rem,1.2rem + 1.2vw,2.3rem);margin-bottom:16px}
+.fs-why h2 em{font-style:normal;color:var(--gold-deep)}
+.fs-why p{color:var(--text-2)}
+.fs-why p + p{margin-top:12px}
+.fs-pitch{padding:8px 0 8px 28px;border-left:3px solid var(--gold)}
+.fs-pitch strong{display:block;font-size:.78rem;letter-spacing:.2em;color:var(--gold-deep);margin-bottom:10px}
+.fs-pitch p{font-family:var(--font-h);font-weight:700;font-size:clamp(1.3rem,1rem + .8vw,1.7rem);line-height:1.3;color:var(--ink)}
+.fs-pitch span{display:block;margin-top:12px;font-size:.74rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.fs-body{padding-top:64px}
+.fs-grid{display:grid;grid-template-columns:270px minmax(0,1fr);gap:48px;align-items:start}
+.fs-toc{position:sticky;top:calc(var(--header-h) + 24px);display:flex;flex-direction:column;gap:2px;padding:12px;border:1px solid var(--line);border-radius:22px;background:var(--white)}
+.fs-toc-t{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:8px 12px 6px}
+.fs-toc a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;font-size:.88rem;font-weight:500;line-height:1.3;color:var(--text-2);text-decoration:none;transition:background-color .2s,color .2s}
+.fs-toc a:hover{background:var(--gold-tint);color:var(--ink)}
+.fs-toc a em{margin-left:auto;font-style:normal;font-size:.75rem;font-weight:700;color:var(--gold-deep)}
+.fs-grp{scroll-margin-top:calc(var(--header-h) + 24px)}
+.fs-grp + .fs-grp{margin-top:80px}
+.fs-grp-head{max-width:760px;margin-bottom:24px}
+.fs-grp-head .overline{margin-bottom:10px}
+.fs-grp-head h2{font-size:clamp(1.55rem,1.15rem + 1.2vw,2.2rem)}
+.fs-grp-head .muted{margin-top:10px}
+.fs-rows{border:1px solid var(--line);border-radius:24px;overflow:hidden;background:var(--white)}
+.fs-row{display:grid;grid-template-columns:26% minmax(0,1fr) 31%;border-top:1px solid var(--line);transition:background-color .2s}
+.fs-row > div{padding:20px 22px;font-size:.93rem;line-height:1.6;color:var(--text-2)}
+.fs-row:not(.fs-hdr):hover{background:#FEFDFB}
+.fs-hdr{border-top:0;background:var(--bg-2)}
+.fs-hdr > div{padding:12px 22px;font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.fs-name{border-right:1px solid var(--line)}
+.fs-name h3{font-size:1.06rem;line-height:1.3;margin:4px 0 10px;color:var(--ink)}
+.fs-num{font-family:var(--font-h);font-weight:800;font-size:.8rem;letter-spacing:.08em;color:var(--gold-deep)}
+.fs-auds{display:flex;flex-wrap:wrap;gap:5px}
+.fs-whyc{background:#FBF8F1;border-left:1px solid var(--line);color:var(--ink) !important}
+.fs-lbl{display:none}
+@media (max-width:960px){
+  .fs-grid{grid-template-columns:1fr;gap:28px}
+  .fs-toc{position:static;flex-direction:row;flex-wrap:wrap;gap:8px;padding:0;border:0;background:none}
+  .fs-toc-t,.fs-toc a em{display:none}
+  .fs-toc a{padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--white)}
+  .fs-why{grid-template-columns:1fr;gap:28px;padding:32px 28px}
+  .fs-legend{margin-left:0}
+}
+@media (max-width:720px){
+  .fs-hero{padding:40px 0 24px}
+  .fs-row{grid-template-columns:1fr}
+  .fs-hdr{display:none}
+  .fs-name{border-right:0;padding-bottom:4px !important}
+  .fs-whyc{border-left:0;border-top:1px dashed var(--line)}
+  .fs-lbl{display:block;font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+}
+@media print{
+  .site-header,.site-footer,.fs-toc,.fs-print,.final,.modal,.sheet,.imosw-root,.skip{display:none !important}
+  body::after{display:none}
+  body{background:#fff;font-size:11px}
+  .js .reveal{opacity:1 !important;transform:none !important}
+  .fs-hero{padding:0 0 12px}.fs-hero h1{font-size:24px}.fs-hero .lead{font-size:12px;margin-top:8px}
+  .fs-why{padding:14px 18px;gap:16px;border-radius:10px}.fs-why h2{font-size:16px}.fs-why p{font-size:10.5px}.fs-pitch p{font-size:13px}
+  .section{padding:0}.fs-body{padding-top:16px}.fs-grid{display:block}.fs-grp + .fs-grp{margin-top:18px}.fs-grp-head h2{font-size:16px}
+  .fs-rows{border-radius:6px}.fs-row{break-inside:avoid}.fs-row > div{padding:7px 10px;font-size:10px;line-height:1.4}.fs-name h3{font-size:11px;margin:0 0 4px}
+}
 </style>
 </head>
 <body>
-<nav>
-  <div class="nav-inner">
-    <a href="/api/marketing-preview/" class="logo"><img src="/api/marketing-preview/logo.png" alt="I'm On Social"/></a>
-    <div class="nav-cta">
-      <a href="https://app.imonsocial.com" class="btn-sign">Sign In</a>
-      <a href="/api/marketing-preview/demo" class="btn-demo">Book a Demo</a>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header" data-testid="site-header">
+  <div class="wrap header-inner">
+    <a href="/api/marketing-preview/" class="logo" data-testid="nav-logo" aria-label="i'M On Social home"><picture><source srcset="/api/marketing-preview/assets/img/logo.webp?v=c54817d1" type="image/webp"/><img src="/api/marketing-preview/assets/img/logo.png?v=c54817d1" alt="i'M On Social" width="42" height="48"/></picture></a>
+    <nav class="nav" aria-label="Main">
+      <a class="nav-link" href="/api/marketing-preview/#how-it-works" data-scroll="how-it-works" data-testid="nav-how-it-works">How It Works</a>
+      <div class="nav-item"><button class="nav-trigger" type="button" aria-expanded="false" aria-controls="dd-features" data-dd="features" data-testid="nav-features-trigger">Features <svg class="ico chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="dd dd-wide" id="dd-features" role="menu"><div class="dd-col"><p class="dd-label">Capture &amp; remember</p><a class="dd-link" href="/api/marketing-preview/jessi/" data-testid="nav-features-voice-memos-jessi-ai"><strong>Voice memos &amp; Jessi AI</strong><span>Talk it out, Jessi writes it down</span></a><a class="dd-link" href="/api/marketing-preview/digital-card/" data-testid="nav-features-digital-card-qr"><strong>Digital card &amp; QR</strong><span>A card people keep and share</span></a><a class="dd-link" href="/api/marketing-preview/showcase/" data-testid="nav-features-link-page-showcase"><strong>Link page &amp; showcase</strong><span>Your work, reviews and links in one place</span></a></div><div class="dd-col"><p class="dd-label">Stay connected</p><a class="dd-link" href="/api/marketing-preview/date-triggers/" data-testid="nav-features-campaigns-date-triggers"><strong>Campaigns &amp; date triggers</strong><span>Birthdays, anniversaries, check-ins</span></a><a class="dd-link" href="/api/marketing-preview/inbox/" data-testid="nav-features-inbox-texting"><strong>Inbox &amp; texting</strong><span>Text from a business number, history on every contact</span></a><a class="dd-link" href="/api/marketing-preview/congrats-template/" data-testid="nav-features-congrats-cards"><strong>Congrats cards</strong><span>Celebrate every purchase</span></a></div><div class="dd-col"><p class="dd-label">Grow &amp; manage</p><a class="dd-link" href="/api/marketing-preview/reviews/" data-testid="nav-features-reviews"><strong>Reviews</strong><span>Ask for a review in one tap</span></a><a class="dd-link" href="/api/marketing-preview/leaderboard/" data-testid="nav-features-leaderboards"><strong>Leaderboards</strong><span>Friendly competition for teams</span></a><a class="dd-link" href="/api/marketing-preview/seo/" data-testid="nav-features-seo-visibility"><strong>SEO &amp; visibility</strong><span>Pages built to be found</span></a></div><a class="dd-all" href="/api/marketing-preview/features/" data-testid="nav-features-all">All features <svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></div></div>
+      <div class="nav-item"><button class="nav-trigger" type="button" aria-expanded="false" aria-controls="dd-solutions" data-dd="solutions" data-testid="nav-solutions-trigger">Solutions <svg class="ico chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="dd" id="dd-solutions" role="menu"><a class="dd-link" href="/api/marketing-preview/organizations/" data-testid="nav-solutions-for-businesses"><strong>For businesses</strong></a><a class="dd-link" href="/api/marketing-preview/individuals/" data-testid="nav-solutions-for-sales-professionals"><strong>For sales professionals</strong></a><a class="dd-link" href="/api/marketing-preview/dealers/" data-testid="nav-solutions-automotive-equipment"><strong>Automotive &amp; equipment</strong></a><a class="dd-link" href="/api/marketing-preview/real-estate/" data-testid="nav-solutions-real-estate"><strong>Real estate</strong></a><a class="dd-link" href="/api/marketing-preview/insurance/" data-testid="nav-solutions-insurance-financial"><strong>Insurance &amp; financial</strong></a><a class="dd-link" href="/api/marketing-preview/home-services/" data-testid="nav-solutions-home-services"><strong>Home services</strong></a><a class="dd-link" href="/api/marketing-preview/powersports/" data-testid="nav-solutions-powersports"><strong>Powersports</strong></a><a class="dd-link" href="/api/marketing-preview/industries/" data-testid="nav-solutions-all-industries"><strong>All industries</strong></a></div></div>
+      <a class="nav-link" href="/api/marketing-preview/pricing/" data-testid="nav-pricing">Pricing</a>
+      <div class="nav-item"><button class="nav-trigger" type="button" aria-expanded="false" aria-controls="dd-resources" data-dd="resources" data-testid="nav-resources-trigger">Resources <svg class="ico chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="dd" id="dd-resources" role="menu"><a class="dd-link" href="/api/marketing-preview/help/" data-testid="nav-resources-help-center"><strong>Help Center</strong></a><a class="dd-link" href="/api/marketing-preview/training/" data-testid="nav-resources-training"><strong>Training</strong></a><a class="dd-link" href="/api/marketing-preview/why-imonsocial/" data-testid="nav-resources-why-i-m-on-social"><strong>Why i&#x27;M On Social</strong></a><a class="dd-link" href="/api/marketing-preview/developers/" data-testid="nav-resources-developers-api"><strong>Developers &amp; API</strong></a><a class="dd-link" href="https://app.imonsocial.com/api/get/site" data-testid="nav-resources-get-the-iphone-app"><strong>Get the iPhone app</strong></a></div></div>
+    </nav>
+    <div class="header-actions">
+      <a class="nav-link signin" href="https://app.imonsocial.com" data-testid="nav-sign-in">Sign In</a>
+      <button class="btn btn-gold btn-sm" type="button" data-demo="nav" data-testid="nav-book-demo-button">Book a Demo</button>
+      <button class="menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-sheet" data-testid="nav-mobile-toggle"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg></button>
     </div>
   </div>
-</nav>
-<section class="page-hero">
-  <div class="sec-tag" style="color:#C9A962">Feature sheet · internal review copy</div>
-  <h1>Everything in I'm On Social, on one sheet.</h1>
-  <p class="page-hero-sub">102 features grouped by what they are for, each with a plain description and the reason it exists. Not everyone will use everything; the point is that every rep, manager and owner finds the handful that changes their week.</p>
-  <div class="hero-meta">
-    <span class="pill">102 features</span><span class="pill">11 areas</span><span class="pill gold">Internal review copy</span>
-    <div class="legend">Who it is for: <span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span><span class="aud" style="--c:#34C759">Customer-facing</span>
-      <button class="btn-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Print / save PDF</button></div>
+</header>
+<div class="sheet" id="mobile-sheet" aria-hidden="true" data-testid="mobile-sheet">
+  <div class="sheet-top"><a href="/api/marketing-preview/" class="logo" data-testid="mobile-sheet-logo" aria-label="i'M On Social home"><picture><source srcset="/api/marketing-preview/assets/img/logo.webp?v=c54817d1" type="image/webp"/><img src="/api/marketing-preview/assets/img/logo.png?v=c54817d1" alt="i'M On Social" width="42" height="48"/></picture></a><button class="menu-btn" type="button" aria-label="Close menu" data-sheet-close data-testid="mobile-sheet-close"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+  <div class="sheet-body">
+    <a class="sheet-link" href="/api/marketing-preview/#how-it-works" data-scroll="how-it-works" data-testid="mobile-how-it-works">How It Works</a>
+    <details class="sheet-acc" data-testid="mobile-acc-features"><summary data-testid="mobile-acc-features-toggle">Features <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="sheet-links"><a href="/api/marketing-preview/jessi/" class="" data-testid="mobile-features-voice-memos-jessi-ai">Voice memos &amp; Jessi AI</a><a href="/api/marketing-preview/digital-card/" class="" data-testid="mobile-features-digital-card-qr">Digital card &amp; QR</a><a href="/api/marketing-preview/showcase/" class="" data-testid="mobile-features-link-page-showcase">Link page &amp; showcase</a><a href="/api/marketing-preview/date-triggers/" class="" data-testid="mobile-features-campaigns-date-triggers">Campaigns &amp; date triggers</a><a href="/api/marketing-preview/inbox/" class="" data-testid="mobile-features-inbox-texting">Inbox &amp; texting</a><a href="/api/marketing-preview/congrats-template/" class="" data-testid="mobile-features-congrats-cards">Congrats cards</a><a href="/api/marketing-preview/reviews/" class="" data-testid="mobile-features-reviews">Reviews</a><a href="/api/marketing-preview/leaderboard/" class="" data-testid="mobile-features-leaderboards">Leaderboards</a><a href="/api/marketing-preview/seo/" class="" data-testid="mobile-features-seo-visibility">SEO &amp; visibility</a><a href="/api/marketing-preview/features/" class="" data-testid="mobile-features-all">All features</a></div></details>
+    <details class="sheet-acc" data-testid="mobile-acc-solutions"><summary data-testid="mobile-acc-solutions-toggle">Solutions <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="sheet-links"><a href="/api/marketing-preview/organizations/" class="" data-testid="mobile-solutions-for-businesses">For businesses</a><a href="/api/marketing-preview/individuals/" class="" data-testid="mobile-solutions-for-sales-professionals">For sales professionals</a><a href="/api/marketing-preview/dealers/" class="" data-testid="mobile-solutions-automotive-equipment">Automotive &amp; equipment</a><a href="/api/marketing-preview/real-estate/" class="" data-testid="mobile-solutions-real-estate">Real estate</a><a href="/api/marketing-preview/insurance/" class="" data-testid="mobile-solutions-insurance-financial">Insurance &amp; financial</a><a href="/api/marketing-preview/home-services/" class="" data-testid="mobile-solutions-home-services">Home services</a><a href="/api/marketing-preview/powersports/" class="" data-testid="mobile-solutions-powersports">Powersports</a><a href="/api/marketing-preview/industries/" class="" data-testid="mobile-solutions-all-industries">All industries</a></div></details>
+    <a class="sheet-link" href="/api/marketing-preview/pricing/" data-testid="mobile-pricing">Pricing</a>
+    <details class="sheet-acc" data-testid="mobile-acc-resources"><summary data-testid="mobile-acc-resources-toggle">Resources <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="sheet-links"><a href="/api/marketing-preview/help/" class="" data-testid="mobile-resources-help-center">Help Center</a><a href="/api/marketing-preview/training/" class="" data-testid="mobile-resources-training">Training</a><a href="/api/marketing-preview/why-imonsocial/" class="" data-testid="mobile-resources-why-i-m-on-social">Why i&#x27;M On Social</a><a href="/api/marketing-preview/developers/" class="" data-testid="mobile-resources-developers-api">Developers &amp; API</a><a href="https://app.imonsocial.com/api/get/site" class="" data-testid="mobile-resources-get-the-iphone-app">Get the iPhone app</a></div></details>
+    <a class="sheet-link" href="https://app.imonsocial.com" data-testid="mobile-sign-in">Sign In</a>
   </div>
-</section>
-<section class="meaning">
-  <div class="meaning-box">
-    <div>
-      <div class="sec-tag" style="color:#C9A962">Why "I'm On Social"?</div>
-      <h2>Because relationships don't run <em>from 9 to 5.</em></h2>
-      <p><strong>I'm On</strong> means always on: remembering, listening, following up, and staying connected. <strong>Social</strong> means the human relationships that drive business, not social media.</p>
-      <p>I'm On Social uses AI to create 24/7 social engagement, helping you remember every relationship, know when to reach out, and stay connected long after the first conversation or sale. Every feature on this sheet is one more way the system stays on so the salesperson can stay human.</p>
-    </div>
-    <div class="pitch">
-      <div class="q"><strong>I'M ON SOCIAL</strong><br>You make the connection.<br>We help keep it alive.</div>
-      <div class="l">The one-line positioning</div>
-    </div>
-  </div>
-</section>
-<div class="wrap">
-  <aside class="toc"><div class="toc-t">Jump to</div><a href="#daily"><span class="dot" style="background:#C9A962"></span>Home, contacts and the daily routine<em>15</em></a><a href="#messaging"><span class="dot" style="background:#007AFF"></span>Texting, calling and the inbox<em>14</em></a><a href="#jessi"><span class="dot" style="background:#AF52DE"></span>Jessi, the AI that sounds like the rep<em>11</em></a><a href="#leads"><span class="dot" style="background:#FF3B30"></span>Internet leads<em>10</em></a><a href="#campaigns"><span class="dot" style="background:#FF2D55"></span>Campaigns and workflows<em>6</em></a><a href="#brand"><span class="dot" style="background:#34C759"></span>Cards, pages, reviews and reputation<em>11</em></a><a href="#coaching"><span class="dot" style="background:#FF9500"></span>Scorecards, practice calls, training and certification<em>10</em></a><a href="#reports"><span class="dot" style="background:#32ADE6"></span>Reports and intelligence<em>6</em></a><a href="#team"><span class="dot" style="background:#5856D6"></span>Team, store and org management<em>9</em></a><a href="#platform"><span class="dot" style="background:#8E8E93"></span>Platform, security, compliance and international<em>6</em></a><a href="#partners"><span class="dot" style="background:#E87722"></span>Partner program and billing<em>4</em></a></aside>
-  <main><section class="grp" id="daily">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#C9A962">Every day · 15 features</div>
-        <h2>Home, contacts and the daily routine</h2>
-        <p>What a rep opens first thing in the morning. Everything here is about never letting a relationship go cold.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">01</span><h3>People to Talk To Today</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>A prioritized list built overnight: touchpoints that are due, hot leads waiting, birthdays and sold-date anniversaries, threads that went quiet. One tap opens the contact or the text.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The rep knows exactly who to reach out to without hunting through a CRM.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">02</span><h3>Contacts (the personal CRM)</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Full customer records: phones (normalized, de-duplicated), vehicle, birthday, anniversary and date sold, tags, notes, photos, plus CSV import with duplicate detection, a merge tool and a duplicate finder.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Every customer in one place on the rep&#x27;s phone; no spreadsheets or sticky notes.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">03</span><h3>Relationship Intel briefing</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Jessi reads the whole history and writes a quick take, two key facts and a &#x27;Next:&#x27; step at the top of every contact. It refreshes itself whenever new activity comes in.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Walk into any conversation prepared in ten seconds, even a customer from three years ago.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">04</span><h3>Activity timeline</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Every call, text, card, campaign send, voice memo and AI action on one scrolling feed per contact.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Anyone covering for a rep sees the full story instantly.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">05</span><h3>Photo gallery per contact</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Profile photo history, MMS photos texted in or out, delivery photos and card photos; camera or library upload; set any photo as the profile.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The delivery shot and every picture the customer sent live with the customer, not in a camera roll.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">06</span><h3>Voice memos and recorded conversations</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Record a quick note or a live conversation from the contact page, or from the Voice Memos screen without picking anyone first and file it to a contact later. Each memo is transcribed, summarized and turned into follow-up tasks, and the details (family, work, hobbies, how you met) land on the profile. Right after a sale, a &#x27;Tell me about them&#x27; prompt lists what to cover.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Details from the lot make it into the record before they are forgotten.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">07</span><h3>How we met</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>The event, place and date where the rep met each customer. Jessi fills it in from a voice memo, the notes or a contact she created; the rep can edit it, and Jessi never overwrites what the rep wrote.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>&#x27;Who did I meet at the home show in October?&#x27; finally has an answer.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">08</span><h3>Tasks and Team Tasks</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Customer tasks with due dates on each contact and on the calendar. Managers see every open task per rep, overdue first.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Promises to customers get kept, and managers can see which ones are slipping.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">09</span><h3>Calendar and calendar sync</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Appointments, tasks, birthdays and sold dates on one calendar, with Google or Apple calendar sync.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The rep&#x27;s work calendar and personal calendar finally agree.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">10</span><h3>SOLD wizard and Sold Quick</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Mark a sale in seconds: customer, vehicle, backdatable date, delivery photo. It kicks off the congrats card, the review request and the long-term follow-up plan.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>One action turns a sale into a lifetime of automated, personal follow-up.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">11</span><h3>Book of Business and Sales List</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Every customer grouped by relationship stage and every sale by month, with referrals and repeat buyers called out.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Reps see the size and health of the book they are building; it goes with them.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">12</span><h3>Tags and Keyword Auto-Tags</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Personal, store and org tags on any contact. Keyword rules tag calls and texts automatically (for example &#x27;trade&#x27;, &#x27;lease end&#x27;, &#x27;service&#x27;).</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Segments build themselves from what customers actually say.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">13</span><h3>Keyword Search</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Search any word or phrase across every text and every call transcript in the account.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Find the customer who &#x27;mentioned a boat&#x27; or &#x27;asked about a Tahoe&#x27; in seconds.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">14</span><h3>Search by name or digits</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Server-side search of the entire contact book by name or by the last digits of a phone number, from the dialer or the contacts tab.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Works even when the rep only remembers part of a number.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">15</span><h3>Home intelligence and notifications center</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Push and in-app notifications for leads, replies, claims, alerts and digests, with per-type preferences and quiet times.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Reps get pinged for what matters and nothing else.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="messaging">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#007AFF">Messaging and calling · 14 features</div>
-        <h2>Texting, calling and the inbox</h2>
-        <p>Every rep gets a real business number. Every conversation is one thread, whoever or whatever sent it.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">16</span><h3>Dedicated business number per rep</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Each rep texts and calls from their own Twilio number. Inbound texts and calls route to the owning rep; the number stays with the store if the rep leaves.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Customers get one number to remember and the store keeps the relationship.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">17</span><h3>Unified Inbox</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>SMS and MMS, email, automated sends, cards and call logs in one thread per contact, with media, contact-card tiles, read state and quick filters.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>No more &#x27;which app did they text me on&#x27;.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">18</span><h3>Shared department inboxes</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>One number worked by a team (Sales BDC, Service, Parts). Routing by jump ball, round robin or weighted; claim, assign, hand off with a note; the first reply owns the thread; collaborators are pulled in when the owner is silent or off shift; Jessi sends the first reply; a close tag hands the customer to the rep&#x27;s own number.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>A department line gets answered fast by whoever is free, and nobody steps on each other.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">19</span><h3>Dialer with press-1 safety</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Full-screen keypad with search and recents. Click-to-call rings the rep&#x27;s cell first; the rep presses 1 to connect, so a pocket dial never reaches a customer. Live in-call status and a red hang-up that ends the call server-side.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Calls from the business number, from a cell phone, with zero accidental dials.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">20</span><h3>Call recording and call logs</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Calls record from answer (with consent messaging), land in the contact timeline and the thread with playback, transcript and summary.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Every call is coachable and nothing said on the phone gets lost.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">21</span><h3>Inbound call handling</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Customer calls to the business number ring the rep&#x27;s cell with a whisper (&#x27;Call for you from Sarah&#x27;), fall back to voicemail, and trigger a missed-call text.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Customers always reach a human or hear back within minutes.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">22</span><h3>Voicemail inbox and your own greeting</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Every missed call and voicemail on the rep&#x27;s line sits in the Call tab with playback, a transcript, and call back or text in one tap. Unheard messages get a badge and a push with the transcript. Each rep records their own greeting (up to a minute) or keeps the default.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>No dialing into a mailbox: every message is read in seconds and called back the same hour.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">23</span><h3>Call Retries</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>When a call hits voicemail the system schedules the retries and sends the &#x27;just tried you&#x27; text automatically, with timing you control.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The second and third attempt happen without the rep remembering.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">24</span><h3>Broadcast (Send a Blast)</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Mass text from the rep&#x27;s own number to a tag or a list, scheduled or immediate, with automatic opt-out handling.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Month-end pushes and event invites go out in one tap, compliantly.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">25</span><h3>Quick Send</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>One-tap sends of the digital card, review link, showcase or a card to any contact, with the message pre-written.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The stuff reps should send after every conversation actually gets sent.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">26</span><h3>Templates and merge fields</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>SMS and email templates with merge fields (first name, vehicle, rep name, links), personal and store-level.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Consistent messaging that still reads personal.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">27</span><h3>Email with signature and analytics</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Send templated emails from the thread, generate a branded email signature to paste into any mail app, and see opens and clicks.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The rep&#x27;s brand shows up in every email and they know who is engaging.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">28</span><h3>Quiet hours, opt-in and STOP compliance</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Every automated send waits for 9 AM in the contact&#x27;s time zone. STOP is honored instantly and blocks every text from the organization until the customer texts START. Each contact shows their consent status, a one-tap opt-in link collects consent for promotional texts, and the numbers run on a registered A2P 10DLC brand.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Deliverability stays high and the store stays out of trouble.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">29</span><h3>SMS notifications and &#x27;You&#x27;re Needed&#x27; alerts</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>The rep gets a text or push when a customer needs a human: Jessi is unsure, a lead is waiting, a thread went quiet.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>AI handles the routine; the rep is pulled in at the right moment.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="jessi">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#AF52DE">Jessi AI · 11 features</div>
-        <h2>Jessi, the AI that sounds like the rep</h2>
-        <p>Jessi is trained per rep, knows the inventory and the whole customer record, does the busywork when asked, and knows when to hand the conversation back.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">30</span><h3>My VA (per-rep AI persona)</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Each rep&#x27;s Jessi is trained on their tone, brevity, emoji and humor during onboarding and voice training. Stores can also build named Virtual Assistant personas in the VA Library.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Customers cannot tell the AI reply from the rep&#x27;s own.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">31</span><h3>AI replies with escalation</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Per conversation or per campaign: fully automatic, draft-for-approval, or off. Jessi escalates to the rep when she is unsure or the customer asks for a human, and an intent engine with a per-store sensitivity slider flags hot conversations.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Replies in seconds around the clock, with the rep always in control.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">32</span><h3>Live inventory in replies</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Jessi quotes real in-stock vehicles (year, make, model, price) and texts the photo, pulled from the store&#x27;s live inventory.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>No made-up cars, no &#x27;let me check and get back to you&#x27;.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">33</span><h3>Ask Jessi</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Chat with your own book: &#x27;who did I promise a callback this week&#x27;, &#x27;who mentioned a trade&#x27;, &#x27;draft a text to everyone with a lease ending in March&#x27;. Ask about one person (&#x27;what do I know about Mike?&#x27;) and Jessi answers from the whole record: memos, personal details, how you met, texts, calls, appointments and tasks.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The rep&#x27;s memory, searchable in plain English.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">34</span><h3>Jessi does it for you</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Type or tap the mic and tell Jessi what to do: who to call today, pull someone up, text or call them, add a note or a tag, finish a task, update a contact, mark a sale, book an appointment, set a reminder, enroll someone in a campaign or send your card. Anything that texts a customer, marks a sale, books, enrolls, sets a reminder or saves a contact is read back first and only happens on the rep&#x27;s yes.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The busywork gets done from the lot or the car, and nothing goes out by accident.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">35</span><h3>Add a contact by voice or text</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Say or type &#x27;add Sarah Lee, 801 555 0142, met her at the home show&#x27;. Jessi reads it back, warns about a likely duplicate, fills in How we met, saves only on a yes and offers a follow-up reminder. Nothing is invented: a detail that was not said stays empty.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>New people get captured the moment they are met, not at the end of the day.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">36</span><h3>Memory search</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Find people by what was said or saved, not by name: &#x27;whose daughter plays violin&#x27;, &#x27;who asked about a Tesla last February&#x27;, &#x27;people I met in October&#x27;. Searches voice memos (including ones not filed to anyone yet), saved facts, personal details, notes and How we met, understands time frames like last February, three months ago or in 2025, and links every result to the contact or the memo.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The detail a rep half-remembers turns back into a customer.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">37</span><h3>Pre-call brief</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>On click-to-call, Jessi picks up first and briefs the rep on who they are calling: what they bought, family and personal details, the last conversation and anything the rep owes them. The rep can ask her questions, then says connect or presses 1.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Every call starts like the rep remembered everything.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">38</span><h3>Ask Jessi About The Team</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Managers ask across every rep: who is waiting on a reply, which calls were missed, who mentioned a trade, what happened yesterday.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Team oversight without opening thirty threads.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">39</span><h3>AI Follow-ups (Relationship Intelligence)</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Jessi suggests who to reach out to and drafts the message based on last contact, sentiment and history.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Warm follow-ups that would otherwise never happen.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">40</span><h3>Help Center AI</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>An in-app assistant that knows every guide, SOP and screen and answers &#x27;how do I…&#x27; questions with the exact path.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Fewer support calls, faster onboarding.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="leads">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#FF3B30">Leads · 10 features</div>
-        <h2>Internet leads</h2>
-        <p>Leads arrive from anywhere, including the store&#x27;s own website, get a reply, and reach the right rep so nothing sits unanswered.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">41</span><h3>Website widget: Text us and Call me now</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>One script tag adds a bubble to the store&#x27;s website, color-matched to the site. Text us puts the visitor&#x27;s message in the Inbox from the store line and assigns a rep; Call me now rings the whole ring group and connects the first rep to press 1, with a text back when the store is closed. Different greetings per page, a bubble visitors can tuck to the edge, and stats per door and per page.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Website visitors become texts and live calls instead of bounced sessions.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">42</span><h3>Chat now with Jessi on the website</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Jessi chats with visitors using the store&#x27;s hours, facts, specials and live inventory (or up to 40 pages of the company&#x27;s own site for non-dealers), books appointments and texts a link to add them to the calendar, and hands off to a person when asked or when a topic is one the manager keeps off-limits. Managers edit what she knows and test her answers in the app.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The website answers questions and books visits at midnight.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">43</span><h3>Lead intake from any source</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>ADF/XML from the CRM or third-party sites, lead emails parsed automatically, website forms, and Zapier / Make webhooks. Each lead source gets its own webhook URL and forwarding address.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Every source lands in one queue with no re-typing.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">44</span><h3>First reply with the vehicle photo</h3><div class="auds"><span class="aud" style="--c:#34C759">Customer-facing</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Jessi texts the lead back, matches the vehicle to live inventory and sends the photo along with the first message, so the rep steps into a conversation that has already started.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Every lead hears back, with the right car, even when the whole team is busy.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">45</span><h3>Lead Flows (ring ladder)</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Reusable playbooks: who rings first, then who, how long between attempts, press 1 to claim, &#x27;Ring me &amp; connect&#x27; from the app, deferral to opening time when the store is closed, and what Jessi does meanwhile.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>A lead at 11 PM rings the right person at 9:05 AM instead of dying in an inbox.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">46</span><h3>Shared lead queue and claiming</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Reps see the queue, claim by answering the ring or tapping in the app; a claimed lead is protected from double-handling.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Fair, fast distribution without a manager refereeing.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">47</span><h3>Team availability and shifts</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Who is on shift drives routing; off-shift reps are skipped and collaborators are pulled in when an owner goes quiet.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Leads never route to someone who is off today.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">48</span><h3>Lead response reporting</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Each lead shows when a person replied, with a team view and a per-rep breakdown. Only a human reply counts.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Managers can see how leads are being handled without asking.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">49</span><h3>Source ROI</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Monthly cost per source, funnel from lead to sale, cost per lead and per sale, and a monthly ROI email on the 1st.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Know which sites deserve the budget.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">50</span><h3>Connect Zapier / Make and a Setup &amp; Test Guide</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Any app can send leads to a source, and the in-app guide walks through shared inbox, lead source and workflow setup with a test for each step.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>A store can be fully wired in an afternoon.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="campaigns">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#FF2D55">Automation · 6 features</div>
-        <h2>Campaigns and workflows</h2>
-        <p>Years-long follow-up that reads like the rep wrote it this morning.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">51</span><h3>Campaign builder</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Multi-step text and email plans with timing from minutes to years, template or Jessi-personalized, automatic or manual delivery, previewed as a real enrolled person. Start from proven plans.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Set the plan once; every new customer gets it.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">52</span><h3>Tag workflows</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>What happens when a contact is tagged Sold, Working, Met, Lost and so on: which plan starts, which stops, who Jessi handles.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The tag a rep already applies does all the follow-up work.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">53</span><h3>Date triggers (birthday and anniversary)</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Birthday and sold-date anniversary messages with a card featuring the customer&#x27;s car. Strictly opt-in per contact, fires only on the day, one send per occasion, and the rep gets an 8 AM preview of who is receiving today.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Hundreds of personal moments a year without a single one going out by mistake.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">54</span><h3>Sold workflow</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Delivery congrats card, scheduled delivery-week texts, contact card (VCF) to the customer, review request, then long-term nurture.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The two weeks after delivery, where referrals are won, run themselves.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">55</span><h3>Campaign dashboard</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Live plans, people enrolled, texts this week, what needs fixing, per-plan performance.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Managers see automation working (or not) at a glance.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">56</span><h3>Safety rails</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Quiet hours, same-day guards, single-campaign-per-occasion, idempotent sends and opt-out checks on every automated message.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Nothing double-fires and nothing goes to someone who said stop.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="brand">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#34C759">Personal brand · 11 features</div>
-        <h2>Cards, pages, reviews and reputation</h2>
-        <p>The public-facing side: what customers tap, save and share. It belongs to the rep and follows them.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">57</span><h3>Digital business card</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>A shareable card at a personal link: text it, QR it, NFC tap it, save to contacts in one tap. Every view is tracked.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Never crumpled in a pocket; the rep knows who looked.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">58</span><h3>Link page and personal landing page</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>One link with every profile, review page, card and showcase (like Linktree, built for sales), plus a full personal page.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>One link in every bio and signature that does everything.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">59</span><h3>Showcase</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>A gallery of happy customers and deliveries, with manager approval before anything goes public.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Social proof that sells the next car.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">60</span><h3>Congrats, thank-you, birthday, anniversary and holiday cards</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Branded, trackable cards with the store logo and the customer&#x27;s photo, sent automatically or on demand; customers share them to social. Card templates are editable per store.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Every sale becomes a post the customer&#x27;s friends see.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">61</span><h3>Create a card to share</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Pick a template and get a trackable link with no recipient needed, for socials, events or signage.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Marketing collateral in a tap.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">62</span><h3>Personal reviews and the Review Center</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>A review funnel per rep and store, auto-requested after every sale, with Google / Facebook / Yelp links, template replies and manager approval before publishing.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Reviews the rep owns for life, not a company page they will leave behind.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">63</span><h3>Print QR and the 4x6 leave-behind card</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>A tracked QR for cards, flyers and signs, a print-ready 4x6 card PDF per rep, and scan analytics.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Print finally reports back.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">64</span><h3>Share the App</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Personal install link and QR; see who installed from it.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Reps recruit the next reps.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">65</span><h3>Brand kit and store profile</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Logo, colors, address and email branding applied across cards, emails and public pages.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Everything customers see looks like the store.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">66</span><h3>SEO Health and GEO Health</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>An online-visibility score and an AI-citation score (how often ChatGPT, Gemini and Perplexity mention the rep or store), each with a fix-it guide.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Be found by search engines and by the AI that customers now ask.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">67</span><h3>Your Advocates</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Customers ranked by referrals, repeats and engagement, ready for a thank-you.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The 20% who send the referrals get treated like it.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="coaching">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#FF9500">Coaching and quality · 10 features</div>
-        <h2>Scorecards, practice calls, training and certification</h2>
-        <p>Every real call is graded, every rep can practice against an AI customer, and managers see who needs what.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">68</span><h3>Call Scorecards</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Manager-built checklists per department (sales, service BDC, phone-ups) with weights and critical items. Every recorded call is graded by AI within minutes with quoted evidence, a summary, wins and coaching. Managers can override or re-score.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Objective, consistent call coaching without listening to every call.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">69</span><h3>Critical-miss alerts</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>A missed critical item (no appointment asked, no trade mentioned) pushes the manager right away; reps get their score and top tip when enabled.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Fix the habit the same day it happens.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">70</span><h3>Team Call Scores</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Leaderboard, &#x27;who misses what&#x27; heatmap by criterion, alert feed and per-rep drilldowns.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The next sales meeting writes itself.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">71</span><h3>Scripts and Practice Calls</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Printable phone scripts, and practice calls where Jessi phones the rep and plays the customer (real voice, curveballs, objections), then grades the call against the scorecard.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Reps rehearse the hard calls before a real customer is on the line.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">72</span><h3>Assign Practice Calls</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Managers pick a script, reps and curveballs; the calls go out on a schedule and results land on the team board.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Training that happens on the phone, where the job is.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">73</span><h3>Courses and Certification</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Enroll reps in a course of challenges; pass every one to earn a certificate with a public verification page.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>A visible standard for &#x27;phone ready&#x27;.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">74</span><h3>Training Hub, SOPs and Company Docs</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Lessons and tracks with video engagement reporting, step-by-step SOPs (with a test at the end of each), and the store&#x27;s own docs and policies in the app.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>New hires learn the platform and the process in one place.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">75</span><h3>Mystery Shop Program (a service we run)</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Our AI callers phone-shop a store&#x27;s sales, service, parts and bodyshop people every month as real customers, record and grade every call, and send the GM a monthly report with coaching themes per department. Signed proposal, monthly invoice, no logins needed for the store.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Know how the phones are really answered, every month, for the price of one lost deal.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">76</span><h3>Leaderboards and power rankings</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Individual, store and org rankings on activity, engagement and sales.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Healthy competition on the numbers that drive sales.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">77</span><h3>My Stats and Customer Engagement</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Day / week / month personal performance, plus customers ranked by engagement level.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Reps manage themselves with real numbers.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="reports">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#32ADE6">Reporting · 6 features</div>
-        <h2>Reports and intelligence</h2>
-        <p>Delivered to the inbox and available in the app, for the rep, the manager and the owner.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">78</span><h3>Activity reports</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Detailed texting, calling, card and campaign activity by rep, store and org, with daily report delivery.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>See effort, not just results.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">79</span><h3>Team Sales</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Monthly sold, referrals and repeat buyers by rep.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The report that shows who is building a book, not just hitting a month.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">80</span><h3>Weekly coaching digest and monthly reports</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>A weekly digest of scores and coaching themes to managers, monthly account-health and ROI emails to owners.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The important numbers arrive without anyone running a report.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">81</span><h3>Account Health</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Retention dashboard across every store: usage, engagement, risk flags.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Spot a store going quiet before it churns.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">82</span><h3>Email and card analytics</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Opens, clicks, card views and saves, link clicks (de-duplicated).</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Know what customers actually engage with.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">83</span><h3>Activity feed</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Live team activity across accounts: sales, cards, reviews, claims.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Momentum is visible to everyone.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="team">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#5856D6">Management · 9 features</div>
-        <h2>Team, store and org management</h2>
-        <p>Org to stores to users, with permissions that match the job.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">84</span><h3>Hierarchy and roles</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Organization → stores → users, with rep, store manager, org admin and owner roles, permission templates and per-feature access.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Everyone sees exactly what they should, across one store or fifty.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">85</span><h3>Team members, invites and approvals</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Invite by text or email, approve pending signups, manage users and permissions, deactivate cleanly.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Onboarding a new rep takes minutes.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">86</span><h3>Bulk transfer</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Move a departing rep&#x27;s contacts (and their history) to another rep in one action, only between people the manager actually manages.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Customers stay with the store when people move on.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">87</span><h3>Phone numbers</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Twilio number inventory, assignment and billing per rep and per shared inbox.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Numbers are a managed asset, not a mystery.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">88</span><h3>Inventory and the inventory feed</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Vehicle records with photos, status and visibility; HomeNet, vAuto or a catalog link pulled hourly; missing-photo reminders to admins.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Jessi and the lead engine always work from what is really on the lot.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">89</span><h3>Team Chat</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Internal messaging for the team, separate from customer threads.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Quick coordination without group texts.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">90</span><h3>Store settings</h3><div class="auds"><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>AI sensitivity, login lockout rules, ROI email recipient, review links, notification rules, messaging channels.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Each store tunes the platform to how it sells.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">91</span><h3>Integrations</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>API keys, webhooks, Zapier / Make, calendar sync, lead-source connectors.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Fits the tools the store already uses.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">92</span><h3>Onboarding Hub and setup wizard</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Create and onboard new accounts step by step, with progress tracking.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>A new store is live the same day.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="platform">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#8E8E93">Platform · 6 features</div>
-        <h2>Platform, security, compliance and international</h2>
-        <p>The parts nobody sees until they matter.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">93</span><h3>iPhone, Android and web from one app</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Native apps plus a web version that works on any computer, updated over the air without app-store waits.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Reps use their phone; managers use a desk; everyone sees the same data.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">94</span><h3>Security</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Encrypted sign-in with Face ID, brute-force lockout, password-reset throttling, object-level authorization on every record, media served only through the app.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Customer data stays with the people who should have it.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">95</span><h3>Contact privacy</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#FF9500">Manager</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>A rep&#x27;s own customers, notes, voice memos and personal details stay with that rep and the managers over them. A teammate on a shared thread, a rep in another store or anyone in another company cannot open them, attach tasks to them or get them from Jessi, and AI reply drafts written for a teammate never use the owner&#x27;s private notes.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Reps trust the app with what they know about their customers.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">96</span><h3>Compliance</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Registered A2P 10DLC messaging, opt-in / STOP handling, quiet hours, recording consent messaging, per-store policies.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Carrier-friendly and audit-friendly.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">97</span><h3>Support in the app</h3><div class="auds"><span class="aud" style="--c:#007AFF">Rep</span><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Report a Bug with one tap (admins pushed instantly), Help Center, error monitoring for the team.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Problems get to the right person the same hour.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">98</span><h3>International: US, UK, Ireland, Netherlands</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span><span class="aud" style="--c:#34C759">Customer-facing</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Country, language, currency and time zone per store and client. British and Dutch AI voices and vocabulary on calls, Dutch and British client pages, PDFs and emails, local shop numbers (+31, +44), and invoices in GBP / EUR with iDEAL, SEPA and Bacs.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The same platform sells and coaches in London, Dublin and Amsterdam.</div>
-      </div>
-      </div>
-    </section><section class="grp" id="partners">
-      <div class="grp-head">
-        <div class="sec-tag" style="color:#E87722">Partners and billing · 4 features</div>
-        <h2>Partner program and billing</h2>
-        <p>For resellers and for the owner running the business side.</p>
-      </div>
-      <div class="rows">
-        <div class="row hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div>
-        <div class="row">
-        <div class="c-name"><span class="num">99</span><h3>Partner Portal</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Partners see their accounts, create quotes, onboard clients and view commission statements and invoices.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>A reseller runs their book without calling us.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">100</span><h3>Agreements, NDA and W-9</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>E-signed partner agreements, NDA flow and W-9 collection, all in the app.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Paperwork done before the first client.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">101</span><h3>Quotes, discount codes and subscriptions</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Generate subscription quotes, apply promo codes, bill by Stripe; mystery-shop clients get a signed proposal and a monthly invoice.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>Selling the platform is as smooth as using it.</div>
-      </div><div class="row">
-        <div class="c-name"><span class="num">102</span><h3>Billing, revenue and forecast</h3><div class="auds"><span class="aud" style="--c:#5856D6">Owner</span></div></div>
-        <div class="c-what"><span class="lbl">What it does</span>Payments, MRR, commissions and a revenue forecast in one dashboard; white-label configuration for branded partners.</div>
-        <div class="c-why"><span class="lbl">Why it matters</span>The business runs on the same numbers as the product.</div>
-      </div>
-      </div>
-    </section></main>
+  <div class="sheet-cta"><button class="btn btn-gold btn-block" type="button" data-demo="mobile_nav" data-testid="mobile-book-demo-button">Book a Demo</button></div>
 </div>
-<footer>
-  <div class="ft-inner">
-    <span class="ft-copy">&copy; 2026 I'm On Social. Powered by VI Ventures Group LLC. Internal review sheet, not indexed.</span>
-    <div class="ft-links"><a href="/api/marketing-preview/">Home</a><a href="/api/marketing-preview/platform/">The Full Platform</a><a href="/api/marketing-preview/pricing/">Pricing</a><a href="https://app.imonsocial.com">Sign In</a></div>
+<main id="main">
+<section class="page-hero fs-hero" data-testid="feature-sheet-hero"><div class="wrap">
+  <p class="overline reveal">Feature sheet · internal review copy</p>
+  <h1 class="reveal" data-testid="feature-sheet-h1">Everything in i'M On Social, on one sheet.</h1>
+  <p class="lead reveal">102 features grouped by what they are for, each with a plain description and the reason it exists. Not everyone will use everything; the point is that every rep, manager and owner finds the handful that changes their week.</p>
+  <div class="fs-meta reveal">
+    <span class="fs-pill" data-testid="feature-sheet-total">102 features</span><span class="fs-pill">11 areas</span><span class="fs-pill gold">Internal review copy</span>
+    <div class="fs-legend">Who it is for: <span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span>
+      <button class="btn btn-outline btn-sm fs-print" type="button" onclick="window.print()" data-testid="feature-sheet-print-button">Print / save PDF</button></div>
+  </div>
+</div></section>
+<section class="fs-why-sec"><div class="wrap"><div class="fs-why reveal" data-testid="feature-sheet-why">
+  <div>
+    <p class="overline">Why "i'M On Social"?</p>
+    <h2>Because relationships don't run <em>from 9 to 5.</em></h2>
+    <p><strong>i'M On</strong> means always on: remembering, listening, following up, and staying connected. <strong>Social</strong> means the human relationships that drive business, not social media.</p>
+    <p>i'M On Social uses AI to create 24/7 social engagement, helping you remember every relationship, know when to reach out, and stay connected long after the first conversation or sale. Every feature on this sheet is one more way the system stays on so the salesperson can stay human.</p>
+  </div>
+  <div class="fs-pitch"><strong>i'M ON SOCIAL</strong><p>You make the connection.<br/>We help keep it alive.</p><span>The one-line positioning</span></div>
+</div></div></section>
+<section class="section fs-body"><div class="wrap fs-grid"><aside class="fs-toc" data-testid="feature-sheet-toc"><p class="fs-toc-t">Jump to</p><a href="#daily" data-testid="feature-toc-daily">Home, contacts and the daily routine<em>15</em></a><a href="#messaging" data-testid="feature-toc-messaging">Texting, calling and the inbox<em>14</em></a><a href="#jessi" data-testid="feature-toc-jessi">Jessi, the AI that sounds like the rep<em>11</em></a><a href="#leads" data-testid="feature-toc-leads">Internet leads<em>10</em></a><a href="#campaigns" data-testid="feature-toc-campaigns">Campaigns and workflows<em>6</em></a><a href="#brand" data-testid="feature-toc-brand">Cards, pages, reviews and reputation<em>11</em></a><a href="#coaching" data-testid="feature-toc-coaching">Scorecards, practice calls, training and certification<em>10</em></a><a href="#reports" data-testid="feature-toc-reports">Reports and intelligence<em>6</em></a><a href="#team" data-testid="feature-toc-team">Team, store and org management<em>9</em></a><a href="#platform" data-testid="feature-toc-platform">Platform, security, compliance and international<em>6</em></a><a href="#partners" data-testid="feature-toc-partners">Partner program and billing<em>4</em></a></aside><div class="fs-main"><section class="fs-grp" id="daily" data-testid="feature-group-daily">
+    <div class="fs-grp-head"><p class="overline">Every day · 15 features</p><h2>Home, contacts and the daily routine</h2><p class="muted">What a rep opens first thing in the morning. Everything here is about never letting a relationship go cold.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-1">
+      <div class="fs-name"><span class="fs-num">01</span><h3>People to Talk To Today</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>A prioritized list built overnight: touchpoints that are due, hot leads waiting, birthdays and sold-date anniversaries, threads that went quiet. One tap opens the contact or the text.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The rep knows exactly who to reach out to without hunting through a CRM.</div>
+    </div><div class="fs-row" data-testid="feature-row-2">
+      <div class="fs-name"><span class="fs-num">02</span><h3>Contacts (the personal CRM)</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Full customer records: phones (normalized, de-duplicated), vehicle, birthday, anniversary and date sold, tags, notes, photos, plus CSV import with duplicate detection, a merge tool and a duplicate finder.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Every customer in one place on the rep&#x27;s phone; no spreadsheets or sticky notes.</div>
+    </div><div class="fs-row" data-testid="feature-row-3">
+      <div class="fs-name"><span class="fs-num">03</span><h3>Relationship Intel briefing</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Jessi reads the whole history and writes a quick take, two key facts and a &#x27;Next:&#x27; step at the top of every contact. It refreshes itself whenever new activity comes in.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Walk into any conversation prepared in ten seconds, even a customer from three years ago.</div>
+    </div><div class="fs-row" data-testid="feature-row-4">
+      <div class="fs-name"><span class="fs-num">04</span><h3>Activity timeline</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Every call, text, card, campaign send, voice memo and AI action on one scrolling feed per contact.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Anyone covering for a rep sees the full story instantly.</div>
+    </div><div class="fs-row" data-testid="feature-row-5">
+      <div class="fs-name"><span class="fs-num">05</span><h3>Photo gallery per contact</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Profile photo history, MMS photos texted in or out, delivery photos and card photos; camera or library upload; set any photo as the profile.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The delivery shot and every picture the customer sent live with the customer, not in a camera roll.</div>
+    </div><div class="fs-row" data-testid="feature-row-6">
+      <div class="fs-name"><span class="fs-num">06</span><h3>Voice memos and recorded conversations</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Record a quick note or a live conversation from the contact page, or from the Voice Memos screen without picking anyone first and file it to a contact later. Each memo is transcribed, summarized and turned into follow-up tasks, and the details (family, work, hobbies, how you met) land on the profile. Right after a sale, a &#x27;Tell me about them&#x27; prompt lists what to cover.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Details from the lot make it into the record before they are forgotten.</div>
+    </div><div class="fs-row" data-testid="feature-row-7">
+      <div class="fs-name"><span class="fs-num">07</span><h3>How we met</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>The event, place and date where the rep met each customer. Jessi fills it in from a voice memo, the notes or a contact she created; the rep can edit it, and Jessi never overwrites what the rep wrote.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>&#x27;Who did I meet at the home show in October?&#x27; finally has an answer.</div>
+    </div><div class="fs-row" data-testid="feature-row-8">
+      <div class="fs-name"><span class="fs-num">08</span><h3>Tasks and Team Tasks</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Customer tasks with due dates on each contact and on the calendar. Managers see every open task per rep, overdue first.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Promises to customers get kept, and managers can see which ones are slipping.</div>
+    </div><div class="fs-row" data-testid="feature-row-9">
+      <div class="fs-name"><span class="fs-num">09</span><h3>Calendar and calendar sync</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Appointments, tasks, birthdays and sold dates on one calendar, with Google or Apple calendar sync.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The rep&#x27;s work calendar and personal calendar finally agree.</div>
+    </div><div class="fs-row" data-testid="feature-row-10">
+      <div class="fs-name"><span class="fs-num">10</span><h3>SOLD wizard and Sold Quick</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Mark a sale in seconds: customer, vehicle, backdatable date, delivery photo. It kicks off the congrats card, the review request and the long-term follow-up plan.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>One action turns a sale into a lifetime of automated, personal follow-up.</div>
+    </div><div class="fs-row" data-testid="feature-row-11">
+      <div class="fs-name"><span class="fs-num">11</span><h3>Book of Business and Sales List</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Every customer grouped by relationship stage and every sale by month, with referrals and repeat buyers called out.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Reps see the size and health of the book they are building; it goes with them.</div>
+    </div><div class="fs-row" data-testid="feature-row-12">
+      <div class="fs-name"><span class="fs-num">12</span><h3>Tags and Keyword Auto-Tags</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Personal, store and org tags on any contact. Keyword rules tag calls and texts automatically (for example &#x27;trade&#x27;, &#x27;lease end&#x27;, &#x27;service&#x27;).</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Segments build themselves from what customers actually say.</div>
+    </div><div class="fs-row" data-testid="feature-row-13">
+      <div class="fs-name"><span class="fs-num">13</span><h3>Keyword Search</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Search any word or phrase across every text and every call transcript in the account.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Find the customer who &#x27;mentioned a boat&#x27; or &#x27;asked about a Tahoe&#x27; in seconds.</div>
+    </div><div class="fs-row" data-testid="feature-row-14">
+      <div class="fs-name"><span class="fs-num">14</span><h3>Search by name or digits</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Server-side search of the entire contact book by name or by the last digits of a phone number, from the dialer or the contacts tab.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Works even when the rep only remembers part of a number.</div>
+    </div><div class="fs-row" data-testid="feature-row-15">
+      <div class="fs-name"><span class="fs-num">15</span><h3>Home intelligence and notifications center</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Push and in-app notifications for leads, replies, claims, alerts and digests, with per-type preferences and quiet times.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Reps get pinged for what matters and nothing else.</div>
+    </div></div>
+  </section><section class="fs-grp" id="messaging" data-testid="feature-group-messaging">
+    <div class="fs-grp-head"><p class="overline">Messaging and calling · 14 features</p><h2>Texting, calling and the inbox</h2><p class="muted">Every rep gets a real business number. Every conversation is one thread, whoever or whatever sent it.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-16">
+      <div class="fs-name"><span class="fs-num">16</span><h3>Dedicated business number per rep</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Each rep texts and calls from their own Twilio number. Inbound texts and calls route to the owning rep; the number stays with the store if the rep leaves.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Customers get one number to remember and the store keeps the relationship.</div>
+    </div><div class="fs-row" data-testid="feature-row-17">
+      <div class="fs-name"><span class="fs-num">17</span><h3>Unified Inbox</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>SMS and MMS, email, automated sends, cards and call logs in one thread per contact, with media, contact-card tiles, read state and quick filters.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>No more &#x27;which app did they text me on&#x27;.</div>
+    </div><div class="fs-row" data-testid="feature-row-18">
+      <div class="fs-name"><span class="fs-num">18</span><h3>Shared department inboxes</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>One number worked by a team (Sales BDC, Service, Parts). Routing by jump ball, round robin or weighted; claim, assign, hand off with a note; the first reply owns the thread; collaborators are pulled in when the owner is silent or off shift; Jessi sends the first reply; a close tag hands the customer to the rep&#x27;s own number.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>A department line gets answered fast by whoever is free, and nobody steps on each other.</div>
+    </div><div class="fs-row" data-testid="feature-row-19">
+      <div class="fs-name"><span class="fs-num">19</span><h3>Dialer with press-1 safety</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Full-screen keypad with search and recents. Click-to-call rings the rep&#x27;s cell first; the rep presses 1 to connect, so a pocket dial never reaches a customer. Live in-call status and a red hang-up that ends the call server-side.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Calls from the business number, from a cell phone, with zero accidental dials.</div>
+    </div><div class="fs-row" data-testid="feature-row-20">
+      <div class="fs-name"><span class="fs-num">20</span><h3>Call recording and call logs</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Calls record from answer (with consent messaging), land in the contact timeline and the thread with playback, transcript and summary.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Every call is coachable and nothing said on the phone gets lost.</div>
+    </div><div class="fs-row" data-testid="feature-row-21">
+      <div class="fs-name"><span class="fs-num">21</span><h3>Inbound call handling</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Customer calls to the business number ring the rep&#x27;s cell with a whisper (&#x27;Call for you from Sarah&#x27;), fall back to voicemail, and trigger a missed-call text.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Customers always reach a human or hear back within minutes.</div>
+    </div><div class="fs-row" data-testid="feature-row-22">
+      <div class="fs-name"><span class="fs-num">22</span><h3>Voicemail inbox and your own greeting</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Every missed call and voicemail on the rep&#x27;s line sits in the Call tab with playback, a transcript, and call back or text in one tap. Unheard messages get a badge and a push with the transcript. Each rep records their own greeting (up to a minute) or keeps the default.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>No dialing into a mailbox: every message is read in seconds and called back the same hour.</div>
+    </div><div class="fs-row" data-testid="feature-row-23">
+      <div class="fs-name"><span class="fs-num">23</span><h3>Call Retries</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>When a call hits voicemail the system schedules the retries and sends the &#x27;just tried you&#x27; text automatically, with timing you control.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The second and third attempt happen without the rep remembering.</div>
+    </div><div class="fs-row" data-testid="feature-row-24">
+      <div class="fs-name"><span class="fs-num">24</span><h3>Broadcast (Send a Blast)</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Mass text from the rep&#x27;s own number to a tag or a list, scheduled or immediate, with automatic opt-out handling.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Month-end pushes and event invites go out in one tap, compliantly.</div>
+    </div><div class="fs-row" data-testid="feature-row-25">
+      <div class="fs-name"><span class="fs-num">25</span><h3>Quick Send</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>One-tap sends of the digital card, review link, showcase or a card to any contact, with the message pre-written.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The stuff reps should send after every conversation actually gets sent.</div>
+    </div><div class="fs-row" data-testid="feature-row-26">
+      <div class="fs-name"><span class="fs-num">26</span><h3>Templates and merge fields</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>SMS and email templates with merge fields (first name, vehicle, rep name, links), personal and store-level.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Consistent messaging that still reads personal.</div>
+    </div><div class="fs-row" data-testid="feature-row-27">
+      <div class="fs-name"><span class="fs-num">27</span><h3>Email with signature and analytics</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Send templated emails from the thread, generate a branded email signature to paste into any mail app, and see opens and clicks.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The rep&#x27;s brand shows up in every email and they know who is engaging.</div>
+    </div><div class="fs-row" data-testid="feature-row-28">
+      <div class="fs-name"><span class="fs-num">28</span><h3>Quiet hours, opt-in and STOP compliance</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Every automated send waits for 9 AM in the contact&#x27;s time zone. STOP is honored instantly and blocks every text from the organization until the customer texts START. Each contact shows their consent status, a one-tap opt-in link collects consent for promotional texts, and the numbers run on a registered A2P 10DLC brand.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Deliverability stays high and the store stays out of trouble.</div>
+    </div><div class="fs-row" data-testid="feature-row-29">
+      <div class="fs-name"><span class="fs-num">29</span><h3>SMS notifications and &#x27;You&#x27;re Needed&#x27; alerts</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>The rep gets a text or push when a customer needs a human: Jessi is unsure, a lead is waiting, a thread went quiet.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>AI handles the routine; the rep is pulled in at the right moment.</div>
+    </div></div>
+  </section><section class="fs-grp" id="jessi" data-testid="feature-group-jessi">
+    <div class="fs-grp-head"><p class="overline">Jessi AI · 11 features</p><h2>Jessi, the AI that sounds like the rep</h2><p class="muted">Jessi is trained per rep, knows the inventory and the whole customer record, does the busywork when asked, and knows when to hand the conversation back.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-30">
+      <div class="fs-name"><span class="fs-num">30</span><h3>My VA (per-rep AI persona)</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Each rep&#x27;s Jessi is trained on their tone, brevity, emoji and humor during onboarding and voice training. Stores can also build named Virtual Assistant personas in the VA Library.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Customers cannot tell the AI reply from the rep&#x27;s own.</div>
+    </div><div class="fs-row" data-testid="feature-row-31">
+      <div class="fs-name"><span class="fs-num">31</span><h3>AI replies with escalation</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Per conversation or per campaign: fully automatic, draft-for-approval, or off. Jessi escalates to the rep when she is unsure or the customer asks for a human, and an intent engine with a per-store sensitivity slider flags hot conversations.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Replies in seconds around the clock, with the rep always in control.</div>
+    </div><div class="fs-row" data-testid="feature-row-32">
+      <div class="fs-name"><span class="fs-num">32</span><h3>Live inventory in replies</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Jessi quotes real in-stock vehicles (year, make, model, price) and texts the photo, pulled from the store&#x27;s live inventory.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>No made-up cars, no &#x27;let me check and get back to you&#x27;.</div>
+    </div><div class="fs-row" data-testid="feature-row-33">
+      <div class="fs-name"><span class="fs-num">33</span><h3>Ask Jessi</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Chat with your own book: &#x27;who did I promise a callback this week&#x27;, &#x27;who mentioned a trade&#x27;, &#x27;draft a text to everyone with a lease ending in March&#x27;. Ask about one person (&#x27;what do I know about Mike?&#x27;) and Jessi answers from the whole record: memos, personal details, how you met, texts, calls, appointments and tasks.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The rep&#x27;s memory, searchable in plain English.</div>
+    </div><div class="fs-row" data-testid="feature-row-34">
+      <div class="fs-name"><span class="fs-num">34</span><h3>Jessi does it for you</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Type or tap the mic and tell Jessi what to do: who to call today, pull someone up, text or call them, add a note or a tag, finish a task, update a contact, mark a sale, book an appointment, set a reminder, enroll someone in a campaign or send your card. Anything that texts a customer, marks a sale, books, enrolls, sets a reminder or saves a contact is read back first and only happens on the rep&#x27;s yes.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The busywork gets done from the lot or the car, and nothing goes out by accident.</div>
+    </div><div class="fs-row" data-testid="feature-row-35">
+      <div class="fs-name"><span class="fs-num">35</span><h3>Add a contact by voice or text</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Say or type &#x27;add Sarah Lee, 801 555 0142, met her at the home show&#x27;. Jessi reads it back, warns about a likely duplicate, fills in How we met, saves only on a yes and offers a follow-up reminder. Nothing is invented: a detail that was not said stays empty.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>New people get captured the moment they are met, not at the end of the day.</div>
+    </div><div class="fs-row" data-testid="feature-row-36">
+      <div class="fs-name"><span class="fs-num">36</span><h3>Memory search</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Find people by what was said or saved, not by name: &#x27;whose daughter plays violin&#x27;, &#x27;who asked about a Tesla last February&#x27;, &#x27;people I met in October&#x27;. Searches voice memos (including ones not filed to anyone yet), saved facts, personal details, notes and How we met, understands time frames like last February, three months ago or in 2025, and links every result to the contact or the memo.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The detail a rep half-remembers turns back into a customer.</div>
+    </div><div class="fs-row" data-testid="feature-row-37">
+      <div class="fs-name"><span class="fs-num">37</span><h3>Pre-call brief</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>On click-to-call, Jessi picks up first and briefs the rep on who they are calling: what they bought, family and personal details, the last conversation and anything the rep owes them. The rep can ask her questions, then says connect or presses 1.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Every call starts like the rep remembered everything.</div>
+    </div><div class="fs-row" data-testid="feature-row-38">
+      <div class="fs-name"><span class="fs-num">38</span><h3>Ask Jessi About The Team</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Managers ask across every rep: who is waiting on a reply, which calls were missed, who mentioned a trade, what happened yesterday.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Team oversight without opening thirty threads.</div>
+    </div><div class="fs-row" data-testid="feature-row-39">
+      <div class="fs-name"><span class="fs-num">39</span><h3>AI Follow-ups (Relationship Intelligence)</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Jessi suggests who to reach out to and drafts the message based on last contact, sentiment and history.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Warm follow-ups that would otherwise never happen.</div>
+    </div><div class="fs-row" data-testid="feature-row-40">
+      <div class="fs-name"><span class="fs-num">40</span><h3>Help Center AI</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>An in-app assistant that knows every guide, SOP and screen and answers &#x27;how do I…&#x27; questions with the exact path.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Fewer support calls, faster onboarding.</div>
+    </div></div>
+  </section><section class="fs-grp" id="leads" data-testid="feature-group-leads">
+    <div class="fs-grp-head"><p class="overline">Leads · 10 features</p><h2>Internet leads</h2><p class="muted">Leads arrive from anywhere, including the store&#x27;s own website, get a reply, and reach the right rep so nothing sits unanswered.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-41">
+      <div class="fs-name"><span class="fs-num">41</span><h3>Website widget: Text us and Call me now</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>One script tag adds a bubble to the store&#x27;s website, color-matched to the site. Text us puts the visitor&#x27;s message in the Inbox from the store line and assigns a rep; Call me now rings the whole ring group and connects the first rep to press 1, with a text back when the store is closed. Different greetings per page, a bubble visitors can tuck to the edge, and stats per door and per page.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Website visitors become texts and live calls instead of bounced sessions.</div>
+    </div><div class="fs-row" data-testid="feature-row-42">
+      <div class="fs-name"><span class="fs-num">42</span><h3>Chat now with Jessi on the website</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Jessi chats with visitors using the store&#x27;s hours, facts, specials and live inventory (or up to 40 pages of the company&#x27;s own site for non-dealers), books appointments and texts a link to add them to the calendar, and hands off to a person when asked or when a topic is one the manager keeps off-limits. Managers edit what she knows and test her answers in the app.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The website answers questions and books visits at midnight.</div>
+    </div><div class="fs-row" data-testid="feature-row-43">
+      <div class="fs-name"><span class="fs-num">43</span><h3>Lead intake from any source</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>ADF/XML from the CRM or third-party sites, lead emails parsed automatically, website forms, and Zapier / Make webhooks. Each lead source gets its own webhook URL and forwarding address.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Every source lands in one queue with no re-typing.</div>
+    </div><div class="fs-row" data-testid="feature-row-44">
+      <div class="fs-name"><span class="fs-num">44</span><h3>First reply with the vehicle photo</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Jessi texts the lead back, matches the vehicle to live inventory and sends the photo along with the first message, so the rep steps into a conversation that has already started.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Every lead hears back, with the right car, even when the whole team is busy.</div>
+    </div><div class="fs-row" data-testid="feature-row-45">
+      <div class="fs-name"><span class="fs-num">45</span><h3>Lead Flows (ring ladder)</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Reusable playbooks: who rings first, then who, how long between attempts, press 1 to claim, &#x27;Ring me &amp; connect&#x27; from the app, deferral to opening time when the store is closed, and what Jessi does meanwhile.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>A lead at 11 PM rings the right person at 9:05 AM instead of dying in an inbox.</div>
+    </div><div class="fs-row" data-testid="feature-row-46">
+      <div class="fs-name"><span class="fs-num">46</span><h3>Shared lead queue and claiming</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Reps see the queue, claim by answering the ring or tapping in the app; a claimed lead is protected from double-handling.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Fair, fast distribution without a manager refereeing.</div>
+    </div><div class="fs-row" data-testid="feature-row-47">
+      <div class="fs-name"><span class="fs-num">47</span><h3>Team availability and shifts</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Who is on shift drives routing; off-shift reps are skipped and collaborators are pulled in when an owner goes quiet.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Leads never route to someone who is off today.</div>
+    </div><div class="fs-row" data-testid="feature-row-48">
+      <div class="fs-name"><span class="fs-num">48</span><h3>Lead response reporting</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Each lead shows when a person replied, with a team view and a per-rep breakdown. Only a human reply counts.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Managers can see how leads are being handled without asking.</div>
+    </div><div class="fs-row" data-testid="feature-row-49">
+      <div class="fs-name"><span class="fs-num">49</span><h3>Source ROI</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Monthly cost per source, funnel from lead to sale, cost per lead and per sale, and a monthly ROI email on the 1st.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Know which sites deserve the budget.</div>
+    </div><div class="fs-row" data-testid="feature-row-50">
+      <div class="fs-name"><span class="fs-num">50</span><h3>Connect Zapier / Make and a Setup &amp; Test Guide</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Any app can send leads to a source, and the in-app guide walks through shared inbox, lead source and workflow setup with a test for each step.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>A store can be fully wired in an afternoon.</div>
+    </div></div>
+  </section><section class="fs-grp" id="campaigns" data-testid="feature-group-campaigns">
+    <div class="fs-grp-head"><p class="overline">Automation · 6 features</p><h2>Campaigns and workflows</h2><p class="muted">Years-long follow-up that reads like the rep wrote it this morning.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-51">
+      <div class="fs-name"><span class="fs-num">51</span><h3>Campaign builder</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Multi-step text and email plans with timing from minutes to years, template or Jessi-personalized, automatic or manual delivery, previewed as a real enrolled person. Start from proven plans.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Set the plan once; every new customer gets it.</div>
+    </div><div class="fs-row" data-testid="feature-row-52">
+      <div class="fs-name"><span class="fs-num">52</span><h3>Tag workflows</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>What happens when a contact is tagged Sold, Working, Met, Lost and so on: which plan starts, which stops, who Jessi handles.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The tag a rep already applies does all the follow-up work.</div>
+    </div><div class="fs-row" data-testid="feature-row-53">
+      <div class="fs-name"><span class="fs-num">53</span><h3>Date triggers (birthday and anniversary)</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Birthday and sold-date anniversary messages with a card featuring the customer&#x27;s car. Strictly opt-in per contact, fires only on the day, one send per occasion, and the rep gets an 8 AM preview of who is receiving today.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Hundreds of personal moments a year without a single one going out by mistake.</div>
+    </div><div class="fs-row" data-testid="feature-row-54">
+      <div class="fs-name"><span class="fs-num">54</span><h3>Sold workflow</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Delivery congrats card, scheduled delivery-week texts, contact card (VCF) to the customer, review request, then long-term nurture.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The two weeks after delivery, where referrals are won, run themselves.</div>
+    </div><div class="fs-row" data-testid="feature-row-55">
+      <div class="fs-name"><span class="fs-num">55</span><h3>Campaign dashboard</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Live plans, people enrolled, texts this week, what needs fixing, per-plan performance.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Managers see automation working (or not) at a glance.</div>
+    </div><div class="fs-row" data-testid="feature-row-56">
+      <div class="fs-name"><span class="fs-num">56</span><h3>Safety rails</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Quiet hours, same-day guards, single-campaign-per-occasion, idempotent sends and opt-out checks on every automated message.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Nothing double-fires and nothing goes to someone who said stop.</div>
+    </div></div>
+  </section><section class="fs-grp" id="brand" data-testid="feature-group-brand">
+    <div class="fs-grp-head"><p class="overline">Personal brand · 11 features</p><h2>Cards, pages, reviews and reputation</h2><p class="muted">The public-facing side: what customers tap, save and share. It belongs to the rep and follows them.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-57">
+      <div class="fs-name"><span class="fs-num">57</span><h3>Digital business card</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>A shareable card at a personal link: text it, QR it, NFC tap it, save to contacts in one tap. Every view is tracked.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Never crumpled in a pocket; the rep knows who looked.</div>
+    </div><div class="fs-row" data-testid="feature-row-58">
+      <div class="fs-name"><span class="fs-num">58</span><h3>Link page and personal landing page</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>One link with every profile, review page, card and showcase (like Linktree, built for sales), plus a full personal page.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>One link in every bio and signature that does everything.</div>
+    </div><div class="fs-row" data-testid="feature-row-59">
+      <div class="fs-name"><span class="fs-num">59</span><h3>Showcase</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>A gallery of happy customers and deliveries, with manager approval before anything goes public.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Social proof that sells the next car.</div>
+    </div><div class="fs-row" data-testid="feature-row-60">
+      <div class="fs-name"><span class="fs-num">60</span><h3>Congrats, thank-you, birthday, anniversary and holiday cards</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Branded, trackable cards with the store logo and the customer&#x27;s photo, sent automatically or on demand; customers share them to social. Card templates are editable per store.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Every sale becomes a post the customer&#x27;s friends see.</div>
+    </div><div class="fs-row" data-testid="feature-row-61">
+      <div class="fs-name"><span class="fs-num">61</span><h3>Create a card to share</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Pick a template and get a trackable link with no recipient needed, for socials, events or signage.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Marketing collateral in a tap.</div>
+    </div><div class="fs-row" data-testid="feature-row-62">
+      <div class="fs-name"><span class="fs-num">62</span><h3>Personal reviews and the Review Center</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>A review funnel per rep and store, auto-requested after every sale, with Google / Facebook / Yelp links, template replies and manager approval before publishing.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Reviews the rep owns for life, not a company page they will leave behind.</div>
+    </div><div class="fs-row" data-testid="feature-row-63">
+      <div class="fs-name"><span class="fs-num">63</span><h3>Print QR and the 4x6 leave-behind card</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>A tracked QR for cards, flyers and signs, a print-ready 4x6 card PDF per rep, and scan analytics.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Print finally reports back.</div>
+    </div><div class="fs-row" data-testid="feature-row-64">
+      <div class="fs-name"><span class="fs-num">64</span><h3>Share the App</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Personal install link and QR; see who installed from it.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Reps recruit the next reps.</div>
+    </div><div class="fs-row" data-testid="feature-row-65">
+      <div class="fs-name"><span class="fs-num">65</span><h3>Brand kit and store profile</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Logo, colors, address and email branding applied across cards, emails and public pages.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Everything customers see looks like the store.</div>
+    </div><div class="fs-row" data-testid="feature-row-66">
+      <div class="fs-name"><span class="fs-num">66</span><h3>SEO Health and GEO Health</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>An online-visibility score and an AI-citation score (how often ChatGPT, Gemini and Perplexity mention the rep or store), each with a fix-it guide.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Be found by search engines and by the AI that customers now ask.</div>
+    </div><div class="fs-row" data-testid="feature-row-67">
+      <div class="fs-name"><span class="fs-num">67</span><h3>Your Advocates</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Customers ranked by referrals, repeats and engagement, ready for a thank-you.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The 20% who send the referrals get treated like it.</div>
+    </div></div>
+  </section><section class="fs-grp" id="coaching" data-testid="feature-group-coaching">
+    <div class="fs-grp-head"><p class="overline">Coaching and quality · 10 features</p><h2>Scorecards, practice calls, training and certification</h2><p class="muted">Every real call is graded, every rep can practice against an AI customer, and managers see who needs what.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-68">
+      <div class="fs-name"><span class="fs-num">68</span><h3>Call Scorecards</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Manager-built checklists per department (sales, service BDC, phone-ups) with weights and critical items. Every recorded call is graded by AI within minutes with quoted evidence, a summary, wins and coaching. Managers can override or re-score.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Objective, consistent call coaching without listening to every call.</div>
+    </div><div class="fs-row" data-testid="feature-row-69">
+      <div class="fs-name"><span class="fs-num">69</span><h3>Critical-miss alerts</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>A missed critical item (no appointment asked, no trade mentioned) pushes the manager right away; reps get their score and top tip when enabled.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Fix the habit the same day it happens.</div>
+    </div><div class="fs-row" data-testid="feature-row-70">
+      <div class="fs-name"><span class="fs-num">70</span><h3>Team Call Scores</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Leaderboard, &#x27;who misses what&#x27; heatmap by criterion, alert feed and per-rep drilldowns.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The next sales meeting writes itself.</div>
+    </div><div class="fs-row" data-testid="feature-row-71">
+      <div class="fs-name"><span class="fs-num">71</span><h3>Scripts and Practice Calls</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Printable phone scripts, and practice calls where Jessi phones the rep and plays the customer (real voice, curveballs, objections), then grades the call against the scorecard.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Reps rehearse the hard calls before a real customer is on the line.</div>
+    </div><div class="fs-row" data-testid="feature-row-72">
+      <div class="fs-name"><span class="fs-num">72</span><h3>Assign Practice Calls</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Managers pick a script, reps and curveballs; the calls go out on a schedule and results land on the team board.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Training that happens on the phone, where the job is.</div>
+    </div><div class="fs-row" data-testid="feature-row-73">
+      <div class="fs-name"><span class="fs-num">73</span><h3>Courses and Certification</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Enroll reps in a course of challenges; pass every one to earn a certificate with a public verification page.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>A visible standard for &#x27;phone ready&#x27;.</div>
+    </div><div class="fs-row" data-testid="feature-row-74">
+      <div class="fs-name"><span class="fs-num">74</span><h3>Training Hub, SOPs and Company Docs</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Lessons and tracks with video engagement reporting, step-by-step SOPs (with a test at the end of each), and the store&#x27;s own docs and policies in the app.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>New hires learn the platform and the process in one place.</div>
+    </div><div class="fs-row" data-testid="feature-row-75">
+      <div class="fs-name"><span class="fs-num">75</span><h3>Mystery Shop Program (a service we run)</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Our AI callers phone-shop a store&#x27;s sales, service, parts and bodyshop people every month as real customers, record and grade every call, and send the GM a monthly report with coaching themes per department. Signed proposal, monthly invoice, no logins needed for the store.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Know how the phones are really answered, every month, for the price of one lost deal.</div>
+    </div><div class="fs-row" data-testid="feature-row-76">
+      <div class="fs-name"><span class="fs-num">76</span><h3>Leaderboards and power rankings</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Individual, store and org rankings on activity, engagement and sales.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Healthy competition on the numbers that drive sales.</div>
+    </div><div class="fs-row" data-testid="feature-row-77">
+      <div class="fs-name"><span class="fs-num">77</span><h3>My Stats and Customer Engagement</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Day / week / month personal performance, plus customers ranked by engagement level.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Reps manage themselves with real numbers.</div>
+    </div></div>
+  </section><section class="fs-grp" id="reports" data-testid="feature-group-reports">
+    <div class="fs-grp-head"><p class="overline">Reporting · 6 features</p><h2>Reports and intelligence</h2><p class="muted">Delivered to the inbox and available in the app, for the rep, the manager and the owner.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-78">
+      <div class="fs-name"><span class="fs-num">78</span><h3>Activity reports</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Detailed texting, calling, card and campaign activity by rep, store and org, with daily report delivery.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>See effort, not just results.</div>
+    </div><div class="fs-row" data-testid="feature-row-79">
+      <div class="fs-name"><span class="fs-num">79</span><h3>Team Sales</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Monthly sold, referrals and repeat buyers by rep.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The report that shows who is building a book, not just hitting a month.</div>
+    </div><div class="fs-row" data-testid="feature-row-80">
+      <div class="fs-name"><span class="fs-num">80</span><h3>Weekly coaching digest and monthly reports</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>A weekly digest of scores and coaching themes to managers, monthly account-health and ROI emails to owners.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The important numbers arrive without anyone running a report.</div>
+    </div><div class="fs-row" data-testid="feature-row-81">
+      <div class="fs-name"><span class="fs-num">81</span><h3>Account Health</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Retention dashboard across every store: usage, engagement, risk flags.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Spot a store going quiet before it churns.</div>
+    </div><div class="fs-row" data-testid="feature-row-82">
+      <div class="fs-name"><span class="fs-num">82</span><h3>Email and card analytics</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Opens, clicks, card views and saves, link clicks (de-duplicated).</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Know what customers actually engage with.</div>
+    </div><div class="fs-row" data-testid="feature-row-83">
+      <div class="fs-name"><span class="fs-num">83</span><h3>Activity feed</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Live team activity across accounts: sales, cards, reviews, claims.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Momentum is visible to everyone.</div>
+    </div></div>
+  </section><section class="fs-grp" id="team" data-testid="feature-group-team">
+    <div class="fs-grp-head"><p class="overline">Management · 9 features</p><h2>Team, store and org management</h2><p class="muted">Org to stores to users, with permissions that match the job.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-84">
+      <div class="fs-name"><span class="fs-num">84</span><h3>Hierarchy and roles</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Organization → stores → users, with rep, store manager, org admin and owner roles, permission templates and per-feature access.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Everyone sees exactly what they should, across one store or fifty.</div>
+    </div><div class="fs-row" data-testid="feature-row-85">
+      <div class="fs-name"><span class="fs-num">85</span><h3>Team members, invites and approvals</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Invite by text or email, approve pending signups, manage users and permissions, deactivate cleanly.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Onboarding a new rep takes minutes.</div>
+    </div><div class="fs-row" data-testid="feature-row-86">
+      <div class="fs-name"><span class="fs-num">86</span><h3>Bulk transfer</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Move a departing rep&#x27;s contacts (and their history) to another rep in one action, only between people the manager actually manages.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Customers stay with the store when people move on.</div>
+    </div><div class="fs-row" data-testid="feature-row-87">
+      <div class="fs-name"><span class="fs-num">87</span><h3>Phone numbers</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Twilio number inventory, assignment and billing per rep and per shared inbox.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Numbers are a managed asset, not a mystery.</div>
+    </div><div class="fs-row" data-testid="feature-row-88">
+      <div class="fs-name"><span class="fs-num">88</span><h3>Inventory and the inventory feed</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Vehicle records with photos, status and visibility; HomeNet, vAuto or a catalog link pulled hourly; missing-photo reminders to admins.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Jessi and the lead engine always work from what is really on the lot.</div>
+    </div><div class="fs-row" data-testid="feature-row-89">
+      <div class="fs-name"><span class="fs-num">89</span><h3>Team Chat</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Internal messaging for the team, separate from customer threads.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Quick coordination without group texts.</div>
+    </div><div class="fs-row" data-testid="feature-row-90">
+      <div class="fs-name"><span class="fs-num">90</span><h3>Store settings</h3><div class="fs-auds"><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>AI sensitivity, login lockout rules, ROI email recipient, review links, notification rules, messaging channels.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Each store tunes the platform to how it sells.</div>
+    </div><div class="fs-row" data-testid="feature-row-91">
+      <div class="fs-name"><span class="fs-num">91</span><h3>Integrations</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>API keys, webhooks, Zapier / Make, calendar sync, lead-source connectors.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Fits the tools the store already uses.</div>
+    </div><div class="fs-row" data-testid="feature-row-92">
+      <div class="fs-name"><span class="fs-num">92</span><h3>Onboarding Hub and setup wizard</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Create and onboard new accounts step by step, with progress tracking.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>A new store is live the same day.</div>
+    </div></div>
+  </section><section class="fs-grp" id="platform" data-testid="feature-group-platform">
+    <div class="fs-grp-head"><p class="overline">Platform · 6 features</p><h2>Platform, security, compliance and international</h2><p class="muted">The parts nobody sees until they matter.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-93">
+      <div class="fs-name"><span class="fs-num">93</span><h3>iPhone, Android and web from one app</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Native apps plus a web version that works on any computer, updated over the air without app-store waits.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Reps use their phone; managers use a desk; everyone sees the same data.</div>
+    </div><div class="fs-row" data-testid="feature-row-94">
+      <div class="fs-name"><span class="fs-num">94</span><h3>Security</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Encrypted sign-in with Face ID, brute-force lockout, password-reset throttling, object-level authorization on every record, media served only through the app.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Customer data stays with the people who should have it.</div>
+    </div><div class="fs-row" data-testid="feature-row-95">
+      <div class="fs-name"><span class="fs-num">95</span><h3>Contact privacy</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#3B6E8F">Manager</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>A rep&#x27;s own customers, notes, voice memos and personal details stay with that rep and the managers over them. A teammate on a shared thread, a rep in another store or anyone in another company cannot open them, attach tasks to them or get them from Jessi, and AI reply drafts written for a teammate never use the owner&#x27;s private notes.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Reps trust the app with what they know about their customers.</div>
+    </div><div class="fs-row" data-testid="feature-row-96">
+      <div class="fs-name"><span class="fs-num">96</span><h3>Compliance</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Registered A2P 10DLC messaging, opt-in / STOP handling, quiet hours, recording consent messaging, per-store policies.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Carrier-friendly and audit-friendly.</div>
+    </div><div class="fs-row" data-testid="feature-row-97">
+      <div class="fs-name"><span class="fs-num">97</span><h3>Support in the app</h3><div class="fs-auds"><span class="fs-aud" style="--c:#C9A962">Rep</span><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Report a Bug with one tap (admins pushed instantly), Help Center, error monitoring for the team.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Problems get to the right person the same hour.</div>
+    </div><div class="fs-row" data-testid="feature-row-98">
+      <div class="fs-name"><span class="fs-num">98</span><h3>International: US, UK, Ireland, Netherlands</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span><span class="fs-aud" style="--c:#3E8E5E">Customer-facing</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Country, language, currency and time zone per store and client. British and Dutch AI voices and vocabulary on calls, Dutch and British client pages, PDFs and emails, local shop numbers (+31, +44), and invoices in GBP / EUR with iDEAL, SEPA and Bacs.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The same platform sells and coaches in London, Dublin and Amsterdam.</div>
+    </div></div>
+  </section><section class="fs-grp" id="partners" data-testid="feature-group-partners">
+    <div class="fs-grp-head"><p class="overline">Partners and billing · 4 features</p><h2>Partner program and billing</h2><p class="muted">For resellers and for the owner running the business side.</p></div>
+    <div class="fs-rows"><div class="fs-row fs-hdr"><div>Feature</div><div>What it does</div><div>Why it matters</div></div><div class="fs-row" data-testid="feature-row-99">
+      <div class="fs-name"><span class="fs-num">99</span><h3>Partner Portal</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Partners see their accounts, create quotes, onboard clients and view commission statements and invoices.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>A reseller runs their book without calling us.</div>
+    </div><div class="fs-row" data-testid="feature-row-100">
+      <div class="fs-name"><span class="fs-num">100</span><h3>Agreements, NDA and W-9</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>E-signed partner agreements, NDA flow and W-9 collection, all in the app.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Paperwork done before the first client.</div>
+    </div><div class="fs-row" data-testid="feature-row-101">
+      <div class="fs-name"><span class="fs-num">101</span><h3>Quotes, discount codes and subscriptions</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Generate subscription quotes, apply promo codes, bill by Stripe; mystery-shop clients get a signed proposal and a monthly invoice.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>Selling the platform is as smooth as using it.</div>
+    </div><div class="fs-row" data-testid="feature-row-102">
+      <div class="fs-name"><span class="fs-num">102</span><h3>Billing, revenue and forecast</h3><div class="fs-auds"><span class="fs-aud" style="--c:#6B5BA8">Owner</span></div></div>
+      <div><span class="fs-lbl">What it does</span>Payments, MRR, commissions and a revenue forecast in one dashboard; white-label configuration for branded partners.</div>
+      <div class="fs-whyc"><span class="fs-lbl">Why it matters</span>The business runs on the same numbers as the product.</div>
+    </div></div>
+  </section></div></div></section>
+<section class="band band-ink final" data-testid="feature_sheet-final-cta">
+  <div class="wrap final-inner">
+    <h2 class="reveal">Be the business they never forget.</h2>
+    <p class="reveal">Build stronger relationships, remember what matters, and make every customer connection count.</p>
+    <button class="btn btn-gold btn-lg reveal" type="button" data-demo="cta" data-testid="feature_sheet-final-book-demo-cta">Book Your Demo</button>
+  </div>
+</section>
+</main>
+<footer class="site-footer" data-testid="site-footer">
+  <div class="wrap footer-grid">
+    <div class="f-brand">
+      <a href="/api/marketing-preview/" class="logo" data-testid="footer-logo" aria-label="i'M On Social home"><picture><source srcset="/api/marketing-preview/assets/img/logo.webp?v=c54817d1" type="image/webp"/><img src="/api/marketing-preview/assets/img/logo.png?v=c54817d1" alt="i'M On Social" width="42" height="48"/></picture></a>
+      <p>The Relationship OS for businesses and the people who sell for them.</p>
+      <a class="appstore" href="https://app.imonsocial.com/api/get/site" data-testid="footer-app-store">Get the iPhone app <svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+      <div class="socials"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener" data-testid="footer-social-instagram">Instagram</a><a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener" data-testid="footer-social-tiktok">TikTok</a><a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener" data-testid="footer-social-youtube">YouTube</a></div>
+    </div>
+    <div class="f-cols"><details class="f-col" open data-testid="footer-col-product"><summary data-testid="footer-accordion-toggle-product">Product <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-links"><a href="/api/marketing-preview/#how-it-works" class="" data-testid="footer-product-how-it-works">How it works</a><a href="/api/marketing-preview/features/" class="" data-testid="footer-product-all-features">All features</a><a href="/api/marketing-preview/jessi/" class="" data-testid="footer-product-jessi-ai">Jessi AI</a><a href="/api/marketing-preview/inbox/" class="" data-testid="footer-product-inbox-texting">Inbox &amp; texting</a><a href="/api/marketing-preview/date-triggers/" class="" data-testid="footer-product-campaigns">Campaigns</a><a href="/api/marketing-preview/pricing/" class="" data-testid="footer-product-pricing">Pricing</a></div></details><details class="f-col" open data-testid="footer-col-solutions"><summary data-testid="footer-accordion-toggle-solutions">Solutions <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-links"><a href="/api/marketing-preview/organizations/" class="" data-testid="footer-solutions-for-businesses">For businesses</a><a href="/api/marketing-preview/individuals/" class="" data-testid="footer-solutions-for-sales-professionals">For sales professionals</a><a href="/api/marketing-preview/dealers/" class="" data-testid="footer-solutions-automotive-equipment">Automotive &amp; equipment</a><a href="/api/marketing-preview/real-estate/" class="" data-testid="footer-solutions-real-estate">Real estate</a><a href="/api/marketing-preview/insurance/" class="" data-testid="footer-solutions-insurance-financial">Insurance &amp; financial</a><a href="/api/marketing-preview/home-services/" class="" data-testid="footer-solutions-home-services">Home services</a></div></details><details class="f-col" open data-testid="footer-col-resources"><summary data-testid="footer-accordion-toggle-resources">Resources <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-links"><a href="/api/marketing-preview/help/" class="" data-testid="footer-resources-help-center">Help Center</a><a href="/api/marketing-preview/training/" class="" data-testid="footer-resources-training">Training</a><a href="/api/marketing-preview/developers/" class="" data-testid="footer-resources-developers-api">Developers &amp; API</a><a href="/api/marketing-preview/why-imonsocial/" class="" data-testid="footer-resources-why-i-m-on-social">Why i&#x27;M On Social</a><a href="https://app.imonsocial.com/api/get/site" class="" data-testid="footer-resources-get-the-iphone-app">Get the iPhone app</a></div></details><details class="f-col" open data-testid="footer-col-company"><summary data-testid="footer-accordion-toggle-company">Company <svg class="ico chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-links"><a href="#demo" class="" data-demo="footer" data-testid="footer-company-book-a-demo">Book a demo</a><a href="#contact" class="" data-contact data-testid="footer-company-contact-us">Contact us</a><a href="https://app.imonsocial.com" class="" target="_blank" rel="noopener" data-testid="footer-company-sign-in">Sign in</a><a href="/api/marketing-preview/privacy/" class="" data-testid="footer-company-privacy">Privacy</a><a href="/api/marketing-preview/terms/" class="" data-testid="footer-company-terms">Terms</a><a href="/api/marketing-preview/sms-terms/" class="" data-testid="footer-company-sms-policy">SMS policy</a></div></details></div>
+  </div>
+  <div class="wrap f-legal">
+    <p>&copy; 2026 i'M On Social. Operated by VI Ventures Group LLC.</p>
+    <div><a href="/api/marketing-preview/privacy/" class="" data-testid="footer-legal-privacy">Privacy</a><a href="/api/marketing-preview/terms/" class="" data-testid="footer-legal-terms">Terms</a><a href="/api/marketing-preview/sms-terms/" class="" data-testid="footer-legal-sms">SMS Policy</a><a href="#contact" class="" data-contact data-testid="footer-legal-contact">Contact</a><a class="faded" href="/api/marketing-preview/feature-sheet/" data-testid="footer-feature-sheet">Feature sheet</a></div>
   </div>
 </footer>
-<script>const _sc=()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40);window.addEventListener('scroll',_sc);_sc();</script>
+<div class="modal" id="demo-modal" role="dialog" aria-modal="true" aria-labelledby="demo-title" aria-hidden="true" data-testid="book-demo-modal">
+  <div class="modal-card">
+    <button class="modal-close" type="button" aria-label="Close" data-modal-close data-testid="demo-modal-close"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <form class="demo-form" id="demo-form" data-form="demo" novalidate data-testid="demo-form">
+      <p class="overline">Book a demo</p><h2 id="demo-title">See it with your own customers in mind.</h2><p class="modal-sub">A short call with our team. We show you the app and set you up on the plan that fits.</p>
+      <div class="row2"><div class="field"><label for="demo-first_name">First name <span aria-hidden="true">*</span></label><input id="demo-first_name" name="first_name" type="text" required autocomplete="given-name" data-testid="demo-first_name-input"/></div><div class="field"><label for="demo-last_name">Last name <em>(optional)</em></label><input id="demo-last_name" name="last_name" type="text" autocomplete="family-name" data-testid="demo-last_name-input"/></div></div>
+      <div class="row2"><div class="field"><label for="demo-phone">Mobile <span aria-hidden="true">*</span></label><input id="demo-phone" name="phone" type="tel" required autocomplete="tel" data-testid="demo-phone-input"/></div><div class="field"><label for="demo-email">Email <span aria-hidden="true">*</span></label><input id="demo-email" name="email" type="email" required autocomplete="email" data-testid="demo-email-input"/></div></div>
+      <div class="field"><label for="demo-company">Company <span aria-hidden="true">*</span></label><input id="demo-company" name="company" type="text" required autocomplete="organization" data-testid="demo-company-input"/></div>
+      <div class="row2">
+        <div class="field"><label for="demo-industry">Industry <span aria-hidden="true">*</span></label><select id="demo-industry" name="business_type" required data-testid="demo-industry-select"><option value="">Select your industry</option><option value="real_estate">Real estate</option><option value="insurance">Insurance &amp; financial services</option><option value="car_dealer">Automotive &amp; equipment</option><option value="powersports">Powersports</option><option value="home_services">Home services</option><option value="professional_services">Professional services</option><option value="salon_wellness">Salons, fitness &amp; wellness</option><option value="other">Other</option></select></div>
+        <div class="field"><label for="demo-team">Team size <em>(optional)</em></label><select id="demo-team" name="team_size" data-testid="demo-team-size-select"><option value="">Select team size</option><option value="Just me">Just me</option><option value="2-5">2-5</option><option value="6-20">6-20</option><option value="21-50">21-50</option><option value="51+">51+</option></select></div>
+      </div>
+      <label class="consent" data-testid="demo-sms-consent-label"><input type="checkbox" name="sms_opt_in" data-testid="demo-sms-consent"/><span>I agree to receive SMS messages from i'M On Social about my request and follow-up communications. Msg &amp; data rates may apply. Message frequency varies. Reply STOP to opt out, HELP for help. See our <a href="/api/marketing-preview/sms-terms/" data-testid="demo-sms-policy-link">SMS Messaging Policy</a>.</span></label><p class="legal-line">By submitting you agree to our <a href="/api/marketing-preview/terms/">Terms</a> and <a href="/api/marketing-preview/privacy/">Privacy Policy</a>. i'M On Social is operated by VI Ventures Group LLC.</p>
+      <p class="form-error" role="alert" data-testid="demo-form-error" hidden></p>
+      <button class="btn btn-gold btn-block" type="submit" data-testid="demo-form-submit-button">Book my demo</button>
+    </form>
+    <div class="form-success" hidden data-testid="demo-form-success-message">
+      <div class="success-ico"><svg class="ico" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <h2>Thanks, <span data-first>there</span>.</h2>
+      <p>Someone from our team will reach out shortly to pick a time.</p>
+      <button class="btn btn-ink" type="button" data-modal-close data-testid="demo-success-close">Done</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="contact-modal" role="dialog" aria-modal="true" aria-labelledby="contact-title" aria-hidden="true" data-testid="contact-modal">
+  <div class="modal-card">
+    <button class="modal-close" type="button" aria-label="Close" data-modal-close data-testid="contact-modal-close"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <form class="contact-form" id="contact-form" data-form="contact" novalidate data-testid="contact-form">
+      <p class="overline">Contact us</p>
+      <h2 id="contact-title">How can we help?</h2>
+      <p class="modal-sub">Send us a note and we will get back to you soon.</p>
+      <div class="row2"><div class="field"><label for="contact-first_name">First name <span aria-hidden="true">*</span></label><input id="contact-first_name" name="first_name" type="text" required autocomplete="given-name" data-testid="contact-first_name-input"/></div><div class="field"><label for="contact-last_name">Last name <em>(optional)</em></label><input id="contact-last_name" name="last_name" type="text" autocomplete="family-name" data-testid="contact-last_name-input"/></div></div>
+      <div class="row2"><div class="field"><label for="contact-email">Email <span aria-hidden="true">*</span></label><input id="contact-email" name="email" type="email" required autocomplete="email" data-testid="contact-email-input"/></div><div class="field"><label for="contact-phone">Mobile <em>(optional)</em></label><input id="contact-phone" name="phone" type="tel" autocomplete="tel" data-testid="contact-phone-input"/></div></div>
+      <div class="field"><label for="contact-message">Message <span aria-hidden="true">*</span></label><textarea id="contact-message" name="message" rows="4" required data-testid="contact-message-input"></textarea></div>
+      <label class="consent" data-testid="contact-sms-consent-label"><input type="checkbox" name="sms_opt_in" data-testid="contact-sms-consent"/><span>I agree to receive SMS messages from i'M On Social about my request and follow-up communications. Msg &amp; data rates may apply. Message frequency varies. Reply STOP to opt out, HELP for help. See our <a href="/api/marketing-preview/sms-terms/" data-testid="contact-sms-policy-link">SMS Messaging Policy</a>.</span></label><p class="legal-line">By submitting you agree to our <a href="/api/marketing-preview/terms/">Terms</a> and <a href="/api/marketing-preview/privacy/">Privacy Policy</a>. i'M On Social is operated by VI Ventures Group LLC.</p>
+      <p class="form-error" role="alert" data-testid="contact-form-error" hidden></p>
+      <button class="btn btn-ink btn-block" type="submit" data-testid="contact-form-submit-button">Send message</button>
+    </form>
+    <div class="form-success" hidden data-testid="contact-form-success-message">
+      <div class="success-ico"><svg class="ico" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <h2>Thanks, <span data-first>there</span>.</h2>
+      <p>We got your message and will get back to you soon.</p>
+      <button class="btn btn-ink" type="button" data-modal-close data-testid="contact-success-close">Done</button>
+    </div>
+  </div>
+</div>
+<div class="modal modal-video" id="video-modal" role="dialog" aria-modal="true" aria-label="The i'M On Social story" aria-hidden="true" data-testid="video-lightbox">
+  <div class="video-card">
+    <button class="modal-close" type="button" aria-label="Close video" data-modal-close data-testid="video-lightbox-close"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <video controls playsinline preload="none" poster="/api/marketing-preview/video/social-ad-poster.jpg" data-testid="video-lightbox-player">
+      <source src="/api/marketing-preview/video/social-ad.webm" type="video/webm"/><source src="/api/marketing-preview/video/social-ad.mp4" type="video/mp4"/>
+    </video>
+  </div>
+</div>
+<script src="/api/marketing-preview/lead-retry.js" defer></script>
+<script src="/api/marketing-preview/assets/site.js?v=c54817d1" defer></script>
+
+<script src="https://app.imonsocial.com/api/w/FE2POg13.js" async></script>
 </body>
 </html>
