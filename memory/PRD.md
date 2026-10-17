@@ -1,5 +1,8 @@
 # i'M On Social — Relationship OS (PRD)
 
+> **PRODUCTION (Oct 17 2026 02:43 UTC): build `2026-10-17.ownership-only` LIVE** = production ffd4a9dd5 + contact-ownership security hotfix only (git `release/r1-ownership-only` eb32187b5, incl. B2 create_task fix). Deployed after `2026-10-17.rollback-safe` (`release/r0-rollback-safe` fe417267f = production minus startup cross-org phone consolidation). **Rollback target = rollback-safe deployment, NEVER photo-intel** (its boot re-runs the cross-org consolidation). Smoke: R0 83/83; R1 8/8 + 83/83. No migrations. No OTA. Unreleased preview features preserved on `preserve/preview-features-2026-10-17` (36933b5cd); workspace is still at R1 — restore features only on owner request, and do NOT release them. Next (owner-gated): give the owner the counts-only merge-assessment command (do not run it).
+
+
 ## Original Problem Statement
 Phase 2 "Relationship OS" UX enhancements: robust backend security, intent-based detection engine, live inventory tracking, ADF/XML lead intake. Native iOS/Android UX (Expo), Twilio voice/SMS routing, long-term campaign tracking, AI personalization, strict RBAC, and "no brain power" UI layouts for sales reps.
 
