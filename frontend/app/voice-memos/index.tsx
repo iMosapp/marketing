@@ -24,7 +24,7 @@ const RED = '#FF3B30';
 // Voice memos in one place: the to-file pile and everything already filed, searchable, tagged, grouped by day.
 export default function VoiceMemosScreen() {
   const router = useRouter();
-  const { record } = useLocalSearchParams<{ record?: string }>();
+  const { record, memo } = useLocalSearchParams<{ record?: string; memo?: string }>();
   const { user } = useAuthStore();
   const { colors } = useThemeStore();
   const { showToast } = useToast();
@@ -98,7 +98,8 @@ export default function VoiceMemosScreen() {
     catch (e) { showToast(errText(e, 'Could not name that day'), 'error'); }
   };
 
-  const shown = useMemo(() => (memos || []).filter(m => memoMatches(m, q) && (!activeTag || (m.tags || []).some((t: string) => t.toLowerCase() === activeTag.toLowerCase()))), [memos, q, activeTag]);
+  const pinned = useMemo(() => (memo ? (memos || []).find(m => m.id === memo) || null : null), [memos, memo]);
+  const shown = useMemo(() => (memos || []).filter(m => m.id !== pinned?.id && memoMatches(m, q) && (!activeTag || (m.tags || []).some((t: string) => t.toLowerCase() === activeTag.toLowerCase()))), [memos, q, activeTag, pinned]);
   const groups = useMemo(() => groupByDay(shown), [shown]);
   const tags = useMemo(() => tagsInUse(memos || []), [memos]);
   const live = rec.recording;
@@ -119,9 +120,16 @@ export default function VoiceMemosScreen() {
           </Text>
         </View>
 
+        {pinned && (
+          <View style={{ gap: 8, borderWidth: 1.5, borderColor: GOLD, borderRadius: 18, padding: 8 }} {...tid('memo-pinned')}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: GOLD, letterSpacing: 0.5, paddingHorizontal: 4 }}>FROM YOUR SEARCH</Text>
+            <MemoCard memo={pinned} colors={colors} playing={player.playingId === pinned.id} onPlay={() => player.play(pinned)} onAttach={(s) => { setPreset(s || null); setAttaching(pinned); }} onDelete={() => remove(pinned)} onRename={t => rename(pinned, t)} onTag={() => setTagging(pinned)} tagColor={tagColor} onRetry={() => retry(pinned)} retrying={retryingId === pinned.id} />
+          </View>
+        )}
+
         <MemoFilters view={view} onView={switchView} counts={counts} q={q} onQ={setQ} tags={tags} activeTag={activeTag} onTag={setActiveTag} tagColor={tagColor} colors={colors} />
 
-        {memos === null ? <ActivityIndicator color={GOLD} style={{ marginTop: 30 }} /> : shown.length === 0 ? (
+        {memos === null ? <ActivityIndicator color={GOLD} style={{ marginTop: 30 }} /> : shown.length === 0 && !pinned ? (
           <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingVertical: 24 }} {...tid('memos-empty')}>
             {q || activeTag ? 'Nothing matches that search.' : view === 'attached' ? 'Nothing filed yet. Memos you attach to a contact show up here with who they went to.' : 'No unattached memos. Anything you record here waits until you attach it.'}
           </Text>

@@ -552,6 +552,8 @@ async def _build_data_lookups(user_id: str, user_message: str, role: str = "user
     Analyze the user's message and pre-fetch any data they might be asking about.
     Returns formatted data that gets injected into the system prompt.
     """
+    def _q(title):
+        return f' "{title}"' if title else ""
     db = get_db()
     msg = user_message.lower()
     sections = []
@@ -579,7 +581,8 @@ async def _build_data_lookups(user_id: str, user_message: str, role: str = "user
                         "someone mentioned", "someone asked", "someone was looking", "somebody mentioned", "somebody asked", "who was it that", "can't remember who", "cant remember who",
                         "which customer", "which contact", "find anyone", "find the customer who", "find the person who", "find whoever",
                         "who bought", "who did i sell", "who have i sold", "who purchased", "who owns a", "who has a", "who drives a", "anyone buy", "anybody buy", "which customers bought", "who took delivery",
-                        "tagged", "the tag ", "with the tag", "who are my", "which of my", "everyone who", "anybody who", "customers who", "contacts who", "people who", "who rides", "who is into", "who's into", "who likes"]
+                        "tagged", "the tag ", "with the tag", "who are my", "which of my", "everyone who", "anybody who", "customers who", "contacts who", "people who", "who rides", "who is into", "who's into", "who likes",
+                        "who did i meet", "people i met", "who i met", "the guy i met", "the lady i met", "whose ", "memo about", "memos from", "voice memo", "the guy who", "the lady who", "the one who"]
     if any(t in msg for t in mention_triggers):
         try:
             from services import memory_search as ms
@@ -592,8 +595,12 @@ async def _build_data_lookups(user_id: str, user_message: str, role: str = "user
                     b = r["best"]
                     rows.append(f"- {r['name']} ({r['phone'] or 'no phone'}) | {ms.SOURCES[b['source']]}, {b['when_label'] or 'undated'} | {b['why'] or b['quote']} | quote: \"{b['quote'][:200]}\" | open: /contact/{r['contact_id']}")
                 more = f"\n(+{len(all_rs) - 40} more not listed here)" if len(all_rs) > 40 else ""
-                sections.append(f"\n### WHO MENTIONED \"{res.get('topic') or user_message}\" ({len(all_rs)} people total; searched texts, call transcripts, voice memos, notes, tags and sold records; terms: {', '.join(res.get('terms') or [])})\n"
-                                + ("\n".join(rows) + more + "\nList EVERY person above with their one-line reason (name, source, when, what they said). Do not stop at a few and say 'and others'. If the list is long, keep each line short but include everyone." if rows
+                memos = [f"- Voice memo NOT FILED to a contact yet{_q(m.get('title'))}, {m['when_label'] or 'undated'} | {m['why'] or m['quote'][:200]} | open: {m['link']}" for m in (res.get("memos") or [])[:10]]
+                if memos:
+                    more += "\n" + "\n".join(memos) + "\nMention these unfiled memos too and offer to file them to the right person."
+                when = f" in {res['window']['label']}" if res.get("window") else ""
+                sections.append(f"\n### WHO MENTIONED \"{res.get('topic') or user_message}\"{when} ({len(all_rs)} people total; searched texts, call transcripts, voice memos, notes, saved details, tags and sold records; terms: {', '.join(res.get('terms') or [])})\n"
+                                + ("\n".join(rows) + more + "\nList EVERY person above with their one-line reason (name, source, when, what they said). Do not stop at a few and say 'and others'. If the list is long, keep each line short but include everyone." if rows or memos
                                    else "Nobody on record. Say so plainly, and offer to widen the search (different words, longer time frame)."))
         except Exception as e:
             logger.warning(f"[Jessie] mentions search failed: {e}")

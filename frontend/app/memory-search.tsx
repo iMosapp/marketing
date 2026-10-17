@@ -7,15 +7,22 @@ import api from '../services/api';
 import { useThemeStore } from '../store/themeStore';
 import { useMemorySearchStore } from '../store/memorySearchStore';
 import { GOLD, tid } from '../components/scripts/shared';
+import { UnfiledMemoHits, UnfiledMemo } from '../components/memory/UnfiledMemoHits';
 
-type Hit = { source: 'text' | 'call' | 'memo' | 'note' | 'sale' | 'tag'; who: string; when_label: string; quote: string; why: string; conversation_id?: string | null };
+type Hit = { source: 'text' | 'call' | 'memo' | 'note' | 'sale' | 'tag' | 'file' | 'fact' | 'met'; who: string; when_label: string; quote: string; why: string; conversation_id?: string | null };
 type Result = { contact_id: string; name: string; first: string; phone: string; vehicle: string; strength: 'strong' | 'maybe'; when_label: string; when_spoken: string; best: Hit; hits: Hit[] };
-type Res = { query: string; topic: string; terms: string[]; scanned: number; results: Result[] };
+type Res = { query: string; topic: string; terms: string[]; scanned: number; results: Result[]; memos?: UnfiledMemo[]; window?: { label: string } | null; mode?: 'search' | 'met' | 'memos' };
 
-const ICON: Record<Hit['source'], any> = { text: 'chatbubble-ellipses-outline', call: 'call-outline', memo: 'mic-outline', note: 'document-text-outline', sale: 'pricetag-outline', tag: 'bookmark-outline' };
-const LABEL: Record<Hit['source'], string> = { text: 'Text', call: 'Call transcript', memo: 'Voice memo', note: 'Note', sale: 'Sold record', tag: 'Tag' };
-const EXAMPLES = ['who asked about a Tesla Model 3 around 20k', 'who did I sell a Tahoe to', 'who are my Harley riders', 'anyone looking for a truck to tow a camper', 'who mentioned a trade-in last month', 'who talked about financing with bad credit'];
+const ICON: Record<Hit['source'], any> = { text: 'chatbubble-ellipses-outline', call: 'call-outline', memo: 'mic-outline', note: 'document-text-outline', sale: 'pricetag-outline', tag: 'bookmark-outline', file: 'attach-outline', fact: 'heart-outline', met: 'people-outline' };
+const LABEL: Record<Hit['source'], string> = { text: 'Text', call: 'Call transcript', memo: 'Voice memo', note: 'Note', sale: 'Sold record', tag: 'Tag', file: 'File', fact: 'Saved detail', met: 'How you met' };
+const EXAMPLES = ['who asked about a Tesla Model 3 around 20k', 'who did I sell a Tahoe to', 'who are my Harley riders', 'the guy whose daughter plays violin', 'who did I meet last February', 'people I met in October', 'who mentioned a trade-in three months ago'];
 const daysLabel = (d: number) => (d >= 360 ? 'this year' : d >= 170 ? 'last 6 months' : d >= 80 ? 'last 3 months' : d >= 40 ? 'last month' : `last ${d} days`);
+const summary = (r: Res) => {
+  const n = r.results.length, when = r.window ? ` in ${r.window.label}` : '';
+  if (r.mode === 'met') return n ? `You met ${n} ${n === 1 ? 'person' : 'people'}${when}` : `Nobody you met${when}`;
+  if (r.mode === 'memos') return n ? `${n} ${n === 1 ? 'person has' : 'people have'} voice memos${when}` : `No memos on a contact${when}`;
+  return n ? `${n} ${n === 1 ? 'person' : 'people'} mentioned ${r.topic}${when}` : `Nobody on record mentioned ${r.topic}${when}`;
+};
 
 // "Who mentioned X": Jessi hunts through texts, call transcripts, voice memos, notes, tags and sold records and comes back with the person, the quote and when.
 // When Jessi already ran the hunt in a live session, her list arrives through memorySearchStore and renders at once: no second search, same people she just read out.
@@ -122,7 +129,7 @@ export default function MemorySearchScreen() {
       {res && !busy && (
         <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <Text style={{ flex: 1, fontSize: 12.5, color: colors.textSecondary, minWidth: 180 }} {...tid('memory-search-summary')}>
-            {res.results.length ? `${res.results.length} ${res.results.length === 1 ? 'person' : 'people'} mentioned ${res.topic}` : `Nobody on record mentioned ${res.topic}`}
+            {summary(res)}
             {res.terms.length ? ` · looked for: ${res.terms.join(', ')}` : ''}
           </Text>
           {!!days && (
@@ -132,6 +139,7 @@ export default function MemorySearchScreen() {
           )}
         </View>
       )}
+      {res && !busy && <UnfiledMemoHits memos={res.memos || []} colors={colors} />}
     </View>
   );
 
@@ -141,7 +149,7 @@ export default function MemorySearchScreen() {
         <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/contacts' as any))} hitSlop={8} style={{ padding: 4 }} {...tid('memory-search-back')}><Ionicons name="chevron-back" size={26} color={colors.text} /></TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Who mentioned...</Text>
-          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Texts, calls, voice memos, notes, tags and what they bought</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Texts, calls, voice memos, notes, saved details, tags, sold records and when you met</Text>
         </View>
       </View>
       <View style={{ marginHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: Platform.OS === 'web' ? 8 : 4 }}>
@@ -158,7 +166,7 @@ export default function MemorySearchScreen() {
         renderItem={renderItem}
         extraData={open}
         ListHeaderComponent={header}
-        ListFooterComponent={res && !busy && !res.results.length ? <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }} {...tid('memory-search-empty')}>Try different words (the make instead of the model, the number written another way) or ask Jessi to widen the time frame.</Text> : null}
+        ListFooterComponent={res && !busy && !res.results.length && !res.memos?.length ? <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }} {...tid('memory-search-empty')}>Try different words (the make instead of the model, the number written another way) or ask Jessi to widen the time frame.</Text> : null}
         contentContainerStyle={{ padding: 14, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
         initialNumToRender={12}
