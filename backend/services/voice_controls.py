@@ -47,10 +47,7 @@ DEFAULT_POLICY = {"enabled": False, "product": "imos", "plan_key": "standard", "
                   "monthly_budget_usd": None, "soft_warn_pcts": [80], "hard_premium_cap_usd": None, "account_monthly_backup_usd": None,
                   "account_monthly_hard_usd": None, "cap_super_admins": False, "killed": False, "engine_mode": "live_first",
                   "carry_over": False, "timezone": None, "notes": ""}
-GLOBAL_DEFAULTS = {"enabled": True, "max_user_daily_premium_min": 240, "max_user_daily_backup_min": 480, "pricing": PRICING,
-                   # production rollout: every account is on voice controls with these defaults unless it has its own setting or was switched off
-                   "all_accounts": False, "default_premium_min": 15, "default_backup_min": 60, "default_monthly_hard_usd": 50.0}
-ROLLOUT_FIELDS = {"per_user_daily_premium_min": "default_premium_min", "per_user_daily_backup_min": "default_backup_min", "account_monthly_hard_usd": "default_monthly_hard_usd"}
+GLOBAL_DEFAULTS = {"enabled": True, "max_user_daily_premium_min": 240, "max_user_daily_backup_min": 480, "pricing": PRICING}
 PLAN_CATALOG = {"standard": {"per_user_daily_premium_min": 15}, "pro": {"per_user_daily_premium_min": 30}, "unlimited": {"per_user_daily_premium_min": 240}}
 INT_FIELDS = ("per_user_daily_premium_min", "per_user_daily_backup_min", "account_daily_premium_min", "account_monthly_premium_min")
 USD_FIELDS = ("monthly_budget_usd", "hard_premium_cap_usd", "account_monthly_backup_usd", "account_monthly_hard_usd")
@@ -158,13 +155,6 @@ async def save_global(db, patch: dict, by: dict) -> dict:
     for k in ("max_user_daily_premium_min", "max_user_daily_backup_min"):
         if k in patch and patch[k] is not None:
             val[k] = min(1440, max(1, int(patch[k])))
-    if "all_accounts" in patch:
-        val["all_accounts"] = bool(patch["all_accounts"])
-    for k in ("default_premium_min", "default_backup_min"):
-        if k in patch and patch[k] is not None:
-            val[k] = min(1440, max(0, int(patch[k])))
-    if "default_monthly_hard_usd" in patch:
-        val["default_monthly_hard_usd"] = None if patch["default_monthly_hard_usd"] in (None, "") else round(min(100000.0, max(0.01, float(patch["default_monthly_hard_usd"]))), 2)
     await db.settings.update_one({"key": GLOBAL_KEY}, {"$set": {"value": val, "updated_at": _now(), "updated_by": by.get("email")}}, upsert=True)
     await db[LEDGER_COLL].insert_one({"kind": "admin_global_change", "by": by.get("email"), "at": _now(), "patch": val})
     return await get_global(db)
@@ -208,44 +198,18 @@ def clean_policy(patch: dict, base: dict) -> dict:
     return p
 
 
-def _custom_keys(doc: dict) -> list:
-    """Fields this account set on purpose. Rows written before the rollout kept every field, so all of them count as set."""
-    c = doc.get("custom")
-    return [k for k in (c if isinstance(c, list) else doc.keys()) if k in DEFAULT_POLICY]
-
-
-def account_defaults(g: dict) -> dict:
-    """What an account gets without its own setting: the rollout defaults while voice controls is on for every account."""
-    base = dict(DEFAULT_POLICY)
-    if g.get("all_accounts"):
-        base["enabled"] = True
-        for field, gk in ROLLOUT_FIELDS.items():
-            base[field] = g.get(gk)
-    return base
-
-
-async def get_policy(db, org_id: str, g: Optional[dict] = None) -> dict:
-    g = g or await get_global(db)
+async def get_policy(db, org_id: str) -> dict:
     doc = await db[POLICY_COLL].find_one({"org_id": org_id}) or {}
-    custom = _custom_keys(doc)
-    p = {**account_defaults(g), **{k: doc[k] for k in custom if k in doc}}
-    p.update({"org_id": org_id, "exists": bool(doc), "custom": sorted(custom), "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None, "updated_by": doc.get("updated_by")})
+    p = {**DEFAULT_POLICY, **{k: v for k, v in doc.items() if k in DEFAULT_POLICY}}
+    p.update({"org_id": org_id, "exists": bool(doc), "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None, "updated_by": doc.get("updated_by")})
     return p
 
 
-async def save_policy(db, org_id: str, patch: dict, by: dict, reset: Optional[list] = None) -> dict:
-    """Writes only what changed and remembers it as this account's own setting; `reset` hands fields back to the defaults."""
+async def save_policy(db, org_id: str, patch: dict, by: dict) -> dict:
     cur = await get_policy(db, org_id)
     p = clean_policy(patch, {k: cur[k] for k in DEFAULT_POLICY})
-    changed = {k: p[k] for k in patch if k in DEFAULT_POLICY}
-    reset = [k for k in (reset or []) if k in DEFAULT_POLICY and k not in changed]
-    doc = await db[POLICY_COLL].find_one({"org_id": org_id}) or {}
-    custom = sorted((set(_custom_keys(doc)) | set(changed)) - set(reset))
-    upd = {"$set": {**changed, "custom": custom, "updated_at": _now(), "updated_by": by.get("email")}, "$setOnInsert": {"created_at": _now()}}
-    if reset:
-        upd["$unset"] = {k: "" for k in reset}
-    await db[POLICY_COLL].update_one({"org_id": org_id}, upd, upsert=True)
-    await db[LEDGER_COLL].insert_one({"org_id": org_id, "kind": "admin_policy_change", "by": by.get("email"), "at": _now(), "patch": changed, "reset": reset})
+    await db[POLICY_COLL].update_one({"org_id": org_id}, {"$set": {**p, "updated_at": _now(), "updated_by": by.get("email")}, "$setOnInsert": {"created_at": _now()}}, upsert=True)
+    await db[LEDGER_COLL].insert_one({"org_id": org_id, "kind": "admin_policy_change", "by": by.get("email"), "at": _now(), "patch": p})
     return await get_policy(db, org_id)
 
 
@@ -389,7 +353,7 @@ async def resolve(db, user: dict, policy: dict) -> dict:
     if policy["hard_premium_cap_usd"] is not None:  # the hard $ cap binds everyone, authorized or not
         hard_left = _usd_to_s(policy["hard_premium_cap_usd"] - float(amonth.get("premium_cost_usd") or 0), "live") - acct_reserved
         limits.append("hard_premium_cap")
-    if policy["account_monthly_hard_usd"] is not None:  # total spend (both engines) this month; binds everyone except uncapped super admins (applied below)
+    if policy["account_monthly_hard_usd"] is not None:  # total spend (both engines) this month; binds everyone incl. super admins
         remaining = policy["account_monthly_hard_usd"] - float(amonth.get("est_cost_usd") or 0)
         v = _usd_to_s(remaining, "live") - acct_reserved
         hard_left = v if hard_left is None else min(hard_left, v)
@@ -401,13 +365,13 @@ async def resolve(db, user: dict, policy: dict) -> dict:
         if not bypass_shared:
             back_left = min(back_left, acct_back_left)
         limits.append("account_monthly_backup")
-    if uncapped:   # super admins are never capped, not even by the account's monthly $ cap (their spend still counts toward it)
+    if uncapped:
         prem_left, back_left = 24 * 3600, 24 * 3600
         user_prem_allow, user_back_allow = 24 * 3600, 24 * 3600
         limits.append("super_admin_uncapped")
-    if hard_left is not None and not uncapped:
+    if hard_left is not None:
         prem_left = min(prem_left, hard_left)
-    if hard_back_left is not None and not uncapped:
+    if hard_back_left is not None:
         back_left = min(back_left, hard_back_left)
     if policy["killed"]:  # owner kill switch: nothing starts, open sessions are told to stop
         prem_left, back_left = 0, 0
@@ -735,42 +699,13 @@ async def kill_open_sessions(db, org_id: str) -> int:
     return n
 
 
-async def account_members(db, org_id: str, limit: int = 300) -> list:
-    """Everyone whose voice minutes count against this account (same rules as org_of)."""
-    proj = {"name": 1, "email": 1, "role": 1, "status": 1}
-    if org_id.startswith("store:"):
-        q = {"store_id": org_id[6:]}
-    elif org_id.startswith("user:"):
-        q = {"_id": _oid(org_id[5:])}
-    else:
-        stores = [str(x["_id"]) async for x in db.stores.find({"$or": [{"organization_id": org_id}, {"org_id": org_id}]}, {"_id": 1})]
-        q = {"$or": [{"organization_id": org_id}, {"org_id": org_id}, {"store_id": {"$in": stores}}]}
-    q = {"$and": [q, {"status": {"$nin": ["deleted", "deactivated", "inactive"]}}]}
-    return [{"user_id": str(u["_id"]), "name": u.get("name") or u.get("email") or "", "email": u.get("email") or "", "role": u.get("role") or "user"}
-            async for u in db.users.find(q, proj).sort("name", 1).limit(limit)]
-
-
-# ── production rollout ────────────────────────────────────────────────────────
-async def rollout(db, on: bool, me: dict) -> dict:
-    """Voice controls for every account (on) or only accounts switched on one by one (off). Turning it on hands the founder pilot
-    account back to the defaults (its pilot allowances and 'cap super admins' were for the test only)."""
-    g = await save_global(db, {"all_accounts": bool(on)}, me)
-    if on:
-        org_id = await org_of(db, me)
-        doc = await db[POLICY_COLL].find_one({"org_id": org_id}) or {}
-        if doc:
-            await save_policy(db, org_id, {}, me, reset=[k for k in DEFAULT_POLICY if k not in ("killed",)])
-    return g
-
-
 # ── founder pilot (one account, the owner's own) ───────────────────────────────
 PILOT_DEFAULTS = {"premium_min": 2, "backup_min": 10, "hard_usd": 20.0}
 
 
 async def pilot_enroll(db, me: dict, premium_min: int, backup_min: int, hard_usd: float) -> dict:
     org_id = await org_of(db, me)
-    g = await get_global(db)   # once every account is on voice limits, super admins are never capped (the pilot cap was for the test only)
-    patch = {"enabled": True, "cap_super_admins": not g["all_accounts"], "killed": False, "per_user_daily_premium_min": premium_min, "per_user_daily_backup_min": backup_min,
+    patch = {"enabled": True, "cap_super_admins": True, "killed": False, "per_user_daily_premium_min": premium_min, "per_user_daily_backup_min": backup_min,
              "account_monthly_hard_usd": hard_usd, "notes": f"Founder voice pilot, enrolled by {me.get('email')}"}
     await save_policy(db, org_id, patch, me)
     return await pilot_status(db, me)
@@ -829,8 +764,6 @@ async def pilot_status(db, me: dict) -> dict:
         allowance["next_engine"] = pick_engine(policy, eff)
     return {"org_id": org_id, "org_name": await org_name(db, org_id), "me": {"user_id": str(me["_id"]), "email": me.get("email"), "role": me.get("role")},
             "enrolled": bool(policy["enabled"] and g["enabled"]), "policy": policy, "global_enabled": g["enabled"], "other_enrolled_org_ids": others, "defaults": PILOT_DEFAULTS,
-            "rollout": {"all_accounts": bool(g["all_accounts"]), "premium_min": g["default_premium_min"], "backup_min": g["default_backup_min"], "hard_usd": g["default_monthly_hard_usd"],
-                        "updated_at": g["updated_at"], "updated_by": g["updated_by"]},
             "env": {"fake_provider_allowed": fake_provider_allowed(), "openai_configured": lv.configured() is None, "openai_reason": lv.configured(), "build": BUILD},
             "allowance": allowance,
             "today": {k: int(aday.get(k) or 0) for k in ("premium_used_s", "premium_reserved_s", "backup_used_s", "backup_reserved_s", "sessions")} | {"day": day},
@@ -913,9 +846,7 @@ async def user_usage(db, org_id: str, since: datetime) -> list:
 
 
 async def account_overview(db, since: datetime) -> list:
-    """One row per account: every organization, stores without one, and any other account with a policy or usage since `since`.
-    Minutes by role, sessions, est. cost, this month's spend against the cap, and the effective policy (own settings vs defaults)."""
-    g = await get_global(db)
+    """One row per account that has a policy or any usage since `since`: minutes by role, sessions, est. cost, enrolment."""
     pipe = [{"$match": {"kind": "segment", "started_at": {"$gte": since}, "org_id": {"$ne": None}}},
             {"$group": {"_id": {"o": "$org_id", "r": "$role"}, "s": {"$sum": "$billable_s"}, "n": {"$sum": 1}, "cost": {"$sum": "$est_cost_usd"}, "users": {"$addToSet": "$user_id"},
                         "caps": {"$sum": {"$cond": [{"$in": ["$stop_reason", ["premium_cap", "backup_cap", "daily_cap"]]}, 1, 0]}}}}]
@@ -924,33 +855,21 @@ async def account_overview(db, since: datetime) -> list:
     def row(org_id):
         return rows.setdefault(org_id, {"org_id": org_id, "premium_s": 0, "backup_s": 0, "sessions": 0, "est_cost_usd": 0.0, "users": set(), "cap_hits": 0})
 
-    async for o in db.organizations.find({"status": {"$nin": ["deleted", "archived"]}}, {"_id": 1}):
-        row(str(o["_id"]))
-    async for st in db.stores.find({"$and": [{"$or": [{"organization_id": {"$in": [None, ""]}}, {"organization_id": {"$exists": False}}]},
-                                             {"$or": [{"org_id": {"$in": [None, ""]}}, {"org_id": {"$exists": False}}]}]}, {"_id": 1}):
-        row(f"store:{st['_id']}")
-    async for gr in db[LEDGER_COLL].aggregate(pipe):
-        r = row(gr["_id"]["o"])
-        r[f"{gr['_id']['r'] or 'premium'}_s"] += int(gr["s"] or 0)
-        r["sessions"] += int(gr["n"] or 0)
-        r["est_cost_usd"] = round(r["est_cost_usd"] + float(gr["cost"] or 0), 4)
-        r["users"] |= set(gr.get("users") or [])
-        r["cap_hits"] += int(gr["caps"] or 0)
-    async for p in db[POLICY_COLL].find({}, {"org_id": 1}):
-        row(p["org_id"])
+    async for g in db[LEDGER_COLL].aggregate(pipe):
+        r = row(g["_id"]["o"])
+        r[f"{g['_id']['r'] or 'premium'}_s"] += int(g["s"] or 0)
+        r["sessions"] += int(g["n"] or 0)
+        r["est_cost_usd"] = round(r["est_cost_usd"] + float(g["cost"] or 0), 4)
+        r["users"] |= set(g.get("users") or [])
+        r["cap_hits"] += int(g["caps"] or 0)
+    async for p in db[POLICY_COLL].find({}):
+        r = row(p["org_id"])
+        r["policy"] = {k: p.get(k, DEFAULT_POLICY[k]) for k in DEFAULT_POLICY}
     out = []
     for r in rows.values():
         r["active_users"] = len(r.pop("users"))
-        pol = await get_policy(db, r["org_id"], g)
-        tz = await account_tz(db, r["org_id"], pol)
-        now_local = _now().astimezone(tz)
-        aday = await db[ACCT_DAY_COLL].find_one({"_id": f"{r['org_id']}:{day_key(now_local)}"}) or {}
-        amonth = await db[ACCT_MONTH_COLL].find_one({"_id": f"{r['org_id']}:{month_key(now_local)}"}) or {}
-        r["policy"] = {k: pol[k] for k in DEFAULT_POLICY} | {"custom": pol["custom"], "exists": pol["exists"]}
-        r["enabled"] = bool(pol["enabled"] and g["enabled"])
-        r["killed"] = bool(pol["killed"])
-        r["today"] = {"premium_s": int(aday.get("premium_used_s") or 0), "backup_s": int(aday.get("backup_used_s") or 0), "sessions": int(aday.get("sessions") or 0)}
-        r["month"] = {"est_cost_usd": round(float(amonth.get("est_cost_usd") or 0), 2), "cap_usd": pol["account_monthly_hard_usd"]}
+        r.setdefault("policy", None)
+        r["enabled"] = bool((r["policy"] or {}).get("enabled"))
         r["name"] = await org_name(db, r["org_id"])
         out.append(r)
-    return sorted(out, key=lambda r: (-(r["premium_s"] + r["backup_s"]), r["name"].lower()))
+    return sorted(out, key=lambda r: (-(r["premium_s"] + r["backup_s"]), r["name"]))

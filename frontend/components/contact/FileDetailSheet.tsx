@@ -5,7 +5,6 @@ import api from '../../services/api';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { showConfirm } from '../../services/alert';
 import { GOLD, tid, errText } from '../inbox/ownership';
-import { DocDates, fmtDay } from '../scan/DocDates';
 
 type Props = { visible: boolean; file: any | null; userId?: string; colors: any; scanTypes: Record<string, string>; sensitiveTypes: string[]; ttlDays: number; contact?: any;
   onClose: () => void; onChanged: (f: any) => void; onDeleted: (id: string) => void; onApplied: () => void; showToast: (m: string, t?: any, d?: number) => void };
@@ -14,19 +13,16 @@ const RED = '#FF3B30';
 const when = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); };
 
 // One file: preview, what Jessi read, the details she can add to the contact, type, sensitive lock, delete.
-// Only empty slots are pre-ticked: anything that would replace a saved value (a name, address, vehicle...) waits for the rep's tick.
-const CURRENT: Record<string, (c: any) => string> = { first_name: c => c?.first_name || '', last_name: c => c?.last_name || '', company: c => c?.employer || '', title: c => c?.occupation || '',
-  website: c => c?.personal_details?.website || '', address_street: c => c?.address_street || '', address_city: c => c?.address_city || '', address_state: c => c?.address_state || '', address_zip: c => c?.address_zip || '' };
-const VEHICLE = ['vin', 'year', 'make', 'model', 'trim', 'mileage', 'color', 'plate'];
-const ADDS = ['phone', 'phone_office', 'email'];   // added next to what is saved, never replace it
-const hasValue = (k: string, c: any) => !!(CURRENT[k]?.(c) || (VEHICLE.includes(k) && c?.vehicle) || (k === 'birthday' && c?.birthday));
+// Name fields replace the contact's own name, so they are never pre-ticked once the contact has one (a referral's card must not rename Sarah).
+const CURRENT: Record<string, (c: any) => string> = { first_name: c => c?.first_name || '', last_name: c => c?.last_name || '', company: c => c?.employer || '', title: c => c?.occupation || '' };
 
 export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sensitiveTypes, ttlDays, contact, onClose, onChanged, onDeleted, onApplied, showToast }: Props) => {
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [showText, setShowText] = useState(false);
   const [name, setName] = useState('');
-  useEffect(() => { if (file) { setPicked(Object.keys(file.fields || {}).filter(k => !(file.applied || []).includes(k) && (ADDS.includes(k) || !hasValue(k, contact)))); setShowText(false); setName(file.title || file.name || ''); } }, [file?.id, contact?._id]);
+  const hasName = !!(contact?.first_name || contact?.last_name);
+  useEffect(() => { if (file) { setPicked(Object.keys(file.fields || {}).filter(k => !(file.applied || []).includes(k) && !(hasName && (k === 'first_name' || k === 'last_name')))); setShowText(false); setName(file.title || file.name || ''); } }, [file?.id]);
   const url = useMemo(() => resolvePhotoUrl(file?.url) || '', [file?.url]);
   if (!file) return null;
 
@@ -52,21 +48,6 @@ export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sens
     catch (e) { showToast(errText(e, 'Could not delete'), 'error'); }
   }, undefined, 'Delete');
   const open = () => { if (Platform.OS === 'web') (globalThis as any).open(url, '_blank'); else Linking.openURL(url).catch(() => showToast('Could not open it', 'error')); };
-  const decide = async (key: string, decision: 'create' | 'dismiss') => {
-    setBusy(key);
-    try {
-      const r = await api.post(`/contact-files/${userId}/${file.id}/reminders`, { key, decision });
-      onChanged(r.data.file);
-      if (decision === 'create') showToast(`Reminder set for ${fmtDay(r.data.reminder.due)}. It's in your Tasks.`, 'success', 3500);
-    } catch (e) { showToast(errText(e, 'Could not set that reminder'), 'error'); }
-    finally { setBusy(null); }
-  };
-  const setAsPhoto = async () => {
-    setBusy('photo');
-    try { await api.patch(`/contacts/${userId}/${file.contact_id}/profile-photo`, { photo_url: file.url }); showToast('Profile photo updated', 'success'); onApplied(); }
-    catch (e) { showToast(errText(e, 'Could not set the profile photo'), 'error'); }
-    finally { setBusy(null); }
-  };
   const lockedType = sensitiveTypes.includes(file.scan_type);
   const fields: [string, string][] = Object.entries(file.fields || {}) as any;
 
@@ -83,19 +64,12 @@ export const FileDetailSheet = ({ visible, file, userId, colors, scanTypes, sens
               {file.kind === 'image' ? <Image source={{ uri: url }} style={{ width: '100%', height: 260 }} resizeMode="contain" />
                 : <View style={{ height: 150, alignItems: 'center', justifyContent: 'center', gap: 8 }}><Ionicons name="document-text" size={44} color={GOLD} /><Text style={{ color: colors.textSecondary, fontSize: 13 }}>PDF · {file.pages || 1} page{file.pages === 1 ? '' : 's'} · tap to open</Text></View>}
             </TouchableOpacity>
-            <Text style={{ fontSize: 12, color: colors.textSecondary }}>{file.doc_label || file.scan_label} · {when(file.created_at)}{file.source === 'mms' ? ' · texted by the customer' : ''}{file.status === 'unread' ? ' · Jessi could not read this one' : ''}</Text>
-            {file.kind === 'image' && !file.sensitive && file.scan_type === 'photo' && !file.doc_type && (
-              <TouchableOpacity onPress={setAsPhoto} disabled={!!busy} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }} {...tid('file-use-as-profile-photo')}>
-                {busy === 'photo' ? <ActivityIndicator color={GOLD} size="small" /> : <Ionicons name="person-circle-outline" size={18} color={GOLD} />}
-                <Text style={{ fontSize: 13, fontWeight: '700', color: GOLD }}>Use as profile photo</Text>
-              </TouchableOpacity>
-            )}
+            <Text style={{ fontSize: 12, color: colors.textSecondary }}>{file.scan_label} · {when(file.created_at)}{file.source === 'mms' ? ' · texted by the customer' : ''}{file.status === 'unread' ? ' · Jessi could not read this one' : ''}</Text>
             {file.summary ? <Text style={{ fontSize: 14.5, lineHeight: 21, color: colors.text }} {...tid('file-summary')}>{file.summary}</Text> : null}
             {file.text ? (
               <TouchableOpacity onPress={() => setShowText(s => !s)} {...tid('file-text-toggle')}><Text style={{ fontSize: 12.5, fontWeight: '700', color: GOLD }}>{showText ? 'Hide what Jessi read' : 'Show everything Jessi read'}</Text></TouchableOpacity>
             ) : null}
             {showText ? <Text style={{ fontSize: 13, lineHeight: 18, color: colors.textSecondary }} {...tid('file-text')}>{file.text}</Text> : null}
-            {!file.sensitive && <DocDates dates={file.dates || []} reminders={file.reminders || []} colors={colors} busyKey={busy} onAdd={k => decide(k, 'create')} onDismiss={k => decide(k, 'dismiss')} />}
 
             {fields.length ? (
               <View style={{ gap: 6, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: GOLD + '55', padding: 12 }} {...tid('file-fields')}>

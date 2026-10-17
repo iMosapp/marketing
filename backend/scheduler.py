@@ -974,60 +974,6 @@ async def _schedule_repeat_touch(db, send_doc: dict, campaign: dict, now_naive: 
     return doc
 
 
-async def _advance_enrollment(db, send_doc: dict, campaign_doc: dict, now_naive, now, message_content: str, channel: str, delivery_mode: str, record_status: str):
-    """After a touch: step the enrollment on, queue the evergreen repeat when the plan has one, or mark it completed."""
-    enrollment_id = send_doc.get("enrollment_id", "")
-    if not enrollment_id:
-        return
-    current_step = send_doc.get("step", 1)
-    try:
-        enr = await db.campaign_enrollments.find_one({"_id": ObjectId(enrollment_id)})
-        if enr:
-            # Check if there are more pending sends for this enrollment
-            next_pending = await db.campaign_pending_sends.find_one({
-                "enrollment_id": enrollment_id,
-                "status": "pending",
-            })
-            if not next_pending and (campaign_doc.get("repeat_every_months") or 0) > 0 and enr.get("status") == "active" and not send_doc.get("broadcast_id"):
-                next_pending = await _schedule_repeat_touch(db, send_doc, campaign_doc, now_naive)
-            new_status = "active" if next_pending else "completed"
-            msg_record = {
-                "step": current_step, "content": (message_content or "")[:100],
-                "channel": channel, "delivery_mode": delivery_mode,
-                "status": record_status,
-                "sent_at": now,
-            }
-            await db.campaign_enrollments.update_one(
-                {"_id": ObjectId(enrollment_id)},
-                {"$set": {"current_step": current_step + 1, "status": new_status,
-                          "next_send_at": (next_pending or {}).get("send_at")},
-                 "$push": {"messages_sent": msg_record}},
-            )
-    except Exception as ee:
-        logger.warning(f"[Scheduler] Enrollment update failed: {ee}")
-
-
-async def _call_touch_task(db, send_doc: dict, step_goal: str, now) -> None:
-    """Campaign call touch: one "Call <name>" task per enrollment step (idempotent) with the plan's talking points."""
-    contact_id = send_doc.get("contact_id")
-    c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"status": 1, "first_name": 1, "last_name": 1}) if contact_id and ObjectId.is_valid(str(contact_id)) else None
-    if not c or c.get("status") in ("merged", "deleted"):
-        return
-    name = send_doc.get("contact_name") or "this customer"
-    enr8 = (send_doc.get("enrollment_id") or str(send_doc.get("_id", "")))[-8:]
-    idem = f"campaign_{send_doc.get('campaign_id')}_{contact_id}_{enr8}_{send_doc.get('step', 1)}"
-    points = await resolve_template_variables(db, (send_doc.get("message_template") or "").strip(), {**c, "contact_name": send_doc.get("contact_name") or ""}, send_doc.get("user_id"))
-    await db.tasks.update_one({"idempotency_key": idem}, {"$setOnInsert": {
-        "user_id": send_doc.get("user_id"), "contact_id": contact_id, "contact_name": name, "contact_phone": send_doc.get("contact_phone", ""),
-        "type": "call", "action_type": "call", "source": "campaign", "title": f"Call {name}"[:120],
-        "description": f"Campaign '{send_doc.get('campaign_name', '')}' step {send_doc.get('step', 1)}{': ' + step_goal if step_goal else ''}. {points}"[:600],
-        "suggested_message": points, "due_date": now, "priority": "high", "priority_order": 1, "status": "pending", "completed": False,
-        "campaign_id": send_doc.get("campaign_id"), "campaign_name": send_doc.get("campaign_name", ""), "pending_send_id": str(send_doc["_id"]),
-        "channel": "call", "created_at": now, "idempotency_key": idem,
-    }}, upsert=True)
-    logger.info(f"[Scheduler] CALL task for step {send_doc.get('step', 1)} to {name}")
-
-
 async def process_pending_campaign_steps():
     """
     Reads from the pre-scheduled campaign_pending_sends queue — no enrollment scan.
@@ -1049,13 +995,6 @@ async def process_pending_campaign_steps():
 
     now = datetime.now(timezone.utc)
     now_naive = datetime.utcnow()
-    from services import campaign_reliability as rel
-    v2 = await rel.enabled(db)   # CAMPAIGN_RELIABILITY_V2: off = the behaviour below is unchanged
-    if v2:
-        try:
-            await rel.recover_stale(db, now_naive)
-        except Exception as re_err:
-            logger.warning(f"[Scheduler] stale-claim recovery failed: {re_err}")
 
     try:
         # ── MIGRATION: pre-schedule any legacy active enrollments that have no pending sends ──
@@ -1066,9 +1005,8 @@ async def process_pending_campaign_steps():
 
             for enr in legacy:
                 eid = str(enr["_id"])
-                # v2: an enrollment with ANY touch row is not legacy (a failed / unknown last step must never be re-created)
                 has_sends = await db.campaign_pending_sends.find_one(
-                    {"enrollment_id": eid} if v2 else {"enrollment_id": eid, "status": "pending"}
+                    {"enrollment_id": eid, "status": "pending"}
                 )
                 if has_sends:
                     continue
@@ -1147,6 +1085,7 @@ async def process_pending_campaign_steps():
         for send_doc in due_sends:
             try:
                 send_id = send_doc["_id"]
+                enrollment_id = send_doc.get("enrollment_id", "")
                 user_id = send_doc["user_id"]
                 contact_id = send_doc["contact_id"]
                 contact_phone = send_doc.get("contact_phone", "")
@@ -1160,46 +1099,16 @@ async def process_pending_campaign_steps():
                 # Mark send as processing immediately (prevents double-processing)
                 await db.campaign_pending_sends.update_one(
                     {"_id": send_id},
-                    {"$set": {"status": "processing", "started_at": now_naive, **({"locked_at": datetime.utcnow()} if v2 else {})}}
+                    {"$set": {"status": "processing", "started_at": now_naive}}
                 )
 
                 # ── GUARDRAILS: never text someone who said STOP; never talk over a customer who is waiting on the rep ──
                 campaign_doc = {}
                 try:
                     if send_doc.get("campaign_id") and ObjectId.is_valid(str(send_doc["campaign_id"])):
-                        campaign_doc = await db.campaigns.find_one({"_id": ObjectId(send_doc["campaign_id"])}, {"sequences": 1, "repeat_every_months": 1, "repeat_step": 1, "name": 1, "active": 1, "message_purpose": 1, "type": 1, "date_type": 1}) or {}
+                        campaign_doc = await db.campaigns.find_one({"_id": ObjectId(send_doc["campaign_id"])}, {"sequences": 1, "repeat_every_months": 1, "repeat_step": 1, "name": 1, "active": 1, "message_purpose": 1}) or {}
                 except Exception as ce:
-                    if v2:
-                        await rel.guard_error(db, send_doc, now_naive, f"campaign lookup: {ce}")
-                        continue
                     logger.debug(f"[Scheduler] campaign lookup failed: {ce}")
-
-                # The touch's goal for the writer: the send doc's own, else the campaign step's, else the repeat step's
-                seqs = campaign_doc.get("sequences") or []
-                step_goal = send_doc.get("step_context") or ((seqs[current_step - 1].get("step_context") if 0 < current_step <= len(seqs) else None) or (campaign_doc.get("repeat_step") or {}).get("step_context") or "")
-
-                if v2:
-                    try:
-                        decision = await rel.preflight(db, send_doc, campaign_doc, now_naive)
-                    except Exception as pe:
-                        await rel.guard_error(db, send_doc, now_naive, f"preflight: {pe}")
-                        continue
-                    if decision:
-                        state, why, extra = decision
-                        await rel.mark(db, send_id, now_naive, state, why, **extra)
-                        if state == "expired":
-                            await rel.expire(db, send_doc, now_naive, why, step_goal)
-                            await _advance_enrollment(db, send_doc, campaign_doc, now_naive, now, "", channel, delivery_mode, "expired")
-                        if send_doc.get("broadcast_id") and state in ("skipped", "expired"):
-                            await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=False, skipped=True)
-                        logger.info(f"[Scheduler] Touch {send_id} {state}: {why}")
-                        continue
-                if send_doc.get("action_type") == "call":   # a call touch is a dated task for the rep (talking points), never a text
-                    await _call_touch_task(db, send_doc, step_goal, now)
-                    await db.campaign_pending_sends.update_one({"_id": send_id}, {"$set": {"status": "pending_user_action", "processed_at": now_naive}})
-                    await _advance_enrollment(db, send_doc, campaign_doc, now_naive, now, message_content, "call", "manual", "pending")
-                    processed += 1
-                    continue
                 try:
                     guard_contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"opted_out": 1, "sms_opt_out": 1, "status": 1}) if contact_id and ObjectId.is_valid(str(contact_id)) else None
                     if guard_contact is None or guard_contact.get("status") in ("merged", "deleted") or guard_contact.get("opted_out") or guard_contact.get("sms_opt_out"):
@@ -1218,10 +1127,11 @@ async def process_pending_campaign_steps():
                             logger.info(f"[Scheduler] Held send {send_id}: the customer texted {lm_ts} and is still waiting on a reply (hold {holds + 1}/3)")
                             continue
                 except Exception as ge:
-                    if v2:   # fail closed: hold the touch rather than text someone the checks could not clear
-                        await rel.guard_error(db, send_doc, now_naive, str(ge))
-                        continue
                     logger.warning(f"[Scheduler] guardrail check failed (sending anyway): {ge}")
+
+                # The touch's goal for the writer: the send doc's own, else the campaign step's, else the repeat step's
+                seqs = campaign_doc.get("sequences") or []
+                step_goal = send_doc.get("step_context") or ((seqs[current_step - 1].get("step_context") if 0 < current_step <= len(seqs) else None) or (campaign_doc.get("repeat_step") or {}).get("step_context") or "")
 
                 # AI personalization
                 use_ai = campaign_ai_enabled
@@ -1243,26 +1153,18 @@ async def process_pending_campaign_steps():
                         logger.warning(f"[Scheduler] Campaign config lookup failed: {e}")
 
                 if use_ai and contact_id and user_id:
-                    from routers.ai_campaigns import generate_campaign_message
-                    ai_payload = {"step_context": step_goal or f"Step {current_step}", "channel": channel,
-                                  "campaign_name": send_doc.get("campaign_name", ""), "template_hint": message_content}
-                    if v2:   # same goal the Customer Preview Trio writes from; dated plans name their occasion
-                        ai_payload.update(step_context=step_goal, occasion=rel.occasion(campaign_doc, send_doc.get("card_type") or ""))
-                    if v2 and delivery_mode in ("automated", "auto"):
-                        # try + 2 retries; then the touch waits for the rep. Never the template, never a generic text
-                        ai_text, ai_err = await rel.generate(lambda: generate_campaign_message(user_id, contact_id, ai_payload))
-                        if not ai_text:
-                            await rel.hold_for_rep(db, send_doc, now_naive, "ai_failed", ai_err, step_goal)
-                            logger.warning(f"[Scheduler] AI writing failed 3 times for send {send_id}: held for the rep ({ai_err})")
-                            continue
-                        message_content = ai_text
-                    else:
-                        try:
-                            ai_result = await generate_campaign_message(user_id, contact_id, ai_payload)
-                            if ai_result.get("success"):
-                                message_content = ai_result["message"]
-                        except Exception as e:
-                            logger.warning(f"[Scheduler] AI generation failed, using template: {e}")
+                    try:
+                        from routers.ai_campaigns import generate_campaign_message
+                        ai_result = await generate_campaign_message(user_id, contact_id, {
+                            "step_context": step_goal or f"Step {current_step}",
+                            "channel": channel,
+                            "campaign_name": send_doc.get("campaign_name", ""),
+                            "template_hint": message_content,
+                        })
+                        if ai_result.get("success"):
+                            message_content = ai_result["message"]
+                    except Exception as e:
+                        logger.warning(f"[Scheduler] AI generation failed, using template: {e}")
 
                 # Relationship brief
                 relationship_brief = ""
@@ -1274,9 +1176,6 @@ async def process_pending_campaign_steps():
                     pass
 
                 if not message_content:
-                    if v2 and delivery_mode in ("automated", "auto") and not send_doc.get("media_urls") and send_doc.get("media_type") != "vcf" and send_doc.get("action_type") != "send_card":
-                        await rel.hold_for_rep(db, send_doc, now_naive, "empty_message", "", step_goal)
-                        continue
                     message_content = f"Hi {send_doc.get('contact_name', 'there')}!"
 
                 # ── QUIET HOURS GATE ──────────────────────────────────────────
@@ -1357,7 +1256,6 @@ async def process_pending_campaign_steps():
                     twilio_error = ""
                     from services.inboxes import resolve_from_number as _resolve_from
                     rep_number = await _resolve_from(db, user_id, contact_id=str(contact_id))
-                    sms_result = {}
                     if contact_phone and channel in ("sms", "mms"):
                         try:
                             from services.twilio_service import send_sms
@@ -1367,10 +1265,10 @@ async def process_pending_campaign_steps():
                                 contact_phone, message_content,
                                 media_urls=media_urls if media_urls else None,
                                 from_phone=rep_number, purpose=send_purpose, user_id=user_id, contact_id=str(contact_id),
-                                campaign_key=program, idempotency_key=rel.ledger_key(send_doc),
+                                campaign_key=program, idempotency_key=f"pending:{send_id}",
                             )
                             if sms_result.get("error_code") == "billing_locked":
-                                await send_ledger_release(db, rel.ledger_key(send_doc))
+                                await send_ledger_release(db, f"pending:{send_id}")
                                 await db.campaign_pending_sends.update_one({"_id": send_id}, {"$set": {"status": "pending", "send_at": now_naive + timedelta(hours=6), "deferred_reason": "billing_locked"}})
                                 logger.info(f"[Scheduler] Paused send {send_id}: organization billing is locked")
                                 continue
@@ -1397,9 +1295,6 @@ async def process_pending_campaign_steps():
                     # On Twilio failure: mark FAILED with the error (visible), update broadcast
                     # counters, and skip message/event logging — nothing was actually sent.
                     if twilio_failed:
-                        if v2 and not unknown_outcome and rel.retryable(sms_result) and await rel.retry_provider(db, send_doc, now_naive, twilio_error):
-                            logger.info(f"[Scheduler] Send {send_id} rate-limited by the provider: retry queued")
-                            continue
                         await db.campaign_pending_sends.update_one(
                             {"_id": send_id},
                             {"$set": {"status": "unknown_outcome" if unknown_outcome else "failed", "error": twilio_error, "processed_at": now_naive}}
@@ -1583,7 +1478,7 @@ async def process_pending_campaign_steps():
                     complete_set["delivery_status"] = "sent"  # carrier receipt lands via /webhooks/twilio/status
                 await db.campaign_pending_sends.update_one(
                     {"_id": send_id},
-                    {"$set": complete_set, **({"$push": {"events": {"at": now_naive, "state": final_status, "reason": ""}}} if v2 else {})}
+                    {"$set": complete_set}
                 )
                 if auto_sent:
                     # A "Send SMS" task may have been created for this send before it went out; close it.
@@ -1596,7 +1491,32 @@ async def process_pending_campaign_steps():
                     await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=False)
 
                 # ── UPDATE ENROLLMENT ──
-                await _advance_enrollment(db, send_doc, campaign_doc, now_naive, now, message_content, channel, delivery_mode, "sent" if auto_sent else "pending")
+                if enrollment_id:
+                    try:
+                        enr = await db.campaign_enrollments.find_one({"_id": ObjectId(enrollment_id)})
+                        if enr:
+                            # Check if there are more pending sends for this enrollment
+                            next_pending = await db.campaign_pending_sends.find_one({
+                                "enrollment_id": enrollment_id,
+                                "status": "pending",
+                            })
+                            if not next_pending and (campaign_doc.get("repeat_every_months") or 0) > 0 and enr.get("status") == "active" and not send_doc.get("broadcast_id"):
+                                next_pending = await _schedule_repeat_touch(db, send_doc, campaign_doc, now_naive)
+                            new_status = "active" if next_pending else "completed"
+                            msg_record = {
+                                "step": current_step, "content": message_content[:100],
+                                "channel": channel, "delivery_mode": delivery_mode,
+                                "status": "sent" if auto_sent else "pending",
+                                "sent_at": now,
+                            }
+                            await db.campaign_enrollments.update_one(
+                                {"_id": ObjectId(enrollment_id)},
+                                {"$set": {"current_step": current_step + 1, "status": new_status,
+                                          "next_send_at": (next_pending or {}).get("send_at")},
+                                 "$push": {"messages_sent": msg_record}},
+                            )
+                    except Exception as ee:
+                        logger.warning(f"[Scheduler] Enrollment update failed: {ee}")
 
                 processed += 1
 
@@ -2140,22 +2060,6 @@ def start_scheduler():
         misfire_grace_time=600,
         coalesce=True,
     )
-
-    # Every minute - voice notes Whisper missed get another go (~2 min, 10 min, 1 h after recording), then a rep reminder
-    async def run_transcript_retry_job():
-        from routers.database import get_db
-        from services import transcript_retry
-        await transcript_retry.sweep(get_db())
-    scheduler.add_job(
-        safe_job(run_transcript_retry_job),
-        IntervalTrigger(minutes=1),
-        id="transcript_retry",
-        replace_existing=True,
-        misfire_grace_time=120,
-        coalesce=True,
-        max_instances=1,
-    )
-
 
     # Daily 3:30 AM UTC - destroy sensitive contact files (IDs, insurance cards, credit apps) past their 30 days
     async def run_contact_files_purge():

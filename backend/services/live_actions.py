@@ -328,30 +328,23 @@ async def appointment_now(db, user: dict, pending: dict):
 
 
 # ── campaigns ─────────────────────────────────────────────────────────────────
-async def _match_campaign(user: dict, spoken: str) -> tuple:
-    """(campaign row, rows): the active campaign the rep named, fuzzy on its words; None when unclear (rows lets the caller list them)."""
-    from routers.campaigns import list_campaigns_simple
-    rows = [c for c in ((await list_campaigns_simple(str(user["_id"]))).get("campaigns") or []) if c.get("active")]
-    words = [w for w in re.findall(r"[a-z0-9]+", (spoken or "").strip().lower()) if len(w) > 2 and w not in ("campaign", "plan", "the", "and", "for")]
-    scored = sorted(((max([lv._sim(w, x) for w in words for x in re.findall(r"[a-z0-9]+", (c.get("name") or "").lower())] or [0]), sum(1 for w in words if w in (c.get("name") or "").lower()), c) for c in rows), key=lambda x: (-x[1], -x[0]))
-    best = scored[0] if scored and words and (scored[0][1] or scored[0][0] >= 0.85) else None
-    return (best[2] if best else None), rows
-
-
-NO_CAMPAIGNS = "You do not have any active campaigns yet. Set one up under Campaigns and I can enroll people from here."
-
-
 async def enroll_campaign(db, user: dict, args: dict, focus: Optional[dict], live: Optional[dict]):
     contact, err = await _person(db, user, args, focus, live)
     if err:
         return err, None, None
-    first, cid = _first(contact), str(contact["_id"])
-    camp, rows = await _match_campaign(user, args.get("campaign") or "")
+    first, uid, cid = _first(contact), str(user["_id"]), str(contact["_id"])
+    from routers.campaigns import list_campaigns_simple
+    rows = [c for c in ((await list_campaigns_simple(uid)).get("campaigns") or []) if c.get("active")]
     if not rows:
-        return NO_CAMPAIGNS, None, lv._open_target("contact", contact)
-    if not camp:
+        return "You do not have any active campaigns yet. Set one up under Campaigns and I can enroll people from here.", None, lv._open_target("contact", contact)
+    want = (args.get("campaign") or "").strip().lower()
+    words = [w for w in re.findall(r"[a-z0-9]+", want) if len(w) > 2 and w not in ("campaign", "plan", "the", "and", "for")]
+    scored = sorted(((max([lv._sim(w, x) for w in words for x in re.findall(r"[a-z0-9]+", (c.get("name") or "").lower())] or [0]), sum(1 for w in words if w in (c.get("name") or "").lower()), c) for c in rows), key=lambda x: (-x[1], -x[0]))
+    best = scored[0] if scored and words and (scored[0][1] or scored[0][0] >= 0.85) else None
+    if not best:
         names = "; ".join(c["name"] for c in rows[:5])
         return f"Which campaign for {first}? You have {names}.", None, lv._open_target("contact", contact)
+    camp = best[2]
     if await db.campaign_enrollments.find_one({"campaign_id": camp["campaign_id"], "contact_id": cid, "status": "active"}):
         return f"{first} is already on {camp['name']}.", None, lv._open_target("contact", contact)
     full = await db.campaigns.find_one({"_id": ObjectId(camp["campaign_id"])}, {"steps": 1, "ai_enabled": 1}) if ObjectId.is_valid(str(camp["campaign_id"])) else {}
@@ -368,119 +361,6 @@ async def enroll_now(db, user: dict, pending: dict):
     except Exception as e:
         return f"That enrollment did not go through: {_err(e)}", None
     return f"Done. {pending['name']} is on {pending['campaign']}.", {"kind": "contact", "id": pending["contact_id"], "name": pending["name"], "first": pending["name"].split(" ")[0]}
-
-
-def _names(people: list) -> str:
-    firsts = [p.get("first") or p["name"].split(" ")[0] for p in people]
-    if len(set(f.lower() for f in firsts)) < len(firsts):   # two Mikes: say full names
-        firsts = [p["name"] for p in people]
-    return firsts[0] if len(firsts) == 1 else f"{', '.join(firsts[:-1])} and {firsts[-1]}"
-
-
-async def enroll_group(db, user: dict, args: dict, focus: Optional[dict], live: Optional[dict]):
-    """Everyone met at one event onto a campaign: read back who joins and who is skipped, enroll only on yes (max met_at.MAX_BATCH)."""
-    from services import met_at
-    event = (args.get("event") or "").strip()
-    if not met_at.event_key(event):
-        return "Where did you meet them? Say something like everyone from NADA.", None, None
-    camp, rows = await _match_campaign(user, args.get("campaign") or "")
-    if not rows:
-        return NO_CAMPAIGNS, None, None
-    if not camp:
-        return f"Which campaign should the {event} people go on? You have {'; '.join(c['name'] for c in rows[:5])}.", None, None
-    pv = await met_at.preview(db, str(user["_id"]), camp["campaign_id"], event)
-    opened = {"kind": "campaign", "id": camp["campaign_id"], "name": camp["name"]}
-    if not pv["matched"]:
-        return f"I do not have anyone marked as met at {event}. How we met is on each contact's profile, and I fill it in from your voice notes.", None, None
-    ok = [p for p in pv["people"] if p["status"] == "ok"]
-    skipped = met_at.skipped_line(pv["counts"])
-    if not ok:
-        return f"Nobody new to add from {pv['event']}. {skipped}".strip(), None, opened
-    who = f" ({_names(ok)})" if len(ok) <= 5 else ""
-    n = len(ok)
-    pending = {"type": "enroll_group", "campaign_id": camp["campaign_id"], "campaign": camp["name"], "event": pv["query"], "label": pv["event"], "contact_ids": [p["id"] for p in ok],
-               "name": f"{n} people met at {pv['event']}", "content": f"put {n} people met at {pv['event']} on {camp['name']}", "at": lv._now().isoformat()}
-    people = "1 person" if n == 1 else f"{n} people"
-    return (f"{people} you met at {pv['event']}{who} can go on {camp['name']}. {skipped + ' ' if skipped else ''}"
-            "Their first touch goes out on the plan's schedule. Say yes to put them on it."), pending, opened
-
-
-async def enroll_group_now(db, user: dict, pending: dict):
-    from services import met_at
-    opened = {"kind": "campaign", "id": pending["campaign_id"], "name": pending["campaign"]}
-    try:
-        res = await met_at.enroll(db, str(user["_id"]), pending["campaign_id"], pending["event"], pending.get("contact_ids") or [])
-    except Exception as e:
-        return f"That did not go through: {_err(e)}", opened
-    n = res["enrolled"]
-    if not n:
-        return f"Nobody was enrolled. {met_at.skipped_line(res['skipped'])}".strip(), opened
-    miss = f" {len(res['failed'])} did not go through." if res["failed"] else ""
-    return f"Done. {n} {'person is' if n == 1 else 'people are'} on {pending['campaign']}.{miss}", opened
-
-
-# ── build / edit a campaign ───────────────────────────────────────────────────
-BRIEF_KEYS = ("goal", "audience", "trigger_tag", "length", "tone", "channels")
-
-
-async def build_campaign(db, user: dict, args: dict, focus: Optional[dict], live: Optional[dict]):
-    """Two or three quick questions (who, how long, tone) kept as a campaign_brief pending, then the draft is saved OFF and opened on screen."""
-    from fastapi import HTTPException
-    from services import campaign_builder as cb
-    prev = (live or {}).get("pending") if ((live or {}).get("pending") or {}).get("type") == "campaign_brief" else None
-    brief = dict((prev or {}).get("brief") or {})
-    for k in BRIEF_KEYS:
-        v = str(args.get(k) or "").strip()
-        if v:
-            brief[k] = v[:200]
-    asked = list((prev or {}).get("asked") or [])
-    said = (live or {}).get("_said") or ""
-    # the model's "go" is trusted only when we cannot see the rep's words; an answer like "3 weeks, 5 touches" or "make it friendly" is not a go-ahead
-    go = cb.go_ahead(said, bool(prev)) if said else bool(args.get("go"))
-    if brief.get("trigger_tag") and not brief.get("audience"):
-        brief["audience"] = f"anyone tagged {brief['trigger_tag']}"
-    if not go:
-        for key, question in cb.QUESTIONS:
-            if not brief.get(key) and key not in asked and len(asked) < 3:
-                asked.append(key)
-                lead = "Sure, let's build it. " if not prev else ""
-                pending = {"type": "campaign_brief", "brief": brief, "asked": asked, "name": "a new campaign", "content": f"building a campaign, asked about {key}", "at": lv._now().isoformat()}
-                return f"{lead}{question}", pending, None
-    try:
-        made = await cb.create(db, user, brief)
-    except HTTPException as e:
-        why = str(e.detail).rstrip('. ')
-        ask = "" if re.search(r"(?i)admin|manager", why) else " Ask your manager or admin to turn on campaign editing for you."
-        return f"I cannot build campaigns on your login: {why}.{ask}", None, None
-    except Exception as e:
-        logger.warning(f"[Live] build_campaign failed: {e}")
-        return "I could not draft that one. Try me again in a second.", None, None
-    who = f" for anyone tagged {made['tag']}" if made["tag"] else ""
-    tag_note = "" if not made["tag"] or made["tag_exists"] else f" You do not have a {made['tag']} tag yet; it starts the first time you tag someone with it."
-    opened = {"kind": "campaign", "id": made["id"], "name": made["name"], "rev": lv._now().isoformat()}
-    return (f"Here is {made['name']}{who}: {cb.outline(made['touches'])} It is on your screen and switched off.{tag_note} "
-            "Tell me what to change, like make text 2 shorter or add a call on day 10, or edit it there and turn it on when you are happy."), None, opened
-
-
-async def edit_campaign(db, user: dict, args: dict, focus: Optional[dict], live: Optional[dict]):
-    from fastapi import HTTPException
-    from services import campaign_builder as cb
-    change = str(args.get("change") or (live or {}).get("_said") or "").strip()
-    camp = await cb.find_draft(db, user, args.get("campaign") or "")
-    if not camp:
-        return "Which campaign? Say its name, or ask me to build a new one.", None
-    opened = {"kind": "campaign", "id": str(camp["_id"]), "name": camp.get("name") or "", "rev": lv._now().isoformat()}
-    try:
-        res = await cb.edit(db, user, camp, change)
-    except HTTPException as e:
-        return str(e.detail), opened
-    except Exception as e:
-        logger.warning(f"[Live] edit_campaign failed: {e}")
-        return "I could not make that change. Try saying it another way.", opened
-    if not res["changed"]:
-        return f"I was not sure what to change in {camp.get('name')}. Say it like make text 2 shorter, add a call on day 10, or change the tone to casual.", opened
-    opened["name"] = res.get("name") or opened["name"]
-    return f"{res['summary'].rstrip('. ')}. Now {cb.outline(res['touches'])} It is updated on your screen.", opened
 
 
 # ── card / review link ────────────────────────────────────────────────────────

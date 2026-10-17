@@ -21,13 +21,11 @@ export const PilotStatusCard = ({ s }: { s: PilotStatus }) => {
           <Row label="Premium (GPT-Live) per person per day" value={`${p.per_user_daily_premium_min} min`} testID="pilot-policy-premium" />
           <Row label="Standard voice (Realtime Mini) per person per day" value={`${p.per_user_daily_backup_min} min`} testID="pilot-policy-backup" />
           <Row label="Hard monthly spending cap (whole account, both engines)" value={usd(p.account_monthly_hard_usd)} tone={p.account_monthly_hard_usd === null ? RED : colors.text} testID="pilot-policy-cap" />
-          <Row label="Super admins capped like everyone" value={p.cap_super_admins ? 'Yes (pilot test)' : 'No, never capped'} tone={p.cap_super_admins ? AMBER : GREEN} testID="pilot-policy-capsuper" />
+          <Row label="Super admins capped like everyone" value={p.cap_super_admins ? 'Yes' : 'No'} tone={toneOf(p.cap_super_admins)} testID="pilot-policy-capsuper" />
         </>
       )}
       <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 8 }} />
-      {s.rollout.all_accounts
-        ? <Row label="Accounts on voice limits" value="Every account" tone={GREEN} testID="pilot-others" />
-        : <Row label="Other accounts enrolled" value={others === 0 ? 'None (good)' : `${others} account${others === 1 ? '' : 's'}`} tone={toneOf(others === 0)} testID="pilot-others" />}
+      <Row label="Other accounts enrolled" value={others === 0 ? 'None (good)' : `${others} account${others === 1 ? '' : 's'}`} tone={toneOf(others === 0)} testID="pilot-others" />
       <Row label="Voice controls master switch" value={s.global_enabled ? 'On' : 'OFF (everyone on legacy caps)'} tone={toneOf(s.global_enabled)} testID="pilot-global" />
       <Row label="OpenAI key on this server" value={s.env.openai_configured ? 'Present' : `Missing${s.env.openai_reason ? '' : ''}`} tone={toneOf(s.env.openai_configured)} testID="pilot-env-openai" />
       <Row label="Fake voice provider (test only)" value={s.env.fake_provider_allowed ? 'ALLOWED, must be OFF in production' : 'Off'} tone={s.env.fake_provider_allowed ? AMBER : GREEN} testID="pilot-env-fake" />

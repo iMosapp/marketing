@@ -35,8 +35,7 @@ const useKeyboardUp = () => {
 
 // Same look as the home screen "+" button: a gold 56pt circle bottom-right that jumps straight back to Home from any deep
 // screen. Screens with their own bottom composer hide it (useHideHomeFab); fixed bottom bars push it up (useHomeFabOffset).
-// Where the Home pill sits right now (null while hidden), so the Jessi and recording bars can line up beside / above it.
-export const useHomeFabSpot = () => {
+export const HomeFab = () => {
   const segments = useSegments() as string[];
   const pathname = (usePathname() || '').replace(/^\//, '');
   const insets = useSafeAreaInsets();
@@ -44,13 +43,7 @@ export const useHomeFabSpot = () => {
   const blockers = useHomeFabStore(s => s.blockers);
   const offset = useHomeFabStore(s => s.offset);
   if (!segments.length || HIDE_FIRST_SEGMENT.has(segments[0]) || HIDE_PATHS.some(rx => rx.test(pathname)) || keyboardUp || blockers > 0) return null;
-  return { bottom: offset > 0 ? offset + 10 : Math.max(insets.bottom, 12) + 10 };
-};
-
-export const HomeFab = () => {
-  const spot = useHomeFabSpot();
-  if (!spot) return null;
-  const { bottom } = spot;
+  const bottom = offset > 0 ? offset + 10 : Math.max(insets.bottom, 12) + 10;
   return (
     <TouchableOpacity
       onPress={goHome}

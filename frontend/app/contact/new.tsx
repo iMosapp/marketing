@@ -35,8 +35,6 @@ import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint, tid } from '../../componen
 import { SheetGrabber } from '../../components/common/SheetGrabber';
 import { MemoKindPicker, MemoKind } from '../../components/memos/MemoKindPicker';
 import { NewContactConsent } from '../../components/compliance/NewContactConsent';
-import { ScanWithJessiSheet } from '../../components/scan/ScanWithJessiSheet';
-import { useScanStatus } from '../../hooks/useScanWithJessi';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -60,7 +58,7 @@ export default function NewContactScreen() {
   const user = useAuthStore(st => st.user);
   const { showToast } = useToast();
   // Opened from a voice memo: name + company Jessi heard are prefilled and the memo attaches to the new contact after Save.
-  const params = useLocalSearchParams<{ memo_id?: string; first_name?: string; last_name?: string; employer?: string; returnTo?: string; scan?: string }>();
+  const params = useLocalSearchParams<{ memo_id?: string; first_name?: string; last_name?: string; employer?: string; returnTo?: string }>();
   const memoId = typeof params.memo_id === 'string' ? params.memo_id : '';
   const [attachTo, setAttachTo] = useState<{ id: string; name: string } | null>(null);
   const [attachBusy, setAttachBusy] = useState<MemoKind | null>(null);
@@ -72,30 +70,6 @@ export default function NewContactScreen() {
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [duplicateMatches, setDuplicateMatches] = useState<any[]>([]);
   const dupCheckTimer = useRef<any>(null);
-
-  // ── Scan with Jessi: a business card fills this form; after Save the card lands in their Files with the extra details ──
-  const scanStatus = useScanStatus(user?._id);
-  const [showScan, setShowScan] = useState(false);
-  const [scanFrom, setScanFrom] = useState<{ id: string; extras: Record<string, string>; values: Record<string, string>; reminders: string[]; card: boolean } | null>(null);
-  const pendingScan = useRef<string | null>(null);   // a card read but not saved yet: discarded if the rep leaves without saving
-  useEffect(() => () => { if (pendingScan.current && user?._id) api.delete(`/scan/${user._id}/${pendingScan.current}`).catch(() => {}); }, [user?._id]);
-  useEffect(() => { if (params.scan === '1' && scanStatus?.enabled) setShowScan(true); }, [params.scan, scanStatus?.enabled]);
-  const fillFromScan = (scan: any, v: Record<string, string>, reminders: string[] = []) => {
-    if (scanFrom && scanFrom.id !== scan.id) api.delete(`/scan/${user?._id}/${scanFrom.id}`).catch(() => {});   // a different card replaces the first one
-    pendingScan.current = scan.id;
-    const phone = v.phone || (!v.email ? v.phone_office : '') || '';
-    setContact(p => ({ ...p, first_name: v.first_name || p.first_name, last_name: v.last_name || p.last_name, phone: phone || p.phone, email: v.email || p.email,
-      employer: v.company || p.employer, address_street: v.address_street || p.address_street, address_city: v.address_city || p.address_city,
-      address_state: v.address_state || p.address_state, address_zip: v.address_zip || p.address_zip }));
-    const extras: Record<string, string> = {};
-    if (v.title) extras.title = v.title;
-    if (v.website) extras.website = v.website;
-    if (v.phone_office && v.phone_office !== phone) extras.phone_office = v.phone_office;
-    setScanFrom({ id: scan.id, extras, values: v, reminders, card: !!scan.is_card });
-    if (v.address_street || v.address_city) setShowMoreDetails(true);
-    setShowScan(false);
-    checkDuplicate(phone, v.email || '');
-  };
 
   // ── Photo ──────────────────────────────────────────────────────────────────
   const pickImage = async () => {
@@ -415,12 +389,6 @@ export default function NewContactScreen() {
       // Upload the voice recordings as voice notes (never pasted into Notes)
       if (newId && ncClips.length) await uploadClips(newId);
 
-      if (newId && scanFrom) {
-        try {
-          await api.post(`/scan/${user._id}/${scanFrom.id}/save`, { contact_id: newId, fields: Object.keys(scanFrom.extras), values: { ...scanFrom.values, ...scanFrom.extras }, reminders: scanFrom.reminders });
-          pendingScan.current = null;
-        } catch { showToast('Contact saved, but the card was not added to their Files.', 'error', 4000); }
-      }
       if (newId && memoId) { setAttachTo({ id: newId, name: contact.first_name }); return; }
       if (newId && params.returnTo === 'appraisal') { router.replace(`/appraisals/new?contact_id=${newId}` as any); return; }
       if (newId) router.replace(`/contact/${newId}` as any);
@@ -483,17 +451,6 @@ export default function NewContactScreen() {
             </View>
           )}
 
-          {!!scanStatus?.enabled && !memoId && (
-            <TouchableOpacity onPress={() => setShowScan(true)} style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: tint(GOLD, 0.5), backgroundColor: tint(GOLD, 0.08), padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }} data-testid="new-contact-scan-btn">
-              <Ionicons name="scan" size={20} color={GOLD} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: TYPE.body, fontWeight: '800', color: colors.text }}>{scanFrom ? 'Scan something else' : 'Scan a business card'}</Text>
-                <Text style={{ fontSize: TYPE.sub, color: colors.textSecondary }}>{scanFrom ? `Filled in from the ${scanFrom.card ? 'card' : 'document'}. Check it and tap Save; it goes in their Files${scanFrom.reminders.length ? ' and your reminders are set' : ''}.` : 'Jessi fills this in. You check it before saving.'}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={GOLD} />
-            </TouchableOpacity>
-          )}
-
           {/* Name */}
           <View style={ncs.card}>
             <TextInput style={ncs.cardInput} placeholder="First name" placeholderTextColor={colors.textTertiary}
@@ -503,7 +460,7 @@ export default function NewContactScreen() {
             <TextInput style={ncs.cardInput} placeholder="Last name" placeholderTextColor={colors.textTertiary}
               value={contact.last_name} onChangeText={t => setContact(p => ({ ...p, last_name: t }))}
               returnKeyType="next" data-testid="input-last-name" />
-            {(!!memoId || !!scanFrom) && (
+            {!!memoId && (
               <>
                 <View style={ncs.cardDivider} />
                 <TextInput style={ncs.cardInput} placeholder="Company" placeholderTextColor={colors.textTertiary}
@@ -729,9 +686,6 @@ export default function NewContactScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <ScanWithJessiSheet visible={showScan} userId={user?._id} colors={colors} onClose={() => setShowScan(false)} showToast={showToast}
-        onCreate={fillFromScan} onSaved={id => { setShowScan(false); router.replace(`/contact/${id}` as any); }} />
 
       {/* ── Memo filing choice (only when opened from a voice memo) ── */}
       <Modal visible={!!attachTo} animationType="slide" transparent onRequestClose={skipAttach}>

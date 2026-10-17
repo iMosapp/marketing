@@ -90,31 +90,3 @@ async def manual_trigger_lifecycle_scan():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/campaign-reliability")
-async def campaign_reliability_status():
-    """The CAMPAIGN_RELIABILITY_V2 switch and the touch queue by state (read-only health check)."""
-    import os
-    from routers.database import get_db
-    from services import campaign_reliability as rel
-    db = get_db()
-    env = os.environ.get(rel.FLAG, "").strip().lower()
-    row = await db.settings.find_one({"key": rel.SETTINGS_KEY}, {"_id": 0}) or {}
-    counts = {r["_id"]: r["n"] async for r in db.campaign_pending_sends.aggregate([{"$group": {"_id": "$status", "n": {"$sum": 1}}}])}
-    oldest = await db.campaign_pending_sends.find_one({"status": "processing"}, {"locked_at": 1}, sort=[("locked_at", 1)])
-    return {"enabled": await rel.enabled(db), "env": env or None, "setting": bool(row.get("enabled")), "set_by": row.get("set_by"),
-            "set_at": row.get("set_at"), "counts": counts, "oldest_processing_locked_at": (oldest or {}).get("locked_at")}
-
-
-@router.put("/campaign-reliability")
-async def set_campaign_reliability(data: dict, current_user: dict = Depends(require_role("super_admin"))):
-    """Turn the switch on or off for THIS environment's database. The env var, when set, wins."""
-    from routers.database import get_db
-    from services import campaign_reliability as rel
-    db = get_db()
-    on = bool(data.get("enabled"))
-    await db.settings.update_one({"key": rel.SETTINGS_KEY}, {"$set": {"key": rel.SETTINGS_KEY, "enabled": on, "set_by": str(current_user.get("_id") or ""),
-                                                                    "set_at": datetime.now(timezone.utc)}}, upsert=True)
-    logger.warning(f"[Scheduler Admin] campaign reliability v2 switched {'ON' if on else 'OFF'} by {current_user.get('_id')}")
-    return await campaign_reliability_status()

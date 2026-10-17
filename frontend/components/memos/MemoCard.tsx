@@ -4,16 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { GOLD, tid } from '../inbox/ownership';
 import { newContactFromMemoHref } from './memoLinks';
-import { TranscriptStatus } from '../contact/TranscriptStatus';
 
 export const fmtLen = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
 const when = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? '' : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
 
-type Props = { memo: any; colors: any; playing: boolean; onPlay: () => void; onAttach: (suggested?: any) => void; onDelete: () => void; onRename: (title: string) => void; onTag: () => void; tagColor: (t: string) => string;
-  onRetry?: () => void; retrying?: boolean };
+type Props = { memo: any; colors: any; playing: boolean; onPlay: () => void; onAttach: (suggested?: any) => void; onDelete: () => void; onRename: (title: string) => void; onTag: () => void; tagColor: (t: string) => string };
 
 // One memo: play, title (tap to rename), Jessi's summary, transcript on demand, tags, and (while unattached) who it might be about + attach.
-export const MemoCard = ({ memo, colors, playing, onPlay, onAttach, onDelete, onRename, onTag, tagColor, onRetry, retrying }: Props) => {
+export const MemoCard = ({ memo, colors, playing, onPlay, onAttach, onDelete, onRename, onTag, tagColor }: Props) => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(memo.title || '');
@@ -50,7 +48,6 @@ export const MemoCard = ({ memo, colors, playing, onPlay, onAttach, onDelete, on
       ) : null}
       {memo.summary ? <Text style={{ fontSize: 14, lineHeight: 20, color: colors.text }} {...tid(`memo-summary-${memo.id}`)}>{memo.summary}</Text>
         : memo.transcript ? <Text style={{ fontSize: 13, lineHeight: 18, color: colors.textSecondary }} numberOfLines={open ? undefined : 2}>{memo.transcript}</Text>
-        : memo.transcript_status === 'retrying' || memo.transcript_status === 'failed' || retrying ? <TranscriptStatus note={memo} colors={colors} onRetry={onRetry ? () => onRetry() : undefined} retrying={retrying} testPrefix="memo" />
         : <Text style={{ fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' }}>No words were heard in this one.</Text>}
       {memo.transcript && memo.summary ? (
         <TouchableOpacity onPress={() => setOpen(o => !o)} {...tid(`memo-transcript-toggle-${memo.id}`)}>

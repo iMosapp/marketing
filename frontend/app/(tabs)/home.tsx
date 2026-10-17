@@ -44,7 +44,6 @@ import { WelcomeVideo, markWelcomeVideoSeen } from '../../components/home/Welcom
 import { AvatarButton } from '../../components/account/AvatarButton';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
 import { PilotHome } from '../../components/home/PilotHome';
-import { useScanStatus } from '../../hooks/useScanWithJessi';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -385,7 +384,6 @@ function HomeScreen() {
   const router = useRouter();
   const { wins: winsParam } = useLocalSearchParams<{ wins?: string }>();
   const { user } = useAuthStore();
-  const scanStatus = useScanStatus(user?._id);
   const canAppraise = ['super_admin', 'org_admin', 'store_manager'].includes(user?.role || '') || !!(user?.feature_permissions?.my_tools?._enabled && user?.feature_permissions?.my_tools?.trade_appraisal);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [pendingTasks, setPendingTasks] = useState<any[]>([]);
@@ -1101,10 +1099,9 @@ function HomeScreen() {
           { key: 'review', icon: 'star', label: 'Review', color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
           { key: 'card', icon: 'card', label: 'Card', color: '#007AFF', onPress: () => setShowSharePicker(true) },
           { key: 'new-contact', icon: 'person-add', label: 'Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
-          ...(scanStatus?.enabled ? [{ key: 'scan-card', icon: 'scan', label: 'Scan', color: '#5AC8FA', onPress: () => router.push('/contact/new?scan=1' as any) }] : []),
           { key: 'voice-memo', icon: 'mic', label: 'Voice memo', color: '#34C759', onPress: () => router.push('/voice-memos?record=1' as any) },
           ...(canAppraise ? [{ key: 'appraisal', icon: 'car-sport', label: 'Appraise trade', color: '#C9A962', onPress: () => router.push('/appraisals/new' as any) }] : []),
-          { key: 'sold', icon: 'trophy', label: 'Sold', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
+          { key: 'sold', icon: 'camera', label: 'Share Photo', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
         ]}
       />
 

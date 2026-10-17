@@ -15,7 +15,6 @@ const label = (t: OpenTarget) => {
   if (t.kind === 'mentions') return { icon: 'search-outline', text: 'See every match' };
   if (t.kind === 'duplicates') return { icon: 'git-merge-outline', text: 'Review duplicates' };
   if (t.kind === 'team_today') return { icon: 'people-outline', text: 'Open team today' };
-  if (t.kind === 'campaign') return { icon: 'megaphone-outline', text: `Open ${t.name || 'campaign'}` };
   return { icon: 'open-outline', text: t.kind === 'inbox' ? 'Open inbox' : 'Open Home' };
 };
 

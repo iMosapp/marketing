@@ -376,17 +376,13 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
 
     # === VOICE MEMO TRANSCRIPTS (full rep notes — richest context available) ===
     try:
-        # every memo on this contact, whoever recorded it (a reassigned customer keeps the earlier rep's memos)
         voice_notes = await db.voice_notes.find(
-            {"contact_id": contact_id, "transcript": {"$exists": True, "$ne": ""}},
-            {"transcript": 1, "created_at": 1, "user_id": 1}
+            {"user_id": user_id, "contact_id": contact_id, "transcript": {"$exists": True, "$ne": ""}},
+            {"transcript": 1, "created_at": 1}
         ).sort("created_at", -1).limit(5).to_list(5)
-        others = {str(v.get("user_id")) for v in voice_notes if str(v.get("user_id")) != str(user_id) and ObjectId.is_valid(str(v.get("user_id")))}
-        by = {str(u["_id"]): (u.get("first_name") or (u.get("name") or "").split(" ")[0] or "a teammate")
-              async for u in db.users.find({"_id": {"$in": [ObjectId(o) for o in others]}}, {"name": 1, "first_name": 1})} if others else {}
 
         if voice_notes:
-            ai_parts.append("\nREP'S VOICE MEMOS (dated notes about this customer, mine unless marked as recorded by a teammate, possibly from other visits; use only what fits the current topic):")
+            ai_parts.append("\nREP'S VOICE MEMOS (my own dated notes about this customer, possibly from other visits; use only what fits the current topic):")
             for i, vn in enumerate(voice_notes):
                 transcript = vn.get("transcript", "").strip()
                 if transcript:
@@ -394,8 +390,7 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
                     truncated = transcript[:500] + ("..." if len(transcript) > 500 else "")
                     ca = vn.get("created_at")
                     when = ca.strftime("%b %d") if isinstance(ca, datetime) else ""
-                    who = f", recorded by {by[str(vn.get('user_id'))]}" if str(vn.get("user_id")) in by else ""
-                    ai_parts.append(f"  Memo {i+1}{f' ({when}{who})' if when or who else ''}: {truncated}")
+                    ai_parts.append(f"  Memo {i+1}{f' ({when})' if when else ''}: {truncated}")
     except Exception as ve:
         logger.debug(f"Voice notes fetch failed (non-fatal): {ve}")
 

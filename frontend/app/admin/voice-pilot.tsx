@@ -13,7 +13,6 @@ import { PilotEngineCard, EngineMode } from '../../components/voice-pilot/PilotE
 import { PilotUsageCard } from '../../components/voice-pilot/PilotUsageCard';
 import { PilotKillCard } from '../../components/voice-pilot/PilotKillCard';
 import { PilotSessionsCard } from '../../components/voice-pilot/PilotSessionsCard';
-import { RolloutCard } from '../../components/voice-pilot/RolloutCard';
 
 const POLL_MS = 5000;
 
@@ -50,19 +49,17 @@ export default function VoicePilot() {
   const resume = () => act(() => api.post('/voice-controls/pilot/resume'));
   const leave = () => act(() => api.post('/voice-controls/pilot/leave'));
   const setMode = (mode: EngineMode) => act(() => api.post('/voice-controls/pilot/engine-mode', { mode }));
-  const rollout = (on: boolean) => act(() => api.post('/voice-controls/rollout', { on }));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} {...tid('voice-pilot-screen')}>
-      <ScreenHeader title="Voice Pilot" subtitle={s?.rollout?.all_accounts ? 'Every account + your own' : 'Your account only'} onBack={() => router.back()} testID="voice-pilot-header" />
+      <ScreenHeader title="Voice Pilot" subtitle="Your account only" onBack={() => router.back()} testID="voice-pilot-header" />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.textSecondary} />}>
         {!!error && <Text style={{ color: RED, fontSize: 13, marginBottom: 12 }} {...tid('voice-pilot-error')}>{error}</Text>}
         {!s && !error && <View style={{ paddingVertical: 40, alignItems: 'center' }}><ActivityIndicator color={colors.textSecondary} /></View>}
         {s && (
           <>
             <PilotStatusCard s={s} />
-            <RolloutCard s={s} busy={busy} onRollout={rollout} />
-            {!s.rollout.all_accounts && <PilotEnrollCard s={s} busy={busy} onEnroll={enroll} onLeave={leave} />}
+            <PilotEnrollCard s={s} busy={busy} onEnroll={enroll} onLeave={leave} />
             {s.enrolled && <PilotEngineCard s={s} busy={busy} onMode={setMode} />}
             {s.enrolled && <PilotKillCard s={s} busy={busy} onKill={kill} onResume={resume} />}
             <PilotUsageCard s={s} />
