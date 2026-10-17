@@ -982,7 +982,7 @@ async def create_task(user_id: str, task_data: dict):
     contact_phone = task_data.get("contact_phone", "")
 
     from services.contact_scope import contact_visible
-    if contact_id and not await contact_visible(db, user_id, user_id, str(contact_id), conversation_ok=True):
+    if contact_id and not await contact_visible(db, user_id, user_id, str(contact_id), conversation_ok=False):
         raise HTTPException(status_code=404, detail="Contact not found")
 
     if contact_id and not contact_name:
