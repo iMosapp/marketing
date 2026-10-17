@@ -19,6 +19,7 @@ const EXAMPLES = ['who asked about a Tesla Model 3 around 20k', 'who did I sell 
 const daysLabel = (d: number) => (d >= 360 ? 'this year' : d >= 170 ? 'last 6 months' : d >= 80 ? 'last 3 months' : d >= 40 ? 'last month' : `last ${d} days`);
 const summary = (r: Res) => {
   const n = r.results.length, when = r.window ? ` in ${r.window.label}` : '';
+  if (!n && r.memos?.length) return 'I found these voice notes';
   if (r.mode === 'met') return n ? `You met ${n} ${n === 1 ? 'person' : 'people'}${when}` : `Nobody you met${when}`;
   if (r.mode === 'memos') return n ? `${n} ${n === 1 ? 'person has' : 'people have'} voice memos${when}` : `No memos on a contact${when}`;
   return n ? `${n} ${n === 1 ? 'person' : 'people'} mentioned ${r.topic}${when}` : `Nobody on record mentioned ${r.topic}${when}`;
