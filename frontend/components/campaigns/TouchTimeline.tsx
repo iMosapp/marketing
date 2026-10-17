@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Touch, touchMinutes, whenLabel, renderSample, Sample, CARD_TYPES, GOLD, GREEN, PURPLE, tid } from './utils';
+import { Touch, touchMinutes, whenLabel, renderSample, Sample, CARD_TYPES, GOLD, GREEN, PURPLE, BLUE, tid } from './utils';
 
 type Props = {
   touches: Touch[];
@@ -21,6 +21,8 @@ export function TouchTimeline({ touches, aiPersonalizes, preview, sample, editab
       {touches.map((t, i) => {
         const instant = touchMinutes(t) === 0;
         const isCard = t.actionType === 'send_card';
+        const isCall = t.actionType === 'call';
+        const badge = isCard ? { c: PURPLE, l: 'CARD' } : isCall ? { c: BLUE, l: 'CALL' } : { c: GREEN, l: t.channel === 'email' ? 'EMAIL' : 'TEXT' };
         const card = CARD_TYPES.find(c => c.key === t.cardType);
         const body = isCard ? '' : preview ? renderSample(t.message, sample) : t.message;
         const last = i === touches.length - 1;
@@ -30,16 +32,16 @@ export function TouchTimeline({ touches, aiPersonalizes, preview, sample, editab
               <Text style={{ fontSize: 12, fontWeight: '800', color: instant ? GREEN : GOLD }}>{whenLabel(t)}</Text>
             </View>
             <View style={{ width: 14, alignItems: 'center' }}>
-              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: instant ? GREEN : isCard ? PURPLE : GOLD, marginTop: 16, shadowColor: GOLD, shadowOpacity: 0.5, shadowRadius: 4 }} />
+              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: instant ? GREEN : isCard ? PURPLE : isCall ? BLUE : GOLD, marginTop: 16, shadowColor: GOLD, shadowOpacity: 0.5, shadowRadius: 4 }} />
               <View style={{ flex: 1, width: 2, backgroundColor: colors.border, marginTop: 4, opacity: last ? 0 : 1 }} />
             </View>
             <View style={{ flex: 1, paddingBottom: last ? 0 : 6 }}>
               <TouchableOpacity onPress={() => onEdit(t, i)} activeOpacity={0.8} style={{ backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 8 }} {...tid(`touch-card-${i}`)}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7, backgroundColor: isCard ? PURPLE + '22' : GREEN + '22' }}>
-                    <Text style={{ fontSize: 10, fontWeight: '800', color: isCard ? PURPLE : GREEN, letterSpacing: 0.6 }}>{isCard ? 'CARD' : 'TEXT'}</Text>
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7, backgroundColor: badge.c + '22' }}>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: badge.c, letterSpacing: 0.6 }} {...tid(`touch-kind-badge-${i}`)}>{badge.l}</Text>
                   </View>
-                  {!isCard && aiPersonalizes ? (
+                  {!isCard && !isCall && aiPersonalizes ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7, backgroundColor: GOLD + '22' }}>
                       <Ionicons name="sparkles" size={10} color={GOLD} />
                       <Text style={{ fontSize: 10, fontWeight: '800', color: GOLD, letterSpacing: 0.6 }}>JESSI PERSONALIZES</Text>
@@ -66,7 +68,7 @@ export function TouchTimeline({ touches, aiPersonalizes, preview, sample, editab
                   </View>
                 ) : (
                   <Text style={{ fontSize: 14, color: body ? colors.text : colors.textTertiary, lineHeight: 20, fontStyle: body ? 'normal' : 'italic' }} numberOfLines={preview ? undefined : 3}>
-                    {body || 'Tap to write this text'}
+                    {body || (isCall ? 'A reminder for you to call them' : 'Tap to write this text')}
                   </Text>
                 )}
               </TouchableOpacity>

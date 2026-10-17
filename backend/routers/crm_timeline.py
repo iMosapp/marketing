@@ -297,7 +297,7 @@ async def get_public_timeline(token: str, pin: Optional[str] = None):
     notes = []
     try:
         notes_cursor = db.voice_notes.find(
-            {"contact_id": contact_id_str, "user_id": user_id},
+            {"contact_id": contact_id_str},
             {"_id": 0, "text": 1, "created_at": 1, "type": 1}
         ).sort("created_at", -1).limit(50)
         notes = await notes_cursor.to_list(50)

@@ -166,23 +166,23 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
   await advanceTo(10000);
   record('1', 'Normal greeting', { greetings_sent: greetingsSent(), sessions_created: sim.sessions, state: sim.state.state }, greetingsSent() === 1 && sim.sessions === 1 && live(), 'One greeting, one session');
 
-  // 2 Silence past 15 s after an answer: stays live, calm hint only.
+  // 2 Silence of 10 s after a 12 s answer: stays live, nothing shown (the quiet clock starts when her audio ends).
   await begin();
   await repSays(6000, 'u1', 3000, 'What did Sarah buy last time?');
   const endA = await jessiSays(9600, 'r1', 'Sarah Kincaid bought a 2024 Tahoe in May and her Equinox lease ends in March', 1500, 12000);
-  await advanceTo(endA + 40000);
-  record('2', 'Silence of 40 s after a 12 s answer (production setting 15 s)', { state: sim.state.state, quiet: sim.state.quiet, close_reason: sim.state.closeReason || null }, live() && sim.state.quiet.level === 'hint', 'Still connected; the sheet shows "Still here, take your time"');
+  await advanceTo(endA + 10000);
+  record('2', 'Silence of 10 s after a 12 s answer', { state: sim.state.state, quiet: sim.state.quiet, close_reason: sim.state.closeReason || null }, live() && sim.state.quiet.level === '', 'Still connected, no warning yet');
 
-  // 3 Longer natural pauses (60 s, then 110 s), with talk in between: never closes.
+  // 3 Natural pauses (10 s, then 11 s), with talk in between: never closes, no warning.
   await begin();
   await repSays(6000, 'u1', 2000, 'Give me a second to think');
   await jessiSays(8400, 'r1', 'Sure, take your time.', 400, 1500);
-  await advanceTo(70000);
-  const after60 = sim.state.state;
-  await repSays(70000, 'u2', 2000, 'Okay, who is next?');
-  await jessiSays(72400, 'r2', 'Mike Tran is next.', 300, 1200);
-  await advanceTo(73600 + 110000);
-  record('3', 'Natural pauses of 60 s and 110 s', { after_60s_pause: after60, after_110s_pause: sim.state.state, quiet: sim.state.quiet }, after60 === 'live' && live(), 'Both pauses survive (warning only starts at 120 s of true quiet)');
+  await advanceTo(19900);
+  const after10 = sim.state.state;
+  await repSays(19900, 'u2', 2000, 'Okay, who is next?');
+  await jessiSays(22300, 'r2', 'Mike Tran is next.', 300, 1200);
+  await advanceTo(23500 + 11000);
+  record('3', 'Natural pauses of 10 s and 11 s', { after_10s_pause: after10, after_11s_pause: sim.state.state, quiet: sim.state.quiet }, after10 === 'live' && live() && sim.state.quiet.level === '', 'Both pauses survive (the countdown only starts at 12 s of true quiet)');
 
   // 4 Rep talks 30 s without a pause: no cut-off.
   await begin();
@@ -220,22 +220,22 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
   emit({ type: 'response.done', response: { id: 'r1', status: 'cancelled', output: [{ id: 'r1_item', type: 'message' }] } });
   await at(14000, { type: 'input_audio_buffer.speech_stopped', item_id: 'u2' });
   await at(14400, { type: 'conversation.item.input_audio_transcription.completed', item_id: 'u2', transcript: 'Actually, text him instead' });
-  await advanceTo(40000);
-  record('7', 'Rep interrupts Jessi, then pauses 25 s', { state: sim.state.state, quiet: sim.state.quiet.level || 'none' }, live(), 'Interruption handled, still connected');
+  await advanceTo(24000);
+  record('7', 'Rep interrupts Jessi, then pauses 10 s', { state: sim.state.state, quiet: sim.state.quiet.level || 'none' }, live(), 'Interruption handled, still connected');
 
-  // 8 Forgotten session: warning at 120 s of quiet, Keep going resets, then a calm end at 150 s.
+  // 8 Forgotten session: countdown at 12 s of quiet, Keep going resets, then a calm end at 20 s.
   const h8 = await begin();
-  await advanceTo(3600 + 121000);
+  await advanceTo(4100 + 13000);
   const warn = { ...sim.state.quiet };
   h8.keepGoing(); await flush();
   const afterKeep = sim.state.quiet.level || 'none';
   const t0 = now;
-  await advanceTo(t0 + 149000);
+  await advanceTo(t0 + 19000);
   const before = sim.state.state;
-  await advanceTo(t0 + 152000);
-  record('8', 'Forgotten session: warning, Keep going, then calm end', { warning_at_121s: warn, after_keep_going: afterKeep, live_at_149s: before, close_reason: sim.state.closeReason, closed_at_quiet_s: s(closedAt() - t0), quiet_after_end: sim.state.quiet.level || 'none', diag: diag() },
-    warn.level === 'warning' && warn.closeIn > 0 && afterKeep === 'none' && before === 'live' && sim.state.closeReason === 'away' && diag().initiated_by === 'app' && diag().unexpected === false && sim.state.quiet.level === '',
-    'Warns with a countdown, Keep going resets it, ends quietly as "away" after 150 s of true quiet');
+  await advanceTo(t0 + 21500);
+  record('8', 'Forgotten session: countdown, Keep going, then calm end', { warning_at_13s: warn, after_keep_going: afterKeep, live_at_19s: before, close_reason: sim.state.closeReason, closed_at_quiet_s: s(closedAt() - t0), quiet_after_end: sim.state.quiet.level || 'none', diag: diag() },
+    warn.level === 'warning' && warn.closeIn > 0 && warn.closeIn <= 8 && afterKeep === 'none' && before === 'live' && sim.state.closeReason === 'away' && Math.abs(closedAt() - t0 - 20000) <= 1100 && diag().initiated_by === 'app' && diag().unexpected === false && sim.state.quiet.level === '',
+    'Countdown from 12 s, Keep going resets it, ends quietly as "away" after 20 s of true quiet');
 
   // 9 Explicit End: mic, peer connection and audio session released, one close, no new session.
   const h9 = await begin();
@@ -250,7 +250,7 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
 
   // 10 Daily allowance still enforced (90 s left).
   await begin({ cap: 90, controls: true });
-  for (let k = 0; k < 4; k++) { await repSays(6000 + k * 16000, `w${k}`, 2000, 'And who else?'); await jessiSays(8500 + k * 16000, `rw${k}`, 'Mike Tran is next, he is one of your three today.', 800, 4000); }
+  for (let k = 0; k < 6; k++) { await repSays(6000 + k * 16000, `w${k}`, 2000, 'And who else?'); await jessiSays(8500 + k * 16000, `rw${k}`, 'Mike Tran is next, he is one of your three today.', 800, 4000); }
   await advanceTo(95000);
   record('10', 'Daily Mini allowance runs out (90 s left)', { close_reason: sim.state.closeReason, closed_at_s: s(closedAt()), diag_by: diag().initiated_by }, sim.state.closeReason === 'backup_cap' && Math.abs(closedAt() - 90300) <= 1000, 'Allowance enforced exactly as before');
 
@@ -278,20 +278,20 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
   await begin();
   await repSays(6000, 'u1', 2000, 'Who is next?');
   await jessiSays(8400, 'r1', 'Mike Tran is next.', 300, 1500, null, false);
-  await advanceTo(8400 + 90000 + 151000);
-  record('14', 'Audio-stopped event never arrives', { close_reason: sim.state.closeReason, closed_at_s: s(closedAt()) }, sim.state.closeReason === 'away', 'Not stuck open: ends as "away" after the 90 s safety cap + 150 s');
+  await advanceTo(8400 + 90000 + 21500);
+  record('14', 'Audio-stopped event never arrives', { close_reason: sim.state.closeReason, closed_at_s: s(closedAt()) }, sim.state.closeReason === 'away', 'Not stuck open: ends as "away" after the 90 s safety cap + 20 s');
 
   // 15 App backgrounded and back during a session.
   const h15 = await begin();
-  await advanceTo(10000);
+  await advanceTo(6000);
   sim.appListeners.forEach(f => f('background'));
-  await advanceTo(40000);
+  await advanceTo(14000);
   sim.appListeners.forEach(f => f('active'));
-  await advanceTo(45000);
+  await advanceTo(16000);
   const h15live = sim.state.state;
   h15.stop('close_requested');
-  await advanceTo(47000);
-  record('15', 'App backgrounded 30 s, then foreground (JS keeps running in the mock)', { state_after_foreground: h15live, diag_backgrounds: diag().backgrounds, diag_app_state: diag().app_state },
+  await advanceTo(18000);
+  record('15', 'App backgrounded 8 s, then foreground (JS keeps running in the mock)', { state_after_foreground: h15live, diag_backgrounds: diag().backgrounds, diag_app_state: diag().app_state },
     h15live === 'live' && diag().backgrounds === 1 && diag().app_state === 'active', 'No change in behaviour; the background trip is counted in the close diagnostics');
 
   // 15b Long background (JS paused 200 s, e.g. iOS suspended it): coming back must not end the session on the first tick without a warning.
@@ -313,10 +313,10 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
   record('16', 'Premium idle behaviour unchanged', { live_at_14s: live14, close_reason: sim.state.closeReason, ending_at_s: s((sim.log.find(x => x.state === 'ending') || {}).t ?? null), quiet: sim.state.quiet.level || 'none' },
     live14 === 'live' && sim.state.closeReason === 'idle' && Math.abs((sim.log.find(x => x.state === 'ending') || {}).t - 15300) <= 1000 && sim.state.quiet.level === '', 'GPT-Live still closes 15 s after the last caption, as before');
 
-  // 17 No unintended session recreation across a long quiet session.
+  // 17 No unintended session recreation across a quiet session that ends by itself.
   await begin();
-  await advanceTo(3600 + 115000);
-  record('17', 'No extra provider sessions during long quiet', { sessions_created: sim.sessions, state: sim.state.state }, sim.sessions === 1 && live(), 'One session only; no reconnects');
+  await advanceTo(4100 + 60000);
+  record('17', 'No extra provider sessions during a long quiet', { sessions_created: sim.sessions, state: sim.state.state, close_reason: sim.state.closeReason }, sim.sessions === 1 && sim.state.closeReason === 'away', 'One session only, no reconnects; it ends as "away"');
 
   // 18 A failed lookup (409) still clears the lookup flag: the quiet hint comes back, the session stays live.
   await begin();
@@ -325,8 +325,29 @@ const s = (ms) => (ms === null ? null : Math.round(ms / 100) / 10);
   await jessiSays(8400, 'r1', 'One sec.', 300, 900, [{ type: 'function_call', name: 'delegate', call_id: 'call_9', arguments: JSON.stringify({ request: 'pull up Sarah' }) }]);
   await advanceTo(10300);
   await jessiSays(10400, 'r2', 'That did not work, try again.', 300, 2000);
-  await advanceTo(12400 + 17000);
-  record('18', 'Lookup fails (409) then quiet', { state: sim.state.state, quiet: sim.state.quiet.level || 'none' }, live() && sim.state.quiet.level === 'hint', 'Lookup flag cleared on failure; normal quiet handling resumes');
+  await advanceTo(12400 + 13000);
+  record('18', 'Lookup fails (409) then quiet', { state: sim.state.state, quiet: sim.state.quiet.level || 'none' }, live() && sim.state.quiet.level === 'warning', 'Lookup flag cleared on failure; normal quiet handling resumes');
+
+  // 19 Greeting echo: listening (input clear + turn detection) starts only after her greeting audio STOPPED playing, plus 0.5 s.
+  await begin();
+  await advanceTo(6000);
+  const sends = ch().sent;
+  const clear = sends.find(e => e.type === 'input_audio_buffer.clear');
+  const vad = sends.find(e => e.type === 'session.update' && e.session?.audio?.input && 'turn_detection' in e.session.audio.input);
+  record('19', 'Mini starts listening only after the greeting finished playing', { greeting_text_done_s: 1.6, greeting_audio_stopped_s: 3.6, input_cleared_at_s: clear ? s(clear._t) : null, listening_on_at_s: vad ? s(vad._t) : null },
+    !!clear && !!vad && clear._t >= 4100 && vad._t >= 4100 && clear._t <= vad._t, 'Her own voice can no longer be heard as the rep: the mic buffer is cleared and listening starts 0.5 s after her audio stops');
+
+  // 20 Greeting audio-stopped event lost: listening still comes on after an estimate of the audio left, never while the text is still fresh.
+  reset(); stateIdx = 0; eid = 0;
+  sim.sessionResponse = { engine: 'mini', sdp: 'v=0 fake answer', idle_close_s: 15, cap_left_s: 86400, greeting: 'Hey Alex, who are we talking about today?', listening: null, meter: { policy_mode: 'legacy', role: null } };
+  const h20 = useLiveJessi({});
+  sim.cleanups = sim.effects.map(fn => fn()).filter(Boolean);
+  h20.start({ mode: 'assistant' }); await flush();
+  await at(300, { type: 'session.created' });
+  await jessiSays(600, 'r_greet', 'Hey Alex, who are we talking about today?', 900, 3000, [{ id: 'r_greet_item', type: 'message', content: [{ type: 'output_audio', transcript: 'Hey Alex, who are we talking about today?' }] }], false);
+  await advanceTo(12000);
+  const vad20 = ch().sent.find(e => e.type === 'session.update' && e.session?.audio?.input && 'turn_detection' in e.session.audio.input);
+  record('20', 'Greeting audio-stopped event lost', { response_done_s: 1.55, listening_on_at_s: vad20 ? s(vad20._t) : null }, !!vad20 && vad20._t >= 1550 + 2500 && vad20._t <= 1550 + 4000 && live(), 'Falls back to the estimated playback time (about 3 s for this greeting), then listens');
 
   fs.mkdirSync('/app/test_reports', { recursive: true });
   fs.writeFileSync('/app/test_reports/mini_lifecycle_sim_after.json', JSON.stringify({ note: 'virtual clock; real hooks/useLiveJessi.ts; fake provider events', passed: results.length - failures, failed: failures, results }, null, 2));

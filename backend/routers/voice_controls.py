@@ -20,6 +20,13 @@ class GlobalBody(BaseModel):
     enabled: Optional[bool] = None
     max_user_daily_premium_min: Optional[int] = None
     max_user_daily_backup_min: Optional[int] = None
+    default_premium_min: Optional[int] = None
+    default_backup_min: Optional[int] = None
+    default_monthly_hard_usd: Optional[float] = None
+
+
+class RolloutBody(BaseModel):
+    on: bool
 
 
 class PolicyBody(BaseModel):
@@ -41,7 +48,11 @@ class PolicyBody(BaseModel):
     carry_over: Optional[bool] = None
     timezone: Optional[str] = None
     notes: Optional[str] = None
+    account_monthly_hard_usd: Optional[float] = None
+    engine_mode: Optional[str] = None
+    cap_super_admins: Optional[bool] = None
     clear: Optional[list] = None  # field names to reset to "no limit"
+    reset: Optional[list] = None  # field names handed back to the defaults for every account
 
 
 class OverrideBody(BaseModel):
@@ -88,6 +99,7 @@ async def _reader(request: Request, db, org_id: str) -> dict:
 
 def _patch(body: BaseModel) -> dict:
     data = body.model_dump()
+    data.pop("reset", None)
     clear = data.pop("clear", None) or []
     patch = {k: v for k, v in data.items() if v is not None}
     for k in clear:
@@ -138,6 +150,13 @@ async def put_global(body: GlobalBody, request: Request):
     return {"global": await vc.save_global(get_db(), {k: v for k, v in body.model_dump().items() if v is not None}, me)}
 
 
+@router.post("/rollout")
+async def rollout(body: RolloutBody, request: Request):
+    """Production switch: voice controls (GPT-Live first, Mini after, monthly $ cap, kill switch) for every account."""
+    me = await _super(request)
+    return {"global": await vc.rollout(get_db(), body.on, me)}
+
+
 @router.get("/pricing")
 async def pricing(request: Request):
     await _super(request)
@@ -166,8 +185,10 @@ async def account(org_id: str, request: Request, range: str = "30d"):
     now_local = vc._now().astimezone(tz)
     month = await db[vc.ACCT_MONTH_COLL].find_one({"_id": f"{org_id}:{vc.month_key(now_local)}"}) or {}
     day = await db[vc.ACCT_DAY_COLL].find_one({"_id": f"{org_id}:{vc.day_key(now_local)}"}) or {}
-    return {"org_id": org_id, "name": await vc.org_name(db, org_id), "policy": policy, "timezone": str(tz), "overrides": overrides, "range": range,
-            "users": await vc.user_usage(db, org_id, _since(range)),
+    g = await vc.get_global(db)
+    return {"org_id": org_id, "name": await vc.org_name(db, org_id), "policy": policy, "defaults": vc.account_defaults(g), "enrolled": bool(policy["enabled"] and g["enabled"]),
+            "timezone": str(tz), "overrides": overrides, "range": range, "day": vc.day_key(now_local),
+            "users": await vc.user_usage(db, org_id, _since(range)), "members": await vc.account_members(db, org_id),
             "today": {k: int(day.get(k) or 0) for k in ("premium_used_s", "premium_reserved_s", "backup_used_s", "backup_reserved_s", "sessions")},
             "month": {"premium_s": int(month.get("premium_s") or 0), "backup_s": int(month.get("backup_s") or 0), "est_cost_usd": round(float(month.get("est_cost_usd") or 0), 4),
                       "premium_cost_usd": round(float(month.get("premium_cost_usd") or 0), 4), "backup_cost_usd": round(float(month.get("backup_cost_usd") or 0), 4)}}
@@ -183,7 +204,13 @@ async def put_policy(org_id: str, body: PolicyBody, request: Request):
         raise HTTPException(status_code=400, detail="Unknown engine")
     if patch.get("plan_key") and patch["plan_key"] not in vc.PLAN_CATALOG:
         raise HTTPException(status_code=400, detail="Unknown plan")
-    return {"policy": await vc.save_policy(get_db(), org_id, patch, me)}
+    if patch.get("engine_mode") and patch["engine_mode"] not in vc.ENGINE_MODES:
+        raise HTTPException(status_code=400, detail="mode must be live_first or mini_only")
+    db = get_db()
+    policy = await vc.save_policy(db, org_id, patch, me, reset=body.reset or [])
+    if patch.get("killed"):
+        await vc.kill_open_sessions(db, org_id)
+    return {"policy": policy}
 
 
 # ── users on an account ───────────────────────────────────────────────────────

@@ -656,7 +656,7 @@ function MoreScreenFull() {
       { icon: 'chatbubbles', title: 'Jessi Onboarding', subtitle: 'Everyone Jessi is walking in by text, where each one sits, whose move it is', onPress: () => router.push('/admin/onboarding-jessi' as any), color: '#AF52DE' },
       { icon: 'flask', title: 'Test Lab', subtitle: 'Try new features on your account before reps see them', onPress: () => router.push('/admin/test-lab' as any), color: '#C9A962' },
       { icon: 'radio', title: 'Jessi Voice Lab', subtitle: 'Pick her live voice, energy and pacing, audition her', onPress: () => router.push('/admin/voice-lab' as any), color: '#C9A962' },
-      { icon: 'pulse', title: 'Voice Pilot', subtitle: 'Enrol your own account in the voice spending controls, watch usage, kill switch', onPress: () => router.push('/admin/voice-pilot' as any), color: '#C9A962' },
+      { icon: 'pulse', title: 'Voice Pilot', subtitle: 'Voice limits for every account, your own pilot, usage, kill switch', onPress: () => router.push('/admin/voice-pilot' as any), color: '#C9A962' },
       { icon: 'image', title: 'Photo Intelligence', subtitle: 'Jessi reads customer photos: rollout, emergency pause, usage and estimated cost', onPress: () => router.push('/admin/photo-intelligence' as any), color: '#C9A962' },
       // System
       { icon: 'shield-checkmark', title: 'Texting Compliance', subtitle: 'A2P 10DLC brand + campaign and Caller ID per organization', onPress: () => router.push('/admin/compliance' as any), color: '#C9A962' },

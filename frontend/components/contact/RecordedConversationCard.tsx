@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { VoiceIdBadge } from '../calls/VoiceIdBadge';
+import { TranscriptStatus, RecordedBy } from './TranscriptStatus';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -20,7 +21,8 @@ export const fmtDue = (iso?: string | null, hasTime?: boolean) => {
 const fmtDur = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${Math.round(s)}s`);
 
 // A recorded in-person conversation on the Calls tab: summary, the follow-ups it created, play button, transcript.
-export const RecordedConversationCard = ({ note, colors, onDelete, onRename }: { note: any; colors: any; onDelete?: (id: string) => void; onRename?: (id: string, title: string) => void }) => {
+export const RecordedConversationCard = ({ note, colors, onDelete, onRename, onRetry, retrying }: { note: any; colors: any; onDelete?: (id: string) => void; onRename?: (id: string, title: string) => void; onRetry?: (id: string) => void; retrying?: boolean }) => {
+  const canChange = note.can_delete !== false;
   const [showTranscript, setShowTranscript] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -42,14 +44,15 @@ export const RecordedConversationCard = ({ note, colors, onDelete, onRename }: {
               style={{ color: colors.text, fontWeight: '700', fontSize: 15, paddingVertical: 2, borderBottomWidth: 1, borderBottomColor: GOLD }}
               {...tid(`recorded-convo-title-input-${note.id}`)} />
           ) : (
-            <TouchableOpacity onPress={() => onRename && (setDraft(note.title || ''), setEditing(true))} disabled={!onRename} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} {...tid(`recorded-convo-title-${note.id}`)}>
+            <TouchableOpacity onPress={() => onRename && canChange && (setDraft(note.title || ''), setEditing(true))} disabled={!onRename || !canChange} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} {...tid(`recorded-convo-title-${note.id}`)}>
               <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15, flexShrink: 1 }} numberOfLines={1}>{heading}</Text>
-              {!!onRename && <Ionicons name="pencil" size={12} color={colors.textSecondary} />}
+              {!!onRename && canChange && <Ionicons name="pencil" size={12} color={colors.textSecondary} />}
             </TouchableOpacity>
           )}
           <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
             {note.title ? 'Recorded conversation · ' : ''}{note.duration ? `${fmtDur(note.duration)} · ` : ''}{note.created_at ? new Date(note.created_at).toLocaleString() : ''} · in person
           </Text>
+          <RecordedBy note={note} colors={colors} testPrefix="recorded-convo" />
           <VoiceIdBadge item={note} id={`convo-${note.id}`} style={{ marginTop: 5 }} />
         </View>
         <TouchableOpacity onPress={() => setShowPlayer(p => !p)} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: showPlayer ? GOLD : GOLD + '22', alignItems: 'center', justifyContent: 'center' }} {...tid(`recorded-convo-play-${note.id}`)}>
@@ -68,6 +71,8 @@ export const RecordedConversationCard = ({ note, colors, onDelete, onRename }: {
           <Text style={{ color: GOLD, fontSize: 12, fontWeight: '700', marginBottom: 5, letterSpacing: 0.8 }}>SUMMARY</Text>
           <Text style={{ color: colors.text, fontSize: 13, lineHeight: 19 }}>{note.summary}</Text>
         </View>
+      ) : !note.transcript && (note.transcript_status === 'retrying' || note.transcript_status === 'failed' || retrying) ? (
+        <View style={{ marginBottom: 8 }}><TranscriptStatus note={note} colors={colors} onRetry={onRetry} retrying={retrying} testPrefix="recorded-convo" /></View>
       ) : !note.transcript ? (
         <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 10, marginBottom: 8 }}>
           <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>No transcript for this recording (was anyone talking?).</Text>
@@ -96,7 +101,7 @@ export const RecordedConversationCard = ({ note, colors, onDelete, onRename }: {
             <Text style={{ color: colors.accent || GOLD, fontSize: 13, fontWeight: '600' }}>{showTranscript ? 'Hide transcript' : 'Read transcript'}</Text>
           </TouchableOpacity>
         ) : <View />}
-        {!!onDelete && (
+        {!!onDelete && canChange && (
           <TouchableOpacity onPress={() => onDelete(note.id)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} {...tid(`recorded-convo-delete-${note.id}`)}>
             <Ionicons name="trash-outline" size={14} color="#FF3B30" />
             <Text style={{ color: '#FF3B30', fontSize: 13, fontWeight: '600' }}>Delete</Text>
