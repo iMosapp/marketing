@@ -42,7 +42,7 @@ export function PlanCard({ campaign: c, colors, onPress, onToggleActive }: Props
           <View style={{ flexDirection: 'row', justifyContent: shown.length === 1 ? 'flex-start' : 'space-between' }}>
             {shown.map((t, i) => (
               <View key={t.id} style={{ alignItems: 'center', minWidth: 36 }}>
-                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.actionType === 'send_card' ? '#AF52DE' : t.actionType === 'call' ? '#0A84FF' : GOLD, borderWidth: 2, borderColor: colors.card }} />
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.actionType === 'send_card' ? '#AF52DE' : GOLD, borderWidth: 2, borderColor: colors.card }} />
                 <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 4, fontWeight: '600' }}>{whenLabel(t)}</Text>
               </View>
             ))}

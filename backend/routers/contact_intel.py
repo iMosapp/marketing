@@ -66,16 +66,6 @@ async def _gather_contact_context(db, user_id: str, contact_id: str) -> dict:
     # Files and photos Jessi has read (business cards, VIN plates, PDFs, pictures they texted); sensitive ones only for the rep who filed them
     from services.contact_files import for_context as _files_for
     files = await _files_for(db, contact_id, user_id, limit=15)
-    try:   # task due times are read in the rep's own time (they are stored in UTC)
-        from zoneinfo import ZoneInfo
-        from routers.user_schedule import resolve_user_tz
-        tz = ZoneInfo(await resolve_user_tz(user_id))
-        for t in tasks:
-            d = t.get("due_date")
-            if isinstance(d, datetime):
-                t["due_date"] = (d if d.tzinfo else d.replace(tzinfo=timezone.utc)).astimezone(tz).strftime("%a %b %d, %Y %I:%M %p")
-    except Exception as e:
-        logger.debug(f"[ContactIntel] task tz skipped: {e}")
     
     return {
         "contact": contact,

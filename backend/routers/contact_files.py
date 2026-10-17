@@ -13,7 +13,6 @@ from pydantic import BaseModel
 from routers.database import get_db, get_data_filter
 from routers.lead_sources import require_user
 from services import contact_files as cf
-from services import doc_reminders as dr
 from utils.image_storage import get_object
 from utils.text_sanitize import no_em_dash
 
@@ -35,11 +34,6 @@ class FileChunk(BaseModel):
 
 class ApplyBody(BaseModel):
     fields: list
-
-
-class ReminderBody(BaseModel):
-    key: str
-    decision: str = "create"   # create | dismiss
 
 
 def _caller(request: Request) -> dict:
@@ -181,21 +175,6 @@ async def apply_to_contact(user_id: str, file_id: str, body: ApplyBody, request:
                                             "contact_id": doc["contact_id"], "user_id": user_id, "category": "file", "icon": "checkmark-done", "color": "#34C759",
                                             "metadata": {"file_id": str(doc["_id"]), "fields": list(res["applied"])}, "timestamp": now, "created_at": now})
     return {"ok": True, **res, "labels": {k: cf.FIELD_LABELS[k] for k in res["applied"]}}
-
-
-@router.post("/{user_id}/{file_id}/reminders")
-async def decide_reminder(user_id: str, file_id: str, body: ReminderBody, request: Request):
-    """Create (or dismiss) one reminder Jessi suggested from a document's dates. A task for the rep only; nothing is sent."""
-    _me(request, user_id)
-    db = get_db()
-    caller_id = str(_caller(request)["_id"])
-    doc = await _file(db, caller_id, file_id)
-    contact = await _contact(db, caller_id, doc["contact_id"])
-    try:
-        r = await dr.decide(db, user_id, doc, contact, body.key, "dismiss" if body.decision == "dismiss" else "create")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return {"ok": True, "reminder": r, "file": cf.public(await db.contact_files.find_one({"_id": doc["_id"]}), caller_id)}
 
 
 @router.delete("/{user_id}/{file_id}")

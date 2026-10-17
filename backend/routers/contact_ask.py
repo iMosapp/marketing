@@ -135,8 +135,7 @@ async def overview(contact_id: str, request: Request):
     db = get_db()
     me = request.state.user
     contact = await _contact(db, me, contact_id)
-    from routers.user_schedule import resolve_user_tz
-    record = await ca.build_record(db, contact, tz=await resolve_user_tz(str(me["_id"])), caller_id=str(me["_id"]))
+    record = await ca.build_record(db, contact, tz=me.get("timezone"), caller_id=str(me["_id"]))
     sessions = await db[ca.SESS].find({"user_id": str(me["_id"]), "contact_id": contact_id}, {"messages": {"$slice": -1}, "title": 1, "created_at": 1, "updated_at": 1}).sort("updated_at", -1).limit(10).to_list(10)
     counts = {s["_id"]: s["n"] async for s in db[ca.SESS].aggregate([{"$match": {"user_id": str(me["_id"]), "contact_id": contact_id}}, {"$project": {"n": {"$size": {"$ifNull": ["$messages", []]}}}}])}
     out_sessions = []

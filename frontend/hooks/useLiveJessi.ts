@@ -10,7 +10,7 @@ import { QUIET_EVENTS, QuietLevel, markBusy, newQuiet, quietLevel, quietSeconds,
 export type LiveState = 'idle' | 'connecting' | 'live' | 'switching' | 'ending' | 'ended' | 'error';
 export type { CaptionRow };
 export type LiveOptions = { mode: 'assistant' | 'lab' | 'shopper' | 'advisor'; overrides?: Record<string, any>; contactId?: string };
-export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions' | 'team_today' | 'campaign'; id?: string; name?: string; first?: string; contact_id?: string; query?: string; days?: number | null; res?: any; rep?: string; draft?: string; rev?: string };
+export type OpenTarget = { kind: 'contact' | 'thread' | 'task' | 'tasks' | 'home' | 'inbox' | 'duplicates' | 'mentions' | 'team_today'; id?: string; name?: string; first?: string; contact_id?: string; query?: string; days?: number | null; res?: any; rep?: string; draft?: string };
 type Meter = { policy_mode?: 'controls' | 'legacy'; role?: 'premium' | 'backup' | null; fallback_reason?: string | null; left_s?: number | null };
 
 const TOOL_LABELS: Record<string, string> = {
@@ -27,13 +27,6 @@ export const CAP_REASONS = ['voice_cap', 'backup_cap', 'daily_cap', 'killed'];
 export const STANDARD_VOICE_NOTE = "Switched to Jessi's standard voice";
 // Realtime mini turn taking, switched on after the greeting (see enableMiniListening). The server sends the tuned version with the
 // session (`listening`, Voice Lab > Mini listening); this is the fallback. Server VAD: the only mode with a loudness threshold.
-// Mini greeting: listening starts GREETING_TAIL_MS after her audio stops; if that event is lost, after an estimate of the audio still playing.
-const GREETING_TAIL_MS = 500;
-const GREETING_MAX_MS = 30000;
-const playbackLeftMs = (response: any, fallbackText: string) => {
-  const said = (response?.output || []).flatMap((o: any) => o?.content || []).map((c: any) => c?.transcript || c?.text || '').join(' ');
-  return Math.min(GREETING_MAX_MS, Math.max(2500, (said || fallbackText || '').length * 75));
-};
 const MINI_TURN_DETECTION = { type: 'server_vad', threshold: 0.6, prefix_padding_ms: 300, silence_duration_ms: 700, create_response: true, interrupt_response: true };
 // Close diagnostics (no content): who ended a session when nothing else says so, and which ends are expected.
 const INITIATED_BY: Record<string, string> = { close_requested: 'user', idle: 'app', away: 'app', daily_cap: 'app', backup_cap: 'app', voice_cap: 'app', premium_cap: 'app',
@@ -124,7 +117,6 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
   // Realtime mini opens with turn detection OFF so room noise or the speaker's own echo cannot start a second turn while Jessi greets; listening is switched on after the greeting.
   const vadOn = useRef(false);
   const vadTimer = useRef<any>(null);
-  const greetPlayed = useRef(false);
   // Per-connection guards (miniSession.ts): one start, each provider event and each tool call acted on once, plus a short trace.
   const guards = useRef(newGuards());
   const greetings = useRef(0);   // greetings sent in this conversation (handoffs continue without one)
@@ -143,13 +135,6 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     dc.current.send(JSON.stringify(ev));
   };
   const traceEvent = () => ({ type: 'trace', rows: guards.current.trace, dups: guards.current.dups, greetings: greetings.current });
-  // Mini listens only once the greeting has finished PLAYING (output_audio_buffer.stopped + a short tail), not when its text is done:
-  // otherwise the phone hears her own voice from the speaker, the transcriber invents a sentence and she answers it.
-  const listenAfter = (ms: number) => {
-    if (!isMini() || vadOn.current) return;
-    if (vadTimer.current) clearTimeout(vadTimer.current);
-    vadTimer.current = setTimeout(enableMiniListening, ms);
-  };
   const enableMiniListening = () => {
     if (!isMini() || vadOn.current) return;
     vadOn.current = true;
@@ -358,7 +343,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     const opening = openingEvent({ mini: isMini(), resumed: resumedRef.current, greeting: greeting.current, greetInstruction: greetInstruction.current });
     send(opening.event);
     if (opening.greeting) greetings.current += 1;
-    if (isMini()) listenAfter(8000); // safety net when no greeting starts; a greeting moves it (response.created / done / audio stopped)
+    if (isMini()) vadTimer.current = setTimeout(enableMiniListening, 8000); // listening comes on at the end of the greeting (response.done); this is the safety net
     quietRef.current = newQuiet(Date.now());
     lookups.current = 0;
     setQuiet({ level: '', closeIn: 0 });
@@ -433,11 +418,6 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
         break;
       case 'response.created':
         activeResponse.current = ev.response?.id || '';
-        if (isMini() && !vadOn.current) listenAfter(GREETING_MAX_MS);
-        break;
-      case 'output_audio_buffer.stopped':
-      case 'output_audio_buffer.cleared':
-        if (isMini() && !vadOn.current) { greetPlayed.current = true; listenAfter(GREETING_TAIL_MS); }
         break;
       case 'response.output_audio_transcript.delta':
         assistantDelta(ev.item_id || '', ev.response_id || '', ev.delta || '');
@@ -450,7 +430,7 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
       case 'response.done': {
         addUsage(ev.response?.usage);
         responseDone(ev.response);
-        if (isMini() && !vadOn.current && !greetPlayed.current) listenAfter(playbackLeftMs(ev.response, greeting.current));  // fallback if the audio-stopped event is lost
+        if (isMini() && !vadOn.current) enableMiniListening();
         if (routed.kind === 'calls') routed.calls.forEach(c => handleDelegation(c.callId, c.request));
         break;
       }
@@ -542,7 +522,6 @@ export function useLiveJessi(handlers: { onOpen?: (target: OpenTarget) => void }
     resumedRef.current = !!resume;
     tokensRef.current = { audio_in: 0, audio_in_cached: 0, text_in: 0, text_in_cached: 0, audio_out: 0, text_out: 0 };
     vadOn.current = false;
-    greetPlayed.current = false;
     activeResponse.current = '';
     noiseCancelled.current = '';
     listening.current = r.data.listening || MINI_TURN_DETECTION;

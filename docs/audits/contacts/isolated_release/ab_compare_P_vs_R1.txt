@@ -1,0 +1,133 @@
+module                                           | baseline (production)                  | candidate
+test_same_org_rep_isolation.py                   | 17 failed, 14 passed in 135.83s (0:02: | 2 failed, 29 passed in 80.89s (0:01:20)
+test_contact_ownership_hotfix.py                 | 15 failed, 10 passed in 43.41s         | 1 failed, 24 passed in 39.26s
+test_t1_claim_hijack_406.py                      | 6 failed in 3.33s                      | 6 passed in 3.22s
+test_t1_everyday_regression_406.py               | 4 failed, 8 passed in 20.45s           | 2 failed, 10 passed in 17.65s
+test_ai_reply_private_context.py                 | 2 failed, 2 passed in 2.71s            | 4 passed in 2.72s
+test_merge_assessment.py                         | 1 error in 0.46s                       | 4 passed in 1.91s
+test_safe_cleanup.py                             | 5 passed in 0.16s                      | 5 passed in 0.17s
+test_data_isolation_fixes.py                     | 12 failed in 1.39s                     | 12 failed in 1.28s
+test_contact_ownership_visibility.py             | 11 errors in 2.80s                     | 11 errors in 2.84s
+test_contact_owner_validation.py                 | 25 passed in 3.80s                     | 25 passed in 3.82s
+test_phase2_bola_middleware.py                   | 12 passed, 1 skipped in 2.64s          | 12 passed, 1 skipped in 2.59s
+test_phase1_security.py                          | 15 passed in 4.00s                     | 15 passed in 3.97s
+test_p0_security_closeout.py                     | 57 passed in 14.91s                    | 57 passed in 14.63s
+test_security_hotfix3_authz.py                   | 19 passed in 106.32s (0:01:46)         | 19 passed in 114.81s (0:01:54)
+test_security_hotfix3_adversarial.py             | 4 passed, 17 errors in 4.33s           | 4 passed, 17 errors in 4.54s
+test_security_hotfix3_webhook_scope.py           | 1 passed in 0.60s                      | 1 passed in 0.58s
+test_security_hotfix4.py                         | 12 passed in 12.74s                    | 12 passed in 12.62s
+test_security_hotfix4b.py                        | 1 failed, 14 passed in 20.58s          | 15 passed in 20.30s
+test_security_hotfix4b_adversarial.py            | 9 passed in 8.62s                      | 9 passed in 7.34s
+test_security_hotfix4c.py                        | 2 failed, 11 passed in 12.03s          | 2 failed, 11 passed in 12.17s
+test_security_hotfix4c_adversarial.py            | 15 passed in 6.03s                     | 15 passed in 6.09s
+test_session_cutoff.py                           | 13 passed in 0.38s                     | 13 passed in 0.40s
+test_session_restore.py                          | 6 passed in 1.42s                      | 6 passed in 1.36s
+test_company_docs_access.py                      | 7 passed in 13.36s                     | 7 passed in 13.46s
+test_jwt_security.py                             | 1 failed, 15 passed, 1 skipped in 1.22 | 1 failed, 15 passed, 1 skipped in 1.21s
+test_rbac.py                                     | 31 failed in 3.90s                     | 31 failed in 3.88s
+test_jessie_rbac_admin.py                        | 22 failed, 1 passed in 2.57s           | 22 failed, 1 passed in 2.56s
+test_inventory_bola_284.py                       | 1 passed in 1.16s                      | 1 passed in 1.09s
+test_contact_ask_api.py                          | 1 failed, 7 passed in 8.09s            | 8 passed in 14.76s
+test_live_actions.py                             | 2 failed, 2 passed in 14.90s           | 2 failed, 2 passed in 15.51s
+test_memory_search.py                            | 6 passed in 29.69s                     | 6 passed in 28.69s
+test_jessie_api.py                               | 4 failed, 7 errors in 0.42s            | 4 failed, 7 errors in 0.42s
+test_live_voice.py                               | 1 failed, 10 passed in 22.83s          | 1 failed, 10 passed in 24.48s
+test_contact_intel.py                            | 10 failed, 3 passed in 2.55s           | 10 failed, 3 passed in 2.52s
+test_contact_intelligence.py                     | 28 passed in 0.85s                     | 28 passed in 0.80s
+test_mms_stage1.py                               | 7 passed in 16.26s                     | 7 passed in 15.91s
+test_mms_vision_iter398.py                       | 13 passed, 1 error in 36.30s           | 13 passed, 1 error in 36.25s
+test_mms_vision_stage2.py                        | 22 passed in 86.34s (0:01:26)          | 2 failed, 20 passed in 237.21s (0:03:57)
+test_photo_intel_iter399.py                      | 1 failed, 15 passed, 1 error in 39.95s | 1 failed, 15 passed, 1 error in 41.93s
+test_files_voice_iter359.py                      | 1 failed, 2 passed in 1.04s            | 1 failed, 2 passed in 1.08s
+test_inbox_photo_fixes.py                        | 4 failed, 1 passed in 0.58s            | 4 failed, 1 passed in 0.62s
+test_add_contact_flow.py                         | 7 failed in 0.96s                      | 7 failed in 0.99s
+test_contact_find_or_create.py                   | 11 failed in 1.26s                     | 11 failed in 1.29s
+test_contacts_delete.py                          | 7 failed, 1 passed in 1.03s            | 7 failed, 1 passed in 0.89s
+test_contact_merge.py                            | 13 failed in 1.44s                     | 13 failed in 1.45s
+test_contact_matching.py                         | 11 failed in 1.33s                     | 11 failed in 1.25s
+test_contact_events.py                           | 10 failed, 1 passed in 1.23s           | 10 failed, 1 passed in 1.22s
+test_card_memo_nudge.py                          | 4 passed in 101.00s (0:01:41)          | 4 passed in 101.02s (0:01:41)
+test_personal_sms.py                             | TIMEOUT/NO OUTPUT                      | TIMEOUT/NO OUTPUT
+test_shared_inboxes_api.py                       | 2 failed, 6 passed, 7 errors in 2.20s  | 2 failed, 6 passed, 7 errors in 2.19s
+test_shared_inboxes_bulk_transfer.py             | TIMEOUT/NO OUTPUT                      | TIMEOUT/NO OUTPUT
+test_inbox_team_wiring_review.py                 | 7 failed, 1 passed in 2.34s            | 7 failed, 1 passed in 1.92s
+test_chat_claim_system.py                        | 7 failed, 3 passed in 16.71s           | 7 failed, 3 passed in 18.29s
+test_launch_compliance.py                        | 26 passed in 0.16s                     | 26 passed in 0.16s
+test_launch_compliance_api.py                    | 5 failed, 14 passed in 3.54s           | 5 failed, 14 passed in 3.34s
+test_launch_compliance_stop.py                   | 1 passed in 1.17s                      | 1 passed in 1.07s
+test_sender_policy.py                            | 27 passed in 0.12s                     | 27 passed in 0.12s
+test_send_paths_guarded.py                       | 2 passed in 2.53s                      | 2 passed in 2.50s
+test_inbound_call_routing.py                     | 2 passed in 2.69s                      | 2 passed in 2.72s
+test_store_independent_mms.py                    | 13 failed, 6 passed in 4.31s           | 13 failed, 6 passed in 3.77s
+test_native_handoff.py                           | 16 passed in 3.21s                     | 16 passed in 2.57s
+test_lead_claim_flow.py                          | 2 failed, 7 passed in 1.59s            | 2 failed, 7 passed in 1.60s
+test_lead_flows_api_regression.py                | 4 failed, 6 passed in 2.88s            | 4 failed, 6 passed in 2.69s
+test_lead_dedup.py                               | no tests ran in 0.77s                  | no tests ran in 0.80s
+test_lead_sources.py                             | 22 errors in 2.42s                     | 22 errors in 2.48s
+test_lead_call_engine_ladder.py                  | 19 failed, 1 passed in 41.82s          | 19 failed, 1 passed in 41.57s
+test_webhook_contact_match.py                    | no tests ran in 3.92s                  | no tests ran in 3.93s
+test_lead_queue_294.py                           | 8 failed, 4 passed in 1.92s            | 8 failed, 4 passed in 1.68s
+test_tasks_api.py                                | 14 failed, 5 skipped in 2.31s          | 14 failed, 5 skipped in 2.17s
+test_task_contact_events_notifications.py        | 5 failed in 0.58s                      | 5 failed in 0.64s
+test_auth_tasks.py                               | 14 failed, 3 passed in 9.38s           | 14 failed, 3 passed in 9.01s
+test_voice_notes.py                              | 10 failed in 1.17s                     | 10 failed in 1.17s
+test_voice_memos_iter358.py                      | 13 passed in 2.91s                     | 13 passed in 2.85s
+test_campaign_permissions_v2.py                  | 6 failed, 2 errors in 0.77s            | 6 failed, 2 errors in 0.74s
+test_tag_campaign_enrollment_immediate.py        | 8 failed, 1 passed in 0.61s            | 8 failed, 1 passed in 0.55s
+test_campaign_auto_enrollment_fix_269.py         | 8 passed in 8.03s                      | 8 passed in 8.13s
+test_team_view.py                                | 7 passed in 0.33s                      | 7 passed in 0.32s
+test_admin_hierarchy_role_setup.py               | 15 errors in 2.74s                     | 15 errors in 2.57s
+test_leadership_team.py                          | 9 passed in 2.38s                      | 9 passed in 2.35s
+test_team_engagement.py                          | 14 failed in 1.62s                     | 14 failed in 1.53s
+test_voice_controls.py                           | 7 passed in 21.18s                     | 7 passed in 9.13s
+test_voice_pilot.py                              | 6 passed in 6.37s                      | 6 passed in 6.22s
+test_voice_fallback.py                           | 6 passed in 11.24s                     | 6 passed in 16.19s
+test_isolated_release_jessi_prompt.py            | 10 passed in 16.09s                    | 10 passed in 17.92s
+
+FAIL ON CANDIDATE ONLY (2):
+   tests/test_mms_vision_stage2.py::test_drivers_license_is_private
+   tests/test_mms_vision_stage2.py::test_same_photo_again_reuses_the_reading
+
+FAIL ON BASELINE ONLY = fixed by candidate (42):
+   tests/test_same_org_rep_isolation.py::test_contact_ask_refuses_A2
+   tests/test_same_org_rep_isolation.py::test_lead_flagged_as_duplicate_never_shows_the_other_reps_contact
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_change_private_data[assigned]
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_change_private_data[collaborator]
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_change_private_data[inbox_claimed_by_owner]
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_change_private_data[inbox_unclaimed]
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_change_private_data[none]
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_read_private_data[assigned]
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_read_private_data[collaborator]
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_read_private_data[inbox_claimed_by_owner]
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_read_private_data[inbox_unclaimed]
+   tests/test_same_org_rep_isolation.py::test_same_store_rep_cannot_read_private_data[none]
+   tests/test_same_org_rep_isolation.py::test_shared_thread_ai_suggestion_skips_owner_private_context
+   tests/test_same_org_rep_isolation.py::test_shared_thread_still_opens_the_conversation[assigned]
+   tests/test_same_org_rep_isolation.py::test_shared_thread_still_opens_the_conversation[collaborator]
+   tests/test_contact_ownership_hotfix.py::test_bulk_transfer_scope_and_personal_contacts
+   tests/test_contact_ownership_hotfix.py::test_inbound_sms_name_enrichment_stays_in_the_org
+   tests/test_contact_ownership_hotfix.py::test_inbox_handoff_keeps_personal_contacts
+   tests/test_contact_ownership_hotfix.py::test_lead_name_only_match_never_edits_a_personal_contact
+   tests/test_contact_ownership_hotfix.py::test_lead_routing_never_moves_a_quiet_reps_dealership_contact
+   tests/test_contact_ownership_hotfix.py::test_lead_routing_never_moves_a_quiet_reps_personal_contact
+   tests/test_contact_ownership_hotfix.py::test_other_org_contact_reads_are_404[A]
+   tests/test_contact_ownership_hotfix.py::test_other_org_contact_reads_are_404[MX]
+   tests/test_contact_ownership_hotfix.py::test_other_org_contact_reads_are_404[OAX]
+   tests/test_contact_ownership_hotfix.py::test_other_org_contact_writes_are_refused_and_change_nothing[A]
+   tests/test_contact_ownership_hotfix.py::test_other_org_contact_writes_are_refused_and_change_nothing[MX]
+   tests/test_contact_ownership_hotfix.py::test_partner_agreement_dedupe_is_scoped
+   tests/test_contact_ownership_hotfix.py::test_startup_phone_consolidation_is_not_scheduled
+   tests/test_contact_ownership_hotfix.py::test_super_admin_cross_org_access_is_audited_without_content
+   tests/test_t1_claim_hijack_406.py::test_cross_org_manager_cannot_assign_foreign_conversation
+   tests/test_t1_claim_hijack_406.py::test_cross_org_manager_cannot_reassign_lead
+   tests/test_t1_claim_hijack_406.py::test_rep_cannot_claim_another_reps_private_thread[A2]
+   tests/test_t1_claim_hijack_406.py::test_rep_cannot_claim_another_reps_private_thread[X]
+   tests/test_t1_claim_hijack_406.py::test_task_create_refuses_foreign_contact[A2-A2]
+   tests/test_t1_claim_hijack_406.py::test_task_create_refuses_foreign_contact[X-None]
+   tests/test_t1_everyday_regression_406.py::test_11_cross_org_rep_cannot_create_task_on_foreign_contact
+   tests/test_t1_everyday_regression_406.py::test_12_merge_assessment_writes_nothing
+   tests/test_ai_reply_private_context.py::test_teammate_or_inbox_draft_never_reads_owner_private_data[assigned-A2]
+   tests/test_ai_reply_private_context.py::test_teammate_or_inbox_draft_never_reads_owner_private_data[inbox_unclaimed-None]
+   tests/test_merge_assessment.py
+   tests/test_security_hotfix4b.py::test_public_chat_widget_is_throttled_per_ip
+   tests/test_contact_ask_api.py::test_ask_grounded_with_citations_and_session

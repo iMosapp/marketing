@@ -1,6 +1,6 @@
 # Living Relationship Intelligence - Phase 1A acceptance journeys
 
-Generated Oct 10, 2026 21:48 UTC by tests/test_contact_intelligence.py (no model calls; the status engine, intent windows and rules-based next action are exercised directly).
+Generated Oct 17, 2026 01:41 UTC by tests/test_contact_intelligence.py (no model calls; the status engine, intent windows and rules-based next action are exercised directly).
 
 ## 1. Existing customer submits a new inquiry about a different product
 
@@ -20,7 +20,7 @@ CURRENT    vehicle.purchase         2024-01-14  Bought Jeep Wrangler
 CURRENT    vehicle.owned            2024-01-14  Owns Jeep Wrangler
 HISTORICAL vehicle.interest         2025-06-03  Considering a larger vehicle
 CURRENT    buying.status            2026-03-11  Not currently shopping: "We're not currently shopping, thanks though"
-CURRENT    vehicle.interest         2026-10-09  Website lead: asked about Ford F-150
+CURRENT    vehicle.interest         2026-10-16  Website lead: asked about Ford F-150
 ```
 **Retained history**: 1 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: Ford F-150 (active, via lead_form)
@@ -29,7 +29,7 @@ CURRENT    vehicle.interest         2026-10-09  Website lead: asked about Ford F
 - Why: Newest active buying signal, yesterday via lead form (active).
 - Opening: "Hi John, I saw your inquiry on the Ford F-150. Is this to replace your Jeep Wrangler, or an additional vehicle?"
 - History worth mentioning: Owns Jeep Wrangler (recorded Jan 2024)
-**Supporting evidence**: lead_form:6acab2a81e7449477d55230d @ 2026-10-09; sale:p1 @ 2024-01-14
+**Supporting evidence**: lead_form:6ad2d233bfd05bd70989f7dd @ 2026-10-16; sale:p1 @ 2024-01-14
 
 ## 2. Customer trades a previously owned vehicle
 
@@ -45,7 +45,7 @@ CURRENT    vehicle.interest         2026-10-09  Website lead: asked about Ford F
 ```
 CURRENT    vehicle.purchase         2021-05-02  Bought 2021 Honda Pilot
 HISTORICAL vehicle.owned            2021-05-02  Owns 2021 Honda Pilot
-CURRENT    vehicle.disposed         2026-10-08  2021 Honda Pilot: traded
+CURRENT    vehicle.disposed         2026-10-15  2021 Honda Pilot: traded
 ```
 **Retained history**: 1 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: none
@@ -67,8 +67,8 @@ CURRENT    vehicle.disposed         2026-10-08  2021 Honda Pilot: traded
 
 **Updated facts (all facts after the event)**
 ```
-SUPERSEDED contact.phone            2024-04-23  Phone: +18015550111
-CURRENT    contact.phone            2026-10-10  Phone: +18015550222
+SUPERSEDED contact.phone            2024-04-30  Phone: +18015550111
+CURRENT    contact.phone            2026-10-17  Phone: +18015550222
 ```
 **Retained history**: 1 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: none
@@ -90,10 +90,10 @@ CURRENT    contact.phone            2026-10-10  Phone: +18015550222
 
 **Updated facts (all facts after the event)**
 ```
-CURRENT    family.spouse            2026-10-10  Spouse: Mark
-CURRENT    family.kid               2026-10-10  Kid: Max (age 7, soccer)
-CURRENT    preference.interest      2026-10-10  Interest: camping
-CURRENT    work.employer            2026-10-10  Employer: Hill AFB
+CURRENT    family.spouse            2026-10-16  Spouse: Mark
+CURRENT    family.kid               2026-10-16  Kid: Max (age 7, soccer)
+CURRENT    preference.interest      2026-10-16  Interest: camping
+CURRENT    work.employer            2026-10-16  Employer: Hill AFB
 ```
 **Retained history**: 0 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: none
@@ -117,9 +117,9 @@ The 4Runner interest became history (declined). The not-shopping statement held 
 
 **Updated facts (all facts after the event)**
 ```
-HISTORICAL vehicle.interest         2026-09-20  Website lead: asked about Toyota 4Runner
-SUPERSEDED buying.status            2026-10-05  Not currently shopping: "Hey, we're not in the market anymore, we decided to hold off"
-CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Toyota Grand Highlander
+HISTORICAL vehicle.interest         2026-09-27  Website lead: asked about Toyota 4Runner
+SUPERSEDED buying.status            2026-10-12  Not currently shopping: "Hey, we're not in the market anymore, we decided to hold off"
+CURRENT    vehicle.interest         2026-10-17  Website lead: asked about Toyota Grand Highlander
 ```
 **Retained history**: 2 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: Toyota Grand Highlander (active, via lead_form)
@@ -127,7 +127,7 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Toyota
 - Topic: Toyota Grand Highlander
 - Why: Newest active buying signal, today via lead form (active).
 - Opening: "Hi Nora, I saw your inquiry on the Toyota Grand Highlander. What matters most to you in it?"
-**Supporting evidence**: lead_form:6acab2a81e7449477d552331 @ 2026-10-10
+**Supporting evidence**: lead_form:6ad2d233bfd05bd70989f801 @ 2026-10-17
 
 ## 6. Customer submits multiple inquiries about different products
 
@@ -141,8 +141,8 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Toyota
 
 **Updated facts (all facts after the event)**
 ```
-CURRENT    vehicle.interest         2026-10-07  Website lead: asked about Chevrolet Silverado 2500
-CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Chevrolet Tahoe
+CURRENT    vehicle.interest         2026-10-14  Website lead: asked about Chevrolet Silverado 2500
+CURRENT    vehicle.interest         2026-10-17  Website lead: asked about Chevrolet Tahoe
 ```
 **Retained history**: 0 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: Chevrolet Tahoe (active, via lead_form); also active: Chevrolet Silverado 2500
@@ -150,7 +150,7 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Chevro
 - Topic: Chevrolet Tahoe
 - Why: Newest active buying signal, today via lead form (active).
 - Opening: "Hi Mia, I saw your inquiry on the Chevrolet Tahoe. What matters most to you in it?"
-**Supporting evidence**: lead_form:6acab2a81e7449477d55233b @ 2026-10-10
+**Supporting evidence**: lead_form:6ad2d233bfd05bd70989f80b @ 2026-10-17
 
 ## 7. Historical information becomes relevant again
 
@@ -169,7 +169,7 @@ The 2025 towing question is surfaced as history worth mentioning; the Silverado 
 CURRENT    vehicle.purchase         2023-04-10  Bought 2023 Chevrolet Silverado 1500
 CURRENT    vehicle.owned            2023-04-10  Owns 2023 Chevrolet Silverado 1500
 SUPERSEDED vehicle.interest         2025-07-08  Asked about towing a camper with a Ford F-250
-CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Ford F-250 Super Duty
+CURRENT    vehicle.interest         2026-10-17  Website lead: asked about Ford F-250 Super Duty
 ```
 **Retained history**: 1 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: Ford F-250 Super Duty (active, via lead_form)
@@ -178,7 +178,7 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Ford F
 - Why: Newest active buying signal, today via lead form (active).
 - Opening: "Hi Hank, I saw your inquiry on the Ford F-250 Super Duty. Is this to replace your 2023 Chevrolet Silverado 1500, or an additional vehicle?"
 - History worth mentioning: Asked about Ford F-250 in Jul 2025 (replaced); Owns 2023 Chevrolet Silverado 1500 (recorded Apr 2023)
-**Supporting evidence**: lead_form:6acab2a81e7449477d552347 @ 2026-10-10; message:msg-250708 @ 2025-07-08; sale:p7 @ 2023-04-10
+**Supporting evidence**: lead_form:6ad2d233bfd05bd70989f817 @ 2026-10-17; message:msg-250708 @ 2025-07-08; sale:p7 @ 2023-04-10
 
 ## 8. Duplicate forms or webhook events arrive
 
@@ -192,7 +192,7 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Ford F
 
 **Updated facts (all facts after the event)**
 ```
-CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Kia Telluride
+CURRENT    vehicle.interest         2026-10-17  Website lead: asked about Kia Telluride
 ```
 **Retained history**: 0 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: Kia Telluride (active, via lead_form)
@@ -200,7 +200,7 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Kia Te
 - Topic: Kia Telluride
 - Why: Newest active buying signal, today via lead form (active).
 - Opening: "Hi Dup, I saw your inquiry on the Kia Telluride. What matters most to you in it?"
-**Supporting evidence**: lead_form:6acab2a81e7449477d55234d @ 2026-10-10
+**Supporting evidence**: lead_form:6ad2d233bfd05bd70989f81d @ 2026-10-17
 
 ## 9. Older events arrive after newer events
 
@@ -214,8 +214,8 @@ CURRENT    vehicle.interest         2026-10-10  Website lead: asked about Kia Te
 
 **Updated facts (all facts after the event)**
 ```
-HISTORICAL work.employer            2025-09-05  Employer: Zions Bank
-CURRENT    work.employer            2026-10-07  Employer: Intermountain Health
+HISTORICAL work.employer            2025-09-12  Employer: Zions Bank
+CURRENT    work.employer            2026-10-14  Employer: Intermountain Health
 ```
 **Retained history**: 1 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: none
@@ -239,8 +239,8 @@ Identity-like guesses wait for a human (proposed); the rep's 'Dana' stays curren
 
 **Updated facts (all facts after the event)**
 ```
-CURRENT    family.spouse            2026-09-10  Spouse: Dana
-CURRENT    preference.interest      2026-10-09  Interest: golf
+CURRENT    family.spouse            2026-09-17  Spouse: Dana
+CURRENT    preference.interest      2026-10-16  Interest: golf
 ```
 **Retained history**: 0 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: none
@@ -265,10 +265,10 @@ Only the F-150 interest closes (purchased); the Explorer opportunity stays activ
 
 **Updated facts (all facts after the event)**
 ```
-HISTORICAL vehicle.interest         2026-10-04  Website lead: asked about Ford F-150
-CURRENT    vehicle.interest         2026-10-06  Website lead: asked about Ford Explorer
-CURRENT    vehicle.purchase         2026-10-10  Bought 2026 Ford F-150 XLT
-CURRENT    vehicle.owned            2026-10-10  Owns 2026 Ford F-150 XLT
+HISTORICAL vehicle.interest         2026-10-11  Website lead: asked about Ford F-150
+CURRENT    vehicle.interest         2026-10-13  Website lead: asked about Ford Explorer
+CURRENT    vehicle.purchase         2026-10-17  Bought 2026 Ford F-150 XLT
+CURRENT    vehicle.owned            2026-10-17  Owns 2026 Ford F-150 XLT
 ```
 **Retained history**: 1 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: Ford Explorer (active, via lead_form)
@@ -277,7 +277,7 @@ CURRENT    vehicle.owned            2026-10-10  Owns 2026 Ford F-150 XLT
 - Why: Newest active buying signal, 4 days ago via lead form (active).
 - Opening: "Hi Sam, I saw your inquiry on the Ford Explorer. Is this to replace your 2026 Ford F-150 XLT, or an additional vehicle?"
 - History worth mentioning: Owns 2026 Ford F-150 XLT (recorded Oct 2026)
-**Supporting evidence**: lead_form:6acab2a81e7449477d552367 @ 2026-10-06; sale:p11 @ 2026-10-10
+**Supporting evidence**: lead_form:6ad2d233bfd05bd70989f837 @ 2026-10-13; sale:p11 @ 2026-10-17
 
 ## 12. Two customers share a phone number
 
@@ -316,8 +316,8 @@ The enrollment document is untouched: intelligence never changes campaign state 
 
 **Updated facts (all facts after the event)**
 ```
-CURRENT    vehicle.interest         2026-09-20  Website lead: asked about Ram 1500
-CURRENT    buying.signal            2026-10-10  Buying signal 8/10: wants to visit Saturday
+CURRENT    vehicle.interest         2026-09-27  Website lead: asked about Ram 1500
+CURRENT    buying.signal            2026-10-17  Buying signal 8/10: wants to visit Saturday
 ```
 **Retained history**: 0 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: wants to visit Saturday (active, via message); also active: Ram 1500
@@ -325,7 +325,7 @@ CURRENT    buying.signal            2026-10-10  Buying signal 8/10: wants to vis
 - Topic: wants to visit Saturday
 - Why: Newest active buying signal, today via message (active).
 - Opening: "Hi Cam, thanks for reaching out. Buying signal 8/10: wants to visit Saturday. What would be most helpful right now?"
-**Supporting evidence**: message:conv1 @ 2026-10-10
+**Supporting evidence**: message:conv1 @ 2026-10-17
 
 ## 14. Similar customer records exist in different dealership tenants
 
@@ -341,8 +341,8 @@ Both stores have a 'John Smith'. Store B's John gets his legacy spouse 'Ann' and
 
 **Updated facts (all facts after the event)**
 ```
-HISTORICAL vehicle.interest         2025-12-14  Interested in Honda Accord (legacy field)
-CURRENT    family.spouse            2026-10-09  Spouse: Ann
+HISTORICAL vehicle.interest         2025-12-21  Interested in Honda Accord (legacy field)
+CURRENT    family.spouse            2026-10-16  Spouse: Ann
 ```
 **Retained history**: 1 historical/superseded fact(s) kept, nothing deleted.
 **Active intent**: none

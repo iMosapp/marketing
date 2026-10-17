@@ -20,7 +20,6 @@ export const pathFor = (t: OpenTarget): string | null => {
   if (t.kind === 'home') return '/(tabs)/home';
   if (t.kind === 'inbox') return '/(tabs)/inbox';
   if (t.kind === 'duplicates') return '/contacts/duplicates';
-  if (t.kind === 'campaign' && t.id) return `/campaigns/${t.id}${t.rev ? `?rev=${encodeURIComponent(t.rev)}` : ''}`;
   if (t.kind === 'mentions') return `/memory-search?q=${encodeURIComponent(t.query || '')}${t.days ? `&days=${t.days}` : ''}`;
   if (t.kind === 'team_today') return `/team-today${t.rep ? `?rep=${encodeURIComponent(t.rep)}` : ''}`;
   return null;
@@ -48,7 +47,6 @@ export const LiveJessiProvider = ({ children }: { children: React.ReactNode }) =
     const current = pathRef.current || '';
     const same = path.split('?')[0].replace('/(tabs)', '') === current.replace('/(tabs)', '');
     if (!same) setTimeout(() => { try { router.push(path as any); } catch { /* route missing on this platform */ } }, 120);
-    else if (t.kind === 'campaign' && t.rev) { try { router.setParams({ rev: t.rev } as any); } catch { /* not on that screen */ } }   // reload the plan Jessi just changed
   }, [router]);
 
   const live = useLiveJessi({ onOpen });

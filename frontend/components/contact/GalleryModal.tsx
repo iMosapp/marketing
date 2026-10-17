@@ -212,7 +212,6 @@ export default function GalleryModal(props: any) {
                   { title: 'You Sent', types: ['message_out'] },
                   { title: 'Cards', types: ['congrats', 'birthday'] },
                   { title: 'Profile', types: ['profile', 'history'] },
-                  { title: 'Files', types: ['file'] },
                 ];
                 const renderTile = (photo: any) => {
                   const isProfile = photo.type === 'profile';

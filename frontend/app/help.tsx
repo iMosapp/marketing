@@ -29,7 +29,7 @@ interface HelpArticle {
 const HELP_ARTICLES: HelpArticle[] = [
   {
     id: 'morning-routine', icon: 'sunny-outline', title: 'What do I do every morning?', category: 'Home',
-    steps: ['Open the app. Home shows three cards and nothing else you need to think about', 'Do This Next: tap the gold button to do the one action already chosen for you, or Skip', 'Your 3 for Today: tap Text on each card (the message is already written), or Check if you handled it, or X to skip', 'Needs a Reply: tap any row with a red WAITING badge and answer the customer', 'Done. Share a photo with a contact any time with the gold + then Sold'],
+    steps: ['Open the app. Home shows three cards and nothing else you need to think about', 'Do This Next: tap the gold button to do the one action already chosen for you, or Skip', 'Your 3 for Today: tap Text on each card (the message is already written), or Check if you handled it, or X to skip', 'Needs a Reply: tap any row with a red WAITING badge and answer the customer', 'Done. Share a photo with a contact any time with the gold + then Share Photo'],
     tip: 'Finishing all three cards keeps your streak alive. Streaks are what managers look at first.',
   },
   {
@@ -59,7 +59,7 @@ const HELP_ARTICLES: HelpArticle[] = [
   },
   {
     id: 'log-sale', icon: 'trophy-outline', title: 'How do I log a sale?', category: 'Contacts',
-    steps: ['Gold + on Home > Sold', 'Pick the contact and what it is for, snap the photo', 'That one tap sets the anniversary, schedules the review ask and check-ins, and can post the photo to your Showcase'],
+    steps: ['Gold + on Home > Share Photo', 'Pick the contact and what it is for, snap the photo', 'That one tap sets the anniversary, schedules the review ask and check-ins, and can post the photo to your Showcase'],
     navPath: '/sold-quick',
   },
   {

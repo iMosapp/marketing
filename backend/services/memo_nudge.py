@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 DELAY_S = 90
 COOLDOWN_H = 24
 CARD_EVENTS = {"digital_card_shared", "vcf_shared", "card_qr_shown"}
-SKIP_SOURCES = {"phone_import", "phone_contacts", "csv", "dms", "crm", "api", "jessi"}   # jessi: the rep just dictated who they are
+SKIP_SOURCES = {"phone_import", "phone_contacts", "csv", "dms", "crm", "api"}
 
 TEXT = {
     "new_contact": (lambda first: (f"You just added {first}. Tell me about them",

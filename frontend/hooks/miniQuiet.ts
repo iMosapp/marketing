@@ -1,13 +1,12 @@
 // Realtime mini: what counts as quiet. Mini's caption text runs ahead of her voice and nothing arrives while the rep talks, so quiet is
 // measured from the provider's audio and turn events plus running lookups, not from captions. Quiet never hangs up early:
-// after the Voice Lab idle_close_s a calm "take your time" hint (only when it is set below AWAY_S), after AWAY_S a visible "Still there?"
-// countdown, after AWAY_WARN_S more a quiet end ('away'). Owner choice (Oct 16 2026): end after 20 s of true quiet, countdown from 12 s.
+// after the Voice Lab idle_close_s a calm "take your time" hint, after AWAY_S a visible warning, after AWAY_WARN_S more a quiet end ('away').
 export type Busy = 'jessi' | 'rep' | 'reply' | 'lookup';
 export type Quiet = { since: number; busy: Partial<Record<Busy, number>> };
 export type QuietLevel = '' | 'hint' | 'warning';
 
-export const AWAY_S = 12;
-export const AWAY_WARN_S = 8;
+export const AWAY_S = 120;
+export const AWAY_WARN_S = 30;
 // A busy flag whose stop event never came (lost event, model without output_audio_buffer events) stops counting after this long.
 const MAX_BUSY_MS: Record<Busy, number> = { jessi: 90000, rep: 60000, reply: 90000, lookup: 70000 };
 

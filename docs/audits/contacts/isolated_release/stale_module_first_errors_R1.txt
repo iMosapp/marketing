@@ -1,0 +1,41 @@
+test_add_contact_flow :: E   AssertionError: Login failed: {"detail":"Invalid credentials"}     assert 401 == 200 
+test_tasks_api :: E   AssertionError: Expected 200, got 401: {"detail":"Authentication required"}     assert 401 == 200 
+test_rbac :: E   AssertionError: Failed to get contacts: {"detail":"Authentication required"}     assert 401 == 200 
+test_lead_sources :: E   AssertionError: Login failed: {"detail":"Invalid credentials"}     assert 401 == 200 
+test_campaign_permissions_v2 :: E   AssertionError: Got 401: {"detail":"Authentication required"}     assert 401 == 200 
+test_voice_notes :: E   AssertionError: Expected 200, got 401: {"detail":"Authentication required"}     assert 401 == 200 
+test_contact_events :: E   assert 401 == 200 /app/backend/tests/test_contact_events.py:32: assert 401 == 200 
+test_data_isolation_fixes :: E   AssertionError: Failed to create contact: {"detail":"Authentication required"}     assert 401 == 200 
+test_contact_ownership_visibility :: E   AssertionError: Login failed: {"detail":"Invalid credentials"}     assert 401 == 200 
+test_shared_inboxes_api :: E   AssertionError: assert ('Sales' in []) /app/backend/tests/test_shared_inboxes_api.py:50: AssertionError: assert ('Sales' in []) 
+test_inbox_team_wiring_review :: E   AssertionError: expected 9 users, got 7: ['Activation Tester', 'Casey Consent', 'QA Hotfix Victim', 'QA Mms Rep', 'QA Hotfix4b Manager Two', 'QA Manager', 'QA Hotfix4     assert 7 == 9 
+test_chat_claim_system :: E   AssertionError: Expected 200, got 401: {"detail":"Authentication required"}     assert 401 == 200 
+test_store_independent_mms :: E   AssertionError: Expected 200, got 401: {"detail":"Authentication required"}     assert 401 == 200 
+test_lead_call_engine_ladder :: E   AssertionError: {"detail":"Lead source not found"}     assert 404 == 200 
+test_lead_queue_294 :: E   AssertionError: {'heat': 'red', 'mine_names': [], 'mine_oldest': None, 'mine_waiting': 0, ...}     assert 0 >= 1 
+test_tag_campaign_enrollment_immediate :: E   AssertionError: Failed to create campaign: {"detail":"Authentication required"}     assert 401 in [200, 201] 
+test_team_engagement :: E   AssertionError: Expected 200, got 401: {"detail":"Authentication required"}     assert 401 == 200 
+test_admin_hierarchy_role_setup :: E   AssertionError: Login failed: {"detail":"Invalid credentials"}     assert 401 == 200 
+test_contact_merge :: E   AssertionError: Expected 200, got 401     assert 401 == 200 
+test_contacts_delete :: E   AssertionError: Failed to create contact: {"detail":"Authentication required"}     assert 401 == 200 
+test_contact_find_or_create :: E   AssertionError: Expected 200, got 401: {"detail":"Authentication required"}     assert 401 == 200 
+test_task_contact_events_notifications :: E   AssertionError: Timeline fetch failed: 401     assert 401 == 200 
+test_auth_tasks :: E   assert 401 == 200 /app/backend/tests/test_auth_tasks.py:38: assert 401 == 200 
+test_jessie_api :: E   AssertionError: Login failed: {"detail":"Invalid credentials"}     assert 401 == 200 
+test_jessie_rbac_admin :: E   AssertionError: Failed: {"detail":"Authentication required"}     assert 401 == 200 
+test_contact_intel :: E   AssertionError: Expected 200, got 401     assert 401 == 200 
+test_inbox_photo_fixes :: E   AssertionError: Expected 200, got 401     assert 401 == 200 
+test_lead_flows_api_regression :: E   AssertionError: {"detail":"Lead source not found"}     assert 404 == 200 
+test_lead_claim_flow :: E   assert 401 == 200 /app/backend/tests/test_lead_claim_flow.py:95: assert 401 == 200 
+test_launch_compliance_api :: E   AssertionError: login locked_rep failed: 401 {"detail":"Invalid credentials"}     assert 401 == 200 
+test_security_hotfix3_adversarial :: E   AssertionError: (401, '{"detail":"Invalid credentials"}') 
+test_security_hotfix4c :: E   AssertionError: (403, '{"detail":"That store belongs to another organization"}')     assert (403 == 200) 
+test_live_actions :: E   AssertionError: ('Tagged Bud QA-Live, the record at (500) 555-0801 as Harley rider. Harley rider is now on 1 of your contacts.', ['QA LiveActions', 'Harley rider'])     assert (False) 
+test_photo_intel_iter399 :: E   pymongo.errors.WriteError: After applying the update, the (immutable) field '_id' was found to have been altered to _id: ObjectId('6ad2d35fbb31c3af475e8ea6'), full er E   AssertionError: assert 'org_001' == 'QA org_001' 
+test_files_voice_iter359 :: E   AssertionError: {'cap_s': 3600, 'engine': 'mini', 'left_s': 3600, 'reset_at': '2026-10-17T00:00:00-06:00', ...}     assert 3600 == 900 
+test_jwt_security :: E   AssertionError: Legacy mock_token_ should be accepted     assert None is not None 
+test_live_voice :: E   assert (500 == 200) /app/backend/tests/test_live_voice.py:338: assert (500 == 200) 
+test_lead_dedup :: no tests ran in 0.80s 
+test_webhook_contact_match :: no tests ran in 3.92s 
+test_personal_sms :: 8 skipped in 0.95s 
+test_shared_inboxes_bulk_transfer :: 15 skipped in 0.18s 

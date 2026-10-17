@@ -4,9 +4,6 @@ import { useThemeStore } from '../../store/themeStore';
 import { Card, GOLD, RED, tid } from '../voice-pilot/shared';
 import { Usage, Stat, money, pct, Segmented, Tile } from './shared';
 
-const SOURCE_LABELS: Record<string, string> = { mms: 'Texted by customers', upload: 'Uploaded by reps', scan_camera: 'Scan with Jessi · camera',
-  scan_library: 'Scan with Jessi · photo', scan_document: 'Scan with Jessi · file' };
-
 export const TotalsCard = ({ u }: { u: Usage }) => {
   const { colors } = useThemeStore();
   const t = u.totals;
@@ -75,7 +72,7 @@ export const BreakdownCard = ({ u }: { u: Usage }) => {
   const rows = view === 'orgs' ? u.organizations.map(r => ({ id: r.organization_id || 'none', label: r.name, sub: r.active_reps ? `${money(r.cost_per_active_rep)} per rep` : '', s: r }))
     : view === 'stores' ? u.stores.map(r => ({ id: r.store_id || 'none', label: r.name, sub: r.org_name, s: r }))
     : view === 'reps' ? u.reps.map(r => ({ id: r.user_id || 'none', label: r.name, sub: [r.org_name, r.store_name].filter(Boolean).join(' · '), s: r }))
-    : [...u.by_source.map(r => ({ id: r.source, label: SOURCE_LABELS[r.source] || r.source, sub: '', s: r })),
+    : [...u.by_source.map(r => ({ id: r.source, label: r.source === 'mms' ? 'Texted by customers' : r.source === 'upload' ? 'Uploaded by reps' : r.source, sub: '', s: r })),
        ...u.by_model.map(r => ({ id: r.model, label: `Model ${r.model}`, sub: '', s: r }))];
   return (
     <Card title="HIGHEST USAGE" testID="photo-intel-breakdown">

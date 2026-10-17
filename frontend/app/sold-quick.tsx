@@ -406,7 +406,7 @@ export default function SoldQuickScreen() {
         <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home' as any))} {...tid("sold-quick-back")}>
           <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={s.headerTitle} {...tid('share-photo-title')}>Sold</Text>
+        <Text style={s.headerTitle} {...tid('share-photo-title')}>Share Photo</Text>
         <View style={{ width: 28 }} />
       </View>
 

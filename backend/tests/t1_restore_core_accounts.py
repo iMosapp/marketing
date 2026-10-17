@@ -24,6 +24,8 @@ ACCOUNTS = [
 
 
 async def main():
+    from tests.safe_cleanup import require_preview_db
+    require_preview_db()   # preview only: refuses a non-local MongoDB
     db = get_db()
     now = datetime.now(timezone.utc)
     await db.stores.update_one({"_id": ObjectId(STORE)}, {"$set": {"name": "i'M On social", "is_active": True, "active": True, "t1_restored": True},

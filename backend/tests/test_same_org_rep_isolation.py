@@ -20,6 +20,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from routers.auth import hash_password  # noqa: E402
 from routers.database import get_db  # noqa: E402
+from tests.safe_cleanup import valid_ids, wipe_by_owner  # noqa: E402
 
 BASE = open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0].rstrip("/")
 PW = "SameOrgIso123!"
@@ -69,7 +70,7 @@ async def _seed():
         "personal_details": {"hobby": f"rides {SECRET}s"}, "tags": ["QA"], "created_at": now, "updated_at": now, **tag})).inserted_id)
     S["ca"] = ca
     S["cids"].append(ca)
-    S["memo"] = str((await db.voice_notes.insert_one({"contact_id": ca, "user_id": a, "recorded_by_id": a, "kind": "memo", "duration": 5,
+    S["memo"] = str((await db.voice_notes.insert_one({"contact_id": ca, "user_id": a, "recorded_by_id": a, "kind": "memo", "duration": 5, "audio_url": "qa/none.m4a",
                                                        "transcript": f"Met Walt at {EVENT}, three stores, rides {SECRET}s", "created_at": now})).inserted_id)
     S["file"] = str((await db.contact_files.insert_one({"contact_id": ca, "user_id": a, "name": "card.jpg", "kind": "image", "status": "ready", "path": "qa/none.jpg",
                                                          "title": f"{SECRET} rally flyer", "summary": f"{SECRET} rally", "text": SECRET, "sensitive": False, "created_at": now})).inserted_id)
@@ -85,17 +86,10 @@ async def _seed():
 
 async def _wipe():
     db = get_db()
-    # never let None / "" into $in: {"user_id": {"$in": [None]}} matches every document WITHOUT a user_id (users, stores, orgs, settings...)
-    ids = [i for i in list(S["uid"].values()) + [S.get("store")] if i and ObjectId.is_valid(str(i))]
-    cids = [c for c in S.get("cids", []) if c and ObjectId.is_valid(str(c))]
-    for coll in await db.list_collection_names():
-        if coll.startswith("system."):
-            continue
-        if ids:
-            await db[coll].delete_many({"user_id": {"$in": ids}})
-        if cids:
-            await db[coll].delete_many({"contact_id": {"$in": cids}})
-    await db.contacts.delete_many({"_id": {"$in": [ObjectId(c) for c in S["cids"]]}})
+    # never None / "" in $in: {"user_id": {"$in": [None]}} matches every document WITHOUT a user_id (users, stores, orgs, settings...)
+    ids, cids = valid_ids(list(S["uid"].values()) + [S.get("store")]), valid_ids(S.get("cids", []))
+    await wipe_by_owner(db, ids, cids)
+    await db.contacts.delete_many({"_id": {"$in": [ObjectId(c) for c in cids]}})
     await db.shared_inboxes.delete_many({"qa_same_org_iso": True})
     await db.users.delete_many({"qa_same_org_iso": True})
     await db.stores.delete_many({"qa_same_org_iso": True})

@@ -16,8 +16,7 @@ from pydantic import BaseModel
 
 from routers.database import get_db
 from routers.lead_sources import require_user
-from routers.voice_notes import MAX_CONVERSATION_SECONDS, _convert_webm_to_m4a, _ext_for, put_object
-from services.transcript_retry import fields_after_upload, retry_one, status_of, transcribe_now
+from routers.voice_notes import MAX_CONVERSATION_SECONDS, _convert_webm_to_m4a, _ext_for, _transcribe_audio, put_object
 from services.llm_models import CUSTOMER_TEXT_MODEL
 from utils.text_sanitize import no_em_dash
 
@@ -51,7 +50,7 @@ def _public(n: dict) -> dict:
             "title": n.get("title") or "", "duration": n.get("duration") or 0, "created_at": n["created_at"].isoformat() if n.get("created_at") else "",
             "contact_id": n.get("contact_id"), "contact_name": n.get("contact_name") or "", "kind": n.get("kind") or "memo",
             "attached_at": n["attached_at"].isoformat() if n.get("attached_at") else "", "tags": n.get("tags") or [],
-            "people": people, "suggested_contacts": suggested, "transcript_status": status_of(n),
+            "people": people, "suggested_contacts": suggested,
             # Names Jessi heard that match nobody in the book: the app offers to create them as new contacts.
             "new_people": [p for p in people if p.get("name") not in heard]}
 
@@ -66,7 +65,7 @@ def _clean_tags(raw) -> list:
 
 
 MEMO_PROJECTION = {"audio_url": 1, "transcript": 1, "summary": 1, "title": 1, "duration": 1, "created_at": 1, "contact_id": 1, "contact_name": 1,
-                   "people": 1, "suggested_contacts": 1, "tags": 1, "kind": 1, "attached_at": 1, "unattached": 1, "transcript_status": 1, "audio_path": 1}
+                   "people": 1, "suggested_contacts": 1, "tags": 1, "kind": 1, "attached_at": 1, "unattached": 1}
 MEMO_OWN = {"$or": [{"unattached": True}, {"attached_at": {"$exists": True}}]}  # notes that came through the memo flow (not notes recorded on a contact directly)
 
 
@@ -179,13 +178,13 @@ async def upload_memo_chunk(user_id: str, chunk: AudioChunk, request: Request):
         logger.error(f"[VoiceMemo] upload failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to store audio")
 
-    transcript, error = await transcribe_now(audio_bytes, filename, "memo")
+    transcript = await _transcribe_audio(audio_bytes, filename, "memo")
     meta = await _title_and_summary(transcript)
     suggested = await match_people(db, user_id, meta["people"])
     now = datetime.now(timezone.utc)
     doc = {"contact_id": None, "unattached": True, "user_id": user_id, "audio_url": f"/api/images/{stored_path}", "audio_path": stored_path,
            "transcript": transcript, "summary": meta["summary"], "title": meta["title"], "people": meta["people"], "suggested_contacts": suggested,
-           "kind": "memo", "duration": round(chunk.duration, 1), "created_at": now, "source": "app", "tags": [], **fields_after_upload(transcript, error, now, True)}
+           "kind": "memo", "duration": round(chunk.duration, 1), "created_at": now, "source": "app", "tags": []}
     res = await db.voice_notes.insert_one(doc)
     return {**_public({**doc, "_id": res.inserted_id}), "success": True, "received": chunk.total, "total": chunk.total}
 
@@ -261,21 +260,6 @@ async def delete_memo(user_id: str, note_id: str, request: Request):
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Memo not found")
     return {"ok": True}
-
-
-@router.post("/{user_id}/{note_id}/retry-transcript")
-async def retry_memo_transcript(user_id: str, note_id: str, request: Request):
-    """Retry button on a memo Jessi could not transcribe: one more go from the saved audio, right now."""
-    _me(request, user_id)
-    db = get_db()
-    if not ObjectId.is_valid(note_id):
-        raise HTTPException(status_code=404, detail="Memo not found")
-    note = await db.voice_notes.find_one({"_id": ObjectId(note_id), "user_id": user_id, **MEMO_OWN})
-    if not note:
-        raise HTTPException(status_code=404, detail="Memo not found")
-    if status_of(note) != "done":
-        await retry_one(db, note, manual=True)
-    return _public(await db.voice_notes.find_one({"_id": note["_id"]}, MEMO_PROJECTION))
 
 
 @router.post("/{user_id}/{note_id}/attach")

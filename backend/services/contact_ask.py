@@ -192,8 +192,6 @@ async def build_record(db, contact: dict, tz: Optional[str] = None, caller_id: O
     profile = [f"CUSTOMER: {contact.get('name') or first} | phone {contact.get('phone') or 'n/a'} | email {contact.get('email') or 'n/a'} | tags {', '.join(contact.get('tags') or []) or 'none'} | added {_fmt(contact.get('created_at'), tz)}"]
     if isinstance(pd, dict) and pd:
         profile.append("PERSONAL DETAILS ON FILE: " + "; ".join(f"{k.replace('_', ' ')}: {v}" for k, v in pd.items() if v and isinstance(v, (str, int, float)))[:1500])
-    if (contact.get("how_we_met") or {}).get("summary"):
-        profile.append(f"HOW WE MET: {contact['how_we_met']['summary']}")
     if contact.get("notes"):
         profile.append(f"NOTES: {str(contact['notes'])[:1500]}")
     if intel and intel.get("summary"):
@@ -287,8 +285,7 @@ async def ask(db, user: dict, contact: dict, question: str, session: Optional[di
     if not api_key:
         raise RuntimeError("EMERGENT_LLM_KEY not set")
     from emergentintegrations.llm.chat import LlmChat, UserMessage
-    from routers.user_schedule import resolve_user_tz
-    record = await build_record(db, contact, tz=await resolve_user_tz(str(user.get("_id") or "")), caller_id=str(user.get("_id") or ""))
+    record = await build_record(db, contact, tz=user.get("timezone"), caller_id=str(user.get("_id") or ""))
     rep_first = user.get("first_name") or (user.get("name") or "there").split(" ")[0]
     history = ""
     if session and session.get("messages"):

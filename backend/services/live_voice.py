@@ -74,7 +74,7 @@ RT_VOICES = [
 ]
 RT_VOICE_IDS = {v["id"] for v in RT_VOICES}
 DELEGATE_TOOL = {"type": "function", "name": "delegate",
-                 "description": "Hand the rep's request to the I'm On Social backend: people, history, new contacts, texting, reminders, notes, calls, sales, appointments, screens, duplicates, numbers, app help, and every yes/no to something read back. Returns exactly what to say.",
+                 "description": "Hand the rep's request to the I'm On Social backend: people, history, texting, reminders, notes, calls, sales, appointments, screens, duplicates, numbers, app help, and every yes/no to something read back. Returns exactly what to say.",
                  "parameters": {"type": "object", "properties": {"request": {"type": "string", "description": "What the rep wants, in one plain sentence. Keep names, spellings, numbers, dates and the exact wording of any text."}}, "required": ["request"]}}
 REALTIME_RULES = ("\n\nTOOL: you have one function, delegate(request). Every case under 'Delegate to the backend when' means: call delegate with what the rep wants in one plain sentence "
                   "(keep names, spellings, numbers, dates and the exact wording of any text). If it will take a moment, two words at most ('one sec'), then call it. "
@@ -153,11 +153,8 @@ PACING = {1: "slow and unhurried", 2: "measured", 3: "a natural pace", 4: "quick
 PLAYFUL = {1: "all business", 2: "mostly serious", 3: "lightly playful when it fits", 4: "playful", 5: "very playful, quick with a one-liner"}
 BREVITY = {1: "take your time and explain fully", 2: "a few sentences", 3: "two or three short sentences", 4: "one or two short sentences, then let them talk", 5: "as few words as possible"}
 TOOLS = ("who_today", "find_person", "recall_person", "send_text", "set_reminder", "draft_message", "confirm", "cancel", "answer", "open_screen", "find_duplicates", "merge_duplicates", "next_stop", "find_mentions", "more_mentions", "team_today", "nudge_rep",
-         "call_person", "add_note", "tag_person", "mark_sold", "finish_task", "update_contact", "book_appointment", "enroll_campaign", "send_card", "create_contact", "enroll_group", "build_campaign", "edit_campaign")
-PENDING_CANCEL = {"merge": "Nothing was merged.", "sold": "Nothing was marked sold.", "appointment": "Nothing was booked.", "enroll": "Nobody was enrolled.", "enroll_group": "Nobody was enrolled.", "campaign_brief": "No campaign was built.", "send_text": "Nothing was sent.",
-                  "contact": "Nothing was saved.", "reminder": "No reminder was set."}
-CHAT_WORDS = (("It is on your screen and switched off.", "It is linked below, switched off."), ("It is updated on your screen.", "Tap below to see it."), ("They are up on your screen.", "Tap below to open them."), ("is up on your screen.", "is linked below."), ("are up on your screen.", "are linked below."),
-              ("It is up now.", "Tap below to open it."), ("Home is up.", "Tap below for Home."), ("Your inbox is up.", "Tap below for your inbox."))
+         "call_person", "add_note", "tag_person", "mark_sold", "finish_task", "update_contact", "book_appointment", "enroll_campaign", "send_card")
+PENDING_CANCEL = {"merge": "Nothing was merged.", "sold": "Nothing was marked sold.", "appointment": "Nothing was booked.", "enroll": "Nobody was enrolled.", "send_text": "Nothing was sent."}
 SCREENS = {"contact": ("contact", "record", "profile", "person", "page", "card"), "thread": ("thread", "conversation", "texts", "messages", "text", "chat"),
            "tasks": ("tasks", "task", "reminders", "touchpoints", "to-dos", "todos"), "home": ("home", "today"), "inbox": ("inbox",)}
 
@@ -181,11 +178,6 @@ async def _tz(user: dict):
         return ZoneInfo(await resolve_user_tz(str(user["_id"])))
     except Exception:
         return timezone.utc
-
-
-async def _tz_name(user: Optional[dict]) -> Optional[str]:
-    """The rep's resolved timezone name for build_record, so times are read back in their own time."""
-    return getattr(await _tz(user), "key", None) if user and user.get("_id") else None
 
 
 def configured() -> Optional[str]:
@@ -314,14 +306,12 @@ def assistant_instructions(cfg: dict, user: dict, language: str = "English", con
             "- Reminders done or snoozed: finish a reminder ('done with Bud's reminder') or push it ('snooze it till Friday').\n"
             "- Customer facts: birthday, anniversary, email, phone, the vehicle they want or drive, job, employer, family and hobbies.\n"
             "- Appointment: book an appointment, test drive or delivery. Read back after the backend confirms the day and time; it books only after the rep says yes, then offer to text the customer the confirmation.\n"
-            "- Campaign: enroll a customer in one of the rep's campaigns, after a yes, or everyone they met at one event.\n"
-            "- Build a campaign: the backend builds a NEW campaign (drip, nurture, follow-up plan) with the rep. It asks up to three quick questions (who it is for, how long, tone), drafts every touch, saves it switched off and opens it on the rep's screen to edit. Spoken changes ('make text 2 shorter', 'add a call on day 10') edit that draft. Never say you cannot create campaigns.\n"
-            "- Card and reviews: text the rep's digital business card or review link to a customer, read back first like any text.\n"
-            "- New contact: add a person the rep just met ('add Mike Peterson, met him at NADA, 602 555 0148'). The backend reads the details back, warns about a likely duplicate, saves only after the rep says yes, then offers the follow-up reminder.\n\n"
+            "- Campaign: enroll a customer in one of the rep's campaigns, after a yes.\n"
+            "- Card and reviews: text the rep's digital business card or review link to a customer, read back first like any text.\n\n"
             "Delegate to the backend when:\n"
             "- The rep names a person or asks who they should talk to or follow up with.\n"
             "- The rep asks to text, remind, draft, look something up, or asks about their numbers or how the app works.\n"
-            "- The rep asks to call someone, add a new contact, save a note, tag or untag someone, mark a sale, finish or snooze a reminder, save a fact about a customer, book an appointment, enroll someone in a campaign, build or change a campaign, or send their card or review link.\n"
+            "- The rep asks to call someone, save a note, tag or untag someone, mark a sale, finish or snooze a reminder, save a fact about a customer, book an appointment, enroll someone in a campaign, or send their card or review link.\n"
             "- The rep asks to open, pull up, show or go to something on the screen.\n"
             "- The rep asks about duplicates, double records, or says 'merge them' / 'combine them' / 'clean that up' after you mentioned two records for one name.\n"
             "- The rep is trying to remember WHO said or asked about something ('someone wanted a 20k Model 3, who was that').\n"
@@ -367,11 +357,11 @@ async def focus_contact(db, user: dict, contact_id: Optional[str]) -> Optional[d
     return c if await contact_visible(db, uid, uid, str(c["_id"])) else None
 
 
-async def focus_brief(db, contact: dict, user: Optional[dict] = None) -> str:
+async def focus_brief(db, contact: dict) -> str:
     """A few plain lines about the focus contact so GPT-Live can follow the conversation; facts still come from the backend."""
     from services.contact_ask import build_record
     try:
-        rec = await build_record(db, contact, tz=await _tz_name(user))
+        rec = await build_record(db, contact)
     except Exception:
         rec = {}
     bits = [f"Contact in focus: {_first_last(contact)}."]
@@ -516,7 +506,7 @@ async def create_session(db, user: dict, mode: str, sdp: str, overrides: Optiona
             instructions += WALKTHROUGH_RULES
     tz = await _tz(user)
     now_local = _now().astimezone(tz).strftime("%A %B %d, %Y, %-I:%M %p")
-    where = f"Their app is open on {_first_last(contact)}'s conversation. {await focus_brief(db, contact, user)}" if contact else "Their app is open on the Home screen."
+    where = f"Their app is open on {_first_last(contact)}'s conversation. {await focus_brief(db, contact)}" if contact else "Their app is open on the Home screen."
     context = f"Right now it is {now_local}." if (shop or advisor_convo) else f"Right now it is {now_local} for the rep. {where}"
     if team is not None:
         context += " TEAM DIGEST already pulled; the rep is a manager and asked for it. They can say a rep's name for that rep's full list or ask to nudge a rep about a customer."
@@ -774,7 +764,7 @@ You read the live transcript (it can contain mishearings, half sentences and lat
 Tools:
 - who_today: the rep asks who to contact / follow up with / talk to today. args: {}
 - find_person: the rep mentions a person but you only need to confirm who they mean or list matches. args: {"name": "..."}
-- recall_person: the rep wants to know about someone (history, what they bought, last conversation, anything about them): "tell me about Mike", "what do I know about Sarah Lee", "what did we talk about with Bud", "remind me who Tom is". args: {"name": "..."}
+- recall_person: the rep wants to know about someone (history, what they bought, last conversation, anything about them). args: {"name": "..."}
 - send_text: the rep wants to text someone. args: {"name": "...", "message": "<the exact wording if the rep gave it, else empty>", "intent": "<what the text should accomplish>"}
 - set_reminder: the rep wants a reminder/task. args: {"name": "<person or empty>", "when_iso": "<ISO 8601 datetime in the rep's timezone, resolve words like Friday/tomorrow 3pm from NOW>", "note": "<what to do>", "action": "call|text|email|manual"}
 - draft_message: the rep wants wording to send themselves. args: {"name": "...", "intent": "..."}
@@ -797,15 +787,11 @@ Tools:
 - update_contact: a fact to save on a person's record: "Bud's birthday is March 3rd", "Sarah's anniversary is June 10th 2015", "Mike's email is mike at gmail dot com", "his new number is 801 555 0142", "Bud is looking at a Silverado now", "Sarah drives a 2019 Tahoe", "Mike is a firefighter", "he works at Intermountain", "his wife is Amy and the kids are Max and Ava", "Bud loves fly fishing". args: {"name": "...", "field": "birthday|anniversary|email|phone|vehicle_interest|vehicle|occupation|employer|address|personal", "value": "<dates as YYYY-MM-DD, or MM-DD when no year was said; emails and phones cleaned up; otherwise the fact in a few words>", "key": "<personal only: family|spouse|kids|hobby|pets|work|other>"}
 - book_appointment: an appointment, meeting, test drive or delivery with a person: "set Bud for Saturday at 10", "book Sarah for a test drive Thursday at 2", "put Mike's delivery on the calendar for the 20th at noon". args: {"name": "...", "when_iso": "<ISO datetime in the rep's local time, resolved from NOW>", "duration_min": <number, default 30>, "title": "<e.g. Test drive with Sarah, Delivery for Mike; empty for a plain appointment>", "location": "<if said, else empty>"}
 - enroll_campaign: put a person on a campaign / plan / drip: "put Bud on the sold quarterly plan", "enroll Sarah in the birthday campaign", "start Mike on the new lead follow-up". args: {"name": "...", "campaign": "<the campaign as spoken>"}
-- enroll_group: put EVERYONE the rep met at one event or place on a campaign: "put everyone I met at NADA on the Trade-in plan", "add the golf tournament people to my VIP drip", "start all my Vegas show contacts on the new lead follow-up". args: {"event": "<where they met, as spoken: NADA, the golf tournament, Vegas>", "campaign": "<the campaign as spoken>"}. One named person is enroll_campaign, never this.
-- build_campaign: the rep wants a NEW campaign, drip, nurture or follow-up plan built ("help me put together a nurturing campaign for anyone I tag Hot Opportunity", "build me a 3 week drip for new leads", "set up a follow-up plan for after they buy"). args: {"goal": "<what the plan is for>", "audience": "<who it is for, as said>", "trigger_tag": "<the tag that should start it, when the rep named one: Hot Opportunity>", "length": "<how long / how many touches, when said>", "tone": "<tone, when said>", "channels": "<texts, emails, calls, when said>", "go": <true when the rep says to just build it now / you pick / sounds good>}. Fill only what the rep actually said (across the transcript); leave the rest empty. While PENDING ACTION is a campaign_brief, the rep's reply answers Jessi's last question: call build_campaign again with that answer in the matching field (who it is for -> audience or trigger_tag, how long -> length, tone -> tone); "you pick", "whatever", "yes", "sounds good" -> go true. A no / never mind is cancel.
-- edit_campaign: change a campaign Jessi just built or one the rep names ("make text 2 shorter", "add a call on day 10", "make it more casual", "drop the email", "move the last text to day 30", "rename it Hot Lead Nurture"). args: {"change": "<the change exactly as said>", "campaign": "<campaign name if the rep named one, else empty>"}. Never use enroll_campaign or answer for these.
 - send_card: text the rep's digital business card or review link to a person: "send Bud my card", "text Sarah my info", "ask Mike for a review", "send her the review link". args: {"name": "...", "what": "card|review"}
-- create_contact: the rep wants to ADD a NEW person to their contacts: "add Mike Peterson, I met him at NADA, his number is 602 555 0148", "new contact, Sarah Lee from Acme", "save this guy: Tom Reyes, rides Harleys". args: {"first_name": "...", "last_name": "...", "phone": "<digits as said, else empty>", "email": "<cleaned up, else empty>", "company": "<their company or dealership, else empty>", "met_at": "<the event or occasion where they met (NADA, the golf tournament, walked into the store), else empty>", "met_place": "<city or venue if said, else empty>", "met_date": "<YYYY-MM-DD when they met; today when they say just met / today; else empty>", "note": "<everything else the rep said about the person, in the rep's words>", "follow_up_iso": "<ISO datetime in the rep's local time when the rep says they will or want to follow up, call, text, check in or be reminded about this person (next Tuesday -> that date at 09:00; Friday at 2 -> that Friday 14:00; a bare weekday is the next one AFTER today, so 'Friday' said on a Friday is 7 days out), resolved from NOW, else empty>", "follow_up_note": "<what that follow-up is about (his trade, pricing), else empty>"}. Only what the rep actually said: never invent a phone, email, company or date. While a new contact is PENDING and the rep corrects or adds a detail ("his number is actually...", "last name is Petersen with an e", "he works at Valley Motors"), call create_contact again with ALL the details so far plus the change.
 
 Every tool that takes a "name" also takes "hint": how the rep pointed at ONE of several records Jessi listed, verbatim and short: "the first one", "the second one", "the other one", "the one with the Tahoe", "ending in 0100", "the Berry one", "the newer one". Empty when the rep did not pick.
 
-Rules: "pull up Mike" or "show me Sarah" means open_screen (they want to see it); "tell me about Mike" or "what did Sarah buy" means recall_person (they want to hear it); "call Mike" is call_person, never open_screen. A PENDING action (a text, a sale, an appointment, an enrollment, a merge, a new contact, a follow-up reminder Jessi offered) waits for confirm or cancel: a bare yes / do it / go ahead is confirm, no / hold on / never mind is cancel; anything else the rep asks instead is a new tool and the pending action is dropped. Right after Jessi booked an appointment and offered to text the confirmation, a yes means send_text for that person with intent "confirm the appointment (day, time, place)". If a person's name is unclear, still pick the tool with your best reading of the name. Names: pass first AND last name whenever the rep said both. If the rep spells a name ("T-O-D", "J E S S I E", "B as in boy, E, R..."), args.name MUST use exactly those letters for that part (J E S S I E -> Jessie, never Jesse) plus the other name part (e.g. "Jessie Walters"). If Jessi just listed several people and the rep picks one ("the second one", "the one with the Tahoe", "Berry", "not Snow, the other Todd"), args.name is that person's full name exactly as listed AND args.hint is how they picked. If Jessi said she used one of several records and the rep says "the other one" / "no, the other Tod", keep the same tool and name and set hint to "the other one". If the rep says the last match was the wrong person, do not reuse it: use the corrected name they gave. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. During a DAY WALKTHROUGH the focus contact is the current stop, so "draft it", "text him", "pull her up", "what did he buy" all point at that person; a bare "yes" right after Jessi offered to draft or pull someone up means do that (send_text / draft_message / open_screen for the focus contact), not confirm, unless an action is PENDING. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
+Rules: "pull up Mike" or "show me Sarah" means open_screen (they want to see it); "tell me about Mike" or "what did Sarah buy" means recall_person (they want to hear it); "call Mike" is call_person, never open_screen. A PENDING action (a text, a sale, an appointment, an enrollment, a merge) waits for confirm or cancel: a bare yes / do it / go ahead is confirm, no / hold on / never mind is cancel; anything else the rep asks instead is a new tool and the pending action is dropped. Right after Jessi booked an appointment and offered to text the confirmation, a yes means send_text for that person with intent "confirm the appointment (day, time, place)". If a person's name is unclear, still pick the tool with your best reading of the name. Names: pass first AND last name whenever the rep said both. If the rep spells a name ("T-O-D", "J E S S I E", "B as in boy, E, R..."), args.name MUST use exactly those letters for that part (J E S S I E -> Jessie, never Jesse) plus the other name part (e.g. "Jessie Walters"). If Jessi just listed several people and the rep picks one ("the second one", "the one with the Tahoe", "Berry", "not Snow, the other Todd"), args.name is that person's full name exactly as listed AND args.hint is how they picked. If Jessi said she used one of several records and the rep says "the other one" / "no, the other Tod", keep the same tool and name and set hint to "the other one". If the rep says the last match was the wrong person, do not reuse it: use the corrected name they gave. When a FOCUS CONTACT is given and the rep says him/her/them/this customer/this person or gives no name at all, args.name is the focus contact's full name. During a DAY WALKTHROUGH the focus contact is the current stop, so "draft it", "text him", "pull her up", "what did he buy" all point at that person; a bare "yes" right after Jessi offered to draft or pull someone up means do that (send_text / draft_message / open_screen for the focus contact), not confirm, unless an action is PENDING. Never invent people or data. Return ONLY JSON: {"tool": "...", "args": {...}}"""
 
 
 def _first_last(c: dict) -> str:
@@ -1097,7 +1083,7 @@ async def _recall(db, user: dict, name: str, focus: Optional[dict] = None, hint:
         return err, None
     from services.contact_ask import build_record
     from services.scripts import _llm
-    rec = await build_record(db, contact, tz=await _tz_name(user))
+    rec = await build_record(db, contact)
     timeline = rec.get("timeline") or ""
     facts = await _llm("You turn a CRM record into what a sharp assistant would SAY out loud to the salesperson about this person. At most 90 words, plain sentences, most useful first: what they bought or want, when you last talked and about what, anything personal worth remembering, open tasks. No headings, no markdown, no phone numbers.",
                        f"PROFILE:\n{rec.get('profile', '')[:4000]}\n\nRECENT TIMELINE (newest last):\n{timeline[-6000:]}", timeout=40)
@@ -1139,7 +1125,7 @@ async def _draft(db, user: dict, contact: dict, intent: str, wording: str = "") 
     from services.contact_ask import build_record
     from services.scripts import _llm
     from services.llm_models import CUSTOMER_TEXT_MODEL
-    rec = await build_record(db, contact, tz=await _tz_name(user))
+    rec = await build_record(db, contact)
     rep_first = (user.get("name") or "").split(" ")[0]
     text = (await _llm(f"Write ONE text message from {rep_first} (a salesperson) to their customer {contact.get('first_name')}. Under 240 characters, sounds human, first name only, no emojis, no signature, no em dashes, references something real from the record when it helps. Output only the message.",
                        f"Goal: {intent or 'friendly check-in'}\n\nPROFILE:\n{rec.get('profile', '')[:2500]}\n\nRECENT:\n{(rec.get('timeline') or '')[-2500:]}", timeout=40, model=CUSTOMER_TEXT_MODEL)).strip().strip('"')[:400]
@@ -1448,20 +1434,12 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
     tz_line = f"NOW (rep's local time, {getattr(tz, 'key', 'UTC')}): {_now().astimezone(tz).strftime('%A %Y-%m-%d %H:%M')}. Return when_iso in this local time without a Z suffix."
     plan = {}
     try:
-        plan = await _llm_json(BRAIN_SYSTEM, f"{'CHANNEL: typed chat (the rep typed this; there is no live voice line)' + chr(10) if live.get('mode') == 'chat' else ''}{tz_line}\n{focus_txt}\n{_walkthrough_line(live)}\n{_mentions_line(live)}\n{_team_line(user, live)}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
+        plan = await _llm_json(BRAIN_SYSTEM, f"{tz_line}\n{focus_txt}\n{_walkthrough_line(live)}\n{_mentions_line(live)}\n{_team_line(user, live)}\nPENDING ACTION: {json.dumps({k: pending[k] for k in ('type', 'name', 'content') if k in pending}) if pending else 'none'}\n\nTRANSCRIPT (oldest first):\n{convo}\n\nDecide the one tool call.", timeout=30)
     except Exception as e:
         logger.warning(f"[Live] brain plan failed: {e}")
     tool = plan.get("tool") if plan.get("tool") in TOOLS else "answer"
     if tool == "next_stop" and live.get("agenda") is None:
         tool = "answer"
-    chat = live.get("mode") == "chat"
-    if chat and tool == "answer" and not pending and re.fullmatch(r"(?i)\W*(no|nope|nah|never ?mind|cancel( that| it)?|forget (it|that)|stop|hold on)\W*", _last_rep_text(transcript) or ""):
-        tool = "cancel"
-    if chat and tool == "answer" and not pending and re.fullmatch(r"(?i)\W*(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|sounds good|please do)\W*", _last_rep_text(transcript) or ""):
-        tool = "confirm"   # a bare yes with nothing waiting is never handed to the chat model (it would claim something was done)
-    if chat and tool == "answer":   # typed Jessi answers app questions and small talk with her own chat model
-        return {"tool": "answer", "content": "", "kind": "commentary", "pending": bool(pending), "open": None, "ms": int((_now() - t0).total_seconds() * 1000)}
-    live["_said"] = _last_rep_text(transcript)
     args = plan.get("args") if isinstance(plan.get("args"), dict) else {}
     result, new_pending, kind, opened = "", pending, "commentary", None
     try:
@@ -1505,17 +1483,11 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             elif pending and pending.get("type") == "merge":
                 result, opened = await _merge_now(db, user, pending)
                 new_pending = None
-            elif pending and pending.get("type") in ("sold", "appointment", "enroll", "reminder", "enroll_group"):
+            elif pending and pending.get("type") in ("sold", "appointment", "enroll"):
                 from services import live_actions as la
-                runner = {"sold": la.sold_now, "appointment": la.appointment_now, "enroll": la.enroll_now, "reminder": la.reminder_now, "enroll_group": la.enroll_group_now}[pending["type"]]
+                runner = {"sold": la.sold_now, "appointment": la.appointment_now, "enroll": la.enroll_now}[pending["type"]]
                 result, opened = await runner(db, user, pending)
                 new_pending = None
-            elif pending and pending.get("type") == "contact":
-                from services import live_actions as la
-                result, opened, new_pending = await la.contact_now(db, user, pending)
-            elif pending and pending.get("type") == "campaign_brief":   # "yes / sounds good" to a build question: build with what we have
-                from services import live_actions as la
-                result, new_pending, opened = await la.build_campaign(db, user, {"go": True}, focus, live)
             else:
                 result = "There is nothing waiting for a yes right now. What would you like me to do?"
         elif tool == "next_stop":
@@ -1544,11 +1516,7 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
             from services import live_actions as la
             result, opened = await getattr(la, tool)(db, user, args, focus, live)
             new_pending = None
-        elif tool == "edit_campaign":
-            from services import live_actions as la
-            result, opened = await la.edit_campaign(db, user, args, focus, live)
-            new_pending = None
-        elif tool in ("mark_sold", "book_appointment", "enroll_campaign", "send_card", "create_contact", "enroll_group", "build_campaign"):
+        elif tool in ("mark_sold", "book_appointment", "enroll_campaign", "send_card"):
             from services import live_actions as la
             result, new_pending, opened = await getattr(la, tool)(db, user, args, focus, live)
         else:
@@ -1557,10 +1525,6 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
         logger.exception(f"[Live] tool {tool} failed: {e}")
         result = "Something went wrong on my side pulling that up. Try me again in a second."
     result = no_em_dash((result or "").strip()[:1400])
-    live.pop("_said", None)
-    if chat:
-        for spoken_words, typed in CHAT_WORDS:
-            result = result.replace(spoken_words, typed)
     ms = int((_now() - t0).total_seconds() * 1000)
     sets = {"pending": new_pending, "updated_at": _now()}
     if live.get("last_task_id"):
@@ -1573,30 +1537,9 @@ async def delegate(db, live: dict, user: dict, transcript: list, delegation_id: 
     return {"tool": tool, "content": result, "kind": kind, "pending": bool(new_pending), "open": opened, "ms": ms}
 
 
-# ── typed Jessi ───────────────────────────────────────────────────────────────
-CHAT_IDLE = timedelta(hours=2)
-
-
-async def chat_session(db, user: dict, contact_id: str = "") -> dict:
-    """Typed Jessi (the Jessi screen and the floating chat) runs on this same brain: one 'chat' session per rep, kept for 2 idle hours,
-    so pending yes/no and 'the second one' carry across messages exactly like on the voice line. Never metered or billed."""
-    uid, now = str(user["_id"]), _now()
-    live = await db[COLL].find_one({"user_id": uid, "mode": "chat", "updated_at": {"$gte": now - CHAT_IDLE}}, sort=[("updated_at", -1)])
-    if not live:
-        live = {"live_id": f"chat_{uuid.uuid4().hex[:12]}", "user_id": uid, "user_name": user.get("name") or "", "mode": "chat", "engine": "chat", "status": "chat",
-                "started_at": now, "updated_at": now, "pending": None, "contact_id": None, "contact_name": "", "delegations": [], "agenda": None}
-        live["_id"] = (await db[COLL].insert_one(live)).inserted_id
-    if contact_id and ObjectId.is_valid(str(contact_id)) and contact_id != live.get("contact_id"):
-        c = await focus_contact(db, user, contact_id)
-        if c:
-            live.update(contact_id=str(c["_id"]), contact_name=_first_last(c))
-            await db[COLL].update_one({"_id": live["_id"]}, {"$set": {"contact_id": live["contact_id"], "contact_name": live["contact_name"]}})
-    return live
-
-
 # ── admin views ───────────────────────────────────────────────────────────────
 async def list_sessions(db, limit: int = 30, user_id: Optional[str] = None) -> list:
-    q = {"user_id": user_id, "mode": {"$ne": "chat"}} if user_id else {"mode": {"$ne": "chat"}}
+    q = {"user_id": user_id} if user_id else {}
     rows = await db[COLL].find(q).sort("started_at", -1).limit(min(200, max(1, limit))).to_list(200)
     return [serialize(s) for s in rows]
 
@@ -1609,7 +1552,7 @@ async def stats(db) -> dict:
         cost = 0.0
         reps = set()
         by_engine = {"live": {"sessions": 0, "minutes": 0.0, "cost_usd": 0.0}, "mini": {"sessions": 0, "minutes": 0.0, "cost_usd": 0.0}}
-        async for s in db[COLL].find({"started_at": {"$gte": since}, "mode": {"$ne": "chat"}}, {"seconds": 1, "user_id": 1, "engine": 1, "cost_usd": 1, "status": 1, "tokens": 1}):
+        async for s in db[COLL].find({"started_at": {"$gte": since}}, {"seconds": 1, "user_id": 1, "engine": 1, "cost_usd": 1, "status": 1, "tokens": 1}):
             sec = int(s.get("seconds") or 0)
             eng = s.get("engine") or "live"
             # open sessions have no final cost yet: estimate from what is known so far

@@ -82,7 +82,6 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     
     # Auto-enroll in tag-triggered campaigns
     await _check_tag_campaign_enrollment(user_id, str(result.inserted_id), contact_dict)
-    _schedule_notes_intel(user_id, str(result.inserted_id), contact_dict.get('notes') if source in NOTE_INTEL_SOURCES else "")
     
     # NOTE: date-based campaign enrollment (birthday/anniversary/sold_date) happens
     # day-of via the daily scheduler sweep — never at save time.
@@ -129,37 +128,6 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
         logger.warning(f"Sold workflow error (non-blocking): {e}")
 
     return Contact(**contact_dict)
-
-
-NOTE_INTEL_SOURCES = {"manual", "", "app", "scan", "jessi", "referral"}   # notes the rep wrote (lead-form text is not theirs)
-
-
-def _schedule_notes_intel(user_id: str, contact_id: str, text: Optional[str]) -> None:
-    """Notes the rep typed or dictated get the same fact extraction as a voice memo (How we met, family, interests). Fire and forget."""
-    if not text or len(text.strip()) < 20:
-        return
-    import asyncio
-    from services.voice_intel import process_notes_intelligence
-    try:
-        asyncio.get_running_loop().create_task(process_notes_intelligence(user_id, contact_id, text))
-    except RuntimeError:
-        pass
-
-
-class HowWeMetBody(BaseModel):
-    event: str = ""
-    place: str = ""
-    date: str = ""
-
-
-@router.patch("/{user_id}/{contact_id}/how-we-met")
-async def set_how_we_met(user_id: str, contact_id: str, body: HowWeMetBody):
-    """The rep's own How we met (it always wins over what Jessi filled in). All fields empty clears it."""
-    from services import how_we_met
-    db = get_db()
-    if not ObjectId.is_valid(contact_id) or not await db.contacts.find_one({"$and": [{"_id": ObjectId(contact_id)}, await get_data_filter(user_id)]}, {"_id": 1}):
-        raise HTTPException(status_code=404, detail="Contact not found")
-    return {"how_we_met": how_we_met.public(await how_we_met.set_by_rep(db, contact_id, body.model_dump()))}
 
 
 @router.get("/{user_id}/check-duplicate")
@@ -820,7 +788,7 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
             logger.error(f"Referral count update failed: {e}")
     
     try:
-        _before = await get_db().contacts.find_one({"$and": [{"_id": ObjectId(contact_id)}, base_filter]}, {"phone": 1, "email": 1, "first_name": 1, "last_name": 1, "vehicle_interest": 1, "user_id": 1, "store_id": 1, "created_at": 1, "notes": 1})
+        _before = await get_db().contacts.find_one({"$and": [{"_id": ObjectId(contact_id)}, base_filter]}, {"phone": 1, "email": 1, "first_name": 1, "last_name": 1, "vehicle_interest": 1, "user_id": 1, "store_id": 1, "created_at": 1})
     except Exception:
         _before = None
     try:
@@ -836,11 +804,6 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
-
-    # New words in the notes go through fact extraction (only what was added when the rep appended)
-    _old_notes, _new_notes = ((_before or {}).get("notes") or ""), (update_dict.get("notes") or "")
-    if _new_notes.strip() != _old_notes.strip():
-        _schedule_notes_intel(user_id, contact_id, _new_notes[len(_old_notes):] if _old_notes and _new_notes.startswith(_old_notes) else _new_notes)
 
     # Living Relationship Intelligence (flagged): a rep's change of phone/email/name is a confirmed identity fact; the old value stays as history.
     if _before:
@@ -887,22 +850,6 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
         response["sold_workflow"] = sold_result
     return response
 
-async def _contact_file_photo(photo_url: str, contact_id: str) -> str:
-    """A photo from this contact's own Files (never a private document) as a data URL, so the avatar gets proper sizes.
-    Any URL that mentions contact-files must resolve to exactly such a file, or it is refused."""
-    import asyncio as _aio, base64 as _b64, re as _re
-    from utils.image_storage import get_object
-    i = photo_url.lower().find("/api/images/")
-    path = photo_url[i + len("/api/images/"):].split("?", 1)[0] if i >= 0 else ""
-    f = None
-    if path.startswith("contact-files/") and not _re.search(r"(^|/)\.{1,2}(/|$)|//", path):
-        f = await get_db().contact_files.find_one({"path": path, "contact_id": contact_id, "kind": "image", "deleted": {"$ne": True}}, {"sensitive": 1})
-    if not f or f.get("sensitive"):
-        raise HTTPException(status_code=400, detail="That photo can't be used as a profile photo")
-    raw, ctype = await _aio.to_thread(get_object, path)
-    return f"data:{ctype or 'image/jpeg'};base64,{_b64.b64encode(raw).decode('ascii')}"
-
-
 @router.patch("/{user_id}/{contact_id}/profile-photo")
 async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...)):
     """Set a contact's profile photo from an existing photo URL."""
@@ -910,16 +857,11 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
     photo_url = data.get("photo_url", "")
     if not photo_url:
         raise HTTPException(status_code=400, detail="photo_url is required")
-    if not ObjectId.is_valid(contact_id) or not await db.contacts.find_one({"_id": ObjectId(contact_id), **(await get_data_filter(user_id))}, {"_id": 1}):
-        raise HTTPException(status_code=404, detail="Contact not found")
 
     # If the source is a Twilio media proxy (customer-texted photo), it isn't durable —
     # download the bytes and re-upload to object storage so the avatar survives long-term.
-    from urllib.parse import unquote as _unquote
-    _file_b64 = await _contact_file_photo(_unquote(photo_url), contact_id) if "contact-files/" in _unquote(photo_url).lower() else None
     try:
         low = photo_url.lower()
-        _b64data = _file_b64
         if "media-proxy" in low or "api.twilio.com" in low:
             import httpx as _httpx, os as _os, urllib.parse as _urllib
             from routers.twilio_webhooks import allowed_media_url
@@ -936,7 +878,6 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
                 import base64 as _b64
                 _ctype = _resp.headers.get("content-type", "image/jpeg")
                 _b64data = f"data:{_ctype};base64,{_b64.b64encode(_resp.content).decode('ascii')}"
-        if _b64data:
                 from utils.image_storage import upload_image
                 _up = await upload_image(_b64data, prefix="contacts", entity_id=contact_id)
                 if _up:
@@ -1250,10 +1191,8 @@ async def update_personal_details(user_id: str, contact_id: str, data: dict = Bo
 async def re_extract_intelligence(user_id: str, contact_id: str):
     """Re-run AI extraction on all voice notes for this contact."""
     db = get_db()
-    from services.contact_scope import owned_contact
-    await owned_contact(db, user_id, contact_id, {"_id": 1})
     notes = await db.voice_notes.find(
-        {"contact_id": contact_id, "transcript": {"$nin": ["", None]}},
+        {"contact_id": contact_id, "user_id": user_id, "transcript": {"$ne": ""}},
         {"_id": 1, "transcript": 1}
     ).to_list(50)
 
@@ -1854,16 +1793,6 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
                 })
     except Exception as e:
         logger.warning(f"[photos/all] message media fetch failed: {e}")
-
-    # 6. Photos filed on the contact's Files (texted ones already show above; private documents never do)
-    try:
-        async for f in db.contact_files.find({"contact_id": contact_id, "kind": "image", "sensitive": {"$ne": True}, "deleted": {"$ne": True}, "source": {"$ne": "mms"}},
-                                             {"path": 1, "thumb_path": 1, "title": 1, "created_at": 1}).sort("created_at", -1).limit(100):
-            photos.append({"type": "file", "label": f.get("title") or "From Files", "url": f"/api/images/{f['path']}",
-                           "thumbnail_url": f"/api/images/{f.get('thumb_path') or f['path']}",
-                           "date": f["created_at"].isoformat() if f.get("created_at") else None})
-    except Exception as e:
-        logger.warning(f"[photos/all] files fetch failed: {e}")
 
     # Deduplicate by URL — keep first occurrence (profile > history > congrats > birthday)
     seen_urls = set()

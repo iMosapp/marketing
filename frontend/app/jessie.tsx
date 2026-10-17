@@ -25,8 +25,6 @@ import { AvatarButton } from '../components/account/AvatarButton';
 import { useLiveJessiLauncher } from '../components/jessi/LiveJessiProvider';
 import { useLiveConfig } from '../components/jessi/useLiveConfig';
 import { liveSupported } from '../hooks/useLiveJessi';
-import type { OpenTarget } from '../hooks/useLiveJessi';
-import { JessiOpenLink } from '../components/jessi/JessiOpenLink';
 import { useSegments } from 'expo-router';
 import api from '../services/api';
 
@@ -59,7 +57,6 @@ export default function JessiScreen() {
   const [state, setState] = useState<ConversationState>('idle');
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
-  const [openTarget, setOpenTarget] = useState<OpenTarget | null>(null);
   const [greeting, setGreeting] = useState("Tap to start talking");
   const [audioLevel, setAudioLevel] = useState(0);
   
@@ -207,7 +204,6 @@ export default function JessiScreen() {
       setState('listening');
       setTranscript('');
       setResponse('');
-      setOpenTarget(null);
       
       // Start monitoring audio levels for VAD
       startVoiceActivityDetection();
@@ -384,7 +380,6 @@ export default function JessiScreen() {
       });
       
       setResponse(chatRes.data.text);
-      setOpenTarget(chatRes.data.open || null);
       
       // Play the audio response
       if (chatRes.data.audio_base64) {
@@ -417,7 +412,6 @@ export default function JessiScreen() {
     const message = textInput.trim();
     setTextInput('');
     setTranscript(message);
-    setOpenTarget(null);
     setState('processing');
     
     try {
@@ -433,7 +427,6 @@ export default function JessiScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
       setResponse(chatRes.data.text);
-      setOpenTarget(chatRes.data.open || null);
       
       if (chatRes.data.audio_base64) {
         await playAudio(chatRes.data.audio_base64);
@@ -620,9 +613,6 @@ export default function JessiScreen() {
           )}
           
           {/* Voice Button */}
-          {!!response && openTarget && (
-            <JessiOpenLink target={openTarget} testID="jessie-response-open" style={{ alignSelf: 'center', marginTop: 0, marginBottom: 12 }} />
-          )}
           <View style={styles.buttonContainer}>
             {renderAudioBars()}
             

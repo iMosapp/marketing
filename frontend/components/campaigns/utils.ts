@@ -3,12 +3,11 @@ export const GREEN = '#34C759';
 export const RED = '#FF3B30';
 export const AMBER = '#FF9500';
 export const PURPLE = '#AF52DE';
-export const BLUE = '#0A84FF';
 export const tid = (id: string) => ({ testID: id, dataSet: { testid: id } } as any);
 
 export type Touch = {
   id: string;
-  actionType: 'message' | 'send_card' | 'call';
+  actionType: 'message' | 'send_card';
   cardType: string;
   message: string;
   delayMinutes: number;

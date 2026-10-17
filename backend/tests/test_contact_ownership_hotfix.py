@@ -22,6 +22,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 from routers.auth import hash_password  # noqa: E402
 from routers.database import get_db  # noqa: E402
 from tests import qa_creds  # noqa: E402
+from tests.safe_cleanup import valid_ids, wipe_by_owner  # noqa: E402
 
 BASE = open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0].rstrip("/")
 PW = "HotfixIso123!"
@@ -80,24 +81,20 @@ async def _seed():
 
 async def _wipe():
     db = get_db()
-    ids = [i for i in S["uid"].values() if i and ObjectId.is_valid(str(i))]   # never None in $in: it would match every doc without a user_id
-    cids = [c for c in S["cids"] if c and ObjectId.is_valid(str(c))]
-    stores = [s for s in S["stores"].values() if s and ObjectId.is_valid(str(s))]
-    for coll in await db.list_collection_names():
-        if coll.startswith("system."):
-            continue
-        if ids + stores:
-            await db[coll].delete_many({"user_id": {"$in": ids + stores}})
-        if cids:
-            await db[coll].delete_many({"contact_id": {"$in": cids}})
+    ids, cids = valid_ids(S["uid"].values()), valid_ids(S["cids"])   # never None / "" in $in: it matches every doc without the field
+    stores, orgs = valid_ids(S["stores"].values()), valid_ids(S["orgs"].values())
+    await wipe_by_owner(db, ids + stores, cids)
     await db.contacts.delete_many({"_id": {"$in": [ObjectId(c) for c in cids] + S["extra_oids"]}})
-    await db.contacts.delete_many({"store_id": {"$in": list(S["stores"].values())}})
-    await db.bulk_transfers.delete_many({"from_user_id": {"$in": ids}})
-    await db.contact_access_audit.delete_many({"contact_id": {"$in": cids}})
-    await db.inbound_leads.delete_many({"store_id": {"$in": list(S["stores"].values())}})
+    if stores:
+        await db.contacts.delete_many({"store_id": {"$in": stores}})
+        await db.inbound_leads.delete_many({"store_id": {"$in": stores}})
+    if ids:
+        await db.bulk_transfers.delete_many({"from_user_id": {"$in": ids}})
+    if cids:
+        await db.contact_access_audit.delete_many({"contact_id": {"$in": cids}})
     await db.users.delete_many({"_id": {"$in": [ObjectId(i) for i in ids]}})
-    await db.stores.delete_many({"_id": {"$in": [ObjectId(i) for i in S["stores"].values()]}})
-    await db.organizations.delete_many({"_id": {"$in": [ObjectId(i) for i in S["orgs"].values()]}})
+    await db.stores.delete_many({"_id": {"$in": [ObjectId(i) for i in stores]}})
+    await db.organizations.delete_many({"_id": {"$in": [ObjectId(i) for i in orgs]}})
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -113,8 +110,8 @@ def synthetic():
                                                                        "personal_details": {"hobby": f"off-roading in a {A_SECRET}"}}}))
     run(db.contacts.update_one({"_id": ObjectId(S["cb"])}, {"$set": {"how_we_met": {"event": "Ford dealership", "summary": "Ford customer", "source": "qa"},
                                                                        "personal_details": {"family": f"daughter {B_SECRET}"}}}))
-    S["memo_a"] = str(run(db.voice_notes.insert_one({"contact_id": S["ca"], "user_id": S["uid"]["A"], "recorded_by_id": S["uid"]["A"], "transcript": f"Jeep event chat, loves his {A_SECRET}", "created_at": now, "duration": 4})).inserted_id)
-    S["memo_b"] = str(run(db.voice_notes.insert_one({"contact_id": S["cb"], "user_id": S["uid"]["B"], "recorded_by_id": S["uid"]["B"], "transcript": f"Ford customer, daughter {B_SECRET}", "created_at": now, "duration": 4})).inserted_id)
+    S["memo_a"] = str(run(db.voice_notes.insert_one({"contact_id": S["ca"], "user_id": S["uid"]["A"], "recorded_by_id": S["uid"]["A"], "transcript": f"Jeep event chat, loves his {A_SECRET}", "created_at": now, "duration": 4, "audio_url": "qa/none.m4a"})).inserted_id)
+    S["memo_b"] = str(run(db.voice_notes.insert_one({"contact_id": S["cb"], "user_id": S["uid"]["B"], "recorded_by_id": S["uid"]["B"], "transcript": f"Ford customer, daughter {B_SECRET}", "created_at": now, "duration": 4, "audio_url": "qa/none.m4a"})).inserted_id)
     yield S
     run(_wipe())
 

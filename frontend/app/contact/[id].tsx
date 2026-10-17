@@ -180,7 +180,6 @@ function ContactDetailScreen() {
     linked_store_id: null as string | null,
     linked_org_name: null as string | null,
     linked_role: null as string | null,
-    how_we_met: null as any,
   });
   const [loading, setLoading] = useState(!isNewContact);
   const [unavailable, setUnavailable] = useState(false);
@@ -622,7 +621,6 @@ function ContactDetailScreen() {
         linked_store_id: data.linked_store_id || null,
         linked_org_name: data.linked_org_name || null,
         linked_role: data.linked_role || null,
-        how_we_met: data.how_we_met || null,
       });
     } catch (e: any) {
       console.error('Failed to load contact:', e);
@@ -2108,28 +2106,6 @@ function ContactDetailScreen() {
     if (!isNewContact && user) loadVoiceNotes();
   }, [id, user, isNewContact]);
 
-  // While Jessi is still retrying a transcript, refresh the memos every 30s so the words show up on their own.
-  const anyRetrying = voiceNotes.some((n: any) => n.transcript_status === 'retrying');
-  React.useEffect(() => {
-    if (!anyRetrying || !user) return;
-    const t = setInterval(() => { contactsAPI.getVoiceNotes(user._id, id as string).then(setVoiceNotes).catch(() => {}); }, 30000);
-    return () => clearInterval(t);
-  }, [anyRetrying, id, user?._id]);
-
-  const [retryingNoteId, setRetryingNoteId] = useState<string | null>(null);
-  const retryTranscript = async (noteId: string) => {
-    if (!user || retryingNoteId) return;
-    setRetryingNoteId(noteId);
-    try {
-      const r = (await api.post(`/voice-notes/${user._id}/${id}/${noteId}/retry-transcript`, {}, { timeout: 120000 })).data;
-      await loadVoiceNotes();
-      if (r?.transcript_status === 'done') showToast('Transcribed. Jessi is reading it now.', 'success');
-      else showToast("Still couldn't transcribe it. You can play it and add a note.", 'error', 5000);
-    } catch (e: any) {
-      showToast(e?.response?.data?.detail || 'Retry did not go through', 'error');
-    } finally { setRetryingNoteId(null); }
-  };
-
   const startRecording = async () => {
     // ── Native (iOS/Android) — use expo-av ───────────────────────────────────
     if (Platform.OS !== 'web') {
@@ -2588,6 +2564,7 @@ function ContactDetailScreen() {
       </SafeAreaView>
     );
   }
+
   if (unavailable) {
     return <ContactUnavailable colors={colors} onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/contacts' as any))} />;
   }
@@ -2839,12 +2816,12 @@ function ContactDetailScreen() {
               }}
               callsProps={{
                 colors, callLogs, voiceNotes, callLogsLoading,
-                onDeleteVoiceNote: deleteVoiceNote, onRenameVoiceNote: renameVoiceNote, onRefresh: loadCallLogs, onRetryTranscript: retryTranscript, retryingNoteId,
+                onDeleteVoiceNote: deleteVoiceNote, onRenameVoiceNote: renameVoiceNote, onRefresh: loadCallLogs,
               }}
               memosProps={{
                 s, colors, voiceNotes, voiceNotesLoading, isRecording, recordingTime, uploadingVoiceNote, playingNoteId,
                 startRecording, stopRecording, playVoiceNote, deleteVoiceNote, formatRecordingTime, maxRecordingSeconds: MAX_RECORDING_SECONDS,
-                promptsMode: capturePromptsOn, contactFirst: (contact.first_name || fullName || 'them').split(' ')[0], retryTranscript, retryingNoteId,
+                promptsMode: capturePromptsOn, contactFirst: (contact.first_name || fullName || 'them').split(' ')[0],
               }}
               filesProps={{ contactId: id as string, colors, store: contactFiles, contact, onContactChanged: () => loadContact() }}
               counts={{ files: contactFiles.files?.length }}
