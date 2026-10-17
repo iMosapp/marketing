@@ -1,5 +1,9 @@
 # CHANGELOG — iMOs App
 
+## Oct 17 2026 — Feature sheet refreshed with live-in-production features (workspace only, NOT published)
+- `marketing/build_feature_sheet.py` -> `build/feature-sheet/index.html` (93 -> 102 features; preview copy `build-preview/feature-sheet/`). Only features in production R2 (30b6dbf03). New: How we met, Voicemail inbox + greeting, Jessi does it for you, Add a contact by voice or text, Memory search, Pre-call brief (lab `live_host`, default live), Website widget (Text us / Call me now), Chat now with Jessi, Contact privacy. Refreshed: Voice memos, STOP/consent, Ask Jessi, Jessi + Leads intros, Bulk transfer.
+- Left out: lab-only `jessi_onboarding` and `jessi_live_voice` (realtime Talk to Jessi), and every preview-only feature. Owner publishes it himself (live site = Vercel from GitHub main; upload only `marketing/build/feature-sheet/index.html`, NOT a workspace Save to GitHub to main, which would carry preview app code).
+
 ## Oct 16 2026 (final) — Marketing site approved and written into marketing/build
 - Owner picks: Contact form now says "we will get back to you soon" (no promised response time); homepage line reworded to "Customers who feel remembered come back and send their friends."; /developers restyled in the new design with the same content (docs still from /app/docs markdown, tabs + deep links ?doc= work).
 - Ran `site/build.py production --approved`: 32 pages + assets into `marketing/build`, removed /automotive, /salespresentation, /hub, /platform, /store-reviews, /future, /presentation (301s added to vercel.json + netlify.toml), sitemap 32 URLs, presentations + calendar-systems noindex. Checked: 3,387 internal links in the build all resolve, no preview paths, widget FE2POg13 on every page, forms post to https://app.imonsocial.com.
