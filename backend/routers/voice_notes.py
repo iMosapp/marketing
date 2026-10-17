@@ -167,32 +167,31 @@ class VoiceNoteOut(BaseModel):
     created_at: str
 
 
+async def _whisper(audio_bytes: bytes, filename: str, kind: str = "memo") -> str:
+    """One Whisper call (OpenAI via Emergent integrations). Raises on failure; "" means no words were heard."""
+    from emergentintegrations.llm.openai import OpenAISpeechToText
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise RuntimeError("EMERGENT_LLM_KEY missing")
+    stt = OpenAISpeechToText(api_key=api_key)
+    audio_file = io.BytesIO(audio_bytes)   # Whisper needs a file-like object with a name attribute
+    audio_file.name = filename
+    response = await stt.transcribe(
+        file=audio_file,
+        model="whisper-1",
+        language="en",
+        response_format="json",
+        prompt=("A recorded in-person conversation at a car dealership between a salesperson and a customer. Names, vehicle models, trade-in, payments, appointment times."
+                if kind == "conversation" else
+                "Sales conversation notes about a customer. May include names, car models, family details, dates."),
+    )
+    return response.text.strip() if response and response.text else ""
+
+
 async def _transcribe_audio(audio_bytes: bytes, filename: str, kind: str = "memo") -> str:
-    """Transcribe audio using OpenAI Whisper via Emergent integrations."""
+    """Transcribe audio, "" on any failure (callers that must not lose a memo use services.transcript_retry instead)."""
     try:
-        from emergentintegrations.llm.openai import OpenAISpeechToText
-
-        api_key = os.environ.get("EMERGENT_LLM_KEY")
-        if not api_key:
-            logger.warning("No EMERGENT_LLM_KEY  - skipping transcription")
-            return ""
-
-        stt = OpenAISpeechToText(api_key=api_key)
-
-        # Whisper needs a file-like object with a name attribute
-        audio_file = io.BytesIO(audio_bytes)
-        audio_file.name = filename
-
-        response = await stt.transcribe(
-            file=audio_file,
-            model="whisper-1",
-            language="en",
-            response_format="json",
-            prompt=("A recorded in-person conversation at a car dealership between a salesperson and a customer. Names, vehicle models, trade-in, payments, appointment times."
-                    if kind == "conversation" else
-                    "Sales conversation notes about a customer. May include names, car models, family details, dates."),
-        )
-        return response.text.strip() if response and response.text else ""
+        return await _whisper(audio_bytes, filename, kind)
     except Exception as e:
         logger.error(f"Whisper transcription failed: {e}")
         return ""
@@ -209,8 +208,9 @@ def _ext_for(content_type: str) -> str:
     return "webm"
 
 
-async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: bytes, content_type: str, duration: float, kind: str) -> dict:
-    """Store, transcribe, summarize (conversations), log the touchpoint, extract personal details."""
+async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: bytes, content_type: str, duration: float, kind: str, transcript: str = "") -> dict:
+    """Store, transcribe, summarize (conversations), log the touchpoint, extract personal details.
+    transcript: already transcribed on this recording (the new-contact screen shows it before Save), so it is not paid for twice."""
     ext = _ext_for(content_type)
     filename = f"voice_note_{uuid.uuid4().hex[:8]}.{ext}"
     if ext == "webm":
@@ -230,22 +230,29 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
         logger.error(f"Voice note upload failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to store audio")
 
-    transcript = await _transcribe_audio(audio_bytes, filename, kind)
-    return await _store_note(db, user_id, contact_id, transcript, kind, duration, audio_url, stored_path, audio_bytes)
+    from services.transcript_retry import heard_words, transcribe_now
+    transcript, error = heard_words((transcript or "")[:20000]), ""
+    if not transcript:
+        transcript, error = await transcribe_now(audio_bytes, filename, kind)
+    return await _store_note(db, user_id, contact_id, transcript, kind, duration, audio_url, stored_path, audio_bytes, transcript_error=error)
 
 
-async def create_text_memo(db, user_id: str, contact_id: str, text: str, source: str = "jessi") -> dict:
-    """A memo dictated to Jessi (or typed): no audio, otherwise the exact voice-note pipeline (timeline event, personal-detail extraction)."""
-    return await _store_note(db, user_id, contact_id, (text or "").strip(), "memo", 0.0, None, None, None, source=source)
+async def create_text_memo(db, user_id: str, contact_id: str, text: str, source: str = "jessi", followup: bool = True) -> dict:
+    """A memo dictated to Jessi (or typed): no audio, otherwise the exact voice-note pipeline (timeline event, personal-detail extraction).
+    followup=False when the caller handles the follow-up itself (Jessi's new-contact flow offers a dated reminder)."""
+    return await _store_note(db, user_id, contact_id, (text or "").strip(), "memo", 0.0, None, None, None, source=source, followup=followup)
 
 
-async def _store_note(db, user_id: str, contact_id: str, transcript: str, kind: str, duration: float, audio_url, stored_path, audio_bytes, source: str = "app") -> dict:
+async def _store_note(db, user_id: str, contact_id: str, transcript: str, kind: str, duration: float, audio_url, stored_path, audio_bytes, source: str = "app", followup: bool = True,
+                      transcript_error: str = "") -> dict:
+    from services.transcript_retry import fields_after_upload
     is_convo = kind == "conversation"
 
     now = datetime.now(timezone.utc)
     note_doc = {
         "contact_id": contact_id, "user_id": user_id, "audio_url": audio_url, "audio_path": stored_path,
         "transcript": transcript, "summary": "", "kind": kind, "duration": round(duration, 1), "created_at": now, "source": source,
+        "followup": followup, **fields_after_upload(transcript, transcript_error, now, bool(stored_path)),
     }
     result = await db.voice_notes.insert_one(note_doc)
     note_id = str(result.inserted_id)
@@ -287,12 +294,12 @@ async def _store_note(db, user_id: str, contact_id: str, transcript: str, kind: 
     if transcript and len(transcript.strip()) >= 10:
         try:
             from services.voice_intel import process_voice_note_intelligence
-            asyncio.create_task(process_voice_note_intelligence(user_id, contact_id, transcript, note_id))
+            asyncio.create_task(process_voice_note_intelligence(user_id, contact_id, transcript, note_id, auto_followup=followup))
         except Exception as e:
             logger.warning(f"Voice intelligence extraction trigger failed: {e}")
 
     return {"id": note_id, "audio_url": audio_url, "transcript": transcript, "summary": summary, "title": title, "kind": kind,
-            "highlights": highlights, "tasks": new_tasks,
+            "highlights": highlights, "tasks": new_tasks, "transcript_status": note_doc["transcript_status"],
             "duration": round(duration, 1), "created_at": now.isoformat()}
 
 
@@ -309,6 +316,7 @@ async def create_voice_note(
     audio: UploadFile = File(...),
     duration: float = Form(0),
     kind: str = Form("memo"),
+    transcript: str = Form(""),
 ):
     """Upload a voice memo (or a recorded in-person conversation) for a contact. Stores audio, transcribes, logs event."""
     db = get_db()
@@ -318,7 +326,7 @@ async def create_voice_note(
     audio_bytes = await audio.read()
     if len(audio_bytes) == 0:
         raise HTTPException(status_code=400, detail="Empty audio file")
-    return await _process_voice_note(db, user_id, contact_id, audio_bytes, audio.content_type or "audio/webm", duration, kind)
+    return await _process_voice_note(db, user_id, contact_id, audio_bytes, audio.content_type or "audio/webm", duration, kind, transcript)
 
 
 class AudioChunk(BaseModel):
@@ -363,14 +371,43 @@ async def upload_voice_chunk(user_id: str, contact_id: str, chunk: AudioChunk):
     return out
 
 
+async def _can_change(db, user_id: str, note: dict) -> bool:
+    """The rep who recorded a memo, or a manager over this contact, may rename or delete it."""
+    if str(note.get("user_id")) == str(user_id):
+        return True
+    from services.inboxes import is_manager
+    me = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1}) if ObjectId.is_valid(str(user_id)) else None
+    return is_manager(me or {})
+
+
+async def _scoped_note(db, user_id: str, contact_id: str, note_id: str) -> dict:
+    """A note on a contact this user can open (reassigned contacts keep every memo, whoever recorded it)."""
+    if not ObjectId.is_valid(str(note_id)):
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    await owned_contact(db, user_id, contact_id, {"_id": 1})
+    n = await db.voice_notes.find_one({"_id": ObjectId(note_id), "contact_id": contact_id})
+    if not n:
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    return n
+
+
 @router.get("/{user_id}/{contact_id}")
 async def get_voice_notes(user_id: str, contact_id: str):
-    """Get all voice notes for a contact, newest first."""
+    """Every voice note on a contact the user can open, newest first, labelled with who recorded it."""
+    from services.transcript_retry import status_of
     db = get_db()
+    await owned_contact(db, user_id, contact_id, {"_id": 1})
     notes = await db.voice_notes.find(
-        {"contact_id": contact_id, "user_id": user_id},
-        {"_id": 1, "audio_url": 1, "transcript": 1, "summary": 1, "title": 1, "kind": 1, "duration": 1, "created_at": 1, "contact_id": 1, "user_id": 1, "highlights": 1, "voice_id.verified": 1},
+        {"contact_id": contact_id},
+        {"_id": 1, "audio_url": 1, "audio_path": 1, "transcript": 1, "transcript_status": 1, "summary": 1, "title": 1, "kind": 1, "duration": 1, "created_at": 1,
+         "contact_id": 1, "user_id": 1, "highlights": 1, "voice_id.verified": 1},
     ).sort("created_at", -1).to_list(100)
+    authors = {str(n.get("user_id")) for n in notes if n.get("user_id")}
+    names = {str(u["_id"]): (u.get("first_name") or (u.get("name") or "").split(" ")[0] or "a teammate")
+             async for u in db.users.find({"_id": {"$in": [ObjectId(a) for a in authors if ObjectId.is_valid(a)]}}, {"name": 1, "first_name": 1})} if authors else {}
+    from services.inboxes import is_manager
+    me = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1}) if ObjectId.is_valid(user_id) else None
+    manager = is_manager(me or {})
 
     def _hl(h: dict) -> dict:
         d = h.get("due_date")
@@ -380,15 +417,19 @@ async def get_voice_notes(user_id: str, contact_id: str):
         {
             "id": str(n["_id"]),
             "contact_id": n["contact_id"],
-            "user_id": n["user_id"],
-            "audio_url": n["audio_url"],
+            "user_id": n.get("user_id"),
+            "audio_url": n.get("audio_url"),
             "transcript": n.get("transcript", ""),
+            "transcript_status": status_of(n),
             "summary": n.get("summary", ""),
             "title": n.get("title") or "",
             "kind": n.get("kind", "memo"),
             "duration": n.get("duration", 0),
             "highlights": [_hl(h) for h in (n.get("highlights") or [])],
             "voice_verified": (n.get("voice_id") or {}).get("verified"),
+            "mine": str(n.get("user_id")) == user_id,
+            "recorded_by": names.get(str(n.get("user_id")), "a teammate"),
+            "can_delete": manager or str(n.get("user_id")) == user_id,
             "created_at": n["created_at"].isoformat() if n.get("created_at") else "",
         }
         for n in notes
@@ -398,49 +439,55 @@ async def get_voice_notes(user_id: str, contact_id: str):
 @router.get("/{user_id}/{contact_id}/{note_id}")
 async def get_voice_note(user_id: str, contact_id: str, note_id: str):
     """One note with what Jessi learned from it (the app polls this right after a memo is saved)."""
-    if not ObjectId.is_valid(note_id):
-        raise HTTPException(status_code=404, detail="Voice note not found")
-    n = await get_db().voice_notes.find_one({"_id": ObjectId(note_id), "user_id": user_id, "contact_id": contact_id})
-    if not n:
-        raise HTTPException(status_code=404, detail="Voice note not found")
+    from services.transcript_retry import status_of
+    n = await _scoped_note(get_db(), user_id, contact_id, note_id)
     transcript = n.get("transcript") or ""
+    status = status_of(n)
     return {
         "id": note_id, "audio_url": n.get("audio_url"), "transcript": transcript, "summary": n.get("summary", ""), "title": n.get("title") or "",
-        "kind": n.get("kind", "memo"), "duration": n.get("duration", 0),
-        "intelligence_done": bool(n.get("intelligence_done")) or len(transcript.strip()) < 10,
+        "kind": n.get("kind", "memo"), "duration": n.get("duration", 0), "transcript_status": status,
+        "intelligence_done": bool(n.get("intelligence_done")) or (status != "retrying" and len(transcript.strip()) < 10),
         "extracted_details": n.get("extracted_details") or {}, "followup_task": n.get("followup_task"),
         "created_at": n["created_at"].isoformat() if n.get("created_at") else "",
     }
+
+
+@router.post("/{user_id}/{contact_id}/{note_id}/retry-transcript")
+async def retry_voice_note_transcript(user_id: str, contact_id: str, note_id: str):
+    """Retry button: one more transcription from the saved audio, right now (no extra reminder if it still fails)."""
+    from services.transcript_retry import retry_one, status_of
+    db = get_db()
+    n = await _scoped_note(db, user_id, contact_id, note_id)
+    if status_of(n) == "done":
+        return {"id": note_id, "transcript_status": "done", "transcript": n.get("transcript") or ""}
+    out = await retry_one(db, n, manual=True)
+    return {"id": note_id, **out}
 
 
 @router.patch("/{user_id}/{contact_id}/{note_id}")
 async def rename_voice_note(user_id: str, contact_id: str, note_id: str, data: dict = None):
     """Give a recording a short name ("Tahoe walk-around"). Empty title falls back to the default label."""
     from utils.text_sanitize import no_em_dash
+    db = get_db()
     title = no_em_dash(str((data or {}).get("title") or "")).strip()[:60]
-    if not ObjectId.is_valid(note_id):
-        raise HTTPException(status_code=404, detail="Voice note not found")
-    result = await get_db().voice_notes.update_one({"_id": ObjectId(note_id), "user_id": user_id, "contact_id": contact_id}, {"$set": {"title": title}})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Voice note not found")
+    n = await _scoped_note(db, user_id, contact_id, note_id)
+    if not await _can_change(db, user_id, n):
+        raise HTTPException(status_code=403, detail="Only the person who recorded this, or a manager, can rename it")
+    await db.voice_notes.update_one({"_id": n["_id"]}, {"$set": {"title": title}})
     return {"id": note_id, "title": title}
 
 
 @router.delete("/{user_id}/{contact_id}/{note_id}")
 async def delete_voice_note(user_id: str, contact_id: str, note_id: str):
-    """Delete a voice note or recorded conversation (timeline entry goes too; tasks it created stay on the rep's list)."""
+    """Delete a voice note or recorded conversation (timeline entry goes too; tasks it created stay on the rep's list).
+    Only the rep who recorded it, or a manager over the contact."""
     db = get_db()
-    try:
-        result = await db.voice_notes.delete_one({"_id": ObjectId(note_id), "user_id": user_id})
-    except Exception:
-        result = await db.voice_notes.delete_one({"_id": note_id, "user_id": user_id})
-
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Voice note not found")
-
+    n = await _scoped_note(db, user_id, contact_id, note_id)
+    if not await _can_change(db, user_id, n):
+        raise HTTPException(status_code=403, detail="Only the person who recorded this, or a manager, can delete it")
+    await db.voice_notes.delete_one({"_id": n["_id"]})
     await db.contact_events.delete_many({"contact_id": contact_id, "metadata.voice_note_id": note_id, "event_type": {"$in": ["voice_note", "conversation_recorded"]}})
     return {"message": "Voice note deleted"}
-
 
 
 @router.post("/{user_id}/{contact_id}/capture-reminder")

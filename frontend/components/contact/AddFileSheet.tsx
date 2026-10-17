@@ -12,6 +12,7 @@ const SCANS: { hint: ScanHint; label: string; sub: string; icon: any }[] = [
   { hint: 'business_card', label: 'Business card', sub: 'Name, company, phone, email, address', icon: 'card-outline' },
   { hint: 'vin', label: 'VIN / odometer', sub: 'VIN, year, make, model, mileage', icon: 'barcode-outline' },
   { hint: 'trade_in', label: 'Trade-in', sub: 'Vehicle, condition, plate', icon: 'car-sport-outline' },
+  { hint: 'document', label: 'Quote, invoice or screenshot', sub: 'Key dates and reminder ideas', icon: 'document-text-outline' },
 ];
 
 // The one place to add something to a contact's files: pick a source, or pick a scan so Jessi knows what to pull out.

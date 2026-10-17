@@ -31,10 +31,12 @@ import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
 import { getS } from '../../components/contact/contactStyles';
 import { PrimaryButton } from '../../components/ui/PrimaryButton';
-import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint } from '../../components/ui/tokens';
+import { GOLD, GREEN, RED, RADIUS, SPACE, TYPE, tint, tid } from '../../components/ui/tokens';
 import { SheetGrabber } from '../../components/common/SheetGrabber';
 import { MemoKindPicker, MemoKind } from '../../components/memos/MemoKindPicker';
 import { NewContactConsent } from '../../components/compliance/NewContactConsent';
+import { ScanWithJessiSheet } from '../../components/scan/ScanWithJessiSheet';
+import { useScanStatus } from '../../hooks/useScanWithJessi';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -58,7 +60,7 @@ export default function NewContactScreen() {
   const user = useAuthStore(st => st.user);
   const { showToast } = useToast();
   // Opened from a voice memo: name + company Jessi heard are prefilled and the memo attaches to the new contact after Save.
-  const params = useLocalSearchParams<{ memo_id?: string; first_name?: string; last_name?: string; employer?: string; returnTo?: string }>();
+  const params = useLocalSearchParams<{ memo_id?: string; first_name?: string; last_name?: string; employer?: string; returnTo?: string; scan?: string }>();
   const memoId = typeof params.memo_id === 'string' ? params.memo_id : '';
   const [attachTo, setAttachTo] = useState<{ id: string; name: string } | null>(null);
   const [attachBusy, setAttachBusy] = useState<MemoKind | null>(null);
@@ -70,6 +72,30 @@ export default function NewContactScreen() {
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [duplicateMatches, setDuplicateMatches] = useState<any[]>([]);
   const dupCheckTimer = useRef<any>(null);
+
+  // ── Scan with Jessi: a business card fills this form; after Save the card lands in their Files with the extra details ──
+  const scanStatus = useScanStatus(user?._id);
+  const [showScan, setShowScan] = useState(false);
+  const [scanFrom, setScanFrom] = useState<{ id: string; extras: Record<string, string>; values: Record<string, string>; reminders: string[]; card: boolean } | null>(null);
+  const pendingScan = useRef<string | null>(null);   // a card read but not saved yet: discarded if the rep leaves without saving
+  useEffect(() => () => { if (pendingScan.current && user?._id) api.delete(`/scan/${user._id}/${pendingScan.current}`).catch(() => {}); }, [user?._id]);
+  useEffect(() => { if (params.scan === '1' && scanStatus?.enabled) setShowScan(true); }, [params.scan, scanStatus?.enabled]);
+  const fillFromScan = (scan: any, v: Record<string, string>, reminders: string[] = []) => {
+    if (scanFrom && scanFrom.id !== scan.id) api.delete(`/scan/${user?._id}/${scanFrom.id}`).catch(() => {});   // a different card replaces the first one
+    pendingScan.current = scan.id;
+    const phone = v.phone || (!v.email ? v.phone_office : '') || '';
+    setContact(p => ({ ...p, first_name: v.first_name || p.first_name, last_name: v.last_name || p.last_name, phone: phone || p.phone, email: v.email || p.email,
+      employer: v.company || p.employer, address_street: v.address_street || p.address_street, address_city: v.address_city || p.address_city,
+      address_state: v.address_state || p.address_state, address_zip: v.address_zip || p.address_zip }));
+    const extras: Record<string, string> = {};
+    if (v.title) extras.title = v.title;
+    if (v.website) extras.website = v.website;
+    if (v.phone_office && v.phone_office !== phone) extras.phone_office = v.phone_office;
+    setScanFrom({ id: scan.id, extras, values: v, reminders, card: !!scan.is_card });
+    if (v.address_street || v.address_city) setShowMoreDetails(true);
+    setShowScan(false);
+    checkDuplicate(phone, v.email || '');
+  };
 
   // ── Photo ──────────────────────────────────────────────────────────────────
   const pickImage = async () => {
@@ -167,44 +193,36 @@ export default function NewContactScreen() {
     setShowDatePicker(false); setActiveDateField(null);
   };
 
-  // ── Voice note for new contact ─────────────────────────────────────────────
+  // ── Voice note for new contact: each recording is kept and saved as a real voice note (audio + transcript) after Save ──
   const [ncVoiceRecording, setNcVoiceRecording] = useState(false);
   const [ncVoiceTranscribing, setNcVoiceTranscribing] = useState(false);
   const ncVoiceRef = useRef<any>(null);
-  const ncVoiceAudioBlob = useRef<Blob | null>(null);
+  const [ncClips, setNcClips] = useState<{ file: any; duration: number; transcript: string }[]>([]);
   const ncScrollRef = useRef<ScrollView>(null);
 
   const handleVoice = async () => {
     try {
       if (ncVoiceRecording) {
         setNcVoiceRecording(false);
-        if (ncVoiceRef.current) {
+        const rec = ncVoiceRef.current;
+        if (rec) {
           setNcVoiceTranscribing(true);
-          await ncVoiceRef.current.stopAndUnloadAsync();
-          const uri = ncVoiceRef.current.getURI();
+          let ms = 0;
+          try { ms = (await rec.getStatusAsync())?.durationMillis || 0; } catch {}
+          const st: any = await rec.stopAndUnloadAsync();
+          ms = st?.durationMillis || ms;
+          const uri = rec.getURI();
           ncVoiceRef.current = null;
           if (uri) {
-            const formData = new FormData();
-            if (IS_WEB) {
-              const resp = await fetch(uri);
-              const blob = await resp.blob();
-              ncVoiceAudioBlob.current = blob;
-              formData.append('file', blob, 'recording.webm');
-            } else {
-              ncVoiceAudioBlob.current = { uri, type: 'audio/m4a', name: 'recording.m4a' } as any;
-              formData.append('file', { uri, type: 'audio/m4a', name: 'recording.m4a' } as any);
-            }
-            try {
-              const response = await api.post('/voice/transcribe', formData, {
-                
-              });
-              if (response.data.success && response.data.text) {
-                setContact(prev => ({
-                  ...prev,
-                  notes: prev.notes ? `${prev.notes}\n${response.data.text}` : response.data.text,
-                }));
-              }
+            const file: any = IS_WEB ? await (await fetch(uri)).blob() : { uri, type: 'audio/m4a', name: 'recording.m4a' };
+            let text = '';
+            try {   // shown here before Save, then sent with the audio so it is not transcribed twice
+              const formData = new FormData();
+              if (IS_WEB) formData.append('file', file, 'recording.webm'); else formData.append('file', file);
+              const response = await api.post('/voice/transcribe', formData);
+              if (response.data?.success) text = (response.data.text || '').trim();
             } catch {}
+            setNcClips(prev => [...prev, { file, duration: Math.round(ms / 100) / 10, transcript: text }]);
           }
           setNcVoiceTranscribing(false);
         }
@@ -219,12 +237,32 @@ export default function NewContactScreen() {
         await recording.prepareToRecordAsync(opts);
         await recording.startAsync();
         ncVoiceRef.current = recording;
-        ncVoiceAudioBlob.current = null;
         setNcVoiceRecording(true);
       }
     } catch {
       setNcVoiceRecording(false); setNcVoiceTranscribing(false);
     }
+  };
+
+  // Each clip becomes a voice note on the new contact (one retry); the rep is told if any did not make it.
+  const uploadClips = async (newId: string) => {
+    let failed = 0;
+    for (const c of ncClips) {
+      let ok = false;
+      for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+        try {
+          const formData = new FormData();
+          if (IS_WEB && c.file instanceof Blob) formData.append('audio', c.file, 'recording.webm'); else formData.append('audio', c.file);
+          formData.append('duration', String(c.duration || 0));
+          if (c.transcript) formData.append('transcript', c.transcript);
+          await api.post(`/voice-notes/${user!._id}/${newId}`, formData, { timeout: 120000 });
+          ok = true;
+        } catch {}
+      }
+      if (!ok) failed++;
+    }
+    setNcClips([]);
+    if (failed) showToast(`Contact saved, but ${failed === 1 ? 'a voice note' : `${failed} voice notes`} did not upload. Record it again on their profile.`, 'error', 6000);
   };
 
   // ── Device contacts ────────────────────────────────────────────────────────
@@ -357,6 +395,7 @@ export default function NewContactScreen() {
     if (!contact.first_name) { showSimpleAlert('Error', 'First name is required'); return; }
     if (!contact.phone && !contact.email) { showSimpleAlert('Error', 'Please provide a phone number or email'); return; }
     if (!user) return;
+    if (ncVoiceRecording || ncVoiceTranscribing) { showSimpleAlert('Voice note', 'Stop the recording first so it saves with the contact.'); return; }
     try {
       setSaving(true);
       const result = await contactsAPI.create(user._id, contact);
@@ -373,23 +412,15 @@ export default function NewContactScreen() {
         }
       }
 
-      // Upload the voice recording if one was made
-      if (newId && ncVoiceAudioBlob.current) {
-        try {
-          const formData = new FormData();
-          if (IS_WEB && ncVoiceAudioBlob.current instanceof Blob) {
-            formData.append('audio', ncVoiceAudioBlob.current, 'recording.webm');
-          } else {
-            formData.append('audio', ncVoiceAudioBlob.current as any);
-          }
-          formData.append('duration', '0');
-          await api.post(`/voice-notes/${user._id}/${newId}`, formData, {
-            
-          });
-          ncVoiceAudioBlob.current = null;
-        } catch {}
-      }
+      // Upload the voice recordings as voice notes (never pasted into Notes)
+      if (newId && ncClips.length) await uploadClips(newId);
 
+      if (newId && scanFrom) {
+        try {
+          await api.post(`/scan/${user._id}/${scanFrom.id}/save`, { contact_id: newId, fields: Object.keys(scanFrom.extras), values: { ...scanFrom.values, ...scanFrom.extras }, reminders: scanFrom.reminders });
+          pendingScan.current = null;
+        } catch { showToast('Contact saved, but the card was not added to their Files.', 'error', 4000); }
+      }
       if (newId && memoId) { setAttachTo({ id: newId, name: contact.first_name }); return; }
       if (newId && params.returnTo === 'appraisal') { router.replace(`/appraisals/new?contact_id=${newId}` as any); return; }
       if (newId) router.replace(`/contact/${newId}` as any);
@@ -452,6 +483,17 @@ export default function NewContactScreen() {
             </View>
           )}
 
+          {!!scanStatus?.enabled && !memoId && (
+            <TouchableOpacity onPress={() => setShowScan(true)} style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: tint(GOLD, 0.5), backgroundColor: tint(GOLD, 0.08), padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }} data-testid="new-contact-scan-btn">
+              <Ionicons name="scan" size={20} color={GOLD} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: TYPE.body, fontWeight: '800', color: colors.text }}>{scanFrom ? 'Scan something else' : 'Scan a business card'}</Text>
+                <Text style={{ fontSize: TYPE.sub, color: colors.textSecondary }}>{scanFrom ? `Filled in from the ${scanFrom.card ? 'card' : 'document'}. Check it and tap Save; it goes in their Files${scanFrom.reminders.length ? ' and your reminders are set' : ''}.` : 'Jessi fills this in. You check it before saving.'}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={GOLD} />
+            </TouchableOpacity>
+          )}
+
           {/* Name */}
           <View style={ncs.card}>
             <TextInput style={ncs.cardInput} placeholder="First name" placeholderTextColor={colors.textTertiary}
@@ -461,7 +503,7 @@ export default function NewContactScreen() {
             <TextInput style={ncs.cardInput} placeholder="Last name" placeholderTextColor={colors.textTertiary}
               value={contact.last_name} onChangeText={t => setContact(p => ({ ...p, last_name: t }))}
               returnKeyType="next" data-testid="input-last-name" />
-            {!!memoId && (
+            {(!!memoId || !!scanFrom) && (
               <>
                 <View style={ncs.cardDivider} />
                 <TextInput style={ncs.cardInput} placeholder="Company" placeholderTextColor={colors.textTertiary}
@@ -519,7 +561,7 @@ export default function NewContactScreen() {
           {/* Voice note: the fastest way to capture who they are. Jessi fills in the rest. */}
           <View style={{ marginHorizontal: SPACE.lg, marginBottom: SPACE.lg }}>
             <PrimaryButton
-              label={ncVoiceTranscribing ? 'Transcribing...' : ncVoiceRecording ? 'Stop recording' : 'Record a voice note'}
+              label={ncVoiceTranscribing ? 'Transcribing...' : ncVoiceRecording ? 'Stop recording' : ncClips.length ? 'Record another voice note' : 'Record a voice note'}
               icon={ncVoiceRecording ? 'stop-circle' : 'mic'}
               color={ncVoiceRecording ? RED : GOLD}
               size="lg" full
@@ -527,18 +569,25 @@ export default function NewContactScreen() {
               onPress={handleVoice}
               testID="new-contact-voice-btn"
             />
-            <Text style={{ fontSize: TYPE.sub, color: colors.textTertiary, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 }}>
-              {ncVoiceRecording ? 'Listening. Say who they are and what they are after.' : 'Say who they are and what they want. It is transcribed into their notes.'}
+            <Text style={{ fontSize: TYPE.sub, color: colors.textTertiary, marginTop: SPACE.sm, textAlign: 'center', lineHeight: 18 }} {...tid('new-contact-voice-hint')}>
+              {ncVoiceRecording ? 'Listening. Say who they are, how you met and what they are after.' : 'Say who they are, how you met and what they want. It saves as a voice note on their profile.'}
             </Text>
-            {!!contact.notes && !showMoreDetails && (
-              <View style={{ marginTop: SPACE.md, backgroundColor: colors.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: tint(GREEN, 0.35), padding: SPACE.md }} data-testid="new-contact-transcript">
+            {ncClips.map((c, i) => (
+              <View key={i} style={{ marginTop: SPACE.md, backgroundColor: colors.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: tint(GREEN, 0.35), padding: SPACE.md }} {...tid(`new-contact-voice-clip-${i}`)}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <Ionicons name="checkmark-circle" size={14} color={GREEN} />
-                  <Text style={{ fontSize: TYPE.label, fontWeight: '800', color: GREEN, letterSpacing: 0.8 }}>SAVED TO NOTES</Text>
+                  <Ionicons name="mic" size={14} color={GREEN} />
+                  <Text style={{ flex: 1, fontSize: TYPE.label, fontWeight: '800', color: GREEN, letterSpacing: 0.8 }}>
+                    VOICE NOTE{ncClips.length > 1 ? ` ${i + 1}` : ''}{c.duration ? ` · ${Math.floor(c.duration / 60)}:${String(Math.round(c.duration % 60)).padStart(2, '0')}` : ''} · SAVES WITH THE CONTACT
+                  </Text>
+                  <TouchableOpacity onPress={() => setNcClips(p => p.filter((_, j) => j !== i))} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} {...tid(`new-contact-voice-clip-remove-${i}`)}>
+                    <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+                  </TouchableOpacity>
                 </View>
-                <Text style={{ fontSize: TYPE.sub, color: colors.text, lineHeight: 18 }} numberOfLines={3}>{contact.notes}</Text>
+                <Text style={{ fontSize: TYPE.sub, color: c.transcript ? colors.text : colors.textTertiary, lineHeight: 18 }} numberOfLines={3}>
+                  {c.transcript || 'Recorded. Jessi transcribes it when you save.'}
+                </Text>
               </View>
-            )}
+            ))}
           </View>
 
           {/* More details: email, purchase, referral, notes, tags, photo, address, dates */}
@@ -680,6 +729,9 @@ export default function NewContactScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ScanWithJessiSheet visible={showScan} userId={user?._id} colors={colors} onClose={() => setShowScan(false)} showToast={showToast}
+        onCreate={fillFromScan} onSaved={id => { setShowScan(false); router.replace(`/contact/${id}` as any); }} />
 
       {/* ── Memo filing choice (only when opened from a voice memo) ── */}
       <Modal visible={!!attachTo} animationType="slide" transparent onRequestClose={skipAttach}>

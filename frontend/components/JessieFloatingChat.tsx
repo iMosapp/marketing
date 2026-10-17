@@ -11,6 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
+import { JessiOpenLink } from './jessi/JessiOpenLink';
+import type { OpenTarget } from '../hooks/useLiveJessi';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 const PANEL_H = Math.min(SCREEN_H * 0.75, 600);
@@ -69,7 +71,7 @@ export const JESSI_BAR_HEIGHT = 22;
 // The five tabs have Jessi one tap away in the tab bar; the floating bar only rides along on inner screens (contact, thread, tools).
 const HIDDEN_ROUTES: string[] = ['/home', '/contacts', '/inbox', '/touchpoints', '/jessi', '/jessie', '/(tabs)'];
 
-type Message = { role: 'user' | 'assistant'; text: string };
+type Message = { role: 'user' | 'assistant'; text: string; open?: OpenTarget | null };
 
 export default function JessieFloatingChat() {
   const { colors } = useThemeStore();
@@ -167,7 +169,7 @@ export default function JessieFloatingChat() {
       }, { timeout: 30000 });
 
       const responseText = res.data.text;
-      setMessages((prev) => [...prev, { role: 'assistant', text: responseText }]);
+      setMessages((prev) => [...prev, { role: 'assistant', text: responseText, open: res.data.open || null }]);
 
       // Step 2: Fire off TTS in background (non-blocking)
       if (voiceEnabled && responseText) {
@@ -298,6 +300,7 @@ export default function JessieFloatingChat() {
                   <Text style={[s.msgText, { color: m.role === 'user' ? '#fff' : colors.text }]}>
                     {m.text}
                   </Text>
+                  {m.role === 'assistant' && <JessiOpenLink target={m.open} onNavigate={() => setOpen(false)} testID={`jessie-msg-open-${i}`} />}
                   {m.role === 'assistant' && speaking && i === messages.length - 1 && (
                     <View style={s.speakingRow}>
                       <Ionicons name="volume-high" size={12} color="#C9A962" />

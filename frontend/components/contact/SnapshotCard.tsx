@@ -8,9 +8,26 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import IntelBriefingCard, { parseSections } from './IntelBriefingCard';
 import PersonalIntelSection from '../PersonalIntelSection';
+import HowWeMetSheet, { HowWeMet } from './HowWeMetSheet';
+import { useToast } from '../common/Toast';
 import { formatEventTime, getEventTitle, getTimeInSystem, getTimeInSystemLabel } from '../../utils/contactHelpers';
 
 const GOLD = '#C9A962';
+
+// "How we met" is always shown so the rep can add or fix it; Jessi fills it from voice notes, notes and contacts she created.
+function MetLine({ met, colors, onPress }: { met: HowWeMet | null; colors: any; onPress: () => void }) {
+  const has = !!met?.summary;
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 5 }} testID="snapshot-line-how-we-met" dataSet={{ testid: 'snapshot-line-how-we-met' } as any}>
+      <Ionicons name="location" size={14} color={GOLD} style={{ marginTop: 3, width: 16 }} />
+      <Text style={{ width: 86, fontSize: 10.5, fontWeight: '800', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 }} numberOfLines={1}>How we met</Text>
+      <Text style={{ flex: 1, fontSize: 14, lineHeight: 19, color: has ? colors.text : colors.textTertiary, fontWeight: '500', fontStyle: has ? 'normal' : 'italic' }} numberOfLines={2} testID="snapshot-how-we-met-value" dataSet={{ testid: 'snapshot-how-we-met-value' } as any}>
+        {has ? met!.summary : 'Add where you met'}
+      </Text>
+      <Ionicons name="create-outline" size={14} color={colors.textTertiary} style={{ marginTop: 3 }} />
+    </TouchableOpacity>
+  );
+}
 
 function Line({ icon, label, value, colors, gold, testid, lines = 1 }: any) {
   if (!value) return null;
@@ -26,6 +43,10 @@ function Line({ icon, label, value, colors, gold, testid, lines = 1 }: any) {
 export default function SnapshotCard({ colors, contact, stats, events, intelData, timeline, onOpenFact, refreshing, onRefresh, firstName, onAsk, userId, contactId, onUpdate, onDetailsChanged, voiceNotesCount }: any) {
   const [expanded, setExpanded] = useState(false);
   const [pd, setPd] = useState<any>(null);
+  const [met, setMet] = useState<HowWeMet | null>(contact?.how_we_met || null);
+  const [editMet, setEditMet] = useState(false);
+  const { showToast } = useToast();
+  useEffect(() => { setMet(contact?.how_we_met || null); }, [contact?.how_we_met?.summary]);
 
   useEffect(() => {
     if (!userId || !contactId) return;
@@ -82,6 +103,7 @@ export default function SnapshotCard({ colors, contact, stats, events, intelData
         ) : (
           <Line icon="car-sport" label="Drives" value={drives} colors={colors} testid="snapshot-line-drives" />
         )}
+        <MetLine met={met} colors={colors} onPress={() => setEditMet(true)} />
         <Line icon="time" label="Last touch" value={lastTouch} colors={colors} testid="snapshot-line-last-touch" />
         <Line icon="heart" label="Personal" value={personalLine} colors={colors} testid="snapshot-line-personal" lines={2} />
         <Line icon="sparkles" label="Jessi" value={jessiValue} colors={colors} gold testid="snapshot-line-jessi" lines={2} />
@@ -107,6 +129,8 @@ export default function SnapshotCard({ colors, contact, stats, events, intelData
           </View>
         </View>
       )}
+      <HowWeMetSheet visible={editMet} onClose={() => setEditMet(false)} colors={colors} userId={userId} contactId={contactId} value={met}
+        onSaved={(h: HowWeMet) => setMet(h?.summary ? h : null)} showToast={showToast} />
     </View>
   );
 }

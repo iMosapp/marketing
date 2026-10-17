@@ -138,10 +138,24 @@ export function TouchEditorSheet({ touch, index, isFirst, triggerLabel, canRemov
 
       <View style={{ gap: 10 }}>
         <Eyebrow colors={colors}>WHAT TO SEND</Eyebrow>
-        <Segmented colors={colors} testId="touch-kind" value={t.actionType} onChange={v => set({ actionType: v as Touch['actionType'] })}
-          options={[{ value: 'message', label: 'Text', icon: 'chatbubble-ellipses' }, { value: 'send_card', label: 'Card', icon: 'gift' }]} />
+        <Segmented colors={colors} testId="touch-kind" value={t.actionType}
+          onChange={v => set({ actionType: v as Touch['actionType'], channel: v === 'call' ? 'call' : t.channel === 'call' ? 'sms' : t.channel })}
+          options={[{ value: 'message', label: 'Text', icon: 'chatbubble-ellipses' }, { value: 'send_card', label: 'Card', icon: 'gift' }, { value: 'call', label: 'Call', icon: 'call' }]} />
 
-        {t.actionType === 'message' ? (
+        {t.actionType === 'call' ? (
+          <View style={{ gap: 8 }}>
+            <TextInput
+              value={t.message}
+              onChangeText={m => set({ message: m })}
+              placeholder="Talking points for you, e.g. ask how the test drive felt and offer a second look this weekend"
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              style={{ minHeight: 90, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: GOLD + '55', padding: 12, fontSize: 15, lineHeight: 21, color: colors.text, textAlignVertical: 'top' }}
+              {...tid('touch-call-input')}
+            />
+            <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>Nothing is sent to the customer. On this day you get a "Call them" task with these points.</Text>
+          </View>
+        ) : t.actionType === 'message' ? (
           <View style={{ gap: 10 }}>
             <View style={{ backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: GOLD + '55', padding: 12 }}>
               <TextInput

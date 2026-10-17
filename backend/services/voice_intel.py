@@ -5,8 +5,10 @@ about the customer: spouse name, kids, interests, vehicle info, etc.
 Saves structured data to the contact's personal_details field.
 """
 import os
+import re
 import json
 import logging
+from typing import Optional
 from datetime import datetime, timezone, timedelta
 
 from routers.database import get_db
@@ -18,7 +20,9 @@ SOURCE_DESCRIPTIONS = {
     "voice_note": "voice memo transcript from a salesperson about their customer",
     "text": "text-message conversation between a salesperson (REP), their AI assistant (AI) and the customer (CUSTOMER). Only extract facts about the CUSTOMER, never about the rep",
     "call": "transcript of a recorded phone call between a salesperson and their customer. Only extract facts about the customer",
+    "note": "salesperson's own written notes about their customer",
 }
+MET_KEYS = ("met_event", "met_place", "met_date")
 
 EXTRACTION_PROMPT = """You are a CRM data extraction expert. Analyze this __SOURCE__. Extract any personal details mentioned.
 
@@ -31,6 +35,10 @@ EXTRACTION_PROMPT = """You are a CRM data extraction expert. Analyze this __SOUR
 - For interests, include hobbies, sports teams, activities, etc.
 - For important_dates, include any dates mentioned with what they're for
 - vehicle_details should capture specifics: model, color, trim, features they liked
+- personal_notes never repeats contact info (phone numbers, emails, addresses) or instructions to the assistant ("add him as a contact")
+- Resolve relative dates ("today", "next Tuesday", "in two weeks") against the RECORDED date given with the text; never guess a year that was not said. important_dates hold real dates (YYYY-MM-DD, or MM-DD when no year), never words like "next Tuesday"
+- met_event / met_place / met_date: ONLY when the text says how or where the salesperson met this person (met him at NADA, walked into the store, introduced at the golf tournament); otherwise null
+- follow_up: ONLY when the text says the salesperson will or should follow up / call / text / send something at a stated time; otherwise null. Never invent one
 
 ## Respond in EXACTLY this JSON format:
 {
@@ -51,13 +59,17 @@ EXTRACTION_PROMPT = """You are a CRM data extraction expert. Analyze this __SOUR
   "neighborhood": "where they live or null",
   "referral_potential": "any mention of friends/family who might buy or null",
   "personal_notes": "any other personal tidbits worth remembering or null",
-  "communication_preference": "how they prefer to be contacted or null"
+  "communication_preference": "how they prefer to be contacted or null",
+  "met_event": "the event or occasion where the salesperson met them (trade show, tournament, party, walked into the store) or null",
+  "met_place": "the city or venue where they met, or null",
+  "met_date": "YYYY-MM-DD when they met (the recorded date for 'today' / 'just met'), or null",
+  "follow_up": {"date": "YYYY-MM-DD or null", "what": "what to follow up about, in a few words"}
 }
 
 Respond ONLY with valid JSON."""
 
 
-async def extract_personal_details(transcript: str, source: str = "voice_note") -> dict:
+async def extract_personal_details(transcript: str, source: str = "voice_note", recorded: str = "") -> dict:
     """Use AI to extract personal details from a voice memo, text thread or call transcript."""
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     api_key = os.getenv("EMERGENT_LLM_KEY")
@@ -77,10 +89,10 @@ async def extract_personal_details(transcript: str, source: str = "voice_note") 
         system_message=EXTRACTION_PROMPT.replace("__SOURCE__", SOURCE_DESCRIPTIONS.get(source, SOURCE_DESCRIPTIONS["voice_note"])),
     ).with_model("openai", "gpt-5.2")
 
-    label = {"text": "Text conversation", "call": "Call transcript"}.get(source, "Voice memo transcript")
+    label = {"text": "Text conversation", "call": "Call transcript", "note": "Notes"}.get(source, "Voice memo transcript")
     try:
         response = await chat.send_message(
-            UserMessage(text=f"{label}:\n\n{transcript}")
+            UserMessage(text=f"{label}{f' (RECORDED {recorded})' if recorded else ''}:\n\n{transcript}")
         )
 
         # Parse JSON
@@ -98,6 +110,8 @@ async def extract_personal_details(transcript: str, source: str = "voice_note") 
         # Clean nulls — only keep fields with actual values
         result = {}
         for key, value in extracted.items():
+            if isinstance(value, dict):
+                value = {k: v for k, v in value.items() if v not in (None, "", [])} or None
             if value is None:
                 continue
             if isinstance(value, list) and len(value) == 0:
@@ -269,7 +283,32 @@ async def resolve_detail_suggestion(user_id: str, contact_id: str, suggestion_id
     return {"ok": True, "accepted": accept, "field": sug["field"], "value": sug["new"] if accept else sug["old"], "remaining": remaining}
 
 
-async def process_voice_note_intelligence(user_id: str, contact_id: str, transcript: str, voice_note_id: str):
+async def _recorded_label(db, user_id: str, when) -> tuple:
+    """(the recording's local date for the extractor, the rep's timezone)."""
+    from zoneinfo import ZoneInfo
+    try:
+        u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1}) if ObjectId.is_valid(str(user_id)) else None
+        tz = ZoneInfo((u or {}).get("timezone") or "America/Denver")
+    except Exception:
+        tz = ZoneInfo("America/Denver")
+    w = _ts(when) or datetime.now(timezone.utc)
+    return w.astimezone(tz).strftime("%A %Y-%m-%d"), tz
+
+
+async def _take_met_and_follow(db, contact_id: str, details: dict, source: str, ref: str):
+    """met_* and follow_up are not personal details: met fills How we met (once), follow_up is handed back for the task."""
+    from services import how_we_met
+    met = {k[4:]: details.pop(k) for k in MET_KEYS if k in details}
+    follow = details.pop("follow_up", None)
+    if met:
+        try:
+            await how_we_met.fill(db, contact_id, met, source, ref)
+        except Exception as e:
+            logger.warning(f"[VoiceIntel] how-we-met fill failed: {e}")
+    return follow if isinstance(follow, dict) else None
+
+
+async def process_voice_note_intelligence(user_id: str, contact_id: str, transcript: str, voice_note_id: str, auto_followup: bool = True):
     """Full pipeline: extract details from transcript and merge into contact."""
     if not transcript or len(transcript.strip()) < 10:
         return
@@ -278,14 +317,19 @@ async def process_voice_note_intelligence(user_id: str, contact_id: str, transcr
 
     db = get_db()
     note_q = {"_id": ObjectId(voice_note_id)} if ObjectId.is_valid(str(voice_note_id)) else {"_id": voice_note_id}
+    note0 = await db.voice_notes.find_one(note_q, {"created_at": 1}) or {}
+    recorded, tz = await _recorded_label(db, user_id, note0.get("created_at"))
     try:
-        details = await extract_personal_details(transcript)
+        details = await extract_personal_details(transcript, recorded=recorded)
     except Exception as e:
         logger.warning(f"[VoiceIntel] extraction crashed for {voice_note_id}: {e}")
         details = {}
+    follow = await _take_met_and_follow(db, contact_id, details, "memo", str(voice_note_id)) if details else None
     if not details:
         logger.info(f"No personal details extracted from voice note {voice_note_id}")
         await db.voice_notes.update_one(note_q, {"$set": {"intelligence_done": True, "intelligence_extracted": False, "extracted_details": {}}})
+        if auto_followup and follow:
+            await _ensure_followup_from_voice(db, user_id, contact_id, {}, follow, tz)
         return
 
     # Merge into contact
@@ -335,18 +379,47 @@ async def process_voice_note_intelligence(user_id: str, contact_id: str, transcr
     logger.info(f"Intelligence extracted from voice note {voice_note_id}: {field_names}")
 
     # Auto-set a follow-up so a captured memory always turns into a next action
-    try:
-        task = await _ensure_followup_from_voice(db, user_id, contact_id, details)
-        if task:
-            await db.voice_notes.update_one(note_q, {"$set": {"followup_task": task}})
-    except Exception as e:
-        logger.warning(f"[VoiceIntel] follow-up creation failed: {e}")
+    if auto_followup:
+        try:
+            task = await _ensure_followup_from_voice(db, user_id, contact_id, details, follow, tz)
+            if task:
+                await db.voice_notes.update_one(note_q, {"$set": {"followup_task": task}})
+        except Exception as e:
+            logger.warning(f"[VoiceIntel] follow-up creation failed: {e}")
 
     return details
 
 
-async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details: dict):
-    """Create a single follow-up task after a voice note (skips if one is already pending)."""
+async def process_notes_intelligence(user_id: str, contact_id: str, text: str):
+    """Notes typed or dictated on the contact: the same extraction as a memo. Conflicting identity facts wait for the rep; no task is created."""
+    if not text or len(text.strip()) < 20:
+        return
+    db = get_db()
+    recorded, _tz = await _recorded_label(db, user_id, None)
+    try:
+        details = await extract_personal_details(text[-4000:], source="note", recorded=recorded)
+    except Exception as e:
+        logger.warning(f"[VoiceIntel] notes extraction crashed for {contact_id}: {e}")
+        return
+    if not details:
+        return
+    await _take_met_and_follow(db, contact_id, details, "note", f"contact:{contact_id}")
+    if details:
+        await merge_personal_details(contact_id, details, confirm_conflicts=True, source="note")
+    logger.info(f"[VoiceIntel] notes intelligence for {contact_id}: {', '.join(details.keys()) or 'how we met only'}")
+
+
+def _follow_due(follow: Optional[dict], tz) -> Optional[datetime]:
+    """A stated follow-up day becomes 9 AM that day in the rep's time; past or unreadable dates are ignored."""
+    m = re.match(r"^\d{4}-\d{2}-\d{2}$", str((follow or {}).get("date") or ""))
+    if not m:
+        return None
+    local = datetime.strptime(m.group(0), "%Y-%m-%d").replace(hour=9, tzinfo=tz)
+    return local.astimezone(timezone.utc) if local.date() >= datetime.now(tz).date() else None
+
+
+async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details: dict, follow: Optional[dict] = None, tz=None):
+    """Create a single follow-up task after a voice note (skips if one is already pending). A follow-up the rep stated keeps its day."""
     existing = await db.tasks.find_one({
         "user_id": user_id,
         "contact_id": contact_id,
@@ -360,7 +433,11 @@ async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details
     first = (contact or {}).get("first_name") or "your customer"
     contact_name = f"{(contact or {}).get('first_name', '')} {(contact or {}).get('last_name', '')}".strip()
     interests = details.get("interests") or []
-    if interests:
+    stated = _follow_due(follow, tz) if tz else None
+    what = str((follow or {}).get("what") or "").strip().rstrip(".")
+    if stated or what:
+        title = f"Follow up with {first}" + (f": {what}" if what else "")
+    elif interests:
         title = f"Check in with {first} about {interests[0]}"
     elif details.get("spouse"):
         title = f"Ask {first} how {details['spouse']} is doing"
@@ -370,14 +447,14 @@ async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details
         title = f"Follow up with {first}"
 
     now = datetime.now(timezone.utc)
-    due = now + timedelta(days=3)
+    due = stated or now + timedelta(days=3)
     res = await db.tasks.insert_one({
         "user_id": user_id,
         "contact_id": contact_id,
         "contact_name": contact_name,
         "contact_phone": (contact or {}).get("phone", ""),
         "type": "follow_up",
-        "title": title,
+        "title": title[:100],
         "due_date": due,
         "status": "pending",
         "source": "voice_note",
@@ -453,6 +530,8 @@ async def process_conversation_intelligence(user_id: str, contact_id: str) -> di
         ts = _ts(c.get("created_at"))
         newest = ts if ts and (not newest or ts > newest) else newest
 
+    for k in (*MET_KEYS, "follow_up"):   # texts and calls never set How we met or tasks here
+        details.pop(k, None)
     await db.contacts.update_one({"_id": contact["_id"]},
                                  {"$set": {"conv_intel_cursor": {"at": now, "fields": list(details.keys())}}})
     if not details:

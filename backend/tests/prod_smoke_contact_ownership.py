@@ -8,7 +8,7 @@ import sys
 from prod_smoke_hotfix3 import call, preflight
 
 BASE_DEFAULT = "https://app.imonsocial.com"
-BUILD = "2026-10-17.ownership-only"
+BUILD = "2026-10-16.contact-ownership"
 Z = "0" * 24
 CHECKS = [
     ("/api/admin/contact-merge-assessment?confirm=COUNTS_ONLY", (401,)),

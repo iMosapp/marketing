@@ -53,7 +53,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-BUILD = "2026-10-17.ownership-only"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
+BUILD = "2026-10-17.preview-restored"  # bump on every production deploy so /api/health ties the live pod to a code version (the platform tracks images by run id, not git SHA)
 app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix (same response class as the app, so its routes can be mounted without being rebuilt)
@@ -746,10 +746,14 @@ api_router.include_router(training_reports.router)
 api_router.include_router(seo.router)
 api_router.include_router(geo.router)
 api_router.include_router(va_profiles.router)
+from routers import campaign_preview as campaign_preview_router  # noqa: E402
+api_router.include_router(campaign_preview_router.router)
 from routers import agents as agents_router
 api_router.include_router(agents_router.router)
 from routers import voice_memos as voice_memos_router
 api_router.include_router(voice_memos_router.router)
+from routers import met_at as met_at_router
+api_router.include_router(met_at_router.router)
 from routers import contact_files as contact_files_router
 api_router.include_router(contact_files_router.open_router)
 api_router.include_router(contact_files_router.router)
@@ -795,6 +799,8 @@ api_router.include_router(consent_router.public_router)
 api_router.include_router(team_view_router.router)
 from routers import jessi_vision as jessi_vision_router
 api_router.include_router(jessi_vision_router.router)
+from routers import visual_scans as visual_scans_router
+api_router.include_router(visual_scans_router.router)
 from routers import owner as owner_router
 api_router.include_router(owner_router.router)
 from routers import scripts as scripts_router
@@ -1957,6 +1963,7 @@ async def startup_event():
                         _ensure_idx(db.conversations, [("user_id", 1), ("status", 1)]),
                         # Messages - thread loading
                         _ensure_idx(db.messages, [("conversation_id", 1), ("timestamp", -1)]),
+                        _ensure_idx(db.messages, [("contact_id", 1), ("timestamp", -1)]),  # campaign "waiting on a reply" guard + previews
                         # Contact events & photos
                         _ensure_idx(db.contact_photos, "contact_id", unique=True),
                         _ensure_idx(db.contact_events, [("user_id", 1), ("timestamp", -1)]),
@@ -1994,6 +2001,8 @@ async def startup_event():
                         # New pre-scheduled queue index — powers the scheduler's primary query
                         _ensure_idx(db.campaign_pending_sends, [("status", 1), ("send_at", 1)]),
                         _ensure_idx(db.campaign_pending_sends, [("enrollment_id", 1), ("status", 1)]),
+                        _ensure_idx(db.campaign_pending_sends, [("enrollment_id", 1), ("step", 1)]),
+                        _ensure_idx(db.campaign_pending_sends, [("status", 1), ("locked_at", 1)]),
                         _ensure_idx(db.tasks, [("contact_id", 1), ("user_id", 1), ("type", 1)]),
                         _ensure_idx(db.congrats_cards_sent, [("contact_id", 1), ("user_id", 1)]),
                         _ensure_idx(db.messages, [("_id", 1)]),  # Ensures batch message lookups are instant

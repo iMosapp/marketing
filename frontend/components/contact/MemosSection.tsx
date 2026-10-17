@@ -8,12 +8,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { tid } from '../scripts/shared';
 import { formatEventTime } from '../../utils/contactHelpers';
 import { capturePrompts } from './CaptureStorySheet';
+import { TranscriptStatus, RecordedBy } from './TranscriptStatus';
 
 export default function MemosSection(props: any) {
   const {
     s, colors, voiceNotes = [], voiceNotesLoading, isRecording, recordingTime, uploadingVoiceNote,
     playingNoteId, startRecording, stopRecording, playVoiceNote, deleteVoiceNote, formatRecordingTime, maxRecordingSeconds,
-    promptsMode, contactFirst,
+    promptsMode, contactFirst, retryTranscript, retryingNoteId,
   } = props;
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const memos = voiceNotes.filter((n: any) => n.kind !== 'conversation');
@@ -76,15 +77,18 @@ export default function MemosSection(props: any) {
                   <View style={{ flex: 1, marginLeft: 10 }}>
                     <Text style={s.vnCardDate}>{note.title || formatEventTime(note.created_at)}</Text>
                     <Text style={s.vnCardDuration}>{note.title ? `${formatEventTime(note.created_at)} · ` : ''}{formatRecordingTime(Math.round(note.duration || 0))}</Text>
+                    <RecordedBy note={note} colors={colors} testPrefix="voice-note" />
                   </View>
-                  <TouchableOpacity
-                    onPress={(e: any) => { e.stopPropagation?.(); deleteVoiceNote(note.id); }}
-                    style={{ padding: 12, margin: -8, zIndex: 10 }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    {...tid(`delete-voice-note-${i}`)}
-                  >
-                    <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-                  </TouchableOpacity>
+                  {note.can_delete !== false ? (
+                    <TouchableOpacity
+                      onPress={(e: any) => { e.stopPropagation?.(); deleteVoiceNote(note.id); }}
+                      style={{ padding: 12, margin: -8, zIndex: 10 }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      {...tid(`delete-voice-note-${i}`)}
+                    >
+                      <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
                 {note.transcript ? (
                   <TouchableOpacity activeOpacity={0.7} onPress={() => setOpen(o => ({ ...o, [note.id]: !o[note.id] }))} {...tid(`voice-note-transcript-${i}`)}>
@@ -95,6 +99,8 @@ export default function MemosSection(props: any) {
                       {note.transcript.length > 160 && <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>{expanded ? 'Less' : 'Read all'}</Text>}
                     </View>
                   </TouchableOpacity>
+                ) : note.transcript_status === 'retrying' || note.transcript_status === 'failed' || retryingNoteId === note.id ? (
+                  <TranscriptStatus note={note} colors={colors} onRetry={retryTranscript} retrying={retryingNoteId === note.id} testPrefix="voice-note" />
                 ) : (
                   <Text style={[s.vnTranscript, { fontStyle: 'italic', color: colors.textTertiary }]}>Transcribing...</Text>
                 )}

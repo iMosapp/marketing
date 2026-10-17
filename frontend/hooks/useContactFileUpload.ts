@@ -4,7 +4,7 @@ import api from '../services/api';
 
 export type ScanHint = 'business_card' | 'vin' | 'trade_in' | 'id_document' | 'insurance_card' | 'credit_app' | 'receipt' | 'document' | 'photo';
 type Opts = { userId?: string; contactId?: string; onSaved: (file: any) => void; onError: (msg: string) => void };
-type Picked = { name: string; contentType: string; base64: string };
+export type Picked = { name: string; contentType: string; base64: string };
 
 const PIECE = 500_000;
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -16,6 +16,34 @@ const readUri = async (uri: string, webFile?: any): Promise<string> => {
   const { File: ExpoFile } = await import('expo-file-system');
   return new ExpoFile(uri).base64();
 };
+
+export const fromImagePicker = (assets: any[]): Picked[] => assets.filter(a => a?.base64).map((a, i) => ({ name: a.fileName || `photo-${Date.now()}-${i + 1}.jpg`, contentType: a.mimeType || 'image/jpeg', base64: a.base64 }));
+
+// Shared pickers (Files and Scan with Jessi). Each returns [] when cancelled and throws an Error with a message to show.
+export const takePhoto = async (): Promise<Picked[]> => {
+  const ImagePicker = await import('expo-image-picker');
+  const perm = await ImagePicker.requestCameraPermissionsAsync();
+  if (!perm.granted) throw new Error('Camera access is needed to scan.');
+  const r = await ImagePicker.launchCameraAsync({ quality: 0.85, base64: true, exif: false });
+  return r.canceled ? [] : fromImagePicker(r.assets);
+};
+export const choosePhotos = async (multiple = true): Promise<Picked[]> => {
+  const ImagePicker = await import('expo-image-picker');
+  const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85, base64: true, allowsMultipleSelection: multiple, selectionLimit: multiple ? 10 : 1, exif: false });
+  return r.canceled ? [] : fromImagePicker(r.assets);
+};
+export const chooseFiles = async (multiple = true, onSkip?: (msg: string) => void): Promise<Picked[]> => {
+  const DocumentPicker = await import('expo-document-picker');
+  const r = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], multiple, copyToCacheDirectory: true });
+  if (r.canceled) return [];
+  const items: Picked[] = [];
+  for (const a of r.assets || []) {
+    if ((a.size || 0) > MAX_BYTES) { onSkip?.(`${a.name} is over 25 MB`); continue; }
+    items.push({ name: a.name || 'document', contentType: a.mimeType || (a.name?.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'), base64: await readUri(a.uri, (a as any).file) });
+  }
+  return items;
+};
+const errMsg = (e: any, fallback: string) => (e instanceof Error && e.message.startsWith('Camera access') ? e.message : fallback);
 
 // Camera / photo library / Files app -> base64 pieces -> /contact-files. Jessi reads each file on the last piece.
 export function useContactFileUpload({ userId, contactId, onSaved, onError }: Opts) {
@@ -41,36 +69,14 @@ export function useContactFileUpload({ userId, contactId, onSaved, onError }: Op
     queue.current = queue.current.then(async () => { for (const p of items) await upload(p, hint); }).finally(() => setBusy(null));
   };
 
-  const fromImagePicker = (assets: any[]): Picked[] => assets.filter(a => a?.base64).map((a, i) => ({ name: a.fileName || `photo-${Date.now()}-${i + 1}.jpg`, contentType: a.mimeType || 'image/jpeg', base64: a.base64 }));
-
   const pickCamera = async (hint?: ScanHint) => {
-    try {
-      const ImagePicker = await import('expo-image-picker');
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) { onError('Camera access is needed to scan.'); return; }
-      const r = await ImagePicker.launchCameraAsync({ quality: 0.85, base64: true, exif: false });
-      if (!r.canceled) enqueue(fromImagePicker(r.assets), hint);
-    } catch { onError('Could not open the camera.'); }
+    try { enqueue(await takePhoto(), hint); } catch (e) { onError(errMsg(e, 'Could not open the camera.')); }
   };
   const pickLibrary = async (hint?: ScanHint) => {
-    try {
-      const ImagePicker = await import('expo-image-picker');
-      const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85, base64: true, allowsMultipleSelection: true, selectionLimit: 10, exif: false });
-      if (!r.canceled) enqueue(fromImagePicker(r.assets), hint);
-    } catch { onError('Could not open your photos.'); }
+    try { enqueue(await choosePhotos(true), hint); } catch (e) { onError(errMsg(e, 'Could not open your photos.')); }
   };
   const pickDocument = async (hint?: ScanHint) => {
-    try {
-      const DocumentPicker = await import('expo-document-picker');
-      const r = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], multiple: true, copyToCacheDirectory: true });
-      if (r.canceled) return;
-      const items: Picked[] = [];
-      for (const a of r.assets || []) {
-        if ((a.size || 0) > MAX_BYTES) { onError(`${a.name} is over 25 MB`); continue; }
-        items.push({ name: a.name || 'document', contentType: a.mimeType || (a.name?.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'), base64: await readUri(a.uri, (a as any).file) });
-      }
-      if (items.length) enqueue(items, hint);
-    } catch { onError('Could not open that file.'); }
+    try { const items = await chooseFiles(true, onError); if (items.length) enqueue(items, hint); } catch (e) { onError(errMsg(e, 'Could not open that file.')); }
   };
 
   // "Scan" = camera on a phone, photo library on the web (no camera roll there)

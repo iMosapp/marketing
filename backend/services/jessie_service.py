@@ -4,6 +4,7 @@ Fast, deeply knowledgeable support agent for I'm On Social.
 """
 import os
 import json
+import re
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -386,10 +387,9 @@ async def _build_contact_context(contact_id: str, user_id: str) -> str:
         return ""
     db = get_db()
     try:
-        contact = await db.contacts.find_one(
-            {"_id": ObjectId(contact_id), "user_id": user_id},
-            {"_id": 0, "password": 0}
-        )
+        from services import live_voice as lv
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1}) if ObjectId.is_valid(user_id) else None
+        contact = await lv.focus_contact(db, {**(user or {}), "_id": user_id}, contact_id) if user else None
     except Exception:
         return ""
     if not contact:
@@ -407,6 +407,11 @@ async def _build_contact_context(contact_id: str, user_id: str) -> str:
     parts.append(f"- Email: {email or 'not set'}")
     parts.append(f"- Tags: {', '.join(tags) if tags else 'none'}")
     parts.append(f"- Customer since: {created_str}")
+    try:
+        digest = await _person_digest(db, contact["_id"])
+        parts.append("- What you know about them (how you met, personal details, notes, voice memos):\n" + "\n".join(digest.splitlines()[1:]) if "\n" in digest else "- No notes, voice memos or personal details on file yet.")
+    except Exception as e:
+        logger.warning(f"[Jessie] contact digest failed: {e}")
 
     # Recent activity for this contact
     try:
@@ -513,6 +518,34 @@ async def _build_proactive_suggestion(user_id: str, current_page: str) -> str:
     return "\n\n## PROACTIVE SUGGESTIONS (share these naturally when relevant)\n" + "\n".join(f"- {s}" for s in suggestions)
 
 
+NAME_FILLER = {"who", "is", "find", "look", "up", "lookup", "search", "for", "contact", "named", "about", "tell", "me", "info", "on", "details", "what", "do", "we", "you",
+               "know", "the", "a", "an", "my", "i", "did", "does", "have", "has", "anything", "everything", "please", "jessi", "jessie", "can", "give", "pull", "show", "customer", "person"}
+
+
+async def _person_digest(db, contact_id) -> str:
+    """One contact the way Jessi should know them: contact info, how we met, personal details, notes and the latest voice memos."""
+    from services import how_we_met
+    c = await db.contacts.find_one({"_id": contact_id}, {"first_name": 1, "last_name": 1, "phone": 1, "email": 1, "tags": 1, "notes": 1, "personal_details": 1, "how_we_met": 1, "vehicle": 1, "created_at": 1})
+    if not c:
+        return ""
+    name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
+    out = [f"- **{name}** | Phone: {c.get('phone') or 'n/a'} | Email: {c.get('email') or 'n/a'} | Tags: {', '.join(c.get('tags') or []) or 'none'} | open: /contact/{c['_id']}"]
+    met = how_we_met.public(c.get("how_we_met"))
+    if met:
+        out.append(f"  How we met: {met['summary']}")
+    if c.get("vehicle"):
+        out.append(f"  Vehicle: {c['vehicle']}")
+    pd = c.get("personal_details") if isinstance(c.get("personal_details"), dict) else {}
+    if pd:
+        out.append("  Personal details: " + "; ".join(f"{k.replace('_', ' ')}: {v if not isinstance(v, list) else ', '.join(str(x.get('name') if isinstance(x, dict) else x) for x in v)}" for k, v in pd.items() if v)[:700])
+    if c.get("notes"):
+        out.append(f"  Notes: {str(c['notes'])[:700]}")
+    async for v in db.voice_notes.find({"contact_id": str(c["_id"]), "transcript": {"$nin": ["", None]}}, {"transcript": 1, "created_at": 1}).sort("created_at", -1).limit(3):
+        when = v["created_at"].strftime("%b %d, %Y") if hasattr(v.get("created_at"), "strftime") else ""
+        out.append(f"  Voice memo {when}: \"{str(v['transcript'])[:500]}\"")
+    return "\n".join(out)
+
+
 async def _build_data_lookups(user_id: str, user_message: str, role: str = "user") -> str:
     """
     Phase 3: Action Agent — Data Lookups.
@@ -523,37 +556,22 @@ async def _build_data_lookups(user_id: str, user_message: str, role: str = "user
     msg = user_message.lower()
     sections = []
 
-    # ── 1. Contact search (name mentioned) ──
+    # ── 1. Contact search (name mentioned): spoken-name matching, and what Jessi knows about them (notes, memos, details) ──
     name_triggers = ["who is", "find", "look up", "lookup", "search for", "contact named",
                      "about", "tell me about", "info on", "details on", "what do we know about"]
     if any(t in msg for t in name_triggers):
-        # Extract potential name from message
-        search_term = msg
-        for t in name_triggers:
-            search_term = search_term.replace(t, "")
-        search_term = search_term.strip(" ?.,!")
-        if len(search_term) >= 2:
+        words = [w for w in re.findall(r"[a-z][a-z'\-]*", msg) if w not in NAME_FILLER]
+        if 1 <= len(words) <= 3:
             try:
-                regex = {"$regex": search_term, "$options": "i"}
-                contacts = await db.contacts.find(
-                    {"user_id": user_id, "$or": [
-                        {"first_name": regex}, {"last_name": regex},
-                        {"phone": regex}, {"email": regex},
-                    ]},
-                    {"_id": 0, "first_name": 1, "last_name": 1, "phone": 1,
-                     "email": 1, "tags": 1, "created_at": 1}
-                ).limit(5).to_list(5)
-                if contacts:
-                    section = [f"\n## DATA LOOKUP: Contact Search for '{search_term}' ({len(contacts)} result{'s' if len(contacts) != 1 else ''})"]
-                    for c in contacts:
-                        name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
-                        tags = ", ".join(c.get("tags", [])) or "none"
-                        section.append(f"- **{name}** | Phone: {c.get('phone', 'n/a')} | Email: {c.get('email', 'n/a')} | Tags: {tags}")
+                from services import live_voice as lv
+                found = await lv._find(db, user_id, " ".join(words), limit=3)
+                if found:
+                    section = [f"\n## DATA LOOKUP: Contacts matching '{' '.join(words)}'"]
+                    for c in found:
+                        section.append(await _person_digest(db, c["_id"]))
                     sections.append("\n".join(section))
-                else:
-                    sections.append(f"\n## DATA LOOKUP: No contacts found matching '{search_term}'")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"[Jessie] name lookup failed: {e}")
 
     # ── 1b. Who mentioned X: hunt through texts, call transcripts, voice memos and notes ──
     mention_triggers = ["who mentioned", "who asked about", "who was asking about", "who was looking for", "who talked about", "who brought up", "who wanted",
@@ -773,6 +791,23 @@ async def _build_data_lookups(user_id: str, user_message: str, role: str = "user
     return header + "\n".join(sections)
 
 
+async def _brain_turn(db, user_id: str, message: str, contact_id: str = "") -> Optional[dict]:
+    """Live Jessi's brain on a typed message. None when it is a plain answer (app help, small talk), which the chat model handles."""
+    from services import live_voice as lv
+    user = await db.users.find_one({"_id": ObjectId(user_id)}) if ObjectId.is_valid(user_id) else None
+    if not user:
+        return None
+    try:
+        live = await lv.chat_session(db, user, contact_id)
+        history = await get_chat_history(user_id, limit=8)
+        transcript = [{"role": "assistant" if m.get("role") == "assistant" else "user", "text": m.get("content") or ""} for m in history] + [{"role": "user", "text": message}]
+        r = await lv.delegate(db, live, user, transcript, None)
+    except Exception as e:
+        logger.warning(f"[Jessie] brain turn failed, answering in chat: {e}")
+        return None
+    return r if r.get("tool") != "answer" and r.get("content") else None
+
+
 async def chat_with_jessie(user_id: str, user_message: str, current_page: str = "", contact_id: str = "") -> dict:
     """
     Send a message to Jessi and get a response.
@@ -786,6 +821,13 @@ async def chat_with_jessie(user_id: str, user_message: str, current_page: str = 
 
     session = await get_or_create_chat_session(user_id)
     db = get_db()
+
+    # Typed and spoken Jessi share one brain: people, texts, reminders, notes, new contacts and searches run Live Jessi's tools
+    brain = await _brain_turn(db, user_id, user_message, contact_id)
+    if brain:
+        await save_message(user_id, "user", user_message)
+        await save_message(user_id, "assistant", brain["content"])
+        return {"text": brain["content"], "session_id": session["session_id"], "open": brain.get("open"), "tool": brain["tool"], "pending": brain.get("pending")}
 
     # Build context: knowledge base + user context + contact context + data lookups + proactive + history
     user_context = await _build_user_context(user_id)

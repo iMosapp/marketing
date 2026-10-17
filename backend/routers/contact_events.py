@@ -283,8 +283,8 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 100, sk
         # Exception: if a custom title was explicitly stored (e.g., custom card names), keep it
         etype = e.get("event_type", "")
         stored_title = e.get("title", "")
-        if stored_title and etype.startswith("custom_") and "_card_" in etype:
-            # Keep the explicitly stored card name (e.g., "'Before' Card Sent")
+        if stored_title and ((etype.startswith("custom_") and "_card_" in etype) or etype in ("file_added", "file_applied")):
+            # Keep the explicitly stored card name (e.g., "'Before' Card Sent") and file titles ("Business card scanned with Jessi")
             pass
         else:
             e["title"] = get_event_label(etype)
